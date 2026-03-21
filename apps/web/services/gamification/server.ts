@@ -6,7 +6,7 @@ import type { DashboardData, PlatformLeaderboard, UserGamificationProfile } from
 import { gamificationTag, gamificationTags } from '@/lib/cacheTags';
 import { extractStreakInfo } from '@/types/gamification/profile';
 import { CacheProfiles, cacheLife, cacheTag } from '@/lib/cache';
-import { getAPIUrl } from '@/services/config/config';
+import { getServerAPIUrl } from '@/services/config/config';
 import { revalidateTag } from 'next/cache';
 import { auth } from '@/auth';
 
@@ -142,7 +142,7 @@ async function fetchGamificationData(accessToken: string): Promise<RawDashboardR
   cacheLife(CacheProfiles.realtime);
 
   try {
-    const res = await fetch(`${getAPIUrl()}gamification/`, {
+    const res = await fetch(`${getServerAPIUrl()}gamification/`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -170,7 +170,7 @@ async function fetchLeaderboardData(limit: number, accessToken: string): Promise
   cacheLife(CacheProfiles.realtime);
 
   try {
-    const res = await fetch(`${getAPIUrl()}gamification/leaderboard?limit=${encodeURIComponent(String(limit))}`, {
+    const res = await fetch(`${getServerAPIUrl()}gamification/leaderboard?limit=${encodeURIComponent(String(limit))}`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -283,7 +283,7 @@ export async function awardXPOnServer(payload: Record<string, any>) {
     custom_amount: payload.custom_amount ?? payload.amount,
     idempotency_key: payload.idempotency_key,
   };
-  const res = await fetch(`${getAPIUrl()}gamification/xp`, {
+  const res = await fetch(`${getServerAPIUrl()}gamification/xp`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
@@ -299,7 +299,7 @@ export async function awardXPOnServer(payload: Record<string, any>) {
 
 export async function updateStreakOnServer(type: 'login' | 'learning') {
   const accessToken = await requireAccessToken();
-  const res = await fetch(`${getAPIUrl()}gamification/streaks/${encodeURIComponent(type)}`, {
+  const res = await fetch(`${getServerAPIUrl()}gamification/streaks/${encodeURIComponent(type)}`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -313,7 +313,7 @@ export async function updateStreakOnServer(type: 'login' | 'learning') {
 
 export async function updatePreferencesOnServer(preferences: Record<string, any>) {
   const accessToken = await requireAccessToken();
-  const res = await fetch(`${getAPIUrl()}gamification/preferences`, {
+  const res = await fetch(`${getServerAPIUrl()}gamification/preferences`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${accessToken}`,

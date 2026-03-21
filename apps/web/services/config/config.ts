@@ -24,30 +24,21 @@ const isUnsupportedCookieDomain = (host?: string | null) => {
 
 /**
  * Resolves the API base URL (always ending with a slash).
- * This is resolved lazily and cached by getAPIUrl().
- *
- * For server-side requests in Docker, use internal container network.
- * For client-side requests, use the public-facing URL.
+ * Client code should use getAPIUrl() / getPublicAPIUrl().
+ * Server code should use getServerAPIUrl().
  */
-const resolveAPIUrl = () => {
-  if (typeof globalThis.window === 'undefined') {
-    const { internalApiUrl: internalUrl } = getServerConfig();
-    if (internalUrl) {
-      return internalUrl;
-    }
+export const getPublicAPIUrl = () => getPublicConfig().apiUrl;
+
+export const getServerAPIUrl = () => {
+  const { internalApiUrl } = getServerConfig();
+  if (!internalApiUrl) {
+    throw new Error('INTERNAL_API_URL is required for server-side API requests');
   }
 
-  return getPublicConfig().apiUrl;
+  return internalApiUrl;
 };
 
-let apiUrlCache: string | null = null;
-
-export const getAPIUrl = () => {
-  if (apiUrlCache) return apiUrlCache;
-
-  apiUrlCache = resolveAPIUrl();
-  return apiUrlCache;
-};
+export const getAPIUrl = () => getPublicAPIUrl();
 
 export const getSiteUrl = () => getPublicConfig().siteUrl;
 

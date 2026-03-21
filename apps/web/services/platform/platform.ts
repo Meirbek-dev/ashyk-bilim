@@ -7,7 +7,7 @@ import {
   getResponseMetadata,
 } from '@services/utils/ts/requests';
 import { CacheProfiles, cacheLife, cacheTag } from '@/lib/cache';
-import { getAPIUrl } from '@services/config/config';
+import { getServerAPIUrl } from '@services/config/config';
 import { tags } from '@/lib/cacheTags';
 
 /*
@@ -25,7 +25,7 @@ async function fetchPlatform(access_token?: string) {
     headers.Authorization = `Bearer ${access_token}`;
   }
 
-  const result = await fetch(`${getAPIUrl()}platform`, {
+  const result = await fetch(`${getServerAPIUrl()}platform`, {
     method: 'GET',
     headers,
   });
@@ -45,12 +45,12 @@ export async function getContextInfoWithoutCredentials(_next?: unknown) {
 }
 
 export async function getContextInfoNoAsync(next: unknown, access_token: string) {
-  return await fetch(`${getAPIUrl()}platform`, RequestBodyWithAuthHeader('GET', null, next, access_token));
+  return await fetch(`${getServerAPIUrl()}platform`, RequestBodyWithAuthHeader('GET', null, next, access_token));
 }
 
 export async function updateLanding(landing_object: any, access_token: string) {
   const result = await fetch(
-    `${getAPIUrl()}platform/landing`,
+    `${getServerAPIUrl()}platform/landing`,
     RequestBodyWithAuthHeader('PUT', landing_object, null, access_token),
   );
   const metadata = await getResponseMetadata(result);
@@ -69,7 +69,7 @@ export async function uploadLandingContent(content_file: File, access_token: str
   formData.append('content_file', content_file);
 
   const result = await fetch(
-    `${getAPIUrl()}platform/landing/content`,
+    `${getServerAPIUrl()}platform/landing/content`,
     RequestBodyFormWithAuthHeader('POST', formData, null, access_token),
   );
   return await getResponseMetadata(result);
@@ -77,7 +77,7 @@ export async function uploadLandingContent(content_file: File, access_token: str
 
 export async function removeUser(user_id: number, access_token: string) {
   const result = await fetch(
-    `${getAPIUrl()}platform/users/${user_id}`,
+    `${getServerAPIUrl()}platform/users/${user_id}`,
     RequestBodyWithAuthHeader('DELETE', null, null, access_token),
   );
   const metadata = await getResponseMetadata(result);

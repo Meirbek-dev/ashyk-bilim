@@ -1,7 +1,7 @@
 'use server';
 
 import { RequestBodyFormWithAuthHeader, RequestBodyWithAuthHeader, errorHandling } from '@services/utils/ts/requests';
-import { getAPIUrl } from '@services/config/config';
+import { getServerAPIUrl } from '@services/config/config';
 import { tags } from '@/lib/cacheTags';
 
 /*
@@ -10,7 +10,10 @@ import { tags } from '@/lib/cacheTags';
 */
 
 export async function updatePlatform(data: any, access_token: string) {
-  const result: any = await fetch(`${getAPIUrl()}platform`, RequestBodyWithAuthHeader('PUT', data, null, access_token));
+  const result: any = await fetch(
+    `${getServerAPIUrl()}platform`,
+    RequestBodyWithAuthHeader('PUT', data, null, access_token),
+  );
   const response = await errorHandling(result);
   const { revalidateTag } = await import('next/cache');
   revalidateTag(tags.platform, 'max');
@@ -22,7 +25,7 @@ export async function uploadPlatformLogo(logo_file: any, access_token: string) {
   const formData = new FormData();
   formData.append('logo_file', logo_file);
   const result: any = await fetch(
-    `${getAPIUrl()}platform/logo`,
+    `${getServerAPIUrl()}platform/logo`,
     RequestBodyFormWithAuthHeader('PUT', formData, null, access_token),
   );
   const response = await errorHandling(result);
@@ -36,7 +39,7 @@ export async function uploadPlatformThumbnail(thumbnail_file: any, access_token:
   const formData = new FormData();
   formData.append('thumbnail_file', thumbnail_file);
   const result: any = await fetch(
-    `${getAPIUrl()}platform/thumbnail`,
+    `${getServerAPIUrl()}platform/thumbnail`,
     RequestBodyFormWithAuthHeader('PUT', formData, null, access_token),
   );
   const response = await errorHandling(result);
@@ -50,7 +53,7 @@ export const uploadPlatformPreview = async (file: File, access_token: string) =>
   formData.append('preview_file', file);
 
   const result: any = await fetch(
-    `${getAPIUrl()}platform/preview`,
+    `${getServerAPIUrl()}platform/preview`,
     RequestBodyFormWithAuthHeader('PUT', formData, null, access_token),
   );
   const response = await errorHandling(result);
