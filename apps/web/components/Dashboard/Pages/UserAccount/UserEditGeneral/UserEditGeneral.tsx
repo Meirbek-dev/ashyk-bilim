@@ -21,15 +21,16 @@ import {
   Users,
 } from 'lucide-react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@components/ui/form';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { getUser, updateUserAvatar } from '@services/users/users';
+import { updateProfile, updateUserAvatar } from '@/lib/users/client';
+import { useSession } from '@/hooks/useSession';
+import { logout } from '@services/auth/auth';
+import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field';
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import { updateProfile } from '@services/settings/profile';
 import { useDebouncedCallback } from '@/hooks/useDebounce';
 import { getAbsoluteUrl } from '@services/config/config';
 import UserAvatar from '@components/Objects/UserAvatar';
 import { constructAcceptValue } from '@/lib/constants';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import type { ChangeEvent, ElementType } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Textarea } from '@components/ui/textarea';
@@ -39,10 +40,9 @@ import { getUserLocale } from '@/i18n/locale';
 import { Label } from '@components/ui/label';
 import { Input } from '@components/ui/input';
 import type { Locale } from '@/i18n/config';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { signOut } from 'next-auth/react';
 import { toast } from 'sonner';
 import * as v from 'valibot';
 
@@ -291,7 +291,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
     ],
   } as const;
 
-  const details = form.watch('details');
+  const details = useWatch({ control: form.control, name: 'details', defaultValue: {} });
 
   return (
     <div>
@@ -304,117 +304,123 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
         <div className="mx-5 my-5 mt-0 flex flex-col gap-8 lg:flex-row">
           {/* Profile Information Section */}
           <div className="min-w-0 flex-1 space-y-4">
-            <FormField
+            <Controller
               control={form.control}
               name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('email')}</FormLabel>
-                  <FormControl>
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>{t('email')}</FieldLabel>
+                  <FieldContent>
                     <Input
+                      id={field.name}
                       type="email"
                       placeholder={t('emailPlaceholder')}
                       {...field}
                     />
-                  </FormControl>
-                  <FormMessage />
+                  </FieldContent>
+                  <FieldError errors={[fieldState.error]} />
                   <div className="mt-2 flex items-center space-x-2 rounded-md bg-amber-50 p-2 text-amber-600">
                     <AlertTriangle size={16} />
                     <span className="text-sm">{t('emailChangeWarning')}</span>
                   </div>
-                </FormItem>
+                </Field>
               )}
             />
 
-            <FormField
+            <Controller
               control={form.control}
               name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('username')}</FormLabel>
-                  <FormControl>
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>{t('username')}</FieldLabel>
+                  <FieldContent>
                     <Input
+                      id={field.name}
                       placeholder={t('usernamePlaceholder')}
                       {...field}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                  </FieldContent>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
               )}
             />
 
-            <FormField
+            <Controller
               control={form.control}
               name="first_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('firstName')}</FormLabel>
-                  <FormControl>
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>{t('firstName')}</FieldLabel>
+                  <FieldContent>
                     <Input
+                      id={field.name}
                       placeholder={t('firstNamePlaceholder')}
                       {...field}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                  </FieldContent>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
               )}
             />
 
-            <FormField
+            <Controller
               control={form.control}
               name="middle_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('middleName')}</FormLabel>
-                  <FormControl>
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>{t('middleName')}</FieldLabel>
+                  <FieldContent>
                     <Input
+                      id={field.name}
                       placeholder={t('middleNamePlaceholder')}
                       {...field}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                  </FieldContent>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
               )}
             />
 
-            <FormField
+            <Controller
               control={form.control}
               name="last_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('lastName')}</FormLabel>
-                  <FormControl>
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>{t('lastName')}</FieldLabel>
+                  <FieldContent>
                     <Input
+                      id={field.name}
                       placeholder={t('lastNamePlaceholder')}
                       {...field}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                  </FieldContent>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
               )}
             />
 
-            <FormField
+            <Controller
               control={form.control}
               name="bio"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>
                     {t('bio')}
                     <span className="text-sm text-gray-500">
                       ({400 - (field.value?.length || 0)} {t('charactersLeft')})
                     </span>
-                  </FormLabel>
-                  <FormControl>
+                  </FieldLabel>
+                  <FieldContent>
                     <Textarea
+                      id={field.name}
                       placeholder={t('bioPlaceholder')}
                       className="min-h-[150px]"
                       maxLength={400}
                       {...field}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                  </FieldContent>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
               )}
             />
 
@@ -470,11 +476,11 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                         const currentIds = new Set(Object.keys(details || {}));
                         const newDetails = { ...details };
 
-                        template.forEach((item) => {
+                        for (const item of template) {
                           if (!currentIds.has(item.id)) {
                             newDetails[item.id] = { ...item };
                           }
-                        });
+                        }
 
                         form.setValue('details', newDetails);
                       }}
@@ -509,8 +515,8 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                     }}
                     onRemove={(id) => {
                       const newDetails = { ...details };
-                      delete newDetails[id];
-                      form.setValue('details', newDetails);
+                      const { [id]: removed, ...nextDetails } = newDetails;
+                      form.setValue('details', nextDetails);
                     }}
                     onLabelChange={(id, newLabel) => {
                       const newDetails = { ...details };
@@ -626,19 +632,21 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
 };
 
 const UserEditGeneral = () => {
-  const session = usePlatformSession();
-  const access_token = session?.data?.tokens?.access_token;
+  const router = useRouter();
+  const { user: me } = useSession();
   const [localAvatar, setLocalAvatar] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
-  const [success, setSuccess] = useState<string>('');
+  const [success, setSuccess] = useState('');
   const [userData, setUserData] = useState<any>(null);
   const [currentLocale, setCurrentLocale] = useState<Locale | null>(null);
-  const [initialLoading, setInitialLoading] = useState<boolean>(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const t = useTranslations('DashPage.Notifications');
   const validationSchema = createValidationSchema(t);
 
-  const form = useForm<FormValues>({
+  type UserEditFormInput = v.InferInput<ReturnType<typeof createValidationSchema>>;
+
+  const form = useForm<UserEditFormInput, any, FormValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       username: '',
@@ -654,12 +662,10 @@ const UserEditGeneral = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (session?.data?.user?.id && access_token) {
+      if (me?.id) {
         try {
-          const [userDataResponse, localeResponse] = await Promise.all([
-            getUser(session.data.user.id, access_token),
-            getUserLocale(),
-          ]);
+          const [userDataResponse, localeResponse] = await Promise.all([Promise.resolve(me), getUserLocale()]);
+          const details = (userDataResponse.details as FormValues['details'] | undefined) ?? {};
           setUserData(userDataResponse);
           setCurrentLocale(localeResponse);
 
@@ -671,7 +677,7 @@ const UserEditGeneral = () => {
             last_name: userDataResponse.last_name || '',
             email: userDataResponse.email || '',
             bio: userDataResponse.bio || '',
-            details: userDataResponse.details || {},
+            details,
           });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -686,7 +692,7 @@ const UserEditGeneral = () => {
     };
 
     fetchData();
-  }, [session?.data?.user?.id, access_token, form]);
+  }, [form, me]);
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -697,18 +703,19 @@ const UserEditGeneral = () => {
     setError(undefined);
     setSuccess('');
 
-    if (!(session?.data?.user?.id && access_token)) {
+    if (!me?.id) {
       setError(t('avatarError'));
       setIsLoading(false);
       return;
     }
 
     try {
-      const res = await updateUserAvatar(session.data.user.id, file, access_token);
+      const res = await updateUserAvatar(me.id, file);
       if (!res.success) {
         setError(res.HTTPmessage || t('avatarError'));
       } else {
         setSuccess(t('avatarSuccess'));
+        router.refresh();
       }
     } catch (error) {
       console.error('Avatar upload error:', error);
@@ -730,11 +737,11 @@ const UserEditGeneral = () => {
 
     // Wait for 4 seconds before signing out
     await new Promise((resolve) => setTimeout(resolve, 4000));
-    signOut({ redirect: true, callbackUrl: getAbsoluteUrl('/') });
+    await logout({ redirectTo: getAbsoluteUrl('/') });
   };
 
   const onSubmit = async (values: FormValues) => {
-    if (!(userData?.id && access_token)) {
+    if (!userData?.id) {
       toast.error(t('profileUpdateError'));
       return;
     }
@@ -743,14 +750,14 @@ const UserEditGeneral = () => {
     const loadingToast = toast.loading(t('updating'));
 
     try {
-      await updateProfile(values, userData.id, access_token);
-      const updatedUserData = await getUser(userData.id, access_token);
-      setUserData(updatedUserData);
+      await updateProfile(values, userData.id);
+      setUserData((current: any) => ({ ...current, ...values }));
 
       toast.dismiss(loadingToast);
       if (isEmailChanged) {
         await handleEmailChange(values.email);
       } else {
+        router.refresh();
         toast.success(t('profileUpdateSuccess'));
       }
     } catch (error) {
@@ -773,20 +780,18 @@ const UserEditGeneral = () => {
 
   return (
     <div className="soft-shadow mx-0 rounded-xl bg-white sm:mx-10">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <UserEditForm
-            form={form}
-            profilePicture={{
-              error,
-              success,
-              isLoading,
-              localAvatar,
-              handleFileChange,
-            }}
-          />
-        </form>
-      </Form>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <UserEditForm
+          form={form}
+          profilePicture={{
+            error,
+            success,
+            isLoading,
+            localAvatar,
+            handleFileChange,
+          }}
+        />
+      </form>
     </div>
   );
 };

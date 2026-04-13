@@ -1,8 +1,17 @@
 from datetime import UTC, datetime, timezone
 from enum import Enum, StrEnum
 
-from pydantic import ConfigDict, field_validator
-from sqlalchemy import JSON, BigInteger, Column, DateTime, ForeignKey, Integer, func
+from pydantic import ConfigDict, field_validator, model_validator
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    func,
+)
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
@@ -42,8 +51,8 @@ class ActivityBase(SQLModelStrictBaseModel):
     name: str
     activity_type: ActivityTypeEnum
     activity_sub_type: ActivitySubTypeEnum
-    content: dict = Field(default_factory=dict, sa_column=Column(JSON))
-    details: dict | None = Field(default=None, sa_column=Column(JSON))
+    content: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
+    details: dict[str, object] | None = Field(default=None, sa_column=Column(JSON))
     published: bool = False
 
     @field_validator("activity_type", mode="before")
@@ -65,10 +74,22 @@ class Activity(ActivityBase, table=True):
     model_config = ConfigDict(from_attributes=True)
 
     id: int | None = Field(default=None, primary_key=True)
+    # Override name with a length-constrained column at the DB level.
+    name: str = Field(sa_column=Column(String(500), nullable=False))
+    # Primary FK: activities belong to a chapter (cascades on chapter delete)
+    chapter_id: int = Field(
+        sa_column=Column(
+            Integer, ForeignKey("chapter.id", ondelete="CASCADE"), nullable=False
+        ),
+    )
+    # Denormalised FK kept for query performance; synced on create/move.
+    # The canonical source of truth is chapter_id → Chapter.course_id.
     course_id: int | None = Field(
         default=None,
-        sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE")),
+        sa_column=Column(Integer, ForeignKey("course.id", ondelete="SET NULL")),
     )
+    # order within the chapter
+    order: int = Field(default=0)
     creator_id: int | None = Field(
         default=None,
         sa_column=Column(BigInteger, ForeignKey("user.id", ondelete="SET NULL")),
@@ -86,55 +107,74 @@ class Activity(ActivityBase, table=True):
     )
 
 
+_VALID_SUBTYPES: dict[ActivityTypeEnum, set[ActivitySubTypeEnum]] = {
+    ActivityTypeEnum.TYPE_VIDEO: {
+        ActivitySubTypeEnum.SUBTYPE_VIDEO_YOUTUBE,
+        ActivitySubTypeEnum.SUBTYPE_VIDEO_HOSTED,
+    },
+    ActivityTypeEnum.TYPE_DOCUMENT: {
+        ActivitySubTypeEnum.SUBTYPE_DOCUMENT_PDF,
+        ActivitySubTypeEnum.SUBTYPE_DOCUMENT_DOC,
+    },
+    ActivityTypeEnum.TYPE_DYNAMIC: {ActivitySubTypeEnum.SUBTYPE_DYNAMIC_PAGE},
+    ActivityTypeEnum.TYPE_ASSIGNMENT: {ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY},
+    ActivityTypeEnum.TYPE_EXAM: {ActivitySubTypeEnum.SUBTYPE_EXAM_STANDARD},
+    ActivityTypeEnum.TYPE_CODE_CHALLENGE: {
+        ActivitySubTypeEnum.SUBTYPE_CODE_GENERAL,
+        ActivitySubTypeEnum.SUBTYPE_CODE_COMPETITIVE,
+    },
+    ActivityTypeEnum.TYPE_CUSTOM: {ActivitySubTypeEnum.SUBTYPE_CUSTOM},
+}
+
+
 class ActivityCreate(ActivityBase):
     chapter_id: int
     activity_type: ActivityTypeEnum = ActivityTypeEnum.TYPE_CUSTOM
     activity_sub_type: ActivitySubTypeEnum = ActivitySubTypeEnum.SUBTYPE_CUSTOM
-    details: dict = Field(default_factory=dict, sa_column=Column(JSON))
-    last_known_update_date: datetime | None = None
+    details: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
 
-    @field_validator("last_known_update_date", mode="before")
-    @classmethod
-    def validate_last_known_update_date(cls, value):
-        if isinstance(value, datetime) or value is None:
-            return value
-        if isinstance(value, str):
-            normalized = value.strip()
-            if normalized.endswith("Z"):
-                normalized = f"{normalized[:-1]}+00:00"
-            return datetime.fromisoformat(normalized)
-        return value
+    @model_validator(mode="after")
+    def subtype_matches_type(self):
+        allowed = _VALID_SUBTYPES.get(self.activity_type, set())
+        if allowed and self.activity_sub_type not in allowed:
+            msg = (
+                f"activity_sub_type {self.activity_sub_type!r} is not valid for "
+                f"activity_type {self.activity_type!r}. "
+                f"Allowed: {sorted(s.value for s in allowed)}"
+            )
+            raise ValueError(msg)
+        return self
 
 
 class ActivityUpdate(ActivityBase):
     name: str | None = None
     activity_type: ActivityTypeEnum | None = None
     activity_sub_type: ActivitySubTypeEnum | None = None
-    content: dict | None = None
-    details: dict | None = None
+    content: dict[str, object] | None = None
+    details: dict[str, object] | None = None
     published: bool | None = None
-    published_version: int | None = None
-    version: int | None = None
-    last_known_update_date: datetime | None = None
 
-    @field_validator("last_known_update_date", mode="before")
-    @classmethod
-    def validate_last_known_update_date(cls, value):
-        if isinstance(value, datetime) or value is None:
-            return value
-        if isinstance(value, str):
-            normalized = value.strip()
-            if normalized.endswith("Z"):
-                normalized = f"{normalized[:-1]}+00:00"
-            return datetime.fromisoformat(normalized)
-        return value
+    @model_validator(mode="after")
+    def subtype_matches_type(self):
+        if self.activity_type is not None and self.activity_sub_type is not None:
+            allowed = _VALID_SUBTYPES.get(self.activity_type, set())
+            if allowed and self.activity_sub_type not in allowed:
+                msg = (
+                    f"activity_sub_type {self.activity_sub_type!r} is not valid for "
+                    f"activity_type {self.activity_type!r}. "
+                    f"Allowed: {sorted(s.value for s in allowed)}"
+                )
+                raise ValueError(msg)
+        return self
 
 
 class ActivityRead(ActivityBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    course_id: int | None
+    chapter_id: int
+    course_id: int | None = None
+    order: int = 0
     activity_uuid: str
     creation_date: datetime
     update_date: datetime
@@ -159,4 +199,3 @@ class ActivityReadWithPermissions(ActivityRead):
     can_delete: bool
     is_owner: bool
     is_creator: bool
-    available_actions: list[str]

@@ -39,7 +39,7 @@ def test_ensure_course_in_scope_allows_scoped_course() -> None:
         teacher_user_id=99,
         course_ids=[1, 2, 3],
         cohort_ids=[],
-        has_org_scope=False,
+        has_platform_scope=False,
     )
 
     ensure_course_in_scope(scope, 2)
@@ -50,7 +50,7 @@ def test_ensure_course_in_scope_rejects_out_of_scope_course() -> None:
         teacher_user_id=99,
         course_ids=[1, 2, 3],
         cohort_ids=[],
-        has_org_scope=False,
+        has_platform_scope=False,
     )
 
     with pytest.raises(PermissionDenied):

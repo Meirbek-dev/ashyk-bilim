@@ -179,34 +179,28 @@ const ActivityTooltipContent = ({
 }) => {
   const t = useTranslations('ActivityIndicators');
   return (
-    <div className="min-w-[220px] rounded-xl bg-white p-4 shadow-lg ring-1 ring-gray-100">
-      <div className="flex items-start gap-3">
-        <div
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${getActivityTypeBadgeColor(activity.activity_type).split(' ')[0]}`}
-        >
+    <div className="border-border bg-popover text-popover-foreground min-w-[200px] rounded-lg border p-3 shadow-md">
+      <div className="flex items-start gap-2.5">
+        <div className="bg-muted flex h-7 w-7 shrink-0 items-center justify-center rounded-md">
           <ActivityTypeIcon
             activityType={activity.activity_type}
-            size={16}
+            size={14}
           />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-gray-900">{activity.name}</p>
-          <p className="mt-0.5 text-xs text-gray-500">{getActivityTypeLabel(activity.activity_type, t)}</p>
+          <p className="text-popover-foreground truncate text-sm font-medium">{activity.name}</p>
+          <p className="text-muted-foreground text-xs">{getActivityTypeLabel(activity.activity_type, t)}</p>
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
+      <div className="border-border mt-2.5 border-t pt-2.5">
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${
-            isCurrent
-              ? 'bg-blue-50 text-blue-600'
-              : isDone
-                ? 'bg-emerald-50 text-emerald-600'
-                : 'bg-gray-50 text-gray-500'
+          className={`inline-flex items-center gap-1 text-xs font-medium ${
+            isCurrent || isDone ? 'text-primary' : 'text-muted-foreground'
           }`}
         >
           {isDone && (
             <Check
-              size={12}
+              size={11}
               className="stroke-[2.5]"
             />
           )}
@@ -230,19 +224,19 @@ const ChapterTooltipContent = ({
 }) => {
   const t = useTranslations('ActivityIndicators');
   const progress = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
-  const isComplete = completedActivities === totalActivities;
+  const isComplete = totalActivities > 0 && completedActivities === totalActivities;
 
   return (
-    <div className="min-w-[200px] rounded-xl bg-white p-4 shadow-lg ring-1 ring-gray-100">
-      <div className="flex items-center gap-3">
+    <div className="border-border bg-popover text-popover-foreground min-w-[180px] rounded-lg border p-3 shadow-md">
+      <div className="flex items-center gap-2.5">
         <div
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-semibold ${
-            isComplete ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-600'
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold ${
+            isComplete ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
           }`}
         >
           {isComplete ? (
             <Check
-              size={16}
+              size={13}
               className="stroke-[2.5]"
             />
           ) : (
@@ -250,22 +244,22 @@ const ChapterTooltipContent = ({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-gray-500">
+          <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
             {t('chapter')} {chapterNumber}
           </p>
-          <p className="truncate text-sm font-medium text-gray-900">{chapter.name}</p>
+          <p className="text-popover-foreground truncate text-sm font-medium">{chapter.name}</p>
         </div>
       </div>
-      <div className="mt-3 space-y-2">
+      <div className="border-border mt-2.5 space-y-1.5 border-t pt-2.5">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-gray-500">{t('progress')}</span>
-          <span className={`font-medium ${isComplete ? 'text-emerald-600' : 'text-gray-700'}`}>
-            {completedActivities}/{totalActivities} {t('completed')}
+          <span className="text-muted-foreground">{t('progress')}</span>
+          <span className={`font-medium ${isComplete ? 'text-primary' : 'text-foreground'}`}>
+            {completedActivities}/{totalActivities}
           </span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+        <div className="bg-muted h-1 w-full overflow-hidden rounded-full">
           <div
-            className={`h-full rounded-full transition-all duration-300 ${isComplete ? 'bg-emerald-500' : 'bg-blue-500'}`}
+            className={`h-full rounded-full transition-all duration-300 ${isComplete ? 'bg-primary' : 'bg-primary/60'}`}
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -281,23 +275,20 @@ const CertificationBadge = ({ courseid, isCompleted }: { courseid: string; isCom
       sideOffset={8}
       unstyled
       content={
-        <div className="min-w-[200px] rounded-xl bg-white p-4 shadow-lg ring-1 ring-gray-100">
-          <div className="flex items-center gap-3">
+        <div className="border-border bg-popover text-popover-foreground min-w-[180px] rounded-lg border p-3 shadow-md">
+          <div className="flex items-center gap-2.5">
             <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                isCompleted ? 'bg-gradient-to-br from-yellow-400 to-orange-400' : 'bg-gray-100'
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
+                isCompleted ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
               }`}
             >
-              <Trophy
-                size={20}
-                className={isCompleted ? 'text-white' : 'text-gray-400'}
-              />
+              <Trophy size={14} />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-popover-foreground text-sm font-medium">
                 {isCompleted ? t('certificationAvailable') : t('earnCertificate')}
               </p>
-              <p className="mt-0.5 text-xs text-gray-500">
+              <p className="text-muted-foreground mt-0.5 text-xs">
                 {isCompleted ? t('viewCertificate') : t('completeAllActivities')}
               </p>
             </div>
@@ -308,22 +299,19 @@ const CertificationBadge = ({ courseid, isCompleted }: { courseid: string; isCom
       <Link
         href={`${getAbsoluteUrl('')}/course/${courseid}/activity/end`}
         prefetch={false}
-        className={`ml-3 flex items-center transition-all duration-200 focus:outline-none ${
-          isCompleted ? 'opacity-100' : 'pointer-events-none opacity-40'
+        className={`ml-1 flex items-center focus:outline-none ${
+          isCompleted ? 'opacity-100' : 'pointer-events-none opacity-30'
         }`}
         aria-disabled={!isCompleted}
       >
         <div
-          className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200 ${
+          className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
             isCompleted
-              ? 'bg-gradient-to-br from-yellow-400 to-orange-400 shadow-sm hover:scale-105 hover:shadow-md'
-              : 'bg-gray-100'
+              ? 'bg-primary text-primary-foreground'
+              : 'border-border bg-background text-muted-foreground border'
           }`}
         >
-          <Trophy
-            size={14}
-            className={isCompleted ? 'text-white' : 'text-gray-400'}
-          />
+          <Trophy size={10} />
         </div>
       </Link>
     </ToolTip>
@@ -400,25 +388,22 @@ const ActivityIndicators = (props: Props) => {
   const isCourseCompleted = totalActivitiesCount > 0 && completedActivities === totalActivitiesCount;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
       {enableNavigation ? (
         <button
           onClick={navigateToPrevious}
           disabled={currentActivityIndex <= 0}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-50 transition-all duration-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+          className="border-border text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition-colors disabled:cursor-not-allowed disabled:opacity-30"
           aria-label={t('previousActivity')}
         >
-          <ChevronLeft
-            size={18}
-            className="text-gray-600"
-          />
+          <ChevronLeft size={16} />
         </button>
       ) : null}
 
-      <div className="flex flex-1 items-center gap-1 overflow-hidden rounded-full bg-gray-100 p-1">
+      <div className="flex flex-1 items-center gap-1 overflow-hidden">
         {course.chapters.map((chapter: any, chapterIndex: number) => {
-          const completedActivities = getChapterProgress(chapter.activities);
-          const isChapterComplete = completedActivities === chapter.activities.length;
+          const completedCount = getChapterProgress(chapter.activities);
+          const isChapterComplete = chapter.activities.length > 0 && completedCount === chapter.activities.length;
           const firstActivity = chapter.activities[0];
           const firstActivityId = firstActivity?.activity_uuid?.replace('activity_', '');
           const chapterLinkHref = firstActivityId
@@ -436,7 +421,7 @@ const ActivityIndicators = (props: Props) => {
                     chapter={chapter}
                     chapterNumber={chapterIndex + 1}
                     totalActivities={chapter.activities.length}
-                    completedActivities={completedActivities}
+                    completedActivities={completedCount}
                   />
                 }
               >
@@ -444,19 +429,19 @@ const ActivityIndicators = (props: Props) => {
                   <Link
                     href={chapterLinkHref}
                     prefetch={false}
-                    className="group relative flex shrink-0 items-center justify-center focus:outline-none"
+                    className="group flex shrink-0 items-center justify-center focus:outline-none"
                   >
                     <div
-                      className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold transition-all duration-200 group-hover:scale-110 ${
+                      className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold transition-colors ${
                         isChapterComplete
-                          ? 'bg-emerald-500 text-white shadow-sm'
-                          : 'bg-white text-gray-600 shadow-sm ring-1 ring-gray-200'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'border-border bg-background text-muted-foreground group-hover:border-muted-foreground/50 border'
                       }`}
                     >
                       {isChapterComplete ? (
                         <Check
-                          size={12}
-                          className="stroke-[2.5]"
+                          size={11}
+                          className="stroke-[3]"
                         />
                       ) : (
                         chapterIndex + 1
@@ -464,10 +449,12 @@ const ActivityIndicators = (props: Props) => {
                     </div>
                   </Link>
                 ) : (
-                  <div className="relative flex shrink-0 items-center justify-center">
+                  <div className="flex shrink-0 items-center justify-center">
                     <div
-                      className={`flex h-6 w-6 cursor-not-allowed items-center justify-center rounded-full text-[10px] font-semibold ${
-                        isChapterComplete ? 'bg-emerald-500 text-white' : 'bg-white text-gray-400 ring-1 ring-gray-200'
+                      className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold ${
+                        isChapterComplete
+                          ? 'bg-primary text-primary-foreground'
+                          : 'border-border bg-background text-muted-foreground border'
                       }`}
                     >
                       {chapterIndex + 1}
@@ -476,8 +463,7 @@ const ActivityIndicators = (props: Props) => {
                 )}
               </ToolTip>
 
-              {/* Activity bars */}
-              <div className="flex flex-1 items-center gap-0.5 px-1">
+              <div className="flex flex-1 items-center gap-0.5">
                 {chapter.activities.map((activity: any) => {
                   const isDone = isActivityDone(activity);
                   const isCurrent = isActivityCurrent(activity);
@@ -501,19 +487,15 @@ const ActivityIndicators = (props: Props) => {
                           'activity_',
                           '',
                         )}`}
-                        className="group relative flex flex-1 items-center"
+                        className="group relative flex flex-1 py-1.5"
                       >
-                        {/* Current activity indicator */}
-                        {isCurrent && (
-                          <span className="absolute inset-0 animate-pulse rounded bg-blue-400 opacity-30" />
-                        )}
                         <span
-                          className={`relative block h-2 w-full rounded transition-all duration-200 ${
+                          className={`block h-2 w-full rounded-full transition-colors duration-150 ${
                             isCurrent
-                              ? 'bg-blue-500 ring-2 ring-blue-200'
+                              ? 'bg-primary'
                               : isDone
-                                ? 'bg-emerald-500 group-hover:bg-emerald-600'
-                                : 'bg-gray-300 group-hover:bg-gray-400'
+                                ? 'bg-primary/70'
+                                : 'bg-muted-foreground/20 group-hover:bg-muted-foreground/35'
                           }`}
                         />
                       </Link>
@@ -536,12 +518,12 @@ const ActivityIndicators = (props: Props) => {
         <button
           onClick={navigateToNext}
           disabled={currentActivityIndex >= allActivities.length - 1}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-50 transition-all duration-200 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+          className="border-border text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition-colors disabled:cursor-not-allowed disabled:opacity-30"
           aria-label={t('nextActivity')}
         >
           <ChevronRight
-            size={18}
-            className="text-gray-600"
+            size={16}
+            className="text-muted-foreground"
           />
         </button>
       ) : null}

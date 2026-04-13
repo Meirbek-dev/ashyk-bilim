@@ -1,15 +1,13 @@
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@components/ui/avatar';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useSession } from '@/hooks/useSession';
+import { useUserByUsername } from '@/lib/users/client';
 import { getBackendUrl, getAbsoluteUrl } from '@services/config/config';
 import { getUserAvatarMediaDirectory } from '@services/media/media';
 import type { UserGamificationProfile } from '@/types/gamification';
 import { AVATAR_UNLOCKS } from '@/lib/gamification/levels';
-import { getUserByUsername } from '@services/users/users';
-import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
 import { User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -55,7 +53,6 @@ const variantStyles = {
   ghost: 'border-0',
 };
 
-// Level indicator size variants
 const levelIndicatorSizes = {
   'xs': 'h-2 w-2 text-[8px]',
   'sm': 'h-3 w-3 text-[10px]',
@@ -66,16 +63,21 @@ const levelIndicatorSizes = {
   '3xl': 'h-9 w-9 text-lg',
 };
 
+// FEATURE FLAG: Avatar customization (frames/accessories)
+// TODO: Enable when backend supports equipped_frame_id and equipped_accessories
+// See: docs/gamification/AVATAR_CUSTOMIZATION.md
+const ENABLE_AVATAR_CUSTOMIZATION = false;
+
+const isExternalUrl = (url: string) => url.startsWith('http://') || url.startsWith('https://');
+
+const extractExternalUrl = (url: string): string | null => {
+  const matches = /avatars\/(https?:\/\/[^/]+.*$)/.exec(url);
+  return matches?.[1] ?? null;
+};
+
 const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
   const t = useTranslations('Components.UserAvatar');
-  const session = usePlatformSession() as any;
-  const params = useParams();
-  const [userData, setUserData] = useState<any>(null);
-
-  // FEATURE FLAG: Avatar customization (frames/accessories)
-  // TODO: Enable when backend supports equipped_frame_id and equipped_accessories
-  // See: docs/gamification/AVATAR_CUSTOMIZATION.md
-  const ENABLE_AVATAR_CUSTOMIZATION = false;
+  const { user: currentUser } = useSession();
 
   const {
     size = 'md',
@@ -95,82 +97,37 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
     showAvatarAccessories: _showAvatarAccessories = false,
   } = props;
 
-  // Apply feature flag to avatar customization props
   const showAvatarFrame = ENABLE_AVATAR_CUSTOMIZATION && _showAvatarFrame;
   const showAvatarAccessories = ENABLE_AVATAR_CUSTOMIZATION && _showAvatarAccessories;
 
-  useEffect(() => {
-    const fetchUserByUsername = async () => {
-      if (username) {
-        try {
-          const data = await getUserByUsername(username);
-          setUserData(data);
-        } catch (error) {
-          console.error('Error fetching user by username:', error);
-        }
-      }
-    };
-
-    fetchUserByUsername();
-  }, [username]);
-
-  const isExternalUrl = (url: string): boolean => {
-    return url.startsWith('http://') || url.startsWith('https://');
-  };
-
-  const extractExternalUrl = (url: string): string | null => {
-    const matches = /avatars\/(https?:\/\/[^/]+.*$)/.exec(url);
-    if (matches?.[1]) {
-      return matches[1];
-    }
-    return null;
-  };
+  // Shared query caching deduplicates identical username lookups across components.
+  const { data: userData } = useUserByUsername(username);
 
   const getAvatarUrl = (): string => {
-    if (predefined_avatar) {
-      return getAbsoluteUrl('/empty_avatar.webp');
-    }
+    if (predefined_avatar) return getAbsoluteUrl('/empty_avatar.webp');
 
-    // Priority 1: Explicitly passed avatar_url prop (e.g., from leaderboard with pre-constructed URLs)
     if (avatar_url) {
-      const extractedUrl = extractExternalUrl(avatar_url);
-      if (extractedUrl) {
-        return extractedUrl;
-      }
-      if (isExternalUrl(avatar_url)) {
-        return avatar_url;
-      }
-      // If it's a path starting with 'content/', prepend the media URL
-      if (avatar_url.startsWith('content/')) {
-        return `${getBackendUrl()}${avatar_url}`;
-      }
+      const extracted = extractExternalUrl(avatar_url);
+      if (extracted) return extracted;
+      if (isExternalUrl(avatar_url)) return avatar_url;
+      if (avatar_url.startsWith('content/')) return `${getBackendUrl()}${avatar_url}`;
       return avatar_url;
     }
 
-    // Priority 2: Fetched user data (when component fetches by username)
     if (userData?.avatar_image) {
-      const avatarUrl = userData.avatar_image;
-      if (isExternalUrl(avatarUrl)) {
-        return avatarUrl;
-      }
-      return getUserAvatarMediaDirectory(userData.user_uuid, avatarUrl);
+      const url = userData.avatar_image;
+      return isExternalUrl(url) ? url : getUserAvatarMediaDirectory(userData.user_uuid, url);
     }
 
-    // Priority 3: Empty avatar for username without data
-    if (username) {
-      return getAbsoluteUrl('/empty_avatar.webp');
+    // Username given but no data yet — show empty rather than falling through to session user.
+    if (username) return getAbsoluteUrl('/empty_avatar.webp');
+
+    // No username — show the current session user's avatar.
+    if (currentUser?.avatar_image) {
+      const url = currentUser.avatar_image;
+      return isExternalUrl(url) ? url : getUserAvatarMediaDirectory(currentUser.user_uuid, url);
     }
 
-    // Priority 4: Session user data
-    if (session?.data?.user?.avatar_image) {
-      const avatarUrl = session.data.user.avatar_image;
-      if (isExternalUrl(avatarUrl)) {
-        return avatarUrl;
-      }
-      return getUserAvatarMediaDirectory(session.data.user.user_uuid, avatarUrl);
-    }
-
-    // Fallback: Empty avatar
     return getAbsoluteUrl('/empty_avatar.webp');
   };
 
@@ -181,49 +138,34 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
       return `${userData.first_name[0]}${userData.last_name[0]}`.toUpperCase();
     }
 
-    if (username && username.length > 0) {
-      return username.charAt(0).toUpperCase();
+    if (username) return username.charAt(0).toUpperCase();
+
+    if (currentUser?.first_name && currentUser?.last_name) {
+      return `${currentUser.first_name[0]}${currentUser.last_name[0]}`.toUpperCase();
     }
 
-    if (session?.data?.user?.first_name && session?.data?.user?.last_name) {
-      return `${session.data.user.first_name[0]}${session.data.user.last_name[0]}`.toUpperCase();
-    }
-
-    if (userData?.username) {
-      return userData.username[0].toUpperCase();
-    }
-
-    if (session?.data?.user?.username) {
-      return session.data.user.username[0].toUpperCase();
-    }
-
-    return '?';
+    return userData?.username?.[0]?.toUpperCase() ?? currentUser?.username?.[0]?.toUpperCase() ?? '?';
   };
 
   const getAvatarFrame = (): string | null => {
     if (!(showAvatarFrame && gamificationProfile)) return null;
-
     const { level } = gamificationProfile;
     const availableFrames = AVATAR_UNLOCKS.frames.filter((frame) => level >= frame.level);
-
-    // Return the highest unlocked frame
     const highestFrame = availableFrames[availableFrames.length - 1];
-    return availableFrames.length > 0 && highestFrame ? highestFrame.color : null;
+    return highestFrame ? highestFrame.color : null;
   };
 
   const getAvatarAccessory = (): string | null => {
     if (!(showAvatarAccessories && gamificationProfile)) return null;
-
     const { level } = gamificationProfile;
-    const availableAccessories = AVATAR_UNLOCKS.accessories.filter((accessory) => level >= accessory.level);
-
-    // Return the highest unlocked accessory
+    const availableAccessories = AVATAR_UNLOCKS.accessories.filter((a) => level >= a.level);
     const highestAccessory = availableAccessories[availableAccessories.length - 1];
-    return availableAccessories.length > 0 && highestAccessory ? highestAccessory.icon : null;
+    return highestAccessory ? highestAccessory.icon : null;
   };
 
   const frameClass = getAvatarFrame();
   const accessoryIcon = getAvatarAccessory();
+  const popupUserId = userId ?? userData?.id ?? null;
 
   const avatarElement = (
     <div className="relative inline-block">
@@ -246,10 +188,8 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
         </AvatarFallback>
       </Avatar>
 
-      {/* Avatar Accessory */}
       {accessoryIcon && <div className="absolute -top-1 -right-1 text-sm">{accessoryIcon}</div>}
 
-      {/* Level Badge */}
       {showLevelBadge && gamificationProfile && (
         <div
           className={cn(
@@ -266,7 +206,6 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
         </div>
       )}
 
-      {/* Level Indicator with Icon */}
       {showLevelIndicator && gamificationProfile && (
         <div
           className={cn(
@@ -283,8 +222,8 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
     </div>
   );
 
-  if (showProfilePopup && (userId || userData?.id)) {
-    return <UserProfilePopup userId={userId || userData?.id}>{avatarElement}</UserProfilePopup>;
+  if (showProfilePopup && popupUserId) {
+    return <UserProfilePopup userId={popupUserId}>{avatarElement}</UserProfilePopup>;
   }
 
   return avatarElement;

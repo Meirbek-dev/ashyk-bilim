@@ -2,9 +2,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request, UploadFile
 
-from src.core.events.database import get_db_session
 from src.db.courses.blocks import BlockRead
-from src.db.courses.quiz import QuizSubmissionRequest
+from src.db.courses.quiz import (
+    QuizAttemptRead,
+    QuizQuestionStatRead,
+    QuizSubmissionRequest,
+    QuizSubmissionResponse,
+)
+from src.infra.db.session import get_db_session
 from src.security.auth import get_current_user
 from src.services.blocks.block_types.imageBlock.imageBlock import (
     create_image_block,
@@ -32,7 +37,7 @@ router = APIRouter()
 ####################
 
 
-@router.post("/image")
+@router.post("/image", response_model=BlockRead)
 async def api_create_image_file_block(
     request: Request,
     file_object: UploadFile,
@@ -46,7 +51,7 @@ async def api_create_image_file_block(
     return await create_image_block(request, file_object, activity_uuid, db_session)
 
 
-@router.get("/image")
+@router.get("/image", response_model=BlockRead)
 async def api_get_image_file_block(
     request: Request,
     block_uuid: str,
@@ -64,7 +69,7 @@ async def api_get_image_file_block(
 ####################
 
 
-@router.post("/video")
+@router.post("/video", response_model=BlockRead)
 async def api_create_video_file_block(
     request: Request,
     file_object: UploadFile,
@@ -78,7 +83,7 @@ async def api_create_video_file_block(
     return await create_video_block(request, file_object, activity_uuid, db_session)
 
 
-@router.get("/video")
+@router.get("/video", response_model=BlockRead)
 async def api_get_video_file_block(
     request: Request,
     block_uuid: str,
@@ -96,7 +101,7 @@ async def api_get_video_file_block(
 ####################
 
 
-@router.post("/pdf")
+@router.post("/pdf", response_model=BlockRead)
 async def api_create_pdf_file_block(
     request: Request,
     file_object: UploadFile,
@@ -110,7 +115,7 @@ async def api_create_pdf_file_block(
     return await create_pdf_block(request, file_object, activity_uuid, db_session)
 
 
-@router.get("/pdf")
+@router.get("/pdf", response_model=BlockRead)
 async def api_get_pdf_file_block(
     request: Request,
     block_uuid: str,
@@ -128,7 +133,7 @@ async def api_get_pdf_file_block(
 ####################
 
 
-@router.post("/quiz/{activity_id}")
+@router.post("/quiz/{activity_id}", response_model=QuizSubmissionResponse)
 async def api_submit_quiz(
     request: Request,
     activity_id: int,
@@ -148,7 +153,7 @@ async def api_submit_quiz(
     )
 
 
-@router.get("/quiz/{activity_id}/attempts")
+@router.get("/quiz/{activity_id}/attempts", response_model=list[QuizAttemptRead])
 async def api_get_quiz_attempts(
     request: Request,
     activity_id: int,
@@ -168,7 +173,7 @@ async def api_get_quiz_attempts(
     )
 
 
-@router.get("/quiz/{activity_id}/stats")
+@router.get("/quiz/{activity_id}/stats", response_model=list[QuizQuestionStatRead])
 async def api_get_quiz_stats(
     request: Request,
     activity_id: int,

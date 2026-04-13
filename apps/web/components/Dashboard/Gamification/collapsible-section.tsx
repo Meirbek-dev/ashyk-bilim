@@ -10,8 +10,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 
 interface CollapsibleSectionProps {
@@ -31,32 +31,38 @@ export function CollapsibleSection({
 }: CollapsibleSectionProps) {
   const t = useTranslations('DashPage.UserAccountSettings.Gamification');
 
-  // Use useSyncExternalStore for SSR-safe localStorage access
-  function subscribe(callback: () => void) {
-    globalThis.addEventListener('storage', callback);
-    return () => globalThis.removeEventListener('storage', callback);
-  }
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  function getSnapshot() {
-    try {
-      const savedState = localStorage.getItem(storageKey);
-      return savedState !== null ? savedState : String(defaultExpanded);
-    } catch (error) {
-      console.warn('Failed to load collapse state:', error);
-      return String(defaultExpanded);
-    }
-  }
+  useEffect(() => {
+    const readState = () => {
+      try {
+        const savedState = localStorage.getItem(storageKey);
+        return savedState !== null ? savedState === 'true' : defaultExpanded;
+      } catch (error) {
+        console.warn('Failed to load collapse state:', error);
+        return defaultExpanded;
+      }
+    };
 
-  function getServerSnapshot() {
-    return String(defaultExpanded);
-  }
+    setIsExpanded(readState());
 
-  const isExpandedString = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const isExpanded = isExpandedString === 'true';
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === storageKey) {
+        setIsExpanded(readState());
+      }
+    };
+
+    globalThis.addEventListener('storage', onStorage);
+    return () => {
+      globalThis.removeEventListener('storage', onStorage);
+    };
+  }, [storageKey, defaultExpanded]);
 
   // Save preference to localStorage
   const toggleExpanded = () => {
     const newState = !isExpanded;
+    setIsExpanded(newState);
+
     try {
       localStorage.setItem(storageKey, String(newState));
       // Trigger storage event manually for same-window updates

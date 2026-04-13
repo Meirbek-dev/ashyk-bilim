@@ -10,12 +10,10 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { getCoursesSwrKey, getTrailSwrKey } from '@services/courses/keys';
-import { swrFetcherWithHeaders } from '@services/utils/ts/requests';
-import { swrFetcher } from '@services/utils/ts/requests';
+import { useSession } from '@/hooks/useSession';
+import { useCourseListQuery } from '@/features/courses/hooks/useCourseQueries';
+import { useTrailCurrent } from '@/features/trail/hooks/useTrail';
 import { useMemo, useState } from 'react';
-import useSWR from 'swr';
 
 const COURSES_PER_PAGE = 20;
 
@@ -25,42 +23,28 @@ interface CourseGridClientProps {
 }
 
 export default function CourseGridClient({ initialCourses, initialTotal }: CourseGridClientProps) {
-  const session = usePlatformSession();
-  const accessToken = session?.data?.tokens?.access_token;
+  const { isAuthenticated } = useSession();
   const [page, setPage] = useState(1);
 
   // Fetch courses with pagination
-  const COURSES_KEY = getCoursesSwrKey(page, COURSES_PER_PAGE);
-  const { data: coursesResponse, isLoading: coursesLoading } = useSWR(
-    COURSES_KEY ? [COURSES_KEY, accessToken] : null,
-    ([url, token]) => swrFetcherWithHeaders(url, token),
+  const { data: coursesResponse, isLoading: coursesLoading } = useCourseListQuery(
+    { page, limit: COURSES_PER_PAGE },
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      revalidateIfStale: page !== 1,
-      dedupingInterval: 60_000,
-      fallbackData:
-        page === 1 ? { data: initialCourses, headers: { 'x-total-count': String(initialTotal) } } : undefined,
+      initialData: page === 1 ? { courses: initialCourses, total: initialTotal } : undefined,
+      staleTime: 60_000,
     },
   );
 
-  const courses = coursesResponse?.data ?? initialCourses;
-  const totalCount = Number.parseInt(coursesResponse?.headers?.['x-total-count'] ?? String(initialTotal), 10);
+  const courses = coursesResponse?.courses ?? initialCourses;
+  const totalCount = coursesResponse?.total ?? initialTotal;
   const totalPages = Math.ceil(totalCount / COURSES_PER_PAGE);
 
-  // Fetch trail data to show progress on course thumbnails
-  const TRAIL_KEY = getTrailSwrKey();
-  const { data: trailData } = useSWR(
-    accessToken && TRAIL_KEY ? [TRAIL_KEY, accessToken] : null,
-    ([url, token]) => swrFetcher(url, token),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 60_000,
-    },
-  );
+  // Fetch trail data to show progress on course thumbnails (auth-required)
+  const { data: trailData } = useTrailCurrent({ enabled: isAuthenticated });
 
-  const isTrailLoading = Boolean(accessToken && !trailData);
+  // Only show loading state for authenticated users; unauthenticated users
+  // never fetch trail data so !trailData would be true forever.
+  const isTrailLoading = isAuthenticated && !trailData;
 
   // Generate pagination range
   const paginationRange = useMemo(() => {

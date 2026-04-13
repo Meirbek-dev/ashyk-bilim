@@ -1,9 +1,6 @@
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { getCourseContributors } from '@services/courses/courses';
-import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
-import { useEffectEvent } from 'react';
-import { toast } from 'sonner';
+import { courseContributorsQueryOptions } from '@/features/courses/queries/course.query';
+import { useSession } from '@/hooks/useSession';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 
 export type ContributorStatus = 'NONE' | 'PENDING' | 'ACTIVE' | 'INACTIVE';
 
@@ -13,60 +10,27 @@ interface Contributor {
 }
 
 export function useContributorStatus(courseUuid: string) {
-  const session = usePlatformSession();
-  const [contributorStatus, setContributorStatus] = useState<ContributorStatus>('NONE');
-  const [isLoading, setIsLoading] = useState(true);
-  const [refetchTrigger, setRefetchTrigger] = useState(0);
-  const t = useTranslations('Hooks.useContributorStatus');
-  const accessToken = session?.data?.tokens?.access_token;
-  const userId = session?.data?.user?.id;
+  const { user: viewer } = useSession();
+  const userId = viewer?.id;
+  const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`;
 
-  // Use Effect Event for the fetch logic that should read latest values
-  // without causing the effect to re-run when accessToken or t changes
-  const onCheckStatus = useEffectEvent(async () => {
-    if (!userId) {
-      setIsLoading(false);
-      return;
-    }
+  const query = useQuery(
+    queryOptions({
+      ...courseContributorsQueryOptions(userId ? normalizedCourseUuid : 'disabled'),
+      enabled: Boolean(userId),
+      select: (response): ContributorStatus => {
+        const contributors = Array.isArray(response?.data) ? (response.data as Contributor[]) : [];
+        const currentUser = contributors.find((contributor) => contributor.user_id === userId);
+        return currentUser?.authorship_status ?? 'NONE';
+      },
+    }),
+  );
 
-    setIsLoading(true);
-    try {
-      const response = await getCourseContributors(
-        courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`,
-        accessToken,
-      );
-
-      if (response?.data && Array.isArray(response.data)) {
-        const currentUser = response.data.find((contributor: Contributor) => contributor.user_id === userId);
-
-        if (currentUser) {
-          setContributorStatus(currentUser.authorship_status as ContributorStatus);
-        } else {
-          setContributorStatus('NONE');
-        }
-      } else {
-        setContributorStatus('NONE');
-      }
-    } catch (error) {
-      console.error(`${t('checkStatusError')}: ${error}`);
-      toast.error(t('checkStatusError'));
-      setContributorStatus('NONE');
-    } finally {
-      setIsLoading(false);
-    }
-  });
-
-  // Effect runs only when userId, courseUuid, or manual refetch trigger changes
-  useEffect(() => {
-    if (userId) {
-      onCheckStatus();
-    }
-  }, [userId, courseUuid, refetchTrigger]);
-
-  // Stable refetch function that triggers the effect
-  function refetch() {
-    setRefetchTrigger((prev) => prev + 1);
-  }
-
-  return { contributorStatus, isLoading, refetch };
+  return {
+    contributorStatus: query.data ?? 'NONE',
+    isLoading: query.isPending,
+    refetch: async () => {
+      await query.refetch();
+    },
+  };
 }

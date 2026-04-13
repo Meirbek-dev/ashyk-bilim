@@ -73,7 +73,11 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
 
   // ── Bar chart data ────────────────────────────────────────────────────────
   const barData = [
-    { metric: t('kpiCharts.activeLearners'), current: m.active_learners.value, previous: prevValue(m.active_learners) },
+    {
+      metric: t('kpiCharts.activeLearners'),
+      current: m.active_learners.value,
+      previous: prevValue(m.active_learners),
+    },
     {
       metric: t('kpiCharts.returningLearners'),
       current: m.returning_learners.value,
@@ -128,37 +132,37 @@ export default function TeacherKpiCharts({ metrics, trends }: TeacherKpiChartsPr
       name: 'active_learners',
       label: t('kpiCharts.activeLearners'),
       value: getHealthPct(m.active_learners),
-      fill: CHART_COLORS[0]!,
+      fill: CHART_COLORS[0] ?? 'var(--chart-1)',
     },
     {
       name: 'returning_learners',
       label: t('kpiCharts.returningLearners'),
       value: getHealthPct(m.returning_learners),
-      fill: CHART_COLORS[1]!,
+      fill: CHART_COLORS[1] ?? 'var(--chart-2)',
     },
     {
       name: 'completion_rate',
       label: t('kpiCharts.completionRate'),
       value: getHealthPct(m.completion_rate),
-      fill: CHART_COLORS[2]!,
+      fill: CHART_COLORS[2] ?? 'var(--chart-3)',
     },
     {
       name: 'at_risk_learners',
       label: t('kpiCharts.atRiskLearners'),
       value: getHealthPct(m.at_risk_learners),
-      fill: CHART_COLORS[3]!,
+      fill: CHART_COLORS[3] ?? 'var(--chart-4)',
     },
     {
       name: 'ungraded_submissions',
       label: t('kpiCharts.ungradedSubs'),
       value: getHealthPct(m.ungraded_submissions),
-      fill: CHART_COLORS[4]!,
+      fill: CHART_COLORS[4] ?? 'var(--chart-5)',
     },
     {
       name: 'negative_engagement_courses',
       label: t('kpiCharts.negativeEngagement'),
       value: getHealthPct(m.negative_engagement_courses),
-      fill: CHART_COLORS[5]!,
+      fill: CHART_COLORS[5] ?? 'var(--chart-1)',
     },
   ];
 

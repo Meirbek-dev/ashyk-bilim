@@ -1,6 +1,8 @@
 import { getServerGamificationDashboard, getServerLeaderboard } from '@/services/gamification/server';
 import { GamificationProvider } from '@/components/Contexts/GamificationContext';
+import { getSession } from '@/lib/auth/session';
 import { getTranslations } from 'next-intl/server';
+import { connection } from 'next/server';
 import type { Metadata } from 'next';
 
 import Trail from './trail';
@@ -19,11 +21,18 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
 }
 
 const TrailPage = async () => {
+  await connection();
+
   const content = (
     <div>
       <Trail />
     </div>
   );
+
+  const session = await getSession();
+  if (!session) {
+    return content;
+  }
 
   const [dashboardData, leaderboardData] = await Promise.all([
     getServerGamificationDashboard(),

@@ -4,7 +4,7 @@ type AnyFunction = (...args: any[]) => unknown;
 
 export function useDebouncedValue<T>(value: T, delay: number): T {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -23,7 +23,7 @@ export function useDebouncedCallback<T extends AnyFunction>(
   delay: number,
 ): (...args: Parameters<T>) => void {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const callbackRef = useRef<T>(callback);
+  const callbackRef = useRef(callback);
 
   useEffect(() => {
     callbackRef.current = callback;

@@ -1,13 +1,12 @@
 'use client';
 
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { getUserCertificates } from '@services/courses/certifications';
+import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications';
 import SimpleAlertDialog from '@/components/ui/alert-dialog-simple';
 import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import { getAbsoluteUrl } from '@services/config/config';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import Link from '@components/ui/AppLink';
 import type React from 'react';
 import QRCode from 'qrcode';
@@ -18,52 +17,19 @@ interface CertificatePageProps {
 }
 
 const CertificatePage: React.FC<CertificatePageProps> = ({ courseid, qrCodeLink }) => {
-  const session = usePlatformSession();
-  const [userCertificate, setUserCertificate] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const locale = useLocale();
   const t = useTranslations('Certificates.CertificatePage');
   const [dialogAlertOpen, setDialogAlertOpen] = useState(false);
   const [dialogAlertMessage, setDialogAlertMessage] = useState('');
-  const fetchedCertificateRef = useRef<Record<string, boolean>>({});
-
-  // Fetch user certificate
-  useEffect(() => {
-    // Avoid repeated fetches if access token refreshes or session object changes
-    if (fetchedCertificateRef.current[courseid]) {
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchCertificate = async () => {
-      fetchedCertificateRef.current[courseid] = true;
-
-      if (!session?.data?.tokens?.access_token) {
-        setError(t('errorAuth'));
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const cleanCourseId = courseid.replace('course_', '');
-        const result = await getUserCertificates(`course_${cleanCourseId}`, session.data.tokens.access_token);
-
-        if (result.success && result.data && result.data.length > 0) {
-          setUserCertificate(result.data[0]);
-        } else {
-          setError(t('noCertificate'));
-        }
-      } catch (error) {
-        console.error('Error fetching certificate:', error);
-        setError(t('error'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCertificate();
-  }, [courseid, session?.data?.tokens?.access_token, t]);
+  const normalizedCourseId = courseid.startsWith('course_') ? courseid : `course_${courseid}`;
+  const certificateQuery = useUserCertificateByCourse(normalizedCourseId);
+  const userCertificate = certificateQuery.data?.data?.[0] ?? null;
+  const isLoading = certificateQuery.isPending;
+  const certificateError = certificateQuery.error
+    ? t('error')
+    : !isLoading && !userCertificate
+      ? t('noCertificate')
+      : null;
 
   // Certificate type translation helper
   const getCertificationTypeLabel = (type: string): string => {
@@ -642,28 +608,28 @@ const CertificatePage: React.FC<CertificatePageProps> = ({ courseid, qrCodeLink 
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="bg-background flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <div className="rounded-full bg-white p-6 shadow-lg">
+          <div className="border-border bg-card rounded-full border p-6 shadow-lg">
             <Loader2
               size={32}
-              className="animate-spin text-blue-600"
+              className="text-primary animate-spin"
             />
           </div>
-          <span className="text-lg font-medium text-gray-700">{t('loading')}</span>
+          <span className="text-foreground text-lg font-medium">{t('loading')}</span>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (certificateError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="bg-background flex min-h-screen items-center justify-center">
         <div className="mx-auto max-w-md p-6 text-center">
-          <div className="rounded-2xl border-2 border-red-200 bg-white p-8 shadow-xl">
-            <div className="mb-4 inline-flex rounded-full bg-red-100 p-4">
+          <div className="border-destructive/20 bg-card rounded-2xl border p-8 shadow-xl">
+            <div className="bg-destructive/10 text-destructive mb-4 inline-flex rounded-full p-4">
               <svg
-                className="h-8 w-8 text-red-600"
+                className="h-8 w-8"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -676,11 +642,11 @@ const CertificatePage: React.FC<CertificatePageProps> = ({ courseid, qrCodeLink 
                 />
               </svg>
             </div>
-            <h2 className="mb-3 text-2xl font-bold text-gray-900">{t('errorNonAvailable')}</h2>
-            <p className="mb-6 text-base text-gray-600">{error}</p>
+            <h2 className="text-foreground mb-3 text-2xl font-bold">{t('errorNonAvailable')}</h2>
+            <p className="text-muted-foreground mb-6 text-base">{certificateError}</p>
             <Link
               href={`${getAbsoluteUrl('')}/course/${courseid}`}
-              className="inline-flex items-center space-x-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-3.5 font-medium text-white shadow-lg shadow-blue-200 transition-all duration-200 hover:scale-105 hover:shadow-xl"
+              className="bg-primary text-primary-foreground inline-flex items-center space-x-2 rounded-xl px-8 py-3.5 font-medium shadow-lg transition-all duration-200 hover:scale-105 hover:opacity-90"
             >
               <ArrowLeft className="h-5 w-5" />
               <span>{t('backToHome')}</span>
@@ -693,12 +659,12 @@ const CertificatePage: React.FC<CertificatePageProps> = ({ courseid, qrCodeLink 
 
   if (!userCertificate) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="bg-background flex min-h-screen items-center justify-center">
         <div className="mx-auto max-w-md p-6 text-center">
-          <div className="rounded-2xl border-2 border-yellow-200 bg-white p-8 shadow-xl">
-            <div className="mb-4 inline-flex rounded-full bg-yellow-100 p-4">
+          <div className="border-border bg-card rounded-2xl border p-8 shadow-xl">
+            <div className="bg-muted text-muted-foreground mb-4 inline-flex rounded-full p-4">
               <svg
-                className="h-8 w-8 text-yellow-600"
+                className="h-8 w-8"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -711,11 +677,11 @@ const CertificatePage: React.FC<CertificatePageProps> = ({ courseid, qrCodeLink 
                 />
               </svg>
             </div>
-            <h2 className="mb-3 text-2xl font-bold text-gray-900">{t('noCertificate')}</h2>
-            <p className="mb-6 text-base text-gray-600">{t('noCertificate')}</p>
+            <h2 className="text-foreground mb-3 text-2xl font-bold">{t('noCertificate')}</h2>
+            <p className="text-muted-foreground mb-6 text-base">{t('noCertificate')}</p>
             <Link
               href={`${getAbsoluteUrl('')}/course/${courseid}`}
-              className="inline-flex items-center space-x-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-3.5 font-medium text-white shadow-lg shadow-blue-200 transition-all duration-200 hover:scale-105 hover:shadow-xl"
+              className="bg-primary text-primary-foreground inline-flex items-center space-x-2 rounded-xl px-8 py-3.5 font-medium shadow-lg transition-all duration-200 hover:scale-105 hover:opacity-90"
             >
               <ArrowLeft className="h-5 w-5" />
               <span>{t('backToHome')}</span>
@@ -727,7 +693,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({ courseid, qrCodeLink 
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50 py-12">
+    <div className="bg-background min-h-screen py-12">
       <SimpleAlertDialog
         open={dialogAlertOpen}
         onOpenChange={setDialogAlertOpen}

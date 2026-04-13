@@ -1,74 +1,50 @@
 import random
+from typing import Any
 
-import httpx
-from fastapi import Depends, HTTPException, Request
+from fastapi import HTTPException, Request
 from sqlmodel import Session, select
 
-from src.core.events.database import get_db_session
 from src.db.users import User, UserCreate, UserRead
-from src.security.auth import get_current_user
 from src.services.users.users import (
     create_user_without_platform,
     ensure_user_has_default_role,
 )
 
 
-async def get_google_user_info(access_token: str):
-    url = "https://www.googleapis.com/oauth2/v3/userinfo"
-    headers = {"Authorization": f"Bearer {access_token}"}
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers)
-
-    if response.status_code != 200:
-        raise HTTPException(
-            status_code=response.status_code,
-            detail="Failed to fetch user info from Google",
-        )
-
-    return response.json()
-
-
-async def signWithGoogle(
+async def find_or_create_google_user(
     request: Request,
-    access_token: str,
-    email: str,
-    current_user=Depends(get_current_user),
-    db_session: Session = Depends(get_db_session),
-):
-    # Google
-    google_user = await get_google_user_info(access_token)
+    google_user_data: dict[str, Any],
+    current_user: Any,
+    db_session: Session,
+) -> UserRead:
+    """Find an existing user by Google email, or create a new one.
 
-    # Use Google email with fallback to parameter email
-    user_email = google_user.get("email", email)
-
-    # Validate we have a valid email
+    This is the shared core used by both the legacy access-token OAuth endpoint
+    and the new backend-driven Authorization Code flow.
+    """
+    user_email = google_user_data.get("email", "")
     if not user_email:
         raise HTTPException(
-            status_code=400, detail="No email address available from Google or request"
+            status_code=400, detail="No email address available from Google"
         )
 
     user = db_session.exec(select(User).where(User.email == user_email)).first()
 
     if not user:
-        # Extract user data with safe defaults
-        given_name = google_user.get("given_name", "")
-        family_name = google_user.get("family_name", "")
-        picture = google_user.get("picture", "")
+        given_name = google_user_data.get("given_name", "")
+        family_name = google_user_data.get("family_name", "")
+        picture = google_user_data.get("picture", "")
+        google_sub = google_user_data.get("sub", "")
 
-        # Generate username more robustly
         username_parts = []
         if given_name:
             username_parts.append(given_name)
         if family_name:
             username_parts.append(family_name)
-
-        # If no name parts available, use part of email
-        if not username_parts and user_email and "@" in user_email:
+        if not username_parts and "@" in user_email:
             email_prefix = user_email.split("@")[0]
-            if email_prefix:  # Make sure it's not empty
+            if email_prefix:
                 username_parts.append(email_prefix)
-
-        # If still no parts, use a default
         if not username_parts:
             username_parts.append("user")
 
@@ -83,12 +59,21 @@ async def signWithGoogle(
             avatar_image=picture,
         )
 
-        # Always create the user without an explicit platform reference; single-platform mode will
-        # Always create the user without an explicit platform reference; single-platform mode will
-        # attach them to the platform automatically.
-        return await create_user_without_platform(
+        user_read = await create_user_without_platform(
             request, db_session, current_user, user_object
         )
 
-    await ensure_user_has_default_role(db_session, user.id)
+        # Mark as Google OAuth user
+        created_user = db_session.exec(
+            select(User).where(User.user_uuid == user_read.user_uuid)
+        ).first()
+        if created_user:
+            created_user.auth_provider = "google"
+            created_user.google_sub = google_sub or None
+            db_session.add(created_user)
+            db_session.commit()
+
+        return user_read
+
+    ensure_user_has_default_role(db_session, user.id)
     return UserRead.model_validate(user)

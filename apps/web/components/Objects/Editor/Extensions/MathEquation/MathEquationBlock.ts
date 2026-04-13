@@ -1,7 +1,19 @@
-import { ReactNodeViewRenderer } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
+import { type CommandProps, Node, mergeAttributes } from '@tiptap/core';
 
 import MathEquationBlockComponent from './MathEquationBlockComponent';
+import { nodeView } from '@components/Objects/Editor/core';
+
+export interface MathEquationBlockAttrs {
+  math_equation: string;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    blockMathEquation: {
+      insertMathEquation: () => ReturnType;
+    };
+  }
+}
 
 export default Node.create({
   name: 'blockMathEquation',
@@ -29,7 +41,16 @@ export default Node.create({
     return ['block-math-equation', mergeAttributes(HTMLAttributes), 0];
   },
 
+  addCommands() {
+    return {
+      insertMathEquation:
+        () =>
+        ({ commands }: CommandProps) =>
+          commands.insertContent({ type: this.name }),
+    };
+  },
+
   addNodeView() {
-    return ReactNodeViewRenderer(MathEquationBlockComponent);
+    return nodeView(MathEquationBlockComponent);
   },
 });

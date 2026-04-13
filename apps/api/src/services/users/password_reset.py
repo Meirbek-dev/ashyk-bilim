@@ -1,168 +1,125 @@
-from datetime import datetime
+"""Password reset via signed single-use JWT token (link in email)."""
 
-import orjson
-from fastapi import HTTPException, Request
+import logging
+import time
+import uuid
+from typing import Any
+
+from authlib.jose import JoseError, jwt
+from fastapi import HTTPException
 from pydantic import EmailStr
 from sqlmodel import Session, select
-from ulid import ULID
 
-from config.config import get_settings
-from src.db.users import AnonymousUser, PublicUser, User, UserRead
-from src.security.security import generate_secure_code, security_hash_password
-from src.services.cache.redis_client import delete_keys, get_json, get_redis_client
+from src.db.users import User
+from src.security.keys import get_private_key, get_public_key
+from src.security.security import security_hash_password
+from src.services.auth.sessions import revoke_all_user_sessions
+from src.services.cache.redis_client import get_async_redis_client
 from src.services.users.emails import send_password_reset_email
+
+logger = logging.getLogger(__name__)
+
+RESET_TOKEN_TTL = 15 * 60  # 15 minutes
+RESET_JTI_PREFIX = "reset_jti:"
+
+
+def _create_reset_token(user_uuid: str) -> tuple[str, str]:
+    jti = str(uuid.uuid4())
+    now = int(time.time())
+    payload = {
+        "sub": user_uuid,
+        "jti": jti,
+        "type": "password_reset",
+        "iat": now,
+        "exp": now + RESET_TOKEN_TTL,
+    }
+    token = jwt.encode({"alg": "EdDSA"}, payload, get_private_key())
+    token_str = token.decode("utf-8") if isinstance(token, bytes) else token
+    return token_str, jti
+
+
+def _verify_reset_token(token: str) -> dict[str, Any]:
+    try:
+        claims = jwt.decode(token, get_public_key())
+        claims.validate()
+        payload = dict(claims)
+    except JoseError as exc:
+        raise HTTPException(
+            status_code=400, detail="Invalid or expired reset token"
+        ) from exc
+
+    if payload.get("type") != "password_reset":
+        raise HTTPException(status_code=400, detail="Invalid token type")
+    return payload
 
 
 async def send_reset_password_code(
-    request: Request,
     db_session: Session,
-    current_user: PublicUser | AnonymousUser,
     email: EmailStr,
 ) -> str:
-    # Get user
+    """Always returns success message to prevent email enumeration."""
     statement = select(User).where(User.email == email)
     user = db_session.exec(statement).first()
-
     if not user:
-        raise HTTPException(
-            status_code=400,
-            detail="User does not exist",
-        )
+        return "If that email exists, a reset link has been sent"
 
-    # Redis init
-    settings = get_settings()
-    redis_conn_string = settings.redis_config.redis_connection_string
-
-    if not redis_conn_string:
-        raise HTTPException(
-            status_code=500,
-            detail="Redis connection string not found",
-        )
-
-    # Connect to Redis (use cached client)
-    r = get_redis_client()
-
+    r = get_async_redis_client()
     if not r:
-        raise HTTPException(
-            status_code=500,
-            detail="Could not connect to Redis",
+        logger.error("Redis unavailable for password reset")
+        raise HTTPException(status_code=500, detail="Service temporarily unavailable")
+
+    token_str, jti = _create_reset_token(str(user.user_uuid))
+
+    # Store JTI as "pending" to enforce single-use
+    await r.set(f"{RESET_JTI_PREFIX}{jti}", "pending", ex=RESET_TOKEN_TTL)
+
+    try:
+        from src.db.users import UserRead
+
+        user_read = UserRead.model_validate(user)
+        send_password_reset_email(
+            generated_reset_code=token_str,
+            user=user_read,
+            email=user.email,
         )
-    # Generate reset code
-    generated_reset_code = generate_secure_code()
-    reset_email_invite_uuid = f"reset_email_invite_code_{ULID()}"
+    except Exception:
+        logger.exception("Failed to send reset email for %s", email)
 
-    ttl = int(datetime.now().timestamp()) + 60 * 60 * 1  # 1 hour
-
-    resetCodeObject = {
-        "reset_code": generated_reset_code,
-        "reset_email_invite_uuid": reset_email_invite_uuid,
-        "reset_code_expires": ttl,
-        "reset_code_type": "signup",
-        "created_at": datetime.now().isoformat(),
-        "created_by": user.user_uuid,
-    }
-
-    r.set(
-        f"{reset_email_invite_uuid}:user:{user.user_uuid}:platform:code:{generated_reset_code}",
-        orjson.dumps(resetCodeObject),
-        ex=ttl,
-    )
-
-    user = UserRead.model_validate(user)
-
-    # Send reset code via email
-    isEmailSent = send_password_reset_email(
-        generated_reset_code=generated_reset_code,
-        user=user,
-        email=user.email,
-    )
-
-    if not isEmailSent:
-        raise HTTPException(
-            status_code=500,
-            detail="Ошибка при отправлении кода сброса пароля",
-        )
-
-    return "Reset code sent"
+    return "If that email exists, a reset link has been sent"
 
 
 async def change_password_with_reset_code(
-    request: Request,
     db_session: Session,
-    current_user: PublicUser | AnonymousUser,
+    token: str,
     new_password: str,
-    email: EmailStr,
-    reset_code: str,
 ) -> str:
-    # Get user
-    statement = select(User).where(User.email == email)
-    user = db_session.exec(statement).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=400,
-            detail="User does not exist",
-        )
-
-    # Redis init
-    settings = get_settings()
-    redis_conn_string = settings.redis_config.redis_connection_string
-
-    if not redis_conn_string:
-        raise HTTPException(
-            status_code=500,
-            detail="Redis connection string not found",
-        )
-
-    # Connect to Redis (use cached client)
-    r = get_redis_client()
-
+    r = get_async_redis_client()
     if not r:
+        raise HTTPException(status_code=500, detail="Service temporarily unavailable")
+
+    payload = _verify_reset_token(token)
+    jti = payload.get("jti", "")
+    user_uuid = payload.get("sub", "")
+
+    # Single-use check
+    jti_key = f"{RESET_JTI_PREFIX}{jti}"
+    if not await r.exists(jti_key):
         raise HTTPException(
-            status_code=500,
-            detail="Could not connect to Redis",
+            status_code=400, detail="Reset token has already been used or expired"
         )
 
-    # Get reset code
-    reset_code_key = f"*:user:{user.user_uuid}:platform:code:{reset_code}"
-    keys = r.keys(reset_code_key)
+    user = db_session.exec(select(User).where(User.user_uuid == user_uuid)).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found")
 
-    if not keys:
-        raise HTTPException(
-            status_code=400,
-            detail="Reset code not found",
-        )
+    # Consume the JTI atomically before changing the password
+    await r.delete(jti_key)
 
-    # Get reset code object
-    key = (
-        keys[0].decode("utf-8") if isinstance(keys[0], (bytes, bytearray)) else keys[0]
-    )
-    reset_code_object = get_json(key)
-
-    if reset_code_object is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Reset code value not found",
-        )
-
-    # Check if reset code is expired
-    if reset_code_object["reset_code_expires"] < int(datetime.now().timestamp()):
-        raise HTTPException(
-            status_code=400,
-            detail="Reset code expired",
-        )
-
-    # Change password
     user.password = security_hash_password(new_password)
     db_session.add(user)
-
     db_session.commit()
-    db_session.refresh(user)
 
-    # Delete reset code
-    key = (
-        keys[0].decode("utf-8") if isinstance(keys[0], (bytes, bytearray)) else keys[0]
-    )
-    delete_keys(key)
+    # Revoke all sessions — force re-login on all devices after password change
+    await revoke_all_user_sessions(user.id)
 
-    return "Password changed"
+    return "Password changed successfully"

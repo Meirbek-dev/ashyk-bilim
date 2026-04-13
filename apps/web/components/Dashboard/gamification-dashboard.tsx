@@ -4,7 +4,7 @@ import { RecentActivityFeed } from './Gamification/recent-activity-feed';
 import { HeroSection } from './Gamification/hero-section';
 import { Leaderboard } from './Gamification/leaderboard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 
 /**
  * Unified Gamification Dashboard (Server Component)
@@ -14,7 +14,7 @@ import { auth } from '@/auth';
  */
 export default async function GamificationDashboard() {
   try {
-    const session = await auth();
+    const session = await getSession();
     const userId = session?.user?.id;
 
     // Return null early if no session (not authenticated)
@@ -42,7 +42,7 @@ export default async function GamificationDashboard() {
           leaderboard: dashboardData.leaderboard ?? null,
         }}
       >
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Hero Section - Main Profile & Stats */}
           <HeroSection
             profile={dashboardData.profile}
@@ -50,18 +50,16 @@ export default async function GamificationDashboard() {
           />
 
           {/* Two Column Layout */}
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             <RecentActivityFeed transactions={dashboardData.recent_transactions || []} />
 
             {/* Right Column: Leaderboard */}
             {leaderboardData && (
-              <div>
-                <Leaderboard
-                  entries={leaderboardData.entries}
-                  currentUserId={userId || undefined}
-                  userRank={dashboardData.user_rank}
-                />
-              </div>
+              <Leaderboard
+                entries={leaderboardData.entries}
+                currentUserId={userId || undefined}
+                userRank={dashboardData.user_rank}
+              />
             )}
           </div>
         </div>
@@ -79,17 +77,11 @@ export default async function GamificationDashboard() {
  */
 export function GamificationDashboardSkeleton() {
   return (
-    <div className="space-y-6">
-      {/* Hero Skeleton */}
-      <Skeleton className="h-[240px]" />
-
-      {/* Two Column Layout */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Skeleton className="h-[400px]" />
-          <Skeleton className="h-[300px]" />
-        </div>
-        <Skeleton className="h-[700px]" />
+    <div className="space-y-4">
+      <Skeleton className="h-[200px]" />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Skeleton className="h-[380px]" />
+        <Skeleton className="h-[380px]" />
       </div>
     </div>
   );

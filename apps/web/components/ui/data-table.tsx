@@ -103,7 +103,7 @@ export default function DataTable<TData>({
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [pagination, setPagination] = React.useState<PaginationState>({
+  const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: serverPaginated ? data.length || pageSize : pageSize,
   });
@@ -227,7 +227,7 @@ export default function DataTable<TData>({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               value={globalFilter}
               onChange={(event) => {
@@ -290,7 +290,7 @@ export default function DataTable<TData>({
           ) : null}
           {toolbarContent}
         </div>
-        <div className="text-sm text-slate-500">
+        <div className="text-muted-foreground text-sm">
           {totalFiltered > 0
             ? resolvedLabels.showingRows({ from, to, total: totalFiltered })
             : resolvedLabels.visibleRows(0)}
@@ -308,7 +308,7 @@ export default function DataTable<TData>({
                 return (
                   <TableHead
                     key={header.id}
-                    className="bg-slate-50/80"
+                    className="bg-secondary/40 dark:bg-secondary/20"
                   >
                     {header.isPlaceholder ? null : canSort ? (
                       <Button
@@ -323,7 +323,7 @@ export default function DataTable<TData>({
                         ) : sortState === 'desc' ? (
                           <ArrowDown className="h-3.5 w-3.5" />
                         ) : (
-                          <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                          <ArrowUpDown className="text-muted-foreground h-3.5 w-3.5" />
                         )}
                       </Button>
                     ) : (
@@ -353,7 +353,7 @@ export default function DataTable<TData>({
             <TableRow>
               <TableCell
                 colSpan={columns.length}
-                className="h-28 text-center text-sm text-slate-500"
+                className="text-muted-foreground h-28 text-center text-sm"
               >
                 {resolvedLabels.emptyMessage}
               </TableCell>
@@ -364,12 +364,12 @@ export default function DataTable<TData>({
 
       {!serverPaginated && (
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2 text-sm text-slate-600">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <span>{resolvedLabels.rowsPerPage}</span>
             <select
               value={currentPageSize}
               onChange={(event) => table.setPageSize(Number(event.target.value))}
-              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm"
+              className="bg-background rounded-md border px-2 py-1 text-sm"
             >
               {pageSizeOptions.map((option) => (
                 <option
@@ -392,7 +392,7 @@ export default function DataTable<TData>({
                 <ChevronLeft className="h-4 w-4" />
                 {resolvedLabels.prev}
               </Button>
-              <span className="text-sm text-slate-600">
+              <span className="text-muted-foreground text-sm">
                 {resolvedLabels.page({ current: pageIndex + 1, total: pageCount })}
               </span>
               <Button

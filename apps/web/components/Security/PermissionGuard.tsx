@@ -1,7 +1,7 @@
 'use client';
 
 import type { Action, Resource, Scope } from '@/types/permissions';
-import { usePermissions } from './PermissionProvider';
+import { useSession } from '@/hooks/useSession';
 import type { ReactNode } from 'react';
 import { Component } from 'react';
 
@@ -38,9 +38,9 @@ export function PermissionGuard({
   fallback = null,
   loadingFallback,
 }: PermissionGuardProps) {
-  const { can, loading } = usePermissions();
+  const { status, can } = useSession();
 
-  if (loading) return <>{loadingFallback ?? null}</>;
+  if (status === 'loading') return <>{loadingFallback ?? null}</>;
   if (!can(resource, action, scope)) return <>{fallback}</>;
   return <>{children}</>;
 }

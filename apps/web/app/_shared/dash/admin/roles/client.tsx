@@ -6,12 +6,11 @@ import {
   deleteRole as apiDeleteRole,
   getRole as apiGetRole,
   getRolePermissions,
-  listAllPermissions,
-  listRoleAuditLog,
-  listRoles,
   removePermissionFromRole,
   updateRole as apiUpdateRole,
 } from '@/services/rbac';
+import { usePlatformPermissions } from '@/features/platform/hooks/usePlatform';
+import { useRoleAuditLog, useRoles } from '@/features/users/hooks/useUsers';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,12 +46,12 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Actions, PermissionGuard, Resources, Scopes, usePermissions } from '@/components/Security';
+import { Actions, PermissionGuard, Resources, Scopes } from '@/components/Security';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSession } from '@/hooks/useSession';
 import type { Permission, RoleAuditEvent, RoleWithPermissions } from '@/types/permissions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -64,18 +63,19 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import useSWR from 'swr';
 
 type RoleDialogMode = 'create' | 'edit' | 'clone';
 
+const EMPTY_ROLES: RoleWithPermissions[] = [];
+const EMPTY_PERMISSIONS: Permission[] = [];
+
 export default function RBACAdminClient() {
-  const session = usePlatformSession();
-  const platform = usePlatform();
-  const { can } = usePermissions();
+  const session = useSession();
+  const { can } = session;
   const t = useTranslations('Components.Roles');
+  const router = useRouter();
 
   const [roles, setRoles] = useState<RoleWithPermissions[]>([]);
-  const [loadingRoles, setLoadingRoles] = useState(true);
   const [activeTab, setActiveTab] = useState('roles');
 
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
@@ -94,71 +94,64 @@ export default function RBACAdminClient() {
   const [roleToDelete, setRoleToDelete] = useState<RoleWithPermissions | null>(null);
 
   const [auditPage, setAuditPage] = useState(1);
-  const [auditData, setAuditData] = useState<{ items: RoleAuditEvent[]; total: number; page_size: number } | null>(
-    null,
-  );
-  const [isAuditLoading, setIsAuditLoading] = useState(false);
-
-  const accessToken = session?.data?.tokens?.access_token;
   const isSuperAdmin = can(Resources.ROLE, Actions.MANAGE, Scopes.ALL);
   const currentUserMaxPriority = useMemo(() => {
-    const sessionRoles = session?.data?.roles ?? [];
-    return sessionRoles.reduce((maxPriority, assignment) => Math.max(maxPriority, assignment.role?.priority ?? 0), 0);
-  }, [session?.data?.roles]);
+    const sessionRoles = session.session?.roles ?? [];
+    return sessionRoles.reduce(
+      (maxPriority: number, assignment: (typeof sessionRoles)[number]) =>
+        Math.max(maxPriority, assignment.role?.priority ?? 0),
+      0,
+    );
+  }, [session.session?.roles]);
 
   const {
-    data: permissions = [],
+    data: permissions = EMPTY_PERMISSIONS,
     isLoading: permissionsLoading,
     error: permissionsError,
-  } = useSWR(accessToken ? ['rbac-permissions', accessToken] : null, ([, token]) => listAllPermissions(token), {
-    dedupingInterval: 3_600_000,
-    revalidateOnFocus: false,
+  } = usePlatformPermissions();
+  const {
+    data: fetchedRoles = EMPTY_ROLES,
+    isLoading: loadingRoles,
+    error: rolesError,
+    refetch: refetchRoles,
+  } = useRoles();
+  const auditLogQuery = useRoleAuditLog(auditPage, 20, {
+    enabled: activeTab === 'audit',
   });
+  const auditData = useMemo(() => {
+    if (!auditLogQuery.data) {
+      return null;
+    }
+
+    return {
+      items: Array.isArray(auditLogQuery.data.items) ? auditLogQuery.data.items : [],
+      total: typeof auditLogQuery.data.total === 'number' ? auditLogQuery.data.total : 0,
+      page_size:
+        typeof auditLogQuery.data.page_size === 'number' && auditLogQuery.data.page_size > 0
+          ? auditLogQuery.data.page_size
+          : 20,
+    } satisfies {
+      items: RoleAuditEvent[];
+      total: number;
+      page_size: number;
+    };
+  }, [auditLogQuery.data]);
+  const isAuditLoading = activeTab === 'audit' && (auditLogQuery.isLoading || auditLogQuery.isFetching);
 
   const fetchRoles = useCallback(async () => {
-    if (!accessToken) return;
-
-    setLoadingRoles(true);
-    try {
-      const rolesData = await listRoles(accessToken);
-      const sortedRoles = rolesData
-        .toSorted((a, b) => {
-          const aSystem = a.is_system ? 0 : 1;
-          const bSystem = b.is_system ? 0 : 1;
-          if (aSystem !== bSystem) return aSystem - bSystem;
-          return (b.priority ?? 0) - (a.priority ?? 0);
-        })
-        .map((role) => Object.assign(role, { permissions: [] }));
-      setRoles(sortedRoles);
-    } catch (error) {
-      console.error('Failed to fetch RBAC roles:', error);
-      toast.error(t('loadFailed'));
-    } finally {
-      setLoadingRoles(false);
+    const result = await refetchRoles();
+    if (result.error) {
+      throw result.error;
     }
-  }, [accessToken, t]);
+  }, [refetchRoles]);
 
-  const refreshSession = async () => {
-    const timeoutMs = 5000;
-    try {
-      await Promise.race([
-        session.update(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)),
-      ]);
-    } catch {
-      toast.warning(t('sessionRefreshWarning'));
-    }
-  };
+  const refreshSession = useCallback(async () => {
+    router.refresh();
+    if (!session.user) toast.warning(t('sessionRefreshWarning'));
+  }, [router, session.user, t]);
 
   const loadRoleWithPermissions = async (roleId: number): Promise<RoleWithPermissions> => {
-    if (!accessToken) {
-      throw new Error('Missing credentials');
-    }
-
-    const [role, rolePermissions] = await Promise.all([
-      apiGetRole(accessToken, roleId),
-      getRolePermissions(accessToken, roleId),
-    ]);
+    const [role, rolePermissions] = await Promise.all([apiGetRole(roleId), getRolePermissions(roleId)]);
 
     return {
       ...role,
@@ -183,8 +176,20 @@ export default function RBACAdminClient() {
   };
 
   useEffect(() => {
-    fetchRoles();
-  }, [fetchRoles]);
+    const sortedRoles = fetchedRoles
+      .toSorted((a, b) => {
+        const aSystem = a.is_system ? 0 : 1;
+        const bSystem = b.is_system ? 0 : 1;
+        if (aSystem !== bSystem) return aSystem - bSystem;
+        return (b.priority ?? 0) - (a.priority ?? 0);
+      })
+      .map((role) => ({
+        ...role,
+        permissions: [],
+      }));
+
+    setRoles(sortedRoles);
+  }, [fetchedRoles]);
 
   useEffect(() => {
     if (permissionsError) {
@@ -193,32 +198,26 @@ export default function RBACAdminClient() {
   }, [permissionsError, t]);
 
   useEffect(() => {
-    const fetchAudit = async () => {
-      if (!accessToken || activeTab !== 'audit') return;
-      setIsAuditLoading(true);
-      try {
-        const data = await listRoleAuditLog(accessToken, auditPage, 20);
-        setAuditData({
-          items: Array.isArray(data.items) ? data.items : [],
-          total: typeof data.total === 'number' ? data.total : 0,
-          page_size: typeof data.page_size === 'number' && data.page_size > 0 ? data.page_size : 20,
-        });
-      } catch (error) {
-        console.error('Failed to fetch audit log:', error);
-        toast.error(t('auditLogLoadFailed'));
-      } finally {
-        setIsAuditLoading(false);
-      }
-    };
+    if (rolesError) {
+      console.error('Failed to fetch RBAC roles:', rolesError);
+      toast.error(t('loadFailed'));
+    }
+  }, [rolesError, t]);
 
-    fetchAudit();
-  }, [accessToken, activeTab, auditPage, t]);
+  useEffect(() => {
+    if (activeTab !== 'audit' || !auditLogQuery.error) {
+      return;
+    }
+
+    console.error('Failed to fetch audit log:', auditLogQuery.error);
+    toast.error(t('auditLogLoadFailed'));
+  }, [activeTab, auditLogQuery.error, t]);
 
   const permissionsByResource = permissions.reduce<Record<string, Permission[]>>((acc, permission) => {
     if (!acc[permission.resource_type]) {
       acc[permission.resource_type] = [];
     }
-    acc[permission.resource_type]!.push(permission);
+    acc[permission.resource_type]?.push(permission);
     return acc;
   }, {});
 
@@ -241,7 +240,7 @@ export default function RBACAdminClient() {
       if (!acc[perm.resource_type]) {
         acc[perm.resource_type] = [];
       }
-      acc[perm.resource_type]!.push(perm);
+      acc[perm.resource_type]?.push(perm);
       return acc;
     },
     {},
@@ -282,16 +281,14 @@ export default function RBACAdminClient() {
     description: string;
     priority: number;
   }) => {
-    if (!accessToken) return;
-
     const sourceRole = roleDialogMode === 'clone' ? roleDialogRole : null;
 
     try {
-      const newRole = await apiCreateRole(accessToken, data);
+      const newRole = await apiCreateRole(data);
 
       if (sourceRole?.permissions?.length) {
         for (const permission of sourceRole.permissions) {
-          await addPermissionToRole(accessToken, newRole.id, permission.id);
+          await addPermissionToRole(newRole.id, permission.id);
         }
       }
 
@@ -310,10 +307,8 @@ export default function RBACAdminClient() {
     roleId: number,
     data: { name: string; slug: string; description: string; priority: number },
   ) => {
-    if (!accessToken) return;
-
     try {
-      await apiUpdateRole(accessToken, roleId, {
+      await apiUpdateRole(roleId, {
         name: data.name,
         description: data.description,
         priority: data.priority,
@@ -334,12 +329,12 @@ export default function RBACAdminClient() {
   };
 
   const confirmDeleteRole = async () => {
-    if (!accessToken || !roleToDelete) return;
+    if (!roleToDelete) return;
 
     setDeletingRoleId(roleToDelete.id);
     setRoleToDelete(null);
     try {
-      await apiDeleteRole(accessToken, roleToDelete.id);
+      await apiDeleteRole(roleToDelete.id);
       await fetchRoles();
       await refreshSession();
       toast.success(t('deletedRoleSuccess'));
@@ -378,16 +373,16 @@ export default function RBACAdminClient() {
   };
 
   const handleTogglePermission = async (permission: Permission, hasPermission: boolean) => {
-    if (!accessToken || !permissionsRole) return;
+    if (!permissionsRole) return;
 
     setPendingPermissionIds((prev) => [...prev, permission.id]);
     optimisticTogglePermission(permission, !hasPermission);
 
     try {
       if (hasPermission) {
-        await removePermissionFromRole(accessToken, permissionsRole.id, permission.id);
+        await removePermissionFromRole(permissionsRole.id, permission.id);
       } else {
-        await addPermissionToRole(accessToken, permissionsRole.id, permission.id);
+        await addPermissionToRole(permissionsRole.id, permission.id);
       }
 
       await refreshPermissionsRole(permissionsRole.id);
@@ -403,7 +398,7 @@ export default function RBACAdminClient() {
   };
 
   const handleToggleResourcePermissions = async (resourceType: string, resourcePermissions: Permission[]) => {
-    if (!accessToken || !permissionsRole) return;
+    if (!permissionsRole) return;
 
     setPendingResourceToggles((prev) => [...prev, resourceType]);
 
@@ -431,10 +426,10 @@ export default function RBACAdminClient() {
       for (const permission of resourcePermissions) {
         const hasPermission = currentPermissionIds.has(permission.id);
         if (shouldGrantAll && !hasPermission) {
-          await addPermissionToRole(accessToken, permissionsRole.id, permission.id);
+          await addPermissionToRole(permissionsRole.id, permission.id);
         }
         if (!shouldGrantAll && hasPermission) {
-          await removePermissionFromRole(accessToken, permissionsRole.id, permission.id);
+          await removePermissionFromRole(permissionsRole.id, permission.id);
         }
       }
 
@@ -922,14 +917,14 @@ export default function RBACAdminClient() {
             }
           }}
         >
-          <DialogContent className="max-h-[80vh] lg:min-w-2xl w-2xl overflow-y-auto">
+          <DialogContent className="max-h-[80vh] w-2xl overflow-y-auto lg:min-w-2xl">
             <DialogHeader>
               <DialogTitle>{t('managePermissionsTitle', { roleName: permissionsRole.name })}</DialogTitle>
               <DialogDescription>{t('managePermissionsDescription')}</DialogDescription>
             </DialogHeader>
 
             {permissionsRole.is_system && !isSuperAdmin && (
-              <div className="rounded-md border bg-muted p-3 text-sm">{t('systemRoleReadOnlyBanner')}</div>
+              <div className="bg-muted rounded-md border p-3 text-sm">{t('systemRoleReadOnlyBanner')}</div>
             )}
 
             <div className="flex flex-col gap-3 py-2 md:flex-row">

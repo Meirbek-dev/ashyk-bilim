@@ -1,8 +1,7 @@
-import { getPlatformContextInfo } from '@/services/platform/platform';
+import { PLATFORM_BRAND_NAME, PLATFORM_DESCRIPTION } from '@/lib/constants';
 import { getEditableCourses } from '@services/courses/courses';
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
-import { auth } from '@/auth';
 
 import CoursesHome from '@/app/_shared/dash/courses/client';
 
@@ -34,17 +33,16 @@ function parseSort(value: string | string[] | undefined): 'updated' | 'name' {
 function parsePreset(value: string | string[] | undefined): string {
   const raw = Array.isArray(value) ? value[0] : value;
   const valid = ['all', 'drafts', 'published', 'private', 'recent', 'attention'];
-  return valid.includes(raw ?? '') ? raw! : 'all';
+  return valid.includes(raw ?? '') ? (raw ?? 'all') : 'all';
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('General');
-  const platform = await getPlatformContextInfo();
 
   return {
-    title: `${t('courses')} - Ashyq Bilim`,
-    description: platform.description,
-    keywords: `${platform.name}, ${platform.description}, ${t('courses')}, learning, education, online learning, edu, online courses, ${platform.name} ${t('courses')}`,
+    title: `${t('courses')} - ${PLATFORM_BRAND_NAME}`,
+    description: PLATFORM_DESCRIPTION,
+    keywords: `${PLATFORM_BRAND_NAME}, ${PLATFORM_DESCRIPTION}, ${t('courses')}, learning, education, online learning, edu, online courses, ${PLATFORM_BRAND_NAME} ${t('courses')}`,
     robots: {
       index: true,
       follow: true,
@@ -56,8 +54,8 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
     openGraph: {
-      title: `${t('courses')} - Ashyq Bilim`,
-      description: platform.description,
+      title: `${t('courses')} - ${PLATFORM_BRAND_NAME}`,
+      description: PLATFORM_DESCRIPTION,
       type: 'website',
     },
   };
@@ -78,12 +76,7 @@ async function PlatformDashCoursesPageInner(props: {
   const sortBy = parseSort(searchParams.sort);
   const preset = parsePreset(searchParams.preset);
 
-  const session = await auth();
-  const access_token = session?.tokens?.access_token;
-  const [platform, { courses, total, summary }] = await Promise.all([
-    getPlatformContextInfo(access_token || undefined),
-    getEditableCourses(access_token || undefined, currentPage, COURSES_PER_PAGE, query, sortBy, preset),
-  ]);
+  const { courses, total, summary } = await getEditableCourses(currentPage, COURSES_PER_PAGE, query, sortBy, preset);
 
   return (
     <CoursesHome

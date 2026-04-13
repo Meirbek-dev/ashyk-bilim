@@ -1,17 +1,16 @@
 'use client';
 
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { updatePassword } from '@/lib/users/client';
+import { logout } from '@services/auth/auth';
+import { useSession } from '@/hooks/useSession';
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@components/ui/field';
 import PasswordInput from '@components/ui/custom/password-input';
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import { updatePassword } from '@services/settings/password';
 import { getAbsoluteUrl } from '@services/config/config';
-import { useState, useTransition } from 'react';
 import { Button } from '@components/ui/button';
-import { Label } from '@components/ui/label';
 import { AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
-import { signOut } from 'next-auth/react';
 import { toast } from 'sonner';
 import * as v from 'valibot';
 
@@ -39,39 +38,32 @@ const createValidationSchema = (t: (key: string, values?: any) => string) =>
   });
 
 type PasswordFormData = v.InferOutput<ReturnType<typeof createValidationSchema>>;
+type PasswordFormValues = v.InferInput<ReturnType<typeof createValidationSchema>>;
 
 const UserEditPassword = () => {
-  const session = usePlatformSession();
-  const access_token = session?.data?.tokens?.access_token;
+  const { user: viewer } = useSession();
   const t = useTranslations('DashPage.Notifications');
   const tPassword = useTranslations('DashPage.UserAccountSettings.UserAccount.EditPassword');
   const validationSchema = createValidationSchema(t);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<PasswordFormData>({
+  const form = useForm<PasswordFormValues, any, PasswordFormData>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       old_password: '',
       new_password: '',
     },
   });
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isPending, startTransition] = useTransition();
 
   const onSubmit = async (values: PasswordFormData) => {
     const loadingToast = toast.loading(t('updating'));
-    startTransition(() => setIsProcessing(true));
     try {
-      const user_id = session?.data?.user?.id;
-      if (!(user_id && access_token)) {
+      const user_id = viewer?.id;
+      if (!user_id) {
         toast.error(t('passwordUpdateError'), { id: loadingToast });
         return;
       }
 
-      const response = await updatePassword(user_id, values, access_token);
+      const response = await updatePassword(user_id, values);
 
       if (response.success) {
         toast.dismiss(loadingToast);
@@ -84,10 +76,12 @@ const UserEditPassword = () => {
           duration: 4000,
           icon: '🔑',
         });
+        form.reset();
 
         // Wait for 4 seconds before signing out
-        await new Promise((resolve) => setTimeout(resolve, 4000));
-        signOut({ redirect: true, callbackUrl: getAbsoluteUrl('/') });
+        setTimeout(() => {
+          void logout({ redirectTo: getAbsoluteUrl('/') });
+        }, 4000);
       } else {
         toast.error(t('passwordUpdateError'), {
           id: loadingToast,
@@ -96,45 +90,46 @@ const UserEditPassword = () => {
     } catch (error: any) {
       toast.error(t('passwordUpdateError'), { id: loadingToast });
       console.error('Password update error:', error);
-    } finally {
-      startTransition(() => setIsProcessing(false));
     }
   };
 
   return (
-    <div className="soft-shadow mx-0 rounded-xl bg-white sm:mx-10">
+    <div className="soft-shadow border-border bg-card text-card-foreground mx-0 rounded-xl border shadow-sm sm:mx-10">
       <div className="flex flex-col">
-        <div className="mx-3 my-3 flex flex-col -space-y-1 rounded-md bg-muted px-5 py-3">
-          <h1 className="text-xl font-bold text-foreground">{tPassword('title')}</h1>
-          <h2 className="text-base text-muted-foreground">{tPassword('description')}</h2>
+        <div className="bg-muted mx-3 my-3 flex flex-col gap-1 rounded-md px-5 py-3">
+          <h1 className="text-foreground text-xl font-bold">{tPassword('title')}</h1>
+          <h2 className="text-muted-foreground text-base">{tPassword('description')}</h2>
         </div>
 
         <div className="px-8 py-6">
           <form
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={form.handleSubmit(onSubmit)}
             className="mx-auto w-full max-w-2xl space-y-6"
           >
-            <div>
-              <Label htmlFor="old_password">{tPassword('currentPasswordLabel')}</Label>
-              <PasswordInput
-                id="old_password"
-                {...register('old_password')}
-                className="mt-1"
-              />
-              {errors.old_password ? <p className="mt-1 text-sm text-red-500">{errors.old_password.message}</p> : null}
-            </div>
+            <Field>
+              <FieldLabel htmlFor="old_password">{tPassword('currentPasswordLabel')}</FieldLabel>
+              <FieldContent>
+                <PasswordInput
+                  id="old_password"
+                  {...form.register('old_password')}
+                />
+              </FieldContent>
+              <FieldError errors={[form.formState.errors.old_password]} />
+            </Field>
 
-            <div>
-              <Label htmlFor="new_password">{tPassword('newPasswordLabel')}</Label>
-              <PasswordInput
-                id="new_password"
-                {...register('new_password')}
-                className="mt-1"
-              />
-              {errors.new_password ? <p className="mt-1 text-sm text-red-500">{errors.new_password.message}</p> : null}
-            </div>
+            <Field>
+              <FieldLabel htmlFor="new_password">{tPassword('newPasswordLabel')}</FieldLabel>
+              <FieldContent>
+                <PasswordInput
+                  id="new_password"
+                  {...form.register('new_password')}
+                />
+              </FieldContent>
+              <FieldDescription>{tPassword('logoutWarning')}</FieldDescription>
+              <FieldError errors={[form.formState.errors.new_password]} />
+            </Field>
 
-            <div className="flex items-center space-x-2 rounded-md bg-amber-50 p-3 text-amber-600">
+            <div className="flex items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 p-3 text-amber-700 dark:text-amber-400">
               <AlertTriangle size={16} />
               <span className="text-sm">{tPassword('logoutWarning')}</span>
             </div>
@@ -142,9 +137,9 @@ const UserEditPassword = () => {
             <div className="flex justify-end pt-2">
               <Button
                 type="submit"
-                disabled={isSubmitting || isProcessing || isPending}
+                disabled={form.formState.isSubmitting}
               >
-                {isSubmitting ? tPassword('updatingButton') : tPassword('updateButton')}
+                {form.formState.isSubmitting ? tPassword('updatingButton') : tPassword('updateButton')}
               </Button>
             </div>
           </form>

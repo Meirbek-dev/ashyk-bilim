@@ -11,7 +11,7 @@ class CertificationBase(SQLModelStrictBaseModel):
     course_id: int = Field(
         sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE"))
     )
-    config: dict = Field(default={}, sa_column=Column("config", JSON))
+    config: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class Certifications(CertificationBase, table=True):
@@ -20,14 +20,14 @@ class Certifications(CertificationBase, table=True):
     course_id: int = Field(
         sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE"))
     )
-    config: dict = Field(default={}, sa_column=Column("config", JSON))
+    config: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
     creation_date: str = ""
     update_date: str = ""
 
 
 class CertificationCreate(SQLModelStrictBaseModel):
     course_id: int
-    config: dict = Field(default={})
+    config: dict[str, object] = Field(default_factory=dict)
     last_known_update_date: datetime | None = None
 
     @field_validator("last_known_update_date", mode="before")
@@ -44,7 +44,7 @@ class CertificationCreate(SQLModelStrictBaseModel):
 
 
 class CertificationUpdate(SQLModelStrictBaseModel):
-    config: dict | None = None
+    config: dict[str, object] | None = None
     last_known_update_date: datetime | None = None
 
     @field_validator("last_known_update_date", mode="before")
@@ -64,7 +64,7 @@ class CertificationRead(SQLModelStrictBaseModel):
     id: int
     certification_uuid: str
     course_id: int
-    config: dict
+    config: dict[str, object]
     creation_date: str
     update_date: str
 

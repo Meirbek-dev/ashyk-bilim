@@ -71,7 +71,11 @@ const xpSourceThemes: Record<string, XPSourceTheme> = {
 } as const;
 
 export function getXPSourceTheme(source: string): XPSourceTheme {
-  return (xpSourceThemes[source] || xpSourceThemes.default)!;
+  const theme = xpSourceThemes[source];
+  if (!theme) {
+    return xpSourceThemes.default!;
+  }
+  return theme;
 }
 
 // ============================================

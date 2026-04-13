@@ -1,12 +1,10 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import useSWR from 'swr';
 
 import { CodeChallengeEditor } from '@/components/features/courses/code-challenges';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useCodeChallengeSettings } from '@/features/code-challenges/hooks/useCodeChallenge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getAPIUrl } from '@services/config/config';
 import { Badge } from '@/components/ui/badge';
 
 interface CodeChallengeActivityProps {
@@ -14,41 +12,47 @@ interface CodeChallengeActivityProps {
   course: any;
 }
 
-const fetcher = async ([url, token]: [string, string]) => {
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (!res.ok) {
-    if (res.status === 404) return null;
-    throw new Error('Failed to fetch');
-  }
-  return res.json();
-};
+interface CodeChallengeTestCase {
+  id: string;
+  input: string;
+  expected_output: string;
+  description?: string;
+  is_visible: boolean;
+  weight?: number;
+}
 
-export default function CodeChallengeActivity({ activity, course }: CodeChallengeActivityProps) {
+interface CodeChallengeActivitySettings {
+  uuid?: string;
+  time_limit_ms: number;
+  memory_limit_kb: number;
+  time_limit: number;
+  memory_limit: number;
+  max_submissions?: number;
+  grading_strategy: string;
+  allowed_languages: number[];
+  visible_tests: CodeChallengeTestCase[];
+  hidden_tests?: CodeChallengeTestCase[];
+  starter_code?: Record<string, string>;
+}
+
+export default function CodeChallengeActivity({ activity }: CodeChallengeActivityProps) {
   const t = useTranslations('Activities.CodeChallenges');
-  const session = usePlatformSession();
-  const accessToken = session?.data?.tokens?.access_token;
-
   const activityUuid = activity?.activity_uuid?.replace('activity_', '') || '';
 
   // Fetch challenge settings
-  const { data: settings, isLoading } = useSWR(
-    accessToken ? [`${getAPIUrl()}code-challenges/${activityUuid}/settings`, accessToken] : null,
-    fetcher,
-    { revalidateOnFocus: false },
-  );
+  const { data: settings, isLoading } = useCodeChallengeSettings<CodeChallengeActivitySettings>(activityUuid);
 
   // Check if challenge is properly configured (has at least one allowed language)
   const isConfigured = settings?.allowed_languages && settings.allowed_languages.length > 0;
+  const primaryLanguageId = settings?.allowed_languages?.[0];
 
   // Get initial code from activity content or settings
   const initialCode =
-    settings?.starter_code?.[settings?.allowed_languages?.[0]?.toString()] || activity?.content?.starter_code || '';
+    (primaryLanguageId !== undefined ? settings?.starter_code?.[String(primaryLanguageId)] : undefined) ||
+    activity?.content?.starter_code ||
+    '';
 
-  const initialLanguageId = settings?.allowed_languages?.[0] || 71; // Default to Python
+  const initialLanguageId = primaryLanguageId || 71; // Default to Python
 
   if (isLoading) {
     return (

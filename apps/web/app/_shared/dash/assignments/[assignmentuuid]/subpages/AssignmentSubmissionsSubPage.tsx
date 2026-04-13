@@ -1,147 +1,186 @@
 'use client';
 
-import AssignmentSubmissionProvider from '@components/Contexts/Assignments/AssignmentSubmissionContext';
-import { AssignmentsTaskProvider } from '@components/Contexts/Assignments/AssignmentsTaskContext';
-import { AssignmentProvider } from '@components/Contexts/Assignments/AssignmentContext';
-import { useAssignmentSubmissions } from '@/hooks/useAssignmentSubmissions';
-import { getUserAvatarMediaDirectory } from '@services/media/media';
-import Modal from '@/components/Objects/Elements/Modal/Modal';
-import { SendHorizonal, UserCheck, X } from 'lucide-react';
-import UserAvatar from '@components/Objects/UserAvatar';
-import { useLocale, useTranslations } from 'next-intl'; // Import useLocale
-import { useUserById } from '@/hooks/useUserById';
-import { useEffect, useState } from 'react';
+/**
+ * AssignmentSubmissionsSubPage
+ *
+ * Teacher view for all student submissions on an assignment.
+ *
+ * Replaced the previous 3-column Kanban board that:
+ * - Loaded ALL submissions at once (no pagination)
+ * - Had no filtering, searching, or sorting
+ * - Used a modal with 3 nested Context Providers and no grade input
+ * - Logged all submission data to the console (console.log on line 24)
+ *
+ * Now renders <SubmissionsTable> which provides:
+ * - Server-paginated, filtered results
+ * - Status filter tabs (All / Needs Grading / Graded / Late)
+ * - "Grade ▸" side panel with a real numeric score input
+ * - Grading backlog count in the header
+ */
 
-import EvaluateAssignment from './Modals/EvaluateAssignment';
+import { useTranslations } from 'next-intl';
 
-const AssignmentSubmissionsSubPage = ({ assignment_uuid }: { assignment_uuid: string }) => {
-  const t = useTranslations('DashPage.Assignments');
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useAssignments } from '@components/Contexts/Assignments/AssignmentContext';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import SubmissionsTable from '@/components/Grading/SubmissionsTable';
+import PageLoading from '@components/Objects/Loaders/PageLoading';
+import { AlertCircle, ClipboardList } from 'lucide-react';
+import { useAssignmentSubmissions } from '@/features/assignments/hooks/useAssignments';
+import { Badge } from '@/components/ui/badge';
 
-  const { data: assignmentSubmission } = useAssignmentSubmissions(assignment_uuid);
+type AssignmentSubmissionStatus = 'PENDING' | 'SUBMITTED' | 'GRADED' | 'LATE' | 'NOT_SUBMITTED';
 
-  useEffect(() => {
-    console.log(assignmentSubmission);
-  }, [assignmentSubmission]);
+interface AssignmentSubmissionUser {
+  id: number;
+  username: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email: string;
+}
 
-  const renderSubmissions = (status: string) => {
-    return assignmentSubmission
-      ?.filter((submission: any) => submission.submission_status === status)
-      .map((submission: any, index: number) => (
-        <SubmissionBox
-          key={`${submission.submission_uuid}-${index}`}
-          submission={submission}
-          assignment_uuid={assignment_uuid}
-          user_id={submission.user_id}
-        />
-      ));
-  };
+interface AssignmentSubmissionRow {
+  id: number;
+  assignmentusersubmission_uuid: string;
+  submission_status: AssignmentSubmissionStatus;
+  grade: number;
+  user_id: number;
+  submitted_at: string | null;
+  graded_at: string | null;
+  user: AssignmentSubmissionUser;
+}
 
-  return (
-    <div className="mr-10 flex w-full flex-col pt-3 pl-10">
-      <div className="flex w-full flex-row">
-        <div className="flex-1">
-          <div className="mx-auto my-5 flex w-fit items-center space-x-2 rounded-full bg-rose-600/80 px-3.5 py-1 text-sm font-bold text-white">
-            <X size={18} />
-            <h3>{t('late')}</h3>
-          </div>
-          <div className="flex flex-col gap-4">{renderSubmissions('LATE')}</div>
-        </div>
-        <div className="flex-1">
-          <div className="mx-auto my-5 flex w-fit items-center space-x-2 rounded-full bg-amber-600/80 px-3.5 py-1 text-sm font-bold text-white">
-            <SendHorizonal size={18} />
-            <h3>{t('submitted')}</h3>
-          </div>
-          <div className="flex flex-col gap-4">{renderSubmissions('SUBMITTED')}</div>
-        </div>
-        <div className="flex-1">
-          <div className="mx-auto my-5 flex w-fit items-center space-x-2 rounded-full bg-emerald-600/80 px-3.5 py-1 text-sm font-bold text-white">
-            <UserCheck size={18} />
-            <h3>{t('graded')}</h3>
-          </div>
-          <div className="flex flex-col gap-4">{renderSubmissions('GRADED')}</div>
-        </div>
-      </div>
-    </div>
-  );
+const STATUS_VARIANTS: Record<
+  AssignmentSubmissionStatus,
+  'secondary' | 'default' | 'success' | 'warning' | 'destructive'
+> = {
+  PENDING: 'secondary',
+  SUBMITTED: 'default',
+  GRADED: 'success',
+  LATE: 'warning',
+  NOT_SUBMITTED: 'destructive',
 };
 
-const SubmissionBox = ({ assignment_uuid, user_id, submission }: any) => {
-  const t = useTranslations('DashPage.Assignments');
-  const [gradeSudmissionModal, setGradeSubmissionModal] = useState({
-    open: false,
-    submission_id: '',
-  });
-  const locale = useLocale();
+const STATUS_LABEL_KEYS: Record<AssignmentSubmissionStatus, string> = {
+  PENDING: 'assignmentStatusPending',
+  SUBMITTED: 'assignmentStatusSubmitted',
+  GRADED: 'assignmentStatusGraded',
+  LATE: 'assignmentStatusLate',
+  NOT_SUBMITTED: 'assignmentStatusNotSubmitted',
+};
 
-  const { data: user } = useUserById(user_id);
+function getUserDisplayName(user: AssignmentSubmissionUser): string {
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+  return fullName || user.username || user.email;
+}
+
+interface AssignmentSubmissionsSubPageProps {
+  assignment_uuid: string;
+}
+
+function normalizeAssignmentUuid(assignmentUuid: string | null | undefined): string | null {
+  if (!assignmentUuid) {
+    return null;
+  }
+
+  return assignmentUuid.startsWith('assignment_') ? assignmentUuid : `assignment_${assignmentUuid}`;
+}
+
+export default function AssignmentSubmissionsSubPage({ assignment_uuid }: AssignmentSubmissionsSubPageProps) {
+  const t = useTranslations('DashPage.Assignments');
+  const assignments = useAssignments();
+  const canonicalAssignmentUuid =
+    assignments?.assignment_object?.assignment_uuid ?? normalizeAssignmentUuid(assignment_uuid);
+
+  // activity_object is fetched by AssignmentProvider and contains the numeric id
+  const activityId: number | null = assignments?.activity_object?.id ?? null;
+
+  const { data: assignmentSubmissionRows, error: assignmentSubmissionRowsError } =
+    useAssignmentSubmissions<AssignmentSubmissionRow>(canonicalAssignmentUuid);
+
+  if (!activityId) {
+    return <PageLoading />;
+  }
+
+  const gradedCount =
+    assignmentSubmissionRows?.filter((row: AssignmentSubmissionRow) => row.submission_status === 'GRADED').length ?? 0;
+  const submittedCount =
+    assignmentSubmissionRows?.filter(
+      (row: AssignmentSubmissionRow) => row.submission_status === 'SUBMITTED' || row.submission_status === 'LATE',
+    ).length ?? 0;
 
   return (
-    <div className="soft-shadow mx-auto flex w-[350px] flex-row rounded-lg bg-white p-4 shadow-[0px_4px_16px_rgba(0,0,0,0.06)]">
-      <div className="flex w-full flex-col space-y-2">
-        <div className="flex w-full justify-between">
-          <h2 className="text-xs font-semibold tracking-tight text-slate-400 uppercase">{t('submission')}</h2>
-          <p className="text-xs font-semibold tracking-tight uppercase">
-            {new Date(submission.creation_date).toLocaleDateString(locale, {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </p>
-        </div>
-        <div className="flex justify-between space-x-2">
-          <div className="flex space-x-2">
-            <UserAvatar
-              size="md"
-              variant="outline"
-              avatar_url={getUserAvatarMediaDirectory(user?.user_uuid, user?.avatar_image)}
-              predefined_avatar={user?.avatar_image ? undefined : 'empty'}
-            />
-            <div className="flex flex-col">
-              {user?.first_name && user?.last_name ? (
-                <p className="text-sm font-semibold">
-                  {[user?.first_name, user?.middle_name, user?.last_name].filter(Boolean).join(' ')}
-                </p>
-              ) : (
-                <p className="text-sm font-semibold">@{user?.username}</p>
-              )}
-              <p className="text-xs text-slate-400">{user?.email}</p>
+    <div className="w-full px-10 py-6">
+      <SubmissionsTable
+        activityId={activityId}
+        title={t('submissionsTitle')}
+      />
+      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-slate-900">
+              <ClipboardList className="h-4 w-4" />
+              <h2 className="text-base font-semibold">{t('assignmentStatusTitle')}</h2>
             </div>
+            <p className="mt-1 text-sm text-slate-600">{t('assignmentStatusDescription')}</p>
           </div>
-          <div className="flex flex-col">
-            <Modal
-              isDialogOpen={
-                gradeSudmissionModal.open ? gradeSudmissionModal.submission_id === submission.submission_uuid : false
-              }
-              onOpenChange={(open: boolean) => {
-                setGradeSubmissionModal({
-                  open,
-                  submission_id: submission.submission_uuid,
-                });
-              }}
-              minHeight="lg"
-              minWidth="lg"
-              dialogContent={
-                <AssignmentProvider assignment_uuid={`assignment_${assignment_uuid}`}>
-                  <AssignmentsTaskProvider>
-                    <AssignmentSubmissionProvider assignment_uuid={`assignment_${assignment_uuid}`}>
-                      <EvaluateAssignment user_id={user_id} />
-                    </AssignmentSubmissionProvider>
-                  </AssignmentsTaskProvider>
-                </AssignmentProvider>
-              }
-              dialogTitle={t('evaluateUser', { username: user?.username })}
-              dialogDescription={t('evaluateSubmission')}
-              dialogTrigger={
-                <div className="cursor-pointer rounded bg-slate-800 px-4 py-2 text-xs font-bold text-white hover:bg-slate-700">
-                  {t('evaluate')}
-                </div>
-              }
-            />
+          <div className="flex flex-wrap gap-2 text-xs font-medium text-slate-600">
+            <Badge variant="secondary">
+              {t('assignmentStatusTotal', { count: assignmentSubmissionRows?.length ?? 0 })}
+            </Badge>
+            <Badge variant="default">{t('assignmentStatusSubmittedCount', { count: submittedCount })}</Badge>
+            <Badge variant="success">{t('assignmentStatusGradedCount', { count: gradedCount })}</Badge>
           </div>
         </div>
-      </div>
+
+        {assignmentSubmissionRowsError ? (
+          <div className="px-5 py-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>{t('assignmentStatusLoadErrorTitle')}</AlertTitle>
+              <AlertDescription>{t('assignmentStatusLoadErrorDescription')}</AlertDescription>
+            </Alert>
+          </div>
+        ) : !assignmentSubmissionRows ? (
+          <div className="px-5 py-6 text-sm text-slate-500">{t('assignmentStatusLoading')}</div>
+        ) : assignmentSubmissionRows.length === 0 ? (
+          <div className="px-5 py-6 text-sm text-slate-500">{t('assignmentStatusEmpty')}</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('assignmentStatusLearner')}</TableHead>
+                  <TableHead>{t('assignmentStatusState')}</TableHead>
+                  <TableHead className="text-right">{t('assignmentStatusGrade')}</TableHead>
+                  <TableHead>{t('assignmentStatusSubmittedAt')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {assignmentSubmissionRows.map((row: AssignmentSubmissionRow) => (
+                  <TableRow key={row.assignmentusersubmission_uuid}>
+                    <TableCell>
+                      <div className="font-medium text-slate-900">{getUserDisplayName(row.user)}</div>
+                      <div className="text-xs text-slate-500">{row.user.email}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={STATUS_VARIANTS[row.submission_status]}>
+                        {t(STATUS_LABEL_KEYS[row.submission_status])}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-slate-900">{row.grade}</TableCell>
+                    <TableCell className="text-sm text-slate-600">
+                      {row.submitted_at
+                        ? new Date(row.submitted_at).toLocaleString()
+                        : t('assignmentStatusNotYetSubmitted')}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
     </div>
   );
-};
-
-export default AssignmentSubmissionsSubPage;
+}

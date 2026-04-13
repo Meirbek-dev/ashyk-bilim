@@ -1,8 +1,8 @@
-import { getPlatformContextInfo } from '@/services/platform/platform';
-import { getThumbnailMediaDirectory } from '@services/media/media';
-import { getOptionalSession } from '@/lib/get-optional-session';
+import { PLATFORM_BRAND_NAME, PLATFORM_DESCRIPTION } from '@/lib/constants';
+import { getPlatformThumbnailImage } from '@services/media/media';
 import { getCourses } from '@services/courses/courses';
 import { getTranslations } from 'next-intl/server';
+import { connection } from 'next/server';
 import type { Metadata } from 'next';
 
 import Courses from '@/app/_shared/withmenu/courses/courses';
@@ -13,12 +13,11 @@ interface MetadataProps {
 
 export async function generateMetadata(_props: MetadataProps): Promise<Metadata> {
   const t = await getTranslations('General');
-  const platform = await getPlatformContextInfo();
 
   return {
-    title: `${t('courses')} - Ashyq Bilim`,
-    description: platform.description,
-    keywords: `${platform.name}, ${platform.description}, ${t('courses')}, ${t('learning')}, ${t('education')}, ${t('onlineLearning')}, ${t('edu')}, ${t('onlineCourses')}, ${platform.name} ${t('courses')}`,
+    title: `${t('courses')} - ${PLATFORM_BRAND_NAME}`,
+    description: PLATFORM_DESCRIPTION,
+    keywords: `${PLATFORM_BRAND_NAME}, ${PLATFORM_DESCRIPTION}, ${t('courses')}, ${t('learning')}, ${t('education')}, ${t('onlineLearning')}, ${t('edu')}, ${t('onlineCourses')}, ${PLATFORM_BRAND_NAME} ${t('courses')}`,
     robots: {
       index: true,
       follow: true,
@@ -30,15 +29,15 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
       },
     },
     openGraph: {
-      title: `${t('courses')} - Ashyq Bilim`,
-      description: platform.description,
+      title: `${t('courses')} - ${PLATFORM_BRAND_NAME}`,
+      description: PLATFORM_DESCRIPTION,
       type: 'website',
       images: [
         {
-          url: getThumbnailMediaDirectory(platform?.thumbnail_image),
+          url: getPlatformThumbnailImage(),
           width: 800,
           height: 600,
-          alt: platform.name,
+          alt: PLATFORM_BRAND_NAME,
         },
       ],
     },
@@ -46,9 +45,8 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
 }
 
 export default async function PlatformCoursesPage() {
-  const session = await getOptionalSession();
-  const access_token = session?.tokens?.access_token;
-  const { courses, total } = await getCourses(null, access_token || null);
+  await connection();
+  const { courses, total } = await getCourses();
 
   return (
     <div>

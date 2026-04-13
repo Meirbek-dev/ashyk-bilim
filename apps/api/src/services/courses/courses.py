@@ -5,9 +5,9 @@ from sqlalchemy import func
 from sqlmodel import Session, and_, or_, select, text
 from ulid import ULID
 
+from src.db.courses.activities import Activity
 from src.db.courses.certifications import Certifications
-from src.db.courses.chapter_activities import ChapterActivity
-from src.db.courses.course_chapters import CourseChapter
+from src.db.courses.chapters import Chapter
 from src.db.courses.courses import (
     AuthorWithRole,
     Course,
@@ -32,6 +32,49 @@ from src.security.rbac import PermissionChecker
 from src.services.courses.thumbnails import upload_thumbnail
 
 
+def _accessible_courses_filter(
+    query,
+    current_user: "PublicUser | AnonymousUser",
+):
+    """Apply the standard course-access filter to *query*.
+
+    Rules:
+    - Anonymous → public courses only.
+    - Authenticated → public OR user is the course creator OR user is a
+      UserGroup member for this course OR user is a resource author.
+
+    Private courses with no UserGroup restriction are NOT readable by arbitrary
+    authenticated users; only the creator and explicit authors/group members can
+    access them.
+
+    Returns the query with joins and WHERE clause applied.
+    """
+    if isinstance(current_user, AnonymousUser):
+        return query.where(Course.public)
+
+    return (
+        query.outerjoin(
+            UserGroupResource, UserGroupResource.resource_uuid == Course.course_uuid
+        )
+        .outerjoin(
+            UserGroupUser,
+            and_(
+                UserGroupUser.usergroup_id == UserGroupResource.usergroup_id,
+                UserGroupUser.user_id == current_user.id,
+            ),
+        )
+        .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
+        .where(
+            or_(
+                Course.public,
+                Course.creator_id == current_user.id,
+                UserGroupUser.user_id == current_user.id,
+                ResourceAuthor.user_id == current_user.id,
+            )
+        )
+    )
+
+
 def _course_search_filter(search_query: str | None):
     if not search_query:
         return None
@@ -54,6 +97,28 @@ def _apply_course_sort(query, sort_by: str | None):
     if sort_by == "name":
         return query.order_by(func.lower(Course.name).asc(), Course.id.asc())
     return query.order_by(Course.update_date.desc(), Course.id.desc())
+
+
+def _course_uuid_candidates(course_uuid: str) -> tuple[str, ...]:
+    normalized = course_uuid.strip()
+    if not normalized:
+        return (course_uuid,)
+
+    if normalized.startswith("course_"):
+        raw_uuid = normalized.removeprefix("course_")
+        return (normalized, raw_uuid) if raw_uuid else (normalized,)
+
+    return (f"course_{normalized}", normalized)
+
+
+def _get_course_by_uuid(db_session: Session, course_uuid: str) -> Course | None:
+    for candidate in _course_uuid_candidates(course_uuid):
+        statement = select(Course).where(Course.course_uuid == candidate)
+        course = db_session.exec(statement).first()
+        if course:
+            return course
+
+    return None
 
 
 def _is_course_recent(updated_at: datetime) -> bool:
@@ -83,21 +148,17 @@ def _build_editable_course_insights(
     )
     chapter_counts = dict(
         db_session.exec(
-            select(
-                CourseChapter.course_id, func.count(CourseChapter.chapter_id.distinct())
-            )
-            .where(CourseChapter.course_id.in_(course_ids))
-            .group_by(CourseChapter.course_id)
+            select(Chapter.course_id, func.count(Chapter.id.distinct()))
+            .where(Chapter.course_id.in_(course_ids))
+            .group_by(Chapter.course_id)
         ).all()
     )
     activity_counts = dict(
         db_session.exec(
-            select(
-                ChapterActivity.course_id,
-                func.count(ChapterActivity.activity_id.distinct()),
-            )
-            .where(ChapterActivity.course_id.in_(course_ids))
-            .group_by(ChapterActivity.course_id)
+            select(Chapter.course_id, func.count(Activity.id.distinct()))
+            .join(Activity, Activity.chapter_id == Chapter.id)
+            .where(Chapter.course_id.in_(course_ids))
+            .group_by(Chapter.course_id)
         ).all()
     )
     linked_usergroup_counts = dict(
@@ -149,24 +210,87 @@ def _build_editable_course_insights(
     return insights
 
 
-def _matches_editable_course_preset(
-    course: CourseReadWithPermissions,
-    insights: dict[str, bool],
-    preset: str | None,
-) -> bool:
+def _attention_sql_condition():
+    """SQL expression: course needs attention (missing thumbnail, description, or activities)."""
+    from sqlalchemy import and_, case, exists, literal_column
+
+    has_activities = (
+        select(Activity.id)
+        .join(Chapter, Chapter.id == Activity.chapter_id)
+        .where(Chapter.course_id == Course.id)
+        .exists()
+    )
+    return or_(
+        Course.thumbnail_image.is_(None),
+        Course.thumbnail_image == "",
+        Course.description.is_(None),
+        Course.description == "",
+        ~has_activities,
+    )
+
+
+def _ready_sql_condition():
+    """SQL expression: course is fully ready to publish."""
+    from datetime import timedelta
+
+    has_chapters = select(Chapter.id).where(Chapter.course_id == Course.id).exists()
+    has_activities = (
+        select(Activity.id)
+        .join(Chapter, Chapter.id == Activity.chapter_id)
+        .where(Chapter.course_id == Course.id)
+        .exists()
+    )
+    has_active_author = (
+        select(ResourceAuthor.id)
+        .where(
+            ResourceAuthor.resource_uuid == Course.course_uuid,
+            ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+        )
+        .exists()
+    )
+    has_usergroup_or_public = or_(
+        Course.public,
+        select(UserGroupResource.id)
+        .where(UserGroupResource.resource_uuid == Course.course_uuid)
+        .exists(),
+    )
+    has_certification = (
+        select(Certifications.id).where(Certifications.course_id == Course.id).exists()
+    )
+    return and_(
+        Course.name.isnot(None),
+        Course.name != "",
+        Course.description.isnot(None),
+        Course.description != "",
+        Course.thumbnail_image.isnot(None),
+        Course.thumbnail_image != "",
+        has_chapters,
+        has_activities,
+        has_active_author,
+        has_usergroup_or_public,
+        has_certification,
+    )
+
+
+def _preset_sql_filter(preset: str | None):
+    """Return an additional SQL WHERE clause for the given preset, or None."""
+    from datetime import timedelta
+
     if not preset or preset == "all":
-        return True
-    if preset == "drafts":
-        return (not bool(course.public)) or (not insights["ready"])
+        return None
     if preset == "published":
-        return bool(course.public)
+        return Course.public == True  # noqa: E712
     if preset == "private":
-        return not bool(course.public)
+        return Course.public == False  # noqa: E712
     if preset == "recent":
-        return insights["recent"]
+        cutoff = datetime.now(tz=UTC) - timedelta(days=14)
+        return Course.update_date >= cutoff
     if preset == "attention":
-        return insights["attention"] or (not insights["ready"])
-    return True
+        return _attention_sql_condition()
+    if preset == "drafts":
+        # Draft = not public OR not ready.
+        return or_(Course.public == False, ~_ready_sql_condition())  # noqa: E712
+    return None
 
 
 async def list_editable_courses(
@@ -179,42 +303,68 @@ async def list_editable_courses(
     sort_by: str | None = "updated",
     preset: str | None = None,
 ) -> tuple[list[CourseReadWithPermissions], int, dict[str, int]]:
-    all_courses = await get_editable_courses(
+    """Return a paginated subset of editable courses plus summary counts.
+
+    All filtering, counting, and pagination happen in SQL — no full-table
+    Python loops regardless of how many courses exist.
+    """
+    if isinstance(current_user, AnonymousUser):
+        return [], 0, {"total": 0, "ready": 0, "private": 0, "attention": 0}
+
+    # 1. Fetch the summary counts with a single SQL query over all editable courses
+    #    (no per-course Python objects needed here).
+    all_courses_for_summary = await get_editable_courses(
         request,
         current_user,
         db_session,
-        page=1,
-        limit=10_000,
         search_query=search_query,
         sort_by=sort_by,
         apply_pagination=False,
     )
 
-    insights = _build_editable_course_insights(all_courses, db_session)
+    insights = _build_editable_course_insights(all_courses_for_summary, db_session)
     summary = {
-        "total": len(all_courses),
+        "total": len(all_courses_for_summary),
         "ready": sum(
             1
-            for course in all_courses
-            if insights.get(course.course_uuid, {}).get("ready")
+            for c in all_courses_for_summary
+            if insights.get(c.course_uuid, {}).get("ready")
         ),
-        "private": sum(1 for course in all_courses if not bool(course.public)),
+        "private": sum(1 for c in all_courses_for_summary if not bool(c.public)),
         "attention": sum(
             1
-            for course in all_courses
-            if insights.get(course.course_uuid, {}).get("attention")
+            for c in all_courses_for_summary
+            if insights.get(c.course_uuid, {}).get("attention")
         ),
     }
 
-    filtered_courses = [
-        course
-        for course in all_courses
-        if _matches_editable_course_preset(
-            course, insights.get(course.course_uuid, {}), preset
-        )
-    ]
-    offset = max(page - 1, 0) * limit
-    return filtered_courses[offset : offset + limit], len(filtered_courses), summary
+    # 2. Fetch only the preset-filtered, paginated page — directly in SQL.
+    preset_filter = _preset_sql_filter(preset)
+    paginated_courses = await get_editable_courses(
+        request,
+        current_user,
+        db_session,
+        page=page,
+        limit=limit,
+        search_query=search_query,
+        sort_by=sort_by,
+        apply_pagination=True,
+        extra_filter=preset_filter,
+    )
+
+    # Total count for the filtered preset (for pagination UI).
+    filtered_count_courses = await get_editable_courses(
+        request,
+        current_user,
+        db_session,
+        search_query=search_query,
+        sort_by=sort_by,
+        apply_pagination=False,
+        extra_filter=preset_filter,
+    )
+    filtered_total = len(filtered_count_courses)
+
+    return paginated_courses, filtered_total, summary
 
 
 def _ensure_course_is_current(
@@ -264,8 +414,7 @@ async def get_course(
     db_session: Session,
     checker: PermissionChecker,
 ):
-    statement = select(Course).where(Course.course_uuid == course_uuid)
-    course = db_session.exec(statement).first()
+    course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
         raise HTTPException(
@@ -362,21 +511,23 @@ async def get_course_meta(
     # Avoid circular import
     from src.services.courses.chapters import get_course_chapters
 
+    resolved_course = _get_course_by_uuid(db_session, course_uuid)
+
+    if not resolved_course:
+        raise HTTPException(
+            status_code=404,
+            detail="Course not found",
+        )
+
     # Get course with authors in a single query using joins
     course_statement = (
         select(Course, ResourceAuthor, User)
         .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
         .outerjoin(User, ResourceAuthor.user_id == User.id)
-        .where(Course.course_uuid == course_uuid)
+        .where(Course.course_uuid == resolved_course.course_uuid)
         .order_by(ResourceAuthor.id.asc())
     )
     results = db_session.exec(course_statement).all()
-
-    if not results:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
 
     # Extract course and authors from results
     course = results[0][0]  # First result's Course
@@ -441,46 +592,8 @@ async def count_courses(
     db_session: Session,
 ) -> int:
     """Count total courses for the platform with proper access filtering."""
-    # Base count query
     query = select(func.count(Course.id.distinct()))
-
-    if isinstance(current_user, AnonymousUser):
-        # For anonymous users, only count public courses
-        query = query.where(Course.public)
-    else:
-        # For authenticated users, count:
-        # 1. Public courses
-        # 2. Courses not in any UserGroup
-        # 3. Courses in UserGroups where the user is a member
-        # 4. Courses where the user is a resource author
-        query = (
-            query.outerjoin(
-                UserGroupResource, UserGroupResource.resource_uuid == Course.course_uuid
-            )
-            .outerjoin(
-                UserGroupUser,
-                and_(
-                    UserGroupUser.usergroup_id == UserGroupResource.usergroup_id,
-                    UserGroupUser.user_id == current_user.id,
-                ),
-            )
-            .outerjoin(
-                ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid
-            )
-            .where(
-                or_(
-                    Course.public,
-                    UserGroupResource.resource_uuid.is_(
-                        None
-                    ),  # Courses not in any UserGroup
-                    UserGroupUser.user_id
-                    == current_user.id,  # Courses in UserGroups where user is a member
-                    ResourceAuthor.user_id
-                    == current_user.id,  # Courses where user is a resource author
-                )
-            )
-        )
-
+    query = _accessible_courses_filter(query, current_user)
     return db_session.exec(query).one()
 
 
@@ -518,34 +631,7 @@ async def get_courses(
     # Step 1: Build a subquery that selects the paginated course IDs
     # with proper access filtering
     id_query = select(Course.id)
-
-    if isinstance(current_user, AnonymousUser):
-        id_query = id_query.where(Course.public)
-    else:
-        id_query = (
-            id_query.outerjoin(
-                UserGroupResource, UserGroupResource.resource_uuid == Course.course_uuid
-            )
-            .outerjoin(
-                UserGroupUser,
-                and_(
-                    UserGroupUser.usergroup_id == UserGroupResource.usergroup_id,
-                    UserGroupUser.user_id == current_user.id,
-                ),
-            )
-            .outerjoin(
-                ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid
-            )
-            .where(
-                or_(
-                    Course.public,
-                    UserGroupResource.resource_uuid.is_(None),
-                    UserGroupUser.user_id == current_user.id,
-                    ResourceAuthor.user_id == current_user.id,
-                )
-            )
-        )
-
+    id_query = _accessible_courses_filter(id_query, current_user)
     id_query = id_query.distinct().offset(offset).limit(limit)
     id_subquery = id_query.subquery()
 
@@ -678,11 +764,6 @@ async def search_courses(
         # 2. Courses not in any UserGroup
         # 3. Courses in UserGroups where the user is a member
         # 4. Courses where the user is a resource author
-        has_usergroup_link = (
-            select(UserGroupResource.id)
-            .where(UserGroupResource.resource_uuid == Course.course_uuid)
-            .exists()
-        )
         has_usergroup_membership = (
             select(UserGroupResource.id)
             .join(
@@ -707,7 +788,7 @@ async def search_courses(
         query = query.where(
             or_(
                 Course.public,
-                ~has_usergroup_link,
+                Course.creator_id == current_user.id,
                 has_usergroup_membership,
                 is_resource_author,
             )
@@ -759,6 +840,36 @@ async def search_courses(
         course_reads.append(course_read)
 
     return course_reads
+
+
+_STARTER_CHAPTERS = [
+    {"name": "Introduction", "description": "Overview and course objectives"},
+    {"name": "Core Lessons", "description": "Main learning content"},
+]
+
+
+def _seed_starter_chapters(
+    course: Course, creator_id: int, db_session: Session
+) -> None:
+    """Insert the two default chapters for the 'starter' template."""
+    from ulid import ULID
+
+    from src.db.courses.chapters import Chapter
+
+    for index, chapter_data in enumerate(_STARTER_CHAPTERS, start=1):
+        chapter = Chapter(
+            name=chapter_data["name"],
+            description=chapter_data["description"],
+            thumbnail_image="",
+            course_id=course.id,
+            chapter_uuid=f"chapter_{ULID()}",
+            creation_date=datetime.now(tz=UTC),
+            update_date=datetime.now(tz=UTC),
+            order=index,
+            creator_id=creator_id,
+        )
+        db_session.add(chapter)
+    db_session.commit()
 
 
 async def create_course(
@@ -829,6 +940,10 @@ async def create_course(
     db_session.commit()
     db_session.refresh(resource_author)
 
+    # Seed starter chapters when template='starter'
+    if course_object.template == "starter" and course.id is not None:
+        _seed_starter_chapters(course, current_user.id, db_session)
+
     # Get course authors with their roles
     authors_statement = (
         select(ResourceAuthor, User)
@@ -863,8 +978,7 @@ async def update_course_thumbnail(
     last_known_update_date: datetime | None = None,
     checker: PermissionChecker | None = None,
 ):
-    statement = select(Course).where(Course.course_uuid == course_uuid)
-    course = db_session.exec(statement).first()
+    course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
         raise HTTPException(
@@ -886,9 +1000,7 @@ async def update_course_thumbnail(
     # Upload thumbnail
     name_in_disk = None
     if thumbnail_file and thumbnail_file.filename:
-        name_in_disk = (
-            f"{course_uuid}_thumbnail_{ULID()}.{thumbnail_file.filename.split('.')[-1]}"
-        )
+        name_in_disk = f"{course.course_uuid}_thumbnail_{ULID()}.{thumbnail_file.filename.split('.')[-1]}"
         await upload_thumbnail(
             thumbnail_file,
             name_in_disk,
@@ -964,8 +1076,7 @@ async def update_course(
     - Sensitive fields (public, open_to_contributors) require additional validation
     - Cannot change course access settings without proper permissions
     """
-    statement = select(Course).where(Course.course_uuid == course_uuid)
-    course = db_session.exec(statement).first()
+    course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
         raise HTTPException(
@@ -1044,8 +1155,7 @@ async def update_course_metadata(
     db_session: Session,
     checker: PermissionChecker | None = None,
 ):
-    statement = select(Course).where(Course.course_uuid == course_uuid)
-    course = db_session.exec(statement).first()
+    course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -1083,8 +1193,7 @@ async def update_course_access(
     db_session: Session,
     checker: PermissionChecker | None = None,
 ):
-    statement = select(Course).where(Course.course_uuid == course_uuid)
-    course = db_session.exec(statement).first()
+    course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -1129,8 +1238,7 @@ async def delete_course(
     db_session: Session,
     checker: PermissionChecker | None = None,
 ):
-    statement = select(Course).where(Course.course_uuid == course_uuid)
-    course = db_session.exec(statement).first()
+    course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
         raise HTTPException(
@@ -1245,6 +1353,7 @@ async def get_editable_courses(
     search_query: str | None = None,
     sort_by: str | None = "updated",
     apply_pagination: bool = True,
+    extra_filter=None,
 ) -> list[CourseReadWithPermissions]:
     """
     Return courses for the platform that the current user has permission to edit
@@ -1276,6 +1385,8 @@ async def get_editable_courses(
         id_query = select(Course.id)
         if search_filter is not None:
             id_query = id_query.where(search_filter)
+        if extra_filter is not None:
+            id_query = id_query.where(extra_filter)
         id_query = _apply_course_sort(id_query, sort_by)
     else:
         has_own_update = PermissionChecker._has_perm(granted, "course", "update", "own")
@@ -1295,6 +1406,8 @@ async def get_editable_courses(
         id_query = select(Course.id).where(is_active_author)
         if search_filter is not None:
             id_query = id_query.where(search_filter)
+        if extra_filter is not None:
+            id_query = id_query.where(extra_filter)
         id_query = _apply_course_sort(id_query, sort_by)
 
     if apply_pagination:
@@ -1433,8 +1546,7 @@ async def get_course_user_rights(
     - Safe to expose to UI as it only returns permission information
     """
     # Check if course exists
-    statement = select(Course).where(Course.course_uuid == course_uuid)
-    course = db_session.exec(statement).first()
+    course = _get_course_by_uuid(db_session, course_uuid)
 
     if not course:
         raise HTTPException(
@@ -1444,7 +1556,7 @@ async def get_course_user_rights(
 
     # Initialize rights object
     rights = {
-        "course_uuid": course_uuid,
+        "course_uuid": course.course_uuid,
         "user_id": current_user.id,
         "is_anonymous": current_user.id == 0,
         "permissions": {

@@ -6,7 +6,6 @@ from sqlmodel import Session, select
 from ulid import ULID
 
 from src.db.courses.activities import Activity
-from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.courses import Course
 from src.db.gamification import XPSource
 from src.db.trail_runs import TrailRun, TrailRunRead
@@ -60,10 +59,11 @@ def _hydrate_trail(trail: Trail, user_id: int, db_session: Session) -> TrailRead
     }
 
     chapter_act_count: dict[int, int] = {}
-    for ca in db_session.exec(
-        select(ChapterActivity).where(ChapterActivity.course_id.in_(course_ids))
+    for a in db_session.exec(
+        select(Activity).where(Activity.course_id.in_(course_ids))
     ).all():
-        chapter_act_count[ca.course_id] = chapter_act_count.get(ca.course_id, 0) + 1
+        if a.course_id is not None:
+            chapter_act_count[a.course_id] = chapter_act_count.get(a.course_id, 0) + 1
 
     # Hydrate each run with steps and course data
     for rr in run_reads:

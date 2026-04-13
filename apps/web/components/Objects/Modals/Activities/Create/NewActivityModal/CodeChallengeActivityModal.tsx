@@ -1,13 +1,13 @@
 'use client';
 
+import { Controller, useForm } from 'react-hook-form';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { Code2, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useForm } from 'react-hook-form';
 import * as v from 'valibot';
 
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,9 +43,10 @@ export default function CodeChallengeActivityModal({
   const t = useTranslations('Components.NewActivity.CodeChallenge');
 
   const validationSchema = createValidationSchema(t);
-  type ValidationSchema = v.InferOutput<typeof validationSchema>;
+  type ValidationInput = v.InferInput<typeof validationSchema>;
+  type ValidationOutput = v.InferOutput<typeof validationSchema>;
 
-  const form = useForm<ValidationSchema>({
+  const form = useForm<ValidationInput, any, ValidationOutput>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       name: '',
@@ -55,13 +56,12 @@ export default function CodeChallengeActivityModal({
     },
   });
 
-  const handleSubmit = async (values: FormValues) => {
+  const handleSubmit = async (values: ValidationOutput) => {
     const activityData = {
       name: values.name,
       activity_type: 'TYPE_CODE_CHALLENGE',
       activity_sub_type: values.subtype === 'competitive' ? 'SUBTYPE_CODE_COMPETITIVE' : 'SUBTYPE_CODE_GENERAL',
       chapter_id: chapterId,
-      course_id: course.id,
       published: false,
       content: {
         description: values.description,
@@ -85,155 +85,151 @@ export default function CodeChallengeActivityModal({
         </div>
       </div>
 
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(handleSubmit)}
-          className="space-y-4"
-        >
-          <FormField
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className="space-y-4"
+      >
+        <Controller
+          control={form.control}
+          name="name"
+          render={({ field, fieldState }) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>{t('name')}</FieldLabel>
+              <FieldContent>
+                <Input
+                  id={field.name}
+                  placeholder={t('namePlaceholder')}
+                  {...field}
+                />
+              </FieldContent>
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+
+        <Controller
+          control={form.control}
+          name="description"
+          render={({ field, fieldState }) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>{t('description')}</FieldLabel>
+              <FieldContent>
+                <Textarea
+                  id={field.name}
+                  placeholder={t('descriptionPlaceholder')}
+                  className="min-h-24"
+                  {...field}
+                />
+              </FieldContent>
+              <FieldDescription>{t('descriptionHint')}</FieldDescription>
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Controller
             control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('name')}</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder={t('namePlaceholder')}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            name="difficulty"
+            render={({ field, fieldState }) => {
+              const difficultyItems = [
+                { value: 'easy', label: t('difficultyEasy') },
+                { value: 'medium', label: t('difficultyMedium') },
+                { value: 'hard', label: t('difficultyHard') },
+              ];
+
+              return (
+                <Field>
+                  <FieldLabel>{t('difficulty')}</FieldLabel>
+                  <Select
+                    items={difficultyItems}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('selectDifficulty')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {difficultyItems.map((item) => (
+                          <SelectItem
+                            key={item.value}
+                            value={item.value}
+                          >
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              );
+            }}
           />
 
-          <FormField
+          <Controller
             control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('description')}</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder={t('descriptionPlaceholder')}
-                    className="min-h-24"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>{t('descriptionHint')}</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
+            name="subtype"
+            render={({ field, fieldState }) => {
+              const subtypeItems = [
+                { value: 'general', label: t('typeGeneral') },
+                { value: 'competitive', label: t('typeCompetitive') },
+              ];
+
+              return (
+                <Field>
+                  <FieldLabel>{t('type')}</FieldLabel>
+                  <Select
+                    items={subtypeItems}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('selectType')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {subtypeItems.map((item) => (
+                          <SelectItem
+                            key={item.value}
+                            value={item.value}
+                          >
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <FieldDescription>
+                    {field.value === 'competitive' ? t('typeCompetitiveHint') : t('typeGeneralHint')}
+                  </FieldDescription>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              );
+            }}
           />
+        </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="difficulty"
-              render={({ field }) => {
-                const difficultyItems = [
-                  { value: 'easy', label: t('difficultyEasy') },
-                  { value: 'medium', label: t('difficultyMedium') },
-                  { value: 'hard', label: t('difficultyHard') },
-                ];
-
-                return (
-                  <FormItem>
-                    <FormLabel>{t('difficulty')}</FormLabel>
-                    <Select
-                      items={difficultyItems}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('selectDifficulty')} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectGroup>
-                          {difficultyItems.map((item) => (
-                            <SelectItem
-                              key={item.value}
-                              value={item.value}
-                            >
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
-            />
-
-            <FormField
-              control={form.control}
-              name="subtype"
-              render={({ field }) => {
-                const subtypeItems = [
-                  { value: 'general', label: t('typeGeneral') },
-                  { value: 'competitive', label: t('typeCompetitive') },
-                ];
-
-                return (
-                  <FormItem>
-                    <FormLabel>{t('type')}</FormLabel>
-                    <Select
-                      items={subtypeItems}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('selectType')} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectGroup>
-                          {subtypeItems.map((item) => (
-                            <SelectItem
-                              key={item.value}
-                              value={item.value}
-                            >
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      {field.value === 'competitive' ? t('typeCompetitiveHint') : t('typeGeneralHint')}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4">
-            {closeModal && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeModal}
-              >
-                {t('cancel')}
-              </Button>
-            )}
+        <div className="flex justify-end gap-2 pt-4">
+          {closeModal && (
             <Button
-              type="submit"
-              disabled={form.formState.isSubmitting}
+              type="button"
+              variant="outline"
+              onClick={closeModal}
             >
-              {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t('create')}
+              {t('cancel')}
             </Button>
-          </div>
-        </form>
-      </Form>
+          )}
+          <Button
+            type="submit"
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {t('create')}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

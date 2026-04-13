@@ -1,12 +1,12 @@
 'use client';
 
-import { useOptionalGamificationContext } from '@/components/Contexts/GamificationContext';
 import { Activity, Crown, Flame, Star, Target, Trophy, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import GamifiedUserAvatar from '@/components/Objects/GamifiedUserAvatar';
 import { AVATAR_UNLOCKS, getLevelInfo } from '@/lib/gamification/levels';
 import { GlowingLevelBadge, LevelProgress } from '@/lib/gamification';
 import type { UserGamificationProfile } from '@/types/gamification';
+import { useGamificationStore } from '@/stores/gamification';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
@@ -28,9 +28,10 @@ export function GamificationProfileSection({
   data,
 }: GamificationProfileSectionProps) {
   const t = useTranslations('DashPage.UserAccountSettings.Gamification');
-  const ctx = useOptionalGamificationContext();
-  const profile = data ?? ctx?.profile ?? null;
-  const isLoading = !profile && Boolean(ctx?.isLoading);
+  const storeProfile = useGamificationStore((s) => s.profile);
+  const storeIsLoading = useGamificationStore((s) => s.isLoading);
+  const profile = data ?? storeProfile ?? null;
+  const isLoading = !profile && storeIsLoading;
   const { levelInfo, nextMilestone, unlockedFrames, unlockedAccessories } = (() => {
     if (!profile) {
       return {

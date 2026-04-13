@@ -17,10 +17,10 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlmodel import Session, select
 
-from src.core.events.database import get_db_session
 from src.db.permissions import Role, UserRole
 from src.db.users import AnonymousUser, PublicUser
 from src.db.users import User as UserModel
+from src.infra.db.session import get_db_session
 from src.security.auth import get_current_user
 from src.security.rbac import PermissionCheckerDep
 
@@ -121,7 +121,7 @@ class UserRoleAssignmentResponse(BaseModel):
 
 @router.post("/check", response_model=PermissionCheckResponse)
 @limiter.limit("60/minute")
-async def check_permission(
+def check_permission(
     request: Request,
     body: PermissionCheckRequest,
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
@@ -140,7 +140,7 @@ async def check_permission(
 
 @router.post("/check/batch", response_model=BatchPermissionCheckResponse)
 @limiter.limit("30/minute")
-async def check_permissions_batch(
+def check_permissions_batch(
     request: Request,
     body: BatchPermissionCheckRequest,
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
@@ -161,7 +161,7 @@ async def check_permissions_batch(
 
 
 @router.get("/me/permissions", response_model=UserPermissionsResponse)
-async def get_my_permissions(
+def get_my_permissions(
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
     checker: PermissionCheckerDep,
 ):
@@ -183,7 +183,7 @@ async def get_my_permissions(
 
 
 @router.get("/user-roles", response_model=list[UserRoleAssignmentResponse])
-async def list_user_roles(
+def list_user_roles(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_current_user)] = None,
     checker: PermissionCheckerDep = None,
@@ -227,7 +227,7 @@ async def list_user_roles(
 
 
 @router.post("/roles/assign")
-async def assign_role(
+def assign_role(
     request: RoleAssignmentRequest,
     current_user: Annotated[PublicUser, Depends(get_current_user)],
     checker: PermissionCheckerDep,
@@ -258,7 +258,7 @@ async def assign_role(
 
 
 @router.post("/roles/revoke")
-async def revoke_role(
+def revoke_role(
     request: RoleRevocationRequest,
     current_user: Annotated[PublicUser, Depends(get_current_user)],
     checker: PermissionCheckerDep,

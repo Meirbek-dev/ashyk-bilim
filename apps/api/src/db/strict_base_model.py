@@ -4,154 +4,52 @@ from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel
 
 
-# Determine development mode from environment to avoid importing config at module import
-# time (which would create a circular import with config.config). This follows
-# the real process environment only; settings file loading happens elsewhere.
 def _parse_env_bool(value: str | None) -> bool:
-    if value is None:
-        return False
-
-    normalized = value.strip().lower()
-    if normalized in {"1", "true", "yes", "on"}:
-        return True
-    if normalized in {"0", "false", "no", "off"}:
-        return False
-
-    return False
+    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-_env_dev = os.environ.get("PLATFORM_DEVELOPMENT_MODE", None)
-is_dev_mode = _parse_env_bool(_env_dev)
+_dev = _parse_env_bool(os.environ.get("PLATFORM_DEVELOPMENT_MODE"))
+is_dev_mode = _dev  # kept for any external callers that read this flag
 
 
-class FalsePydanticStrictBaseModel(BaseModel):
-    model_config = ConfigDict(
-        compiled=True,
-        slots=True,
-        # Use enum values, not names
-        use_enum_values=True,
-    )
+_PYDANTIC_CONFIG: ConfigDict = ConfigDict(
+    compiled=True,
+    use_enum_values=True,
+    str_strip_whitespace=True,
+    ser_json_bytes="base64",
+    regex_engine="rust-regex",
+    # Strict validation active in dev, lean in prod
+    strict=_dev,
+    validate_assignment=_dev,
+    validate_default=_dev,
+    validate_return=_dev,
+    validation_error_cause=_dev,
+)
+
+_SQLMODEL_CONFIG: ConfigDict = ConfigDict(
+    compiled=True,
+    use_enum_values=True,
+    str_strip_whitespace=True,
+    # slots=True is intentionally omitted: SQLModel table models rely on
+    # SQLAlchemy instrumented descriptors which are incompatible with __slots__.
+    strict=_dev,
+    validate_assignment=_dev,
+    validate_default=_dev,
+)
 
 
-class TruePydanticStrictBaseModel(BaseModel):
-    model_config = ConfigDict(
-        compiled=True,
-        slots=True,
-        # Core strictness settings
-        strict=True,
-        # Prevent extra fields completely
-        # extra='forbid',
-        # Validate all fields on assignment
-        validate_assignment=True,
-        # Validate default values
-        validate_default=True,
-        validate_return=True,
-        # Use enum values, not names
-        use_enum_values=True,
-        # Prevent arbitrary types
-        arbitrary_types_allowed=False,
-        # String constraints
-        str_strip_whitespace=True,
-        # str_min_length=0,
-        # str_max_length=10000,  # Prevent extremely large strings
-        # JSON schema generation
-        json_schema_mode="validation",
-        # Serialization settings
-        # ser_json_timedelta="float",
-        ser_json_bytes="base64",
-        loc_by_alias=False,
-        # Prevent model mutation after creation for maximum stability
-        # frozen=True,
-        # Error handling
-        # populate_by_name=True,
-        # Additional strictness
-        validate_call=True,
-        # revalidate_instances="always",
-        # Prevent aliasing issues
-        alias_generator=None,
-        # Strict JSON handling
-        json_encoders={},
-        # Regex engine for consistent behavior
-        regex_engine="rust-regex",
-        # debug
-        validation_error_cause=True,
-        # Validation settings
-        hide_input_in_errors=False,
-    )
+class PydanticStrictBaseModel(BaseModel):
+    model_config = _PYDANTIC_CONFIG
 
 
-class FalseSQLModelStrictBaseModel(SQLModel):
-    model_config = ConfigDict(
-        compiled=True,
-    )
+class SQLModelStrictBaseModel(SQLModel):
+    model_config = _SQLMODEL_CONFIG
 
 
-class TrueSQLModelStrictBaseModel(SQLModel):
-    model_config = ConfigDict(
-        compiled=True,
-        # Core strictness settings
-        strict=True,
-        # Prevent extra fields completely
-        # extra='forbid',
-        # Validate all fields on assignment
-        validate_assignment=True,
-        # Validate default values
-        validate_default=True,
-        validate_return=True,
-        # Use enum values, not names
-        use_enum_values=True,
-        # Prevent arbitrary types
-        arbitrary_types_allowed=False,
-        # String constraints
-        str_strip_whitespace=True,
-        # str_min_length=0,
-        # str_max_length=10000,  # Prevent extremely large strings
-        # JSON schema generation
-        json_schema_mode="validation",
-        # Serialization settings
-        # ser_json_timedelta="float",
-        ser_json_bytes="base64",
-        loc_by_alias=False,
-        # Prevent model mutation after creation for maximum stability
-        # frozen=True,
-        # Error handling
-        # populate_by_name=True,
-        # Additional strictness
-        validate_call=True,
-        # revalidate_instances="always",
-        # Prevent aliasing issues
-        alias_generator=None,
-        # Strict JSON handling
-        json_encoders={},
-        # Regex engine for consistent behavior
-        regex_engine="rust-regex",
-        # debug
-        validation_error_cause=True,
-        # Validation settings
-        hide_input_in_errors=False,
-    )
-
-
-# Default aliases selected by environment
-# Use strict variants during development for maximum feedback
-# and lighter (less-strict) variants in production for robustness.
-PydanticStrictBaseModel: type[
-    FalsePydanticStrictBaseModel | TruePydanticStrictBaseModel
-] = TruePydanticStrictBaseModel if is_dev_mode else FalsePydanticStrictBaseModel
-
-SQLModelDefaultBase: type[
-    FalseSQLModelStrictBaseModel | TrueSQLModelStrictBaseModel
-] = TrueSQLModelStrictBaseModel if is_dev_mode else FalseSQLModelStrictBaseModel
-
-# Backwards-compatible alias: some modules import SQLModelStrictBaseModel
-SQLModelStrictBaseModel = SQLModelDefaultBase
+SQLModelDefaultBase = SQLModelStrictBaseModel
 
 __all__: list[str] = [
-    "FalsePydanticStrictBaseModel",
-    "FalseSQLModelStrictBaseModel",
     "PydanticStrictBaseModel",
     "SQLModelDefaultBase",
     "SQLModelStrictBaseModel",
-    "TruePydanticStrictBaseModel",
-    "TrueSQLModelStrictBaseModel",
 ]

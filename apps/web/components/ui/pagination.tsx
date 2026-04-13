@@ -1,10 +1,8 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {
@@ -23,7 +21,7 @@ function PaginationContent({ className, ...props }: React.ComponentProps<'ul'>) 
   return (
     <ul
       data-slot="pagination-content"
-      className={cn('gap-1 flex items-center', className)}
+      className={cn('flex items-center gap-0.5', className)}
       {...props}
     />
   );
@@ -68,7 +66,7 @@ function PaginationPrevious({ className, ...props }: React.ComponentProps<typeof
     <PaginationLink
       aria-label={t('previousAria')}
       size="default"
-      className={cn('ps-2!', className)}
+      className={cn('ps-1.5!', className)}
       {...props}
     >
       <ChevronLeftIcon
@@ -86,7 +84,7 @@ function PaginationNext({ className, ...props }: React.ComponentProps<typeof Pag
     <PaginationLink
       aria-label={t('nextAria')}
       size="default"
-      className={cn('pe-2!', className)}
+      className={cn('pe-1.5!', className)}
       {...props}
     >
       <span className="hidden sm:block">{t('next')}</span>
@@ -104,7 +102,7 @@ function PaginationEllipsis({ className, ...props }: React.ComponentProps<'span'
     <span
       aria-hidden
       data-slot="pagination-ellipsis"
-      className={cn("size-9 [&_svg:not([class*='size-'])]:size-4 flex items-center justify-center", className)}
+      className={cn("flex size-8 items-center justify-center [&_svg:not([class*='size-'])]:size-4", className)}
       {...props}
     >
       <MoreHorizontalIcon />

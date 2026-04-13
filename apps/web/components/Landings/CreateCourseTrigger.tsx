@@ -22,7 +22,7 @@ export default function CreateCourseTrigger() {
         className="my-auto gap-2 rounded-lg px-4 py-2 font-semibold"
       >
         <span>{t('newCourse')}</span>
-        <span className="rounded-full border border-current/15 px-1.5 text-xs font-medium leading-5">+</span>
+        <span className="rounded-full border border-current/15 px-1.5 text-xs leading-5 font-medium">+</span>
       </Button>
     </PermissionGuard>
   );

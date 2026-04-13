@@ -5,15 +5,15 @@ import {
   handleAssignmentTaskSubmission,
   updateSubFile,
 } from '@services/courses/assignments';
-import { useAssignmentsTaskDispatch } from '@components/Contexts/Assignments/AssignmentsTaskContext';
+import { useAssignmentsTaskStore } from '@components/Contexts/Assignments/AssignmentsTaskContext';
 import { AlertCircle, Cloud, Download, File, Info, Loader2, UploadCloud } from 'lucide-react';
 import AssignmentBoxUI from '@components/Objects/Activities/Assignment/AssignmentBoxUI';
 import { useAssignments } from '@components/Contexts/Assignments/AssignmentContext';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import { usePlatform } from '@/components/Contexts/PlatformContext';
+import { useSession } from '@/hooks/useSession';
 import { getTaskFileSubmissionDir } from '@services/media/media';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
 import Link from '@components/ui/AppLink';
 import { toast } from 'sonner';
 
@@ -62,6 +62,25 @@ const MAX_FILENAME_LENGTH = 20;
 const UUID_PREVIEW_START = 8;
 const UUID_PREVIEW_END = 4;
 
+// ================= Render helpers =================
+const FileCard = ({ label }: { label: string }) => (
+  <Card className="relative w-full sm:w-auto">
+    <CardContent className="flex items-center gap-2 py-4">
+      <Badge className="absolute top-2 right-2 rounded-full bg-emerald-600 p-1 shadow-sm">
+        <Cloud
+          className="text-white"
+          size={16}
+        />
+      </Badge>
+      <File
+        className="text-emerald-500"
+        size={18}
+      />
+      <span className="text-xs font-medium break-all uppercase sm:text-sm">{label}</span>
+    </CardContent>
+  </Card>
+);
+
 // ================= Utils =================
 const truncateFilename = (filename: string): string => {
   if (filename.length <= MAX_FILENAME_LENGTH) return filename;
@@ -74,20 +93,20 @@ const formatUUID = (uuid: string): string => `${uuid.slice(0, UUID_PREVIEW_START
 // ================= Component =================
 export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: TaskFileObjectProps) {
   const t = useTranslations('DashPage.Assignments.TaskFileObject');
-  const session = usePlatformSession();
+  const { user: viewer } = useSession();
   usePlatform();
   const assignment = useAssignments() as Assignment | null;
-  const assignmentTaskDispatch = useAssignmentsTaskDispatch();
-
-  const accessToken = session?.data?.tokens?.access_token;
-  const username = session?.data?.user?.username;
+  const reload = useAssignmentsTaskStore((s) => s.reload);
+  const username = viewer?.username;
 
   const [isLoading, setIsLoading] = useState(false);
   const [localUploadFile, setLocalUploadFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [assignmentTask, setAssignmentTask] = useState<AssignmentTask | null>(null);
   const [userSubmissions, setUserSubmissions] = useState<FileSubmission>({ fileUUID: '' });
-  const [initialUserSubmissions, setInitialUserSubmissions] = useState<FileSubmission>({ fileUUID: '' });
+  const [initialUserSubmissions, setInitialUserSubmissions] = useState<FileSubmission>({
+    fileUUID: '',
+  });
   const [userSubmissionObject, setUserSubmissionObject] = useState<UserSubmissionObject | null>(null);
 
   const showSavingDisclaimer = userSubmissions.fileUUID !== initialUserSubmissions.fileUUID;
@@ -98,10 +117,6 @@ export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: Ta
 
   // ================= Handlers =================
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!accessToken) {
-      setError(t('authRequiredUpload'));
-      return;
-    }
     if (!assignmentTaskUUID || !assignmentUUID) {
       setError(t('missingAssignmentInfo'));
       return;
@@ -115,15 +130,18 @@ export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: Ta
     setError(null);
 
     try {
-      const res = await updateSubFile(file, assignmentTaskUUID, assignmentUUID, accessToken);
-      await new Promise((r) => setTimeout(r, UPLOAD_DELAY_MS));
+      const res = await updateSubFile({
+        file,
+        assignmentTaskUUID,
+        assignmentUUID,
+      });
 
       if (!res.success) {
         setError(res.data?.detail || t('uploadFailed'));
         return;
       }
 
-      assignmentTaskDispatch({ type: 'reload' });
+      reload();
       setUserSubmissions({
         fileUUID: res.data.file_uuid,
         assignment_task_submission_uuid: res.data.assignment_task_submission_uuid,
@@ -137,10 +155,6 @@ export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: Ta
   };
 
   const submitFile = async (): Promise<void> => {
-    if (!accessToken) {
-      toast.error(t('authRequiredSubmit'));
-      return;
-    }
     if (!assignmentTaskUUID || !assignmentUUID) {
       toast.error(t('missingAssignmentInfo'));
       return;
@@ -154,13 +168,17 @@ export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: Ta
     };
 
     try {
-      const res = await handleAssignmentTaskSubmission(values, assignmentTaskUUID, assignmentUUID, accessToken);
+      const res = await handleAssignmentTaskSubmission({
+        body: values,
+        assignmentTaskUUID,
+        assignmentUUID,
+      });
       if (!res) {
         toast.error(t('errorSaving'));
         return;
       }
 
-      assignmentTaskDispatch({ type: 'reload' });
+      reload();
       toast.success(t('saveSuccess'));
 
       const updated = {
@@ -177,7 +195,7 @@ export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: Ta
   };
 
   const gradeSubmission = async (grade: number): Promise<void> => {
-    if (!assignmentTaskUUID || !assignmentUUID || !accessToken || !assignmentTask || !username) {
+    if (!assignmentTaskUUID || !assignmentUUID || !assignmentTask || !username) {
       toast.error(t('missingGradingInfo'));
       return;
     }
@@ -194,7 +212,11 @@ export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: Ta
     };
 
     try {
-      const res = await handleAssignmentTaskSubmission(values, assignmentTaskUUID, assignmentUUID, accessToken);
+      const res = await handleAssignmentTaskSubmission({
+        body: values,
+        assignmentTaskUUID,
+        assignmentUUID,
+      });
       if (!res) {
         toast.error(t('gradeError'));
         return;
@@ -209,8 +231,12 @@ export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: Ta
 
   // ================= Fetching =================
   async function fetchUserSubmission() {
-    if (!accessToken || !assignmentTaskUUID || !assignmentUUID || !user_id) return;
-    const res = await getAssignmentTaskSubmissionsUser(assignmentTaskUUID, user_id, assignmentUUID, accessToken);
+    if (!assignmentTaskUUID || !assignmentUUID || !user_id) return;
+    const res = await getAssignmentTaskSubmissionsUser({
+      assignmentTaskUUID,
+      user_id,
+      assignmentUUID,
+    });
     if (res.success && res.data?.task_submission) {
       const sub = {
         ...res.data.task_submission,
@@ -226,55 +252,64 @@ export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: Ta
     }
   }
 
+  const fetchStudentView = useCallback(async () => {
+    if (assignmentTaskUUID) {
+      const res = await getAssignmentTask(assignmentTaskUUID);
+      if (res.success && res.data) setAssignmentTask(res.data);
+    }
+
+    if (assignmentTaskUUID && assignmentUUID) {
+      const res = await getAssignmentTaskSubmissionsMe(assignmentTaskUUID, assignmentUUID);
+      if (res.success && res.data?.task_submission) {
+        const sub = {
+          ...res.data.task_submission,
+          assignment_task_submission_uuid: res.data.assignment_task_submission_uuid,
+        };
+        setUserSubmissions(sub);
+        setInitialUserSubmissions(sub);
+      } else {
+        setUserSubmissions({ fileUUID: '' });
+        setInitialUserSubmissions({ fileUUID: '' });
+      }
+    }
+  }, [assignmentTaskUUID, assignmentUUID]);
+
+  const fetchCustomGradingView = useCallback(async () => {
+    if (assignmentTaskUUID) {
+      const res = await getAssignmentTask(assignmentTaskUUID);
+      if (res.success && res.data) setAssignmentTask(res.data);
+    }
+
+    if (assignmentTaskUUID && assignmentUUID && user_id) {
+      const res = await getAssignmentTaskSubmissionsUser({
+        assignmentTaskUUID,
+        user_id,
+        assignmentUUID,
+      });
+      if (res.success && res.data?.task_submission) {
+        const sub = {
+          ...res.data.task_submission,
+          assignment_task_submission_uuid: res.data.assignment_task_submission_uuid,
+        };
+        setUserSubmissions(sub);
+        setInitialUserSubmissions(sub);
+        setUserSubmissionObject(res.data);
+      } else {
+        setUserSubmissions({ fileUUID: '' });
+        setInitialUserSubmissions({ fileUUID: '' });
+        setUserSubmissionObject(null);
+      }
+    }
+  }, [assignmentTaskUUID, assignmentUUID, user_id]);
+
   useEffect(() => {
     const loadIfNeeded = async () => {
       setIsLoading(true);
       try {
         if (view === 'student') {
-          if (accessToken && assignmentTaskUUID) {
-            const res = await getAssignmentTask(assignmentTaskUUID, accessToken);
-            if (res.success && res.data) setAssignmentTask(res.data);
-          }
-          if (accessToken && assignmentTaskUUID && assignmentUUID) {
-            const res = await getAssignmentTaskSubmissionsMe(assignmentTaskUUID, assignmentUUID, accessToken);
-            if (res.success && res.data?.task_submission) {
-              const sub = {
-                ...res.data.task_submission,
-                assignment_task_submission_uuid: res.data.assignment_task_submission_uuid,
-              };
-              setUserSubmissions(sub);
-              setInitialUserSubmissions(sub);
-            } else {
-              setUserSubmissions({ fileUUID: '' });
-              setInitialUserSubmissions({ fileUUID: '' });
-            }
-          }
+          await fetchStudentView();
         } else if (view === 'custom-grading') {
-          if (accessToken && assignmentTaskUUID) {
-            const res = await getAssignmentTask(assignmentTaskUUID, accessToken);
-            if (res.success && res.data) setAssignmentTask(res.data);
-          }
-          if (accessToken && assignmentTaskUUID && assignmentUUID && user_id) {
-            const res = await getAssignmentTaskSubmissionsUser(
-              assignmentTaskUUID,
-              user_id,
-              assignmentUUID,
-              accessToken,
-            );
-            if (res.success && res.data?.task_submission) {
-              const sub = {
-                ...res.data.task_submission,
-                assignment_task_submission_uuid: res.data.assignment_task_submission_uuid,
-              };
-              setUserSubmissions(sub);
-              setInitialUserSubmissions(sub);
-              setUserSubmissionObject(res.data);
-            } else {
-              setUserSubmissions({ fileUUID: '' });
-              setInitialUserSubmissions({ fileUUID: '' });
-              setUserSubmissionObject(null);
-            }
-          }
+          await fetchCustomGradingView();
         }
       } finally {
         setIsLoading(false);
@@ -282,27 +317,9 @@ export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: Ta
     };
 
     void loadIfNeeded();
-  }, [view, accessToken, assignmentTaskUUID, assignmentUUID, user_id]);
+  }, [view, assignmentTaskUUID, assignmentUUID, user_id, fetchStudentView, fetchCustomGradingView]);
 
   // ================= Render helpers =================
-  const FileCard = ({ label }: { label: string }) => (
-    <Card className="relative w-full sm:w-auto">
-      <CardContent className="flex items-center gap-2 py-4">
-        <Badge className="absolute top-2 right-2 rounded-full bg-emerald-600 p-1 shadow-sm">
-          <Cloud
-            className="text-white"
-            size={16}
-          />
-        </Badge>
-        <File
-          className="text-emerald-500"
-          size={18}
-        />
-        <span className="text-xs font-medium break-all uppercase sm:text-sm">{label}</span>
-      </CardContent>
-    </Card>
-  );
-
   const renderTeacherView = () => (
     <Alert>
       <Info className="h-4 w-4" />
@@ -321,13 +338,13 @@ export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: Ta
       );
     }
 
-    const fileUrl = getTaskFileSubmissionDir(
+    const fileUrl = getTaskFileSubmissionDir({
       courseUUID,
       activityUUID,
       assignmentUUID,
       assignmentTaskUUID,
-      userSubmissions.fileUUID,
-    );
+      fileSubID: userSubmissions.fileUUID,
+    });
 
     return (
       <div className="space-y-3">
@@ -368,12 +385,7 @@ export default function TaskFileObject({ view, user_id, assignmentTaskUUID }: Ta
           <AlertDescription>{t('allowedFormats')}</AlertDescription>
         </Alert>
 
-        {!accessToken ? (
-          <Alert className="w-full sm:w-auto">
-            <Info className="h-4 w-4" />
-            <AlertDescription>{t('signInToUpload')}</AlertDescription>
-          </Alert>
-        ) : isLoading ? (
+        {isLoading ? (
           <Button
             disabled
             variant="secondary"

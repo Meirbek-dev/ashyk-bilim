@@ -1,9 +1,11 @@
 import { ArrowRight, CheckCircle, GitBranch, RefreshCcw, RotateCcw } from 'lucide-react';
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
+import NextImage from '@components/ui/NextImage';
 import { NodeViewWrapper } from '@tiptap/react';
 import ScenariosModal from './ScenariosModal';
 import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
 
 interface ScenarioOption {
   id: string;
@@ -18,7 +20,13 @@ interface Scenario {
   options: ScenarioOption[];
 }
 
-const ScenariosExtension: React.FC = (props: any) => {
+interface ScenarioNodeAttrs {
+  title: string;
+  scenarios: Scenario[];
+  currentScenarioId: string;
+}
+
+const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = (props) => {
   // use translations for any UI text or fallbacks
   const t = useTranslations('DashPage.Editor.Scenarios');
 
@@ -27,9 +35,9 @@ const ScenariosExtension: React.FC = (props: any) => {
   const initialNodeScenarios: Scenario[] = props.node?.attrs?.scenarios || [];
   const initialNodeCurrentId: string = props.node?.attrs?.currentScenarioId || (initialNodeScenarios[0]?.id ?? '1');
 
-  const [title, setTitle] = useState<string>(initialNodeTitle || t('interactiveScenario'));
-  const [scenarios, setScenarios] = useState<Scenario[]>(initialNodeScenarios.length > 0 ? initialNodeScenarios : []);
-  const [currentScenarioId, setCurrentScenarioId] = useState<string>(initialNodeCurrentId);
+  const [title, setTitle] = useState(initialNodeTitle || t('interactiveScenario'));
+  const [scenarios, setScenarios] = useState(initialNodeScenarios.length > 0 ? initialNodeScenarios : []);
+  const [currentScenarioId, setCurrentScenarioId] = useState(initialNodeCurrentId);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [scenarioComplete, setScenarioComplete] = useState(false);
   const editorState = useEditorProvider();
@@ -134,7 +142,7 @@ const ScenariosExtension: React.FC = (props: any) => {
                       setTitle(e.target.value);
                       props.updateAttributes({ title: e.target.value });
                     }}
-                    className="text-md w-full rounded-md border-2 border-dotted border-gray-200 bg-[#00008b00] p-2 font-bold text-slate-800"
+                    className="text-md bg-primary/10 w-full rounded-md border-2 border-dotted border-gray-200 p-2 font-bold text-slate-800"
                   />
                 </div>
               </div>
@@ -191,14 +199,14 @@ const ScenariosExtension: React.FC = (props: any) => {
                   {/* Scenario Text */}
                   <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                     {currentScenario.imageUrl && (
-                      <div className="mb-4">
-                        <img
+                      <div className="relative mb-4 h-48 w-full overflow-hidden rounded-lg border border-slate-200">
+                        <NextImage
                           src={currentScenario.imageUrl}
                           alt={t('scenarioIllustrationAlt')}
-                          className="h-48 w-full rounded-lg border border-slate-200 object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
+                          fill
+                          className="object-cover"
+                          sizes="100vw"
+                          onError={() => undefined}
                         />
                       </div>
                     )}

@@ -10,16 +10,14 @@
   "iconLibrary": "lucide",
   "menuAccent": "subtle",
   "menuColor": "default",
-  "registries": {},
   "rsc": true,
   "rtl": true,
-  "style": "base-vega",
+  "style": "base-nova",
   "tailwind": {
     "config": "",
     "css": "app/globals.css",
     "baseColor": "neutral",
-    "cssVariables": true,
-    "prefix": ""
+    "cssVariables": true
   },
   "tsx": true
 }

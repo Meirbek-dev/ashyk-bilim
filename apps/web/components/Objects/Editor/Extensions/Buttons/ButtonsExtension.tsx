@@ -6,10 +6,21 @@ import type { ChangeEvent, FC } from 'react';
 import { useTranslations } from 'next-intl';
 import { twMerge } from 'tailwind-merge';
 import dynamic from 'next/dynamic';
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
 
-const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false, loading: () => null });
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), {
+  ssr: false,
+  loading: () => null,
+});
 
-const ButtonsExtension: FC = (props: any) => {
+interface ButtonNodeAttrs {
+  emoji: string;
+  link: string;
+  color: string;
+  alignment: 'left' | 'center' | 'right';
+}
+
+const ButtonsExtension: FC<TypedNodeViewProps<ButtonNodeAttrs>> = (props) => {
   const t = useTranslations('DashPage.Editor.ButtonsExtension');
   const [emoji, setEmoji] = useState(props.node.attrs.emoji);
   const [link, setLink] = useState(props.node.attrs.link);

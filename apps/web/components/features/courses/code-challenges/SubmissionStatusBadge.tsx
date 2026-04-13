@@ -144,7 +144,7 @@ export function SubmissionStatusBadge({
 }
 
 interface Judge0StatusBadgeProps {
-  statusId: number;
+  statusId: Judge0Status;
   statusDescription?: string;
   size?: 'sm' | 'default' | 'lg';
   className?: string;

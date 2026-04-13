@@ -1,5 +1,6 @@
 'use client';
 
+import { renderEditorHtml } from '@components/Objects/Editor/core';
 import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 
@@ -8,11 +9,23 @@ interface RichContentRendererProps {
   className?: string;
 }
 
+/** Resolve content: JSON string → HTML via Tiptap schema; raw HTML → pass through. */
+function resolveToHtml(content: string): string {
+  if (!content) return '';
+  try {
+    return renderEditorHtml(JSON.parse(content) as Record<string, unknown>, { preset: 'viewing' });
+  } catch {
+    // not JSON – treat as legacy HTML
+  }
+  return content;
+}
+
 export default function RichContentRenderer({ content, className = '' }: RichContentRendererProps) {
+  const html = resolveToHtml(content);
   // Sanitize the HTML content to prevent XSS attacks
   const sanitizedContent =
     typeof globalThis.window !== 'undefined'
-      ? DOMPurify.sanitize(content, {
+      ? DOMPurify.sanitize(html, {
           ALLOWED_TAGS: [
             'p',
             'br',
@@ -55,7 +68,7 @@ export default function RichContentRenderer({ content, className = '' }: RichCon
           ALLOWED_URI_REGEXP:
             /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|data):|[^a-z]|[+.a-z-]+(?:[^+.:a-z-]|$))/i,
         })
-      : content;
+      : html;
 
   return (
     <div

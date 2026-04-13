@@ -25,11 +25,12 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
         <div>
           <Link
             href={`/dash/analytics/assessments/${row.original.assessment_type}/${row.original.assessment_id}`}
-            className="font-medium text-foreground hover:text-emerald-700"
+            className="text-foreground focus-visible:ring-offset-background font-medium hover:text-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:outline-none dark:focus-visible:ring-offset-slate-900"
+            aria-label={t('assessmentOutliers.viewAssessment', { title: row.original.title })}
           >
             {row.original.title}
           </Link>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          <div className="text-muted-foreground text-xs tracking-wide uppercase">
             {getAnalyticsAssessmentTypeLabel(t, row.original.assessment_type)}
           </div>
         </div>
@@ -58,24 +59,26 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
         const v = row.original.difficulty_score;
         if (v === null) return t('atRisk.na');
         // difficulty_score = round(100 - pass_rate, 2) → already on a 0–100 scale.
-        return `${Math.round(v)}%`;
+        return `${Math.round(v ?? 0)}%`;
       },
     },
     {
       accessorKey: 'outlier_reason_codes',
       header: t('assessmentOutliers.colSignals'),
       cell: ({ row }) =>
-        row.original.outlier_reason_codes.length ? (
-          <div className="max-w-[240px] whitespace-normal text-xs text-muted-foreground">
-            {row.original.outlier_reason_codes.map((code) => (
-              <Badge
-                key={code}
-                variant="outline"
-                className="mb-1 mr-1"
-              >
-                {getAnalyticsReasonCodeLabel(t, code)}
-              </Badge>
-            ))}
+        row.original.outlier_reason_codes.filter((code): code is string => Boolean(code)).length ? (
+          <div className="text-muted-foreground max-w-[240px] text-xs whitespace-normal">
+            {row.original.outlier_reason_codes
+              .filter((code): code is string => Boolean(code))
+              .map((code) => (
+                <Badge
+                  key={code}
+                  variant="outline"
+                  className="mr-1 mb-1"
+                >
+                  {getAnalyticsReasonCodeLabel(t, code)}
+                </Badge>
+              ))}
           </div>
         ) : (
           t('assessmentOutliers.healthy')
@@ -90,6 +93,12 @@ export default function AssessmentOutliersTable({ rows, storageKey, serverPagina
         <CardDescription>{t('assessmentOutliers.description')}</CardDescription>
       </CardHeader>
       <CardContent>
+        <div
+          className="sr-only"
+          aria-live="polite"
+        >
+          {t('assessmentOutliers.rowCount', { count: rows.length })}
+        </div>
         <AnalyticsDataTable
           columns={columns}
           data={rows}

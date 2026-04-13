@@ -16,13 +16,12 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import { useUserCourses } from '@/features/users/hooks/useUsers';
 import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import { getUserAvatarMediaDirectory } from '@services/media/media';
-import { getCoursesByUser } from '@services/users/users';
 import UserAvatar from '@components/Objects/UserAvatar';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FC } from 'react';
 import Image from 'next/image';
 
@@ -49,7 +48,7 @@ const ICON_MAP = {
 const IconComponent = ({ iconName }: { iconName: string }) => {
   const IconElement = ICON_MAP[iconName as keyof typeof ICON_MAP];
   if (!IconElement) return null;
-  return <IconElement className="h-4 w-4 text-gray-600" />;
+  return <IconElement className="text-muted-foreground h-4 w-4" />;
 };
 
 const ImageModal: FC<{
@@ -57,11 +56,11 @@ const ImageModal: FC<{
   onClose: () => void;
 }> = ({ image, onClose }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+    <div className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="relative w-full max-w-4xl">
         <button
           onClick={onClose}
-          className="absolute -top-10 right-0 text-white transition-colors hover:text-gray-300"
+          className="text-foreground hover:text-muted-foreground absolute -top-10 right-0 transition-colors"
         >
           <X className="h-6 w-6" />
         </button>
@@ -72,56 +71,34 @@ const ImageModal: FC<{
           height={600}
           className="h-auto w-full rounded-lg"
         />
-        {image.caption ? <p className="mt-4 text-center text-lg text-white">{image.caption}</p> : null}
+        {image.caption ? <p className="text-foreground mt-4 text-center text-lg">{image.caption}</p> : null}
       </div>
     </div>
   );
 };
 
 const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
-  const session = usePlatformSession();
-  const access_token = session?.data?.tokens?.access_token;
   const t = useTranslations('UserProfilePage');
   const [selectedImage, setSelectedImage] = useState<{
     url: string;
     caption?: string;
   } | null>(null);
-  const [userCourses, setUserCourses] = useState<any[]>([]);
-  const [isLoadingCourses, setIsLoadingCourses] = useState(false);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    const fetchUserCourses = async () => {
-      if (userData.id && access_token) {
-        try {
-          setIsLoadingCourses(true);
-          const coursesData = await getCoursesByUser(userData.id, access_token);
-          if (coursesData.data) {
-            setUserCourses(coursesData.data);
-          }
-        } catch (error) {
-          console.error(t('fetchError'), error);
-          setError(true);
-        } finally {
-          setIsLoadingCourses(false);
-        }
-      }
-    };
-
-    fetchUserCourses();
-  }, [userData.id, access_token, t]);
+  const userCoursesQuery = useUserCourses(userData.id, { enabled: Boolean(userData.id) });
+  const userCourses = userCoursesQuery.data ?? [];
+  const isLoadingCourses = userCoursesQuery.isPending;
+  const error = userCoursesQuery.isError;
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="text-foreground container mx-auto py-8">
       {/* Banner */}
-      <div className="relative mb-0 h-48 w-full overflow-hidden rounded-t-xl bg-gray-100">
+      <div className="bg-muted relative mb-0 h-48 w-full overflow-hidden rounded-t-xl">
         {/* Optional banner content */}
       </div>
       {/* Profile Content */}
-      <div className="soft-shadow relative rounded-b-xl bg-white p-8">
+      <div className="soft-shadow border-border bg-card text-card-foreground relative rounded-b-xl border p-8 shadow-sm">
         {/* Avatar Positioned on the banner */}
         <div className="absolute -top-24 left-12">
-          <div className="overflow-hidden rounded-full border-4 border-white shadow-lg">
+          <div className="border-background overflow-hidden rounded-full border-4 shadow-lg">
             <UserAvatar
               size="3xl"
               avatar_url={
@@ -144,7 +121,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                   affiliation.logoUrl && (
                     <div
                       key={index}
-                      className="rounded-lg border-2 border-white bg-white p-2 shadow-lg"
+                      className="border-background bg-card rounded-lg border-2 p-2 shadow-lg"
                     >
                       <Image
                         src={affiliation.logoUrl}
@@ -166,7 +143,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
             {/* Left column with details - aligned with avatar */}
             <div className="w-full pl-2 md:w-1/6">
               {/* Name */}
-              <h1 className="mb-8 text-[32px] font-bold">
+              <h1 className="text-foreground mb-8 text-[32px] font-bold">
                 {[userData.first_name, userData.middle_name, userData.last_name].filter(Boolean).join(' ')}
               </h1>
 
@@ -181,7 +158,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                         <div className="shrink-0">
                           <IconComponent iconName={detail.icon} />
                         </div>
-                        <span className="text-[15px] font-medium text-gray-700">{detail.text}</span>
+                        <span className="text-muted-foreground text-[15px] font-medium">{detail.text}</span>
                       </div>
                     ))
                   : null}
@@ -193,9 +170,9 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
               <div className="mb-8">
                 <h2 className="mb-4 text-xl font-semibold">{t('aboutTitle')}</h2>
                 {userData.bio ? (
-                  <p className="text-gray-700">{userData.bio}</p>
+                  <p className="text-muted-foreground">{userData.bio}</p>
                 ) : (
-                  <p className="text-gray-500 italic">{t('noBiography')}</p>
+                  <p className="text-muted-foreground italic">{t('noBiography')}</p>
                 )}
               </div>
 
@@ -228,8 +205,8 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                                 className="h-48 w-full rounded-lg object-cover"
                               />
                               {image.caption ? (
-                                <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 p-4 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                                  <p className="text-center text-sm text-white">{image.caption}</p>
+                                <div className="bg-background/70 absolute inset-0 flex items-center justify-center rounded-lg p-4 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+                                  <p className="text-foreground text-center text-sm">{image.caption}</p>
                                 </div>
                               ) : null}
                             </div>
@@ -247,7 +224,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                               href={link.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
+                              className="text-primary hover:text-primary/80 flex items-center gap-2"
                             >
                               <LinkIcon className="h-4 w-4" />
                               <span>{link.title}</span>
@@ -261,7 +238,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                           {section.skills.map((skill: any, skillIndex: number) => (
                             <span
                               key={skillIndex}
-                              className="rounded-full bg-gray-100 px-3 py-1 text-sm"
+                              className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm"
                             >
                               {skill.name}
                               {skill.level ? ` • ${skill.level}` : null}
@@ -275,14 +252,14 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                           {section.experiences.map((exp: any, expIndex: number) => (
                             <div
                               key={expIndex}
-                              className="border-l-2 border-gray-200 pl-4"
+                              className="border-border border-l-2 pl-4"
                             >
                               <h3 className="font-medium">{exp.title}</h3>
-                              <p className="text-gray-600">{exp.organization}</p>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-muted-foreground">{exp.organization}</p>
+                              <p className="text-muted-foreground text-sm">
                                 {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
                               </p>
-                              {exp.description ? <p className="mt-2 text-gray-700">{exp.description}</p> : null}
+                              {exp.description ? <p className="text-muted-foreground mt-2">{exp.description}</p> : null}
                             </div>
                           ))}
                         </div>
@@ -293,16 +270,16 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                           {section.education.map((edu: any, eduIndex: number) => (
                             <div
                               key={eduIndex}
-                              className="border-l-2 border-gray-200 pl-4"
+                              className="border-border border-l-2 pl-4"
                             >
                               <h3 className="font-medium">{edu.institution}</h3>
-                              <p className="text-gray-600">
+                              <p className="text-muted-foreground">
                                 {edu.degree} {t('in')} {edu.field}
                               </p>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-muted-foreground text-sm">
                                 {edu.startDate} - {edu.current ? 'Present' : edu.endDate}
                               </p>
-                              {edu.description ? <p className="mt-2 text-gray-700">{edu.description}</p> : null}
+                              {edu.description ? <p className="text-muted-foreground mt-2">{edu.description}</p> : null}
                             </div>
                           ))}
                         </div>
@@ -313,7 +290,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                           {section.affiliations.map((affiliation: any, affIndex: number) => (
                             <div
                               key={affIndex}
-                              className="border-l-2 border-gray-200 pl-4"
+                              className="border-border border-l-2 pl-4"
                             >
                               <div className="flex items-start gap-4">
                                 {affiliation.logoUrl ? (
@@ -328,7 +305,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                                 <div>
                                   <h3 className="font-medium">{affiliation.name}</h3>
                                   {affiliation.description ? (
-                                    <p className="mt-2 text-gray-700">{affiliation.description}</p>
+                                    <p className="text-muted-foreground mt-2">{affiliation.description}</p>
                                   ) : null}
                                 </div>
                               </div>
@@ -350,12 +327,33 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                                   key={course.id}
                                   className="mx-auto w-full max-w-[300px]"
                                 >
-                                  <CourseThumbnail course={course} />
+                                  <CourseThumbnail
+                                    course={{
+                                      ...course,
+                                      authors: course.authors?.map((author) => ({
+                                        authorship: author.authorship,
+                                        authorship_status: author.authorship_status,
+                                        user: {
+                                          id: author.user.id,
+                                          user_uuid: author.user.user_uuid,
+                                          avatar_image: author.user.avatar_image ?? '',
+                                          first_name: author.user.first_name,
+                                          middle_name: author.user.middle_name ?? undefined,
+                                          last_name: author.user.last_name,
+                                          username: author.user.username,
+                                        },
+                                      })),
+                                      description: course.description ?? '',
+                                      thumbnail_image: course.thumbnail_image ?? '',
+                                    }}
+                                  />
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="py-8 text-center text-gray-500">{t('courseSection.noCoursesFound')}</div>
+                            <div className="text-muted-foreground py-8 text-center">
+                              {t('courseSection.noCoursesFound')}
+                            </div>
                           )}
                         </div>
                       )}
@@ -364,7 +362,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                 </div>
               ) : null}
 
-              {error ? <div className="text-red-500">{t('courseSection.errorLoadingCourses')}</div> : null}
+              {error ? <div className="text-destructive">{t('courseSection.errorLoadingCourses')}</div> : null}
             </div>
           </div>
         </div>

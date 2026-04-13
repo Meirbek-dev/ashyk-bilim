@@ -9,7 +9,6 @@ import { getRankTheme } from '@/lib/gamification';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
-import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -69,7 +68,7 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
     <Card className={className}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="flex items-center gap-2">
-          <Crown className="h-5 w-5 text-yellow-500" />
+          <Crown className="h-5 w-5 text-amber-500" />
           {t('dashboard.leaderboard')}
         </CardTitle>
         {entries.length > 10 && (
@@ -159,39 +158,32 @@ function LeaderboardEntryRow({
   t: any;
 }) {
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
+    <div
       className={cn(
-        'flex items-center gap-3 rounded-lg p-2 m-4 transition-colors',
-        isCurrentUser && 'bg-primary/10 ring-2 ring-primary/20',
+        'flex items-center gap-3 rounded-md px-2 py-2 transition-colors',
+        isCurrentUser && 'bg-muted ring-1 ring-border',
         !isCurrentUser && 'hover:bg-muted/50',
       )}
     >
       {/* Rank Badge */}
-      <div className="flex shrink-0 items-center justify-center">
+      <div className="flex w-8 shrink-0 items-center justify-center">
         {isTop3 ? (
-          <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
+          <Badge
+            variant="secondary"
+            className={cn(
+              'h-7 w-7 justify-center rounded-full p-0 text-xs font-bold tabular-nums',
+              entry.rank === 1 &&
+                'border-amber-400/40 bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
+              entry.rank === 2 &&
+                'border-slate-400/40 bg-slate-50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400',
+              entry.rank === 3 &&
+                'border-orange-400/40 bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400',
+            )}
           >
-            <Badge
-              variant="secondary"
-              className={cn('h-8 w-8 justify-center rounded-full font-bold', rankTheme.color, 'shadow-lg')}
-            >
-              {entry.rank === 1 && <Crown className="h-4 w-4" />}
-              {entry.rank > 1 && entry.rank}
-            </Badge>
-          </motion.div>
+            {entry.rank === 1 ? <Crown className="h-3.5 w-3.5" /> : entry.rank}
+          </Badge>
         ) : (
-          <div className="text-muted-foreground flex h-8 w-8 items-center justify-center text-sm font-semibold">
-            #{entry.rank}
-          </div>
+          <span className="text-muted-foreground text-xs font-medium tabular-nums">#{entry.rank}</span>
         )}
       </div>
 
@@ -264,6 +256,6 @@ function LeaderboardEntryRow({
       )}
 
       {entry.rank_change === 0 && <Minus className="text-muted-foreground h-3 w-3" />}
-    </motion.div>
+    </div>
   );
 }

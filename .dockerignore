@@ -1,73 +1,62 @@
-# Dependencies
+# Used as build context for apps/web/Dockerfile (context = repo root)
+
+# Python (api app — not needed in web image)
+apps/api
+!apps/api/package.json
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.venv
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/.pyrefly_cache
+
+# Node / build outputs
 node_modules
 **/node_modules
-
-# Build outputs
 .next
 **/.next
 out
-.out
 dist
 **/dist
-build
 
-# Logs
+# Logs and runtime data
 logs
 *.log
 **/*.log
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+apps/api/logs
+apps/api/content
+apps/api/temp-restore
+apps/api/backups
 
 # Cache directories
 .cache
-.parcel-cache
 .npm
 .eslintcache
 .nyc_output
-.pytest_cache/
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
 **/*.tsbuildinfo
 **/.eslintcache
-**/__pycache__
-**/.ruff_cache
 
-# Coverage reports
+# Coverage
 coverage
 *.lcov
 .coverage
 htmlcov/
-*.cover
-.hypothesis/
 coverage.xml
-
-# Test files
-.tox/
-nosetests.xml
 
 # Temporary files
 tmp/
-tmp
 temp/
 *.tmp
-.node_repl_history
-*.tgz
 
-# IDE files
+# IDE / OS
 .vscode
 .idea
 *.swp
 *.swo
-
-# OS files
 .DS_Store
-**.DS_Store
 Thumbs.db
 
 # Git
@@ -77,56 +66,28 @@ Thumbs.db
 .gitattributes
 .github
 
-# Docker
-Dockerfile
-.dockerignore
+# Docker files (not needed inside images)
+**/Dockerfile
+**/.dockerignore
 docker-compose.yml
-*docker-compose*
-dockers
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-**/.venv
-ENV/
-env.bak/
-venv.bak/
-
-# Database
-*.db
-*.sqlite3
-
-# Media files
-uploads/
-media/
+compose.prod.yml
 
 # Documentation
 README.md
 docs/
 *.md
 
-# Project specific
-**/.assets
-**/.temporary
-.logfire
-
-# Backups & restore data
-backups/
-temp-restore/
-apps/api/logs/
-apps/api/temp-restore/
-
-# Extra configs (mounted at runtime, not baked in)
+# Secrets / env (never bake into images)
 extra/.env
 extra/backup.env
-apps/api/.env
-apps/api/.env.*
+apps/web/.env
+apps/web/.env.*
 
-# Test output
+# Backups and test artefacts
+backups/
+temp-restore/
 junit.xml
 test-results/
+plans/
+.claude/
+.turbo/

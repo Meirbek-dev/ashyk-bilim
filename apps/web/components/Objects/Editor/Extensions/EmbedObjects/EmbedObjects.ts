@@ -1,7 +1,26 @@
-import { ReactNodeViewRenderer } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
+import { type CommandProps, Node, mergeAttributes } from '@tiptap/core';
 
 import EmbedObjectsComponent from './EmbedObjectsComponent';
+import { nodeView } from '@components/Objects/Editor/core';
+
+export type EmbedObjectAlignment = 'left' | 'center';
+
+export interface EmbedObjectAttrs {
+  embedUrl: string | null;
+  embedCode: string | null;
+  embedType: string | null;
+  embedHeight: number;
+  embedWidth: string;
+  alignment: EmbedObjectAlignment;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    blockEmbed: {
+      insertEmbedObject: () => ReturnType;
+    };
+  }
+}
 
 export default Node.create({
   name: 'blockEmbed',
@@ -42,7 +61,16 @@ export default Node.create({
     return ['block-embed', mergeAttributes(HTMLAttributes), 0];
   },
 
+  addCommands() {
+    return {
+      insertEmbedObject:
+        () =>
+        ({ commands }: CommandProps) =>
+          commands.insertContent({ type: this.name }),
+    };
+  },
+
   addNodeView() {
-    return ReactNodeViewRenderer(EmbedObjectsComponent);
+    return nodeView(EmbedObjectsComponent);
   },
 });

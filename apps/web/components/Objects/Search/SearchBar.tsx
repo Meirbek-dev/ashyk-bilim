@@ -11,14 +11,13 @@ import {
   Users,
 } from 'lucide-react';
 import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
+import { useSearchContent } from '@/features/search/hooks/useSearch';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { removeCoursePrefix } from '../Thumbnails/CourseThumbnail';
 import type { ChangeEvent, FC, KeyboardEvent } from 'react';
 import { getAbsoluteUrl } from '@services/config/config';
-import { searchContent } from '@services/search/search';
 import { useDebouncedValue } from '@/hooks/useDebounce';
+import NextImage from '@components/ui/NextImage';
 import { Input } from '@components/ui/input';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
@@ -88,18 +87,18 @@ interface SearchBarProps {
 const CourseResultsSkeleton = () => (
   <div className="p-2">
     <div className="flex items-center gap-2 px-2 py-2">
-      <div className="h-4 w-4 animate-pulse rounded bg-black/5" />
-      <div className="h-4 w-20 animate-pulse rounded bg-black/5" />
+      <div className="bg-muted h-4 w-4 animate-pulse rounded" />
+      <div className="bg-muted h-4 w-20 animate-pulse rounded" />
     </div>
     {[1, 2].map((i) => (
       <div
         key={i}
         className="flex items-center gap-3 p-2"
       >
-        <div className="h-10 w-10 animate-pulse rounded-lg bg-black/5" />
+        <div className="bg-muted h-10 w-10 animate-pulse rounded-lg" />
         <div className="flex-1">
-          <div className="mb-2 h-4 w-48 animate-pulse rounded bg-black/5" />
-          <div className="h-3 w-32 animate-pulse rounded bg-black/5" />
+          <div className="bg-muted mb-2 h-4 w-48 animate-pulse rounded" />
+          <div className="bg-muted h-3 w-32 animate-pulse rounded" />
         </div>
       </div>
     ))}
@@ -109,21 +108,19 @@ const CourseResultsSkeleton = () => (
 export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false, showSearchSuggestions = false }) => {
   const t = useTranslations('Components.SearchBar');
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResults>({
-    courses: [],
-    collections: [],
-    users: [],
-  });
-  const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-  const session = usePlatformSession();
-  const accessToken = session?.data?.tokens?.access_token;
-  const platform = usePlatform();
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Debounce the search query value
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
+  const searchQueryResult = useSearchContent(debouncedSearch, { page: 1, limit: 3 });
+  const rawSearchResults = searchQueryResult.data?.data;
+  const searchResults: SearchResults = {
+    courses: Array.isArray(rawSearchResults?.courses) ? rawSearchResults.courses : [],
+    collections: Array.isArray(rawSearchResults?.collections) ? rawSearchResults.collections : [],
+    users: Array.isArray(rawSearchResults?.users) ? rawSearchResults.users : [],
+  };
+  const isLoading = debouncedSearch.trim().length > 0 && searchQueryResult.isPending;
 
   const handleClickOutside = useEffectEvent((event: MouseEvent) => {
     if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -138,77 +135,19 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
     };
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const currentQuery = debouncedSearch.trim();
-
-    if (currentQuery.length === 0) {
-      setSearchResults({ courses: [], collections: [], users: [] });
-      setIsLoading(false);
-      setIsInitialLoad(false);
-      return () => {};
-    }
-
-    setIsLoading(true);
-
-    (async () => {
-      try {
-        const response = await searchContent(currentQuery, 1, 3, null, accessToken);
-        if (controller.signal.aborted) return;
-
-        // Type assertion and safe access
-        const typedResponse = response.data;
-
-        // Ensure we have the correct structure and handle potential undefined values
-        const processedResults: SearchResults = {
-          courses: Array.isArray(typedResponse?.courses) ? typedResponse.courses : [],
-          collections: Array.isArray(typedResponse?.collections) ? typedResponse.collections : [],
-          users: Array.isArray(typedResponse?.users) ? typedResponse.users : [],
-        };
-
-        setSearchResults(processedResults);
-      } catch (error: any) {
-        if (controller.signal.aborted) return;
-        if (error?.name === 'AbortError') return;
-        console.error('Error searching content:', error);
-        setSearchResults({ courses: [], collections: [], users: [] });
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-          setIsInitialLoad(false);
-        }
-      }
-    })();
-
-    return () => {
-      controller.abort();
-    };
-  }, [debouncedSearch, accessToken]);
-
   const MemoizedEmptyState = !searchQuery.trim() ? (
     <div className="px-4 py-8">
       <div className="flex flex-col items-center text-center">
-        <div className="mb-4 rounded-full bg-black/5 p-3">
-          <Sparkles className="h-6 w-6 text-black/70" />
+        <div className="bg-muted mb-4 rounded-full p-3">
+          <Sparkles className="text-muted-foreground h-6 w-6" />
         </div>
-        <h3 className="mb-1 text-sm font-medium text-black/80">{t('discoverTitle')}</h3>
-        <p className="max-w-[240px] text-xs text-black/50">{t('discoverSubtitle')}</p>
+        <h3 className="text-foreground mb-1 text-sm font-medium">{t('discoverTitle')}</h3>
+        <p className="text-muted-foreground max-w-[240px] text-xs">{t('discoverSubtitle')}</p>
       </div>
     </div>
   ) : null;
 
   // Calculate if we should show the dropdown
-  const shouldShowDropdown = (() => {
-    if (!showResults) return false;
-
-    // Show if there's a search query with content
-    if (searchQuery.trim()) return true;
-
-    // Show empty state only if focused and no initial load
-    if (!isInitialLoad && showResults) return true;
-
-    return false;
-  })();
 
   const searchTerms = [
     {
@@ -217,7 +156,7 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
       icon: (
         <Search
           size={14}
-          className="text-black/40"
+          className="text-muted-foreground"
         />
       ),
     },
@@ -227,7 +166,7 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
       icon: (
         <GraduationCap
           size={14}
-          className="text-black/40"
+          className="text-muted-foreground"
         />
       ),
     },
@@ -237,7 +176,7 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
       icon: (
         <Book
           size={14}
-          className="text-black/40"
+          className="text-muted-foreground"
         />
       ),
     },
@@ -245,7 +184,7 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
 
   const MemoizedSearchSuggestions = searchQuery.trim() ? (
     <div className="p-2">
-      <div className="flex items-center gap-2 px-2 py-2 text-sm text-black/50">
+      <div className="text-muted-foreground flex items-center gap-2 px-2 py-2 text-sm">
         <ScanSearch size={16} />
         <span className="font-medium">{t('suggestionsTitle')}</span>
       </div>
@@ -255,15 +194,15 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
             prefetch={false}
             key={`${term}-${type}`}
             href={getAbsoluteUrl(`/search?q=${encodeURIComponent(term)}`)}
-            className="group flex items-center rounded-lg px-3 py-2 transition-colors hover:bg-black/2"
+            className="group hover:bg-accent flex items-center rounded-lg px-3 py-2 transition-colors"
           >
             <div className="flex flex-1 items-center gap-2">
               {icon}
-              <span className="text-sm text-black/70">{term}</span>
+              <span className="text-foreground text-sm">{term}</span>
             </div>
             <ArrowUpRight
               size={14}
-              className="text-black/30 transition-colors group-hover:text-black/50"
+              className="text-muted-foreground group-hover:text-foreground transition-colors"
             />
           </Link>
         ))}
@@ -279,15 +218,14 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
 
     return (
       <div className="p-2">
-        <div className="flex items-center gap-2 px-2 py-2 text-sm text-black/50">
+        <div className="text-muted-foreground flex items-center gap-2 px-2 py-2 text-sm">
           <TextSearch size={16} />
           <span className="font-medium">{t('quickResultsTitle')}</span>
         </div>
 
-        {/* Courses Section */}
-        {searchResults.courses.length > 0 && (
+        {searchResults.courses.length > 0 ? (
           <div className="mb-2">
-            <div className="flex items-center gap-2 px-2 py-1 text-xs text-black/40">
+            <div className="text-muted-foreground flex items-center gap-2 px-2 py-1 text-xs">
               <GraduationCap size={12} />
               <span>{t('coursesSection')}</span>
             </div>
@@ -296,48 +234,49 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
                 prefetch={false}
                 key={course.course_uuid}
                 href={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
-                className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-black/2"
+                className="hover:bg-accent flex items-center gap-3 rounded-lg p-2 transition-colors"
               >
-                <div className="relative">
+                <div className="relative h-10 w-10">
                   {course.thumbnail_image ? (
-                    <img
+                    <NextImage
                       src={getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)}
                       alt={course.name}
-                      className="h-10 w-10 rounded-lg object-cover"
+                      fill
+                      className="rounded-lg object-cover"
+                      sizes="100vw"
                     />
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/5">
+                    <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-lg">
                       <Book
                         size={20}
-                        className="text-black/40"
+                        className="text-muted-foreground"
                       />
                     </div>
                   )}
-                  <div className="absolute -right-1 -bottom-1 rounded-full bg-white p-1 shadow-sm">
+                  <div className="bg-background ring-border absolute -right-1 -bottom-1 rounded-full p-1 shadow-sm ring-1">
                     <GraduationCap
                       size={11}
-                      className="text-black/60"
+                      className="text-muted-foreground"
                     />
                   </div>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="truncate text-sm font-medium text-black/80">{course.name}</h3>
-                    <span className="text-[10px] font-medium tracking-wide whitespace-nowrap text-black/40 uppercase">
+                    <h3 className="text-foreground truncate text-sm font-medium">{course.name}</h3>
+                    <span className="text-muted-foreground text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
                       {t('courseType')}
                     </span>
                   </div>
-                  <p className="truncate text-xs text-black/50">{course.description}</p>
+                  <p className="text-muted-foreground truncate text-xs">{course.description}</p>
                 </div>
               </Link>
             ))}
           </div>
-        )}
+        ) : null}
 
-        {/* Collections Section */}
-        {searchResults.collections.length > 0 && (
+        {searchResults.collections.length > 0 ? (
           <div className="mb-2">
-            <div className="flex items-center gap-2 px-2 py-1 text-xs text-black/40">
+            <div className="text-muted-foreground flex items-center gap-2 px-2 py-1 text-xs">
               <Book size={12} />
               <span>{t('collectionsSection')}</span>
             </div>
@@ -346,32 +285,31 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
                 prefetch={false}
                 key={collection.collection_uuid}
                 href={getAbsoluteUrl(`/collection/${collection.collection_uuid}`)}
-                className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-black/2"
+                className="hover:bg-accent flex items-center gap-3 rounded-lg p-2 transition-colors"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/5">
+                <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-lg">
                   <Book
                     size={20}
-                    className="text-black/40"
+                    className="text-muted-foreground"
                   />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="truncate text-sm font-medium text-black/80">{collection.name}</h3>
-                    <span className="text-[10px] font-medium tracking-wide whitespace-nowrap text-black/40 uppercase">
+                    <h3 className="text-foreground truncate text-sm font-medium">{collection.name}</h3>
+                    <span className="text-muted-foreground text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
                       {t('collectionType')}
                     </span>
                   </div>
-                  <p className="truncate text-xs text-black/50">{collection.description}</p>
+                  <p className="text-muted-foreground truncate text-xs">{collection.description}</p>
                 </div>
               </Link>
             ))}
           </div>
-        )}
+        ) : null}
 
-        {/* Users Section */}
-        {searchResults.users.length > 0 && (
+        {searchResults.users.length > 0 ? (
           <div className="mb-2">
-            <div className="flex items-center gap-2 px-2 py-1 text-xs text-black/40">
+            <div className="text-muted-foreground flex items-center gap-2 px-2 py-1 text-xs">
               <Users size={12} />
               <span>{t('usersSection')}</span>
             </div>
@@ -380,7 +318,7 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
                 prefetch={false}
                 key={user.user_uuid}
                 href={getAbsoluteUrl(`/user/${user.username}`)}
-                className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-black/2"
+                className="hover:bg-accent flex items-center gap-3 rounded-lg p-2 transition-colors"
               >
                 <UserAvatar
                   size="md"
@@ -391,19 +329,19 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="truncate text-sm font-medium text-black/80">
+                    <h3 className="text-foreground truncate text-sm font-medium">
                       {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
                     </h3>
-                    <span className="text-[10px] font-medium tracking-wide whitespace-nowrap text-black/40 uppercase">
+                    <span className="text-muted-foreground text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
                       {t('userType')}
                     </span>
                   </div>
-                  <p className="truncate text-xs text-black/50">@{user.username}</p>
+                  <p className="text-muted-foreground truncate text-xs">@{user.username}</p>
                 </div>
               </Link>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
     );
   })();
@@ -439,17 +377,17 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
         />
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
           <Search
-            className="text-black/40 transition-colors group-focus-within:text-black/60"
+            className="text-muted-foreground group-focus-within:text-foreground transition-colors"
             size={16}
           />
         </div>
       </div>
 
       <div
-        className={`soft-shadow absolute z-50 mt-2 w-full divide-y divide-black/5 overflow-hidden rounded-xl bg-white transition-all duration-200 ease-in-out ${shouldShowDropdown ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'} ${isMobile ? 'max-w-full' : 'min-w-[240px]'}`}
+        className={`soft-shadow divide-border border-border bg-card text-card-foreground absolute z-50 mt-2 w-full divide-y overflow-hidden rounded-xl border transition-all duration-200 ease-in-out ${showResults ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'} ${isMobile ? 'max-w-full' : 'min-w-[240px]'}`}
       >
-        {shouldShowDropdown &&
-          (!searchQuery.trim() || isInitialLoad ? (
+        {showResults ? (
+          !searchQuery.trim() ? (
             MemoizedEmptyState
           ) : (
             <>
@@ -466,7 +404,7 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
                     <Link
                       prefetch={false}
                       href={getAbsoluteUrl(`/search?q=${encodeURIComponent(searchQuery)}`)}
-                      className="flex items-center justify-between px-4 py-2.5 text-xs text-black/50 transition-colors hover:bg-black/2 hover:text-black/70"
+                      className="text-muted-foreground hover:bg-accent hover:text-foreground flex items-center justify-between px-4 py-2.5 text-xs transition-colors"
                     >
                       <span>{t('viewAllResults')}</span>
                       <ArrowRight size={14} />
@@ -475,7 +413,8 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
                 </>
               )}
             </>
-          ))}
+          )
+        ) : null}
       </div>
     </div>
   );

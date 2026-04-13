@@ -128,11 +128,11 @@ export function CourseChoiceCard({
         <Icon className="size-5" />
       </div>
       <div className="min-w-0 flex-1 space-y-1">
-        <div className="text-sm font-semibold leading-5 text-foreground">{title}</div>
-        <div className="text-sm leading-5 text-muted-foreground">{description}</div>
+        <div className="text-foreground text-sm leading-5 font-semibold">{title}</div>
+        <div className="text-muted-foreground text-sm leading-5">{description}</div>
       </div>
       <div className={cn('mt-0.5 shrink-0 transition-opacity', checked ? 'opacity-100' : 'opacity-0')}>
-        <CheckCircle2 className="size-5 text-primary" />
+        <CheckCircle2 className="text-primary size-5" />
       </div>
     </Label>
   );

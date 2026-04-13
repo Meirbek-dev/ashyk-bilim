@@ -7,12 +7,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { Backpack, Book, CreditCard, School, User, Users } from 'lucide-react';
+import { Backpack, Book, School, User, Users } from 'lucide-react';
 import AppLink from '@/components/ui/AppLink';
 import { useTranslations } from 'next-intl';
 
 interface BreadCrumbsProps {
-  type: 'courses' | 'user' | 'users' | 'platform' | 'platformusers' | 'assignments' | 'payments';
+  type: 'courses' | 'user' | 'users' | 'platform' | 'platformusers' | 'assignments';
   last_breadcrumb?: string;
 }
 
@@ -61,14 +61,6 @@ const BreadCrumbs = (props: BreadCrumbsProps) => {
           />
         );
       }
-      case 'payments': {
-        return (
-          <CreditCard
-            className="text-muted-foreground"
-            size={14}
-          />
-        );
-      }
       default: {
         return null;
       }
@@ -90,10 +82,7 @@ const BreadCrumbs = (props: BreadCrumbsProps) => {
         return '/dash/users/settings/users';
       }
       case 'platform': {
-        return '/dash/platform/settings/general';
-      }
-      case 'payments': {
-        return '/dash/payments';
+        return '/dash/platform/settings/landing';
       }
       default: {
         return '#';
@@ -117,9 +106,6 @@ const BreadCrumbs = (props: BreadCrumbsProps) => {
       }
       case 'platform': {
         return t('Card.Platform.title');
-      }
-      case 'payments': {
-        return t('Payments.title');
       }
       default: {
         return '';

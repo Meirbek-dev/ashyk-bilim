@@ -166,6 +166,8 @@ class CourseCreate(CourseBase):
     thumbnail_type: ThumbnailType | None = Field(default=ThumbnailType.IMAGE)
     thumbnail_image: str | None = Field(default="")
     thumbnail_video: str | None = Field(default="")
+    # Optional starter template: "blank" (default) or "starter" (seeds 2 default chapters)
+    template: str | None = None
 
     @field_validator("thumbnail_type", mode="before")
     @classmethod

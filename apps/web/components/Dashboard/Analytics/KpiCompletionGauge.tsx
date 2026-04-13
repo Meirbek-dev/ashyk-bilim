@@ -3,7 +3,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Cell, Pie, PieChart } from 'recharts';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { useMemo } from 'react';
 
 interface KpiCompletionGaugeProps {
   completionPct: number;
@@ -13,6 +14,11 @@ interface KpiCompletionGaugeProps {
 
 export default function KpiCompletionGauge({ completionPct, deltaPct, direction }: KpiCompletionGaugeProps) {
   const t = useTranslations('TeacherAnalytics');
+  const locale = useLocale();
+  const numberFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+
+  const formatPercent = (value: string | number | null | undefined) =>
+    `${numberFormatter.format(typeof value === 'number' ? value : Number(value ?? 0))}%`;
 
   const gaugeData = [
     { name: t('kpiCharts.completionRate'), value: completionPct },
@@ -36,12 +42,12 @@ export default function KpiCompletionGauge({ completionPct, deltaPct, direction 
               completion: {
                 label: t('kpiCharts.completionRate'),
                 color: 'var(--chart-2)',
-                valueFormatter: (value) => `${value ?? 0}%`,
+                valueFormatter: (value) => formatPercent(value),
               },
               remaining: {
                 label: t('kpiCharts.remaining'),
                 color: 'var(--chart-5)',
-                valueFormatter: (value) => `${value ?? 0}%`,
+                valueFormatter: (value) => formatPercent(value),
               },
             }}
           >
@@ -73,11 +79,11 @@ export default function KpiCompletionGauge({ completionPct, deltaPct, direction 
           </ChartContainer>
           <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-6">
             <div className="text-center">
-              <div className="text-4xl font-bold text-foreground">{completionPct.toLocaleString()}%</div>
+              <div className="text-foreground text-4xl font-bold">{numberFormatter.format(completionPct)}%</div>
               {deltaPct !== null && (
                 <div className={`mt-0.5 text-sm font-medium ${deltaColor}`}>
                   {deltaPct > 0 ? '+' : ''}
-                  {deltaPct}% {t('kpiCharts.vsPrevPeriod')}
+                  {numberFormatter.format(deltaPct)}% {t('kpiCharts.vsPrevPeriod')}
                 </div>
               )}
             </div>

@@ -36,16 +36,3 @@ class TrailRead(PydanticStrictBaseModel):
     runs: list[TrailRunRead]
 
     model_config = ConfigDict(from_attributes=True)
-
-
-def rebuild_trail_models() -> None:
-    """
-    Rebuild models to resolve Pydantic V2 forward references.
-    This function is called during database initialization to ensure
-    all model references are properly resolved.
-    """
-    # Rebuild models that may have forward references
-    TrailRead.model_rebuild()
-    Trail.model_rebuild()
-    TrailCreate.model_rebuild()
-    TrailBase.model_rebuild()

@@ -1,18 +1,16 @@
 'use client';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { getUserCertificates } from '@services/courses/certifications';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
-import { revalidateTags } from '@services/utils/ts/requests';
-import { Award, ExternalLink, Loader2 } from 'lucide-react';
+import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications';
+import { queryKeys } from '@/lib/react-query/queryKeys';
+import { revalidateTags } from '@/lib/api-client';
+import { Award, ExternalLink, Loader2, X } from 'lucide-react';
 import { removeCourse } from '@services/courses/activity';
 import { getAbsoluteUrl } from '@services/config/config';
-import { getTrailSwrKey } from '@services/courses/keys';
-import { useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
-import { mutate } from 'swr';
 
 interface TrailCourseElementProps {
   course: any;
@@ -20,136 +18,114 @@ interface TrailCourseElementProps {
 }
 
 const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
-  const platform = usePlatform() as any;
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
+  const queryClient = useQueryClient();
   const courseid = course.course_uuid.replace('course_', '');
   const router = useRouter();
   const t = useTranslations('Trail');
   const { course_total_steps } = run;
   const course_completed_steps = run.steps.length;
   const course_progress = course_total_steps > 0 ? Math.round((course_completed_steps / course_total_steps) * 100) : 0;
-  const [courseCertificate, setCourseCertificate] = useState<any>(null);
-  const [isLoadingCertificate, setIsLoadingCertificate] = useState(false);
-  const fetchedCourseCertificateRef = useRef<Record<string, boolean>>({});
+  const isCompleted = course_progress === 100;
+  const certificateQuery = useUserCertificateByCourse(isCompleted ? course.course_uuid : null);
+  const courseCertificate = certificateQuery.data?.data?.[0] ?? null;
+  const isLoadingCertificate = isCompleted && certificateQuery.isPending;
 
   async function quitCourse(course_uuid: string) {
-    // Close activity
-    await removeCourse(course_uuid, access_token);
-    // Mutate course
+    await removeCourse(course_uuid);
     await revalidateTags(['courses']);
     router.refresh();
-
-    // Mutate
-    mutate([getTrailSwrKey(), access_token]);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() });
   }
 
-  // Fetch certificate for this course
-  useEffect(() => {
-    // Avoid repeated fetches for the same course if we've already tried
-    if (!access_token || course_progress < 100) return;
-    if (fetchedCourseCertificateRef.current[course.course_uuid]) return;
-
-    const fetchCourseCertificate = async () => {
-      fetchedCourseCertificateRef.current[course.course_uuid] = true;
-      setIsLoadingCertificate(true);
-      try {
-        const result = await getUserCertificates(course.course_uuid, access_token);
-
-        if (result.success && result.data && result.data.length > 0) {
-          setCourseCertificate(result.data[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching course certificate:', error);
-      } finally {
-        setIsLoadingCertificate(false);
-      }
-    };
-
-    fetchCourseCertificate();
-  }, [access_token, course_progress, course.course_uuid]);
-
   return (
-    <div
-      className="trailcoursebox flex rounded-xl bg-white p-3"
-      style={{ boxShadow: '0px 4px 7px 0px rgba(0, 0, 0, 0.03)' }}
-    >
+    <div className="border-border bg-card flex gap-4 rounded-xl border p-4 transition-shadow hover:shadow-md">
+      {/* Thumbnail */}
       <Link
         prefetch={false}
         href={getAbsoluteUrl(`/course/${courseid}`)}
+        className="shrink-0"
       >
         <div
-          className="course_tumbnail relative inset-0 h-[50px] w-[72px] rounded-lg bg-cover bg-center ring-1 ring-black/10 ring-inset"
+          className="ring-border h-[76px] w-[108px] rounded-lg bg-cover bg-center ring-1 ring-inset"
           style={{
             backgroundImage: course.thumbnail_image
               ? `url(${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)})`
               : `url('/empty_thumbnail.webp')`,
-            boxShadow: '0px 4px 7px 0px rgba(0, 0, 0, 0.03)',
           }}
         />
       </Link>
-      <div className="course_meta grow space-y-1 pl-5">
-        <div className="course_top">
-          <div className="course_info flex">
-            <div className="course_basic flex-end flex flex-col -space-y-2">
-              <p className="p-0 pb-1 text-sm font-bold text-gray-700">{t('courseLabel')}</p>
-              <div className="flex items-center space-x-2">
-                <h2 className="text-xl font-bold">{course.name}</h2>
-                <div className="h-[5px] w-[10px] rounded-full bg-slate-300" />
-                <h2>{course_progress}%</h2>
-              </div>
-            </div>
-            <div className="course_actions flex grow flex-row-reverse">
-              <button
-                onClick={() => quitCourse(course.course_uuid)}
-                className="h-5 rounded-full bg-red-200 px-2 text-xs font-semibold text-red-700 hover:bg-red-300"
-              >
-                {t('quitCourseButton')}
-              </button>
-            </div>
+
+      {/* Content */}
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
+        {/* Title row */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-muted-foreground mb-0.5 text-[11px] font-medium tracking-wider uppercase">
+              {t('courseLabel')}
+            </p>
+            <Link
+              prefetch={false}
+              href={getAbsoluteUrl(`/course/${courseid}`)}
+            >
+              <h3 className="text-foreground hover:text-primary truncate text-base leading-snug font-semibold transition-colors">
+                {course.name}
+              </h3>
+            </Link>
           </div>
+          <button
+            onClick={() => quitCourse(course.course_uuid)}
+            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
+          >
+            <X className="h-3 w-3" />
+            {t('quitCourseButton')}
+          </button>
         </div>
-        <div className="indicator w-full">
-          <div className="h-1.5 w-full rounded-full bg-gray-200">
+
+        {/* Progress */}
+        <div className="space-y-1.5">
+          <div className="text-muted-foreground flex items-center justify-between text-xs">
+            <span className="tabular-nums">
+              {course_completed_steps}&thinsp;/&thinsp;{course_total_steps} {t('stepsLabel')}
+            </span>
+            <span className={cn('tabular-nums font-semibold', isCompleted ? 'text-primary' : 'text-foreground')}>
+              {course_progress}%
+            </span>
+          </div>
+          <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
             <div
-              className="h-1.5 rounded-full bg-teal-600"
+              className="bg-primary h-full rounded-full transition-all duration-300"
               style={{ width: `${course_progress}%` }}
             />
           </div>
         </div>
 
-        {/* Certificate Section */}
-        {course_progress === 100 && (
-          <div className="mt-2 border-t border-gray-100 pt-2">
+        {/* Certificate */}
+        {isCompleted && (
+          <div className="flex items-center gap-1.5">
             {isLoadingCertificate ? (
-              <div className="flex items-center space-x-1 text-xs text-gray-500">
+              <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                <span>{t('loadingCertificate')}</span>
-              </div>
+                {t('loadingCertificate')}
+              </span>
             ) : courseCertificate ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1">
-                  <Award className="h-3 w-3 text-yellow-500" />
-                  <span className="text-xs font-medium text-gray-700">{t('viewCertificate')}</span>
-                </div>
-                <Link
-                  prefetch={false}
-                  href={getAbsoluteUrl(
-                    `/certificates/${courseCertificate.certificate_user.user_certification_uuid}/verify`,
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center space-x-1 text-xs font-medium text-blue-600 hover:text-blue-700"
-                >
-                  <span>{t('downloadCertificate')}</span>
-                  <ExternalLink className="h-3 w-3" />
-                </Link>
-              </div>
+              <Link
+                prefetch={false}
+                href={getAbsoluteUrl(
+                  `/certificates/${courseCertificate.certificate_user.user_certification_uuid}/verify`,
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border-border text-foreground hover:bg-muted/60 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors"
+              >
+                <Award className="text-primary h-3.5 w-3.5" />
+                {t('downloadCertificate')}
+                <ExternalLink className="text-muted-foreground h-3 w-3" />
+              </Link>
             ) : (
-              <div className="flex items-center space-x-1 text-xs text-gray-500">
-                <Award className="h-3 w-3 text-gray-300" />
-                <span>{t('noCertificateAvailable')}</span>
-              </div>
+              <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs">
+                <Award className="text-muted-foreground/40 h-3 w-3" />
+                {t('noCertificateAvailable')}
+              </span>
             )}
           </div>
         )}

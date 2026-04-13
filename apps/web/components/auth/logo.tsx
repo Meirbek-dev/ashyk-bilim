@@ -11,7 +11,7 @@ const AuthLogo = ({ width = 240 }: AuthLogoProps) => (
     width={width}
     height={Math.round((width * 119.28) / 327.34)}
     priority
-    className="dark:brightness-0 dark:invert m-4"
+    className="m-4 dark:brightness-0 dark:invert"
   />
 );
 

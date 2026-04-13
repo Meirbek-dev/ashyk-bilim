@@ -11,12 +11,13 @@ The checker determines which scope applies.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlmodel import Session, select
 
-from src.core.events.database import get_db_session
+from src.infra.db.session import get_db_session
 
 logger = logging.getLogger(__name__)
 
@@ -77,17 +78,6 @@ class ResourceAccessDenied(HTTPException):
             "message": reason or "Access denied",
         }
         super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
-
-
-class InternalAuthFailed(HTTPException):
-    """401 - internal/service authentication failed."""
-
-    def __init__(self, reason: str | None = None) -> None:
-        detail = {
-            "error_code": "AUTHENTICATION_FAILED",
-            "message": reason or "Authentication failed",
-        }
-        super().__init__(status_code=status.HTTP_401_UNAUTHORIZED, detail=detail)
 
 
 # ============================================================================
@@ -347,63 +337,6 @@ class PermissionChecker:
         self._cache.pop(user_id, None)
 
     # ------------------------------------------------------------------
-    # Seeding
-    # ------------------------------------------------------------------
-
-    def seed_default_roles(self) -> list[str]:
-        """Create system roles & permissions from SYSTEM_ROLES. Idempotent."""
-        from src.db.permission_enums import SYSTEM_ROLES
-        from src.db.permissions import Permission, Role, RolePermission
-
-        created: list[str] = []
-
-        for slug, role_def in SYSTEM_ROLES.items():
-            # Upsert role
-            role = self.db.exec(select(Role).where(Role.slug == slug)).first()
-            if not role:
-                role = Role(
-                    slug=slug,
-                    name=role_def["name"],
-                    description=role_def["description"],
-                    is_system=True,
-                    priority=role_def["priority"],
-                )
-                self.db.add(role)
-                self.db.flush()
-                created.append(slug)
-
-            # Upsert permissions for this role
-            for perm_str in role_def["permissions"]:
-                parts = perm_str.split(":")
-                if len(parts) != 3:
-                    continue
-                resource, action, scope = parts
-
-                perm = self.db.exec(
-                    select(Permission).where(Permission.name == perm_str)
-                ).first()
-                if not perm:
-                    perm = Permission(
-                        name=perm_str,
-                        resource_type=resource,
-                        action=action,
-                        scope=scope,
-                    )
-                    self.db.add(perm)
-                    self.db.flush()
-
-                existing_rp = self.db.exec(
-                    select(RolePermission)
-                    .where(RolePermission.role_id == role.id)
-                    .where(RolePermission.permission_id == perm.id)
-                ).first()
-                if not existing_rp:
-                    self.db.add(RolePermission(role_id=role.id, permission_id=perm.id))
-
-        self.db.commit()
-        return created
-
-    # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
 
@@ -511,6 +444,30 @@ class PermissionChecker:
 # ============================================================================
 # FastAPI Dependencies
 # ============================================================================
+
+
+async def mark_user_roles_updated(user_uuid: str) -> None:
+    """Signal that a user's roles have changed.
+
+    Writes the current timestamp to ``roles_updated:{user_uuid}`` in Redis with
+    a TTL equal to the access-token lifetime.  The next token verification will
+    compare this value against the ``rvs`` claim and reject stale tokens with a
+    ``roles_stale`` WWW-Authenticate error, prompting a silent refresh.
+
+    MUST be called (awaited) by any endpoint that assigns or revokes roles after
+    the DB transaction has been committed.
+    """
+    from src.security.auth_lifetimes import ACCESS_TOKEN_EXPIRE
+    from src.services.cache.redis_client import get_async_redis_client
+
+    r = get_async_redis_client()
+    if r:
+        ttl = int(ACCESS_TOKEN_EXPIRE.total_seconds())
+        await r.set(
+            f"roles_updated:{user_uuid}",
+            str(int(time.time())),
+            ex=ttl,
+        )
 
 
 def get_permission_checker(

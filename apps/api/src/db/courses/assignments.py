@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum, StrEnum
 
 from pydantic import ConfigDict, field_validator
@@ -6,6 +6,35 @@ from sqlalchemy import JSON, Column, DateTime, ForeignKey
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
+from src.db.users import UserRead
+
+
+def _normalize_due_date_value(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if normalized == "":
+        return ""
+
+    try:
+        if "T" in normalized:
+            datetime.fromisoformat(normalized)
+        else:
+            date.fromisoformat(normalized)
+    except ValueError as exc:
+        raise ValueError(
+            "due_date must be a valid ISO 8601 date or datetime string"
+        ) from exc
+
+    return normalized
+
+
+def _validate_max_grade_value(value: int | None) -> int | None:
+    if value is None:
+        return None
+    if not 0 <= value <= 100:
+        raise ValueError("max_grade_value must be between 0 and 100")
+    return value
 
 
 ## Assignment ##
@@ -36,6 +65,11 @@ class AssignmentBase(SQLModelStrictBaseModel):
             return GradingTypeEnum(v)
         return v
 
+    @field_validator("due_date", mode="before")
+    @classmethod
+    def validate_due_date(cls, v):
+        return _normalize_due_date_value(v)
+
 
 class AssignmentCreate(AssignmentBase):
     """Model for creating a new assignment."""
@@ -48,6 +82,8 @@ class AssignmentRead(AssignmentBase):
 
     id: int
     assignment_uuid: str
+    course_uuid: str | None = None
+    activity_uuid: str | None = None
     creation_date: str | None = None
     update_date: str | None = None
 
@@ -73,6 +109,11 @@ class AssignmentUpdate(SQLModelStrictBaseModel):
         if v is not None and isinstance(v, str):
             return GradingTypeEnum(v)
         return v
+
+    @field_validator("due_date", mode="before")
+    @classmethod
+    def validate_due_date(cls, v):
+        return _normalize_due_date_value(v)
 
 
 class Assignment(AssignmentBase, table=True):
@@ -116,7 +157,7 @@ class AssignmentTaskBase(SQLModelStrictBaseModel):
     hint: str
     reference_file: str | None = None
     assignment_type: AssignmentTaskTypeEnum
-    contents: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    contents: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
     max_grade_value: int = 0  # Value is always between 0-100
 
     @field_validator("assignment_type", mode="before")
@@ -125,6 +166,12 @@ class AssignmentTaskBase(SQLModelStrictBaseModel):
         if isinstance(v, str):
             return AssignmentTaskTypeEnum(v)
         return v
+
+    @field_validator("max_grade_value")
+    @classmethod
+    def validate_max_grade_value(cls, v: int) -> int:
+        validated = _validate_max_grade_value(v)
+        return 0 if validated is None else validated
 
 
 class AssignmentTaskCreate(AssignmentTaskBase):
@@ -150,7 +197,7 @@ class AssignmentTaskUpdate(SQLModelStrictBaseModel):
     hint: str | None = None
     reference_file: str | None = None
     assignment_type: AssignmentTaskTypeEnum | None = None
-    contents: dict | None = Field(default=None, sa_column=Column(JSON))
+    contents: dict[str, object] | None = Field(default=None, sa_column=Column(JSON))
     max_grade_value: int | None = None
 
     @field_validator("assignment_type", mode="before")
@@ -159,6 +206,11 @@ class AssignmentTaskUpdate(SQLModelStrictBaseModel):
         if v is not None and isinstance(v, str):
             return AssignmentTaskTypeEnum(v)
         return v
+
+    @field_validator("max_grade_value")
+    @classmethod
+    def validate_max_grade_value(cls, v: int | None) -> int | None:
+        return _validate_max_grade_value(v)
 
 
 class AssignmentTask(AssignmentTaskBase, table=True):
@@ -198,7 +250,9 @@ class AssignmentTaskSubmissionBase(SQLModelStrictBaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
     assignment_task_submission_uuid: str
-    task_submission: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    task_submission: dict[str, object] = Field(
+        default_factory=dict, sa_column=Column(JSON)
+    )
     grade: int = 0  # Value is always between 0-100
     task_submission_grade_feedback: str
     assignment_type: AssignmentTaskTypeEnum
@@ -238,7 +292,9 @@ class AssignmentTaskSubmissionUpdate(SQLModelStrictBaseModel):
 
     assignment_task_id: int | None = None
     assignment_task_submission_uuid: str | None = None
-    task_submission: dict | None = Field(default=None, sa_column=Column(JSON))
+    task_submission: dict[str, object] | None = Field(
+        default=None, sa_column=Column(JSON)
+    )
     grade: int | None = None
     task_submission_grade_feedback: str | None = None
     assignment_type: AssignmentTaskTypeEnum | None = None
@@ -256,7 +312,9 @@ class AssignmentTaskSubmission(AssignmentTaskSubmissionBase, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     assignment_task_submission_uuid: str
-    task_submission: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    task_submission: dict[str, object] = Field(
+        default_factory=dict, sa_column=Column(JSON)
+    )
     grade: int = 0  # Value is always between 0-100
     task_submission_grade_feedback: str
     assignment_type: AssignmentTaskTypeEnum
@@ -328,10 +386,19 @@ class AssignmentUserSubmissionRead(AssignmentUserSubmissionBase):
     """Model for reading an assignment user submission."""
 
     id: int
+    assignmentusersubmission_uuid: str
     creation_date: str
     update_date: str
     submitted_at: datetime | None = None
     graded_at: datetime | None = None
+
+    @field_validator("submitted_at", "graded_at", mode="before")
+    @classmethod
+    def normalize_tz_offset(cls, v: object) -> object:
+        # SQLite/Postgres may return '+00' instead of the ISO 8601 '+00:00'
+        if isinstance(v, str) and (v.endswith(("+00", "-00"))):
+            v = v + ":00"
+        return v
 
 
 class AssignmentUserSubmissionUpdate(SQLModelStrictBaseModel):
@@ -343,6 +410,12 @@ class AssignmentUserSubmissionUpdate(SQLModelStrictBaseModel):
     grade: int | None = None
     user_id: int | None = None
     assignment_id: int | None = None
+
+
+class AssignmentUserSubmissionWithUserRead(AssignmentUserSubmissionRead):
+    """Assignment-level submission status enriched with user information."""
+
+    user: UserRead
 
 
 class AssignmentUserSubmission(AssignmentUserSubmissionBase, table=True):
@@ -394,3 +467,8 @@ class AssignmentCreateWithActivity(SQLModelStrictBaseModel):
         if isinstance(v, str):
             return GradingTypeEnum(v)
         return v
+
+    @field_validator("due_date", mode="before")
+    @classmethod
+    def validate_due_date(cls, v):
+        return _normalize_due_date_value(v)

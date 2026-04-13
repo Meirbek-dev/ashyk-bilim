@@ -27,7 +27,7 @@ export async function GET() {
         apiUrl: publicConfig.success ? publicConfig.config.apiUrl : null,
         mediaUrl: publicConfig.success ? publicConfig.config.mediaUrl : null,
         internalApiUrl: serverConfig.success ? (serverConfig.config.internalApiUrl ?? null) : null,
-        nextAuthUrl: serverConfig.success ? serverConfig.config.nextAuthUrl : null,
+        appUrl: serverConfig.success ? serverConfig.config.appUrl : null,
         cookieDomain: serverConfig.success ? (serverConfig.config.cookieDomain ?? null) : null,
         cookieSecure: serverConfig.success ? serverConfig.config.cookieSecure : null,
       },
@@ -91,8 +91,8 @@ export async function GET() {
 
     // Check auth
     try {
-      const { auth } = await import('@/auth');
-      const session = await auth();
+      const { getSession } = await import('@/lib/auth/session');
+      const session = await getSession();
       diagnostics.checks.auth = {
         status: 'working',
         hasSession: Boolean(session),

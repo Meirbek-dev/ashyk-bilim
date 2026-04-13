@@ -1,5 +1,4 @@
 import ArtPlayer from '@components/Objects/Activities/Video/Artplayer';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { getActivityMediaDirectory } from '@services/media/media';
 import type ArtplayerType from 'artplayer';
 import { useLocale } from 'next-intl';
@@ -48,7 +47,6 @@ interface VideoActivityProps {
 }
 
 const VideoActivity = ({ activity, course }: VideoActivityProps) => {
-  const platform = usePlatform() as any;
   const fullLocale = useLocale();
   const locale = fullLocale.split('-')[0];
 
@@ -58,7 +56,12 @@ const VideoActivity = ({ activity, course }: VideoActivityProps) => {
   // Generate subtitle entries from activity details
   const subtitleEntries: SubtitleEntry[] = (activity?.details?.subtitles || [])
     .map((subtitle) => {
-      const url = getActivityMediaDirectory(course?.course_uuid, activity.activity_uuid, subtitle.filename, 'video');
+      const url = getActivityMediaDirectory({
+        courseUUID: course.course_uuid,
+        activityUUID: activity.activity_uuid,
+        fileId: subtitle.filename,
+        activityType: 'video',
+      });
       return url ? { html: subtitle.label, url } : null;
     })
     .filter((entry): entry is SubtitleEntry => entry !== null);
@@ -68,14 +71,28 @@ const VideoActivity = ({ activity, course }: VideoActivityProps) => {
     const subtitles = activity?.details?.subtitles || [];
     const defaultSubtitle = subtitles.find((s) => s.language === locale);
     if (defaultSubtitle) {
-      return getActivityMediaDirectory(course?.course_uuid, activity.activity_uuid, defaultSubtitle.filename, 'video');
+      return (
+        getActivityMediaDirectory({
+          courseUUID: course.course_uuid,
+          activityUUID: activity.activity_uuid,
+          fileId: defaultSubtitle.filename,
+          activityType: 'video',
+        }) ?? ''
+      );
     }
     return '';
   };
 
   const getVideoSrc = () => {
     if (!activity.content?.filename) return '';
-    return getActivityMediaDirectory(course?.course_uuid, activity.activity_uuid, activity.content.filename, 'video');
+    return (
+      getActivityMediaDirectory({
+        courseUUID: course.course_uuid,
+        activityUUID: activity.activity_uuid,
+        fileId: activity.content.filename,
+        activityType: 'video',
+      }) ?? ''
+    );
   };
 
   return (

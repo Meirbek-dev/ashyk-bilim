@@ -1,38 +1,32 @@
 import {
-  AlertCircle,
   ArrowRight,
   BookOpen,
   CheckCircle2,
   Clock,
   Loader2,
   PlayCircle,
-  ShoppingCart,
   Sparkles,
   Trophy,
   UserPen,
 } from 'lucide-react';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/react-query/queryKeys';
+import { useSession } from '@/hooks/useSession';
 import { useContributorStatus } from '@/hooks/useContributorStatus';
-import { getProductsByCourse } from '@services/payments/products';
 import { applyForContributor } from '@services/courses/courses';
-import Modal from '@/components/Objects/Elements/Modal/Modal';
 import CourseProgress from '../CourseProgress/CourseProgress';
-import { checkPaidAccess } from '@services/payments/payments';
-import { revalidateTags } from '@services/utils/ts/requests';
+import { revalidateTags } from '@/lib/api-client';
 import { startCourse } from '@services/courses/activity';
 import { getAbsoluteUrl } from '@services/config/config';
 import { Card, CardContent } from '@/components/ui/card';
 import UserAvatar from '@components/Objects/UserAvatar';
-import { getTrailSwrKey } from '@services/courses/keys';
-import CoursePaidOptions from './CoursePaidOptions';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { mutate } from 'swr';
 
 interface CourseRun {
   status: string;
@@ -68,25 +62,14 @@ interface CourseActionsProps {
 }
 
 const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) => {
+  const queryClient = useQueryClient();
   const router = useRouter();
-  const session = usePlatformSession() as any;
-  const [linkedProducts, setLinkedProducts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user: currentUser } = useSession();
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [isContributeLoading, setIsContributeLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const { contributorStatus, refetch } = useContributorStatus(courseuuid);
   const [isProgressOpen, setIsProgressOpen] = useState(false);
   const t = useTranslations('Courses.CoursesActions');
-
-  // stable primitives to avoid effects depending on whole session object
-  const accessToken = session.data?.tokens?.access_token;
-  const userId = session.data?.user?.id;
-
-  // one-shot guards to avoid repeated requests when context identity changes
-  const fetchedLinkedProductsRef = useRef<Record<string, boolean>>({});
-  const checkedAccessRef = useRef<Record<string, boolean>>({});
 
   // Clean up course UUID by removing 'course_' prefix if it exists
   const cleanCourseUuid = course.course_uuid?.replace('course_', '');
@@ -97,47 +80,8 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
       return cleanRunCourseUuid === cleanCourseUuid;
     }) ?? false;
 
-  useEffect(() => {
-    const fetchLinkedProducts = async () => {
-      try {
-        const response = await getProductsByCourse(course.id, accessToken);
-        setLinkedProducts(response.data || []);
-      } catch {
-        console.error('Failed to fetch linked products');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // run once per course id to avoid loops caused by unstable session/context identity
-    if (fetchedLinkedProductsRef.current[course.id]) return;
-    fetchedLinkedProductsRef.current[course.id] = true;
-    fetchLinkedProducts();
-  }, [course.id, accessToken]);
-
-  useEffect(() => {
-    const checkAccess = async () => {
-      if (!userId) return;
-      try {
-        const response = await checkPaidAccess(course.id, accessToken);
-        setHasAccess(response.has_access);
-      } catch {
-        console.error('Failed to check course access');
-        toast.error(t('errorCheckingCourseAccess'));
-        setHasAccess(false);
-      }
-    };
-
-    // Only run when there are linked products and avoid rerunning repeatedly
-    if (linkedProducts.length === 0) return;
-    const checkKey = `${course.id}:${accessToken || 'no-token'}`;
-    if (checkedAccessRef.current[checkKey]) return;
-    checkedAccessRef.current[checkKey] = true;
-    checkAccess();
-  }, [course.id, accessToken, userId, linkedProducts, t]);
-
   const handleCourseAction = async () => {
-    if (!session.data?.user) {
+    if (!currentUser) {
       router.push(getAbsoluteUrl('/signup'));
       return;
     }
@@ -180,8 +124,8 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
     const loadingToast = toast.loading(t('startingCourse'));
 
     try {
-      await startCourse(`course_${courseuuid}`, session.data?.tokens?.access_token);
-      mutate([getTrailSwrKey(), session.data?.tokens?.access_token]);
+      await startCourse(`course_${courseuuid}`);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() });
       toast.success(t('startedCourseSuccess'), { id: loadingToast });
 
       // Get the first activity from the first chapter
@@ -194,7 +138,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
           `${getAbsoluteUrl('')}/course/${courseuuid}/activity/${firstActivity.activity_uuid.replace('activity_', '')}`,
         );
       } else {
-        mutate([getTrailSwrKey(), session.data?.tokens?.access_token]);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() });
         router.refresh();
       }
     } catch (error) {
@@ -208,7 +152,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
   };
 
   const handleApplyToContribute = async () => {
-    if (!session.data?.user) {
+    if (!currentUser) {
       router.push(getAbsoluteUrl('/signup'));
       return;
     }
@@ -221,7 +165,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
         message: t('contributorApplicationMessage'),
       };
 
-      await applyForContributor(`course_${courseuuid}`, data, session.data?.tokens?.access_token);
+      await applyForContributor(`course_${courseuuid}`, data);
       await revalidateTags(['courses']);
       refetch();
       toast.success(t('contributorApplicationSuccess'), { id: loadingToast });
@@ -234,7 +178,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
   };
 
   const renderActionButton = (action: 'start' | 'continue') => {
-    const isAuthenticated = Boolean(session.data?.user);
+    const isAuthenticated = Boolean(currentUser);
     const icon = action === 'start' ? <PlayCircle className="size-5" /> : <ArrowRight className="size-5" />;
     const label = action === 'start' ? t('startCourse') : t('continueLearning');
 
@@ -264,7 +208,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
       return null;
     }
 
-    if (!session.data?.user) {
+    if (!currentUser) {
       return (
         <Button
           variant="outline"
@@ -427,92 +371,6 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
       </button>
     );
   };
-
-  if (isLoading) {
-    return (
-      <Card
-        size="sm"
-        className="animate-pulse"
-      >
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="size-6 animate-spin text-neutral-400" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (linkedProducts.length > 0) {
-    return (
-      <Card size="sm">
-        <CardContent className="space-y-4">
-          {hasAccess ? (
-            <>
-              {/* Access granted banner */}
-              <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50/50 p-4">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-green-100">
-                  <CheckCircle2 className="size-4 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-green-800">{t('youOwnThisCourse')}</h3>
-                  <p className="mt-0.5 text-sm text-green-700">{t('youHavePurchasedThisCourse')}</p>
-                </div>
-              </div>
-
-              {/* Progress section for paid courses */}
-              {renderProgressSection()}
-
-              {/* Action button */}
-              <Button
-                onClick={handleCourseAction}
-                disabled={isActionLoading}
-                className="h-12 w-full gap-2 text-base"
-              >
-                {isActionLoading ? (
-                  <Loader2 className="size-5 animate-spin" />
-                ) : (
-                  renderActionButton(isStarted ? 'continue' : 'start')
-                )}
-              </Button>
-
-              {renderContributorButton()}
-            </>
-          ) : (
-            <>
-              {/* Payment required banner */}
-              <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50/50 p-4">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber-100">
-                  <AlertCircle className="size-4 text-amber-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-amber-800">{t('paidCourse')}</h3>
-                  <p className="mt-0.5 text-sm text-amber-700">{t('courseRequiresPurchase')}</p>
-                </div>
-              </div>
-
-              <Modal
-                isDialogOpen={isModalOpen}
-                onOpenChange={setIsModalOpen}
-                dialogContent={<CoursePaidOptions course={course} />}
-                dialogTitle={t('purchaseCourse')}
-                dialogDescription={t('selectPaymentOption')}
-                minWidth="sm"
-              />
-
-              <Button
-                onClick={() => setIsModalOpen(true)}
-                className="h-12 w-full gap-2 text-base"
-              >
-                <ShoppingCart className="size-5" />
-                {t('purchaseCourse')}
-              </Button>
-
-              {renderContributorButton()}
-            </>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card size="sm">

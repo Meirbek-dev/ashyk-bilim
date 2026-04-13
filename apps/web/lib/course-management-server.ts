@@ -1,7 +1,8 @@
 import type { CourseWorkspaceStage } from '@/lib/course-management';
 import { Actions, Resources, Scopes } from '@/types/permissions';
 import { getCourseUserRights } from '@services/courses/courses';
-import { requireAuth, sessionCan } from '@/lib/server-auth';
+import { requireSession } from '@/lib/auth/session';
+import { sessionCan } from '@/lib/auth/permissions';
 import { cleanCourseUuid } from '@/lib/course-management';
 import { redirect } from 'next/navigation';
 
@@ -12,6 +13,7 @@ export interface CourseWorkspaceCapabilities {
   canEditCurriculum: boolean;
   canManageAccess: boolean;
   canManageCollaboration: boolean;
+  canManageSettings: boolean;
   canManageCertificate: boolean;
   canReviewCourse: boolean;
   canDeleteCourse: boolean;
@@ -38,17 +40,19 @@ function mapCourseRightsToCapabilities(session: any, rights: CourseRightsRespons
   const canEditCurriculum = Boolean(rights.permissions?.update_content ?? rights.permissions?.update);
   const canManageAccess = Boolean(rights.permissions?.manage_access);
   const canManageCollaboration = Boolean(rights.permissions?.manage_contributors);
+  const canManageSettings = canManageAccess || canManageCollaboration;
   const canManageCertificate = Boolean(rights.permissions?.create_certifications);
   const canDeleteCourse = Boolean(rights.permissions?.delete);
   const canReviewCourse = canEditDetails || canEditCurriculum || canManageAccess || canManageCertificate;
 
   return {
-    canViewWorkspace: canReviewCourse || canManageCollaboration,
+    canViewWorkspace: canReviewCourse || canManageSettings,
     canCreateCourse: hasCreateCoursePermission(session),
     canEditDetails,
     canEditCurriculum,
     canManageAccess,
     canManageCollaboration,
+    canManageSettings,
     canManageCertificate,
     canReviewCourse,
     canDeleteCourse,
@@ -58,16 +62,9 @@ function mapCourseRightsToCapabilities(session: any, rights: CourseRightsRespons
 export async function getCourseWorkspaceCapabilitiesForCourse(
   courseuuid: string,
 ): Promise<CourseWorkspaceCapabilities> {
-  const session = await requireAuth();
-  const accessToken = session?.tokens?.access_token;
-  if (!accessToken) {
-    redirect('/unauthorized');
-  }
+  const session = await requireSession();
 
-  const rights = (await getCourseUserRights(
-    `course_${cleanCourseUuid(courseuuid)}`,
-    accessToken,
-  )) as CourseRightsResponse;
+  const rights = (await getCourseUserRights(`course_${cleanCourseUuid(courseuuid)}`)) as CourseRightsResponse;
   const capabilities = mapCourseRightsToCapabilities(session, rights);
 
   if (!capabilities.canViewWorkspace) {
@@ -87,7 +84,7 @@ export async function requireCourseWorkspaceStageAccess(
     overview: capabilities.canViewWorkspace,
     details: capabilities.canEditDetails,
     curriculum: capabilities.canEditCurriculum,
-    access: capabilities.canManageAccess,
+    access: capabilities.canManageSettings,
     collaboration: capabilities.canManageCollaboration,
     certificate: capabilities.canManageCertificate,
     review: capabilities.canReviewCourse,

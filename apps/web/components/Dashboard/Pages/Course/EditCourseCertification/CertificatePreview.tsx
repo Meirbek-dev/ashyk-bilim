@@ -6,6 +6,7 @@ import { getLogoMediaDirectory } from '@services/media/media';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 import type React from 'react';
 import QRCode from 'qrcode';
 
@@ -80,7 +81,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   awardedDate,
   qrCodeLink,
 }) => {
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
   const platform = usePlatform();
   const tTypes = useTranslations('Certificates.EditCourseCertification.certificationTypes');
   const t = useTranslations('Certificates.CertificatePreview');
@@ -106,7 +107,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   }, [certificateId, qrCodeLink]);
 
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="bg-card rounded-xl border p-4">
       <div
         className={cn(
           'relative min-h-[32rem] rounded-lg bg-background text-foreground',
@@ -114,28 +115,31 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
         )}
       >
         {layout === 'double' ? (
-          <div className="pointer-events-none absolute inset-3 rounded-md border border-border" />
+          <div className="border-border pointer-events-none absolute inset-3 rounded-md border" />
         ) : null}
-        {layout === 'classic' ? <div className="pointer-events-none absolute inset-x-10 top-6 h-px bg-border" /> : null}
+        {layout === 'classic' ? <div className="bg-border pointer-events-none absolute inset-x-10 top-6 h-px" /> : null}
 
         <div className={getCertificateBodyClass(layout)}>
           <div className={cn('relative flex flex-col', layout === 'split' ? 'p-6 md:p-8' : 'h-full')}>
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
-                <div className="flex items-center gap-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                <div className="text-muted-foreground flex items-center gap-1 text-xs font-medium tracking-[0.18em] uppercase">
                   <Hash className="size-3.5" />
                   <span>{t('certificateIdInline', { id: certificateId || 'OU-2025-001' })}</span>
                 </div>
-                <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('certificate')}</div>
+                <div className="text-muted-foreground text-xs tracking-[0.18em] uppercase">{t('certificate')}</div>
               </div>
 
               {layout !== 'split' ? (
-                <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-card p-1 sm:h-24 sm:w-24">
+                <div className="bg-card flex h-16 w-16 items-center justify-center rounded-md border p-1 sm:h-24 sm:w-24">
                   {qrCodeUrl ? (
-                    <img
+                    <Image
                       src={qrCodeUrl}
                       alt={t('certificateQRAlt')}
                       className="h-full w-full object-contain"
+                      width={96}
+                      height={96}
+                      unoptimized
                     />
                   ) : (
                     <QrCode className="text-muted-foreground h-10 w-10" />
@@ -145,20 +149,20 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             </div>
 
             <div className="flex flex-1 flex-col items-center justify-center px-2 py-10 text-center">
-              <div className="mb-4 flex items-center gap-2 text-muted-foreground">
-                <div className="h-px w-8 bg-border" />
+              <div className="text-muted-foreground mb-4 flex items-center gap-2">
+                <div className="bg-border h-px w-8" />
                 <Award className="size-5" />
-                <div className="h-px w-8 bg-border" />
+                <div className="bg-border h-px w-8" />
               </div>
 
               <h4 className="max-w-xl text-lg font-semibold tracking-tight sm:text-2xl">
                 {certificationName || t('certificationName')}
               </h4>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+              <p className="text-muted-foreground mt-4 max-w-2xl text-sm leading-7 sm:text-base">
                 {certificationDescription || t('certificationDescriptionPlaceholder')}
               </p>
 
-              <div className="mt-6 inline-flex items-center gap-2 rounded-full border bg-muted px-4 py-2 text-sm font-medium">
+              <div className="bg-muted mt-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
                 <CheckCircle className="size-4" />
                 <span>{tTypes(certificationType, { defaultValue: tTypes('completion') })}</span>
               </div>
@@ -166,11 +170,11 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
             <div className="grid gap-4 border-t pt-6 sm:grid-cols-3">
               <div className="space-y-1 text-left">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                <div className="text-muted-foreground flex items-center gap-2 text-xs tracking-[0.18em] uppercase">
                   <User className="size-3.5" />
                   <span>{t('instructor')}</span>
                 </div>
-                <div className="text-sm font-medium text-foreground">
+                <div className="text-foreground text-sm font-medium">
                   {certificateInstructor || t('instructorName')}
                 </div>
               </div>
@@ -178,52 +182,60 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
               <div className="space-y-2 text-center">
                 <div className="flex items-center justify-center">
                   {platform?.logo_image ? (
-                    <img
+                    <Image
                       src={`${getLogoMediaDirectory(platform.logo_image)}`}
                       alt={t('organizationLogoAlt')}
                       className="h-10 w-10 object-contain"
+                      width={40}
+                      height={40}
+                      unoptimized
                     />
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border bg-muted">
+                    <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full border">
                       <Building className="text-muted-foreground h-5 w-5" />
                     </div>
                   )}
                 </div>
-                <div className="text-sm font-medium text-foreground">{platform?.name || ''}</div>
+                <div className="text-foreground text-sm font-medium">{platform?.name || ''}</div>
               </div>
 
               <div className="space-y-1 text-right">
-                <div className="flex items-center justify-end gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                <div className="text-muted-foreground flex items-center justify-end gap-2 text-xs tracking-[0.18em] uppercase">
                   <Calendar className="size-3.5" />
                   <span>{t('awardedLabel')}</span>
                 </div>
-                <div className="text-sm font-medium text-foreground">{awardedDate || t('completedOn')}</div>
+                <div className="text-foreground text-sm font-medium">{awardedDate || t('completedOn')}</div>
               </div>
             </div>
           </div>
 
           {layout === 'split' ? (
-            <aside className="border-t bg-muted/50 p-6 md:border-t-0 md:border-l">
+            <aside className="bg-muted/50 border-t p-6 md:border-t-0 md:border-l">
               <div className="space-y-4">
                 <div>
-                  <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  <div className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
                     {t('template')}
                   </div>
-                  <div className="mt-2 text-sm font-medium text-foreground">
-                    {t(`certificatePatterns.${certificatePattern}`, { defaultValue: t('certificate') })}
+                  <div className="text-foreground mt-2 text-sm font-medium">
+                    {t(`certificatePatterns.${certificatePattern}`, {
+                      defaultValue: t('certificate'),
+                    })}
                   </div>
                 </div>
 
-                <div className="rounded-lg border bg-background p-3">
-                  <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                <div className="bg-background rounded-lg border p-3">
+                  <div className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
                     {t('qrLabel')}
                   </div>
                   <div className="mt-3 flex items-center justify-center">
                     {qrCodeUrl ? (
-                      <img
+                      <Image
                         src={qrCodeUrl}
                         alt={t('certificateQRAlt')}
                         className="h-28 w-28 object-contain"
+                        width={112}
+                        height={112}
+                        unoptimized
                       />
                     ) : (
                       <QrCode className="text-muted-foreground h-14 w-14" />
@@ -231,7 +243,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                   </div>
                 </div>
 
-                <div className="rounded-lg border bg-background p-3 text-sm text-muted-foreground">
+                <div className="bg-background text-muted-foreground rounded-lg border p-3 text-sm">
                   {t('previewNote')}
                 </div>
               </div>

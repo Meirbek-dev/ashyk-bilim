@@ -2,23 +2,40 @@ import { getCollections } from '@services/courses/collections';
 import { getAbsoluteUrl } from '@services/config/config';
 import { getCourses } from '@services/courses/courses';
 import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { connection, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
+  await connection();
+
   // Fetch all courses with pagination (20 per page)
   const COURSES_PER_PAGE = 20;
   const allCourses: { course_uuid: string }[] = [];
   let page = 1;
   let hasMore = true;
 
-  while (hasMore) {
-    const { courses: pageCourses, total } = await getCourses(null, null, page, COURSES_PER_PAGE);
-    allCourses.push(...pageCourses);
-    hasMore = page * COURSES_PER_PAGE < total;
-    page += 1;
+  try {
+    while (hasMore) {
+      const { courses: pageCourses, total } = await getCourses(undefined, page, COURSES_PER_PAGE);
+      allCourses.push(...pageCourses);
+      hasMore = page * COURSES_PER_PAGE < total;
+      page += 1;
+    }
+  } catch {
+    // Backend unavailable — return an empty but valid sitemap
+    return new NextResponse(
+      generateSitemap(getAbsoluteUrl('/'), [{ loc: getAbsoluteUrl('/'), priority: 1, changefreq: 'daily' }]),
+      {
+        headers: { 'Content-Type': 'application/xml' },
+      },
+    );
   }
 
-  const collections = await getCollections();
+  let collections: { collection_uuid: string }[] = [];
+  try {
+    collections = await getCollections();
+  } catch {
+    // Collections unavailable — continue with empty list
+  }
 
   const baseUrl = getAbsoluteUrl('/');
 

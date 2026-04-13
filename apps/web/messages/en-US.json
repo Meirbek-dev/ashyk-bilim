@@ -4,16 +4,30 @@
       "AI": "AI",
       "aiSender": "AI",
       "askAI": "Ask AI",
+      "closePanel": "Close AI panel",
+      "copy": "Copy",
+      "copied": "Copied!",
       "errorTitle": "Something wrong happened",
       "examplesAbbr": "ex. ",
       "hello": "Hello",
       "howCanWeHelp": "how can I help?",
       "logoAlt": "Ashyq Bilim AI Logo",
       "placeholder": "Ask AI About this Lecture",
+      "defaultUser": "User",
+      "dismiss": "Dismiss",
       "questionAbout": "What is this Activity about?",
       "questionExamples": "Explain this Activity in practical examples",
       "questionFlashcards": "Generate flashcards about this Activity",
+      "stopGeneration": "Stop generation",
       "usernameComma": "{username},"
+    },
+    "AIStatus": {
+      "aborted": "Request cancelled.",
+      "analyzing": "Analyzing your request without additional retrieval.",
+      "generating": "Generating the response.",
+      "processing": "Preparing your request.",
+      "retrieving": "Retrieving relevant course context.",
+      "working": "Working on your request."
     },
     "AICanvaToolkit": {
       "aiIconAlt": "AI Icon",
@@ -70,6 +84,7 @@
       "translateToLanguageMissing": "Please enter a language to translate to",
       "typePromptBelow": "Type your prompt below",
       "userInputPlaceholder": "Ask AI",
+      "stop": "Stop",
       "writerPlaceholder": "Write about..."
     },
     "AssignmentBoxUI": {
@@ -572,7 +587,11 @@
       "signInWithGoogle": "Sign in with Google",
       "signup": "Sign up",
       "title": "Login - {platformName}",
+      "sessionExpired": "Your session expired. Please sign in again.",
+      "sessionRevoked": "Your session was revoked. Please sign in again.",
+      "sessionRecoveryFailed": "We could not recover your session. Please sign in again.",
       "wrongCredentials": "Wrong email or password",
+      "serviceUnavailable": "Service temporarily unavailable. Please try again.",
       "loginTitle": "Login",
       "noAccount": "Don't have an account?"
     },
@@ -839,6 +858,7 @@
       "certificationRemoved": "Certification removed successfully",
       "certificationSettings": "Certification Settings",
       "certificationType": "Certification Type",
+      "certificationTypeRequired": "Certification type is required",
       "certificationTypes": {
         "achievement": "Achievement Based",
         "assessment": "Assessment Based",
@@ -852,6 +872,7 @@
       },
       "certificationUpdated": "Certification updated successfully",
       "courseCertification": "Course Certification",
+      "certificatePatternRequired": "Certificate pattern is required",
       "creatingCertification": "Creating Certification...",
       "creatingCertificationDescription": "Please wait while we set up your course certification.",
       "enableCertification": "Enable and configure certificates for students who complete this course",
@@ -880,6 +901,7 @@
   },
   "Common": {
     "close": "Close",
+    "cancel": "Cancel",
     "DataTable": {
       "searchPlaceholder": "Search table...",
       "emptyMessage": "No rows found.",
@@ -1017,11 +1039,12 @@
     "DocumentPdfModal": {
       "ariaLabel": "Choose PDF document file to upload",
       "createActivity": "Create Activity",
+      "fileTooLarge": "File size exceeds the 100MB limit",
       "noFileSelected": "No file selected",
       "pdfDocumentFile": "PDF Document File",
       "pdfDocumentName": "PDF Document Name",
       "selectFile": "Select PDF File",
-      "supportedFormats": "Supported format: PDF",
+      "supportedFormats": "Supported format: PDF • Max size: 100MB",
       "valueMissingFile": "Please provide a PDF document for your activity",
       "valueMissingName": "Please provide a name for your PDF activity"
     },
@@ -1358,9 +1381,6 @@
       "step8Button": "Create an Assignment",
       "step8Desc": "Engage students with assignments, track their progress, and provide feedback through our intuitive grading system.",
       "step8Title": "Create and Grade Assignments",
-      "step9Button": "Payment Settings",
-      "step9Desc": "Set up payment plans, sell courses, and manage subscriptions with our integrated payment system.",
-      "step9Title": "Monetize your content",
       "triggerText": "Onboarding"
     },
     "NavMenu": {
@@ -2070,18 +2090,23 @@
       "deletingActivity": "Deleting activity...",
       "editAssignmentButton": "Edit Assignment",
       "editPageButton": "Edit Page",
+      "openEditPage": "Open edit page",
       "failedToUpdateActivityName": "Failed to update activity name",
       "noAccessToken": "Authentication required",
       "ownerLabel": "Owner",
-      "previewTooltip": "Preview Activity",
       "ownerBadge": "You created this activity",
+      "previewTooltip": "Preview Activity",
       "publish": "Publish",
       "publishButton": "Publish",
       "unpublish": "Unpublish",
       "unpublishButton": "Unpublish",
       "updateFailed": "Failed to update activity",
       "updating": "Updating activity...",
-      "editButton": "Edit"
+      "editButton": "Edit",
+      "draftBadge": "Draft",
+      "liveBadge": "Live",
+      "save": "Save",
+      "cancel": "Cancel"
     },
     "ChapterElement": {
       "chapterNamePlaceholder": "Chapter name",
@@ -2111,6 +2136,8 @@
         "currentThumbnailAlt": "Current course thumbnail",
         "errors": {
           "fileTooLarge": "File size ({fileSize}MB) exceeds the 8MB limit",
+          "imageReadFailed": "Could not read the selected image",
+          "invalidAspectRatio": "Image must use a 16:9 ratio. Selected image is {width}x{height}",
           "invalidMimeType": "Invalid file type: {fileType}. Please upload only PNG or JPG/JPEG images",
           "invalidVideoMimeType": "Invalid file type: {fileType}. Please upload only MP4, MKV or WebM videos",
           "pleaseSelectAFile": "Please select a file",
@@ -2125,7 +2152,7 @@
         "pleaseSelectAFile": "Please select a file",
         "selectImageFile": "Select Image File",
         "selectVideoFile": "Select Video File",
-        "supportedFormats": "Supported formats: JPG, PNG (max 8MB)",
+        "supportedFormats": "Supported formats: JPG, PNG (max 8MB, 16:9)",
         "supportedVideoFormats": "Supported formats: MP4, MKV, WebM (max 100MB)",
         "thumbnailPreviewAlt": "Course thumbnail preview",
         "thumbnailUpdatedSuccessfully": "Thumbnail updated successfully",
@@ -2186,6 +2213,10 @@
     "NewActivityModal": {
       "buttonText": "Add Activity",
       "description": "Create a new activity for this chapter.",
+      "quickCreate": {
+        "codeChallengeName": "New Code Challenge",
+        "dynamicPageName": "New Dynamic Page"
+      },
       "title": "Add Activity"
     },
     "Structure": {
@@ -2197,18 +2228,33 @@
       "chapterCreateFailed": "Failed to create chapter",
       "chapterCreatedSuccess": "Chapted created successfully",
       "creatingChapter": "Creating...",
+      "chapterNamePlaceholder": "Chapter name",
       "saveOrderError": "Failed to save the new content order",
       "savingOrder": "Applying curriculum changes",
       "curriculumChangesApplyImmediately": "Curriculum changes apply immediately",
       "curriculumInlineFeedback": "Drag, reorder, and chapter creation actions save as you work.",
       "refreshAfterError": "The latest structure change could not be saved. Review the current curriculum and try again.",
-      "title": "Course Curriculum"
+      "title": "Course Curriculum",
+      "confirmChapter": "Confirm",
+      "cancel": "Cancel",
+      "selectItemHint": "Click + Add Activity under a chapter to get started",
+      "selectItemHintDescription": "Select an activity type and fill in the details. Changes are saved immediately.",
+      "emptyStateTitle": "Build your curriculum",
+      "emptyStateDescription": "Add your first chapter to organize lessons and activities.",
+      "emptyStateAction": "Add your first chapter"
     },
     "Conflict": {
       "title": "This course changed in another editor",
       "description": "Someone saved a newer version of this course while you were editing.",
       "reloadWarning": "Reload to get the latest course data before trying again. Reloading will discard unsaved changes on this page.",
-      "reloadButton": "Reload latest course",
+      "draftSummaryTitle": "Your pending changes",
+      "serverSummaryTitle": "Current course state",
+      "keepMineButton": "Retry with my changes",
+      "useTheirsButton": "Discard my changes",
+      "emptyDraftSummary": "No unsaved changes are stored for this section.",
+      "emptyServerSummary": "The latest course snapshot is not available yet.",
+      "reloadButton": "Reload latest",
+      "saveAnywayButton": "Save anyway",
       "reviewDraftButton": "Keep reviewing my draft"
     },
     "activityNamePlaceholder": "Activity name",
@@ -2231,7 +2277,11 @@
     "deleting": "Deleting...",
     "edit": "Edit",
     "editButton": "Edit",
-    "noActivities": "No activities yet"
+    "noActivities": "No activities yet",
+    "deleteChapterConfirmationBreakdown": "This will permanently delete the chapter and its {count, plural, =0 {0 activities} one {# activity} other {# activities}} ({published} published, {drafts} drafts).",
+    "noActivitiesHint": "Add your first activity below",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "CourseEndView": {
     "backToCourse": "Back to Course",
@@ -2319,12 +2369,7 @@
       "authors": "Authors",
       "leaveCourse": "Leave Course",
       "loading": "Loading...",
-      "modalDescription": "Select a payment option to access this course",
-      "modalTitle": "Purchase Course",
       "moreAuthors": "& {count} more",
-      "ownCourse": "You Own This Course",
-      "paidCourse": "Paid Course",
-      "purchaseCourse": "Purchase Course",
       "signIn": "Sign In",
       "startCourse": "Start Course"
     },
@@ -2355,25 +2400,6 @@
       "updateTitlePlaceholder": "What's new in this update?",
       "updates": "updates",
       "updatesAppearHere": "Updates about this course will appear here"
-    },
-    "CoursePaidOptions": {
-      "benefits": "Benefits:",
-      "checkoutError": "Failed to initiate checkout process",
-      "choosePrice": "Choose your price",
-      "failedToLoad": "Failed to load product options",
-      "loading": "Loading...",
-      "minimumPrice": "Minimum Price:",
-      "oneTimePayment": "One-time payment",
-      "perMonth": "(per month)",
-      "perMonthSuffix": "/month",
-      "price": "Price:",
-      "processing": "Processing...",
-      "purchaseNow": "Purchase Now",
-      "requestError": "An error occurred while processing your request",
-      "showLess": "Show less",
-      "showMore": "Show more",
-      "subscribeNow": "Subscribe Now",
-      "subscription": "Subscription"
     },
     "CourseUpdates": {
       "addNewCourseUpdate": "Add new Course Update",
@@ -2413,7 +2439,6 @@
       "updates": "Updates"
     },
     "CoursesActions": {
-      "accessCheckError": "Failed to check course access. Please try again later.",
       "activitiesCompleted": "{completed} of {total} activities completed",
       "applicationPending": "Contributor application pending",
       "applyToContribute": "Apply to contribute",
@@ -2437,21 +2462,13 @@
       "contributorApplicationSuccess": "Your application to contribute has been submitted successfully",
       "courseCompleted": "Course Completed!",
       "courseProgress": "Course Progress",
-      "courseRequiresPurchase": "This course requires purchase to access its content.",
       "leaveCourse": "Leave Course",
       "leaveCourseError": "Failed to leave the course. Please try again later.",
       "leaveError": "Failed to leave the course. Please try again later.",
       "leaveSuccess": "Successfully left the course",
       "leavingCourse": "Leaving course...",
       "leftCourseSuccess": "Successfully left the course",
-      "modalDescription": "Select a payment option to access this course",
-      "modalTitle": "Purchase Course",
       "moreAuthors": "& {count} more",
-      "ownCourseDescription": "You have purchased this course and have full access to all content.",
-      "ownCourseTitle": "You Own This Course",
-      "paidCourse": "Paid Course",
-      "paidCourseDescription": "This course requires purchase to access its content.",
-      "paidCourseTitle": "Paid Course",
       "progressCard": {
         "activitiesCompletedLabel": "activities completed",
         "chapterActivitiesCount": "{completed}/{total} activities",
@@ -2459,9 +2476,7 @@
         "completedAllActivities": "Great job! You have completed all activities.",
         "courseCompleted": "Course Completed!"
       },
-      "purchaseCourse": "Purchase Course",
       "readyToBegin": "Ready to Begin?",
-      "selectPaymentOption": "Select a payment option to access this course",
       "startCourse": "Start Course",
       "startCourseError": "Failed to start the course. Please try again later.",
       "startError": "Failed to start the course. Please try again later.",
@@ -2471,13 +2486,7 @@
       "startingCourse": "Starting course...",
       "submittingContributorApplication": "Submitting contributor application...",
       "youAreAContributor": "You are a contributor",
-      "youAreContributor": "You are a contributor",
-      "youHavePurchasedThisCourse": "You have purchased this course and have full access to all content.",
-      "youOwnThisCourse": "You Own This Course"
-    },
-    "PaidCourseActivityDisclaimer": {
-      "message": "This content requires a course purchase to access.",
-      "paidContent": "Paid Content"
+      "youAreContributor": "You are a contributor"
     },
     "access": "Access",
     "content": "Content",
@@ -3160,7 +3169,8 @@
       "Tasks": {
         "addTask": "Add Task",
         "addTaskModalDescription": "Create a new task for this assignment",
-        "addTaskModalTitle": "Add task to assignment"
+        "addTaskModalTitle": "Add task to assignment",
+        "openTask": "Open task"
       },
       "addQuestion": "Add Question",
       "evaluate": "Evaluate",
@@ -3173,10 +3183,30 @@
       "noQuestionsFound": "No questions found",
       "optionPlaceholder": "Enter option text",
       "questionPlaceholder": "Enter question text",
+      "assignmentStatusDescription": "Track assignment-level submission progress before drilling into task-level grading.",
+      "assignmentStatusEmpty": "No assignment-level statuses are available yet.",
+      "assignmentStatusGrade": "Grade",
+      "assignmentStatusGraded": "Graded",
+      "assignmentStatusGradedCount": "Graded: {count}",
+      "assignmentStatusLearner": "Learner",
+      "assignmentStatusLate": "Late",
+      "assignmentStatusLoadErrorDescription": "Assignment-level statuses could not be loaded.",
+      "assignmentStatusLoadErrorTitle": "Status panel unavailable",
+      "assignmentStatusLoading": "Loading assignment-level statuses...",
+      "assignmentStatusNotSubmitted": "Not submitted",
+      "assignmentStatusNotYetSubmitted": "Not yet submitted",
+      "assignmentStatusPending": "Pending",
+      "assignmentStatusState": "Status",
+      "assignmentStatusSubmitted": "Submitted",
+      "assignmentStatusSubmittedAt": "Submitted at",
+      "assignmentStatusSubmittedCount": "Submitted: {count}",
+      "assignmentStatusTitle": "Assignment status overview",
+      "assignmentStatusTotal": "Learners: {count}",
       "submission": "Submission",
       "submitted": "Submitted",
       "tasks": "Tasks",
-      "title": "Assignments"
+      "title": "Assignments",
+      "submissionsTitle": "Student Submissions"
     },
     "Card": {
       "AccountSettings": {
@@ -3188,6 +3218,14 @@
         "errorOccurred": "An error occurred",
         "title": "Courses"
       },
+      "Assignments": {
+        "description": "View and grade assignments across your courses",
+        "title": "Assignments"
+      },
+      "Analytics": {
+        "description": "Access analytics dashboards and export reports",
+        "title": "Analytics"
+      },
       "Platform": {
         "description": "Configure general settings for your platform",
         "title": "Platform"
@@ -3196,6 +3234,12 @@
         "description": "Manage your organization's users and roles",
         "title": "Users"
       },
+      "Admin": {
+        "description": "Organization administration and system settings",
+        "title": "Admin",
+        "badge": "System"
+      },
+      "noAccess": "You don’t have access to dashboard features yet.",
       "platformLogo": "Ashyq Bilim Logo",
       "touUniversity": "Toraighyrov University"
     },
@@ -3314,6 +3358,11 @@
         "table": {
           "actions": "Actions",
           "course": "Course",
+          "selectAll": "Select all submissions on this page",
+          "selectSubmission": "Select submission for {student}",
+          "selectedCount": "{count} submissions selected",
+          "clearSelection": "Clear selection",
+          "batchGrade": "Batch Grade",
           "emptyMessage": "No courses match the current filters.",
           "filterPlaceholder": "Filter current page results",
           "noDescription": "No description yet.",
@@ -3485,12 +3534,10 @@
         },
         "steps": {
           "basics": "Basics",
-          "launch": "Launch",
           "template": "Template"
         },
         "summary": {
           "heading": "Setup summary",
-          "launchDestination": "Launch destination",
           "selectedOutlineCourse": "Selected outline course",
           "sourceCourse": "Source course",
           "template": "Template",
@@ -3549,13 +3596,11 @@
         "previewButton": "Preview",
         "reviewButton": "Review",
         "tabs": {
-          "access": "Access",
           "certificate": "Certificate",
-          "collaboration": "Collaboration",
-          "curriculum": "Curriculum",
+          "content": "Content",
           "details": "Details",
-          "overview": "Overview",
-          "reviewPublish": "Review & Publish"
+          "publish": "Review & Publish",
+          "settings": "Settings"
         },
         "untitledCourse": "Untitled course",
         "unsavedDialogLeave": "Leave workspace",
@@ -3760,6 +3805,8 @@
       "failedToRemoveContributor": "Failed to remove {username}: {reason}",
       "failedToRemoveContributorsGeneral": "Failed to remove contributors",
       "failedToRemoveSelectedContributors": "Failed to remove selected contributors",
+      "removeSelectedConfirmMessage": "This will remove {count, plural, one {# contributor} other {# contributors}} from the course.",
+      "removeSelectedConfirmTitle": "Remove {count, plural, one {# contributor} other {# contributors}}?",
       "failedToUpdateContributor": "Failed to update contributor",
       "inactive": "Inactive",
       "maintainer": "Maintainer",
@@ -3907,7 +3954,10 @@
         "dropOrClick": "Drop an image here or click to select",
         "expand": "Expand",
         "imageViewer": "Image Viewer",
+        "invalidImageFile": "Please select a valid image file",
+        "previewImageAlt": "Preview",
         "supportedFormats": "Supported formats: JPG, PNG, WebP, GIF",
+        "uploadFailed": "Upload failed",
         "upload": "Upload",
         "uploading": "Uploading..."
       },
@@ -4059,6 +4109,7 @@
       "Toolbar": {
         "addColumnRight": "Add column right",
         "addRowBelow": "Add row below",
+        "aiEditor": "AI Editor",
         "aria": {
           "insertInteractiveScenarios": "Insert interactive scenarios"
         },
@@ -4074,6 +4125,7 @@
         "calloutWarning": "Callout (Warning)",
         "clickMe": "Click me",
         "codeBlock": "Code Block",
+        "codeBlockLanguage": "Code Language",
         "codeInline": "Code Inline",
         "defaultInfoCalloutText": "Info",
         "defaultScenario": {
@@ -4118,7 +4170,15 @@
         "headingLevel": "Heading {level}",
         "image": "Image",
         "infoCallout": "Info Callout",
+        "insert": "Insert",
+        "insertGroups": {
+          "callouts": "Callouts",
+          "interactive": "Interactive",
+          "media": "Media",
+          "text": "Text"
+        },
         "insertTable": "Insert new table (3×3)",
+        "lists": "Lists",
         "interactiveQuiz": "Interactive Quiz",
         "interactiveScenarios": "Interactive Scenarios",
         "italic": "Italic",
@@ -4128,12 +4188,19 @@
           "orderedList": "Ordered List"
         },
         "mathEquation": "Math Equation (LaTeX)",
+        "plainText": "Plain text",
+        "slashBlocks": "Blocks",
+        "slashEmbedDescription": "Embed {label}",
+        "slashInsertDescription": "Insert {label} block",
+        "slashNoResults": "No results found.",
+        "slashSearchPlaceholder": "Search blocks...",
         "orderedList": "Ordered List",
         "paragraph": "Paragraph",
         "pdfDocument": "PDF Document",
         "redo": "Redo",
         "strike": "Strikethrough",
         "table": "Table",
+        "tableOfContents": "Table of contents",
         "undo": "Undo",
         "user": "User",
         "video": "Video",
@@ -4771,183 +4838,6 @@
       "socials": "Socials",
       "socialsDescription": "Manage your organization social media links",
       "socialsTitle": "Socials"
-    },
-    "Payments": {
-      "Configuration": {
-        "aboutStripe": {
-          "acceptPayments": "Accept payments for courses and subscriptions",
-          "accessAnalytics": "Access detailed payment analytics",
-          "handleCurrencies": "Handle multiple currencies and payment methods",
-          "learnMore": "Learn more about Stripe",
-          "manageSubscriptions": "Manage recurring billing and subscriptions",
-          "title": "About the Stripe Integration"
-        },
-        "accountNotConfigured": "Stripe account not configured",
-        "configUpdatedSuccess": "Configuration updated successfully",
-        "connectButton": "Connect Stripe Account",
-        "connectedStatus": "Connected",
-        "connectingButton": "Connecting to Stripe...",
-        "deletingStripeConfig": "Deleting Stripe configuration...",
-        "editModalDescription": "Update your Stripe account details",
-        "editModalTitle": "Edit Stripe Configuration",
-        "enableButton": "Enable Stripe Payments",
-        "enablingStripe": "Enabling Stripe...",
-        "errorLoading": "Error loading payment configuration",
-        "errors": {
-          "deleteStripeConfigFailed": "Failed to delete Stripe configuration",
-          "enableStripeFailed": "Failed to enable Stripe",
-          "loadStripeConfigFailed": "Failed to load existing configuration",
-          "startStripeOnboardingFailed": "Failed to start Stripe onboarding",
-          "updateConfigFailed": "Failed to update configuration"
-        },
-        "linkedAccountLabel": "Linked Account ID",
-        "loading": "Loading...",
-        "notConnectedStatus": "Not Connected",
-        "pageDescription": "Manage your organization payments configuration",
-        "pageTitle": "Payments Configuration",
-        "removeConnectionButton": "Remove Connection",
-        "removeConnectionConfirmation": "Are you sure you want to remove the Stripe connection? This will disable payments.",
-        "removeConnectionTitle": "Remove Stripe Connection",
-        "saveButton": "Save",
-        "startingStripeOnboarding": "Starting Stripe onboarding",
-        "stripeAccountIdLabel": "Stripe Account ID",
-        "stripeAccountIdPlaceholder": "acct_...",
-        "stripeConfigDeletedSuccess": "Stripe configuration deleted successfully",
-        "stripeEnabledSuccess": "Stripe enabled successfully",
-        "updatingConfig": "Updating configuration..."
-      },
-      "CustomersPage": {
-        "amountHeader": "Amount",
-        "description": "View and manage your customer information",
-        "errors": {
-          "loadCustomersFailed": "Error loading customers"
-        },
-        "noCustomerData": "No customer data available",
-        "noCustomers": "No customers found",
-        "oneTimeType": "One-time",
-        "productHeader": "Product",
-        "purchaseDateHeader": "Purchase Date",
-        "statusHeader": "Status",
-        "subscriptionType": "Subscription",
-        "title": "Customers",
-        "typeHeader": "Type",
-        "userHeader": "User"
-      },
-      "LinkCourseModal": {
-        "alreadyLinked": "Already Linked",
-        "linkCourseButton": "Link Course",
-        "noCoursesFound": "No courses found",
-        "searchPlaceholder": "Search for courses..."
-      },
-      "LinkedCourses": {
-        "linkCourseButton": "Link Course",
-        "linkModalDescription": "Select courses to associate with this product",
-        "linkModalTitle": "Link Courses to Product",
-        "noCoursesLinked": "No courses linked to this product yet.",
-        "title": "Linked Courses"
-      },
-      "ProductForm": {
-        "benefitsLabel": "Benefits (Optional)",
-        "benefitsPlaceholder": "List the benefits, one per line",
-        "currencyLabel": "Currency",
-        "currencyPlaceholder": "Select currency",
-        "descriptionLabel": "Description",
-        "descriptionPlaceholder": "Describe your product",
-        "errors": {
-          "amountMin": "Amount must be at least 1",
-          "amountRequired": "Amount is required",
-          "currencyRequired": "Currency is required",
-          "descriptionRequired": "Description is required",
-          "nameRequired": "Product name is required",
-          "priceTypeRequired": "Price type is required",
-          "productTypeRequired": "Product type is required"
-        },
-        "minAmountLabel": "Minimum Amount",
-        "nameLabel": "Product Name",
-        "namePlaceholder": "Enter product name",
-        "priceLabel": "Price",
-        "priceTypeLabel": "Price Type",
-        "priceTypePlaceholder": "Select price type",
-        "priceTypes": {
-          "customer_choice": "Customer Choice (Min Price)",
-          "fixed_price": "Fixed Price"
-        },
-        "productTypeLabel": "Product Type",
-        "productTypePlaceholder": "Select product type",
-        "productTypes": {
-          "one_time": "One-time Payment",
-          "subscription": "Subscription"
-        },
-        "submitButton": "Create Product",
-        "submittingButton": "Creating..."
-      },
-      "ProductPage": {
-        "archiveButton": "Archive",
-        "archiveConfirmButton": "Archive Product",
-        "archiveConfirmationMessage": "Are you sure you want to archive this product?",
-        "archiveConfirmationTitle": "Archive {productName}?",
-        "benefitsLabel": "Benefits:",
-        "createModalDescription": "Add a new product to your organization",
-        "createModalTitle": "Create New Product",
-        "createProductButton": "Create New Product",
-        "editButton": "Edit",
-        "editForm": {
-          "benefitsLabel": "Benefits",
-          "benefitsPlaceholder": "Product Benefits",
-          "cancelButton": "Cancel",
-          "currencyLabel": "Currency",
-          "currencyPlaceholder": "Currency",
-          "descriptionLabel": "Description",
-          "descriptionPlaceholder": "Product Description",
-          "nameLabel": "Product Name",
-          "namePlaceholder": "Product Name",
-          "priceLabel": "Price",
-          "pricePlaceholder": "Price",
-          "productUpdatedSuccess": "Product updated successfully",
-          "saveButton": "Save",
-          "savingButton": "Saving...",
-          "updateProductFailed": "Failed to update product"
-        },
-        "errors": {
-          "archiveProductFailed": "Failed to archive data: {error}"
-        },
-        "loadError": "Failed to load products",
-        "loading": "Loading...",
-        "noProducts": "No products available. Create a new product to get started.",
-        "oneTimeType": "One-Time",
-        "priceLabel": "Price:",
-        "productArchivedSuccess": "Product archived successfully",
-        "showLess": "Show less",
-        "showMore": "Show more",
-        "subscriptionType": "Subscription"
-      },
-      "configuration": "Payment Configuration",
-      "configurationInfo": "Set up and manage your payment gateway",
-      "configureStripe": "Configure your Stripe account.",
-      "contactAdmin": "Please contact an administrator to enable payments.",
-      "createProducts": "Create products or subscriptions.",
-      "customerInfo": "View and manage customer information",
-      "customers": "Customers",
-      "goToConfiguration": "Go to Configuration",
-      "notAvailable": "Payments not available",
-      "notEnabledMessage": "The payments feature is not enabled for this organization.",
-      "overview": "Overview",
-      "paidProducts": "Paid Products",
-      "paidProductsInfo": "Manage paid products and pricing",
-      "productsSubscriptions": "Products and Subscriptions",
-      "startSelling": "Start selling your courses!",
-      "title": "Payments",
-      "unconfiguredAlertTitle": "Payment Configuration Required"
-    },
-    "Stripe": {
-      "completing": "Completing Connection...",
-      "connectError": "Error connecting Stripe account",
-      "connectionFailed": "Connection Failed.",
-      "connectionSuccess": "Connection Successful!",
-      "missingParameters": "Missing parameters to verify Stripe connection.",
-      "pleaseWait": "Please wait while we securely connect your Stripe account.",
-      "returnToDashboard": "You can now return to the dashboard.",
-      "tryAgainOrContact": "Please try again or contact support if the issue persists."
     },
     "UserAccountSettings": {
       "Gamification": {
@@ -6103,6 +5993,158 @@
     "sunset_blaze": "Sunset Blaze",
     "volcanic": "Volcanic"
   },
+  "Grading": {
+    "Table": {
+      "needGrading": "need grading",
+      "total": "Total: {count}",
+      "student": "Student",
+      "attempt": "Attempt",
+      "submitted": "Submitted",
+      "status": "Status",
+      "statusDraft": "Draft",
+      "statusPending": "Pending",
+      "statusGraded": "Graded",
+      "statusPublished": "Published",
+      "statusReturned": "Returned",
+      "score": "Score",
+      "scorePlaceholder": "0–100",
+      "scoreInputAria": "Edit score for {student}",
+      "quickSaveAria": "Save score for {student}",
+      "empty": "No submissions yet",
+      "prev": "Prev",
+      "next": "Next",
+      "pageOf": "Page {page} of {pages}",
+      "grade": "Grade",
+      "view": "View",
+      "filterAll": "All",
+      "filterNeedsGrading": "Needs Grading",
+      "filterGraded": "Graded",
+      "filterLate": "Late",
+      "searchPlaceholder": "Search by student name or email...",
+      "sortBy": "Sort by",
+      "sortByDate": "Submitted date",
+      "sortByScore": "Score",
+      "sortByAttempt": "Attempt",
+      "exportCSV": "Export CSV",
+      "filterPending": "Pending",
+      "filterPublished": "Published",
+      "filterReturned": "Returned"
+    },
+    "Stats": {
+      "total": "Total",
+      "needsGrading": "Needs Grading",
+      "avgScore": "Avg Score",
+      "passRate": "Pass Rate"
+    },
+    "Panel": {
+      "title": "Grading panel",
+      "loading": "Loading...",
+      "notYetSubmitted": "Not yet submitted",
+      "noData": "No submission data",
+      "finalScore": "Final Score",
+      "autoScore": "Auto score",
+      "feedback": "Feedback",
+      "optional": "optional",
+      "feedbackPlaceholder": "Add a comment or feedback...",
+      "returnToStudent": "Return to student",
+      "confirmReturnTitle": "Return to student?",
+      "confirmReturnDesc": "The student will be notified and may revise their submission.",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "saveGrade": "Save grade",
+      "saving": "Saving...",
+      "gradeSaved": "Grade saved successfully",
+      "returned": "Returned to student",
+      "saveFailed": "Failed to save grade",
+      "invalidScore": "Score must be between 0 and 100",
+      "previous": "Previous",
+      "next": "Next",
+      "attempt": "Attempt",
+      "manualReviewRequired": "This submission requires manual review",
+      "needsReview": "Needs review",
+      "noBreakdown": "No answer breakdown available",
+      "saveDraft": "Save draft",
+      "publishGrade": "Publish grade",
+      "gradePublished": "Grade published to student",
+      "confirmPublishTitle": "Publish grade?",
+      "confirmPublishDesc": "The student will be able to see their grade and feedback.",
+      "unsavedTitle": "Unsaved changes",
+      "unsavedDesc": "You have unsaved changes. Are you sure you want to discard them and continue?",
+      "discardAndContinue": "Discard and continue",
+      "late": "Late",
+      "autoSum": "Auto-sum",
+      "useAutoScore": "Use auto-score",
+      "useAutoSum": "Use auto-sum",
+      "studentAnswer": "Student answer",
+      "itemScore": "Score",
+      "itemFeedback": "Feedback",
+      "itemFeedbackPlaceholder": "Add item-level feedback...",
+      "correctAnswer": "Correct answer"
+    },
+    "Batch": {
+      "title": "Batch Grade ({count} submissions)",
+      "subtitle": "{count} drafts edited",
+      "close": "Close batch grading panel",
+      "position": "Student {current} of {total}: {student}",
+      "indicatorNotEdited": "Not edited",
+      "indicatorEdited": "Edited",
+      "saveDraft": "Save Draft",
+      "draftSaved": "Draft changes are kept locally until you submit them",
+      "submitAll": "Submit All ({count})",
+      "submitting": "Submitting...",
+      "confirmSubmitTitle": "Submit grades for selected students?",
+      "confirmSubmitDesc": "Submit grades for {count} students? This cannot be undone.",
+      "confirmSubmitAction": "Submit All ({count})",
+      "nothingToSubmit": "Edit at least one submission before submitting",
+      "scoreRequired": "Every edited submission must have a final score",
+      "submitSummary": "{succeeded} grades submitted, {failed} failed",
+      "submitFailed": "Failed to submit batch grades",
+      "unknownError": "Unknown error",
+      "unsavedTitle": "Unsaved batch drafts",
+      "unsavedDesc": "You have local grading drafts that have not been submitted. Discard them and close the panel?"
+    },
+    "Result": {
+      "score": "Score",
+      "passed": "Passed",
+      "failed": "Not passed",
+      "autoScore": "Auto score",
+      "teacherFeedback": "Teacher feedback",
+      "yourAnswer": "Your answer",
+      "correctAnswer": "Correct answer",
+      "breakdown": "Answer breakdown",
+      "pendingReview": "Pending review",
+      "waitingForGrade": "Waiting for teacher review"
+    },
+    "SubmissionShell": {
+      "bannerSubmittedTitle": "Submitted",
+      "bannerSubmittedDesc": "Your work has been submitted and is awaiting review.",
+      "bannerGradedTitle": "Graded",
+      "bannerGradedDesc": "Your submission is being reviewed by the teacher.",
+      "bannerLateTitle": "Late submission",
+      "bannerLateDesc": "Your submission was received after the deadline.",
+      "bannerReturnedTitle": "Returned for revision",
+      "bannerReturnedDesc": "The teacher has returned your work. Please revise and resubmit.",
+      "score": "Score",
+      "readyToSubmit": "Ready to submit your work?",
+      "returnedResubmit": "Your work has been returned. Make corrections and resubmit.",
+      "bannerPendingTitle": "Submitted",
+      "bannerPendingDesc": "Your work has been submitted and is awaiting review.",
+      "bannerPublishedTitle": "Grade published",
+      "bannerPublishedDesc": "Your grade and feedback are now available."
+    },
+    "SubmitButton": {
+      "submitForGrading": "Submit for grading",
+      "submitting": "Submitting...",
+      "alreadySubmitted": "Already submitted",
+      "notAuthenticated": "Please sign in to submit",
+      "submitted": "Submitted successfully",
+      "submitFailed": "Failed to submit. Please try again.",
+      "confirmTitle": "Submit for grading?",
+      "confirmDescription": "You will not be able to make changes after submission.",
+      "cancel": "Cancel",
+      "confirmSubmit": "Submit"
+    }
+  },
   "Header": {
     "adminBadge": "ADMIN",
     "login": "Login",
@@ -6270,7 +6312,6 @@
       "manageAnalytics": "Open teacher analytics dashboard",
       "manageAssignments": "Manage assignments",
       "manageCourses": "Manage courses",
-      "managePayments": "Manage payments and billing",
       "manageUsers": "Manage users",
       "platformSettings": "Platform settings",
       "platformLogo": "Ashyq Bilim logo",
@@ -6295,7 +6336,6 @@
       "courses": "Courses",
       "home": "Home",
       "platform": "Platform",
-      "payments": "Payments",
       "settings": "Settings",
       "users": "Users"
     },
@@ -6309,7 +6349,6 @@
       "logout": "Logout",
       "metrics": "Metrics",
       "platform": "Platform Settings",
-      "payments": "Payments",
       "userSettings": "@{username}'s Settings",
       "users": "Users"
     }
@@ -6368,7 +6407,16 @@
       "sortCompletion": "Completion",
       "sortActiveLearners": "Active learners",
       "sortDifficulty": "Difficulty",
-      "sortSignals": "Signals"
+      "sortSignals": "Signals",
+      "sectionAriaLabel": "Analytics filter controls",
+      "windowSelect": "Select analytics window",
+      "compareSelect": "Select comparison mode",
+      "bucketSelect": "Select bucket",
+      "courseSelect": "Select course",
+      "cohortSelect": "Select cohort",
+      "timezoneSelect": "Select timezone",
+      "sortBySelect": "Select sort field",
+      "sortOrderSelect": "Select sort order"
     },
     "labels": {
       "bucket": {
@@ -6492,8 +6540,9 @@
       "searchDefault": "Search...",
       "emptyDefault": "No rows found for the selected filters.",
       "visibleRows": "{count} visible rows",
-      "showingRows": "{from}\u2013{to} of {total}",
+      "showingRows": "{from}–{to} of {total}",
       "page": "Page {current} of {total}",
+      "pagination": "Pagination",
       "prev": "Previous",
       "next": "Next",
       "rowsPerPage": "Rows per page",
@@ -6544,9 +6593,11 @@
       "colMedian": "Median",
       "colDifficulty": "Difficulty",
       "colSignals": "Signals",
+      "viewAssessment": "View assessment {title}",
       "healthy": "Healthy",
       "searchPlaceholder": "Search assessments...",
-      "emptyMessage": "No assessment outliers match the current scope."
+      "emptyMessage": "No assessment outliers match the current scope.",
+      "rowCount": "{count} assessment outliers"
     },
     "atRisk": {
       "defaultTitle": "At-risk learners",
@@ -6755,9 +6806,13 @@
       "description": "Warm coffee-inspired theme with rich mocha and cream tones",
       "name": "Mocha Mousse"
     },
-    "mono": {
-      "description": "Ultra-minimal monochrome theme with pure black and white, no shadows",
-      "name": "Mono"
+    "dark": {
+      "description": "Dark theme (in development)",
+      "name": "Dark (Beta)"
+    },
+    "darkBeta": {
+      "description": "An experimental dark theme with deep contrasts and subtle accents designed for comfortable nighttime use",
+      "name": "Dark (Beta)"
     },
     "nature": {
       "description": "Fresh nature-inspired theme with organic green tones and earthy accents",
@@ -6881,6 +6936,7 @@
     "loadingCertificate": "Loading...",
     "noCertificateAvailable": "No certificate available",
     "quitCourseButton": "Quit Course",
+    "stepsLabel": "steps",
     "viewCertificate": "View Certificate"
   },
   "TrailPage": {
@@ -6888,13 +6944,14 @@
     "myProgress": "My Progress",
     "noCourses": "You haven't started any courses yet.",
     "noCoursesInProgress": "No courses in progress",
-    "quitAllCourses": "Quit All Courses",
-    "quitAllCoursesConfirmation": "Are you sure you want to quit all courses? This action cannot be undone and you will lose all your progress.",
-    "quitAllCoursesDialogTitle": "Quit All Courses?",
-    "quittingProgress": "Quitting Courses ({progress}%)",
     "startACourseToSeeYourProgress": "Start a course to see your progress here",
     "startExploring": "Start exploring courses!",
     "title": "Progress"
+  },
+  "UnauthorizedPage": {
+    "button": "Return home",
+    "message": "You do not have permission to access this page.",
+    "title": "Unauthorized"
   },
   "UserProfilePage": {
     "aboutTitle": "About",

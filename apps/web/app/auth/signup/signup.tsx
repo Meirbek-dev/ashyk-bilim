@@ -1,125 +1,117 @@
 'use client';
 
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { AuthErrorBanner, AuthSubmitButton } from '@components/auth/AuthForm';
+import { getAbsoluteUrl, getPublicAPIUrl } from '@services/config/config';
+import { signupAction } from '@/app/actions/auth';
 import PasswordInput from '@components/ui/custom/password-input';
-import { valibotResolver } from '@hookform/resolvers/valibot';
-import { useEffect, useState, useTransition } from 'react';
 import { SiGoogle } from '@icons-pack/react-simple-icons';
-import { getAbsoluteUrl } from '@services/config/config';
-import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Separator } from '@components/ui/separator';
-import { passwordSchema } from '@/lib/schemas/auth';
+import { passwordSchema } from '@/lib/auth/schemas';
+import { useActionState, useTransition } from 'react';
 import { Button } from '@components/ui/button';
 import AuthLogo from '@components/auth/logo';
 import AuthCard from '@components/auth/card';
 import { Input } from '@components/ui/input';
-import { signup } from '@services/auth/auth';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
-import { useForm } from 'react-hook-form';
-import { signIn } from 'next-auth/react';
 import * as v from 'valibot';
 
-const buildFormSchema = (t: (key: string) => string) =>
-  v.pipe(
+const SIGNUP_ERROR_MAP: Record<string, string> = {
+  email_taken: 'emailTaken',
+  username_taken: 'usernameTaken',
+};
+
+interface SignupState {
+  error: string | null;
+  fieldErrors: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  };
+}
+
+const SignUpClient = () => {
+  const t = useTranslations('Auth.Signup');
+  const validationT = useTranslations('Validation');
+  const [isPendingGoogle, startGoogleTransition] = useTransition();
+
+  const schema = v.pipe(
     v.object({
-      firstName: v.pipe(v.string(), v.minLength(1, t('required'))),
-      lastName: v.pipe(v.string(), v.minLength(1, t('required'))),
-      email: v.pipe(v.string(), v.email(t('invalidEmail'))),
-      password: passwordSchema(t),
+      firstName: v.pipe(v.string(), v.minLength(1, validationT('required'))),
+      lastName: v.pipe(v.string(), v.minLength(1, validationT('required'))),
+      email: v.pipe(v.string(), v.email(validationT('invalidEmail'))),
+      password: passwordSchema(validationT),
       confirmPassword: v.string(),
     }),
     v.forward(
       v.partialCheck(
         [['password'], ['confirmPassword']],
         (data) => data.password === data.confirmPassword,
-        t('passwordsDontMatch'),
+        validationT('passwordsDontMatch'),
       ),
       ['confirmPassword'],
     ),
   );
 
-type SignUpFormData = v.InferOutput<ReturnType<typeof buildFormSchema>>;
+  const [state, action, isPending] = useActionState(
+    async (_prev: SignupState, formData: FormData): Promise<SignupState> => {
+      const result = v.safeParse(schema, {
+        firstName: formData.get('firstName'),
+        lastName: formData.get('lastName'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+        confirmPassword: formData.get('confirmPassword'),
+      });
 
-const SignUpClient = () => {
-  const session = usePlatformSession();
-  const router = useRouter();
-  const t = useTranslations('Auth.Signup');
-  const validationT = useTranslations('Validation');
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState('');
-  const formSchema = buildFormSchema(validationT);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<SignUpFormData>({
-    defaultValues: { firstName: '', lastName: '', email: '', password: '', confirmPassword: '' },
-    resolver: valibotResolver(formSchema),
-  });
-
-  useEffect(() => {
-    if (session?.status === 'authenticated') {
-      router.push(getAbsoluteUrl('/'));
-    }
-  }, [session?.status, router]);
-
-  const onSubmit = (data: SignUpFormData) => {
-    setError('');
-    startTransition(async () => {
-      try {
-        const username = `${data.firstName.toLowerCase()}.${data.lastName.toLowerCase()}`;
-        const res = await signup({
-          username,
-          email: data.email,
-          password: data.password,
-          first_name: data.firstName,
-          last_name: data.lastName,
-        });
-
-        if (res.ok) {
-          const signInRes = await signIn('credentials', {
-            redirect: false,
-            email: data.email,
-            password: data.password,
-          });
-          if (signInRes?.ok) {
-            globalThis.location.href = '/redirect_from_auth';
-          } else {
-            router.push(getAbsoluteUrl('/login'));
-          }
-        } else {
-          const body = await res.json().catch(() => ({}));
-          const detail = body?.detail;
-          const msg =
-            typeof detail === 'string' ? detail : detail?.message || body?.message || t('errorSomethingWentWrong');
-          setError(msg);
-        }
-      } catch (error: any) {
-        setError(error.message || t('errorSomethingWentWrong'));
+      if (!result.success) {
+        const flat = v.flatten(result.issues);
+        return {
+          error: null,
+          fieldErrors: {
+            firstName: flat.nested?.firstName?.[0],
+            lastName: flat.nested?.lastName?.[0],
+            email: flat.nested?.email?.[0],
+            password: flat.nested?.password?.[0],
+            confirmPassword: flat.nested?.confirmPassword?.[0],
+          },
+        };
       }
-    });
-  };
+
+      const { firstName, lastName, email, password } = result.output;
+      const response = await signupAction({
+        email,
+        firstName,
+        lastName,
+        password,
+      });
+
+      if (!response.ok) {
+        const code = response.signupCode;
+        const msgKey = code && SIGNUP_ERROR_MAP[code] ? SIGNUP_ERROR_MAP[code] : null;
+        return {
+          error: msgKey ? t(msgKey) : t('errorSomethingWentWrong'),
+          fieldErrors: {},
+        };
+      }
+
+      return { error: null, fieldErrors: {} };
+    },
+    { error: null, fieldErrors: {} },
+  );
 
   const handleGoogleSignIn = () => {
-    startTransition(() => {
-      signIn('google', {
-        callbackUrl: '/redirect_from_auth',
-      });
+    startGoogleTransition(() => {
+      const frontendCallback = getAbsoluteUrl('/redirect_from_auth');
+      const authorizeUrl = new URL(`${getPublicAPIUrl()}auth/google/authorize`);
+      authorizeUrl.searchParams.set('callback', frontendCallback);
+      globalThis.location.href = authorizeUrl.toString();
     });
   };
 
-  if (session?.status === 'authenticated') {
-    return (
-      <AuthCard>
-        <AuthLogo />
-        <p className="text-muted-foreground mt-4 text-sm">{t('redirecting')}</p>
-      </AuthCard>
-    );
-  }
+  const anyPending = isPending || isPendingGoogle;
 
   return (
     <AuthCard className="max-w-md">
@@ -134,7 +126,7 @@ const SignUpClient = () => {
       <Button
         className="mt-8 w-full gap-3"
         onClick={handleGoogleSignIn}
-        disabled={isPending}
+        disabled={anyPending}
       >
         <SiGoogle />
         {t('continueWithGoogle')}
@@ -148,41 +140,37 @@ const SignUpClient = () => {
 
       <form
         className="w-full space-y-4"
-        onSubmit={handleSubmit(onSubmit)}
+        action={action}
       >
-        {error ? (
-          <div className="flex items-center gap-2 rounded-md bg-red-200 p-3 text-red-950">
-            <AlertTriangle size={18} />
-            <span className="text-sm font-semibold">{error}</span>
-          </div>
-        ) : null}
+        {state.error ? <AuthErrorBanner message={state.error} /> : null}
+
         <div className="grid grid-cols-2 gap-3">
           <Field>
             <FieldLabel>{t('firstName')}</FieldLabel>
             <FieldContent>
               <Input
+                name="firstName"
                 type="text"
                 placeholder={t('firstNamePlaceholder')}
                 autoComplete="given-name"
                 className="w-full"
-                {...register('firstName')}
               />
             </FieldContent>
-            <FieldError>{errors.firstName?.message}</FieldError>
+            <FieldError>{state.fieldErrors.firstName}</FieldError>
           </Field>
 
           <Field>
             <FieldLabel>{t('lastName')}</FieldLabel>
             <FieldContent>
               <Input
+                name="lastName"
                 type="text"
                 placeholder={t('lastNamePlaceholder')}
                 autoComplete="family-name"
                 className="w-full"
-                {...register('lastName')}
               />
             </FieldContent>
-            <FieldError>{errors.lastName?.message}</FieldError>
+            <FieldError>{state.fieldErrors.lastName}</FieldError>
           </Field>
         </div>
 
@@ -190,59 +178,48 @@ const SignUpClient = () => {
           <FieldLabel>{t('email')}</FieldLabel>
           <FieldContent>
             <Input
+              name="email"
               type="email"
               placeholder={t('emailPlaceholder')}
               autoComplete="email"
               className="w-full"
-              {...register('email')}
             />
           </FieldContent>
-          <FieldError>{errors.email?.message}</FieldError>
+          <FieldError>{state.fieldErrors.email}</FieldError>
         </Field>
 
         <Field>
           <FieldLabel>{t('password')}</FieldLabel>
           <FieldContent>
             <PasswordInput
+              name="password"
               placeholder={t('passwordPlaceholder')}
               autoComplete="new-password"
               className="w-full"
-              {...register('password')}
             />
           </FieldContent>
-          <FieldError>{errors.password?.message}</FieldError>
+          <FieldError>{state.fieldErrors.password}</FieldError>
         </Field>
 
         <Field>
           <FieldLabel>{t('confirmPassword')}</FieldLabel>
           <FieldContent>
             <PasswordInput
+              name="confirmPassword"
               placeholder={t('confirmPasswordPlaceholder')}
               autoComplete="new-password"
               className="w-full"
-              {...register('confirmPassword')}
             />
           </FieldContent>
-          <FieldError>{errors.confirmPassword?.message}</FieldError>
+          <FieldError>{state.fieldErrors.confirmPassword}</FieldError>
         </Field>
 
-        <Button
-          type="submit"
+        <AuthSubmitButton
+          isPending={anyPending}
+          label={t('createAccount')}
+          pendingLabel={t('loading')}
           className="mt-2 w-full"
-          disabled={isPending}
-        >
-          {isPending ? (
-            <>
-              <Loader2
-                className="mr-2 h-4 w-4 animate-spin"
-                aria-hidden="true"
-              />
-              {t('loading')}
-            </>
-          ) : (
-            t('createAccount')
-          )}
-        </Button>
+        />
       </form>
 
       <p className="mt-5 text-center text-sm">

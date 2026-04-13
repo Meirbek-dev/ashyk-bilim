@@ -68,7 +68,7 @@ export default function KpiHealthRingsChart({ data }: KpiHealthRingsChartProps) 
           {data.map((d) => (
             <div
               key={d.name}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground"
+              className="text-muted-foreground flex items-center gap-1.5 text-xs"
             >
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-full"

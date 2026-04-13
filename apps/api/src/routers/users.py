@@ -1,20 +1,19 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, Request, Response, UploadFile
 from pydantic import EmailStr
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from src.core.events.database import get_db_session
 from src.db.courses.courses import CourseRead
 from src.db.users import (
     PublicUser,
-    User,
     UserCreate,
     UserRead,
     UserSession,
     UserUpdate,
     UserUpdatePassword,
 )
+from src.infra.db.session import get_db_session
 from src.security.auth import get_current_user
 from src.security.rbac import (
     PermissionCheckerDep,
@@ -41,18 +40,18 @@ from src.services.users.users import (
 router = APIRouter()
 
 
-@router.get("/profile")
-async def api_get_current_user(
-    current_user: Annotated[User, Depends(get_current_user)],
-):
+@router.get("/profile", response_model=UserRead)
+def api_get_current_user(
+    current_user: Annotated[PublicUser, Depends(get_current_user)],
+) -> UserRead:
     """
     Get current user
     """
-    return current_user.model_dump()
+    return current_user
 
 
-@router.get("/session")
-async def api_get_current_user_session(
+@router.get("/session", response_model=UserSession)
+def api_get_current_user_session(
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_current_user)],
@@ -60,7 +59,7 @@ async def api_get_current_user_session(
     """
     Get current user session.
     """
-    return await get_user_session(
+    return get_user_session(
         request,
         db_session,
         current_user,
@@ -84,7 +83,7 @@ async def api_create_user_without_platform(
 
 
 @router.get("/id/{user_id}", tags=["users"])
-async def api_get_user_by_id(
+def api_get_user_by_id(
     *,
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -97,11 +96,11 @@ async def api_get_user_by_id(
     """
     # Short client-side cache; data is user-scoped and should be private
     response.headers["Cache-Control"] = "private, max-age=60"
-    return await read_user_by_id(request, db_session, current_user, user_id)
+    return read_user_by_id(request, db_session, current_user, user_id)
 
 
 @router.get("/uuid/{user_uuid}", tags=["users"])
-async def api_get_user_by_uuid(
+def api_get_user_by_uuid(
     *,
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -111,11 +110,11 @@ async def api_get_user_by_uuid(
     """
     Get User by UUID
     """
-    return await read_user_by_uuid(request, db_session, current_user, user_uuid)
+    return read_user_by_uuid(request, db_session, current_user, user_uuid)
 
 
 @router.get("/username/{username}", tags=["users"])
-async def api_get_user_by_username(
+def api_get_user_by_username(
     *,
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -128,11 +127,11 @@ async def api_get_user_by_username(
     """
     # Short client-side cache; data is user-scoped and should be private
     response.headers["Cache-Control"] = "private, max-age=60"
-    return await read_user_by_username(request, db_session, current_user, username)
+    return read_user_by_username(request, db_session, current_user, username)
 
 
 @router.put("/{user_id}", tags=["users"])
-async def api_update_user(
+def api_update_user(
     *,
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -152,7 +151,7 @@ async def api_update_user(
     if not is_own_profile:
         checker.require(current_user.id, "user:update")
 
-    return await update_user(request, db_session, user_id, current_user, user_object)
+    return update_user(request, db_session, user_id, current_user, user_object)
 
 
 @router.put("/update_avatar/{user_id}", tags=["users"])
@@ -180,7 +179,7 @@ async def api_update_avatar_user(
 
 
 @router.put("/change_password/{user_id}", tags=["users"])
-async def api_update_user_password(
+def api_update_user_password(
     *,
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -197,11 +196,11 @@ async def api_update_user_password(
     if user_id != current_user.id:
         raise ResourceAccessDenied(reason="You can only change your own password")
 
-    return await update_user_password(request, db_session, current_user, user_id, form)
+    return update_user_password(request, db_session, current_user, user_id, form)
 
 
 @router.put("/preferences/theme/{user_id}", tags=["users"])
-async def api_update_user_theme(
+def api_update_user_theme(
     *,
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -213,11 +212,11 @@ async def api_update_user_theme(
     Update User Theme Preference
     """
     user_update = UserUpdate(theme=theme)
-    return await update_user(request, db_session, user_id, current_user, user_update)
+    return update_user(request, db_session, user_id, current_user, user_update)
 
 
 @router.put("/preferences/locale/{user_id}", tags=["users"])
-async def api_update_user_locale(
+def api_update_user_locale(
     *,
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -229,7 +228,7 @@ async def api_update_user_locale(
     Update User Locale Preference
     """
     user_update = UserUpdate(locale=locale)
-    return await update_user(request, db_session, user_id, current_user, user_update)
+    return update_user(request, db_session, user_id, current_user, user_update)
 
 
 @router.post("/reset_password/change_password/{email}", tags=["users"])
@@ -275,7 +274,7 @@ async def api_send_password_reset_email(
 
 
 @router.delete("/user_id/{user_id}", tags=["users"])
-async def api_delete_user(
+def api_delete_user(
     *,
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -296,7 +295,7 @@ async def api_delete_user(
             reason="You cannot delete your own account through this endpoint"
         )
 
-    return await delete_user_by_id(request, db_session, current_user, user_id)
+    return delete_user_by_id(request, db_session, current_user, user_id)
 
 
 @router.get("/{user_id}/courses", tags=["users"])

@@ -1,0 +1,470 @@
+/*
+ * Unified ProseMirror content styles.
+ * Single source of truth for all editor surfaces (authoring, interactive, discussion).
+ * Uses CSS custom properties from the shadcn/ui design system.
+ */
+
+/* ── Base ──────────────────────────────────────────────────────── */
+
+.ProseMirror {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--foreground);
+  caret-color: var(--foreground);
+  padding: 1rem;
+  word-break: break-word;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* ── Placeholder ───────────────────────────────────────────────── */
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  pointer-events: none;
+  float: left;
+  height: 0;
+  opacity: 0.6;
+}
+
+/* ── Headings ──────────────────────────────────────────────────── */
+/* Use ems for margins so they scale proportionally with the heading size */
+
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4,
+.ProseMirror h5,
+.ProseMirror h6 {
+  font-family: inherit;
+  color: var(--foreground);
+  line-height: 1.3;
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror h1:first-child,
+.ProseMirror h2:first-child,
+.ProseMirror h3:first-child,
+.ProseMirror h4:first-child {
+  margin-top: 0;
+}
+
+.ProseMirror h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border);
+}
+
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.ProseMirror h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.ProseMirror h5 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.ProseMirror h6 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+/* ── Paragraphs ────────────────────────────────────────────────── */
+
+.ProseMirror p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Links ─────────────────────────────────────────────────────── */
+
+.ProseMirror a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+  transition:
+    text-decoration-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.ProseMirror a:hover {
+  color: var(--primary);
+  text-decoration-color: var(--primary);
+}
+
+/* ── Lists ─────────────────────────────────────────────────────── */
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.35rem;
+}
+
+.ProseMirror li > p {
+  margin-bottom: 0.35rem;
+}
+
+.ProseMirror li > p:last-child {
+  margin-bottom: 0;
+}
+
+/* Nested lists */
+.ProseMirror ul ul,
+.ProseMirror ol ol,
+.ProseMirror ul ol,
+.ProseMirror ol ul {
+  margin-top: 0.35rem;
+  margin-bottom: 0;
+}
+
+/* ── Blockquote ────────────────────────────────────────────────── */
+
+.ProseMirror blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1.25rem;
+  margin: 1.5rem 0;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.ProseMirror blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Horizontal rule ───────────────────────────────────────────── */
+
+.ProseMirror hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2.5rem 0;
+}
+
+/* ── Code ──────────────────────────────────────────────────────── */
+
+.ProseMirror code {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  padding: 0.2em 0.4em;
+}
+
+.ProseMirror pre {
+  background: oklch(0.14 0 0);
+  /* Keeping your dark theme for code blocks */
+  color: oklch(0.9 0 0);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  padding: 1.25rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  line-height: 1.5;
+  tab-size: 2;
+}
+
+.ProseMirror pre code {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 0.875rem;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* ── Syntax highlighting (hljs) ─────────────────────────────── */
+
+.ProseMirror .hljs-comment,
+.ProseMirror .hljs-quote {
+  color: oklch(0.5 0 0);
+  font-style: italic;
+}
+
+.ProseMirror .hljs-variable,
+.ProseMirror .hljs-template-variable,
+.ProseMirror .hljs-attribute,
+.ProseMirror .hljs-tag,
+.ProseMirror .hljs-name,
+.ProseMirror .hljs-regexp,
+.ProseMirror .hljs-link,
+.ProseMirror .hljs-selector-id,
+.ProseMirror .hljs-selector-class {
+  color: oklch(0.72 0.16 20);
+}
+
+.ProseMirror .hljs-number,
+.ProseMirror .hljs-meta,
+.ProseMirror .hljs-built_in,
+.ProseMirror .hljs-builtin-name,
+.ProseMirror .hljs-literal,
+.ProseMirror .hljs-type,
+.ProseMirror .hljs-params {
+  color: oklch(0.76 0.12 60);
+}
+
+.ProseMirror .hljs-string,
+.ProseMirror .hljs-symbol,
+.ProseMirror .hljs-bullet {
+  color: oklch(0.76 0.14 145);
+}
+
+.ProseMirror .hljs-title,
+.ProseMirror .hljs-section {
+  color: oklch(0.8 0.1 80);
+}
+
+.ProseMirror .hljs-keyword,
+.ProseMirror .hljs-selector-tag {
+  color: oklch(0.74 0.12 240);
+}
+
+.ProseMirror .hljs-emphasis {
+  font-style: italic;
+}
+
+.ProseMirror .hljs-strong {
+  font-weight: 700;
+}
+
+/* ── Tables ────────────────────────────────────────────────────── */
+
+.ProseMirror .tableWrapper {
+  margin: 2rem 0;
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.ProseMirror table {
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  position: relative;
+  box-sizing: border-box;
+  min-width: 1em;
+  padding: 0.6rem 0.8rem;
+  vertical-align: top;
+  border: 1px solid var(--border);
+}
+
+.ProseMirror th {
+  background: var(--muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-align: left;
+  color: var(--muted-foreground);
+}
+
+.ProseMirror td > *,
+.ProseMirror th > * {
+  margin-bottom: 0;
+}
+
+.ProseMirror table .selectedCell::after {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  content: '';
+  pointer-events: none;
+}
+
+.ProseMirror table .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--primary);
+  pointer-events: none;
+}
+
+.ProseMirror.resize-cursor {
+  cursor: col-resize;
+}
+
+/* ── iframes (embeds, YouTube) ─────────────────────────────────── */
+
+.ProseMirror iframe {
+  display: block;
+  width: 100%;
+  min-width: 200px;
+  height: 440px;
+  min-height: 200px;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  outline: none;
+  margin: 1.5rem 0;
+}
+
+/* Resizable embed blocks manage their own dimensions. */
+.ProseMirror .embed-block iframe,
+.ProseMirror block-embed iframe,
+.ProseMirror .block-pdf iframe,
+.ProseMirror block-pdf iframe {
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: inherit;
+}
+
+/* ── Images ────────────────────────────────────────────────────── */
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+  border: 1px solid var(--border);
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ── Selection ─────────────────────────────────────────────────── */
+
+.ProseMirror ::selection {
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+/* ── Marks ─────────────────────────────────────────────────────── */
+
+.ProseMirror strong {
+  font-weight: 600;
+  /* 600 often looks cleaner than 700 or 650 in modern sans fonts */
+}
+
+.ProseMirror s {
+  text-decoration-thickness: 1px;
+  color: var(--muted-foreground);
+  /* Dim text when struck through */
+}
+
+/* ── Authoring mode ─────────────────────────────────────────────── */
+
+.prosemirror-authoring .ProseMirror {
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .prosemirror-authoring .ProseMirror {
+    padding: 3rem 4rem;
+  }
+}
+
+/* ── Interactive (read-only) mode overrides ────────────────────── */
+
+.prosemirror-interactive .ProseMirror {
+  font-size: 1rem;
+  width: 100%;
+}
+
+/* TOC sidebar layout */
+.prosemirror-interactive-layout {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: clamp(0.75rem, 1.5vw, 1.5rem);
+  width: 100%;
+  max-width: 100%;
+  align-items: start;
+}
+
+/* TOC sidebar — collapses entirely when empty */
+.prosemirror-interactive-layout-toc:empty {
+  display: none;
+}
+
+.prosemirror-interactive-layout-toc {
+  flex: 0 0 auto;
+  width: clamp(15rem, 20vw, 22rem);
+  position: sticky;
+  top: 2rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+/* Main content always fills remaining space */
+.prosemirror-interactive-layout-content {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .prosemirror-interactive-layout {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .prosemirror-interactive-layout-toc {
+    display: none;
+  }
+}
+
+/* ── Discussion mode overrides ─────────────────────────────────── */
+
+.prosemirror-discussion .ProseMirror {
+  max-width: none;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}

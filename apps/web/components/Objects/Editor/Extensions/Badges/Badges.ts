@@ -1,7 +1,20 @@
-import { ReactNodeViewRenderer } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
+import { type CommandProps, Node, mergeAttributes } from '@tiptap/core';
 
-import BadgesExtension from '@/components/Objects/Editor/Extensions/Badges/BadgesExtension';
+import BadgesExtension from './BadgesExtension';
+import { nodeView } from '@components/Objects/Editor/core';
+
+export interface BadgeAttrs {
+  color: string;
+  emoji: string;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    badge: {
+      insertBadge: () => ReturnType;
+    };
+  }
+}
 
 export default Node.create({
   name: 'badge',
@@ -32,8 +45,20 @@ export default Node.create({
     return ['badge', mergeAttributes(HTMLAttributes), 0];
   },
 
+  addCommands() {
+    return {
+      insertBadge:
+        () =>
+        ({ commands }: CommandProps) =>
+          commands.insertContent({
+            type: this.name,
+            content: [{ type: 'paragraph' }],
+          }),
+    };
+  },
+
   addNodeView() {
-    return ReactNodeViewRenderer(BadgesExtension, {
+    return nodeView(BadgesExtension, {
       contentDOMElementTag: 'div',
     });
   },

@@ -1,8 +1,7 @@
 'use client';
 
-import { useAssignmentSubmission } from '@components/Contexts/Assignments/AssignmentSubmissionContext';
 import { BookPlus, BookUser, FileUp, Forward, InfoIcon, ListTodo, Save, Type } from 'lucide-react';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useSession } from '@/hooks/useSession';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { CardContent, CardHeader } from '@components/ui/card';
 import { Separator } from '@components/ui/separator';
@@ -23,6 +22,8 @@ interface AssignmentBoxProps {
   view?: ViewMode;
   maxPoints?: number;
   currentPoints?: number;
+  /** Pass true when the student already has a submission — hides the submit button. */
+  hasExistingSubmission?: boolean;
   saveFC?: () => void;
   submitFC?: () => void;
   gradeFC?: () => void;
@@ -36,6 +37,7 @@ const AssignmentBoxUI = ({
   view = 'student',
   currentPoints = 0,
   maxPoints,
+  hasExistingSubmission = false,
   saveFC,
   submitFC,
   gradeFC,
@@ -44,14 +46,9 @@ const AssignmentBoxUI = ({
   children,
 }: AssignmentBoxProps) => {
   const t = useTranslations('Activities.AssignmentBoxUI');
-  const [customGrade, setCustomGrade] = useState<string>('');
-  const submissionContext = useAssignmentSubmission();
-  const session = usePlatformSession();
-
-  const submissions = submissionContext?.submissions ?? [];
-  const isAuthenticated = session?.status === 'authenticated';
-  const hasNoSubmissions = submissions.length === 0;
-  const showStudentSubmitButton = view === 'student' && isAuthenticated && hasNoSubmissions;
+  const [customGrade, setCustomGrade] = useState('');
+  const { isAuthenticated } = useSession();
+  const showStudentSubmitButton = view === 'student' && isAuthenticated && !hasExistingSubmission;
 
   const handleCustomGradeSubmit = () => {
     if (!gradeCustomFC || !customGrade) return;
@@ -177,8 +174,8 @@ interface TeacherViewBadgeProps {
 
 const TeacherViewBadge = ({ t }: TeacherViewBadgeProps) => (
   <Badge
-    variant="outline"
-    className="gap-1.5 border-amber-200 bg-amber-50 text-amber-700"
+    variant="secondary"
+    className="gap-1.5"
   >
     <BookUser className="h-3 w-3" />
     <span className="text-xs">{t('teacherView')}</span>
@@ -192,8 +189,8 @@ interface PointsBadgeProps {
 
 const PointsBadge = ({ points, t }: PointsBadgeProps) => (
   <Badge
-    variant="outline"
-    className="gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700"
+    variant="success"
+    className="gap-1.5"
   >
     <BookPlus className="h-3 w-3" />
     <span className="text-xs">{t('points', { count: points })}</span>
@@ -225,9 +222,9 @@ const TeacherActions = ({ saveFC, t }: TeacherActionsProps) => {
   return (
     <Button
       onClick={saveFC}
-      variant="outline"
+      variant="secondary"
       size="sm"
-      className="gap-2 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
+      className="gap-2"
     >
       <Save className="h-4 w-4" />
       <span className="text-xs font-semibold">{t('save')}</span>
@@ -246,9 +243,9 @@ const StudentActions = ({ submitFC, t }: StudentActionsProps) => {
   return (
     <Button
       onClick={submitFC}
-      variant="outline"
+      variant="default"
       size="sm"
-      className="w-full gap-2 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 sm:w-auto"
+      className="w-full gap-2 sm:w-auto"
     >
       <Forward className="h-4 w-4" />
       <span className="text-xs font-semibold">{t('saveProgress')}</span>

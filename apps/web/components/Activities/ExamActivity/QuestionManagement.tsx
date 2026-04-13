@@ -1,5 +1,7 @@
 'use client';
 
+import { apiFetch } from '@/lib/api-client';
+
 import { createInitialEditorState, questionEditorReducer } from './state/questionEditorReducer';
 import { Download, Edit2, GripVertical, Plus, Trash2, Upload } from 'lucide-react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
@@ -17,32 +19,25 @@ import {
   AlertDialogTitle,
 } from '@components/ui/alert-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
-import { Dialog, DialogContent } from '@components/ui/dialog';
-import { getAPIUrl } from '@/services/config/config';
+import { Dialog, DialogContent, DialogDescription } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
 import QuestionEditor from './QuestionEditor';
 
 interface QuestionManagementProps {
   examUuid: string;
   questions: Question[];
-  accessToken: string;
   onQuestionsChange: () => void;
 }
 
-export default function QuestionManagement({
-  examUuid,
-  questions,
-  accessToken,
-  onQuestionsChange,
-}: QuestionManagementProps) {
+export default function QuestionManagement({ examUuid, questions, onQuestionsChange }: QuestionManagementProps) {
   const t = useTranslations('Components.QuestionManagement');
 
-  // Centralized state management with reducer
+  // Centralized state management with reducer,
   const [state, dispatch] = useReducer(questionEditorReducer, createInitialEditorState());
   const inlineEditorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Extract current state
+  // Extract current state,
   const isDialogOpen = state.mode === 'editing-modal';
   const inlineEditorOpen = state.mode === 'editing-inline';
   const editingQuestion = state.mode === 'editing-inline' || state.mode === 'editing-modal' ? state.question : null;
@@ -60,18 +55,13 @@ export default function QuestionManagement({
       order_index: questions.length,
     };
     dispatch({ type: 'START_INLINE_EDIT', question: newQuestion });
-    // scroll the inline editor into view after render
+    // scroll the inline editor into view after render,
     setTimeout(() => inlineEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
   };
 
   const handleExportCSV = async () => {
     try {
-      const response = await fetch(`${getAPIUrl()}exams/${examUuid}/questions/export-csv`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const response = await apiFetch(`exams/${examUuid}/questions/export-csv`, { method: 'GET' });
 
       if (!response.ok) throw new Error('Failed to export questions');
 
@@ -100,13 +90,7 @@ export default function QuestionManagement({
     formData.append('file', file);
 
     try {
-      const response = await fetch(`${getAPIUrl()}exams/${examUuid}/questions/import-csv`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: formData,
-      });
+      const response = await apiFetch(`exams/${examUuid}/questions/import-csv`, { method: 'POST', body: formData });
 
       if (!response.ok) throw new Error('Failed to import questions');
 
@@ -152,12 +136,7 @@ export default function QuestionManagement({
 
     dispatch({ type: 'CONFIRM_DELETE' });
     try {
-      const response = await fetch(`${getAPIUrl()}exams/questions/${uuid}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const response = await apiFetch(`exams/questions/${uuid}`, { method: 'DELETE' });
 
       if (!response.ok) throw new Error('Failed to delete question');
 
@@ -179,19 +158,16 @@ export default function QuestionManagement({
     if (!reorderedItem) return;
     items.splice(result.destination.index, 0, reorderedItem);
 
-    // Update order_index for all questions using bulk endpoint
+    // Update order_index for all questions using bulk endpoint,
     const questionOrder = items.map((question, index) => ({
       question_uuid: question.question_uuid,
       order_index: index,
     }));
 
     try {
-      const response = await fetch(`${getAPIUrl()}exams/${examUuid}/questions/reorder`, {
+      const response = await apiFetch(`exams/${examUuid}/questions/reorder`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(questionOrder),
       });
 
@@ -266,10 +242,10 @@ export default function QuestionManagement({
             onOpenChange={(open) => !open && dispatch({ type: 'CANCEL_EDIT' })}
           >
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+              <DialogDescription className="sr-only">{t('fillInQuestionDetails')}</DialogDescription>
               <QuestionEditor
                 question={editingQuestion}
                 examUuid={examUuid}
-                accessToken={accessToken}
                 onSave={() => {
                   dispatch({ type: 'RESET_TO_IDLE' });
                   onQuestionsChange();
@@ -293,7 +269,6 @@ export default function QuestionManagement({
                   <QuestionEditor
                     question={editingQuestion}
                     examUuid={examUuid}
-                    accessToken={accessToken}
                     onSave={() => {
                       dispatch({ type: 'RESET_TO_IDLE' });
                       onQuestionsChange();
@@ -365,7 +340,11 @@ export default function QuestionManagement({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => promptDeleteQuestion(question.question_uuid!)}
+                              onClick={() => {
+                                if (question.question_uuid) {
+                                  promptDeleteQuestion(question.question_uuid);
+                                }
+                              }}
                               disabled={isDeleting}
                             >
                               <Trash2 className="h-4 w-4 text-red-600" />
@@ -386,7 +365,6 @@ export default function QuestionManagement({
                         <QuestionEditor
                           question={editingQuestion}
                           examUuid={examUuid}
-                          accessToken={accessToken}
                           onSave={() => {
                             dispatch({ type: 'RESET_TO_IDLE' });
                             onQuestionsChange();

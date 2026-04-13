@@ -1,5 +1,5 @@
 import { Actions, Resources, Scopes } from '@/types/permissions';
-import { requireAnyPermission } from '@/lib/server-auth';
+import { requireAnyPermission } from '@/lib/auth/permissions';
 import type { ReactNode } from 'react';
 
 export default async function PlatformAdminLayout({ children }: { children: ReactNode }) {
@@ -8,6 +8,7 @@ export default async function PlatformAdminLayout({ children }: { children: Reac
     { action: Actions.UPDATE, resource: Resources.PLATFORM, scope: Scopes.OWN },
     { action: Actions.MANAGE, resource: Resources.PLATFORM, scope: Scopes.PLATFORM },
     { action: Actions.UPDATE, resource: Resources.PLATFORM, scope: Scopes.PLATFORM },
+    { action: Actions.MANAGE, resource: Resources.ROLE, scope: Scopes.PLATFORM },
     { action: Actions.UPDATE, resource: Resources.ROLE, scope: Scopes.PLATFORM },
     { action: Actions.READ, resource: Resources.ROLE, scope: Scopes.PLATFORM },
   ]);

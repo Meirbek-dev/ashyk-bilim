@@ -11,6 +11,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import next from '@next/eslint-plugin-next';
 import react from 'eslint-plugin-react';
+import pluginQuery from '@tanstack/eslint-plugin-query';
 
 /* -------------------------------------------------------------------------- */
 /* Shared rules                                                               */
@@ -80,6 +81,12 @@ export default defineConfig(
   /* ------------------------------------------------------------------------ */
 
   js.configs.recommended,
+
+  /* ------------------------------------------------------------------------ */
+  /* TanStack Query strict                                                    */
+  /* ------------------------------------------------------------------------ */
+
+  ...pluginQuery.configs['flat/recommended-strict'],
 
   /* ------------------------------------------------------------------------ */
   /* TypeScript recommended (typed)                                           */

@@ -1,15 +1,16 @@
-import importlib
-import os
+import logging
 from logging.config import fileConfig
 
+import sqlalchemy as sa
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
+from sqlmodel.sql.sqltypes import AutoString
 
 from config.config import get_settings
+from src.db.model_registry import import_orm_models
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# Alembic Config object
 config = context.config
 
 database_url = (
@@ -19,42 +20,134 @@ database_url = (
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-
-# IMPORTING ALL SCHEMAS
-base_dir = "src/db"
-base_module_path = "src.db"
-
-# Recursively walk through the base directory
-for root, _dirs, files in os.walk(base_dir):
-    # Filter out __init__.py and non-Python files
-    module_files = [f for f in files if f.endswith(".py") and f != "__init__.py"]
-    # Calculate the module's base path from its directory structure
-    path_diff = os.path.relpath(root, base_dir)
-    if path_diff == ".":
-        # Root of the base_dir, no additional path to add
-        current_module_base = base_module_path
-    else:
-        # Convert directory path to a module path
-        current_module_base = f"{base_module_path}.{path_diff.replace(os.sep, '.')}"
-
-    # Dynamically import each module
-    for file_name in module_files:
-        module_name = file_name[:-3]  # Remove the '.py' extension
-        full_module_path = f"{current_module_base}.{module_name}"
-        importlib.import_module(full_module_path)
-
-# IMPORTING ALL SCHEMAS
+# Load all ORM models via the single canonical registry.
+# This replaces the previous os.walk dynamic discovery so that migrations and
+# the runtime app always use the exact same set of models.
+import_orm_models()
 
 target_metadata = SQLModel.metadata
+
+# Tables that exist in the database but are *not* managed by SQLModel metadata
+# (external tools, legacy schema elements).  Alembic will not attempt to
+# create, alter, or drop these.
+_AUTOGENERATE_EXCLUDED_TABLES = {
+    "ar_internal_metadata",
+    "chapteractivity",
+    "clients",
+    "coursechapter",
+    "languages",
+    "schema_migrations",
+    "submissions",
+}
+
+
+def include_object(object_, name: str | None, type_: str, reflected: bool, compare_to):
+    if not name:
+        return True
+
+    table_name = name
+    if type_ != "table":
+        parent_table = getattr(object_, "table", None)
+        if parent_table is not None and getattr(parent_table, "name", None):
+            table_name = parent_table.name
+
+    return not (
+        reflected and compare_to is None and table_name in _AUTOGENERATE_EXCLUDED_TABLES
+    )
+
+
+def compare_type(
+    _context,
+    _inspected_column,
+    _metadata_column,
+    inspected_type,
+    metadata_type,
+):
+    # Treat String / Text / AutoString as interchangeable to avoid spurious diffs.
+    stringish_types = (sa.String, sa.Text, AutoString)
+    if isinstance(inspected_type, stringish_types) and isinstance(
+        metadata_type, stringish_types
+    ):
+        return False
+    return None
+
+
+def run_migrations_offline() -> None:
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
+        compare_type=compare_type,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online() -> None:
+    connect_args = {}
+    if database_url and database_url.startswith("postgresql+"):
+        connect_args["connect_timeout"] = 5
+
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+        connect_args=connect_args,
+    )
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
+            compare_type=compare_type,
+        )
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+
+
+def include_object(object_, name: str | None, type_: str, reflected: bool, compare_to):
+    if not name:
+        return True
+
+    table_name = name
+    if type_ != "table":
+        parent_table = getattr(object_, "table", None)
+        if parent_table is not None and getattr(parent_table, "name", None):
+            table_name = parent_table.name
+
+    return not (
+        reflected and compare_to is None and table_name in _AUTOGENERATE_EXCLUDED_TABLES
+    )
+
+
+def compare_type(
+    _context,
+    _inspected_column,
+    _metadata_column,
+    inspected_type,
+    metadata_type,
+):
+    stringish_types = (sa.String, sa.Text, AutoString)
+    if isinstance(inspected_type, stringish_types) and isinstance(
+        metadata_type, stringish_types
+    ):
+        return False
+
+    return None
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -80,6 +173,8 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
+        compare_type=compare_type,
     )
 
     with context.begin_transaction():
@@ -105,7 +200,12 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
+            compare_type=compare_type,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

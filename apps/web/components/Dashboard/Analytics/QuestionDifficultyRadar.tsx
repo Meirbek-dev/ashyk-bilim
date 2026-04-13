@@ -28,7 +28,7 @@ export default function QuestionDifficultyRadar({ title, description, data }: Qu
       </CardHeader>
       <CardContent>
         {data.length > MAX && (
-          <p className="mb-2 text-xs text-muted-foreground">{t('radar.showing', { shown: MAX, total: data.length })}</p>
+          <p className="text-muted-foreground mb-2 text-xs">{t('radar.showing', { shown: MAX, total: data.length })}</p>
         )}
         <ChartContainer
           className="h-[320px] w-full"

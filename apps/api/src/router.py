@@ -26,7 +26,8 @@ from src.routers.courses import (
     exams,
 )
 from src.routers.courses.activities import activities, blocks
-from src.routers.ee import payments
+from src.routers.grading.submit import router as grading_submit_router
+from src.routers.grading.teacher import router as grading_teacher_router
 from src.routers.uploads import chunked_upload
 from src.routers.utils import router as utils_router
 from src.services.dev.dev import isDevModeEnabledOrRaise
@@ -37,7 +38,7 @@ v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(users.router, prefix="/users", tags=["users"])
 v1_router.include_router(usergroups.router, prefix="/usergroups", tags=["usergroups"])
 v1_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-v1_router.include_router(platform.router, prefix="/platform", tags=["platform"])
+v1_router.include_router(platform.router, prefix="", tags=["platform"])
 v1_router.include_router(roles.router, prefix="/roles", tags=["roles"])
 v1_router.include_router(rbac.router, prefix="/rbac", tags=["rbac"])
 v1_router.include_router(search.router, prefix="/search", tags=["search"])
@@ -74,10 +75,11 @@ v1_router.include_router(
 )
 v1_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 
-v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
+# Unified grading system (replaces fragmented assignment/quiz grading)
+v1_router.include_router(grading_submit_router, prefix="/grading", tags=["grading"])
+v1_router.include_router(grading_teacher_router, prefix="/grading", tags=["grading"])
 
-# Payments/EE
-v1_router.include_router(payments.router, prefix="/payments", tags=["payments"])
+v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 
 # Dev routes
 v1_router.include_router(

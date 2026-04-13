@@ -3,9 +3,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 
-from src.core.events.database import get_db_session
 from src.db.usergroups import UserGroup, UserGroupCreate, UserGroupRead, UserGroupUpdate
 from src.db.users import PublicUser, UserRead
+from src.infra.db.session import get_db_session
 from src.security.auth import get_current_user
 from src.security.rbac import PermissionCheckerDep
 from src.services.users.usergroups import (

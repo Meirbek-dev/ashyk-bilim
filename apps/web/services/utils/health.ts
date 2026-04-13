@@ -1,4 +1,4 @@
-import { RequestBody, getResponseMetadata } from '@services/utils/ts/requests';
+import { RequestBody, getResponseMetadata } from '@/lib/api-client';
 import { getAPIUrl } from '@services/config/config';
 
 export async function checkHealth() {

@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { reportClientError } from '@/services/telemetry/client';
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
@@ -18,6 +19,19 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       digest: error.digest,
       stack: error.stack,
       timestamp: new Date().toISOString(),
+    });
+
+    void reportClientError({
+      digest: error.digest,
+      error: {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      },
+      page: typeof globalThis.window !== 'undefined' ? globalThis.location.pathname : 'unknown',
+      url: typeof globalThis.window !== 'undefined' ? globalThis.location.href : 'unknown',
+    }).catch((loggingError: unknown) => {
+      console.error('Failed to report global error boundary event:', loggingError);
     });
   }, [error]);
 

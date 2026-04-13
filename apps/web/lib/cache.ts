@@ -17,8 +17,11 @@ import { cacheLife, cacheTag } from 'next/cache';
 export const CacheProfiles = {
   // Rarely changing static content
   static: { stale: 60 * 30, revalidate: 60 * 60, expire: 60 * 60 * 24 },
-  // Platform metadata - updated occasionally
-  platform: { stale: 60 * 5, revalidate: 60 * 10, expire: 60 * 60 },
+  // Platform metadata - updated occasionally.
+  // Short stale/revalidate so a null entry cached during Docker build (when
+  // the API is unreachable) is refreshed within ~30 s of the first runtime
+  // request rather than sitting stale for minutes.
+  platform: { stale: 30, revalidate: 60, expire: 60 * 60 },
   // Course metadata and structure - increased stale to reduce frequent upstream calls
   courses: { stale: 60 * 5, revalidate: 60 * 10, expire: 60 * 60 * 24 },
   // Per-user dynamic data

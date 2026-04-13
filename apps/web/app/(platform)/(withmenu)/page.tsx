@@ -1,6 +1,6 @@
+import { PLATFORM_BRAND_NAME, PLATFORM_DESCRIPTION } from '@/lib/constants';
 import { LandingContent } from '@/app/_shared/withmenu/LandingContent';
-import { getPlatformContextInfo } from '@/services/platform/platform';
-import { getThumbnailMediaDirectory } from '@services/media/media';
+import { getPlatformThumbnailImage } from '@services/media/media';
 import { PageSuspense } from '@components/Utils/PageSuspense';
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
@@ -47,12 +47,11 @@ interface MetadataProps {
 }
 
 export async function generateMetadata(_props: MetadataProps): Promise<Metadata> {
-  const platform = await getPlatformContextInfo();
   const t = await getTranslations('General');
 
   return {
-    title: `${t('home')} - Ashyq Bilim`,
-    description: platform.description,
+    title: `${t('home')} - ${PLATFORM_BRAND_NAME}`,
+    description: PLATFORM_DESCRIPTION,
     robots: {
       index: true,
       follow: true,
@@ -64,15 +63,15 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
       },
     },
     openGraph: {
-      title: `${t('home')} - Ashyq Bilim`,
-      description: platform.description,
+      title: `${t('home')} - ${PLATFORM_BRAND_NAME}`,
+      description: PLATFORM_DESCRIPTION,
       type: 'website',
       images: [
         {
-          url: getThumbnailMediaDirectory(platform?.thumbnail_image),
+          url: getPlatformThumbnailImage(),
           width: 800,
           height: 600,
-          alt: platform.name,
+          alt: PLATFORM_BRAND_NAME,
         },
       ],
     },

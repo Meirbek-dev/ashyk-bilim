@@ -8,7 +8,6 @@ import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyS
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
 import { Badge } from '@/components/ui/badge';
-import { auth } from '@/auth';
 
 export default function PlatformAnalyticsCourseDetailPage(props: {
   params: Promise<{ courseuuid: string }>;
@@ -27,27 +26,16 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { courseuuid } = await props.params;
-  const session = await auth();
-  const accessToken = session?.tokens?.access_token;
   const query = normalizeAnalyticsQuery(await props.searchParams);
   const t = await getTranslations('TeacherAnalytics');
 
-  if (!accessToken) {
-    return (
-      <AnalyticsEmptyState
-        title={t('pages.courseDetailTitle')}
-        description={t('pages.courseDetailDesc')}
-      />
-    );
-  }
-
   try {
-    const detail = await getTeacherCourseDetailByUuid(courseuuid, accessToken, query);
+    const detail = await getTeacherCourseDetailByUuid(courseuuid, query);
     return (
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
         <Card className="border-slate-200 bg-white/90 shadow-sm">
           <CardHeader>
-            <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-slate-500">
+            <div className="flex flex-wrap items-center gap-2 text-xs tracking-[0.18em] text-slate-500 uppercase">
               <Badge variant="outline">{t('pages.courseDetailBadge')}</Badge>
               <Badge variant="outline">{detail.course.course_uuid}</Badge>
             </div>
@@ -55,15 +43,15 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-3">
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">{t('pages.courseStatCompletion')}</div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.courseStatCompletion')}</div>
               <div className="mt-2 text-3xl font-semibold">{detail.summary.completion_rate}%</div>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">{t('pages.courseStatAvgProgress')}</div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.courseStatAvgProgress')}</div>
               <div className="mt-2 text-3xl font-semibold">{detail.summary.avg_progress_pct}%</div>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">{t('pages.courseStatUngraded')}</div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.courseStatUngraded')}</div>
               <div className="mt-2 text-3xl font-semibold">{detail.summary.ungraded_submissions}</div>
             </div>
           </CardContent>
@@ -78,14 +66,14 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
           <CompletionFunnelChart
             title={t('pages.courseFunnelTitle')}
             description={t('pages.courseFunnelDesc')}
-            data={detail.funnels.course_completion}
+            data={detail.funnels.course_completion ?? []}
           />
         </div>
 
         <CompletionFunnelChart
           title={t('pages.courseChapterDropoffTitle')}
           description={t('pages.courseChapterDropoffDesc')}
-          data={detail.funnels.chapter_dropoff}
+          data={detail.funnels.chapter_dropoff ?? []}
         />
 
         <Card className="border-slate-200 bg-white/90 shadow-sm">

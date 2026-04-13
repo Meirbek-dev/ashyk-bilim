@@ -44,7 +44,6 @@ export const Resources = {
   ANALYTICS: 'analytics',
   TRAIL: 'trail',
   EXAM: 'exam',
-  PAYMENT: 'payment',
   API_TOKEN: 'api_token',
 } as const;
 

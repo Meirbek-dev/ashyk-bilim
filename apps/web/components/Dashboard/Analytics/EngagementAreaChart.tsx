@@ -15,7 +15,10 @@ interface EngagementAreaChartProps {
 export default function EngagementAreaChart({ title, description, data }: EngagementAreaChartProps) {
   const locale = useLocale();
   const chartData = data.map((point) => ({
-    bucket: new Date(point.bucket_start).toLocaleDateString(locale, { month: 'short', day: 'numeric' }),
+    bucket: new Date(point.bucket_start).toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+    }),
     value: point.value,
   }));
 
@@ -29,7 +32,11 @@ export default function EngagementAreaChart({ title, description, data }: Engage
         <ChartContainer
           className="h-[280px] w-full"
           config={{
-            value: { label: title, color: 'var(--chart-1)', valueFormatter: (value) => `${value ?? 0}` },
+            value: {
+              label: title,
+              color: 'var(--chart-1)',
+              valueFormatter: (value) => `${value ?? 0}`,
+            },
           }}
         >
           <AreaChart data={chartData}>

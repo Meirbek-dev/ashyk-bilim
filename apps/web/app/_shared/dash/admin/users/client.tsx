@@ -20,16 +20,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { assignRoleToUser, listUsers, listRoles, listUserRoles, removeRoleFromUser } from '@/services/rbac';
+import { assignRoleToUser, removeRoleFromUser } from '@/services/rbac';
+import { useBasicUsers, useRoles, useUserRoleAssignments } from '@/features/users/hooks/useUsers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Actions, PermissionGuard, Resources, Scopes } from '@/components/Security';
 import { AlertTriangle, Calendar, Plus, Shield, Trash2, User } from 'lucide-react';
-import type { UserBasic, Role, UserRoleAssignment } from '@/types/permissions';
+import type { UserRoleAssignment } from '@/types/permissions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useSession } from '@/hooks/useSession';
 import { getUserAvatarMediaDirectory } from '@/services/media/media';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
+import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/skeleton';
 import DataTable from '@/components/ui/data-table';
@@ -40,14 +42,19 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 
 export default function UserRolesClient() {
-  const session = usePlatformSession();
+  const session = useSession();
   const t = useTranslations('Components.Roles');
   const locale = useLocale();
+  const router = useRouter();
+  const {
+    data: userRoles = [],
+    error: userRolesError,
+    isPending: userRolesLoading,
+    refetch: refetchUserRoles,
+  } = useUserRoleAssignments();
+  const { data: availableRoles = [], error: rolesError, isPending: rolesLoading } = useRoles();
+  const { data: users = [], error: usersError, isPending: usersLoading } = useBasicUsers();
 
-  const [userRoles, setUserRoles] = useState<UserRoleAssignment[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
-  const [users, setUsers] = useState<UserBasic[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
@@ -57,73 +64,23 @@ export default function UserRolesClient() {
     roleName?: string;
   } | null>(null);
 
-  const accessToken = session?.data?.tokens?.access_token;
-
   const refreshSession = useCallback(async () => {
-    const timeoutMs = 5000;
-    try {
-      await Promise.race([
-        session.update(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)),
-      ]);
-    } catch {
-      toast.warning(t('sessionRefreshWarning'));
-    }
-  }, [session, t]);
-
-  // Fetch user roles
-  const fetchUserRolesData = useCallback(async () => {
-    if (!accessToken) return;
-    try {
-      const data = await listUserRoles(accessToken);
-      setUserRoles(data);
-    } catch (error) {
-      console.error('Failed to fetch user roles:', error);
-      toast.error(t('loadFailed'));
-    }
-  }, [accessToken, t]);
-
-  // Fetch available roles
-  const fetchRoles = useCallback(async () => {
-    if (!accessToken) return;
-    try {
-      const data = await listRoles(accessToken);
-      setAvailableRoles(data);
-    } catch (error) {
-      console.error('Failed to fetch roles:', error);
-    }
-  }, [accessToken]);
-
-  // Fetch users for search
-  const fetchUsers = useCallback(async () => {
-    if (!accessToken) return;
-    try {
-      const data = await listUsers(accessToken);
-      setUsers(data);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-    }
-  }, [accessToken]);
-  useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
-      await Promise.all([fetchUserRolesData(), fetchRoles(), fetchUsers()]);
-      setLoading(false);
-    };
-    fetchAll();
-  }, [fetchUserRolesData, fetchRoles, fetchUsers]);
+    router.refresh();
+    if (!session.user) toast.warning(t('sessionRefreshWarning'));
+  }, [router, session.user, t]);
+  const loading = userRolesLoading || rolesLoading || usersLoading;
 
   // Add role to user
   const handleAddUserRole = async () => {
-    if (!accessToken || !selectedUserId || !selectedRoleId) return;
+    if (!selectedUserId || !selectedRoleId) return;
 
     try {
-      await assignRoleToUser(accessToken, selectedUserId, selectedRoleId);
+      await assignRoleToUser(selectedUserId, selectedRoleId);
       toast.success(t('assignedRoleSuccess'));
       setIsAddDialogOpen(false);
       setSelectedUserId(null);
       setSelectedRoleId(null);
-      await fetchUserRolesData();
+      await refetchUserRoles();
       // Refresh session so permission changes take effect immediately
       await refreshSession();
     } catch (error) {
@@ -139,15 +96,15 @@ export default function UserRolesClient() {
 
   // Confirm remove role from user
   const confirmRemoveUserRole = async () => {
-    if (!accessToken || !assignmentToRemove) return;
+    if (!assignmentToRemove) return;
 
     const { userId, roleId } = assignmentToRemove;
     setAssignmentToRemove(null);
 
     try {
-      await removeRoleFromUser(accessToken, userId, roleId);
+      await removeRoleFromUser(userId, roleId);
       toast.success(t('removedRoleSuccess'));
-      await fetchUserRolesData();
+      await refetchUserRoles();
       // Refresh session so permission changes take effect immediately
       await refreshSession();
     } catch (error) {
@@ -253,6 +210,10 @@ export default function UserRolesClient() {
         <Skeleton className="h-96" />
       </div>
     );
+  }
+
+  if (userRolesError || rolesError || usersError) {
+    return <div className="text-destructive container mx-auto p-6 text-sm">{t('loadFailed')}</div>;
   }
 
   return (

@@ -1,16 +1,17 @@
 'use client';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field';
+import { Controller, useForm } from 'react-hook-form';
 import { BarLoader } from '@components/Objects/Loaders/BarLoader';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { constructAcceptValue } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslations } from 'next-intl';
-import { useForm } from 'react-hook-form';
-import { useTransition } from 'react';
+import { useRef } from 'react';
 import * as v from 'valibot';
 
 const SUPPORTED_FILES = constructAcceptValue(['pdf']);
+const MAX_PDF_FILE_SIZE = 100 * 1024 * 1024;
 
 const createValidationSchema = (t: (key: string) => string) =>
   v.object({
@@ -23,124 +24,130 @@ interface FormValues {
   file: File;
 }
 
+type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>;
+
 const DocumentPdfModal = ({ submitFileActivity, chapterId, course }: any) => {
   const validationT = useTranslations('Validation');
   const t = useTranslations('Components.DocumentPdfModal');
   const validationSchema = createValidationSchema(validationT);
 
-  const form = useForm<FormValues>({
+  const form = useForm<FormValues, any, SubmitValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       name: '',
-      file: undefined,
     },
   });
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [isPending, startTransition] = useTransition();
-
-  const onSubmit = (values: FormValues) => {
-    startTransition(() => {
-      void (async () => {
-        await submitFileActivity(
-          values.file,
-          'documentpdf',
-          {
-            name: values.name,
-            chapter_id: chapterId,
-            activity_type: 'TYPE_DOCUMENT',
-            activity_sub_type: 'SUBTYPE_DOCUMENT_PDF',
-            published_version: 1,
-            version: 1,
-            course_id: course.id,
-          },
-          chapterId,
-        );
-      })();
+  const onSubmit = async (values: SubmitValues) => {
+    await submitFileActivity({
+      file: values.file,
+      type: 'documentpdf',
+      activity: {
+        name: values.name,
+        chapter_id: chapterId,
+        activity_type: 'TYPE_DOCUMENT',
+        activity_sub_type: 'SUBTYPE_DOCUMENT_PDF',
+      },
+      chapterId,
     });
   };
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-4"
-      >
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('pdfDocumentName')}</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="text"
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="space-y-4"
+    >
+      <Field>
+        <FieldLabel htmlFor="name">{t('pdfDocumentName')}</FieldLabel>
+        <FieldContent>
+          <Input
+            id="name"
+            type="text"
+            {...form.register('name')}
+          />
+        </FieldContent>
+        <FieldError errors={[form.formState.errors.name]} />
+      </Field>
+
+      <Controller
+        control={form.control}
+        name="file"
+        render={({ field: { onChange, value, name }, fieldState }) => (
+          <Field>
+            <FieldLabel htmlFor={name}>{t('pdfDocumentFile')}</FieldLabel>
+            <FieldContent>
+              <div className="relative">
+                <input
+                  ref={fileInputRef}
+                  id={name}
+                  name={name}
+                  type="file"
+                  accept={SUPPORTED_FILES}
+                  onChange={(e) => {
+                    const nextFile = e.target.files?.[0];
+
+                    if (!nextFile) {
+                      onChange(undefined);
+                      return;
+                    }
+
+                    if (nextFile.size > MAX_PDF_FILE_SIZE) {
+                      form.setError('file', {
+                        type: 'manual',
+                        message: t('fileTooLarge'),
+                      });
+                      e.target.value = '';
+                      onChange(undefined);
+                      return;
+                    }
+
+                    form.clearErrors('file');
+                    onChange(nextFile);
+                  }}
+                  className="sr-only"
+                  aria-label={t('ariaLabel')}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="file"
-          render={({ field: { onChange, value, ...field } }) => (
-            <FormItem>
-              <FormLabel>{t('pdfDocumentFile')}</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <input
-                    {...field}
-                    type="file"
-                    accept={SUPPORTED_FILES}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        onChange(file);
-                      }
-                    }}
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                    aria-label={t('ariaLabel')}
-                  />
-                  <div className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full cursor-pointer items-center justify-between rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="-ml-3"
-                      onClick={() => {}}
-                    >
-                      {t('selectFile')}
-                    </Button>
-                    <span className="text-muted-foreground">{value ? value.name : t('noFileSelected')}</span>
-                  </div>
+                <div className="border-input bg-background ring-offset-background flex min-h-10 w-full items-center justify-between rounded-md border px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-offset-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {t('selectFile')}
+                  </Button>
+                  <span className="text-muted-foreground truncate pl-3">
+                    {value ? value.name : t('noFileSelected')}
+                  </span>
                 </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <p className="text-muted-foreground mt-2 text-xs">{t('supportedFormats')}</p>
+              </div>
+            </FieldContent>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
 
-        <div className="mt-6 flex justify-end">
-          <Button
-            type="submit"
-            className="mt-2.5"
-            disabled={isPending || form.formState.isSubmitting}
-          >
-            {isPending || form.formState.isSubmitting ? (
-              <BarLoader
-                cssOverride={{ borderRadius: 60 }}
-                width={60}
-                color="#ffffff"
-              />
-            ) : (
-              t('createActivity')
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+      <div className="mt-6 flex justify-end">
+        <Button
+          type="submit"
+          className="mt-2.5"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting ? (
+            <BarLoader
+              cssOverride={{ borderRadius: 60 }}
+              width={60}
+              color="#ffffff"
+            />
+          ) : (
+            t('createActivity')
+          )}
+        </Button>
+      </div>
+    </form>
   );
 };
 

@@ -3,17 +3,16 @@
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, Globe, Image as ImageIcon, Loader2, Lock, Search } from 'lucide-react';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { createCollection } from '@services/courses/collections';
-import { revalidateTags } from '@services/utils/ts/requests';
+import { revalidateTags } from '@/lib/api-client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getAbsoluteUrl } from '@services/config/config';
 import { useMemo, useState, useTransition } from 'react';
 import { useCourseList } from '@/hooks/useCourseList';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import NextImage from '@/components/ui/NextImage';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -33,8 +32,6 @@ interface CourseListItem {
 
 const NewCollection = () => {
   const t = useTranslations('NewCollectionPage');
-  const platform = usePlatform() as any;
-  const session = usePlatformSession() as any;
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCourses, setSelectedCourses] = useState<number[]>([]);
@@ -92,7 +89,7 @@ const NewCollection = () => {
         courses: selectedCourses,
         public: isPublic,
       };
-      await createCollection(collection, session.data?.tokens?.access_token);
+      await createCollection(collection);
       await revalidateTags(['collections']);
       toast.success(t('toast.success'));
       startTransition(() => router.push(getAbsoluteUrl('/collections')));
@@ -335,11 +332,15 @@ const NewCollection = () => {
                             />
                             <div className="bg-muted relative h-20 w-32 shrink-0 overflow-hidden rounded-md border">
                               {course.thumbnail_image ? (
-                                <img
-                                  src={getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)}
-                                  alt={course.name}
-                                  className="h-full w-full object-cover"
-                                />
+                                <div className="relative h-full w-full">
+                                  <NextImage
+                                    src={getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)}
+                                    alt={course.name}
+                                    fill
+                                    className="object-cover"
+                                    sizes="100vw"
+                                  />
+                                </div>
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center">
                                   <ImageIcon className="text-muted-foreground h-8 w-8" />

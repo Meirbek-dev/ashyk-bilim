@@ -160,7 +160,7 @@ export default function ExamResults({
     const userAnswer = attempt.answers?.[question.id];
 
     if (userAnswer === undefined || userAnswer === null) {
-      return <span className="text-gray-500">{t('notAnswered')}</span>;
+      return <span className="text-muted-foreground">{t('notAnswered')}</span>;
     }
 
     switch (question.question_type) {
@@ -177,7 +177,7 @@ export default function ExamResults({
                 <div key={idx}>{question.answer_options[idx]?.text ?? t('invalidAnswer')}</div>
               ))
             ) : (
-              <span className="text-gray-500">{t('notAnswered')}</span>
+              <span className="text-muted-foreground">{t('notAnswered')}</span>
             )}
           </div>
         );
@@ -255,7 +255,7 @@ export default function ExamResults({
 
           <div className="mt-6 flex items-center justify-center gap-6">
             <div
-              className={`flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-md ring-4 ${performanceSummary.ring}`}
+              className={`bg-card flex h-28 w-28 items-center justify-center rounded-full shadow-md ring-4 ${performanceSummary.ring}`}
               role="img"
               aria-label={`${percentage}%`}
             >
@@ -320,13 +320,13 @@ export default function ExamResults({
               <div className="absolute right-0 bottom-0 h-20 w-20 translate-x-8 translate-y-8 rounded-full bg-red-600/10" />
             </div>
 
-            <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100/50 p-6 shadow-sm transition-all hover:shadow-md hover:shadow-gray-100">
+            <div className="group border-border relative overflow-hidden rounded-xl border bg-gradient-to-br from-gray-50 to-gray-100/50 p-6 shadow-sm transition-all hover:shadow-md hover:shadow-gray-100">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gray-600 shadow-lg">
                   <AlertCircle className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-700">{t('unanswered')}</p>
+                  <p className="text-foreground text-sm font-medium">{t('unanswered')}</p>
                   <p className="text-3xl font-bold text-gray-600">{unansweredCount}</p>
                 </div>
               </div>
@@ -359,7 +359,7 @@ export default function ExamResults({
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle className="text-lg">{t('questionNumber', { number: index + 1 })}</CardTitle>
-                      <div className="mt-1 text-sm text-gray-500">
+                      <div className="text-muted-foreground mt-1 text-sm">
                         {t('questionType.' + question.question_type)} · {t('pointsValue', { points: question.points })}
                       </div>
                     </div>
@@ -373,13 +373,13 @@ export default function ExamResults({
                       {t(status)}
                     </Badge>
                   </div>
-                  <CardDescription className="mt-3 text-base text-gray-900">{question.question_text}</CardDescription>
+                  <CardDescription className="text-foreground mt-3 text-base">{question.question_text}</CardDescription>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
                   <div>
                     <p className="mb-2 text-sm font-semibold text-gray-600">{t('yourAnswer')}</p>
-                    <div className="rounded-lg bg-gray-50 p-3">{renderUserAnswer(question)}</div>
+                    <div className="bg-muted rounded-lg p-3">{renderUserAnswer(question)}</div>
                   </div>
 
                   {showCorrectAnswers && status !== 'correct' && (
@@ -390,7 +390,7 @@ export default function ExamResults({
                   )}
 
                   {question.explanation && status !== 'correct' && (
-                    <div className="rounded-lg border-l-4 border-blue-500 bg-blue-50 p-3">
+                    <div className="bg-primary/10 rounded-lg border-l-4 border-blue-500 p-3">
                       <p className="text-sm font-semibold text-blue-900">{t('explanation')}</p>
                       <p className="text-sm text-blue-800">{question.explanation}</p>
                     </div>

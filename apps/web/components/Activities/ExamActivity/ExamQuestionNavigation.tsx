@@ -40,7 +40,7 @@ export default function ExamQuestionNavigation({
         {/* Progress Summary */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">{t('progress')}</span>
+            <span className="text-foreground text-sm font-medium">{t('progress')}</span>
             <span className="text-lg font-bold text-blue-600">
               {answeredCount}/{totalQuestions}
             </span>
@@ -65,7 +65,7 @@ export default function ExamQuestionNavigation({
             const isFlagged = flaggedQuestions.has(index);
 
             let bgColor =
-              'bg-gradient-to-br from-gray-100 to-gray-50 hover:from-gray-200 hover:to-gray-100 border-gray-200 shadow-sm';
+              'bg-gradient-to-br from-gray-100 to-gray-50 hover:from-gray-200 hover:to-gray-100 border-border shadow-sm';
             let textColor = 'text-gray-600';
             let borderColor = '';
 
@@ -98,7 +98,10 @@ export default function ExamQuestionNavigation({
                   answered: isAnswered ? 'true' : 'false',
                 })}
                 aria-pressed={isCurrent}
-                title={t('questionAriaLabel', { number: questionNumber, answered: isAnswered ? 'true' : 'false' })}
+                title={t('questionAriaLabel', {
+                  number: questionNumber,
+                  answered: isAnswered ? 'true' : 'false',
+                })}
               >
                 {questionNumber}
                 {isFlagged && (
@@ -116,12 +119,12 @@ export default function ExamQuestionNavigation({
         </div>
 
         {/* Legend */}
-        <div className="space-y-2.5 border-t border-gray-200 bg-gradient-to-br from-gray-50 to-white px-4 py-4 text-sm">
+        <div className="border-border space-y-2.5 border-t bg-gradient-to-br from-gray-50 to-white px-4 py-4 text-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-green-100 to-green-50 shadow-sm">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
             </div>
-            <span className="font-medium text-gray-700">
+            <span className="text-foreground font-medium">
               {t('answered')} <span className="text-green-600">({answeredCount})</span>
             </span>
           </div>
@@ -129,13 +132,13 @@ export default function ExamQuestionNavigation({
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-md shadow-blue-200">
               <Circle className="h-5 w-5 text-white" />
             </div>
-            <span className="font-medium text-gray-700">{t('current')}</span>
+            <span className="text-foreground font-medium">{t('current')}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 shadow-sm">
               <Circle className="h-5 w-5 text-gray-400" />
             </div>
-            <span className="font-medium text-gray-700">
+            <span className="text-foreground font-medium">
               {t('unanswered')} <span className="text-gray-600">({totalQuestions - answeredCount})</span>
             </span>
           </div>
@@ -147,7 +150,7 @@ export default function ExamQuestionNavigation({
                   fill="currentColor"
                 />
               </div>
-              <span className="font-medium text-gray-700">
+              <span className="text-foreground font-medium">
                 {t('flagged')} <span className="text-orange-600">({flaggedCount})</span>
               </span>
             </div>
@@ -185,12 +188,12 @@ export function ExamQuestionNavigationMobile({
   const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
 
   return (
-    <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-200 bg-gradient-to-r from-white to-gray-50 shadow-2xl lg:hidden">
+    <div className="border-border fixed right-0 bottom-0 left-0 z-50 border-t bg-gradient-to-r from-white to-gray-50 shadow-2xl lg:hidden">
       <div className="px-4 py-4">
         {/* Progress bar */}
         <div className="mb-4">
           <div className="mb-2 flex items-center justify-between text-sm font-medium">
-            <span className="text-gray-700">
+            <span className="text-foreground">
               {t('questionProgress', {
                 current: currentQuestionIndex + 1,
                 total: totalQuestions,
@@ -227,7 +230,7 @@ export function ExamQuestionNavigationMobile({
           <Button
             variant="ghost"
             size="sm"
-            className="min-w-[70px] border border-gray-200 bg-gray-50 font-bold shadow-sm"
+            className="border-border bg-muted min-w-[70px] border font-bold shadow-sm"
             onClick={() => {
               // Could open a drawer with full question grid
             }}

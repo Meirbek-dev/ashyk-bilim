@@ -4,9 +4,6 @@
  * All permission-related imports should come from this module.
  */
 
-// Core provider and hook
-export { PermissionProvider, usePermissions } from './PermissionProvider';
-
 // UI Components
 export { PermissionGuard, PermissionErrorBoundary } from './PermissionGuard';
 

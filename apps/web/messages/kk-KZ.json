@@ -4,16 +4,30 @@
       "AI": "ЖИ",
       "aiSender": "ЖИ",
       "askAI": "ЖИ-дан сұрау",
+      "closePanel": "ЖИ панелін жабу",
+      "copy": "Көшіру",
+      "copied": "Көшірілді!",
       "errorTitle": "Бірдеңе дұрыс болмады",
       "examplesAbbr": "мысал.",
       "hello": "Сәлеметсіз бе",
       "howCanWeHelp": "қалай көмектесе аламын?",
       "logoAlt": "Ashyq Bilim AI логотипі",
       "placeholder": "Осы дәріс туралы ЖИ-дан сұраңыз",
+      "defaultUser": "Пайдаланушы",
+      "dismiss": "Жабу",
       "questionAbout": "Бұл белсенділік не туралы?",
       "questionExamples": "Осы белсенділікті практикалық мысалдармен түсіндіріңіз",
       "questionFlashcards": "Осы белсенділік бойынша флеш-карталар жасаңыз",
+      "stopGeneration": "Генерацияны тоқтату",
       "usernameComma": "{username},"
+    },
+    "AIStatus": {
+      "aborted": "Сұрау тоқтатылды.",
+      "analyzing": "Сұрағыңызды қосымша іздеусіз талдап жатырмыз.",
+      "generating": "Жауапты құрастырып жатырмыз.",
+      "processing": "Сұрағыңызды дайындап жатырмыз.",
+      "retrieving": "Курс контекстін іздеп жатырмыз.",
+      "working": "Сұрағыңызды өңдеп жатырмыз."
     },
     "AICanvaToolkit": {
       "aiIconAlt": "ЖИ белгішесі",
@@ -70,6 +84,7 @@
       "translateToLanguageMissing": "Аудару үшін тілді енгізіңіз",
       "typePromptBelow": "Сұрауыңызды төменде теріңіз",
       "userInputPlaceholder": "ЖИ-дан сұрау",
+      "stop": "Тоқтату",
       "writerPlaceholder": "Мынау туралы жазу..."
     },
     "AssignmentBoxUI": {
@@ -87,12 +102,28 @@
     },
     "AssignmentStudentActivity": {
       "assignment": "Тапсырма",
+      "blankLabel": "Өріс {index}",
       "descriptionTitle": "Тапсырма сипаттамасы",
       "dueDate": "Тапсыру мерзімі",
+      "emptyOption": "Бос нұсқа",
       "hint": "Кеңес",
+      "loadSubmissionError": "Тапсырма жауабыңызды жүктеу мүмкін болмады.",
       "noTasks": "Қол жетімді тапсырмалар жоқ",
+      "points": "{count, plural, =0 {# ұпай} one {# ұпай} few {# ұпай} many {# ұпай} other {# ұпай}}",
+      "progressSaved": "Прогресс сақталды",
+      "questionLabel": "Сұрақ {index}",
       "referenceDocument": "Анықтамалық құжат",
-      "task": "Тапсырма {index}"
+      "saveProgress": "Прогрессті сақтау",
+      "saveSubmissionError": "Жауабыңызды сақтау мүмкін болмады.",
+      "signInToSave": "Жауапты сақтау үшін жүйеге кіріңіз.",
+      "task": "Тапсырма {index}",
+      "taskContentUnavailable": "Бұл тапсырманың мазмұны студент режимінде әзірге қолжетімсіз.",
+      "taskTypeFile": "Файл жүктеу",
+      "taskTypeForm": "Форма",
+      "taskTypeOther": "Басқа",
+      "taskTypeQuiz": "Тест",
+      "untitledQuestion": "Мәтінсіз сұрақ",
+      "unsavedChanges": "Сақталмаған өзгерістер бар"
     },
     "CodeChallenges": {
       "actualOutput": "Сіздің шығаруыңыз",
@@ -572,7 +603,11 @@
       "sso": "Бір реттік жүйеге кіру (SSO)",
       "title": "Кіру - {platformName}",
       "welcomeBack": "Қайтып келуіңізбен! Тіркелгі деректеріңізді енгізіңіз.",
+      "sessionExpired": "Сеансыңыз аяқталды. Қайта кіріңіз.",
+      "sessionRevoked": "Сеансыңыз кері қайтарылды. Қайта кіріңіз.",
+      "sessionRecoveryFailed": "Сеансты қалпына келтіру мүмкін болмады. Қайта кіріңіз.",
       "wrongCredentials": "Қате электронды пошта немесе құпия сөз",
+      "serviceUnavailable": "Қызмет уақытша қолжетімсіз. Қайталап көріңіз.",
       "loginTitle": "Кіру",
       "noAccount": "Аккаунтыңыз жоқ па?"
     },
@@ -839,6 +874,7 @@
       "certificationRemoved": "Сертификат сәтті жойылды",
       "certificationSettings": "Сертификат баптаулары",
       "certificationType": "Сертификат түрі",
+      "certificationTypeRequired": "Сертификат түрі қажет",
       "certificationTypes": {
         "achievement": "Жетістік негізінде",
         "assessment": "Бағалау негізінде",
@@ -852,6 +888,7 @@
       },
       "certificationUpdated": "Сертификат сәтті жаңартылды",
       "courseCertification": "Курс сертификаты",
+      "certificatePatternRequired": "Сертификат үлгісі қажет",
       "creatingCertification": "Сертификат жасалуда...",
       "creatingCertificationDescription": "Курс сертификаты бапталуда. Күте тұрыңыз...",
       "enableCertification": "Бұл курсты аяқтаған студенттер үшін сертификатты қосу және баптау",
@@ -880,6 +917,7 @@
   },
   "Common": {
     "close": "Жабу",
+    "cancel": "Болдырмау",
     "DataTable": {
       "searchPlaceholder": "Кестеден іздеу...",
       "emptyMessage": "Жолдар табылмады.",
@@ -1001,11 +1039,12 @@
     "DocumentPdfModal": {
       "ariaLabel": "Жүктеу үшін PDF құжат файлын таңдаңыз",
       "createActivity": "Белсенділік жасау",
+      "fileTooLarge": "Файл өлшемі 100 МБ шегінен асады",
       "noFileSelected": "Ешқандай файл таңдалмады",
       "pdfDocumentFile": "PDF құжатының файлы",
       "pdfDocumentName": "PDF құжатының атауы",
       "selectFile": "PDF файлын таңдаңыз",
-      "supportedFormats": "Қолдау көрсетілетін формат: PDF",
+      "supportedFormats": "Қолдау көрсетілетін формат: PDF • Максималды өлшемі: 100 МБ",
       "valueMissingFile": "Белсенділігіңіз үшін PDF құжатын беріңіз",
       "valueMissingName": "PDF белсенділігіңіз үшін атауды көрсетіңіз"
     },
@@ -1342,9 +1381,6 @@
       "step8Button": "Тапсырма жасау",
       "step8Desc": "Студенттерді тапсырмаларды орындауға тарту, олардың үлгерімін бақылау және интуитивті бағалау жүйесі арқылы кері байланыс беру.",
       "step8Title": "Тапсырмаларды жасау және бағалау",
-      "step9Button": "Төлем параметрлері",
-      "step9Desc": "Төлем жоспарларын реттеңіз, курстарды сатыңыз және біріктірілген төлем жүйесі арқылы жазылымдарды басқарыңыз.",
-      "step9Title": "Мазмұныңызды ақшаға айналдырыңыз",
       "triggerText": "Онбординг"
     },
     "NavMenu": {
@@ -2070,18 +2106,23 @@
       "deletingActivity": "Белсенділік жойылуда...",
       "editAssignmentButton": "Тапсырманы өңдеу",
       "editPageButton": "Бетті өңдеу",
+      "openEditPage": "Өңдеу бетін ашу",
       "failedToUpdateActivityName": "Белсенділік атауын жаңарту мүмкін болмады",
       "noAccessToken": "Аутентификация қажет",
       "ownerLabel": "Иесі",
-      "ownerBadge": "Сіз бұл белсенділікті жасадыңыз",
       "previewTooltip": "Белсенділікті алдын ала қарау",
+      "ownerBadge": "Сіз бұл белсенділікті жасадыңыз",
       "publish": "Жариялау",
       "publishButton": "Жариялау",
       "unpublish": "Жариялаудан алу",
       "unpublishButton": "Жариялаудан алу",
       "updateFailed": "Белсенділікті жаңарту мүмкін болмады",
       "updating": "Белсенділік жаңартылуда...",
-      "editButton": "Өңдеу"
+      "editButton": "Өңдеу",
+      "draftBadge": "Жоба",
+      "liveBadge": "Жарияланған",
+      "save": "Сақтау",
+      "cancel": "Болдырмау"
     },
     "ChapterElement": {
       "chapterNamePlaceholder": "Тарау атауы",
@@ -2111,6 +2152,8 @@
         "currentThumbnailAlt": "Курстың ағымдағы нобайы",
         "errors": {
           "fileTooLarge": "Файл өлшемі ({fileSize}МБ) 8МБ шегінен асады",
+          "imageReadFailed": "Таңдалған кескінді оқу мүмкін болмады",
+          "invalidAspectRatio": "Кескін 16:9 арақатынасында болуы керек. Таңдалған файл өлшемі: {width}x{height}",
           "invalidMimeType": "Жарамсыз файл түрі: {fileType}. Тек PNG немесе JPG/JPEG кескіндерін жүктеңіз",
           "invalidVideoMimeType": "Жарамсыз файл түрі: {fileType}. Тек MP4, MKV немесе WebM бейнелерін жүктеңіз",
           "pleaseSelectAFile": "Файлды таңдаңыз",
@@ -2125,7 +2168,7 @@
         "pleaseSelectAFile": "Файлды таңдаңыз",
         "selectImageFile": "Сурет файлын таңдаңыз",
         "selectVideoFile": "Бейне файлын таңдаңыз",
-        "supportedFormats": "Қолдау көрсетілетін пішімдер: JPG, PNG (макс. 8МБ)",
+        "supportedFormats": "Қолдау көрсетілетін пішімдер: JPG, PNG (макс. 8МБ, 16:9)",
         "supportedVideoFormats": "Қолдау көрсетілетін пішімдер: MP4, MKV, WebM (макс. 100МБ)",
         "thumbnailPreviewAlt": "Курс нобайының алдын ала қарауы",
         "thumbnailUpdatedSuccessfully": "Нобай сәтті жаңартылды",
@@ -2186,6 +2229,10 @@
     "NewActivityModal": {
       "buttonText": "Белсенділік қосу",
       "description": "Осы тарау үшін жаңа белсенділік жасаңыз.",
+      "quickCreate": {
+        "codeChallengeName": "Жаңа код тапсырмасы",
+        "dynamicPageName": "Жаңа динамикалық бет"
+      },
       "title": "Белсенділік қосу"
     },
     "Structure": {
@@ -2197,18 +2244,33 @@
       "chapterCreateFailed": "Тарауды жасау мүмкін болмады",
       "chapterCreatedSuccess": "Тарау сәтті жасалды",
       "creatingChapter": "Жасалуда...",
+      "chapterNamePlaceholder": "Тарау атауы",
       "saveOrderError": "Жаңа мазмұн ретін сақтау мүмкін болмады",
       "savingOrder": "Оқу жоспары өзгертулері қолданылуда",
       "curriculumChangesApplyImmediately": "Оқу жоспары өзгертулері бірден қолданылады",
       "curriculumInlineFeedback": "Жылжыту, қайта реттеу және тарау жасау әрекеттері жұмыс барысында сақталады.",
       "refreshAfterError": "Соңғы құрылым өзгертуін сақтау мүмкін болмады. Қазіргі оқу жоспарын қарап, қайта көріңіз.",
-      "title": "Курстың оқу жоспары"
+      "title": "Курстың оқу жоспары",
+      "confirmChapter": "Растау",
+      "cancel": "Болдырмау",
+      "selectItemHint": "Тарау астындағы + Белсенділік қосу батырмасын басыңыз",
+      "selectItemHintDescription": "Белсенділік түрін таңдап, мәліметтерді толтырыңыз. Өзгерістер бірден сақталады.",
+      "emptyStateTitle": "Оқу бағдарламасын жасаңыз",
+      "emptyStateDescription": "Сабақтар мен тапсырмаларды ұйымдастыру үшін бірінші тарауды қосыңыз.",
+      "emptyStateAction": "Бірінші тарауды қосу"
     },
     "Conflict": {
       "title": "Бұл курс басқа редакторда өзгертілді",
       "description": "Сіз өңдеп жатқанда біреу осы курстың жаңарақ нұсқасын сақтап қойды.",
       "reloadWarning": "Қайта әрекеттенбес бұрын курстың соңғы деректерін жүктеңіз. Қайта жүктеу осы беттегі сақталмаған өзгерістерді өшіреді.",
-      "reloadButton": "Курстың соңғы нұсқасын жүктеу",
+      "draftSummaryTitle": "Сіздің сақталмаған өзгерістеріңіз",
+      "serverSummaryTitle": "Курстың ағымдағы күйі",
+      "keepMineButton": "Менің өзгерістеріммен қайта көру",
+      "useTheirsButton": "Менің өзгерістерімді өшіру",
+      "emptyDraftSummary": "Бұл бөлім үшін сақталмаған өзгерістер жоқ.",
+      "emptyServerSummary": "Курстың соңғы күйі әлі қолжетімді емес.",
+      "reloadButton": "Соңғы нұсқасын жүктеу",
+      "saveAnywayButton": "Дегенмен сақтау",
       "reviewDraftButton": "Жобамды қарап шығуды жалғастыру"
     },
     "activityNamePlaceholder": "Белсенділік атауы",
@@ -2231,7 +2293,11 @@
     "deleting": "Жойылуда...",
     "edit": "Өңдеу",
     "editButton": "Өңдеу",
-    "noActivities": "Белсенділіктер әлі жоқ"
+    "noActivities": "Белсенділіктер әлі жоқ",
+    "deleteChapterConfirmationBreakdown": "Бұл тарауды және оның {count, plural, =0 {0 сабақты} one {# сабақты} other {# сабақты}} ({published} жарияланған, {drafts} жоба) біржола жояды.",
+    "noActivitiesHint": "Төменде бірінші тапсырманы қосыңыз",
+    "save": "Сақтау",
+    "cancel": "Болдырмау"
   },
   "CourseEndView": {
     "backToCourse": "Курсқа оралу",
@@ -2319,12 +2385,7 @@
       "authors": "Авторлар",
       "leaveCourse": "Курстан шығу",
       "loading": "Жүктелуде...",
-      "modalDescription": "Бұл курсқа қол жеткізу үшін төлем әдісін таңдаңыз",
-      "modalTitle": "Курсты сатып алу",
       "moreAuthors": "& тағы {count}",
-      "ownCourse": "Сіз бұл курсты сатып алдыңыз",
-      "paidCourse": "Ақылы курс",
-      "purchaseCourse": "Курсты сатып алу",
       "signIn": "Кіру",
       "startCourse": "Курсты бастау"
     },
@@ -2371,25 +2432,6 @@
       "updates": "жаңартулар",
       "updatesAppearHere": "Бұл курс бойынша жаңартулар осы жерде пайда болады"
     },
-    "CoursePaidOptions": {
-      "benefits": "Артықшылықтары:",
-      "checkoutError": "Кассалық процесті бастау мүмкін болмады",
-      "choosePrice": "Бағаны таңдаңыз",
-      "failedToLoad": "Өнім нұсқаларын жүктеу мүмкін болмады",
-      "loading": "Жүктелуде...",
-      "minimumPrice": "Минималды баға:",
-      "oneTimePayment": "Бір реттік төлем",
-      "perMonth": "(айына)",
-      "perMonthSuffix": "/ай",
-      "price": "Бағасы:",
-      "processing": "Өңделуде...",
-      "purchaseNow": "Қазір сатып алу",
-      "requestError": "Сұранысыңызды өңдеу кезінде қате орын алды",
-      "showLess": "Аз көрсету",
-      "showMore": "Көбірек көрсету",
-      "subscribeNow": "Қазір жазылу",
-      "subscription": "Жазылым"
-    },
     "CourseUpdates": {
       "addNewCourseUpdate": "Жаңа курс жаңартуын қосу",
       "addNewUpdateTitle": "Жаңа курс жаңартуын қосу",
@@ -2428,7 +2470,6 @@
       "updates": "Жаңартулар"
     },
     "CoursesActions": {
-      "accessCheckError": "Курсқа кіруді тексеру мүмкін болмады. Кейінірек қайталап көріңіз.",
       "activitiesCompleted": "{completed}/{total} әрекеті аяқталды",
       "applicationPending": "Автор ретінде қатысуға өтінім қаралуда",
       "applyToContribute": "Қатысуға өтінім беру",
@@ -2452,21 +2493,13 @@
       "contributorApplicationSuccess": "Қатысуға өтініміңіз сәтті жіберілді",
       "courseCompleted": "Курс аяқталды!",
       "courseProgress": "Курс үлгерімі",
-      "courseRequiresPurchase": "Бұл курстың мазмұнына қол жеткізу үшін сатып алу қажет.",
       "leaveCourse": "Курстан шығу",
       "leaveCourseError": "Курстан шығу мүмкін болмады. Кейінірек қайталап көріңіз.",
       "leaveError": "Курстан шығу мүмкін болмады. Кейінірек қайталап көріңіз.",
       "leaveSuccess": "Курстан сәтті шықтыңыз",
       "leavingCourse": "Курстан шығу...",
       "leftCourseSuccess": "Курстан сәтті шықтыңыз",
-      "modalDescription": "Бұл курсқа қол жеткізу үшін төлем әдісін таңдаңыз",
-      "modalTitle": "Курсты сатып алу",
       "moreAuthors": "& тағы {count}",
-      "ownCourseDescription": "Сіз бұл курсты сатып алдыңыз және барлық мазмұнға толық қол жеткізе аласыз.",
-      "ownCourseTitle": "Сіз бұл курстың иесісіз",
-      "paidCourse": "Ақылы курс",
-      "paidCourseDescription": "Бұл курстың мазмұнына қол жеткізу үшін сатып алу қажет.",
-      "paidCourseTitle": "Ақылы курс",
       "progressCard": {
         "activitiesCompletedLabel": "тапсырма орындалды",
         "chapterActivitiesCount": "{completed}/{total} тапсырма",
@@ -2474,9 +2507,7 @@
         "completedAllActivities": "Тамаша! Сіз барлық тапсырмаларды орындадыңыз.",
         "courseCompleted": "Курс аяқталды!"
       },
-      "purchaseCourse": "Курсты сатып алу",
       "readyToBegin": "Бастауға дайынсыз ба?",
-      "selectPaymentOption": "Бұл курсқа қол жеткізу үшін төлем әдісін таңдаңыз",
       "startCourse": "Курсты бастау",
       "startCourseError": "Курсты бастау мүмкін болмады. Кейінірек қайталап көріңіз.",
       "startError": "Курсты бастау мүмкін болмады. Кейінірек қайталап көріңіз.",
@@ -2486,13 +2517,7 @@
       "startingCourse": "Курс басталуда...",
       "submittingContributorApplication": "Қатысуға өтінім жіберілуде...",
       "youAreAContributor": "Сіз авторсыз",
-      "youAreContributor": "Сіз авторсыз",
-      "youHavePurchasedThisCourse": "Сіз бұл курсты сатып алдыңыз және барлық мазмұнға толық қол жеткізе аласыз.",
-      "youOwnThisCourse": "Сіз бұл курстың иесісіз"
-    },
-    "PaidCourseActivityDisclaimer": {
-      "message": "Мазмұнға қол жеткізу үшін курсты сатып алу қажет.",
-      "paidContent": "Ақылы мазмұн"
+      "youAreContributor": "Сіз авторсыз"
     },
     "access": "Қолжетімділік",
     "content": "Мазмұны",
@@ -3175,7 +3200,8 @@
       "Tasks": {
         "addTask": "Тапсырма қосу",
         "addTaskModalDescription": "Жаңа тапсырма жасаңыз",
-        "addTaskModalTitle": "Тапсырма қосу"
+        "addTaskModalTitle": "Тапсырма қосу",
+        "openTask": "Тапсырманы ашу"
       },
       "addQuestion": "Сұрақ қосу",
       "evaluate": "Бағалау",
@@ -3188,10 +3214,30 @@
       "noQuestionsFound": "Сұрақтар табылмады",
       "optionPlaceholder": "Нұсқа мәтінін енгізіңіз",
       "questionPlaceholder": "Сұрақ мәтінін енгізіңіз",
+      "assignmentStatusDescription": "Тапсырма деңгейіндегі жіберу барысын тексеріп, содан кейін тапсырма ішіндегі бағалауға өтіңіз.",
+      "assignmentStatusEmpty": "Тапсырма деңгейіндегі мәртебелер әлі қолжетімді емес.",
+      "assignmentStatusGrade": "Баға",
+      "assignmentStatusGraded": "Бағаланды",
+      "assignmentStatusGradedCount": "Бағаланғаны: {count}",
+      "assignmentStatusLearner": "Білім алушы",
+      "assignmentStatusLate": "Кешігіп тапсырылды",
+      "assignmentStatusLoadErrorDescription": "Тапсырма деңгейіндегі мәртебелерді жүктеу мүмкін болмады.",
+      "assignmentStatusLoadErrorTitle": "Мәртебе панелі қолжетімсіз",
+      "assignmentStatusLoading": "Тапсырма деңгейіндегі мәртебелер жүктелуде...",
+      "assignmentStatusNotSubmitted": "Тапсырылмады",
+      "assignmentStatusNotYetSubmitted": "Әлі тапсырылмаған",
+      "assignmentStatusPending": "Күтуде",
+      "assignmentStatusState": "Мәртебе",
+      "assignmentStatusSubmitted": "Тапсырылды",
+      "assignmentStatusSubmittedAt": "Тапсырылған уақыты",
+      "assignmentStatusSubmittedCount": "Тапсырылғаны: {count}",
+      "assignmentStatusTitle": "Тапсырма мәртебесінің шолуы",
+      "assignmentStatusTotal": "Білім алушылар: {count}",
       "submission": "Жіберілген жұмыс",
       "submitted": "Жіберілді",
       "tasks": "Тапсырмалар",
-      "title": "Тапсырмалар"
+      "title": "Тапсырмалар",
+      "submissionsTitle": "Студенттердің жұмыстары"
     },
     "Card": {
       "AccountSettings": {
@@ -3203,6 +3249,14 @@
         "errorOccurred": "Қате пайда болды",
         "title": "Курстар"
       },
+      "Assignments": {
+        "description": "Курстарыңыз бойынша тапсырмаларды қарап және бағалаңыз",
+        "title": "Тапсырмалар"
+      },
+      "Analytics": {
+        "description": "Талдау панелдеріне және есептерді экспорттауға қол жеткізіңіз",
+        "title": "Аналитика"
+      },
       "Platform": {
         "description": "Платформаңыздың жалпы параметрлерін баптаңыз",
         "title": "Платформа"
@@ -3211,6 +3265,12 @@
         "description": "Ұйым пайдаланушыларын және рөлдерін басқарыңыз",
         "title": "Пайдаланушылар"
       },
+      "Admin": {
+        "description": "Ұйым әкімшілігі мен жүйелік параметрлер",
+        "title": "Әкімші",
+        "badge": "Жүйелік"
+      },
+      "noAccess": "Сізде әлі бақылау тақтасының функцияларына рұқсат жоқ.",
       "platformLogo": "Ashyq Bilim логотипі",
       "touUniversity": "Торайғыров Университеті"
     },
@@ -3500,12 +3560,10 @@
         },
         "steps": {
           "basics": "Негізгісі",
-          "launch": "Іске қосу",
           "template": "Үлгі"
         },
         "summary": {
           "heading": "Баптау қысқаша мазмұны",
-          "launchDestination": "Іске қосу бағыты",
           "selectedOutlineCourse": "Таңдалған құрылым курсы",
           "sourceCourse": "Бастапқы курс",
           "template": "Үлгі",
@@ -3564,13 +3622,11 @@
         "previewButton": "Алдын ала қарау",
         "reviewButton": "Тексеру",
         "tabs": {
-          "access": "Қолжетімділік",
           "certificate": "Сертификат",
-          "collaboration": "Ынтымақтастық",
-          "curriculum": "Оқу жоспары",
+          "content": "Мазмұн",
           "details": "Мәліметтер",
-          "overview": "Шолу",
-          "reviewPublish": "Тексеру және жариялау"
+          "publish": "Тексеру және жариялау",
+          "settings": "Баптаулар"
         },
         "untitledCourse": "Атаусыз курс",
         "unsavedDialogLeave": "Жұмыс кеңістігінен шығу",
@@ -3775,6 +3831,8 @@
       "failedToRemoveContributor": "{username} жою сәтсіз аяқталды: {reason}",
       "failedToRemoveContributorsGeneral": "Қатысушыларды жою сәтсіз аяқталды",
       "failedToRemoveSelectedContributors": "Таңдалған қатысушыларды жою сәтсіз аяқталды",
+      "removeSelectedConfirmMessage": "Бұл курстан {count, plural, one {# қатысушыны} other {# қатысушыларды}} жояды.",
+      "removeSelectedConfirmTitle": "{count, plural, one {# қатысушыны} other {# қатысушыларды}} жою керек пе?",
       "failedToUpdateContributor": "Қатысушыны жаңарту сәтсіз аяқталды",
       "inactive": "Белсенді емес",
       "maintainer": "Қолдаушы",
@@ -3922,7 +3980,10 @@
         "dropOrClick": "Кескінді осы жерге сүйреңіз немесе таңдау үшін басыңыз",
         "expand": "Кеңейту",
         "imageViewer": "Суретті қарау құралы",
+        "invalidImageFile": "Жарамды сурет файлын таңдаңыз",
+        "previewImageAlt": "Алдын ала қарау",
         "supportedFormats": "Қолдау көрсетілетін пішімдері: JPG, PNG, WebP, GIF",
+        "uploadFailed": "Кескінді жүктеу мүмкін болмады",
         "upload": "Жүктеп алу",
         "uploading": "Жүктеп салынуда..."
       },
@@ -4074,6 +4135,7 @@
       "Toolbar": {
         "addColumnRight": "Оң жаққа баған қосу",
         "addRowBelow": "Төменге жол қосу",
+        "aiEditor": "ЖИ редакторы",
         "aria": {
           "insertInteractiveScenarios": "Интерактивті сценарийлерді енгізу"
         },
@@ -4089,6 +4151,7 @@
         "calloutWarning": "Шығару (Ескерту)",
         "clickMe": "Мені бас",
         "codeBlock": "Код блогы",
+        "codeBlockLanguage": "Код тілі",
         "codeInline": "Желілік код",
         "defaultInfoCalloutText": "Ақпарат",
         "defaultScenario": {
@@ -4133,22 +4196,37 @@
         "headingLevel": "{level} тақырыбы",
         "image": "Сурет",
         "infoCallout": "Ақпараттық шығару",
+        "insert": "Кірістіру",
+        "insertGroups": {
+          "callouts": "Ескертпелер",
+          "interactive": "Интерактивті",
+          "media": "Медиа",
+          "text": "Мәтін"
+        },
         "insertTable": "Жаңа кесте енгізу (3×3)",
         "interactiveQuiz": "Интерактивті тест",
         "interactiveScenarios": "Интерактивті сценарийлер",
         "italic": "Курсив",
         "link": "Байланыс",
+        "lists": "Тізімдер",
         "listOptions": {
           "bulletList": "Нүктелі тізім",
           "orderedList": "Нөмірленген тізім"
         },
         "mathEquation": "Математикалық теңдеу (LaTeX)",
+        "plainText": "Қарапайым мәтін",
+        "slashBlocks": "Блоктар",
+        "slashEmbedDescription": "{label} енгізу",
+        "slashInsertDescription": "{label} блогын кірістіру",
+        "slashNoResults": "Нәтиже табылмады.",
+        "slashSearchPlaceholder": "Блоктарды іздеу...",
         "orderedList": "Нөмірленген тізім",
         "paragraph": "Параграф",
         "pdfDocument": "PDF Құжаты",
         "redo": "Қайталау",
         "strike": "Сызылған",
         "table": "Кесте",
+        "tableOfContents": "Мазмұны",
         "undo": "Болдырмау",
         "user": "Пайдаланушы",
         "video": "Бейне",
@@ -4786,183 +4864,6 @@
       "socials": "Әлеуметтік желілер",
       "socialsDescription": "Ұйымыңыздың әлеуметтік желі сілтемелерін басқару",
       "socialsTitle": "Әлеуметтік желілер"
-    },
-    "Payments": {
-      "Configuration": {
-        "aboutStripe": {
-          "acceptPayments": "Курстар мен жазылымдар үшін төлемдерді қабылдау",
-          "accessAnalytics": "Толық төлем аналитикасына қол жеткізу",
-          "handleCurrencies": "Бірнеше валюталар мен төлем әдістерін басқару",
-          "learnMore": "Stripe туралы көбірек білу",
-          "manageSubscriptions": "Қайталанатын шоттар мен жазылымдарды басқару",
-          "title": "Stripe интеграциясы туралы"
-        },
-        "accountNotConfigured": "Stripe шоты конфигурацияланбаған",
-        "configUpdatedSuccess": "Конфигурация сәтті жаңартылды",
-        "connectButton": "Stripe шотын қосу",
-        "connectedStatus": "Қосылған",
-        "connectingButton": "Stripe-ке қосылуда...",
-        "deletingStripeConfig": "Stripe конфигурациясын жою...",
-        "editModalDescription": "Stripe тіркелгі деректеріңізді жаңартыңыз",
-        "editModalTitle": "Stripe конфигурациясын өңдеу",
-        "enableButton": "Stripe төлемдерін қосу",
-        "enablingStripe": "Stripe қосылуда...",
-        "errorLoading": "Төлем конфигурациясын жүктеу қатесі",
-        "errors": {
-          "deleteStripeConfigFailed": "Stripe конфигурациясын жою сәтсіз аяқталды",
-          "enableStripeFailed": "Stripe қосу сәтсіз аяқталды",
-          "loadStripeConfigFailed": "Бар конфигурацияны жүктеу сәтсіз аяқталды",
-          "startStripeOnboardingFailed": "Stripe тіркелуін бастау сәтсіз аяқталды",
-          "updateConfigFailed": "Конфигурацияны жаңарту сәтсіз аяқталды"
-        },
-        "linkedAccountLabel": "Байланыстырылған тіркелгі ID",
-        "loading": "Жүктелуде...",
-        "notConnectedStatus": "Қосылмаған",
-        "pageDescription": "Ұйымыңыздың төлем конфигурациясын басқарыңыз",
-        "pageTitle": "Төлем конфигурациясы",
-        "removeConnectionButton": "Қосылымды жою",
-        "removeConnectionConfirmation": "Stripe қосылымын жойғыңыз келетініне сенімдісіз бе? Бұл төлемдерді өшіреді.",
-        "removeConnectionTitle": "Stripe қосылымын жою",
-        "saveButton": "Сақтау",
-        "startingStripeOnboarding": "Stripe тіркелуін бастау",
-        "stripeAccountIdLabel": "Stripe тіркелгі ID",
-        "stripeAccountIdPlaceholder": "acct_...",
-        "stripeConfigDeletedSuccess": "Stripe конфигурациясы сәтті жойылды",
-        "stripeEnabledSuccess": "Stripe сәтті қосылды",
-        "updatingConfig": "Конфигурация жаңартылуда..."
-      },
-      "CustomersPage": {
-        "amountHeader": "Сома",
-        "description": "Тұтынушы ақпаратыңызды қараңыз және басқарыңыз",
-        "errors": {
-          "loadCustomersFailed": "Клиенттерді жүктеу қатесі"
-        },
-        "noCustomerData": "Клиент деректері жоқ",
-        "noCustomers": "Клиенттер табылмады",
-        "oneTimeType": "Бір реттік",
-        "productHeader": "Өнім",
-        "purchaseDateHeader": "Сатып алу күні",
-        "statusHeader": "Мәртебе",
-        "subscriptionType": "Жазылым",
-        "title": "Клиенттер",
-        "typeHeader": "Түрі",
-        "userHeader": "Пайдаланушы"
-      },
-      "LinkCourseModal": {
-        "alreadyLinked": "Бұрыннан байланыстырылған",
-        "linkCourseButton": "Курсты байланыстыру",
-        "noCoursesFound": "Курстар табылмады",
-        "searchPlaceholder": "Курстарды іздеу..."
-      },
-      "LinkedCourses": {
-        "linkCourseButton": "Курсты байланыстыру",
-        "linkModalDescription": "Бұл өнімге байланыстыру үшін курстарды таңдаңыз",
-        "linkModalTitle": "Курстарды өнімге байланыстыру",
-        "noCoursesLinked": "Бұл өнімге әлі курстар байланыстырылмаған.",
-        "title": "Байланыстырылған курстар"
-      },
-      "ProductForm": {
-        "benefitsLabel": "Артықшылықтар (міндетті емес)",
-        "benefitsPlaceholder": "Артықшылықтарды тізімдеңіз, әр жолда бір-бірден",
-        "currencyLabel": "Валюта",
-        "currencyPlaceholder": "Валютаны таңдаңыз",
-        "descriptionLabel": "Сипаттамасы",
-        "descriptionPlaceholder": "Өнімді сипаттаңыз",
-        "errors": {
-          "amountMin": "Сома кемінде 1 болуы керек",
-          "amountRequired": "Сома қажет",
-          "currencyRequired": "Валюта қажет",
-          "descriptionRequired": "Сипаттама қажет",
-          "nameRequired": "Өнім атауы қажет",
-          "priceTypeRequired": "Баға түрі қажет",
-          "productTypeRequired": "Өнім түрі қажет"
-        },
-        "minAmountLabel": "Минималды сома",
-        "nameLabel": "Өнім атауы",
-        "namePlaceholder": "Өнім атауын енгізіңіз",
-        "priceLabel": "Бағасы",
-        "priceTypeLabel": "Баға түрі",
-        "priceTypePlaceholder": "Баға түрін таңдаңыз",
-        "priceTypes": {
-          "customer_choice": "Клиент таңдауы (мин. баға)",
-          "fixed_price": "Тұрақты баға"
-        },
-        "productTypeLabel": "Өнім түрі",
-        "productTypePlaceholder": "Өнім түрін таңдаңыз",
-        "productTypes": {
-          "one_time": "Бір реттік төлем",
-          "subscription": "Жазылым"
-        },
-        "submitButton": "Өнім жасау",
-        "submittingButton": "Жасалуда..."
-      },
-      "ProductPage": {
-        "archiveButton": "Мұрағаттау",
-        "archiveConfirmButton": "Өнімді мұрағаттау",
-        "archiveConfirmationMessage": "Бұл өнімді мұрағаттағыңыз келетініне сенімдісіз бе?",
-        "archiveConfirmationTitle": "{productName} мұрағаттау керек пе?",
-        "benefitsLabel": "Артықшылықтары:",
-        "createModalDescription": "Ұйымыңызға жаңа өнім қосыңыз",
-        "createModalTitle": "Жаңа өнім жасау",
-        "createProductButton": "Жаңа өнім жасау",
-        "editButton": "Өңдеу",
-        "editForm": {
-          "benefitsLabel": "Артықшылықтар",
-          "benefitsPlaceholder": "Өнім артықшылықтары",
-          "cancelButton": "Бас тарту",
-          "currencyLabel": "Валюта",
-          "currencyPlaceholder": "Валюта",
-          "descriptionLabel": "Сипаттамасы",
-          "descriptionPlaceholder": "Өнім сипаттамасы",
-          "nameLabel": "Өнім атауы",
-          "namePlaceholder": "Өнім атауы",
-          "priceLabel": "Бағасы",
-          "pricePlaceholder": "Бағасы",
-          "productUpdatedSuccess": "Өнім сәтті жаңартылды",
-          "saveButton": "Сақтау",
-          "savingButton": "Сақталуда...",
-          "updateProductFailed": "Өнімді жаңарту мүмкін болмады"
-        },
-        "errors": {
-          "archiveProductFailed": "Деректерді мұрағаттау мүмкін болмады: {error}"
-        },
-        "loadError": "Өнімдерді жүктеу мүмкін болмады",
-        "loading": "Жүктелуде...",
-        "noProducts": "Өнімдер жоқ. Бастау үшін жаңа өнім жасаңыз.",
-        "oneTimeType": "Бір реттік",
-        "priceLabel": "Бағасы:",
-        "productArchivedSuccess": "Өнім сәтті мұрағатталды",
-        "showLess": "Аз көрсету",
-        "showMore": "Көбірек көрсету",
-        "subscriptionType": "Жазылым"
-      },
-      "configuration": "Төлем параметрлері",
-      "configurationInfo": "Төлем шлюзіңізді реттеңіз және басқарыңыз",
-      "configureStripe": "Stripe тіркелгіңізді конфигурациялаңыз.",
-      "contactAdmin": "Төлемдерді қосу үшін әкімшімен байланысыңыз.",
-      "createProducts": "Өнімдер немесе жазылымдар жасаңыз.",
-      "customerInfo": "Клиент ақпаратын қарау және басқару",
-      "customers": "Клиенттер",
-      "goToConfiguration": "Конфигурацияға өту",
-      "notAvailable": "Төлемдер қолжетімсіз",
-      "notEnabledMessage": "Бұл ұйым үшін төлем функциясы қосылмаған.",
-      "overview": "Шолу",
-      "paidProducts": "Ақылы өнімдер",
-      "paidProductsInfo": "Ақылы өнімдер мен бағаларды басқару",
-      "productsSubscriptions": "Өнімдер мен жазылымдар",
-      "startSelling": "Курстарыңызды сата бастаңыз!",
-      "title": "Төлемдер",
-      "unconfiguredAlertTitle": "Төлем конфигурациясы қажет"
-    },
-    "Stripe": {
-      "completing": "Қосылым аяқталуда...",
-      "connectError": "Stripe тіркелгісін қосу қатесі",
-      "connectionFailed": "Қосылым сәтсіз аяқталды.",
-      "connectionSuccess": "Қосылым сәтті!",
-      "missingParameters": "Stripe қосылымын тексеру үшін параметрлер жетіспейді.",
-      "pleaseWait": "Stripe тіркелгіңізді қосып жатқанда күте тұрыңыз.",
-      "returnToDashboard": "Енді басқару тақтасына оралуға болады.",
-      "tryAgainOrContact": "Қайталап көріңіз немесе мәселе шешілмесе, қолдау қызметіне хабарласыңыз."
     },
     "UserAccountSettings": {
       "Gamification": {
@@ -6118,6 +6019,162 @@
     "sunset_blaze": "Күн батуының жалыны",
     "volcanic": "Вулкандық"
   },
+  "Grading": {
+    "Table": {
+      "needGrading": "тексеруді қажет етеді",
+      "total": "Барлығы: {count}",
+      "selectAll": "Осы беттегі барлық жұмыстарды таңдау",
+      "selectSubmission": "{student} жұмыcын таңдау",
+      "selectedCount": "{count} жұмыс таңдалды",
+      "clearSelection": "Таңдауды тазарту",
+      "batchGrade": "Топпен бағалау",
+      "student": "Студент",
+      "attempt": "Әрекет",
+      "submitted": "Жіберілді",
+      "status": "Күй",
+      "statusDraft": "Жоба",
+      "statusPending": "Күтуде",
+      "statusGraded": "Бағаланды",
+      "statusPublished": "Жарияланған",
+      "statusReturned": "Қайтарылған",
+      "score": "Баға",
+      "scorePlaceholder": "0–100",
+      "scoreInputAria": "{student} үшін бағаны өзгерту",
+      "quickSaveAria": "{student} үшін бағаны сақтау",
+      "empty": "Жіберілген жұмыстар жоқ",
+      "prev": "Алдыңғы",
+      "next": "Келесі",
+      "pageOf": "{page}/{pages} бет",
+      "grade": "Тексеру",
+      "view": "Қарау",
+      "filterAll": "Барлығы",
+      "filterNeedsGrading": "Тексеруді күтеді",
+      "filterGraded": "Бағаланған",
+      "filterLate": "Кешіктірілген",
+      "searchPlaceholder": "Студентті іздеу...",
+      "sortBy": "Сорттау",
+      "sortByDate": "Жіберілген күні",
+      "sortByScore": "Баға бойынша",
+      "sortByAttempt": "Әрекет нөмірі",
+      "exportCSV": "CSV экспорт",
+      "filterPending": "Күтуде",
+      "filterPublished": "Жарияланған",
+      "filterReturned": "Қайтарылған"
+    },
+    "Stats": {
+      "total": "Барлық жіберілімдер",
+      "needsGrading": "Тексеруді күтеді",
+      "avgScore": "Орташа баға",
+      "passRate": "Өту пайызы"
+    },
+    "Panel": {
+      "loading": "Жүктелуде...",
+      "notYetSubmitted": "Әлі жіберілмеген",
+      "noData": "Деректер жоқ",
+      "attempt": "Әрекет",
+      "finalScore": "Қорытынды баға",
+      "autoScore": "Автоматты баға",
+      "feedback": "Пікір",
+      "optional": "міндетті емес",
+      "feedbackPlaceholder": "Пікір немесе түсініктеме қосыңыз...",
+      "returnToStudent": "Студентке қайтару",
+      "saveGrade": "Бағаны сақтау",
+      "saving": "Сақталуда...",
+      "gradeSaved": "Баға сақталды",
+      "returned": "Жұмыс студентке қайтарылды",
+      "saveFailed": "Бағаны сақтау сәтсіз аяқталды",
+      "invalidScore": "Баға 0 мен 100 арасында болуы керек",
+      "previous": "Алдыңғы",
+      "next": "Келесі",
+      "manualReviewRequired": "Бұл жұмыс қолмен тексеруді қажет етеді",
+      "needsReview": "Тексеруді қажет етеді",
+      "noBreakdown": "Жауаптардың толық шолуы жоқ",
+      "confirmReturnTitle": "Студентке қайтаруды растаңыз",
+      "confirmReturnDesc": "Жұмыс студентке қайтарылады. Студент жұмысты қайта жіберуге мүмкіндік алады.",
+      "cancel": "Болдырмау",
+      "confirm": "Растау",
+      "saveDraft": "Жобаны сақтау",
+      "publishGrade": "Бағаны жариялау",
+      "gradePublished": "Баға студентке жарияланды",
+      "confirmPublishTitle": "Бағаны жариялау керек пе?",
+      "confirmPublishDesc": "Студент бағасы мен пікірді көре алатын болады.",
+      "unsavedTitle": "Сақталмаған өзгерістер",
+      "unsavedDesc": "Сізде сақталмаған өзгерістер бар. Оларды жойып жалғастыру керек пе?",
+      "discardAndContinue": "Жойып жалғастыру",
+      "late": "Кешіктірілген",
+      "autoSum": "Авто-сумма",
+      "useAutoScore": "Авто-бағаны қолдану",
+      "useAutoSum": "Авто-суммаға қолдану",
+      "studentAnswer": "Студенттің жауабы",
+      "itemScore": "Баға",
+      "itemFeedback": "Пікір",
+      "itemFeedbackPlaceholder": "Тапсырма бойынша пікір қосыңыз...",
+      "correctAnswer": "Дұрыс жауап"
+    },
+    "Batch": {
+      "title": "Топпен бағалау ({count} жұмыс)",
+      "subtitle": "{count} жергілікті жоба өзгертілді",
+      "close": "Топтық бағалау панелін жабу",
+      "position": "Студент {current}/{total}: {student}",
+      "indicatorNotEdited": "Өзгертілмеген",
+      "indicatorEdited": "Өзгертілген",
+      "saveDraft": "Жобаны сақтау",
+      "draftSaved": "Жоба өзгерістері жіберілгенге дейін жергілікті сақталады",
+      "submitAll": "Барлығын жіберу ({count})",
+      "submitting": "Жіберілуде...",
+      "confirmSubmitTitle": "Таңдалған студенттердің бағаларын жіберу керек пе?",
+      "confirmSubmitDesc": "{count} студенттің бағаларын жіберу керек пе? Бұл әрекетті болдырмау мүмкін емес.",
+      "confirmSubmitAction": "Барлығын жіберу ({count})",
+      "nothingToSubmit": "Жіберер алдында кемінде бір жұмысты өңдеңіз",
+      "scoreRequired": "Өзгертілген әр жұмысқа қорытынды баға қажет",
+      "submitSummary": "{succeeded} баға жіберілді, {failed} сәтсіз аяқталды",
+      "submitFailed": "Топтық бағаларды жіберу сәтсіз аяқталды",
+      "unknownError": "Белгісіз қате",
+      "unsavedTitle": "Жіберілмеген жергілікті жобалар",
+      "unsavedDesc": "Жіберілмеген жергілікті бағалау жобалары бар. Оларды жойып, панельді жабу керек пе?"
+    },
+    "Result": {
+      "score": "Баға",
+      "passed": "Өтті",
+      "failed": "Өтпеді",
+      "autoScore": "Автоматты баға",
+      "teacherFeedback": "Мұғалімнің пікірі",
+      "yourAnswer": "Сіздің жауабыңыз",
+      "correctAnswer": "Дұрыс жауап",
+      "breakdown": "Жауаптар бойынша тіркелу",
+      "pendingReview": "Тексеруді күтеді",
+      "waitingForGrade": "Баға күтілуде..."
+    },
+    "SubmissionShell": {
+      "bannerSubmittedTitle": "Жұмыс жіберілді",
+      "bannerSubmittedDesc": "Жұмысыңыз жіберілді. Мұғалімнің тексеруін күтіңіз.",
+      "bannerGradedTitle": "Жұмыс бағаланды",
+      "bannerGradedDesc": "Жұмысыңызды мұғалім тексеруде.",
+      "bannerLateTitle": "Жұмыс кешіктіріліп жіберілді",
+      "bannerLateDesc": "Жұмысыңыз мерзімінен кеш жіберілді.",
+      "bannerReturnedTitle": "Жұмыс қайтарылды",
+      "bannerReturnedDesc": "Мұғалім жұмысыңызды қайта тапсыруды сұрады.",
+      "score": "Баға",
+      "readyToSubmit": "Жіберуге дайынсыз ба?",
+      "returnedResubmit": "Жұмыс қайтарылды. Түзетіп, қайта жіберуге болады.",
+      "bannerPendingTitle": "Жұмыс жіберілді",
+      "bannerPendingDesc": "Жұмысыңыз жіберілді. Мұғалімнің тексеруін күтіңіз.",
+      "bannerPublishedTitle": "Баға жарияланды",
+      "bannerPublishedDesc": "Бағаңыз бен пікір қол жетімді."
+    },
+    "SubmitButton": {
+      "submitForGrading": "Тексеруге жіберу",
+      "submitting": "Жіберілуде...",
+      "submitted": "Сәтті жіберілді",
+      "alreadySubmitted": "Жіберілді",
+      "notAuthenticated": "Жіберу үшін жүйеге кіріңіз",
+      "submitFailed": "Жіберу сәтсіз аяқталды. Қайталап көріңіз.",
+      "confirmTitle": "Тексеруге жіберу керек пе?",
+      "confirmDescription": "Жіберілгеннен кейін жауаптарды өзгерту мүмкін болмайды.",
+      "cancel": "Болдырмау",
+      "confirmSubmit": "Жіберу"
+    }
+  },
   "Header": {
     "adminBadge": "ӘКІМШІ",
     "login": "Кіру",
@@ -6285,7 +6342,6 @@
       "manageAnalytics": "Оқытушы аналитикасын ашу",
       "manageAssignments": "Тапсырмаларды басқару",
       "manageCourses": "Курстарды басқару",
-      "managePayments": "Төлемдер мен шоттарды басқару",
       "manageUsers": "Пайдаланушыларды басқару",
       "platformSettings": "Платформа параметрлері",
       "platformLogo": "Ashyq Bilim логотипі",
@@ -6310,7 +6366,6 @@
       "courses": "Курстар",
       "home": "Басты бет",
       "platform": "Платформа",
-      "payments": "Төлемдер",
       "settings": "Параметрлер",
       "users": "Пайдаланушылар"
     },
@@ -6324,7 +6379,6 @@
       "logout": "Шығу",
       "metrics": "Метрикалар",
       "platform": "Платформа параметрлері",
-      "payments": "Төлемдер",
       "userSettings": "@{username} параметрлері",
       "users": "Пайдаланушылар"
     }
@@ -6383,7 +6437,16 @@
       "sortCompletion": "Аяқтау",
       "sortActiveLearners": "Белсенді оқушылар",
       "sortDifficulty": "Қиындық",
-      "sortSignals": "Сигналдар"
+      "sortSignals": "Сигналдар",
+      "sectionAriaLabel": "Аналитика сүзгілерінің басқаруы",
+      "windowSelect": "Уақыт аралығын таңдаңыз",
+      "compareSelect": "Салыстыруды таңдаңыз",
+      "bucketSelect": "Шелекті таңдаңыз",
+      "courseSelect": "Курсты таңдаңыз",
+      "cohortSelect": "Когортаны таңдаңыз",
+      "timezoneSelect": "Уақыт белдеуін таңдаңыз",
+      "sortBySelect": "Сұрыптау өрісін таңдаңыз",
+      "sortOrderSelect": "Сұрыптау тәртібін таңдаңыз"
     },
     "labels": {
       "bucket": {
@@ -6507,8 +6570,9 @@
       "searchDefault": "Іздеу...",
       "emptyDefault": "Таңдалған фильтрлер бойынша жолдар табылмады.",
       "visibleRows": "{count} көрінетін жол",
-      "showingRows": "{total} ішіндегі {from}\u2013{to}",
+      "showingRows": "{total} ішіндегі {from}–{to}",
       "page": "{total} беттен {current} бет",
+      "pagination": "Беттеу",
       "prev": "Алдыңғы",
       "next": "Келесі",
       "rowsPerPage": "Бетке жолдар",
@@ -6569,9 +6633,11 @@
       "colMedian": "Медиана",
       "colDifficulty": "Қиындық",
       "colSignals": "Сигналдар",
+      "viewAssessment": "Бағалауды қарау {title}",
       "healthy": "Жақсы",
       "searchPlaceholder": "Бағалаулар бойынша іздеу...",
-      "emptyMessage": "Ағымдағы аумаққа сәйкес бағалау ауытқулары жоқ."
+      "emptyMessage": "Ағымдағы аумаққа сәйкес бағалау ауытқулары жоқ.",
+      "rowCount": "{count} бағалау ауытқулары"
     },
     "atRisk": {
       "defaultTitle": "Тәуекелдегі оқушылар",
@@ -6780,9 +6846,13 @@
       "description": "Бай мокко және кремді реңктері бар кофеден шабыттанған жылы тақырып",
       "name": "Мокко мусс"
     },
-    "mono": {
-      "description": "Көлеңкесіз таза қара және ақпен ультраминималистік монохромды тақырып",
-      "name": "Моно"
+    "dark": {
+      "description": "Қараңғы тақырып (әзірлеу кезеңінде)",
+      "name": "Қараңғы (бета)"
+    },
+    "darkBeta": {
+      "description": "Түнгі уақытта ыңғайлы жұмысқа арналған терең контрасттар мен жұмсақ акценттері бар эксперименттік қараңғы тақырып",
+      "name": "Қараңғы (бета)"
     },
     "nature": {
       "description": "Органикалық жасыл реңктер мен жер акценттері бар жаңа табиғат тақырыбы",
@@ -6906,6 +6976,7 @@
     "loadingCertificate": "Жүктелуде...",
     "noCertificateAvailable": "Сертификат қолжетімді емес",
     "quitCourseButton": "Курстан шығу",
+    "stepsLabel": "қадам",
     "viewCertificate": "Сертификатты қарау"
   },
   "TrailPage": {
@@ -6913,13 +6984,14 @@
     "myProgress": "Менің прогрессім",
     "noCourses": "Сіз әлі ешбір курс бастамадыңыз.",
     "noCoursesInProgress": "Жүріп жатқан курстар жоқ",
-    "quitAllCourses": "Барлық курстардан шығу",
-    "quitAllCoursesConfirmation": "Барлық курстардан шығуға сенімдісіз бе? Бұл әрекетті қайтару мүмкін емес және сіз барлық прогрессіңізді жоғалтасыз.",
-    "quitAllCoursesDialogTitle": "Барлық курстардан шығу?",
-    "quittingProgress": "Курстардан шығу ({progress}%)",
     "startACourseToSeeYourProgress": "Прогрессіңізді осында көру үшін курс бастаңыз",
     "startExploring": "Курстарды зерттеуді бастаңыз!",
     "title": "Прогресс"
+  },
+  "UnauthorizedPage": {
+    "button": "Басты бетке оралу",
+    "message": "Сізде бұл бетке кіру рұқсаты жоқ.",
+    "title": "Рұқсат жоқ"
   },
   "UserProfilePage": {
     "aboutTitle": "Туралы",

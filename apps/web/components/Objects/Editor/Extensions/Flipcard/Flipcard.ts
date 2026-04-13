@@ -1,6 +1,25 @@
 import { ReactNodeViewRenderer } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
+import { type CommandProps, Node, mergeAttributes } from '@tiptap/core';
 import FlipcardExtension from './FlipcardExtension';
+
+export type FlipcardAlignment = 'left' | 'center' | 'right';
+export type FlipcardSize = 'small' | 'medium' | 'large';
+
+export interface FlipcardAttrs {
+  question: string;
+  answer: string;
+  color: string;
+  alignment: FlipcardAlignment;
+  size: FlipcardSize;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    flipcard: {
+      insertFlipcard: () => ReturnType;
+    };
+  }
+}
 
 export default Node.create({
   name: 'flipcard',
@@ -15,10 +34,10 @@ export default Node.create({
   addAttributes() {
     return {
       question: {
-        default: 'Click to reveal the answer',
+        default: '',
       },
       answer: {
-        default: 'This is the answer',
+        default: '',
       },
       color: {
         default: 'blue',
@@ -42,6 +61,15 @@ export default Node.create({
 
   renderHTML({ HTMLAttributes }) {
     return ['flipcard-block', mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addCommands() {
+    return {
+      insertFlipcard:
+        () =>
+        ({ commands }: CommandProps) =>
+          commands.insertContent({ type: this.name }),
+    };
   },
 
   addNodeView() {

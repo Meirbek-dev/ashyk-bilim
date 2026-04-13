@@ -236,15 +236,15 @@ export const mochaMousseTheme = createThemeFromCSS(
   'Warm coffee-inspired theme with rich mocha and cream tones',
 );
 
-export const monoTheme = createThemeFromCSS(
-  'mono',
-  'Mono',
+export const darkTheme = createThemeFromCSS(
+  'dark',
+  'Dark (Beta)',
   `
-  --primary: oklch(0.5555 0 0);
-  --secondary: oklch(0.9702 0 0);
-  --accent: oklch(0.9702 0 0);
+  --primary: oklch(0.922 0 0);
+  --secondary: oklch(0.269 0 0);
+  --accent: oklch(0.269 0 0);
   `,
-  'Ultra-minimal monochrome theme with pure black and white, no shadows',
+  'Dark theme (In developement)',
 );
 
 export const natureTheme = createThemeFromCSS(
@@ -642,7 +642,7 @@ export const themes = [
   materialDesignTheme,
   midnightBloomTheme,
   mochaMousseTheme,
-  monoTheme,
+  darkTheme,
   natureTheme,
   neoBrutalismTheme,
   northernLightsTheme,

@@ -2,7 +2,8 @@
 
 import TypeOfContentTitle from '@/components/Objects/Elements/Titles/TypeOfContentTitle';
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
-import { Actions, Resources, Scopes, usePermissions } from '@/components/Security';
+import { Actions, Resources, Scopes } from '@/components/Security';
+import { useSession } from '@/hooks/useSession';
 import CreateCourseTrigger from '@/components/Landings/CreateCourseTrigger';
 import CourseGridClient from '@components/Landings/CourseGridClient';
 
@@ -43,8 +44,8 @@ const EmptyStateMessage = ({ canManagePlatform, t, createCourseTrigger }: any) =
 const Courses = (props: CourseProps) => {
   const t = useTranslations('CoursesPage');
   const { courses, totalCourses } = props;
-  const { can } = usePermissions();
-  const canManagePlatform = can(Actions.MANAGE, Resources.PLATFORM, Scopes.OWN);
+  const { can } = useSession();
+  const canManagePlatform = can(Resources.PLATFORM, Actions.MANAGE, Scopes.OWN);
 
   const createCourseTrigger = <CreateCourseTrigger />;
 

@@ -231,7 +231,7 @@ def refresh_teacher_analytics_rollups(
             teacher_user_id=0,
             course_ids=course_ids,
             cohort_ids=[],
-            has_org_scope=True,
+            has_platform_scope=True,
         )
         # Bound the context load to the previous-period start (2× the window) so the nightly
         # rollup refresh does not repeatedly scan unbounded historical data (issue 12).
@@ -429,7 +429,7 @@ def refresh_teacher_analytics_rollups(
         )
 
         step_order = {
-            (item.course_id, item.activity_id): item.order
+            (item.course_id, item.id): item.order
             for item in context.chapter_activities
             if item.course_id in course_ids
         }
@@ -446,7 +446,7 @@ def refresh_teacher_analytics_rollups(
                 activity_users.setdefault(event.activity_id, set()).add(event.user_id)
             completed_users: dict[int, set[int]] = {}
             ordered_activity_ids = [
-                item.activity_id
+                item.id
                 for item in sorted(
                     (
                         item
@@ -484,7 +484,7 @@ def refresh_teacher_analytics_rollups(
                             (
                                 item.chapter_id
                                 for item in context.chapter_activities
-                                if item.activity_id == activity_id
+                                if item.id == activity_id
                                 and item.course_id == course_id
                             ),
                             None,

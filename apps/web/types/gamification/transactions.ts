@@ -12,7 +12,11 @@ export const XP_SOURCES = {
   COURSE_COMPLETION: 'course_completion',
   LOGIN_BONUS: 'login_bonus',
   QUIZ_COMPLETION: 'quiz_completion',
+  EXAM_COMPLETION: 'exam_completion',
   ASSIGNMENT_SUBMISSION: 'assignment_submission',
+  CODE_CHALLENGE_COMPLETION: 'code_challenge_completion',
+  CODE_CHALLENGE_FIRST_SOLVE: 'code_challenge_first_solve',
+  CODE_CHALLENGE_PERFECT: 'code_challenge_perfect',
   STREAK_BONUS: 'streak_bonus',
   ADMIN_AWARD: 'admin_award',
 } as const;

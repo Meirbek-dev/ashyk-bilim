@@ -79,10 +79,10 @@ export default function ExamSubmissionReview({
 
           <div className="space-y-5 text-left">
             {/* Summary Stats */}
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white shadow-sm">
+            <div className="border-border overflow-hidden rounded-xl border bg-gradient-to-br from-gray-50 to-white shadow-sm">
               <div className="grid gap-0 divide-y divide-gray-100">
                 <div className="flex items-center justify-between p-4">
-                  <span className="font-medium text-gray-700">{`${t('totalQuestions')}:`}</span>
+                  <span className="text-foreground font-medium">{`${t('totalQuestions')}:`}</span>
                   <span className="text-xl font-bold text-blue-600">{totalQuestions}</span>
                 </div>
                 <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-white p-4">
@@ -148,7 +148,7 @@ export default function ExamSubmissionReview({
 
             {/* Flagged Questions List */}
             {hasFlagged && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <div className="bg-primary/10 rounded-lg border border-blue-200 p-4">
                 <div className="mb-2 flex items-start gap-2">
                   <Flag className="mt-0.5 h-4 w-4 text-blue-600" />
                   <div className="flex-1">
@@ -193,7 +193,7 @@ export default function ExamSubmissionReview({
               </div>
             </div>
 
-            {!confirmChecked && <p className="text-xs text-gray-500">{t('confirmSubmissionHint')}</p>}
+            {!confirmChecked && <p className="text-muted-foreground text-xs">{t('confirmSubmissionHint')}</p>}
           </div>
         </AlertDialogHeader>
         <AlertDialogFooter>

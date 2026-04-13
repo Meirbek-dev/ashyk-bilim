@@ -32,8 +32,8 @@ export function SectionHeader({
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
-        {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">{title}</h1>
+        {description ? <p className="text-muted-foreground mt-1 text-sm">{description}</p> : null}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-3">
         {children}

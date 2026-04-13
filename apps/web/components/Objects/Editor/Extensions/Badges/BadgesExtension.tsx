@@ -6,10 +6,19 @@ import { useTranslations } from 'next-intl';
 import { twMerge } from 'tailwind-merge';
 import dynamic from 'next/dynamic';
 import type { FC } from 'react';
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
 
-const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false, loading: () => null });
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), {
+  ssr: false,
+  loading: () => null,
+});
 
-const BadgesExtension: FC = (props: any) => {
+interface BadgeNodeAttrs {
+  color: string;
+  emoji: string;
+}
+
+const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = (props) => {
   const t = useTranslations('DashPage.Editor.BadgesExtension');
   const [color, setColor] = useState(props.node.attrs.color);
   const [emoji, setEmoji] = useState(props.node.attrs.emoji);
@@ -65,10 +74,13 @@ const BadgesExtension: FC = (props: any) => {
 
     // Insert the predefined content
     const { editor } = props;
-    if (editor) {
+    const getPos = props.getPos;
+    const position = getPos?.();
+
+    if (editor && position !== undefined) {
       editor.commands.setTextSelection({
-        from: props.getPos() + 1,
-        to: props.getPos() + props.node.nodeSize - 1,
+        from: position + 1,
+        to: position + props.node.nodeSize - 1,
       });
       editor.commands.insertContent(badge.content);
     }

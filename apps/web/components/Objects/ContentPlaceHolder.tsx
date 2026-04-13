@@ -1,6 +1,6 @@
 'use client';
 import type { Action, Resource, Scope } from '@/types/permissions';
-import { usePermissions } from '@/components/Security';
+import { useSession } from '@/hooks/useSession';
 import { useTranslations } from 'next-intl';
 
 interface ProtectedTextProps {
@@ -13,8 +13,8 @@ interface ProtectedTextProps {
 
 const ProtectedText = ({ text, action, resource, scope, fallback }: ProtectedTextProps) => {
   const t = useTranslations('General');
-  const { can } = usePermissions();
-  return <span>{can(action, resource, scope) ? text : (fallback ?? t('noContentYet'))}</span>;
+  const { can } = useSession();
+  return <span>{can(resource, action, scope) ? text : (fallback ?? t('noContentYet'))}</span>;
 };
 
 export default ProtectedText;

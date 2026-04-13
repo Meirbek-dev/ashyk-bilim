@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,16 +17,14 @@ import { AlertTriangle, Loader2, Pencil, SquareUserRound, Users, X } from 'lucid
 import EditUserGroup from '@/components/Objects/Modals/Dash/UserGroups/EditUserGroup';
 import AddUserGroup from '@/components/Objects/Modals/Dash/UserGroups/AddUserGroup';
 import ManageUsers from '@/components/Objects/Modals/Dash/UserGroups/ManageUsers';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import { deleteUserGroup } from '@services/usergroups/usergroups';
+import { queryKeys } from '@/lib/react-query/queryKeys';
 import Modal from '@/components/Objects/Elements/Modal/Modal';
-import { swrFetcher } from '@services/utils/ts/requests';
+import { useUserGroups } from '@/features/users/hooks/useUsers';
 import type { ColumnDef } from '@tanstack/react-table';
-import { getAPIUrl } from '@services/config/config';
 import DataTable from '@components/ui/data-table';
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 
 interface DeleteUserGroupButtonProps {
@@ -89,8 +88,6 @@ function DeleteUserGroupButton({ usergroupId, onDelete, t }: DeleteUserGroupButt
 }
 
 const UserGroups = () => {
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
   const t = useTranslations('DashPage.UserSettings.usergroupsSection');
   const [userGroupManagementModal, setUserGroupManagementModal] = useState(false);
   const [createUserGroupModal, setCreateUserGroupModal] = useState(false);
@@ -98,19 +95,16 @@ const UserGroups = () => {
   const [selectedUserGroup, setSelectedUserGroup] = useState<any | null>(null);
   const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<number | null>(null);
   const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<number | null>(null);
+  const queryClient = useQueryClient();
 
-  const {
-    data: usergroups,
-    error,
-    isLoading,
-  } = useSWR(`${getAPIUrl()}usergroups`, (url) => swrFetcher(url, access_token));
+  const { data: usergroups, error, isLoading } = useUserGroups();
 
   const deleteUserGroupUI = async (usergroup_id: number) => {
     const toastId = toast.loading(t('deletingUserGroup'));
     try {
-      const res = await deleteUserGroup(usergroup_id, access_token);
+      const res = await deleteUserGroup(usergroup_id);
       if (res.status === 200) {
-        mutate(`${getAPIUrl()}usergroups`);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all() });
         toast.success(t('userGroupDeletedSuccess'), { id: toastId });
       } else {
         toast.error(t('errors.deleteUserGroupFailed'), { id: toastId });
@@ -239,10 +233,10 @@ const UserGroups = () => {
   return (
     <>
       <div className="h-6" />
-      <div className="mx-auto mr-10 ml-10 rounded-xl bg-white px-4 py-4 shadow-xs">
-        <div className="mb-3 flex flex-col -space-y-1 rounded-md bg-muted px-5 py-3">
-          <h1 className="text-xl font-bold text-foreground">{t('title')}</h1>
-          <h2 className="text-sm text-muted-foreground">{t('description')}</h2>
+      <div className="border-border bg-card mx-auto mr-10 ml-10 rounded-xl border px-4 py-4 shadow-xs">
+        <div className="bg-muted mb-3 flex flex-col -space-y-1 rounded-md px-5 py-3">
+          <h1 className="text-foreground text-xl font-bold">{t('title')}</h1>
+          <h2 className="text-muted-foreground text-sm">{t('description')}</h2>
         </div>
         <DataTable
           columns={columns}

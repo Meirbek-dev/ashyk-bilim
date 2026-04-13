@@ -4,29 +4,24 @@ import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
 import { BadgeHelp, Check, Minus, Plus, RefreshCcw } from 'lucide-react';
 import { NodeViewWrapper } from '@tiptap/react';
 import { useTranslations } from 'next-intl';
-import ReactConfetti from 'react-confetti';
+import { useEffect, useState } from 'react';
 import { generateUUID } from '@/lib/utils';
 import { twMerge } from 'tailwind-merge';
-import { useState } from 'react';
+import confetti from 'canvas-confetti';
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
+import type { QuizAnswer, QuizBlockAttrs, QuizQuestion } from './QuizBlock';
 
-interface Answer {
-  answer_id: string;
-  answer: string;
-  correct: boolean;
-}
-interface Question {
+interface UserAnswer {
   question_id: string;
-  question: string;
-  type: 'multiple_choice' | 'custom_answer';
-  answers: Answer[];
+  answer_id: string;
 }
 
-const QuizBlockComponent = (props: any) => {
+const QuizBlockComponent = (props: TypedNodeViewProps<QuizBlockAttrs>) => {
   const t = useTranslations('DashPage.Editor.QuizBlock');
-  const [questions, setQuestions] = useState(props.node.attrs.questions) as [Question[], any];
-  const [userAnswers, setUserAnswers] = useState([]) as [any[], any];
-  const [submitted, setSubmitted] = useState(false) as [boolean, any];
-  const [submissionMessage, setSubmissionMessage] = useState('') as [string, any];
+  const [questions, setQuestions] = useState<QuizQuestion[]>(props.node.attrs.questions);
+  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+  const [submissionMessage, setSubmissionMessage] = useState('');
   const editorState = useEditorProvider();
   const { isEditable } = editorState;
 
@@ -34,7 +29,7 @@ const QuizBlockComponent = (props: any) => {
     if (submitted) return;
 
     const existingAnswerIndex = userAnswers.findIndex(
-      (answer: any) => answer.question_id === question_id && answer.answer_id === answer_id,
+      (answer) => answer.question_id === question_id && answer.answer_id === answer_id,
     );
 
     if (existingAnswerIndex !== -1) {
@@ -55,10 +50,10 @@ const QuizBlockComponent = (props: any) => {
   const handleUserSubmission = () => {
     setSubmitted(true);
 
-    const correctAnswers = questions.every((question: Question) => {
-      const correctAnswers = question.answers.filter((answer: Answer) => answer.correct);
+    const correctAnswers = questions.every((question) => {
+      const correctAnswers = question.answers.filter((answer) => answer.correct);
       const userAnswersForQuestion = userAnswers.filter(
-        (userAnswer: any) => userAnswer.question_id === question.question_id,
+        (userAnswer) => userAnswer.question_id === question.question_id,
       );
 
       // If no correct answers are set and user didn't select any, it's correct
@@ -69,8 +64,8 @@ const QuizBlockComponent = (props: any) => {
       // Check if user selected all correct answers and no incorrect ones
       return (
         correctAnswers.length === userAnswersForQuestion.length &&
-        correctAnswers.every((correctAnswer: Answer) =>
-          userAnswersForQuestion.some((userAnswer: any) => userAnswer.answer_id === correctAnswer.answer_id),
+        correctAnswers.every((correctAnswer) =>
+          userAnswersForQuestion.some((userAnswer) => userAnswer.answer_id === correctAnswer.answer_id),
         )
       );
     });
@@ -78,25 +73,32 @@ const QuizBlockComponent = (props: any) => {
     setSubmissionMessage(correctAnswers ? t('allCorrect') : t('someIncorrect'));
   };
 
+  useEffect(() => {
+    if (submitted && submissionMessage === t('allCorrect')) {
+      confetti({ particleCount: 1400, spread: 90, disableForReducedMotion: true });
+    }
+  }, [submitted, submissionMessage, t]);
+
   const getAnswerID = (answerIndex: number, questionId: string) => {
     const alphabet = Array.from({ length: 26 }, (_, i) => String.fromCharCode('A'.charCodeAt(0) + i));
     const alphabetID = alphabet[answerIndex];
 
     // Get question index
-    const questionIndex = questions.findIndex((question: Question) => question.question_id === questionId);
+    const questionIndex = questions.findIndex((question) => question.question_id === questionId);
     const _questionID = questionIndex + 1;
 
     return `${alphabetID}`;
   };
 
-  const saveQuestions = (questions: any) => {
+  const saveQuestions = (nextQuestions: QuizQuestion[]) => {
     props.updateAttributes({
-      questions,
+      questions: nextQuestions,
     });
-    setQuestions(questions);
+    setQuestions(nextQuestions);
   };
+
   const addSampleQuestion = () => {
-    const newQuestion = {
+    const newQuestion: QuizQuestion = {
       question_id: generateUUID(),
       question: '',
       type: 'multiple_choice',
@@ -108,80 +110,90 @@ const QuizBlockComponent = (props: any) => {
         },
       ],
     };
-    setQuestions([...questions, newQuestion]);
+    saveQuestions([...questions, newQuestion]);
   };
 
   const addAnswer = (question_id: string) => {
-    const newAnswer = {
+    const newAnswer: QuizAnswer = {
       answer_id: generateUUID(),
       answer: '',
       correct: false,
     };
 
     // check if there is already more than 5 answers
-    const question: any = questions.find((question: Question) => question.question_id === question_id);
-    if (question.answers.length >= 5) {
+    const question = questions.find((currentQuestion) => currentQuestion.question_id === question_id);
+    if (!(question && question.answers.length < 5)) {
       return;
     }
 
-    const newQuestions = questions.map((question: Question) => {
-      if (question.question_id === question_id) {
-        question.answers.push(newAnswer);
+    const newQuestions = questions.map((currentQuestion) => {
+      if (currentQuestion.question_id === question_id) {
+        return {
+          ...currentQuestion,
+          answers: [...currentQuestion.answers, newAnswer],
+        };
       }
-      return question;
+
+      return currentQuestion;
     });
 
     saveQuestions(newQuestions);
   };
 
   const changeAnswerValue = (question_id: string, answer_id: string, value: string) => {
-    const newQuestions = questions.map((question: Question) => {
+    const newQuestions = questions.map((question) => {
       if (question.question_id === question_id) {
-        question.answers.map((answer: Answer) => {
-          if (answer.answer_id === answer_id) {
-            answer.answer = value;
-          }
-          return answer;
-        });
+        return {
+          ...question,
+          answers: question.answers.map((answer) =>
+            answer.answer_id === answer_id ? { ...answer, answer: value } : answer,
+          ),
+        };
       }
+
       return question;
     });
     saveQuestions(newQuestions);
   };
 
   const changeQuestionValue = (question_id: string, value: string) => {
-    const newQuestions = questions.map((question: Question) => {
-      if (question.question_id === question_id) {
-        question.question = value;
-      }
-      return question;
-    });
+    const newQuestions = questions.map((question) =>
+      question.question_id === question_id ? { ...question, question: value } : question,
+    );
     saveQuestions(newQuestions);
   };
 
   const deleteQuestion = (question_id: string) => {
-    const newQuestions = questions.filter((question: Question) => question.question_id !== question_id);
+    const newQuestions = questions.filter((question) => question.question_id !== question_id);
     saveQuestions(newQuestions);
   };
 
   const deleteAnswer = (question_id: string, answer_id: string) => {
-    const newQuestions = questions.map((question: Question) => {
+    const newQuestions = questions.map((question) => {
       if (question.question_id === question_id) {
-        question.answers = question.answers.filter((answer: Answer) => answer.answer_id !== answer_id);
+        return {
+          ...question,
+          answers: question.answers.filter((answer) => answer.answer_id !== answer_id),
+        };
       }
+
       return question;
     });
     saveQuestions(newQuestions);
   };
 
   const markAnswerCorrect = (question_id: string, answer_id: string) => {
-    const newQuestions = questions.map((question: Question) => {
+    const newQuestions = questions.map((question) => {
       if (question.question_id === question_id) {
-        question.answers = question.answers.map((answer: Answer) => ({
-          ...answer,
-          correct: answer.answer_id === answer_id ? !answer.correct : answer.correct,
-        }));
+        return {
+          ...question,
+          answers: question.answers.map((answer) => ({
+            ...answer,
+            correct: answer.answer_id === answer_id ? !answer.correct : answer.correct,
+          })),
+        };
       }
+
       return question;
     });
     saveQuestions(newQuestions);
@@ -191,14 +203,7 @@ const QuizBlockComponent = (props: any) => {
     <NodeViewWrapper className="block-quiz">
       <div className="rounded-xl bg-slate-100 px-3 py-2 transition-all ease-linear sm:px-5">
         {/* Header section */}
-        <div className="flex flex-wrap items-center gap-2 pt-1 text-sm z-50">
-          {submitted && submissionMessage === t('allCorrect') ? (
-            <ReactConfetti
-              numberOfPieces={submitted ? 1400 : 0}
-              recycle={false}
-              className="h-screen w-full"
-            />
-          ) : null}
+        <div className="z-50 flex flex-wrap items-center gap-2 pt-1 text-sm">
           <div className="flex items-center space-x-2 text-sm">
             <BadgeHelp
               className="text-slate-400"
@@ -257,7 +262,7 @@ const QuizBlockComponent = (props: any) => {
         </div>
 
         {/* Questions section */}
-        {questions.map((question: Question) => (
+        {questions.map((question) => (
           <div
             key={question.question_id}
             className="space-y-2 pt-3"
@@ -272,10 +277,10 @@ const QuizBlockComponent = (props: any) => {
                       onChange={(e) => {
                         changeQuestionValue(question.question_id, e.target.value);
                       }}
-                      className="w-full rounded-md border-2 border-dotted border-gray-200 bg-[#00008b00] p-2 text-base font-bold text-slate-800"
+                      className="bg-primary/10 w-full rounded-md border-2 border-dotted border-gray-200 p-2 text-base font-bold text-slate-800"
                     />
                   ) : (
-                    <p className="w-full rounded-md bg-[#00008b00] p-2 text-base font-bold break-words text-slate-800">
+                    <p className="bg-primary/10 w-full rounded-md p-2 text-base font-bold break-words text-slate-800">
                       {question.question}
                     </p>
                   )}
@@ -298,14 +303,14 @@ const QuizBlockComponent = (props: any) => {
 
               {/* Answers section - changed to vertical layout for better responsiveness */}
               <div className="answers flex flex-col space-y-2 py-2">
-                {question.answers.map((answer: Answer) => (
+                {question.answers.map((answer) => (
                   <div
                     key={answer.answer_id}
                     className={twMerge(
                       'flex min-h-[36px] w-full cursor-pointer items-stretch space-x-2 rounded-lg bg-white bg-opacity-50 pr-2 text-sm shadow-sm outline-2 duration-150 ease-linear hover:bg-opacity-100 hover:shadow-md',
                       answer.correct && isEditable ? 'outline-lime-300' : 'outline-white',
                       userAnswers.some(
-                        (userAnswer: any) =>
+                        (userAnswer) =>
                           userAnswer.question_id === question.question_id &&
                           userAnswer.answer_id === answer.answer_id &&
                           !isEditable &&
@@ -317,7 +322,7 @@ const QuizBlockComponent = (props: any) => {
                       submitted &&
                         !answer.correct &&
                         userAnswers.some(
-                          (userAnswer: any) =>
+                          (userAnswer) =>
                             userAnswer.question_id === question.question_id &&
                             userAnswer.answer_id === answer.answer_id,
                         )
@@ -333,7 +338,7 @@ const QuizBlockComponent = (props: any) => {
                         'flex w-[40px] items-center justify-center self-stretch rounded-l-md bg-white font-bold text-base text-slate-800',
                         answer.correct && isEditable ? 'bg-lime-300 text-lime-800 outline-hidden' : 'bg-white',
                         userAnswers.some(
-                          (userAnswer: any) =>
+                          (userAnswer) =>
                             userAnswer.question_id === question.question_id &&
                             userAnswer.answer_id === answer.answer_id &&
                             !isEditable &&
@@ -345,7 +350,7 @@ const QuizBlockComponent = (props: any) => {
                         submitted &&
                           !answer.correct &&
                           userAnswers.some(
-                            (userAnswer: any) =>
+                            (userAnswer) =>
                               userAnswer.question_id === question.question_id &&
                               userAnswer.answer_id === answer.answer_id,
                           )
@@ -364,10 +369,10 @@ const QuizBlockComponent = (props: any) => {
                           changeAnswerValue(question.question_id, answer.answer_id, e.target.value);
                         }}
                         placeholder={t('answerPlaceholder')}
-                        className="mx-2 w-full rounded-md border-2 border-dotted border-gray-200 bg-[#00008b00] px-3 py-1.5 pr-6 text-sm font-bold text-neutral-600"
+                        className="bg-primary/10 mx-2 w-full rounded-md border-2 border-dotted border-gray-200 px-3 py-1.5 pr-6 text-sm font-bold text-neutral-600"
                       />
                     ) : (
-                      <p className="mx-2 w-full rounded-md bg-[#00008b00] px-3 py-1.5 pr-6 text-sm font-bold wrap-break-word text-neutral-600">
+                      <p className="bg-primary/10 mx-2 w-full rounded-md px-3 py-1.5 pr-6 text-sm font-bold wrap-break-word text-neutral-600">
                         {answer.answer}
                       </p>
                     )}

@@ -18,10 +18,8 @@ from src.db.courses.assignments import (
     AssignmentUserSubmissionStatus,
 )
 from src.db.courses.certifications import CertificateUser, Certifications
-from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import Chapter
 from src.db.courses.code_challenges import CodeSubmission, SubmissionStatus
-from src.db.courses.course_chapters import CourseChapter
 from src.db.courses.courses import Course
 from src.db.courses.exams import Exam, ExamAttempt
 from src.db.courses.quiz import QuizAttempt, QuizQuestionStat
@@ -66,8 +64,8 @@ class AnalyticsContext:
     courses_by_id: dict[int, Course]
     activities_by_id: dict[int, Activity]
     chapters_by_id: dict[int, Chapter]
-    course_chapters: list[CourseChapter]
-    chapter_activities: list[ChapterActivity]
+    course_chapters: list[Chapter]
+    chapter_activities: list[Activity]
     trail_runs: list[TrailRun]
     trail_steps: list[TrailStep]
     certificates: list[tuple[CertificateUser, Certifications]]
@@ -366,29 +364,21 @@ def load_analytics_context(
     }
 
     course_chapters = [
-        _unwrap_model(item, CourseChapter)
+        _unwrap_model(item, Chapter)
         for item in db_session.exec(
-            select(CourseChapter).where(CourseChapter.course_id.in_(course_ids))
+            select(Chapter).where(Chapter.course_id.in_(course_ids))
         ).all()
     ]
-    chapter_ids = [item.chapter_id for item in course_chapters]
+    [item.id for item in course_chapters]
 
-    chapters = []
-    if chapter_ids:
-        chapters = [
-            _unwrap_model(chapter, Chapter)
-            for chapter in db_session.exec(
-                select(Chapter).where(Chapter.id.in_(chapter_ids))
-            ).all()
-        ]
     chapter_map = {
-        chapter.id: chapter for chapter in chapters if chapter.id is not None
+        chapter.id: chapter for chapter in course_chapters if chapter.id is not None
     }
 
     chapter_activities = [
-        _unwrap_model(item, ChapterActivity)
+        _unwrap_model(item, Activity)
         for item in db_session.exec(
-            select(ChapterActivity).where(ChapterActivity.course_id.in_(course_ids))
+            select(Activity).where(Activity.course_id.in_(course_ids))
         ).all()
     ]
 
@@ -542,29 +532,33 @@ def load_analytics_context(
 
     usergroup_names_by_id: dict[int, str] = {}
     cohort_ids_by_user: dict[int, set[int]] = defaultdict(set)
-    if courses:
-        usergroups = [
-            _unwrap_model(usergroup, UserGroup)
-            for usergroup in db_session.exec(select(UserGroup)).all()
+    if user_ids:
+        # Scope to memberships for the users we already know — avoids loading every cohort
+        # in the entire database, which becomes expensive on large platforms.
+        membership_rows = [
+            _unwrap_model(row, UserGroupUser)
+            for row in db_session.exec(
+                select(UserGroupUser).where(UserGroupUser.user_id.in_(sorted(user_ids)))
+            ).all()
         ]
-        usergroup_names_by_id = {
-            usergroup.id: usergroup.name
-            for usergroup in usergroups
-            if usergroup.id is not None
-        }
-        if usergroup_names_by_id:
-            membership_rows = [
-                _unwrap_model(row, UserGroupUser)
-                for row in db_session.exec(
-                    select(UserGroupUser).where(
-                        UserGroupUser.usergroup_id.in_(
-                            sorted(usergroup_names_by_id.keys())
-                        )
+        for membership in membership_rows:
+            cohort_ids_by_user[membership.user_id].add(membership.usergroup_id)
+        # Only load the usergroup names that actually appear in those memberships.
+        relevant_group_ids = {m.usergroup_id for m in membership_rows}
+        if relevant_group_ids:
+            usergroups = [
+                _unwrap_model(usergroup, UserGroup)
+                for usergroup in db_session.exec(
+                    select(UserGroup).where(
+                        UserGroup.id.in_(sorted(relevant_group_ids))
                     )
                 ).all()
             ]
-            for membership in membership_rows:
-                cohort_ids_by_user[membership.user_id].add(membership.usergroup_id)
+            usergroup_names_by_id = {
+                usergroup.id: usergroup.name
+                for usergroup in usergroups
+                if usergroup.id is not None
+            }
 
     return AnalyticsContext(
         generated_at=now_utc(),
@@ -705,9 +699,7 @@ def progress_snapshots(
 ) -> dict[tuple[int, int], ProgressSnapshot]:
     total_steps_by_course: dict[int, set[int]] = defaultdict(set)
     for chapter_activity in context.chapter_activities:
-        total_steps_by_course[chapter_activity.course_id].add(
-            chapter_activity.activity_id
-        )
+        total_steps_by_course[chapter_activity.course_id].add(chapter_activity.id)
 
     completed_by_course_user: dict[tuple[int, int], set[int]] = defaultdict(set)
     trailrun_by_course_user: dict[tuple[int, int], int] = {}

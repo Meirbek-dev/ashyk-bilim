@@ -4,7 +4,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Form, Request, Response, UploadFile
 from sqlmodel import Session
 
-from src.core.events.database import get_db_session
 from src.db.courses.course_updates import (
     CourseUpdateCreate,
     CourseUpdateRead,
@@ -15,13 +14,14 @@ from src.db.courses.courses import (
     CourseCreate,
     CourseMetadataUpdate,
     CourseRead,
-    CourseUpdate,
     FullCourseRead,
     ThumbnailType,
 )
 from src.db.courses.enhanced_responses import CourseReadWithPermissions
 from src.db.resource_authors import ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import AnonymousUser, PublicUser
+from src.infra.db.session import get_db_session
 from src.security.auth import get_current_user, get_current_user_optional
 from src.security.rbac import PermissionCheckerDep
 from src.services.courses.contributors import (
@@ -37,14 +37,12 @@ from src.services.courses.courses import (
     create_course,
     delete_course,
     get_course,
-    get_course_by_id,
     get_course_meta,
     get_course_user_rights,
     get_courses,
     get_editable_courses,
     list_editable_courses,
     search_courses,
-    update_course,
     update_course_access,
     update_course_metadata,
     update_course_thumbnail,
@@ -57,6 +55,49 @@ from src.services.courses.updates import (
 )
 
 router = APIRouter()
+
+
+class CourseDetailResponse(PydanticStrictBaseModel):
+    detail: str
+
+
+class CourseUserRightsPermissions(PydanticStrictBaseModel):
+    read: bool
+    create: bool
+    update: bool
+    delete: bool
+    create_content: bool
+    update_content: bool
+    delete_content: bool
+    manage_contributors: bool
+    manage_access: bool
+    grade_assignments: bool
+    mark_activities_done: bool
+    create_certifications: bool
+
+
+class CourseUserRightsOwnership(PydanticStrictBaseModel):
+    is_owner: bool
+    is_creator: bool
+    is_maintainer: bool
+    is_contributor: bool
+    authorship_status: ResourceAuthorshipStatusEnum | None = None
+
+
+class CourseUserRightsRoles(PydanticStrictBaseModel):
+    is_admin: bool
+    is_maintainer_role: bool
+    is_instructor: bool
+    is_user: bool
+
+
+class CourseUserRightsResponse(PydanticStrictBaseModel):
+    course_uuid: str
+    user_id: int
+    is_anonymous: bool
+    permissions: CourseUserRightsPermissions
+    ownership: CourseUserRightsOwnership
+    roles: CourseUserRightsRoles
 
 
 # ---------------------------------------------------------------------------
@@ -75,6 +116,7 @@ async def api_create_course(
     about: Annotated[str | None, Form()] = None,
     thumbnail_type: Annotated[ThumbnailType, Form()] = ThumbnailType.IMAGE,
     thumbnail: UploadFile | None = None,
+    template: Annotated[str | None, Form()] = None,
     current_user: Annotated[PublicUser, Depends(get_current_user)] = None,
     checker: PermissionCheckerDep = None,
     db_session=Depends(get_db_session),
@@ -83,6 +125,8 @@ async def api_create_course(
     Create new Course
 
     **Required Permission**: `course:create:platform`
+
+    Pass ``template=starter`` to automatically seed two default chapters.
     """
     course = CourseCreate(
         name=name,
@@ -92,6 +136,7 @@ async def api_create_course(
         tags=tags,
         about=about,
         thumbnail_type=thumbnail_type,
+        template=template,
     )
     return await create_course(
         request,
@@ -148,31 +193,10 @@ async def api_get_course(
     )
 
 
-@router.get("/id/{course_id}")
-async def api_get_course_by_id(
-    request: Request,
-    course_id: int,
-    db_session: Annotated[Session, Depends(get_db_session)],
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_current_user_optional)
-    ],
-    checker: PermissionCheckerDep,
-) -> CourseRead:
-    """
-    Get single Course by id
-    """
-    return await get_course_by_id(
-        request,
-        course_id,
-        current_user=current_user,
-        db_session=db_session,
-        checker=checker,
-    )
-
-
 @router.get("/{course_uuid}/meta")
 async def api_get_course_meta(
     request: Request,
+    response: Response,
     course_uuid: str,
     with_unpublished_activities: bool = False,
     current_user: Annotated[
@@ -182,9 +206,13 @@ async def api_get_course_meta(
     checker: PermissionCheckerDep = None,
 ) -> FullCourseRead:
     """
-    Get single Course Metadata (chapters, activities) by course_uuid
+    Get single Course Metadata (chapters, activities) by course_uuid.
+
+    Returns ``X-Structure-Version`` header (latest chapter update_date ISO string).
+    Clients should send this back as ``If-Match`` on reorder requests to detect
+    concurrent edits.
     """
-    return await get_course_meta(
+    result = await get_course_meta(
         request,
         course_uuid,
         with_unpublished_activities,
@@ -192,6 +220,31 @@ async def api_get_course_meta(
         db_session=db_session,
         checker=checker,
     )
+
+    # Emit the structure version so clients can detect concurrent edits
+    try:
+        from sqlalchemy import func as _func
+        from sqlmodel import select as _select
+
+        from src.db.courses.chapters import Chapter as _Chapter
+
+        latest_chapter_update = db_session.exec(
+            _select(_func.max(_Chapter.update_date)).where(
+                _Chapter.course_id == result.id
+            )
+        ).one_or_none()
+
+        if latest_chapter_update:
+            if hasattr(latest_chapter_update, "isoformat"):
+                version_str = latest_chapter_update.isoformat()
+            else:
+                version_str = str(latest_chapter_update)
+            response.headers["X-Structure-Version"] = version_str
+            response.headers["Access-Control-Expose-Headers"] = "X-Structure-Version"
+    except Exception:
+        pass
+
+    return result
 
 
 @router.get("/page/{page}/limit/{limit}")
@@ -285,24 +338,6 @@ async def api_search_platform_courses(
     return await search_courses(request, current_user, query, db_session, page, limit)
 
 
-@router.put("/{course_uuid}")
-async def api_update_course(
-    request: Request,
-    course_object: CourseUpdate,
-    course_uuid: str,
-    db_session: Annotated[Session, Depends(get_db_session)],
-    current_user: Annotated[PublicUser, Depends(get_current_user)],
-) -> CourseRead:
-    """
-    Update Course by course_uuid
-
-    **Required Permission**: `course:update:own` or `course:update:platform`
-    """
-    return await update_course(
-        request, course_object, course_uuid, current_user, db_session
-    )
-
-
 @router.put("/{course_uuid}/metadata")
 async def api_update_course_metadata(
     request: Request,
@@ -329,7 +364,7 @@ async def api_update_course_access(
     )
 
 
-@router.delete("/{course_uuid}")
+@router.delete("/{course_uuid}", response_model=CourseDetailResponse)
 async def api_delete_course(
     request: Request,
     course_uuid: str,
@@ -478,7 +513,7 @@ async def api_add_bulk_course_contributors(
     )
 
 
-@router.put("/{course_uuid}/bulk-remove-contributors")
+@router.delete("/{course_uuid}/bulk-remove-contributors")
 async def api_remove_bulk_course_contributors(
     request: Request,
     course_uuid: str,
@@ -494,7 +529,7 @@ async def api_remove_bulk_course_contributors(
     )
 
 
-@router.get("/{course_uuid}/rights")
+@router.get("/{course_uuid}/rights", response_model=CourseUserRightsResponse)
 async def api_get_course_user_rights(
     request: Request,
     course_uuid: str,

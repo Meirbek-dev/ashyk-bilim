@@ -60,7 +60,10 @@ export default function AssessmentLearnerRowsTable({ rows, storageKey }: Assessm
           data={rows}
           pageSize={10}
           storageKey={storageKey}
-          labels={{ emptyMessage: t('table.emptyDefault'), searchPlaceholder: t('table.searchDefault') }}
+          labels={{
+            emptyMessage: t('table.emptyDefault'),
+            searchPlaceholder: t('table.searchDefault'),
+          }}
         />
       </CardContent>
     </Card>

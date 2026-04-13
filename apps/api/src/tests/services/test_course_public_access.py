@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
 from src.db.courses.courses import Course
 from src.db.users import AnonymousUser
-from src.services.courses.courses import get_course, get_course_by_id
+from src.services.courses import chapters as chapter_service
+from src.services.courses.courses import get_course, get_course_by_id, get_course_meta
 
 
 class _ExecResult:
@@ -46,6 +47,24 @@ def _public_course() -> Course:
         open_to_contributors=False,
         course_uuid="course_public",
         creator_id=77,
+        creation_date=datetime(2026, 1, 1, tzinfo=UTC),
+        update_date=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+
+
+def _raw_public_course() -> Course:
+    return Course(
+        id=2,
+        name="Raw UUID course",
+        description="",
+        about="",
+        learnings="",
+        tags="",
+        thumbnail_image="",
+        public=True,
+        open_to_contributors=False,
+        course_uuid="public",
+        creator_id=88,
         creation_date=datetime(2026, 1, 1, tzinfo=UTC),
         update_date=datetime(2026, 1, 1, tzinfo=UTC),
     )
@@ -95,3 +114,56 @@ async def test_get_public_course_by_id_allows_anonymous_without_rbac_check():
     checker.require.assert_not_called()
     assert result.id == 1
     assert result.public is True
+
+
+@pytest.mark.asyncio
+async def test_get_course_falls_back_to_raw_uuid_when_prefixed_lookup_misses():
+    session = _FakeSession(
+        [
+            _ExecResult(first_value=None),
+            _ExecResult(first_value=_raw_public_course()),
+            _ExecResult(all_value=[]),
+        ]
+    )
+    checker = Mock()
+
+    result = await get_course(
+        request=None,  # type: ignore[arg-type]
+        course_uuid="course_public",
+        current_user=AnonymousUser(),
+        db_session=session,  # type: ignore[arg-type]
+        checker=checker,
+    )
+
+    checker.require.assert_not_called()
+    assert result.course_uuid == "public"
+    assert result.public is True
+
+
+@pytest.mark.asyncio
+async def test_get_course_meta_falls_back_to_raw_uuid_when_prefixed_lookup_misses(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    session = _FakeSession(
+        [
+            _ExecResult(first_value=None),
+            _ExecResult(first_value=_raw_public_course()),
+            _ExecResult(all_value=[(_raw_public_course(), None, None)]),
+        ]
+    )
+    monkeypatch.setattr(
+        chapter_service, "get_course_chapters", AsyncMock(return_value=[])
+    )
+
+    result = await get_course_meta(
+        request=None,  # type: ignore[arg-type]
+        course_uuid="course_public",
+        with_unpublished_activities=False,
+        current_user=AnonymousUser(),
+        db_session=session,  # type: ignore[arg-type]
+        checker=None,
+    )
+
+    assert result.course_uuid == "public"
+    assert result.public is True
+    assert result.chapters == []

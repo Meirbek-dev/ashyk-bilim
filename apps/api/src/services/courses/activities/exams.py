@@ -11,7 +11,6 @@ from src.db.courses.activities import (
     ActivitySubTypeEnum,
     ActivityTypeEnum,
 )
-from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.courses import Course
 from src.db.courses.exams import (
     ATTEMPT_LIMIT_MAX,
@@ -334,6 +333,13 @@ async def create_exam_with_activity(
     activity_uuid = f"activity_{ULID()}"
     now = _utc_now_iso()
 
+    last_in_chapter = db_session.exec(
+        select(Activity)
+        .where(Activity.chapter_id == chapter.id)
+        .order_by(Activity.order.desc())
+    ).first()
+    next_order = (last_in_chapter.order if last_in_chapter else 0) + 1
+
     activity = Activity(
         activity_uuid=activity_uuid,
         name=exam_object.activity_name,
@@ -342,38 +348,14 @@ async def create_exam_with_activity(
         content={},
         details={},
         published=False,
-        course_id=course.id,
+        chapter_id=chapter.id,
+        course_id=course.id,  # keep legacy column in sync
+        order=next_order,
         creation_date=now,
         update_date=now,
     )
 
     db_session.add(activity)
-    db_session.flush()
-
-    # Link activity to chapter
-    # Determine next "order" value for the chapter
-    statement = (
-        select(ChapterActivity)
-        .where(ChapterActivity.chapter_id == chapter.id)
-        .order_by(ChapterActivity.order.desc())
-    )
-    last_chapter_activity = db_session.exec(statement).first()
-    next_order = 1
-    if (
-        last_chapter_activity
-        and getattr(last_chapter_activity, "order", None) is not None
-    ):
-        next_order = last_chapter_activity.order + 1
-
-    chapter_activity = ChapterActivity(
-        chapter_id=chapter.id,
-        activity_id=activity.id,
-        course_id=course.id,
-        order=next_order,
-        creation_date=now,
-        update_date=now,
-    )
-    db_session.add(chapter_activity)
     db_session.flush()
 
     # Create exam
@@ -1080,14 +1062,12 @@ async def get_attempt_by_uuid(
             ExamAttempt,
             Exam,
             Activity,
-            ChapterActivity,
             Course,
             ResourceAuthor,
         )
         .join(Exam, Exam.id == ExamAttempt.exam_id, isouter=True)
         .join(Activity, Activity.id == Exam.activity_id, isouter=True)
-        .join(ChapterActivity, ChapterActivity.activity_id == Activity.id, isouter=True)
-        .join(Course, Course.id == ChapterActivity.course_id, isouter=True)
+        .join(Course, Course.id == Activity.course_id, isouter=True)
         .join(
             ResourceAuthor,
             (ResourceAuthor.resource_uuid == Course.course_uuid)
@@ -1103,16 +1083,14 @@ async def get_attempt_by_uuid(
         # No attempt at all
         raise HTTPException(status_code=404, detail="Попытка не найдена")
 
-    # row is a tuple: (attempt, exam, activity, chapter_activity, course, resource_author)
-    attempt, exam, activity, chapter_activity, course, resource_author = row
+    # row is a tuple: (attempt, exam, activity, course, resource_author)
+    attempt, exam, activity, course, resource_author = row
 
     # Preserve original 404 behavior for missing linked records
     if not exam:
         raise HTTPException(status_code=404, detail="Тест не найден")
     if not activity:
         raise HTTPException(status_code=404, detail="Активность не найдена")
-    if not chapter_activity:
-        raise HTTPException(status_code=404, detail="Активность главы не найдена")
     if not course:
         raise HTTPException(status_code=404, detail="Курс не найден")
 

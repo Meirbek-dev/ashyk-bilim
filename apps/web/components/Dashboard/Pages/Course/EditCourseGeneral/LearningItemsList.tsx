@@ -8,7 +8,10 @@ import { useTranslations } from 'next-intl';
 import { generateUUID } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 
-const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false, loading: () => null });
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), {
+  ssr: false,
+  loading: () => null,
+});
 
 interface LearningItem {
   id: string;
@@ -23,17 +26,21 @@ interface LearningItemsListProps {
   error?: string;
 }
 
+const PLACEHOLDER_ID_PREFIX = '__placeholder_';
+
 const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) => {
-  // Helper function to standardize items
+  // Helper function to standardize items.
+  // Uses deterministic placeholder IDs to avoid SSR/hydration mismatch;
+  // real UUIDs are assigned in a post-mount effect.
   const standardizeItems = (val?: string): LearningItem[] => {
     try {
       if (val) {
         const parsedItems = JSON.parse(val);
         if (Array.isArray(parsedItems) && parsedItems.length > 0) {
-          return parsedItems.map((item: unknown) => {
+          return parsedItems.map((item: unknown, index: number) => {
             const safeItem = item as Partial<LearningItem>;
             return {
-              id: safeItem.id || generateUUID(),
+              id: safeItem.id || `${PLACEHOLDER_ID_PREFIX}${index}`,
               text: safeItem.text ?? '',
               emoji: safeItem.emoji || '📝',
               link: safeItem.link || undefined,
@@ -47,7 +54,7 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
     // Default item
     return [
       {
-        id: generateUUID(),
+        id: `${PLACEHOLDER_ID_PREFIX}0`,
         text: '',
         emoji: '📝',
       },
@@ -58,6 +65,18 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
 
   // Use lazy initialization to parse and standardize items once
   const [items, setItems] = useState<LearningItem[]>(() => standardizeItems(value));
+
+  // Replace placeholder IDs with real UUIDs after mount to avoid SSR/hydration mismatch.
+  useEffect(() => {
+    setItems((prev) => {
+      const hasPlaceholders = prev.some((item) => item.id.startsWith(PLACEHOLDER_ID_PREFIX));
+      if (!hasPlaceholders) return prev;
+      return prev.map((item) => ({
+        ...item,
+        id: item.id.startsWith(PLACEHOLDER_ID_PREFIX) ? generateUUID() : item.id,
+      }));
+    });
+  }, []);
 
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [showLinkInput, setShowLinkInput] = useState<string | null>(null);
@@ -89,8 +108,7 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
     return () => {
       if (initialSyncRafRef.current) cancelAnimationFrame(initialSyncRafRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onChange, items, value]);
 
   // Cleanup on unmount - cancel any scheduled animation frames
   useEffect(() => {
@@ -274,7 +292,7 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
   return (
     <div className="space-y-2">
       {items.length === 0 && (
-        <div className="rounded-lg border bg-muted/50 py-3 text-center text-sm text-muted-foreground">
+        <div className="bg-muted/50 text-muted-foreground rounded-lg border py-3 text-center text-sm">
           {t('noItems')}
         </div>
       )}
@@ -289,7 +307,7 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
             id={`learning-item-${item.id}`}
             className="group relative"
           >
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 transition-colors hover:bg-muted/70">
+            <div className="border-border bg-muted/50 hover:bg-muted/70 flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors">
               <button
                 type="button"
                 onClick={() => {
@@ -318,7 +336,7 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
               />
 
               {item.link ? (
-                <div className="flex items-center gap-1 rounded border bg-background px-2 py-0.5 text-xs text-muted-foreground">
+                <div className="bg-background text-muted-foreground flex items-center gap-1 rounded border px-2 py-0.5 text-xs">
                   <LinkIcon size={12} />
                   <span className="max-w-[100px] truncate">{item.link}</span>
                 </div>
@@ -341,7 +359,7 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
                       }, 0);
                     }
                   }}
-                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
                   title={item.link ? t('editLinkTooltip') : t('addLinkTooltip')}
                   aria-label={item.link ? t('editLinkAriaLabel') : t('addLinkAriaLabel')}
                 >
@@ -353,7 +371,7 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
                   onClick={() => {
                     removeItem(item.id);
                   }}
-                  className="text-muted-foreground/70 transition-colors hover:text-foreground"
+                  className="text-muted-foreground/70 hover:text-foreground transition-colors"
                   aria-label={t('removeItemAriaLabel')}
                   title={t('removeItemTooltip')}
                 >
@@ -386,7 +404,7 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
             {showLinkInput === item.id && (
               <div
                 ref={linkInputRef}
-                className="mt-1 rounded-lg border border-border bg-background p-2 shadow-sm"
+                className="border-border bg-background mt-1 rounded-lg border p-2 shadow-sm"
               >
                 <Input
                   ref={setLinkInputRef(item.id)}
@@ -412,7 +430,7 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
       <button
         type="button"
         onClick={addItem}
-        className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground mt-2 flex items-center gap-1.5 text-sm transition-colors"
       >
         <Plus
           size={16}

@@ -1,5 +1,5 @@
 import { Actions, Resources, Scopes } from '@/types/permissions';
-import { requireAnyPermission } from '@/lib/server-auth';
+import { requireAnyPermission } from '@/lib/auth/permissions';
 import type { ReactNode } from 'react';
 
 export default async function PlatformUsersLayout({ children }: { children: ReactNode }) {

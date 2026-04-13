@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,9 +22,10 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Actions, Resources, Scopes, usePermissions } from '@/components/Security';
+import { Actions, Resources, Scopes } from '@/components/Security';
 import RolesUpdate from '@/components/Objects/Modals/Dash/Users/RolesUpdate';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useSession } from '@/hooks/useSession';
+import { useMembers } from '@/features/users/hooks/useUsers';
 import type { ColumnDef } from '@tanstack/react-table';
 import DataTable from '@/components/ui/data-table';
 
@@ -31,11 +33,9 @@ import { AlertTriangle, KeyRound, Loader2, LogOut } from 'lucide-react';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
 import Modal from '@/components/Objects/Elements/Modal/Modal';
 import { removeUser } from '@/services/platform/platform';
-import { swrFetcher } from '@services/utils/ts/requests';
+import { queryKeys } from '@/lib/react-query/queryKeys';
 import React, { useState, useTransition } from 'react';
-import { getAPIUrl } from '@services/config/config';
 import { useTranslations } from 'next-intl';
-import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 
 const USERS_PER_PAGE = 20;
@@ -113,13 +113,11 @@ function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonPro
 }
 
 const Users = () => {
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
+  const { session: sessionData, user: currentUser, can } = useSession();
   const t = useTranslations('DashPage.UserSettings.usersSection');
-  const userRoles = session?.data?.roles ?? [];
-  const { can } = usePermissions();
-  const canUpdateRole = can(Actions.UPDATE, Resources.ROLE, Scopes.PLATFORM);
-  const canDeleteUser = can(Actions.DELETE, Resources.USER, Scopes.PLATFORM);
+  const userRoles = sessionData?.roles ?? [];
+  const canUpdateRole = can(Resources.ROLE, Actions.UPDATE, Scopes.PLATFORM);
+  const canDeleteUser = can(Resources.USER, Actions.DELETE, Scopes.PLATFORM);
 
   const getRolePriority = (roleObj: any) => {
     if (!roleObj) return 0;
@@ -140,14 +138,9 @@ const Users = () => {
   })();
 
   const [currentPage, setCurrentPage] = useState(1);
+  const queryClient = useQueryClient();
 
-  const {
-    data: usersData,
-    error,
-    isLoading,
-  } = useSWR(`${getAPIUrl()}platform/users?page=${currentPage}&per_page=${USERS_PER_PAGE}`, (url) =>
-    swrFetcher(url, access_token),
-  );
+  const { data: usersData, error, isLoading } = useMembers(currentPage, USERS_PER_PAGE);
 
   const totalUsers = usersData?.total ?? 0;
   const totalPages = usersData?.total_pages ?? 1;
@@ -168,10 +161,9 @@ const Users = () => {
   const handleRemoveUser = async (user_id: number) => {
     const toastId = toast.loading(t('removingUser'));
     try {
-      const res = await removeUser(user_id, access_token);
+      const res = await removeUser(user_id);
       if (res.status === 200) {
-        // Revalidate the current page data
-        await mutate(`${getAPIUrl()}platform/users?page=${currentPage}&per_page=${USERS_PER_PAGE}`);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.users.members(currentPage, USERS_PER_PAGE) });
         toast.success(t('userRemovedSuccess'), { id: toastId });
       } else {
         toast.error(t('errors.removeUserFailed'), { id: toastId });
@@ -215,8 +207,7 @@ const Users = () => {
       enableSorting: false,
       cell: ({ row }) => {
         const user = row.original;
-        const isSelf =
-          session?.data?.user?.user_uuid === user.user.user_uuid || session?.data?.user?.id === user.user.id;
+        const isSelf = currentUser?.user_uuid === user.user.user_uuid || currentUser?.id === user.user.id;
         const targetPriority = getRolePriority(user.role);
         const canManage = !isSelf && currentUserPriority > targetPriority;
 
@@ -294,10 +285,10 @@ const Users = () => {
       ) : (
         <>
           <div className="h-6" />
-          <div className="mx-auto mr-10 ml-10 rounded-xl bg-white px-4 py-4 shadow-xs">
-            <div className="mb-3 flex flex-col -space-y-1 rounded-md bg-muted px-5 py-3">
-              <h1 className="text-xl font-bold text-foreground">{t('activeUsersTitle')}</h1>
-              <h2 className="text-base text-muted-foreground"> {t('description')}</h2>
+          <div className="border-border bg-card mx-auto mr-10 ml-10 rounded-xl border px-4 py-4 shadow-xs">
+            <div className="bg-muted mb-3 flex flex-col -space-y-1 rounded-md px-5 py-3">
+              <h1 className="text-foreground text-xl font-bold">{t('activeUsersTitle')}</h1>
+              <h2 className="text-muted-foreground text-base"> {t('description')}</h2>
             </div>
             <DataTable
               columns={columns}

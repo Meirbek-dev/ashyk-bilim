@@ -50,11 +50,13 @@ class QuizAttempt(SQLModelStrictBaseModel, table=True):
 
     # Anti-cheat
     violation_count: int = Field(default=0)
-    violations: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    violations: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
 
     # Submission data
-    answers: dict = Field(default_factory=dict, sa_column=Column(JSON))
-    grading_result: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    answers: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
+    grading_result: dict[str, object] = Field(
+        default_factory=dict, sa_column=Column(JSON)
+    )
 
     # Idempotency
     idempotency_key: str | None = Field(default=None, index=True)
@@ -154,12 +156,12 @@ class QuizSettings(PydanticStrictBaseModel):
 class QuizSubmissionRequest(PydanticStrictBaseModel):
     """Request payload for quiz submission."""
 
-    answers: list[dict] = PydanticField(default_factory=list)
+    answers: list[dict[str, object]] = PydanticField(default_factory=list)
     start_ts: datetime | None = PydanticField(default=None)
     end_ts: datetime | None = PydanticField(default=None)
     idempotency_key: str | None = PydanticField(default=None)
     violation_count: int = PydanticField(default=0, ge=0)
-    violations: dict = PydanticField(default_factory=dict)
+    violations: dict[str, object] = PydanticField(default_factory=dict)
 
 
 class QuizGradingResult(PydanticStrictBaseModel):
@@ -169,7 +171,7 @@ class QuizGradingResult(PydanticStrictBaseModel):
     max_score: float
     percentage: float
     passed: bool
-    per_question: list[dict]
+    per_question: list[dict[str, object]]
     triggered_level_up: bool = False
     xp_awarded: int = 0
 

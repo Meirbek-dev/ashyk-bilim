@@ -1,4 +1,7 @@
 'use client';
+
+import React from 'react';
+import { apiFetch } from '@/lib/api-client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,13 +16,23 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Download, Eye, TrendingDown, TrendingUp, Users } from 'lucide-react';
-import { getAPIUrl } from '@/services/config/config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+
+const getDurationSeconds = (
+  a: { duration_seconds?: number | null; duration_minutes?: number | null } | null | undefined,
+): number | null => {
+  if (!a) return null;
+  if (typeof a.duration_seconds === 'number') return a.duration_seconds;
+  if (typeof a.duration_minutes === 'number') return Math.round(a.duration_minutes * 60);
+  return null;
+};
+
+const escapeCsv = (v: any): string => `"${String(v ?? '').replace(/"/g, '""')}"`;
 
 interface AttemptData {
   attempt_uuid: string;
@@ -41,8 +54,7 @@ interface AttemptData {
 interface ExamResultsDashboardProps {
   examUuid: string;
   attempts: AttemptData[];
-  accessToken: string;
-  // optional callback for parent-level navigation; dashboard also provides internal modal
+  // optional callback for parent-level navigation; dashboard also provides internal modal,
   onViewAttempt?: (attemptUuid: string) => void;
   onReviewAttempt?: (attempt: any) => void;
 }
@@ -50,14 +62,13 @@ interface ExamResultsDashboardProps {
 export default function ExamResultsDashboard({
   examUuid,
   attempts,
-  accessToken,
   onViewAttempt,
   onReviewAttempt,
 }: ExamResultsDashboardProps) {
   const t = useTranslations('Components.ExamResultsDashboard');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('started_at');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('started_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const statusItems = [
@@ -74,18 +85,7 @@ export default function ExamResultsDashboard({
     { value: 'duration_minutes', label: t('duration') },
   ];
 
-  // Helper to safely get duration in seconds (null if unavailable)
-  const getDurationSeconds = (
-    a: { duration_seconds?: number | null; duration_minutes?: number | null } | null | undefined,
-  ) => {
-    if (!a) return null;
-    // use typeof checks to correctly narrow `undefined` and `null` cases
-    if (typeof a.duration_seconds === 'number') return a.duration_seconds;
-    if (typeof a.duration_minutes === 'number') return Math.round(a.duration_minutes * 60);
-    return null;
-  };
-
-  // Calculate statistics
+  // Calculate statistics,
   const stats = useMemo(() => {
     const submitted = attempts.filter((a) => a.status === 'SUBMITTED' || a.status === 'AUTO_SUBMITTED');
     const scores = submitted.map((a) => a.percentage);
@@ -107,11 +107,11 @@ export default function ExamResultsDashboard({
     };
   }, [attempts]);
 
-  // Filter and sort attempts
+  // Filter and sort attempts,
   const filteredAttempts = useMemo(() => {
     let filtered = [...attempts];
 
-    // Search filter
+    // Search filter,
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -119,14 +119,14 @@ export default function ExamResultsDashboard({
       );
     }
 
-    // Status filter
+    // Status filter,
     if (statusFilter !== 'all') {
       filtered = filtered.filter((a) => a.status === statusFilter);
     }
 
-    // Sort
+    // Sort,
     filtered.sort((a, b) => {
-      // dynamic key lookups can be undefined; coalesce to null and handle accordingly
+      // dynamic key lookups can be undefined; coalesce to null and handle accordingly,
       let aVal: any = a[sortBy as keyof AttemptData] ?? null;
       let bVal: any = b[sortBy as keyof AttemptData] ?? null;
 
@@ -134,7 +134,7 @@ export default function ExamResultsDashboard({
       if (bVal === null) bVal = sortOrder === 'asc' ? Infinity : -Infinity;
 
       if (typeof aVal === 'string') {
-        // ensure we have string operands
+        // ensure we have string operands,
         return sortOrder === 'asc' ? aVal.localeCompare(bVal ?? '') : (bVal ?? '').localeCompare(aVal);
       }
 
@@ -160,8 +160,6 @@ export default function ExamResultsDashboard({
       }
     }
   };
-
-  const escapeCsv = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 
   const handleExportCSV = () => {
     const headers = [
@@ -219,27 +217,44 @@ export default function ExamResultsDashboard({
     }
   };
 
-  // Attempt detail modal state
+  // Attempt detail modal state,
   const [selectedAttemptUuid, setSelectedAttemptUuid] = useState<string | null>(null);
   const [selectedAttempt, setSelectedAttempt] = useState<any | null>(null);
   const [isAttemptLoading, setIsAttemptLoading] = useState(false);
+  // Cache questions keyed by examUuid so we only fetch once
+  const [questionsMap, setQuestionsMap] = useState<Record<number, any>>({});
 
-  const handleOpenAttempt = async (attemptUuid: string) => {
-    setSelectedAttemptUuid(attemptUuid);
-    setSelectedAttempt(null);
+  const handleOpenAttempt = async (row: AttemptData) => {
+    setSelectedAttemptUuid(row.attempt_uuid);
+    setSelectedAttempt(row);
     setIsAttemptLoading(true);
 
     try {
-      const res = await fetch(`${getAPIUrl()}exams/${examUuid}/attempts/${attemptUuid}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+      const [attemptRes, questionsRes] = await Promise.all([
+        apiFetch(`exams/attempts/${row.attempt_uuid}`),
+        Object.keys(questionsMap).length === 0 ? apiFetch(`exams/${examUuid}/questions`) : Promise.resolve(null),
+      ]);
+
+      if (!attemptRes.ok) throw new Error('Failed to fetch attempt');
+      const data = await attemptRes.json();
+      setSelectedAttempt({
+        ...row,
+        ...data,
+        user_name: row.user_name,
+        percentage: row.percentage,
+        violation_count: row.violation_count,
       });
-      if (!res.ok) throw new Error('Failed to fetch attempt');
-      const data = await res.json();
-      setSelectedAttempt(data);
+
+      if (questionsRes && questionsRes.ok) {
+        const qs: any[] = await questionsRes.json();
+        const map: Record<number, any> = {};
+        for (const q of qs) map[q.id] = q;
+        setQuestionsMap(map);
+      }
     } catch (error) {
       console.error('Failed to load attempt detail', error);
       toast.error(t('errorLoadingAttempt'));
-      setSelectedAttempt(null);
+      setSelectedAttempt(row);
     } finally {
       setIsAttemptLoading(false);
     }
@@ -410,10 +425,10 @@ export default function ExamResultsDashboard({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        handleOpenAttempt(attempt.attempt_uuid);
+                        handleOpenAttempt(attempt);
                       }
                     }}
-                    onClick={() => handleOpenAttempt(attempt.attempt_uuid)}
+                    onClick={() => handleOpenAttempt(attempt)}
                     aria-label={t('openAttemptCard', { name: attempt.user_name })}
                   >
                     <div className="flex items-start justify-between">
@@ -448,7 +463,7 @@ export default function ExamResultsDashboard({
                           variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleOpenAttempt(attempt.attempt_uuid);
+                            handleOpenAttempt(attempt);
                           }}
                           aria-label={t('viewAttemptAria', { name: attempt.user_name })}
                         >
@@ -556,7 +571,7 @@ export default function ExamResultsDashboard({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleOpenAttempt(attempt.attempt_uuid)}
+                                onClick={() => handleOpenAttempt(attempt)}
                                 aria-label={t('viewAttemptAria', { name: attempt.user_name })}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
@@ -591,7 +606,7 @@ export default function ExamResultsDashboard({
         open={Boolean(selectedAttemptUuid)}
         onOpenChange={(open) => !open && handleCloseAttempt()}
       >
-        <AlertDialogContent className="max-w-3xl">
+        <AlertDialogContent className="max-w-3xl min-w-fit">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {selectedAttempt ? `${selectedAttempt.user_name} - ${selectedAttempt.percentage}%` : t('loadingAttempt')}
@@ -646,11 +661,64 @@ export default function ExamResultsDashboard({
               )}
 
               {selectedAttempt.answers && (
-                <div>
+                <div className="space-y-2">
                   <div className="text-sm font-semibold text-gray-600">{t('answersPreview')}</div>
-                  <pre className="mt-2 max-h-40 overflow-auto rounded bg-gray-50 p-3 text-xs">
-                    {JSON.stringify(selectedAttempt.answers, null, 2)}
-                  </pre>
+                  {isAttemptLoading || Object.keys(questionsMap).length === 0 ? (
+                    <pre className="mt-2 max-h-40 overflow-auto rounded bg-gray-50 p-3 text-xs">
+                      {JSON.stringify(selectedAttempt.answers, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="mt-2 max-h-64 space-y-2 overflow-auto">
+                      {Object.entries(selectedAttempt.answers as Record<string, any>).map(([qid, userAnswer]) => {
+                        const question = questionsMap[Number(qid)];
+                        if (!question) return null;
+                        const opts: any[] = question.answer_options || [];
+
+                        let answerDisplay: React.ReactNode;
+                        switch (question.question_type) {
+                          case 'SINGLE_CHOICE':
+                          case 'TRUE_FALSE':
+                            answerDisplay = <span>{opts[userAnswer as number]?.text ?? String(userAnswer)}</span>;
+                            break;
+                          case 'MULTIPLE_CHOICE':
+                            answerDisplay = (
+                              <span>
+                                {(Array.isArray(userAnswer) ? userAnswer : [])
+                                  .map((idx: number) => opts[idx]?.text ?? String(idx))
+                                  .join(', ')}
+                              </span>
+                            );
+                            break;
+                          case 'MATCHING':
+                            answerDisplay = (
+                              <div className="space-y-0.5">
+                                {Object.entries(userAnswer as Record<string, string>).map(([left, right]) => (
+                                  <div
+                                    key={left}
+                                    className="text-xs"
+                                  >
+                                    {left} → {right}
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                            break;
+                          default:
+                            answerDisplay = <span>{String(userAnswer)}</span>;
+                        }
+
+                        return (
+                          <div
+                            key={qid}
+                            className="rounded border bg-gray-50 px-3 py-2 text-sm"
+                          >
+                            <div className="mb-1 font-medium text-gray-700">{question.question_text}</div>
+                            <div className="text-gray-600">{answerDisplay}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -1,6 +1,8 @@
 'use client';
 
+import type { CourseDirtySection } from '@/stores/courses/courseEditorStore';
 import { useCourse } from '@components/Contexts/CourseContext';
+import { useCourseEditorStore } from '@/stores/courses';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -11,20 +13,20 @@ interface SaveSectionOptions {
   onError?: (message: string) => void;
   successMessage?: string;
   errorMessage?: string;
+  section?: CourseDirtySection;
 }
 
 interface SaveInvocationOptions {
   onSuccess?: () => void;
   successMessage?: string;
   errorMessage?: string;
-  refresh?: 'meta' | 'editor';
+  refresh?: 'meta' | 'editor' | 'none';
 }
 
 function normalizeResponse(response: SaveResponse) {
   if (response && typeof response === 'object' && 'success' in response) {
     return response;
   }
-
   return { success: true, data: response };
 }
 
@@ -34,14 +36,16 @@ function normalizeResponse(response: SaveResponse) {
  * Wraps the common pattern of:
  *  - setting isSaving state
  *  - calling the API
- *  - handling 409 conflict via CourseContext.showConflict
+ *  - handling 409 conflict via the course editor store
  *  - showing a toast on success or error
  *  - calling onSuccess (e.g. markClean)
- *  - refreshing SWR via refreshCourseMeta (single source of truth — no optimistic dispatch)
+ *  - refreshing cached course queries when the caller is not already using an optimistic mutation flow
  */
 export function useSaveSection(options?: SaveSectionOptions) {
   const [isSaving, setIsSaving] = useState(false);
-  const { showConflict, refreshCourseMeta, refreshCourseEditor } = useCourse();
+  const { refreshCourseMeta, refreshCourseEditor } = useCourse();
+  const setConflict = useCourseEditorStore((state) => state.setConflict);
+  const syncLastKnownUpdateDate = useCourseEditorStore((state) => state.syncLastKnownUpdateDate);
 
   const runSave = useCallback(
     async (saveFn: () => Promise<SaveResponse>, invocationOptions?: SaveInvocationOptions) => {
@@ -51,8 +55,13 @@ export function useSaveSection(options?: SaveSectionOptions) {
 
         if (!response.success) {
           if (response.status === 409) {
-            const detail = response.data?.detail;
-            showConflict(typeof detail === 'string' ? detail : undefined);
+            setConflict({
+              serverVersion: response.data,
+              message: typeof response.data?.detail === 'string' ? response.data.detail : undefined,
+              pendingSave: async () => {
+                await runSave(saveFn, invocationOptions);
+              },
+            });
             return;
           }
           const message =
@@ -64,22 +73,29 @@ export function useSaveSection(options?: SaveSectionOptions) {
           return;
         }
 
-        if ((invocationOptions?.refresh || 'meta') === 'editor') {
+        const refreshMode = invocationOptions?.refresh || 'meta';
+        if (refreshMode === 'editor') {
           await refreshCourseEditor();
-        } else {
+        } else if (refreshMode === 'meta') {
           await refreshCourseMeta();
         }
 
+        syncLastKnownUpdateDate(response.data?.update_date);
+
         const successMessage = invocationOptions?.successMessage || options?.successMessage || 'Изменения сохранены';
-        if (successMessage) {
-          toast.success(successMessage);
-        }
+        if (successMessage) toast.success(successMessage);
 
         invocationOptions?.onSuccess?.();
         options?.onSuccess?.();
       } catch (error: any) {
         if (error?.status === 409) {
-          showConflict(error?.detail || error?.message);
+          setConflict({
+            serverVersion: error?.data,
+            message: error?.detail || error?.message,
+            pendingSave: async () => {
+              await runSave(saveFn, invocationOptions);
+            },
+          });
           return;
         }
         const message =
@@ -93,7 +109,8 @@ export function useSaveSection(options?: SaveSectionOptions) {
         setIsSaving(false);
       }
     },
-    [options, refreshCourseEditor, refreshCourseMeta, showConflict],
+
+    [options, refreshCourseEditor, refreshCourseMeta, setConflict, syncLastKnownUpdateDate],
   );
 
   const save = useCallback(
@@ -110,5 +127,12 @@ export function useSaveSection(options?: SaveSectionOptions) {
     [runSave],
   );
 
-  return { isSaving, save, saveWithEditorRefresh };
+  const saveWithoutRefresh = useCallback(
+    async (saveFn: () => Promise<SaveResponse>, invocationOptions?: Omit<SaveInvocationOptions, 'refresh'>) => {
+      await runSave(saveFn, { ...invocationOptions, refresh: 'none' });
+    },
+    [runSave],
+  );
+
+  return { isSaving, save, saveWithEditorRefresh, saveWithoutRefresh };
 }

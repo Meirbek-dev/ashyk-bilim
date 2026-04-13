@@ -1,26 +1,21 @@
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-import pytest
-
-from src.db.users import User
 from src.services.users.users import _get_user_by_field
 
 
-@pytest.mark.asyncio
-async def test_get_user_by_field_returns_from_cache():
+def test_get_user_by_field_returns_from_cache():
     mock_db = Mock()
     # Mock cache to return serialized user
     cached = {"id": 1, "username": "alice", "email": "a@x.com", "user_uuid": "user_1"}
 
     with patch("src.services.cache.redis_client.get_json", return_value=cached):
-        user = await _get_user_by_field(mock_db, "id", 1)
+        user = _get_user_by_field(mock_db, "id", 1)
         assert user.id == 1
         assert user.username == "alice"
 
 
-@pytest.mark.asyncio
-async def test_get_user_by_field_sets_cache_after_db_fetch(monkeypatch):
+def test_get_user_by_field_sets_cache_after_db_fetch(monkeypatch):
     # Mock DB to return a User-like object
     mock_user = SimpleNamespace(
         id=2,
@@ -41,14 +36,13 @@ async def test_get_user_by_field_sets_cache_after_db_fetch(monkeypatch):
     monkeypatch.setattr("src.services.cache.redis_client.get_json", lambda k: None)
     monkeypatch.setattr("src.services.cache.redis_client.set_json", fake_set_json)
 
-    user = await _get_user_by_field(mock_db, "id", 2)
+    user = _get_user_by_field(mock_db, "id", 2)
     assert user.id == 2
     assert len(set_calls) >= 1
     assert set_calls[0][0] == "user:id:2"
 
 
-@pytest.mark.asyncio
-async def test_update_user_invalidates_cache(monkeypatch):
+def test_update_user_invalidates_cache(monkeypatch):
     # Setup user and db session for update_user
     from src.services.users.users import update_user
 
@@ -58,7 +52,7 @@ async def test_update_user_invalidates_cache(monkeypatch):
     # Mock _get_user_by_field to return a user
     user = SimpleNamespace(id=3, username="charlie", user_uuid="user_3")
 
-    async def fake_get_user(db, field, value, use_cache: bool = True):
+    def fake_get_user(db, field, value, use_cache: bool = True):
         return user
 
     monkeypatch.setattr("src.services.users.users._get_user_by_field", fake_get_user)
@@ -76,7 +70,7 @@ async def test_update_user_invalidates_cache(monkeypatch):
     user_update.model_dump.return_value = {}
 
     # Provide a dummy current_user as PublicUser
-    await update_user(Mock(), db_session, 3, current_user, user_update)
+    update_user(Mock(), db_session, 3, current_user, user_update)
 
     assert delete_calls
     # Keys should include id and username

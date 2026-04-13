@@ -21,7 +21,6 @@ from src.db.users import (
     UserSessionRole,
     UserUpdate,
     UserUpdatePassword,
-    rebuild_user_models,
 )
 from src.security.rbac import PermissionChecker
 from src.security.security import security_hash_password, security_verify_password
@@ -29,10 +28,6 @@ from src.services.cache import redis_client
 from src.services.users.avatars import upload_avatar
 from src.services.users.emails import send_account_creation_email
 from src.services.users.usergroups import add_users_to_usergroup
-
-# Rebuild user models to resolve forward references after all imports
-rebuild_user_models()
-
 
 _logger = logging.getLogger(__name__)
 
@@ -56,7 +51,7 @@ async def create_user(
     user = await _create_and_validate_user(db_session, user_object)
 
     # Assign default user role
-    await _assign_default_role(db_session, user.id)
+    _assign_default_role(db_session, user.id)
     db_session.commit()
 
     user_read = UserRead.model_validate(user)
@@ -90,7 +85,7 @@ async def create_user_without_platform(
     user = await _create_and_validate_user(db_session, user_object)
 
     # Assign default user role
-    await _assign_default_role(db_session, user.id)
+    _assign_default_role(db_session, user.id)
     db_session.commit()
 
     user_read = UserRead.model_validate(user)
@@ -104,7 +99,7 @@ async def create_user_without_platform(
     return user_read
 
 
-async def update_user(
+def update_user(
     request: Request,
     db_session: Session,
     user_id: int,
@@ -113,7 +108,7 @@ async def update_user(
     checker: PermissionChecker | None = None,
 ):
     # Get user (bypass cache for mutations to ensure ORM-attached instance)
-    user = await _get_user_by_field(db_session, "id", user_id, use_cache=False)
+    user = _get_user_by_field(db_session, "id", user_id, use_cache=False)
 
     # Validate unique constraints if fields are being updated
     user_data = user_object.model_dump(exclude_unset=True)
@@ -140,12 +135,12 @@ async def update_user(
     checker.require(current_user.id, "user:update", resource_owner_id=user_id)
 
     if user_object.username:
-        await _validate_unique_username(
+        _validate_unique_username(
             db_session, user_object.username, exclude_user_id=current_user.id
         )
 
     if user_object.email:
-        await _validate_unique_email(
+        _validate_unique_email(
             db_session, user_object.email, exclude_user_id=current_user.id
         )
 
@@ -153,7 +148,7 @@ async def update_user(
     for key, value in user_data.items():
         setattr(user, key, value)
 
-    user.update_date = str(datetime.now())
+    # updated_at is handled by the database via onupdate=func.now()
 
     # Update user in database
     db_session.add(user)
@@ -180,7 +175,7 @@ async def update_user_avatar(
     checker: PermissionChecker | None = None,
 ):
     # Get user (bypass cache for mutations to ensure ORM-attached instance)
-    user = await _get_user_by_field(db_session, "id", current_user.id, use_cache=False)
+    user = _get_user_by_field(db_session, "id", current_user.id, use_cache=False)
 
     # RBAC check
     if checker is None:
@@ -215,7 +210,7 @@ async def update_user_avatar(
     return UserRead.model_validate(user)
 
 
-async def update_user_password(
+def update_user_password(
     request: Request,
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
@@ -224,7 +219,7 @@ async def update_user_password(
     checker: PermissionChecker | None = None,
 ):
     # Get user (bypass cache for mutations to ensure ORM-attached instance)
-    user = await _get_user_by_field(db_session, "id", user_id, use_cache=False)
+    user = _get_user_by_field(db_session, "id", user_id, use_cache=False)
 
     # RBAC check
     if checker is None:
@@ -238,7 +233,6 @@ async def update_user_password(
 
     # Update user
     user.password = security_hash_password(form.new_password)
-    user.update_date = str(datetime.now())
 
     # Add password_changed_at field for session invalidation tracking
     if user.profile is None:
@@ -253,44 +247,46 @@ async def update_user_password(
     return UserRead.model_validate(user)
 
 
-async def read_user_by_id(
+def read_user_by_id(
     request: Request,
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     user_id: int,
 ):
-    user = await _get_user_by_field(db_session, "id", user_id)
+    user = _get_user_by_field(db_session, "id", user_id)
     return UserRead.model_validate(user)
 
 
-async def read_user_by_uuid(
+def read_user_by_uuid(
     request: Request,
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     user_uuid: str,
 ):
-    user = await _get_user_by_field(db_session, "user_uuid", user_uuid)
+    user = _get_user_by_field(db_session, "user_uuid", user_uuid)
     return UserRead.model_validate(user)
 
 
-async def read_user_by_username(
+def read_user_by_username(
     request: Request,
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     username: str,
 ):
-    user = await _get_user_by_field(db_session, "username", username)
+    user = _get_user_by_field(db_session, "username", username)
     return UserRead.model_validate(user)
 
 
-async def get_user_session(
+def get_user_session(
     request: Request,
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
 ) -> UserSession:
     from datetime import UTC, datetime
 
-    user = await _get_user_by_field(db_session, "user_uuid", current_user.user_uuid)
+    from src.security.auth import decode_access_token, get_access_token_from_request
+
+    user = _get_user_by_field(db_session, "user_uuid", current_user.user_uuid)
     user_read = UserRead.model_validate(user)
 
     checker = PermissionChecker(db_session)
@@ -303,6 +299,8 @@ async def get_user_session(
     # Resolve permissions
     permissions: list[str] = []
     permissions_timestamp: int | None = None
+    expires_at: int | None = None
+    session_version: int | None = None
     try:
         effective = checker.get_expanded_permissions(current_user.id)
         permissions = sorted(effective)
@@ -310,15 +308,30 @@ async def get_user_session(
     except Exception as e:
         _logger.exception(f"Error loading permissions for user {current_user.id}: {e}")
 
+    try:
+        resolved_token = get_access_token_from_request(request, None)
+        if resolved_token:
+            token_data = decode_access_token(resolved_token)
+            if token_data.expires_at is not None:
+                expires_at = token_data.expires_at * 1000
+            if token_data.issued_at is not None:
+                session_version = token_data.issued_at
+    except Exception as e:
+        _logger.exception(
+            f"Error resolving session expiry for user {current_user.id}: {e}"
+        )
+
     return UserSession(
         user=user_read,
         roles=roles,
         permissions=permissions,
         permissions_timestamp=permissions_timestamp,
+        expires_at=expires_at,
+        session_version=session_version,
     )
 
 
-async def delete_user_by_id(
+def delete_user_by_id(
     request: Request,
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
@@ -326,7 +339,7 @@ async def delete_user_by_id(
     checker: PermissionChecker | None = None,
 ) -> str:
     # Get user (bypass cache for mutations to ensure ORM-attached instance)
-    user = await _get_user_by_field(db_session, "id", user_id, use_cache=False)
+    user = _get_user_by_field(db_session, "id", user_id, use_cache=False)
 
     # RBAC check
     if checker is None:
@@ -352,10 +365,10 @@ async def delete_user_by_id(
 # Utils & Security functions
 
 
-async def security_get_user(request: Request, db_session: Session, email: str) -> User:
+def security_get_user(request: Request, db_session: Session, email: str) -> User:
     """Get user by email for security purposes."""
     try:
-        return await _get_user_by_field(db_session, "email", email)
+        return _get_user_by_field(db_session, "email", email)
     except HTTPException:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -366,7 +379,7 @@ async def security_get_user(request: Request, db_session: Session, email: str) -
 # Helper functions for user operations
 
 
-async def _validate_unique_username(
+def _validate_unique_username(
     db_session: Session, username: str, exclude_user_id: int | None = None
 ) -> None:
     """Validate that username is unique."""
@@ -381,7 +394,7 @@ async def _validate_unique_username(
         )
 
 
-async def _validate_unique_email(
+def _validate_unique_email(
     db_session: Session, email: str, exclude_user_id: int | None = None
 ) -> None:
     """Validate that email is unique."""
@@ -401,16 +414,16 @@ async def _create_and_validate_user(
 ) -> User:
     """Create user with validation and proper initialization."""
     # Validate unique constraints
-    await _validate_unique_username(db_session, user_object.username)
-    await _validate_unique_email(db_session, user_object.email)
+    _validate_unique_username(db_session, user_object.username)
+    _validate_unique_email(db_session, user_object.email)
 
     # Create user with completed fields
     user = User.model_validate(user_object)
     user.user_uuid = f"user_{ULID()}"
-    user.password = security_hash_password(user_object.password)
-    user.email_verified = False
-    user.creation_date = str(datetime.now())
-    user.update_date = str(datetime.now())
+    user.password = (
+        security_hash_password(user_object.password) if user_object.password else None
+    )
+    user.auth_provider = "local"
 
     # Add user to database
     db_session.add(user)
@@ -442,7 +455,7 @@ def _safe_role_read(role: Role) -> RoleRead:
         )
 
 
-async def _assign_default_role(db_session: Session, user_id: int | None) -> None:
+def _assign_default_role(db_session: Session, user_id: int | None) -> None:
     """Assign default 'user' role to a newly registered user."""
     from src.db.permissions import Role
     from src.security.rbac import PermissionChecker
@@ -459,7 +472,7 @@ async def _assign_default_role(db_session: Session, user_id: int | None) -> None
     )
 
 
-async def _get_user_by_field(
+def _get_user_by_field(
     db_session: Session, field: str, value: str | int, use_cache: bool = True
 ) -> User:
     """Generic function to get user by any field.
@@ -543,9 +556,9 @@ async def _get_user_by_field(
     return user
 
 
-async def ensure_user_has_default_role(db_session: Session, user_id: int) -> None:
+def ensure_user_has_default_role(db_session: Session, user_id: int) -> None:
     """Ensure a user has the default role assigned (idempotent)."""
-    await _assign_default_role(db_session, user_id)
+    _assign_default_role(db_session, user_id)
     db_session.commit()
 
 

@@ -2,26 +2,28 @@
 
 // Server-only data fetchers with Next.js cacheComponents
 
-import type { DashboardData, PlatformLeaderboard, UserGamificationProfile } from '@/types/gamification';
-import { gamificationTag, gamificationTags } from '@/lib/cacheTags';
+import type {
+  DashboardData,
+  PlatformLeaderboard,
+  StreakUpdate,
+  UserGamificationProfile,
+  XPAwardRequest,
+  XPAwardResponse,
+} from '@/types/gamification';
+import { gamificationTags } from '@/lib/cacheTags';
 import { extractStreakInfo } from '@/types/gamification/profile';
-import { CacheProfiles, cacheLife, cacheTag } from '@/lib/cache';
 import { getServerAPIUrl } from '@/services/config/config';
+import type { components } from '@/lib/api/generated';
 import { revalidateTag } from 'next/cache';
-import { auth } from '@/auth';
+import { apiFetch } from '@/lib/api-client';
 
-interface RawDashboardResponse {
-  profile?: Record<string, unknown>;
-  recent_transactions?: unknown[];
-  user_rank?: number | null;
-  leaderboard?: RawLeaderboardResponse | null;
-}
-
-interface RawLeaderboardResponse {
-  entries?: unknown[];
-  total_participants?: unknown;
-  last_updated?: unknown;
-}
+type ApiDashboardResponse = components['schemas']['DashboardRead'];
+type ApiLeaderboardResponse = components['schemas']['LeaderboardRead'];
+type ApiProfileResponse = components['schemas']['ProfileRead'];
+type ApiTransactionResponse = components['schemas']['TransactionRead'];
+type ApiXPAwardRequest = components['schemas']['XPAwardRequest'];
+type ApiXPAwardResponse = components['schemas']['XPAwardResponse'];
+type ApiStreakUpdateResponse = components['schemas']['StreakUpdateRead'];
 
 const nowISO = () => new Date().toISOString();
 
@@ -32,20 +34,15 @@ const numberOr = (value: unknown, fallback = 0) => {
 
 const stringOrNull = (value: unknown) => (typeof value === 'string' ? value : null);
 
-const recordOrEmpty = (value: unknown): Record<string, unknown> => {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return {};
-};
+const recordOrEmpty = (value: Record<string, unknown> | null | undefined): Record<string, unknown> => value ?? {};
 
-function normalizeProfile(payload: Record<string, unknown> | undefined): UserGamificationProfile | null {
+function normalizeProfile(payload: ApiProfileResponse | undefined): UserGamificationProfile | null {
   if (!payload) return null;
   const createdAt = stringOrNull(payload.created_at) ?? nowISO();
   const updatedAt = stringOrNull(payload.updated_at) ?? createdAt;
 
   const profile: UserGamificationProfile = {
-    id: payload.id !== undefined ? numberOr(payload.id) : undefined,
+    id: undefined,
     user_id: numberOr(payload.user_id),
     total_xp: Math.max(0, numberOr(payload.total_xp)),
     level: Math.max(1, numberOr(payload.level, 1)),
@@ -71,29 +68,25 @@ function normalizeProfile(payload: Record<string, unknown> | undefined): UserGam
   return profile;
 }
 
-function normalizeTransactions(transactions: unknown[] | undefined) {
+function normalizeTransactions(transactions: ApiTransactionResponse[] | undefined) {
   const fallbackDate = nowISO();
-  return (Array.isArray(transactions) ? transactions : []).map((tx) => {
-    const transaction = tx as Record<string, unknown>;
-    return {
-      id: numberOr(transaction.id),
-      user_id: numberOr(transaction.user_id),
-      amount: numberOr(transaction.amount),
-      source: typeof transaction.source === 'string' ? transaction.source : 'unknown',
-      source_id: transaction.source_id ?? null,
-      triggered_level_up: Boolean(transaction.triggered_level_up),
-      previous_level: numberOr(transaction.previous_level),
-      created_at: stringOrNull(transaction.created_at) ?? fallbackDate,
-    };
-  });
+  return (transactions ?? []).map((transaction) => ({
+    id: numberOr(transaction.id),
+    user_id: numberOr(transaction.user_id),
+    amount: numberOr(transaction.amount),
+    source: typeof transaction.source === 'string' ? transaction.source : 'unknown',
+    source_id: transaction.source_id ?? null,
+    triggered_level_up: transaction.triggered_level_up,
+    previous_level: numberOr(transaction.previous_level),
+    created_at: stringOrNull(transaction.created_at) ?? fallbackDate,
+  }));
 }
 
-function normalizeLeaderboard(payload?: RawLeaderboardResponse | null): PlatformLeaderboard {
+function normalizeLeaderboard(payload?: ApiLeaderboardResponse | null): PlatformLeaderboard {
   const fallbackDate = nowISO();
-  const entries = Array.isArray(payload?.entries) ? payload?.entries : [];
+  const entries = payload?.entries ?? [];
   return {
-    entries: entries.map((entry, index) => {
-      const data = entry as Record<string, unknown>;
+    entries: entries.map((data, index) => {
       return {
         user_id: numberOr(data.user_id),
         total_xp: Math.max(0, numberOr(data.total_xp)),
@@ -107,44 +100,20 @@ function normalizeLeaderboard(payload?: RawLeaderboardResponse | null): Platform
       };
     }),
     total_participants: Math.max(0, numberOr(payload?.total_participants)),
-    last_updated: stringOrNull(payload?.last_updated) ?? fallbackDate,
+    last_updated: fallbackDate,
   };
-}
-
-/**
- * Get access token from session without throwing
- * Returns null if no session or error occurs
- */
-async function getAccessToken(): Promise<string | null> {
-  try {
-    const session = await auth();
-    const token = session?.tokens?.access_token;
-    return token || null;
-  } catch {
-    // Silently fail for unauthorized users - this is expected behavior
-    return null;
-  }
-}
-
-async function requireAccessToken(): Promise<string> {
-  const token = await getAccessToken();
-  if (!token) throw new Error('Authentication required');
-  return token;
 }
 
 /**
  * Cached fetch for unified gamification data
  * Uses `use cache` directive for cacheComponents
  */
-async function fetchGamificationData(accessToken: string): Promise<RawDashboardResponse | null> {
-  'use cache';
-  cacheTag(gamificationTag.dashboard());
-  cacheLife(CacheProfiles.realtime);
-
+async function fetchGamificationData(): Promise<ApiDashboardResponse | null> {
   try {
-    const res = await fetch(`${getServerAPIUrl()}gamification/`, {
+    const res = await apiFetch('gamification/', {
       method: 'GET',
-      headers: { Authorization: `Bearer ${accessToken}` },
+      baseUrl: getServerAPIUrl(),
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!res.ok) {
@@ -152,7 +121,7 @@ async function fetchGamificationData(accessToken: string): Promise<RawDashboardR
       console.error(`Failed to fetch gamification data: ${res.status}`);
       return null;
     }
-    return res.json();
+    return (await res.json()) as ApiDashboardResponse;
   } catch (error) {
     if (error instanceof Error && !error.message.includes('fetch')) {
       console.error('Error fetching gamification data:', error);
@@ -164,15 +133,12 @@ async function fetchGamificationData(accessToken: string): Promise<RawDashboardR
 /**
  * Cached fetch for leaderboard data
  */
-async function fetchLeaderboardData(limit: number, accessToken: string): Promise<RawLeaderboardResponse | null> {
-  'use cache';
-  cacheTag(gamificationTag.leaderboard());
-  cacheLife(CacheProfiles.realtime);
-
+async function fetchLeaderboardData(limit: number): Promise<ApiLeaderboardResponse | null> {
   try {
-    const res = await fetch(`${getServerAPIUrl()}gamification/leaderboard?limit=${encodeURIComponent(String(limit))}`, {
+    const res = await apiFetch(`gamification/leaderboard?limit=${encodeURIComponent(String(limit))}`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${accessToken}` },
+      baseUrl: getServerAPIUrl(),
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!res.ok) {
@@ -181,7 +147,7 @@ async function fetchLeaderboardData(limit: number, accessToken: string): Promise
       return null;
     }
 
-    return res.json();
+    return (await res.json()) as ApiLeaderboardResponse;
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
     return null;
@@ -192,24 +158,8 @@ async function fetchLeaderboardData(limit: number, accessToken: string): Promise
  * Fetch unified gamification data from API
  * Returns null if user is not authenticated or if fetch fails
  */
-async function getUnifiedServerData(): Promise<RawDashboardResponse | null> {
-  // Check if user is authenticated first
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    return null; // Expected: user not authenticated
-  }
-
-  // Use the cached fetcher
-  return fetchGamificationData(accessToken);
-}
-
-async function getUnifiedServerDataWithToken(accessToken?: string | null): Promise<RawDashboardResponse | null> {
-  const resolvedAccessToken = accessToken ?? (await getAccessToken());
-  if (!resolvedAccessToken) {
-    return null;
-  }
-
-  return fetchGamificationData(resolvedAccessToken);
+async function getUnifiedServerData(): Promise<ApiDashboardResponse | null> {
+  return fetchGamificationData();
 }
 
 export async function getServerGamificationProfile(): Promise<UserGamificationProfile | null> {
@@ -220,11 +170,11 @@ export async function getServerGamificationProfile(): Promise<UserGamificationPr
     return null;
   }
 
-  return normalizeProfile((json.profile ?? json) as Record<string, unknown> | undefined);
+  return normalizeProfile(json.profile);
 }
 
-export async function getServerGamificationDashboard(accessToken?: string | null): Promise<DashboardData | null> {
-  const json = await getUnifiedServerDataWithToken(accessToken);
+export async function getServerGamificationDashboard(): Promise<DashboardData | null> {
+  const json = await getUnifiedServerData();
 
   // Return null if no data (unauthorized or error)
   if (!json) {
@@ -253,19 +203,35 @@ export async function getServerGamificationDashboard(accessToken?: string | null
  * Fetch platform leaderboard
  * Returns null if user is not authenticated or if fetch fails
  */
-export async function getServerLeaderboard(
-  limit = 20,
-  accessToken?: string | null,
-): Promise<PlatformLeaderboard | null> {
-  const resolvedAccessToken = accessToken ?? (await getAccessToken());
-  if (!resolvedAccessToken) {
-    return null; // Expected: user not authenticated
-  }
-
-  // Use the cached fetcher
-  const json = await fetchLeaderboardData(limit, resolvedAccessToken);
+export async function getServerLeaderboard(limit = 20): Promise<PlatformLeaderboard | null> {
+  const json = await fetchLeaderboardData(limit);
   return normalizeLeaderboard(json);
 }
+
+const normalizeAwardXpResponse = (payload: ApiXPAwardResponse): XPAwardResponse => ({
+  transaction: {
+    id: payload.transaction.id,
+    user_id: payload.transaction.user_id,
+    amount: payload.transaction.amount,
+    source: payload.transaction.source,
+    source_id: payload.transaction.source_id ?? null,
+    triggered_level_up: payload.transaction.triggered_level_up,
+    previous_level: payload.transaction.previous_level,
+    created_at: payload.transaction.created_at,
+  },
+  profile: normalizeProfile(payload.profile)!,
+  triggered_level_up: payload.level_up_occurred,
+  previous_level: payload.previous_level,
+});
+
+const normalizeStreakUpdate = (payload: ApiStreakUpdateResponse): StreakUpdate => ({
+  type: payload.streak_type as 'login' | 'learning',
+  current_streak: payload.current_count,
+  longest_streak: payload.longest_count,
+  streak_maintained: true,
+  streak_broken: false,
+  bonus_xp_awarded: 0,
+});
 
 // Server-only revalidation utility after successful mutations
 export async function revalidateGamificationTags() {
@@ -275,50 +241,36 @@ export async function revalidateGamificationTags() {
 }
 
 // Server-side mutation helpers
-export async function awardXPOnServer(payload: Record<string, any>) {
-  const accessToken = await requireAccessToken();
-  const body = {
+export async function awardXPOnServer(payload: XPAwardRequest): Promise<XPAwardResponse> {
+  const body: ApiXPAwardRequest = {
     source: payload.source,
     source_id: payload.source_id,
-    custom_amount: payload.custom_amount ?? payload.amount,
+    custom_amount: payload.amount,
     idempotency_key: payload.idempotency_key,
   };
-  const res = await fetch(`${getServerAPIUrl()}gamification/xp`, {
+  const res = await apiFetch('gamification/xp', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`Failed to award XP: ${res.status}`);
-  const json = await res.json();
+  const json = (await res.json()) as ApiXPAwardResponse;
   await revalidateGamificationTags();
-  return json;
+  return normalizeAwardXpResponse(json);
 }
 
-export async function updateStreakOnServer(type: 'login' | 'learning') {
-  const accessToken = await requireAccessToken();
-  const res = await fetch(`${getServerAPIUrl()}gamification/streaks/${encodeURIComponent(type)}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+export async function updateStreakOnServer(type: 'login' | 'learning'): Promise<StreakUpdate> {
+  const res = await apiFetch(`gamification/streaks/${encodeURIComponent(type)}`, { method: 'POST' });
   if (!res.ok) throw new Error(`Failed to update streak: ${res.status}`);
-  const json = await res.json();
+  const json = (await res.json()) as ApiStreakUpdateResponse;
   await revalidateGamificationTags();
-  return json;
+  return normalizeStreakUpdate(json);
 }
 
 export async function updatePreferencesOnServer(preferences: Record<string, any>) {
-  const accessToken = await requireAccessToken();
-  const res = await fetch(`${getServerAPIUrl()}gamification/preferences`, {
+  const res = await apiFetch('gamification/preferences', {
     method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(preferences),
   });
   if (!res.ok) throw new Error(`Failed to update preferences: ${res.status}`);

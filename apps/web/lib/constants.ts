@@ -19,6 +19,11 @@ export const ACCEPTED_FILE_FORMATS = {
 export const SESSION_CACHE_TTL_MS = 1 * 60 * 1000;
 export const TOKEN_REFRESH_BUFFER_MS = 2 * 60 * 1000;
 export const SESSION_CACHE_MAX_SIZE = 1000;
+export const PLATFORM_BRAND_NAME = 'Ashyq Bilim';
+export const PLATFORM_DESCRIPTION = 'Образовательная платформа для онлайн-обучения';
+export const PLATFORM_LABEL = 'ashyq-bilim';
+export const PLATFORM_THUMBNAIL_IMAGE_PATH = '/platform_logo_full.svg';
+export const NAVBAR_HEIGHT = 52;
 
 /**
  * Constructs the 'accept' attribute value for an input element.

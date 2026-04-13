@@ -1,27 +1,24 @@
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlignCenter, AlignLeft, AlignRight, Edit2, Save, Trash, X } from 'lucide-react';
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { queryKeys } from '@/lib/react-query/queryKeys';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Modal from '@/components/Objects/Elements/Modal/Modal';
-import { getUrlPreview } from '@services/courses/activities';
+import { getUrlPreview, type UrlPreviewResponse } from '@services/courses/activities';
 import { Checkbox } from '@components/ui/checkbox';
+import NextImage from '@components/ui/NextImage';
 import { NodeViewWrapper } from '@tiptap/react';
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
 import { Input } from '@components/ui/input';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
+import type { WebPreviewAttrs } from './WebPreview';
 
-interface EditorContext {
-  isEditable: boolean;
-  [key: string]: any;
-}
-
-interface WebPreviewProps {
-  node: any;
-  updateAttributes: (attrs: any) => void;
-  extension: any;
+type WebPreviewProps = TypedNodeViewProps<WebPreviewAttrs> & {
   deleteNode?: () => void;
-}
+};
 
 const ALIGNMENTS = [
   { value: 'left', label: <AlignLeft size={16} /> },
@@ -30,11 +27,13 @@ const ALIGNMENTS = [
 ];
 
 const PreviewImage = ({ src, alt }: { src: string; alt: string }) => (
-  <div className="-mx-6 -mt-6 mb-0 overflow-hidden rounded-t-xl">
-    <img
+  <div className="relative -mx-6 -mt-6 mb-0 h-40 w-full overflow-hidden rounded-t-xl">
+    <NextImage
       src={src}
       alt={alt}
-      className="block h-40 w-full object-cover"
+      fill
+      className="object-cover"
+      sizes="100vw"
     />
   </div>
 );
@@ -42,15 +41,33 @@ const PreviewImage = ({ src, alt }: { src: string; alt: string }) => (
 const FaviconDisplay = ({ favicon, url, faviconAlt }: { favicon?: string; url: string; faviconAlt: string }) => (
   <div className="mt-0 flex items-center border-t border-gray-100 pt-2">
     {favicon ? (
-      <img
-        src={favicon}
-        alt={faviconAlt}
-        className="mr-2 h-[18px] w-[18px] rounded bg-gray-100"
-      />
+      <div className="relative mr-2 h-[18px] w-[18px] overflow-hidden rounded bg-gray-100">
+        <NextImage
+          src={favicon}
+          alt={faviconAlt}
+          fill
+          className="object-cover"
+        />
+      </div>
     ) : null}
     <span className="truncate text-xs text-gray-500">{url}</span>
   </div>
 );
+
+const getAlignmentClass = (alignment: string) => {
+  if (alignment === 'center') return 'justify-center';
+  if (alignment === 'right') return 'justify-end';
+  return 'justify-start';
+};
+
+function urlPreviewQueryOptions(url: string) {
+  return queryOptions({
+    queryKey: queryKeys.activities.linkPreview(url),
+    queryFn: () => getUrlPreview(url),
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 const AlignmentControls = ({
   alignment,
@@ -61,7 +78,7 @@ const AlignmentControls = ({
   alignment: string;
   onAlignmentChange: (value: string) => void;
   alignments: typeof ALIGNMENTS;
-  t: any;
+  t: (key: string, values?: Record<string, string>) => string;
 }) => (
   <div className="mt-4 flex flex-col items-center">
     <div className="flex items-center gap-1">
@@ -88,13 +105,16 @@ const AlignmentControls = ({
   </div>
 );
 
+// The component logic is intentionally split across helper functions and local state.
+// Complexity is managed by breaking large expressions into isolated helpers.
+
 const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewProps) => {
   const t = useTranslations('Components.WebPreview');
   const [inputUrl, setInputUrl] = useState(node.attrs.url || '');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(!node.attrs.url);
   const inputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
   const editorContext = useEditorProvider();
   const isEditable = editorContext?.isEditable ?? true;
 
@@ -107,6 +127,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
     og_url: node.attrs.og_url,
     url: node.attrs.url,
   };
+  const previewUrl = previewData.url ?? undefined;
 
   const alignment = node.attrs.alignment || 'left';
   const hasPreview = Boolean(previewData.title);
@@ -116,16 +137,14 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
   const [openInPopup, setOpenInPopup] = useState(node.attrs.openInPopup);
   const [popupOpen, setPopupOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(!node.attrs.url);
+  const shouldAutoFetchPreview = Boolean(node.attrs.url && !hasPreview);
+  const previewQuery = useQuery({
+    ...urlPreviewQueryOptions(node.attrs.url || ''),
+    enabled: shouldAutoFetchPreview,
+  });
 
-  async function fetchPreview(url: string) {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await getUrlPreview(url);
-      if (!res) throw new Error(t('errorFetchingPreview'));
-      const data = res;
-
-      // Check if metadata is insufficient (only has basic fields like favicon/url but no title/description)
+  const applyPreviewData = useCallback(
+    (url: string, data: UrlPreviewResponse) => {
       const hasMinimalMetadata = !(data.title || data.description || data.og_image);
 
       if (hasMinimalMetadata) {
@@ -136,22 +155,39 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
 
       updateAttributes({ ...data, url });
       setEditing(false);
-    } catch (error: any) {
-      setError(error.message || t('errorFetchingPreview'));
-    } finally {
-      setLoading(false);
-    }
-  }
+      setError(null);
+    },
+    [t, updateAttributes],
+  );
 
-  const fetchPreviewEvent = useEffectEvent((url: string) => {
-    fetchPreview(url);
+  const fetchPreviewMutation = useMutation({
+    mutationFn: async (url: string) => queryClient.fetchQuery(urlPreviewQueryOptions(url)),
+    onSuccess: (data, url) => {
+      if (!data) {
+        throw new Error(t('errorFetchingPreview'));
+      }
+
+      applyPreviewData(url, data);
+    },
+    onError: (fetchError: unknown) => {
+      setError(fetchError instanceof Error ? fetchError.message : t('errorFetchingPreview'));
+    },
   });
 
+  const loading = previewQuery.isFetching || fetchPreviewMutation.isPending;
+
   useEffect(() => {
-    if (node.attrs.url && !hasPreview) {
-      fetchPreviewEvent(node.attrs.url);
+    if (!shouldAutoFetchPreview) return;
+
+    if (previewQuery.data && node.attrs.url) {
+      applyPreviewData(node.attrs.url, previewQuery.data);
+      return;
     }
-  }, [node.attrs.url, hasPreview]);
+
+    if (previewQuery.error) {
+      setError(previewQuery.error instanceof Error ? previewQuery.error.message : t('errorFetchingPreview'));
+    }
+  }, [applyPreviewData, node.attrs.url, previewQuery.data, previewQuery.error, shouldAutoFetchPreview, t]);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -183,7 +219,8 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
 
   const handleSaveEdit = () => {
     if (inputUrl && inputUrl !== node.attrs.url) {
-      fetchPreview(inputUrl);
+      setError(null);
+      void fetchPreviewMutation.mutateAsync(inputUrl);
     } else {
       setEditing(false);
       setModalOpen(false);
@@ -215,12 +252,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
     }
   };
 
-  const alignClass = (() => {
-    const alignment = node.attrs.alignment || 'left';
-    if (alignment === 'center') return 'justify-center';
-    if (alignment === 'right') return 'justify-end';
-    return 'justify-start';
-  })();
+  const alignmentClass = getAlignmentClass(node.attrs.alignment || 'left');
 
   return (
     <NodeViewWrapper className="web-preview-block relative">
@@ -232,16 +264,18 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
         minWidth="xl"
         minHeight="xl"
         dialogContent={
-          <iframe
-            src={previewData.url}
-            title={t('embeddedWebsitePreview')}
-            className="h-full w-full border-0 bg-white"
-            style={{ display: 'block', borderRadius: 0 }}
-            allowFullScreen
-          />
+          previewUrl ? (
+            <iframe
+              src={previewUrl}
+              title={t('embeddedWebsitePreview')}
+              className="h-full w-full border-0 bg-white"
+              style={{ display: 'block', borderRadius: 0 }}
+              allowFullScreen
+            />
+          ) : null
         }
       />
-      <div className={`flex w-full ${alignClass}`}>
+      <div className={`flex w-full ${alignmentClass}`}>
         {/* CardWrapper */}
         <div className="soft-shadow relative my-2 max-w-[420px] min-w-[260px] rounded-xl bg-white px-6 pt-6 pb-4">
           {/* PreviewCard */}
@@ -410,7 +444,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
           {hasPreview && !editing ? (
             <>
               <a
-                href={previewData.url}
+                href={previewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="no-underline hover:no-underline focus:no-underline active:no-underline"
@@ -424,7 +458,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                 ) : null}
                 <div className="pt-4 pb-2">
                   <span
-                    className="mb-1.5 text-lg leading-tight font-semibold text-[#232323] no-underline hover:no-underline focus:no-underline active:no-underline"
+                    className="text-foreground mb-1.5 text-lg leading-tight font-semibold no-underline hover:no-underline focus:no-underline active:no-underline"
                     style={{ textDecoration: 'none', borderBottom: 'none' }}
                   >
                     {previewData.title}
@@ -438,8 +472,8 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                 </div>
               </a>
               <FaviconDisplay
-                favicon={previewData.favicon}
-                url={previewData.url}
+                favicon={previewData.favicon ?? undefined}
+                url={previewUrl ?? ''}
                 faviconAlt={t('faviconAlt')}
               />
               {showButton && previewData.url ? (

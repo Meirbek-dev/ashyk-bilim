@@ -18,7 +18,6 @@ from src.db.strict_base_model import PydanticStrictBaseModel
 
 _POSTGRES_DSN = TypeAdapter(PostgresDsn)
 _REDIS_DSN = TypeAdapter(RedisDsn)
-_INSECURE_DEFAULT_SECRETS = {"", "changeme", "secret"}
 
 
 def _normalize_cookie_domain(raw_domain: str | None) -> str | None:
@@ -99,122 +98,146 @@ class GeneralConfig(PlatformSectionSettings):
 
 
 class SecurityConfig(PlatformSectionSettings):
-    auth_jwt_secret_key: str = Field(
-        min_length=1,
-        validation_alias="PLATFORM_AUTH_JWT_SECRET_KEY",
+    auth_ed25519_private_key: str | None = Field(
+        default=None,
+        validation_alias="PLATFORM_AUTH_ED25519_PRIVATE_KEY",
+    )
+    auth_ed25519_public_key: str | None = Field(
+        default=None,
+        validation_alias="PLATFORM_AUTH_ED25519_PUBLIC_KEY",
     )
 
-    @field_validator("auth_jwt_secret_key", mode="before")
+    @field_validator(
+        "auth_ed25519_private_key", "auth_ed25519_public_key", mode="before"
+    )
     @classmethod
-    def validate_auth_jwt_secret_key(cls, value: str) -> str:
-        if not isinstance(value, str):
-            return value
-
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("PLATFORM_AUTH_JWT_SECRET_KEY must not be empty")
-
-        return stripped
-
-
-class RBACConfig(PlatformSectionSettings):
-    """RBAC configuration."""
-
-    audit_logging_enabled: bool = Field(
-        default=True,
-        validation_alias="PLATFORM_RBAC_AUDIT_LOGGING_ENABLED",
-    )
-    cache_enabled: bool = Field(
-        default=True,
-        validation_alias="PLATFORM_RBAC_CACHE_ENABLED",
-    )
-    cache_ttl_seconds: int = Field(
-        default=300,
-        validation_alias="PLATFORM_RBAC_CACHE_TTL_SECONDS",
-    )
-
-
-class ChromaDBConfig(PlatformSectionSettings):
-    separate_db_enabled: bool = Field(
-        default=False,
-        validation_alias="PLATFORM_CHROMADB_SEPARATE",
-    )
-    db_host: str | None = Field(default=None, validation_alias="PLATFORM_CHROMADB_HOST")
-    db_port: int = Field(default=8000, validation_alias="PLATFORM_CHROMADB_PORT")
-    persist_path: str = Field(
-        default="./chromadb_data",
-        validation_alias="PLATFORM_CHROMADB_PERSIST_PATH",
-    )
-
-    @field_validator("db_host", mode="before")
-    @classmethod
-    def normalize_db_host(cls, value: str | None) -> str | None:
+    def normalize_key_fields(cls, value: str | None) -> str | None:
         return _strip_optional_string(value)
 
-    @field_validator("persist_path", mode="before")
-    @classmethod
-    def normalize_persist_path(cls, value: str) -> str:
-        if not isinstance(value, str):
-            return value
-
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("PLATFORM_CHROMADB_PERSIST_PATH must not be empty")
-
-        return stripped
+    @model_validator(mode="after")
+    def validate_key_presence(self) -> "SecurityConfig":
+        if not self.auth_ed25519_private_key and not self.auth_ed25519_public_key:
+            raise ValueError(
+                "At least one of PLATFORM_AUTH_ED25519_PRIVATE_KEY or "
+                "PLATFORM_AUTH_ED25519_PUBLIC_KEY must be set."
+            )
+        return self
 
 
-class AIPerformanceConfig(PlatformSectionSettings):
-    streaming_enabled: bool = True
-    cache_enabled: bool = True
-    max_concurrent_requests: int = 50
-    request_timeout: int = 60
+class AIConfig(PlatformSectionSettings):
+    """All AI-related configuration in one flat class.
 
+    Fields with no ``validation_alias`` use hardcoded defaults and are not
+    configurable via environment variables (intentional — they are tuning
+    knobs that rarely need to change per deployment).
+    """
 
-class AICacheConfig(PlatformSectionSettings):
-    vector_store_ttl: int = 3600
-    response_cache_ttl: int = 1800
-    embedding_cache_ttl: int = 7200
-    semantic_similarity_threshold: float = 0.95
-
-
-class AIVectorStoreConfig(PlatformSectionSettings):
-    chromadb_pool_size: int = 10
-    collection_retention: int = 86400
-    embedding_batch_size: int = 8191
-
-
-class AIChatConfig(PlatformSectionSettings):
-    history_window_size: int = 10
-    max_history_length: int = 100
-    message_retention: int = 86400
-
-
-class AIRootConfig(PlatformSectionSettings):
     openai_api_key: str | None = Field(
         default=None,
         validation_alias="PLATFORM_OPENAI_API_KEY",
     )
+    chat_model: str = Field(
+        default="gpt-5.4-mini",
+        validation_alias="PLATFORM_AI_CHAT_MODEL",
+    )
+    embedding_model: str = Field(
+        default="text-embedding-3-small",
+        validation_alias="PLATFORM_AI_EMBEDDING_MODEL",
+    )
+    embedding_dimensions: int = Field(
+        default=512,
+        validation_alias="PLATFORM_AI_EMBEDDING_DIMENSIONS",
+    )
 
-    @field_validator("openai_api_key", mode="before")
+    # Performance
+    streaming_enabled: bool = Field(
+        default=True,
+        validation_alias="PLATFORM_AI_STREAMING_ENABLED",
+    )
+    max_concurrent_requests: int = Field(
+        default=50,
+        validation_alias="PLATFORM_AI_MAX_CONCURRENT_REQUESTS",
+    )
+    request_timeout: int = Field(
+        default=60,
+        validation_alias="PLATFORM_AI_REQUEST_TIMEOUT",
+    )
+    max_output_tokens: int = Field(
+        default=4000,
+        validation_alias="PLATFORM_AI_MAX_OUTPUT_TOKENS",
+    )
+
+    # Cache TTLs (seconds)
+    retrieval_cache_ttl: int = Field(
+        default=3600,
+        validation_alias="PLATFORM_AI_RETRIEVAL_CACHE_TTL",
+    )
+    response_cache_ttl: int = Field(
+        default=1800,
+        validation_alias="PLATFORM_AI_RESPONSE_CACHE_TTL",
+    )
+    embedding_cache_ttl: int = Field(
+        default=7200,
+        validation_alias="PLATFORM_AI_EMBEDDING_CACHE_TTL",
+    )
+
+    # Vector store
+    collection_retention: int = Field(
+        default=86400,
+        validation_alias="PLATFORM_AI_COLLECTION_RETENTION",
+    )
+    embedding_batch_size: int = Field(
+        default=8191,
+        validation_alias="PLATFORM_AI_EMBEDDING_BATCH_SIZE",
+    )
+    retrieval_top_k: int = Field(
+        default=5,
+        validation_alias="PLATFORM_AI_RETRIEVAL_TOP_K",
+    )
+
+    # Chat history
+    history_window_size: int = Field(
+        default=10,
+        validation_alias="PLATFORM_AI_HISTORY_WINDOW_SIZE",
+    )
+    max_history_length: int = Field(
+        default=100,
+        validation_alias="PLATFORM_AI_MAX_HISTORY_LENGTH",
+    )
+    message_retention: int = Field(
+        default=86400,
+        validation_alias="PLATFORM_AI_MESSAGE_RETENTION",
+    )
+    chunk_size: int = Field(
+        default=1000,
+        validation_alias="PLATFORM_AI_CHUNK_SIZE",
+    )
+    chunk_overlap: int = Field(
+        default=200,
+        validation_alias="PLATFORM_AI_CHUNK_OVERLAP",
+    )
+
+    @field_validator("openai_api_key", "chat_model", "embedding_model", mode="before")
     @classmethod
-    def normalize_openai_api_key(cls, value: str | None) -> str | None:
+    def normalize_optional_ai_strings(cls, value: str | None) -> str | None:
         return _strip_optional_string(value)
-
-
-class AIConfig(PydanticStrictBaseModel):
-    openai_api_key: str | None = None
-    chromadb_config: ChromaDBConfig = Field(default_factory=ChromaDBConfig)
-    performance: AIPerformanceConfig = Field(default_factory=AIPerformanceConfig)
-    cache: AICacheConfig = Field(default_factory=AICacheConfig)
-    vector_store: AIVectorStoreConfig = Field(default_factory=AIVectorStoreConfig)
-    chat: AIChatConfig = Field(default_factory=AIChatConfig)
 
 
 class HostingConfig(PlatformSectionSettings):
     domain: str = Field(validation_alias="PLATFORM_DOMAIN")
     ssl: bool = Field(default=False, validation_alias="PLATFORM_SSL")
+    cookie_secure: bool | None = Field(
+        default=None,
+        validation_alias="PLATFORM_COOKIE_SECURE",
+    )
     port: int = Field(default=8000, validation_alias="PLATFORM_PORT")
+    # Number of trusted reverse proxies in front of the app.
+    # Set to 1 when running behind a single nginx/load-balancer.
+    # Used to correctly resolve the real client IP from X-Forwarded-For.
+    trusted_proxy_count: int = Field(
+        default=0,
+        validation_alias="PLATFORM_TRUSTED_PROXY_COUNT",
+    )
     allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=list,
         validation_alias="PLATFORM_ALLOWED_ORIGINS",
@@ -280,6 +303,12 @@ class HostingConfig(PlatformSectionSettings):
 
         return self
 
+    def cookies_use_secure_transport(self) -> bool:
+        if self.cookie_secure is not None:
+            return self.cookie_secure
+
+        return self.ssl
+
 
 class MailingConfig(PlatformSectionSettings):
     resend_api_key: str | None = Field(
@@ -312,6 +341,9 @@ class DatabaseConfig(PlatformSectionSettings):
         if not stripped:
             raise ValueError("PLATFORM_SQL_CONNECTION_STRING must not be empty")
 
+        if stripped.startswith("sqlite"):
+            return stripped
+
         _POSTGRES_DSN.validate_python(stripped)
         return stripped
 
@@ -335,58 +367,28 @@ class RedisConfig(PlatformSectionSettings):
         return stripped
 
 
-class InternalStripeConfig(PlatformSectionSettings):
-    stripe_secret_key: str | None = Field(
+class GoogleOAuthConfig(PlatformSectionSettings):
+    client_id: str | None = Field(
         default=None,
-        validation_alias="PLATFORM_STRIPE_SECRET_KEY",
+        validation_alias="PLATFORM_GOOGLE_CLIENT_ID",
     )
-    stripe_publishable_key: str | None = Field(
+    client_secret: str | None = Field(
         default=None,
-        validation_alias="PLATFORM_STRIPE_PUBLISHABLE_KEY",
+        validation_alias="PLATFORM_GOOGLE_CLIENT_SECRET",
     )
-    stripe_webhook_standard_secret: str | None = Field(
+    # Explicit redirect URI registered in Google Cloud Console.
+    # Must be set to the exact URL Google will redirect to after consent,
+    # e.g. "http://localhost:1338/api/v1/auth/google/callback".
+    # When omitted the backend tries to construct it from PLATFORM_DOMAIN /
+    # PLATFORM_PORT / PLATFORM_SSL, but an explicit value is more reliable.
+    redirect_uri: str | None = Field(
         default=None,
-        validation_alias="PLATFORM_STRIPE_WEBHOOK_STANDARD_SECRET",
-    )
-    stripe_webhook_connect_secret: str | None = Field(
-        default=None,
-        validation_alias="PLATFORM_STRIPE_WEBHOOK_CONNECT_SECRET",
-    )
-    stripe_client_id: str | None = Field(
-        default=None,
-        validation_alias="PLATFORM_STRIPE_CLIENT_ID",
+        validation_alias="PLATFORM_GOOGLE_REDIRECT_URI",
     )
 
-    @field_validator(
-        "stripe_secret_key",
-        "stripe_publishable_key",
-        "stripe_webhook_standard_secret",
-        "stripe_webhook_connect_secret",
-        "stripe_client_id",
-        mode="before",
-    )
+    @field_validator("client_id", "client_secret", "redirect_uri", mode="before")
     @classmethod
-    def normalize_optional_secret_fields(cls, value: str | None) -> str | None:
-        return _strip_optional_string(value)
-
-
-class InternalPaymentsConfig(PydanticStrictBaseModel):
-    stripe: InternalStripeConfig = Field(default_factory=InternalStripeConfig)
-
-
-class PlatformMetadataConfig(PlatformSectionSettings):
-    contact_email: EmailStr = Field(validation_alias="PLATFORM_CONTACT_EMAIL")
-
-
-class InternalConfig(PlatformSectionSettings):
-    cloud_internal_key: str | None = Field(
-        default=None,
-        validation_alias="CLOUD_INTERNAL_KEY",
-    )
-
-    @field_validator("cloud_internal_key", mode="before")
-    @classmethod
-    def normalize_cloud_internal_key(cls, value: str | None) -> str | None:
+    def normalize_optional_strings(cls, value: str | None) -> str | None:
         return _strip_optional_string(value)
 
 
@@ -408,7 +410,7 @@ class BootstrapConfig(PlatformSectionSettings):
 
 class Judge0Config(PlatformSectionSettings):
     base_url: str = Field(
-        default="http://judge0_server:2358",
+        default="http://judge0-server:2358",
         validation_alias="JUDGE0_URL",
     )
 
@@ -426,29 +428,16 @@ class Judge0Config(PlatformSectionSettings):
 
 
 class PlatformConfig(PydanticStrictBaseModel):
-    contact_email: str
     general_config: GeneralConfig
     hosting_config: HostingConfig
     database_config: DatabaseConfig
     redis_config: RedisConfig
     security_config: SecurityConfig
-    rbac_config: RBACConfig
     ai_config: AIConfig
     mailing_config: MailingConfig
-    payments_config: InternalPaymentsConfig
 
     @model_validator(mode="after")
     def validate_security_posture(self) -> "PlatformConfig":
-        secret = self.security_config.auth_jwt_secret_key.strip().lower()
-        if (
-            not self.general_config.development_mode
-            and secret in _INSECURE_DEFAULT_SECRETS
-        ):
-            raise ValueError(
-                "PLATFORM_AUTH_JWT_SECRET_KEY uses an insecure default. "
-                "Set a strong secret before running in non-development mode."
-            )
-
         return self
 
 
@@ -457,35 +446,24 @@ class IntegrationsConfig(PydanticStrictBaseModel):
 
 
 class AppSettings(PlatformConfig):
-    internal: InternalConfig = Field(default_factory=InternalConfig)
     bootstrap: BootstrapConfig = Field(default_factory=BootstrapConfig)
     integrations: IntegrationsConfig = Field(default_factory=IntegrationsConfig)
+    google_oauth: GoogleOAuthConfig = Field(default_factory=GoogleOAuthConfig)
 
 
 @lru_cache(maxsize=1)
 def get_settings() -> AppSettings:
-    metadata = PlatformMetadataConfig()
     return AppSettings(
-        contact_email=str(metadata.contact_email),
         general_config=GeneralConfig(),
         hosting_config=HostingConfig(),
         database_config=DatabaseConfig(),
         redis_config=RedisConfig(),
         security_config=SecurityConfig(),
-        rbac_config=RBACConfig(),
-        ai_config=AIConfig(
-            openai_api_key=AIRootConfig().openai_api_key,
-            chromadb_config=ChromaDBConfig(),
-            performance=AIPerformanceConfig(),
-            cache=AICacheConfig(),
-            vector_store=AIVectorStoreConfig(),
-            chat=AIChatConfig(),
-        ),
+        ai_config=AIConfig(),
         mailing_config=MailingConfig(),
-        payments_config=InternalPaymentsConfig(stripe=InternalStripeConfig()),
-        internal=InternalConfig(),
         bootstrap=BootstrapConfig(),
         integrations=IntegrationsConfig(judge0=Judge0Config()),
+        google_oauth=GoogleOAuthConfig(),
     )
 
 

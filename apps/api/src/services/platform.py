@@ -6,9 +6,7 @@ from src.db.platform import Platform
 
 
 def get_platform(db_session: Session) -> Platform:
-    platform = db_session.exec(
-        select(Platform).order_by(Platform.creation_date.asc())
-    ).first()
+    platform = db_session.exec(select(Platform)).first()
     if not platform:
         raise RuntimeError("Platform not found. Run the install/bootstrap flow first.")
     return platform

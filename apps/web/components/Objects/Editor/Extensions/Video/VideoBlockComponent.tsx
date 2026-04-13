@@ -2,7 +2,6 @@
 
 import { AlertCircle, ArrowLeftRight, CheckCircle2, Download, Expand, Loader2, Upload, Video, X } from 'lucide-react';
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import ArtPlayer from '@components/Objects/Activities/Video/Artplayer';
 import { getActivityBlockMediaDirectory } from '@services/media/media';
 import { usePlatform } from '@/components/Contexts/PlatformContext';
@@ -82,7 +81,6 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
     { html: t('subtitles.kazakh'), url: '/subtitle.kz.srt' },
   ];
   const editorState = useEditorProvider();
-  const session = usePlatformSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadZoneRef = useRef<HTMLDivElement>(null);
 
@@ -100,7 +98,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const uploadResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [blockObject, setBlockObject] = useState<VideoBlockObject | null>(initialBlockObject || null);
+  const [blockObject, setBlockObject] = useState(initialBlockObject || null);
   const [selectedSize, setSelectedSize] = useState<VideoSize>(initialBlockObject?.size || 'medium');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -117,7 +115,6 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
   }, [selectedSize, blockObject, updateAttributes]);
 
   const isEditable = editorState?.isEditable;
-  const access_token = session?.data?.tokens?.access_token;
   const fileId = blockObject ? `${blockObject.content.file_id}.${blockObject.content.file_format}` : null;
 
   const handleVideoChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -164,8 +161,6 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleUpload = async (file: File) => {
-    if (!access_token) return;
-
     try {
       setIsLoading(true);
       setError(null);
@@ -181,7 +176,6 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
       const object = await uploadNewVideoFile(
         file,
         extension.options.activity.activity_uuid,
-        access_token,
         course?.courseStructure.course_uuid,
         tempBlockUuid,
       );
@@ -215,7 +209,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
         setUploadProgress(0);
       }, 1000);
     } catch (error: any) {
-      console.error('Upload failed', error);
+      console.error(t('errorUpload'), error);
       setError(error?.message || t('errorUpload'));
     } finally {
       if (progressIntervalRef.current) {
@@ -254,13 +248,13 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
 
   const videoUrl =
     blockObject && course?.courseStructure.course_uuid
-      ? getActivityBlockMediaDirectory(
-          course.courseStructure.course_uuid,
-          extension.options.activity.activity_uuid,
-          blockObject.block_uuid,
-          fileId || '',
-          'videoBlock',
-        )
+      ? getActivityBlockMediaDirectory({
+          courseId: course.courseStructure.course_uuid,
+          activityId: extension.options.activity.activity_uuid,
+          blockId: blockObject.block_uuid,
+          fileId: fileId || '',
+          type: 'videoBlock',
+        })
       : null;
 
   const handleDownload = () => {
@@ -370,7 +364,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="flex flex-col space-y-4 rounded-lg px-5 py-6 [transition:all_0.2s_ease] bg-[#f9f9f9] border border-[#eaeaea]">
+        <div className="bg-muted border-border flex flex-col space-y-4 rounded-lg border px-5 py-6 [transition:all_0.2s_ease]">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-zinc-500">
               <Video size={16} />
@@ -501,7 +495,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
                 </motion.button>
               </div>
 
-              <div className="flex justify-center items-center w-full">
+              <div className="flex w-full items-center justify-center">
                 <div
                   style={{
                     maxWidth:

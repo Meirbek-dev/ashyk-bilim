@@ -1,38 +1,30 @@
 'use client';
 
 import { Award, Building, Calendar, ExternalLink, Hash } from 'lucide-react';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { getAPIUrl, getAbsoluteUrl } from '@services/config/config';
+import { getAbsoluteUrl } from '@services/config/config';
 import { useFormatter, useTranslations } from 'next-intl';
-import { swrFetcher } from '@services/utils/ts/requests';
+import { useUserCertificates } from '@/features/certifications/hooks/useCertifications';
 import Link from '@components/ui/AppLink';
 import type React from 'react';
-import useSWR from 'swr';
 
 const UserCertificates: React.FC = () => {
-  const session = usePlatformSession();
-  const access_token = session?.data?.tokens?.access_token;
   const format = useFormatter();
   const t = useTranslations('Certificates.UserCertificates');
 
-  const {
-    data: certificates,
-    error,
-    isLoading,
-  } = useSWR(access_token ? `${getAPIUrl()}certifications/user/all` : null, (url) => swrFetcher(url, access_token));
+  const { data: certificates, error, isLoading } = useUserCertificates();
 
   if (isLoading) {
     return (
-      <div className="rounded-xl bg-white p-6 shadow-sm">
-        <div className="mb-4 flex items-center space-x-3">
-          <Award className="h-6 w-6 text-yellow-500" />
-          <h2 className="text-xl font-semibold text-gray-900">{t('myCertificates')}</h2>
+      <div className="border-border bg-card text-card-foreground rounded-xl border p-6 shadow-sm">
+        <div className="mb-4 flex items-center gap-3">
+          <Award className="text-primary h-6 w-6" />
+          <h2 className="text-foreground text-xl font-semibold">{t('myCertificates')}</h2>
         </div>
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-20 rounded-lg bg-gray-100"
+              className="bg-muted h-20 rounded-lg"
             />
           ))}
         </div>
@@ -42,13 +34,13 @@ const UserCertificates: React.FC = () => {
 
   if (error) {
     return (
-      <div className="rounded-xl bg-white p-6 shadow-sm">
-        <div className="mb-4 flex items-center space-x-3">
-          <Award className="h-6 w-6 text-yellow-500" />
-          <h2 className="text-xl font-semibold text-gray-900">{t('myCertificates')}</h2>
+      <div className="border-border bg-card text-card-foreground rounded-xl border p-6 shadow-sm">
+        <div className="mb-4 flex items-center gap-3">
+          <Award className="text-primary h-6 w-6" />
+          <h2 className="text-foreground text-xl font-semibold">{t('myCertificates')}</h2>
         </div>
         <div className="py-8 text-center">
-          <p className="text-gray-500">{t('failedToLoadCertificates')}</p>
+          <p className="text-muted-foreground">{t('failedToLoadCertificates')}</p>
         </div>
       </div>
     );
@@ -59,26 +51,26 @@ const UserCertificates: React.FC = () => {
 
   if (!certificatesData || certificatesData.length === 0) {
     return (
-      <div className="rounded-xl bg-white p-6 shadow-sm">
-        <div className="mb-4 flex items-center space-x-3">
-          <Award className="h-6 w-6 text-yellow-500" />
-          <h2 className="text-xl font-semibold text-gray-900">{t('myCertificates')}</h2>
+      <div className="border-border bg-card text-card-foreground rounded-xl border p-6 shadow-sm">
+        <div className="mb-4 flex items-center gap-3">
+          <Award className="text-primary h-6 w-6" />
+          <h2 className="text-foreground text-xl font-semibold">{t('myCertificates')}</h2>
         </div>
         <div className="py-8 text-center">
-          <Award className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-          <p className="text-gray-500">{t('noCertificatesEarned')}</p>
-          <p className="mt-1 text-sm text-gray-400">{t('completeCoursesToEarn')}</p>
+          <Award className="text-muted-foreground/40 mx-auto mb-3 h-12 w-12" />
+          <p className="text-muted-foreground">{t('noCertificatesEarned')}</p>
+          <p className="text-muted-foreground mt-1 text-sm">{t('completeCoursesToEarn')}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl bg-white p-6 shadow-sm">
-      <div className="mb-6 flex items-center space-x-3">
-        <Award className="h-6 w-6 text-yellow-500" />
-        <h2 className="text-xl font-semibold text-gray-900">{t('myCertificates')}</h2>
-        <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+    <div className="p-2">
+      <div className="mb-6 flex items-center gap-3">
+        <Award className="text-primary h-6 w-6" />
+        <h2 className="text-foreground text-xl font-semibold">{t('myCertificates')}</h2>
+        <span className="bg-secondary text-secondary-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
           {certificatesData.length}
         </span>
       </div>
@@ -99,39 +91,39 @@ const UserCertificates: React.FC = () => {
           return (
             <div
               key={certificate.certificate_user.user_certification_uuid}
-              className="rounded-lg border border-gray-200 p-4 transition-shadow hover:shadow-md"
+              className="border-border rounded-lg border p-4 transition-shadow hover:shadow-md"
             >
               <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Award className="h-4 w-4 text-yellow-500" />
-                  <h3 className="truncate text-sm font-semibold text-gray-900">
+                <div className="flex items-center gap-2">
+                  <Award className="text-primary h-4 w-4" />
+                  <h3 className="text-foreground truncate text-sm font-semibold">
                     {certificate.certification.config.certification_name}
                   </h3>
                 </div>
 
-                <div className="space-y-2 text-xs text-gray-600">
-                  <div className="flex items-center space-x-2">
+                <div className="text-muted-foreground space-y-2 text-xs">
+                  <div className="flex items-center gap-2">
                     <Building className="h-3 w-3" />
                     <span className="truncate">{certificate.course.name}</span>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
                     <span>
                       {t('awardedOn')} {awardedDate}
                     </span>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <Hash className="h-3 w-3" />
-                    <span className="truncate rounded bg-gray-100 px-2 py-1 font-mono text-xs">
+                    <span className="bg-muted text-foreground truncate rounded px-2 py-1 font-mono text-xs">
                       {certificate.certificate_user.user_certification_uuid}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-gray-100 pt-2">
-                  <div className="text-xs text-gray-500 capitalize">
+                <div className="border-border flex items-center justify-between border-t pt-2">
+                  <div className="text-muted-foreground text-xs capitalize">
                     {certificate.certification.config.certification_type.replace('_', ' ')}
                   </div>
                   <Link
@@ -139,7 +131,7 @@ const UserCertificates: React.FC = () => {
                     href={verificationLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+                    className="text-primary hover:text-primary/80 inline-flex items-center gap-1 text-xs font-medium"
                   >
                     <span>{t('verifyCertificate')}</span>
                     <ExternalLink className="h-3 w-3" />

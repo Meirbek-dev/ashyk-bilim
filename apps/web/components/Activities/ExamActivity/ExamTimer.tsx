@@ -4,6 +4,26 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Clock } from 'lucide-react';
 
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const getTimerColor = (seconds: number | null): string => {
+  if (seconds === null) return 'text-blue-900';
+  if (seconds <= 60) return 'text-red-600';
+  if (seconds <= 300) return 'text-orange-600';
+  return 'text-blue-900';
+};
+
+const getTimerBgColor = (seconds: number | null): string => {
+  if (seconds === null) return 'bg-gradient-to-br from-blue-50 to-blue-100';
+  if (seconds <= 60) return 'bg-gradient-to-br from-red-50 to-red-100';
+  if (seconds <= 300) return 'bg-gradient-to-br from-orange-50 to-orange-100';
+  return 'bg-gradient-to-br from-blue-50 to-blue-100';
+};
+
 interface ExamTimerProps {
   startedAt: string;
   timeLimitMinutes?: number | null;
@@ -47,26 +67,6 @@ export default function ExamTimer({ startedAt, timeLimitMinutes, onExpire, class
   }, [startedAt, timeLimitMinutes, onExpire]);
 
   if (remaining === null) return null;
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const getTimerColor = (seconds: number | null) => {
-    if (seconds === null) return 'text-blue-900';
-    if (seconds <= 60) return 'text-red-600';
-    if (seconds <= 300) return 'text-orange-600';
-    return 'text-blue-900';
-  };
-
-  const getTimerBgColor = (seconds: number | null) => {
-    if (seconds === null) return 'bg-gradient-to-br from-blue-50 to-blue-100';
-    if (seconds <= 60) return 'bg-gradient-to-br from-red-50 to-red-100';
-    if (seconds <= 300) return 'bg-gradient-to-br from-orange-50 to-orange-100';
-    return 'bg-gradient-to-br from-blue-50 to-blue-100';
-  };
 
   return (
     <div

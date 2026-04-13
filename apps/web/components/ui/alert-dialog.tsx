@@ -16,33 +16,10 @@ function AlertDialog({ ...props }: AlertDialogPrimitive.Root.Props) {
   );
 }
 
-function AlertDialogTrigger({ nativeButton, ...props }: AlertDialogPrimitive.Trigger.Props) {
-  // If the caller explicitly provides `nativeButton`, honor it. Otherwise,
-  // attempt to detect whether the `render` prop or `children` is a native
-  // <button> element (string type === 'button') or a local `Button` component.
-  const renderProp = props.render ?? props.children;
-  const isNativeRenderButton =
-    React.isValidElement(renderProp) && typeof renderProp.type === 'string' && renderProp.type === 'button';
-  const isLocalButtonComponent = React.isValidElement(renderProp) && renderProp.type === Button;
-
-  // Honor explicit prop; otherwise only set nativeButton when the render
-  // element is a raw native <button>. Do NOT auto-enable it for our local
-  // `Button` component (that would cause nested <button> elements).
-  const computedNativeButton = nativeButton ?? isNativeRenderButton;
-
-  // If the trigger's children is our local `Button` component and the caller
-  // didn't provide a `render` prop, explicitly use a non-button wrapper
-  // element (a <div>) for the trigger. This prevents the primitive from
-  // rendering an outer native <button> around the inner native <button>.
-  const shouldProvideNonButtonWrapper = isLocalButtonComponent && !props.render;
-  const renderWrapper = shouldProvideNonButtonWrapper ? <div data-slot="alert-dialog-trigger" /> : props.render;
-
+function AlertDialogTrigger({ ...props }: AlertDialogPrimitive.Trigger.Props) {
   return (
     <AlertDialogPrimitive.Trigger
-      // Provide a non-button wrapper when appropriate to avoid nested buttons
-      {...(shouldProvideNonButtonWrapper ? { render: renderWrapper } : {})}
       data-slot="alert-dialog-trigger"
-      nativeButton={computedNativeButton}
       {...props}
     />
   );
@@ -62,7 +39,7 @@ function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.Backdr
     <AlertDialogPrimitive.Backdrop
       data-slot="alert-dialog-overlay"
       className={cn(
-        'data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs fixed inset-0 isolate z-50',
+        'fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
         className,
       )}
       {...props}
@@ -80,35 +57,11 @@ function AlertDialogContent({
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
-      {/*
-        Full-screen invisible close target placed between the backdrop and the popup.
-        This captures outside clicks and closes the AlertDialog (uses Radix/Primitive Close).
-        Use nativeButton so Base UI doesn't show a runtime warning about render types.
-      */}
-      <AlertDialogPrimitive.Close
-        data-slot="alert-dialog-outside-close"
-        // Our local button is native, so set nativeButton to true to avoid mismatch warnings.
-        nativeButton
-        // Render a full-screen button that captures clicks but does not receive focus.
-        // Prevent focus on mousedown so assistive tech won't be exposed to a focused
-        // element that may be hidden from AT. No `aria-hidden` on interactive elements.
-        render={
-          <button
-            type="button"
-            tabIndex={-1}
-            onMouseDown={(e) => {
-              // Prevent the browser from moving focus to this element when clicked
-              e.preventDefault();
-            }}
-            className="absolute inset-0 z-50"
-          />
-        }
-      />
       <AlertDialogPrimitive.Popup
         data-slot="alert-dialog-content"
         data-size={size}
         className={cn(
-          'data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 bg-background ring-foreground/10 gap-6 rounded-xl p-6 ring-1 duration-100 data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-lg group/alert-dialog-content fixed top-1/2 start-1/2 z-50 grid w-full -translate-x-1/2 rtl:translate-x-1/2 -translate-y-1/2 outline-none',
+          'group/alert-dialog-content fixed top-1/2 start-1/2 z-50 grid w-full -translate-x-1/2 rtl:translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
           className,
         )}
         {...props}
@@ -122,7 +75,7 @@ function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>)
     <div
       data-slot="alert-dialog-header"
       className={cn(
-        'grid grid-rows-[auto_1fr] place-items-center gap-1.5 text-center has-data-[slot=alert-dialog-media]:grid-rows-[auto_auto_1fr] has-data-[slot=alert-dialog-media]:gap-x-6 sm:group-data-[size=default]/alert-dialog-content:place-items-start sm:group-data-[size=default]/alert-dialog-content:text-start sm:group-data-[size=default]/alert-dialog-content:has-data-[slot=alert-dialog-media]:grid-rows-[auto_1fr]',
+        'grid grid-rows-[auto_1fr] place-items-center gap-1.5 text-center has-data-[slot=alert-dialog-media]:grid-rows-[auto_auto_1fr] has-data-[slot=alert-dialog-media]:gap-x-4 sm:group-data-[size=default]/alert-dialog-content:place-items-start sm:group-data-[size=default]/alert-dialog-content:text-start sm:group-data-[size=default]/alert-dialog-content:has-data-[slot=alert-dialog-media]:grid-rows-[auto_1fr]',
         className,
       )}
       {...props}
@@ -135,7 +88,7 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<'div'>)
     <div
       data-slot="alert-dialog-footer"
       className={cn(
-        'flex flex-col-reverse gap-2 group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:justify-end',
+        '-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:justify-end',
         className,
       )}
       {...props}
@@ -148,7 +101,7 @@ function AlertDialogMedia({ className, ...props }: React.ComponentProps<'div'>) 
     <div
       data-slot="alert-dialog-media"
       className={cn(
-        "bg-muted mb-2 inline-flex size-16 items-center justify-center rounded-md sm:group-data-[size=default]/alert-dialog-content:row-span-2 *:[svg:not([class*='size-'])]:size-8",
+        "mb-2 inline-flex size-10 items-center justify-center rounded-md bg-muted sm:group-data-[size=default]/alert-dialog-content:row-span-2 *:[svg:not([class*='size-'])]:size-6",
         className,
       )}
       {...props}
@@ -161,7 +114,7 @@ function AlertDialogTitle({ className, ...props }: React.ComponentProps<typeof A
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
       className={cn(
-        'text-lg font-medium sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2',
+        'text-base font-medium sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2',
         className,
       )}
       {...props}
@@ -177,7 +130,7 @@ function AlertDialogDescription({
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
       className={cn(
-        'text-muted-foreground *:[a]:hover:text-foreground text-sm text-balance md:text-pretty *:[a]:underline *:[a]:underline-offset-3',
+        'text-sm text-balance text-muted-foreground md:text-pretty *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground',
         className,
       )}
       {...props}
@@ -208,9 +161,6 @@ function AlertDialogCancel({
   return (
     <AlertDialogPrimitive.Close
       data-slot="alert-dialog-cancel"
-      // Our local `Button` returns a native <button> element. Set
-      // `nativeButton={true}` so Base UI does not emit a mismatch warning.
-      nativeButton
       className={cn(className)}
       render={
         <Button
@@ -224,6 +174,7 @@ function AlertDialogCancel({
     />
   );
 }
+
 export {
   AlertDialog,
   AlertDialogAction,

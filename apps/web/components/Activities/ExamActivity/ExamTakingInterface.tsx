@@ -1,5 +1,7 @@
 'use client';
 
+import { apiFetch } from '@/lib/api-client';
+
 import { createInitialTakingState, examTakingReducer } from './state/examTakingReducer';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useExamPersistence } from '@/hooks/useExamPersistence';
@@ -24,7 +26,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp
 import type { AttemptData, ExamData, QuestionData } from './state/examFlowReducer';
 import { RadioGroup, RadioGroupItem } from '@components/ui/radio-group';
 import { Alert, AlertDescription } from '@components/ui/alert';
-import { getAPIUrl } from '@/services/config/config';
 import { useTestGuard } from '@/hooks/useTestGuard';
 import { Progress } from '@components/ui/progress';
 import { Checkbox } from '@components/ui/checkbox';
@@ -35,20 +36,13 @@ interface ExamTakingInterfaceProps {
   exam: ExamData;
   questions: QuestionData[];
   attempt: AttemptData;
-  accessToken: string;
   onComplete: () => void;
 }
 
-export default function ExamTakingInterface({
-  exam,
-  questions,
-  attempt,
-  accessToken,
-  onComplete,
-}: ExamTakingInterfaceProps) {
+export default function ExamTakingInterface({ exam, questions, attempt, onComplete }: ExamTakingInterfaceProps) {
   const t = useTranslations('Activities.ExamActivity');
 
-  // Centralized state management with reducer
+  // Centralized state management with reducer,
   const [state, dispatch] = useReducer(
     examTakingReducer,
     createInitialTakingState(0, {}, attempt.violations?.length || 0),
@@ -58,13 +52,13 @@ export default function ExamTakingInterface({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const examContainerRef = useRef<HTMLDivElement>(null);
 
-  // Answer persistence with auto-save and recovery
+  // Answer persistence with auto-save and recovery,
   const persistence = useExamPersistence({
     attemptUuid: attempt.attempt_uuid,
-    autoSaveInterval: 5000, // Auto-save every 5 seconds
+    autoSaveInterval: 5000, // Auto-save every 5 seconds,
     expirationHours: 24,
     onRestore: (recoveredAnswers) => {
-      // Offer recovery on mount if no current answers and we have recovered data
+      // Offer recovery on mount if no current answers and we have recovered data,
       const currentAnswers =
         state.mode === 'answering' ||
         state.mode === 'confirming-submit' ||
@@ -83,7 +77,7 @@ export default function ExamTakingInterface({
     .map((id) => questions.find((q) => q.id === id))
     .filter(Boolean) as QuestionData[];
 
-  // Extract current state
+  // Extract current state,
   const currentIndex = state.mode === 'submitting' ? 0 : state.currentIndex;
   const answers = state.mode === 'submitting' ? state.answers : state.mode === 'recovery-prompt' ? {} : state.answers;
   const isSubmitting = state.mode === 'submitting';
@@ -104,12 +98,9 @@ export default function ExamTakingInterface({
 
       try {
         const submitAnswers = state.mode === 'confirming-submit' ? state.answers : {};
-        const response = await fetch(`${getAPIUrl()}exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/submit`, {
+        const response = await apiFetch(`exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/submit`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(submitAnswers),
         });
 
@@ -117,7 +108,7 @@ export default function ExamTakingInterface({
           throw new Error('Failed to submit exam');
         }
 
-        // Clear saved answers on successful submission
+        // Clear saved answers on successful submission,
         persistence.clearSavedAnswers();
 
         toast.success(t('examSubmittedSuccessfully'));
@@ -128,29 +119,26 @@ export default function ExamTakingInterface({
         dispatch({ type: 'RESET_TO_ANSWERING' });
       }
     },
-    [state, accessToken, exam.exam_uuid, attempt.attempt_uuid, onComplete, t, persistence],
+    [state, exam.exam_uuid, attempt.attempt_uuid, onComplete, t, persistence],
   );
 
-  // Anti-cheating with useTestGuard
+  // Anti-cheating with useTestGuard,
   const handleViolation = useCallback(
     async (type: string, count: number) => {
       dispatch({ type: 'RECORD_VIOLATION', violation: { type, count } });
 
-      // Record violation on server
+      // Record violation on server,
       try {
-        await fetch(`${getAPIUrl()}exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/violations`, {
+        await apiFetch(`exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/violations`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type }),
         });
 
-        // Check if threshold reached
+        // Check if threshold reached,
         const threshold = settings.violation_threshold;
         if (threshold && count >= threshold) {
-          // Auto-submit on threshold
+          // Auto-submit on threshold,
           toast.error(t('autoSubmitting', { reason: t('autoSubmittingReason.violationThresholdExceeded') }));
           void handleSubmit(true);
         }
@@ -158,7 +146,7 @@ export default function ExamTakingInterface({
         console.error('Failed to record violation:', error);
       }
     },
-    [accessToken, exam.exam_uuid, attempt.attempt_uuid, settings.violation_threshold, handleSubmit, t],
+    [exam.exam_uuid, attempt.attempt_uuid, settings.violation_threshold, handleSubmit, t],
   );
 
   useTestGuard({
@@ -168,17 +156,17 @@ export default function ExamTakingInterface({
     trackBlur: settings.tab_switch_detection,
     trackDevTools: settings.devtools_detection,
     maxViolations: settings.violation_threshold || 999,
-    // Wrap the async handler to avoid passing a Promise-returning function to the hook
+    // Wrap the async handler to avoid passing a Promise-returning function to the hook,
     onViolation: (type, count) => {
       void handleViolation(type, count);
     },
-    // Debounce options to reduce false positives
+    // Debounce options to reduce false positives,
     blurDebounceMs: 500, // Wait 500ms before reporting blur (user might switch back quickly)
-    devToolsThreshold: 180, // More conservative threshold for DevTools detection
+    devToolsThreshold: 180, // More conservative threshold for DevTools detection,
     devToolsCheckIntervalMs: 2000, // Check less frequently to avoid performance impact
   });
 
-  // Fullscreen enforcement with grace period and better UX
+  // Fullscreen enforcement with grace period and better UX,
   useEffect(() => {
     if (!settings.fullscreen_enforcement) return;
 
@@ -197,11 +185,11 @@ export default function ExamTakingInterface({
         console.warn('Fullscreen request failed:', error);
         fullscreenSupported = false;
 
-        // Show warning but don't penalize if browser doesn't support fullscreen
+        // Show warning but don't penalize if browser doesn't support fullscreen,
         if (error.name === 'TypeError' || error.message?.includes('not supported')) {
           toast.warning(t('fullscreenNotSupported'));
         } else {
-          // User denied or other error - show message but allow exam to continue
+          // User denied or other error - show message but allow exam to continue,
           toast.info(t('fullscreenRecommended'));
         }
       }
@@ -212,32 +200,32 @@ export default function ExamTakingInterface({
       setIsFullscreen(inFullscreen);
 
       if (!inFullscreen && settings.fullscreen_enforcement && fullscreenSupported) {
-        // Clear any existing timeout
+        // Clear any existing timeout,
         if (fullscreenExitTimeout) {
           clearTimeout(fullscreenExitTimeout);
         }
 
-        // Grace period: give user 3 seconds to return to fullscreen before reporting violation
+        // Grace period: give user 3 seconds to return to fullscreen before reporting violation,
         fullscreenExitTimeout = setTimeout(() => {
-          // Only report if still not in fullscreen after grace period
+          // Only report if still not in fullscreen after grace period,
           if (!document.fullscreenElement && !userInitiatedExit) {
             toast.warning(t('fullscreenExited'));
             void handleViolation('FULLSCREEN_EXIT', state.violationCount + 1);
 
-            // Optionally try to re-enter fullscreen
+            // Optionally try to re-enter fullscreen,
             if (settings.fullscreen_enforcement) {
               void requestFullscreen();
             }
           }
         }, 3000); // 3 second grace period
       } else if (inFullscreen && fullscreenExitTimeout) {
-        // User returned to fullscreen within grace period - cancel violation
+        // User returned to fullscreen within grace period - cancel violation,
         clearTimeout(fullscreenExitTimeout);
         fullscreenExitTimeout = null;
       }
     };
 
-    // Request fullscreen on mount
+    // Request fullscreen on mount,
     void requestFullscreen();
     document.addEventListener('fullscreenchange', handleFullscreenChange);
 
@@ -258,7 +246,7 @@ export default function ExamTakingInterface({
 
   const handleAnswerChange = (questionId: number, answer: any) => {
     dispatch({ type: 'ANSWER_QUESTION', questionId, answer });
-    // Persist answers to localStorage
+    // Persist answers to localStorage,
     const currentAnswers =
       state.mode === 'answering' || state.mode === 'violation-warning' || state.mode === 'fullscreen-warning'
         ? state.answers
@@ -299,7 +287,7 @@ export default function ExamTakingInterface({
             {question.answer_options.map((option, index) => (
               <div
                 key={index}
-                className="flex items-center space-x-3 rounded-lg border border-gray-200 p-4 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                className="border-border hover:bg-muted flex items-center space-x-3 rounded-lg border p-4 transition-colors hover:border-gray-300"
               >
                 <RadioGroupItem
                   value={index.toString()}
@@ -328,7 +316,7 @@ export default function ExamTakingInterface({
             {question.answer_options.map((option, index) => (
               <div
                 key={index}
-                className="flex items-center space-x-3 rounded-lg border border-gray-200 p-4 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                className="border-border hover:bg-muted flex items-center space-x-3 rounded-lg border p-4 transition-colors hover:border-gray-300"
               >
                 <Checkbox
                   id={`q${questionId}-${index}`}
@@ -357,11 +345,14 @@ export default function ExamTakingInterface({
         return (
           <div className="space-y-3">
             {question.answer_options.map((option, index) => {
-              const matchOptions = question.answer_options.map((opt) => ({ value: opt.right ?? '', label: opt.right }));
+              const matchOptions = question.answer_options.map((opt) => ({
+                value: opt.right ?? '',
+                label: opt.right,
+              }));
               return (
                 <div
                   key={index}
-                  className="flex items-center gap-4 rounded-lg border border-gray-200 p-4"
+                  className="border-border flex items-center gap-4 rounded-lg border p-4"
                 >
                   <span className="min-w-[200px] text-base font-medium">{option.left}</span>
                   <span className="text-gray-400">→</span>
@@ -476,7 +467,10 @@ export default function ExamTakingInterface({
         aria-valuenow={Math.round(progress)}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={t('questionProgress', { current: currentIndex + 1, total: orderedQuestions.length })}
+        aria-label={t('questionProgress', {
+          current: currentIndex + 1,
+          total: orderedQuestions.length,
+        })}
       />
 
       {/* Violation Warning */}
@@ -583,12 +577,12 @@ export default function ExamTakingInterface({
                   {t('questionNumber', { number: currentIndex + 1 })}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-normal text-gray-500">
+                  <span className="text-muted-foreground text-sm font-normal">
                     {t('points', { count: currentQuestion?.points ?? 0 })}
                   </span>
                 </div>
               </CardTitle>
-              <CardDescription className="mt-4 text-xl leading-relaxed text-gray-900">
+              <CardDescription className="text-foreground mt-4 text-xl leading-relaxed">
                 {currentQuestion?.question_text}
               </CardDescription>
             </CardHeader>
@@ -648,7 +642,7 @@ export default function ExamTakingInterface({
                   const answered = isAnswered(question.id);
                   const current = index === currentIndex;
 
-                  let bgColor = 'bg-gray-100 hover:bg-gray-200';
+                  let bgColor = 'bg-muted hover:bg-gray-200';
                   let textColor = 'text-gray-600';
 
                   if (current) {
@@ -664,7 +658,10 @@ export default function ExamTakingInterface({
                       key={question.id}
                       onClick={() => dispatch({ type: 'NAVIGATE_TO_QUESTION', index })}
                       className={`relative flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition-colors ${bgColor} ${textColor}`}
-                      aria-label={t('questionAriaLabel', { number: index + 1, answered: answered ? 'true' : 'false' })}
+                      aria-label={t('questionAriaLabel', {
+                        number: index + 1,
+                        answered: answered ? 'true' : 'false',
+                      })}
                     >
                       {index + 1}
                     </button>
@@ -683,7 +680,7 @@ export default function ExamTakingInterface({
                   <span className="text-gray-600">{t('current')}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded bg-gray-100" />
+                  <div className="bg-muted h-4 w-4 rounded" />
                   <span className="text-gray-600">{t('unanswered')}</span>
                 </div>
               </div>
@@ -693,7 +690,7 @@ export default function ExamTakingInterface({
       </div>
 
       {/* Mobile bottom nav */}
-      <div className="fixed right-0 bottom-0 left-0 z-50 border-t bg-white lg:hidden">
+      <div className="bg-card fixed right-0 bottom-0 left-0 z-50 border-t lg:hidden">
         <div className="px-4 py-3">
           <div className="flex items-center gap-2">
             <Button
@@ -747,7 +744,7 @@ export default function ExamTakingInterface({
             <AlertDialogDescription>{t('confirmSubmissionMessage')}</AlertDialogDescription>
 
             <div className="space-y-3">
-              <div className="rounded-lg border bg-gray-50 p-4">
+              <div className="bg-muted rounded-lg border p-4">
                 <div className="grid gap-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('totalQuestions')}:</span>
@@ -765,7 +762,10 @@ export default function ExamTakingInterface({
               </div>
               {answeredCount < orderedQuestions.length && (
                 <p className="text-sm text-orange-600">
-                  ⚠️ {t('unansweredQuestionsWarning', { count: orderedQuestions.length - answeredCount })}
+                  ⚠️{' '}
+                  {t('unansweredQuestionsWarning', {
+                    count: orderedQuestions.length - answeredCount,
+                  })}
                 </p>
               )}
             </div>

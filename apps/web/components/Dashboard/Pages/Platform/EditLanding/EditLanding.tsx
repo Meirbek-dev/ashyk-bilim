@@ -19,13 +19,13 @@ import {
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import { updateLanding, uploadLandingContent } from '@/services/platform/platform';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { createElement, useEffect, useState, useTransition } from 'react';
 import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { getLandingMediaDirectory } from '@services/media/media';
-import { getCourses } from '@services/courses/courses';
+import { usePlatformCourses } from '@/features/platform/hooks/usePlatform';
 import { Textarea } from '@components/ui/textarea';
+import NextImage from '@components/ui/NextImage';
 
 import { Switch } from '@components/ui/switch';
 import { Button } from '@components/ui/button';
@@ -34,7 +34,6 @@ import { Input } from '@components/ui/input';
 import type { ChangeEvent, FC } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import useSWR from 'swr';
 
 import type {
   LandingButton,
@@ -289,8 +288,6 @@ const makeGradientDirectionItems = (t: Function) =>
 
 const EditLanding = () => {
   const platform = usePlatform() as any;
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
   const [isLandingEnabled, setIsLandingEnabled] = useState(false);
   const tNotify = useTranslations('DashPage.Notifications');
   const t = useTranslations('DashPage.PlatformSettings.Landing');
@@ -308,8 +305,8 @@ const EditLanding = () => {
 
   // Initialize landing data from platform config
   useEffect(() => {
-    if (platform?.config?.config?.landing) {
-      const landingConfig = platform.config.config.landing;
+    if (platform?.landing) {
+      const landingConfig = platform.landing;
       setLandingData({
         sections: landingConfig.sections || [],
         enabled: Boolean(landingConfig.enabled),
@@ -431,13 +428,10 @@ const EditLanding = () => {
     startTransition(() => setIsSaving(true));
     const loadingToast = toast.loading(tNotify('savingLandingPage'));
     try {
-      const res = await updateLanding(
-        {
-          sections: landingData.sections,
-          enabled: isLandingEnabled,
-        },
-        access_token,
-      );
+      const res = await updateLanding({
+        sections: landingData.sections,
+        enabled: isLandingEnabled,
+      });
 
       if (res.status === 200) {
         toast.success(tNotify('landingPageSavedSuccess'), { id: loadingToast });
@@ -895,13 +889,14 @@ const HeroSectionEditor: FC<{
               <Select
                 value={section.background.type}
                 onValueChange={(value) => {
+                  const selectedType = value || 'solid';
                   onChange({
                     ...section,
                     background: {
-                      type: value!,
-                      color: value === 'solid' ? '#ffffff' : undefined,
-                      colors: value === 'gradient' ? PREDEFINED_GRADIENTS.sunrise.colors : undefined,
-                      image: value === 'image' ? '' : undefined,
+                      type: selectedType,
+                      color: selectedType === 'solid' ? '#ffffff' : undefined,
+                      colors: selectedType === 'gradient' ? PREDEFINED_GRADIENTS.sunrise.colors : undefined,
+                      image: selectedType === 'image' ? '' : undefined,
                     },
                   });
                 }}
@@ -1200,11 +1195,13 @@ const HeroSectionEditor: FC<{
                     />
                   </div>
                   {section.background.image ? (
-                    <div className="mt-4">
-                      <img
+                    <div className="relative mt-4 h-40 w-full overflow-hidden rounded-lg">
+                      <NextImage
                         src={section.background.image}
                         alt={t('HeroEditor.Background.imagePreviewAlt')}
-                        className="max-h-40 rounded-lg object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="100vw"
                       />
                     </div>
                   ) : null}
@@ -1390,11 +1387,15 @@ const HeroSectionEditor: FC<{
                   t={t}
                 />
                 {section.illustration?.image.url ? (
-                  <img
-                    src={section.illustration?.image.url}
-                    alt={t('HeroEditor.Illustration.imagePreviewAlt')}
-                    className="h-12 object-contain"
-                  />
+                  <div className="relative h-12 w-full">
+                    <NextImage
+                      src={section.illustration?.image.url}
+                      alt={t('HeroEditor.Illustration.imagePreviewAlt')}
+                      fill
+                      className="object-contain"
+                      sizes="100vw"
+                    />
+                  </div>
                 ) : null}
               </div>
 
@@ -1511,9 +1512,6 @@ interface ImageUploaderProps {
 }
 
 const ImageUploader: FC<ImageUploaderProps> = ({ t, onImageUploaded, className, buttonText, id }) => {
-  const platform = usePlatform() as any;
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
   const [isUploading, setIsUploading] = useState(false);
   const tNotify = useTranslations('DashPage.Notifications');
   const inputId = `imageUpload-${id}`;
@@ -1535,8 +1533,8 @@ const ImageUploader: FC<ImageUploaderProps> = ({ t, onImageUploaded, className, 
     setIsUploading(true);
     const loadingToast = toast.loading(tNotify('uploadingImage'));
     try {
-      const response = await uploadLandingContent(file, access_token);
-      if (response.status === 200) {
+      const response = await uploadLandingContent(file);
+      if (response.status === 200 && response.data?.filename) {
         const imageUrl = getLandingMediaDirectory(response.data.filename);
         onImageUploaded(imageUrl);
         toast.success(tNotify('imageUploadSuccess'), { id: loadingToast });
@@ -1623,7 +1621,7 @@ const TextAndImageSectionEditor: FC<{
           <Select
             value={section.flow}
             onValueChange={(value) => {
-              onChange({ ...section, flow: value! });
+              onChange({ ...section, flow: value || section.flow });
             }}
             items={makeFlowItems(t)}
           >
@@ -1686,11 +1684,13 @@ const TextAndImageSectionEditor: FC<{
             </div>
           </div>
           {section.image.url ? (
-            <div className="mt-4">
-              <img
+            <div className="relative mt-4 h-40 w-full overflow-hidden rounded-lg">
+              <NextImage
                 src={section.image.url}
                 alt={section.image.alt}
-                className="max-h-40 rounded-lg object-cover"
+                fill
+                className="object-cover"
+                sizes="100vw"
               />
             </div>
           ) : null}
@@ -1768,11 +1768,15 @@ const LogosSectionEditor: FC<{
                   placeholder={t('LogosEditor.logoAltPlaceholder')}
                 />
                 {logo.url ? (
-                  <img
-                    src={logo.url}
-                    alt={logo.alt}
-                    className="h-10 object-contain"
-                  />
+                  <div className="relative h-10 w-24 overflow-hidden">
+                    <NextImage
+                      src={logo.url}
+                      alt={logo.alt}
+                      fill
+                      className="object-contain"
+                      sizes="100vw"
+                    />
+                  </div>
                 ) : null}
               </div>
               <Button
@@ -1912,11 +1916,15 @@ const PeopleSectionEditor: FC<{
                       t={t}
                     />
                     {person.image_url ? (
-                      <img
-                        src={person.image_url}
-                        alt={person.name}
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
+                      <div className="relative h-12 w-12 overflow-hidden rounded-full">
+                        <NextImage
+                          src={person.image_url}
+                          alt={person.name}
+                          fill
+                          className="object-cover"
+                          sizes="100vw"
+                        />
+                      </div>
                     ) : null}
                   </div>
                 </div>
@@ -1985,13 +1993,7 @@ const FeaturedCoursesEditor: FC<{
   section: LandingFeaturedCourses;
   onChange: (section: LandingFeaturedCourses) => void;
 }> = ({ t, section, onChange }) => {
-  const platform = usePlatform() as any;
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
-
-  const { data: coursesData } = useSWR(access_token ? ['platform-courses', access_token] : null, ([, token]) =>
-    getCourses(null, token),
-  );
+  const { data: coursesData } = usePlatformCourses();
   const courses = coursesData?.courses;
 
   return (
@@ -2029,12 +2031,14 @@ const FeaturedCoursesEditor: FC<{
                     className="flex items-center justify-between rounded-lg border p-4"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="h-12 w-12 overflow-hidden rounded-md bg-gray-100">
+                      <div className="relative h-12 w-12 overflow-hidden rounded-md bg-gray-100">
                         {course.course_thumbnail ? (
-                          <img
+                          <NextImage
                             src={course.course_thumbnail}
                             alt={course.name}
+                            fill
                             className="h-full w-full object-cover"
+                            sizes="100vw"
                           />
                         ) : null}
                       </div>

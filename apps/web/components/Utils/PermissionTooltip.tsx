@@ -57,7 +57,7 @@ export function PermissionTooltip({
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger>{children}</TooltipTrigger>
+        <TooltipTrigger render={children} />
         <TooltipContent>
           <p className="text-sm">{getTooltipContent()}</p>
         </TooltipContent>

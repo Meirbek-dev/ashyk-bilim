@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
 
 import CodeChallengeConfigEditor from '@components/features/courses/code-challenges/CodeChallengeConfigEditor';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
@@ -29,7 +29,7 @@ interface PageProps {
 
 export default async function CodeChallengeEditorPage({ params }: PageProps) {
   await connection();
-  const session = await auth();
+  const session = await getSession();
   const { courseuuid, activityid } = await params;
 
   if (!session) {

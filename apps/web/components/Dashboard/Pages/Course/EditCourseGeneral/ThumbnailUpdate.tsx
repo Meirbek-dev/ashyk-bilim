@@ -1,19 +1,24 @@
 import { ArrowBigUpDash, Image as ImageIcon, UploadCloud, Video } from 'lucide-react';
-import { useCourse, useCourseDispatch } from '@components/Contexts/CourseContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
+import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations';
+import { useSaveSection } from '@/hooks/useSaveSection';
 import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+
 import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { updateCourseThumbnail } from '@services/courses/courses';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCourse } from '@components/Contexts/CourseContext';
+import { useCourseEditorStore } from '@/stores/courses';
 import { Card, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { toast } from 'sonner';
 import type React from 'react';
 
 const MAX_FILE_SIZE = 8_000_000; // 8MB for images
 const MAX_VIDEO_FILE_SIZE = 100_000_000; // 100MB for videos
+const REQUIRED_IMAGE_ASPECT_RATIO = 16 / 9;
+const IMAGE_ASPECT_RATIO_TOLERANCE = 0.01;
 const VALID_IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png'] as const;
 const VALID_VIDEO_MIME_TYPES = ['video/mp4', 'video/webm', 'video/x-matroska'] as const;
 
@@ -39,13 +44,16 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   const course = useCourse();
-  const dispatchCourse = useCourseDispatch();
-  const session = usePlatformSession() as any;
+  const { updateThumbnail: updateThumbnailMutation } = useCoursesMutations(course.courseStructure.course_uuid, true);
+  const lastKnownUpdateDate = useCourseEditorStore((state) => state.lastKnownUpdateDate);
   const t = useTranslations('CourseEdit.General.Thumbnail');
 
   const [localThumbnail, setLocalThumbnail] = useState<LocalThumbnail | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(thumbnailType === 'video' ? 'video' : 'image');
+  const { isSaving, saveWithoutRefresh } = useSaveSection({
+    section: 'general',
+    errorMessage: t('errors.updateFailed'),
+  });
 
   // Cleanup blob URLs
   useEffect(() => {
@@ -99,44 +107,62 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
     [showError, t],
   );
 
-  const updateThumbnail = useCallback(
-    async (file: File, type: 'image' | 'video') => {
-      setIsLoading(true);
+  const validateImageAspectRatio = useCallback(
+    async (blobUrl: string): Promise<boolean> => {
       try {
-        const formData = new FormData();
-        formData.append('thumbnail', file);
-        formData.append('thumbnail_type', type);
+        const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+          const image = new globalThis.Image();
 
-        const res = await updateCourseThumbnail(
-          course.courseStructure.course_uuid,
-          formData,
-          session.data?.tokens?.access_token,
-          {
-            lastKnownUpdateDate: course.courseStructure.update_date,
-          },
-        );
+          image.onload = () => {
+            resolve({ width: image.naturalWidth, height: image.naturalHeight });
+          };
 
-        if (!res.success) {
-          showError(res.HTTPmessage);
-        } else {
-          if (res.data) {
-            dispatchCourse({ type: 'setCourseStructure', payload: res.data });
-          } else {
-            await course.refreshCourseMeta();
-          }
-          setLocalThumbnail(null);
-          toast.success(t('thumbnailUpdatedSuccessfully'), {
-            duration: 3000,
-            position: 'top-center',
-          });
+          image.onerror = () => {
+            reject(new Error('Failed to read image dimensions'));
+          };
+
+          image.src = blobUrl;
+        });
+
+        const actualAspectRatio = dimensions.width / dimensions.height;
+
+        if (Math.abs(actualAspectRatio - REQUIRED_IMAGE_ASPECT_RATIO) > IMAGE_ASPECT_RATIO_TOLERANCE) {
+          showError(
+            t('errors.invalidAspectRatio', {
+              height: dimensions.height,
+              width: dimensions.width,
+            }),
+          );
+          return false;
         }
+
+        return true;
       } catch {
-        showError(t('errors.updateFailed'));
-      } finally {
-        setIsLoading(false);
+        showError(t('errors.imageReadFailed'));
+        return false;
       }
     },
-    [course, dispatchCourse, session, showError, t],
+    [showError, t],
+  );
+
+  const updateThumbnail = useCallback(
+    async (file: File, type: 'image' | 'video') => {
+      const formData = new FormData();
+      formData.append('thumbnail', file);
+      formData.append('thumbnail_type', type);
+
+      await saveWithoutRefresh(
+        async () =>
+          updateThumbnailMutation(formData, {
+            lastKnownUpdateDate: lastKnownUpdateDate ?? course.courseStructure.update_date ?? null,
+          }),
+        {
+          onSuccess: () => setLocalThumbnail(null),
+          successMessage: t('thumbnailUpdatedSuccessfully'),
+        },
+      );
+    },
+    [course.courseStructure.update_date, lastKnownUpdateDate, saveWithoutRefresh, t, updateThumbnailMutation],
   );
 
   const handleFileChange = useCallback(
@@ -154,10 +180,22 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
       }
 
       const blobUrl = URL.createObjectURL(file);
+
+      if (type === 'image') {
+        const hasValidAspectRatio = await validateImageAspectRatio(blobUrl);
+
+        if (!hasValidAspectRatio) {
+          URL.revokeObjectURL(blobUrl);
+          event.target.value = '';
+          return;
+        }
+      }
+
       setLocalThumbnail({ file, url: blobUrl, type });
       await updateThumbnail(file, type);
+      event.target.value = '';
     },
-    [showError, validateFile, updateThumbnail, t],
+    [showError, validateFile, validateImageAspectRatio, updateThumbnail, t],
   );
 
   const getThumbnailUrl = useCallback(
@@ -182,7 +220,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
 
     if (!thumbnailToShow.url) {
       return (
-        <div className="mx-auto flex h-[270px] max-w-[480px] items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/50">
+        <div className="border-border bg-muted/50 mx-auto flex h-[270px] max-w-[480px] items-center justify-center rounded-lg border-2 border-dashed">
           <div className="text-center">
             <ImageIcon className="text-muted-foreground mx-auto h-12 w-12" />
             <p className="text-muted-foreground mt-2 text-sm">
@@ -198,27 +236,37 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         <div className="mx-auto max-w-[480px]">
           <video
             src={thumbnailToShow.url}
-            className={`aspect-video w-full rounded-lg border border-border object-cover shadow-sm ${
-              isLoading ? 'animate-pulse' : ''
+            className={`border-border aspect-video w-full rounded-lg border object-cover shadow-sm ${
+              isSaving ? 'animate-pulse' : ''
             }`}
             controls
-          />
+          >
+            <track
+              kind="captions"
+              srcLang="en"
+              label={t('videoCaptions')}
+              default
+            />
+          </video>
         </div>
       );
     }
 
     return (
       <div className="mx-auto max-w-[480px]">
-        <img
+        <Image
           src={thumbnailToShow.url}
           alt={localThumbnail ? t('thumbnailPreviewAlt') : t('currentThumbnailAlt')}
-          className={`aspect-video w-full rounded-lg border border-border object-cover shadow-sm ${
-            isLoading ? 'animate-pulse' : ''
+          className={`border-border aspect-video w-full rounded-lg border object-cover shadow-sm ${
+            isSaving ? 'animate-pulse' : ''
           }`}
+          width={480}
+          height={270}
+          unoptimized
         />
       </div>
     );
-  }, [localThumbnail, activeTab, getThumbnailUrl, isLoading, t]);
+  }, [localThumbnail, activeTab, getThumbnailUrl, isSaving, t]);
 
   const renderImageControls = () => (
     <>
@@ -229,13 +277,13 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         accept=".jpg,.jpeg,.png"
         onChange={(e) => handleFileChange(e, 'image')}
         aria-label={t('ariaLabelImage')}
-        disabled={isLoading || disabled}
+        disabled={isSaving || disabled}
       />
       <Button
         type="button"
         variant="outline"
         size="default"
-        disabled={isLoading || disabled}
+        disabled={isSaving || disabled}
         onClick={() => imageInputRef.current?.click()}
         className="flex-1"
       >
@@ -254,13 +302,13 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         accept=".mp4,.webm,.mkv"
         onChange={(e) => handleFileChange(e, 'video')}
         aria-label={t('ariaLabelVideo')}
-        disabled={isLoading || disabled}
+        disabled={isSaving || disabled}
       />
       <Button
         type="button"
         variant="outline"
         size="default"
-        disabled={isLoading || disabled}
+        disabled={isSaving || disabled}
         onClick={() => videoInputRef.current?.click()}
         className="flex-1"
       >
@@ -281,14 +329,14 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
             <TabsList className="mb-6 grid w-full grid-cols-2">
               <TabsTrigger
                 value="image"
-                disabled={isLoading || disabled}
+                disabled={isSaving || disabled}
               >
                 <ImageIcon className="mr-2 h-4 w-4" />
                 {t('image')}
               </TabsTrigger>
               <TabsTrigger
                 value="video"
-                disabled={isLoading || disabled}
+                disabled={isSaving || disabled}
               >
                 <Video className="mr-2 h-4 w-4" />
                 {t('video')}
@@ -301,9 +349,9 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
             >
               {renderThumbnailPreview()}
 
-              {isLoading ? (
+              {isSaving ? (
                 <div className="flex items-center justify-center">
-                  <div className="text-muted-foreground flex items-center gap-2 rounded-full border bg-muted px-4 py-2 text-sm font-medium">
+                  <div className="text-muted-foreground bg-muted flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
                     <ArrowBigUpDash className="h-4 w-4 animate-bounce" />
                     {t('uploading')}
                   </div>
@@ -327,9 +375,9 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
             >
               {renderThumbnailPreview()}
 
-              {isLoading ? (
+              {isSaving ? (
                 <div className="flex items-center justify-center">
-                  <div className="text-muted-foreground flex items-center gap-2 rounded-full border bg-muted px-4 py-2 text-sm font-medium">
+                  <div className="text-muted-foreground bg-muted flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
                     <ArrowBigUpDash className="h-4 w-4 animate-bounce" />
                     {t('uploading')}
                   </div>
@@ -358,9 +406,9 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
       <CardContent className="space-y-6 p-6">
         {renderThumbnailPreview()}
 
-        {isLoading ? (
+        {isSaving ? (
           <div className="flex items-center justify-center">
-            <div className="text-muted-foreground flex items-center gap-2 rounded-full border bg-muted px-4 py-2 text-sm font-medium">
+            <div className="text-muted-foreground bg-muted flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium">
               <ArrowBigUpDash className="h-4 w-4 animate-bounce" />
               {t('uploading')}
             </div>

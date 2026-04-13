@@ -1,6 +1,7 @@
 'use client';
 
-import { Actions, Resources, Scopes, usePermissions } from '@/components/Security';
+import { Actions, Resources, Scopes } from '@/components/Security';
+import { useSession } from '@/hooks/useSession';
 import UserGroups from '@/components/Dashboard/Pages/Users/UserGroups/UserGroups';
 import DesktopOnlyGuard from '@components/Dashboard/Misc/DesktopOnlyGuard';
 import SettingsHeader from '@components/Dashboard/Misc/SettingsHeader';
@@ -31,7 +32,7 @@ export default function PlatformUsersSettingsPage(props: { params: Promise<{ sub
   const params = use(props.params);
   const router = useRouter();
   const t = useTranslations('DashPage.UserSettings');
-  const { can } = usePermissions();
+  const { can } = useSession();
 
   const allTabs: TabConfig[] = useMemo(
     () => [
@@ -66,11 +67,11 @@ export default function PlatformUsersSettingsPage(props: { params: Promise<{ sub
         switch (tab.id) {
           case 'users': {
             return (
-              can(Actions.READ, Resources.USER, Scopes.PLATFORM) || can(Actions.UPDATE, Resources.USER, Scopes.PLATFORM)
+              can(Resources.USER, Actions.READ, Scopes.PLATFORM) || can(Resources.USER, Actions.UPDATE, Scopes.PLATFORM)
             );
           }
           case 'usergroups': {
-            return can(Actions.MANAGE, Resources.USERGROUP, Scopes.PLATFORM);
+            return can(Resources.USERGROUP, Actions.MANAGE, Scopes.PLATFORM);
           }
           default: {
             return true;

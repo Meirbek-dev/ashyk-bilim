@@ -1,11 +1,11 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
-import type { MetricCard } from '@/types/analytics';
 import { Badge } from '@/components/ui/badge';
-import { useTranslations } from 'next-intl';
+import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMemo } from 'react';
+import type { MetricCard } from '@/types/analytics';
 
 interface TeacherKpiCardsProps {
   cards: { metric: MetricCard; sparkline: number[]; definition?: string }[];
@@ -62,25 +62,26 @@ function Sparkline({ values, positive }: { values: number[]; positive: boolean }
 
 export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
   const t = useTranslations('TeacherAnalytics');
+  const locale = useLocale();
+  const numberFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {cards.map(({ metric, sparkline, definition }) => {
-        const displayValue = metric.unit === '%' ? `${metric.value.toLocaleString()}%` : metric.value.toLocaleString();
+        const displayValue =
+          metric.unit === '%' ? `${numberFormatter.format(metric.value)}%` : numberFormatter.format(metric.value);
 
         let deltaLabel: string;
         if (metric.delta_pct === null && metric.delta_value === null) {
           deltaLabel = t('kpi.noComparison');
         } else if (metric.delta_pct === null && metric.delta_value !== null) {
-          // Previous was 0 — delta_pct is undefined, show absolute change instead
-          deltaLabel = `${metric.delta_value > 0 ? '+' : ''}${metric.delta_value}`;
+          deltaLabel = `${metric.delta_value > 0 ? '+' : ''}${numberFormatter.format(metric.delta_value)}`;
         } else if (metric.delta_pct !== null) {
-          deltaLabel = `${metric.delta_pct > 0 ? '+' : ''}${metric.delta_pct}%`;
+          deltaLabel = `${metric.delta_pct > 0 ? '+' : ''}${numberFormatter.format(metric.delta_pct)}%`;
         } else {
           deltaLabel = t('kpi.stable');
         }
 
-        // When delta_pct is null but delta_value is non-null, the previous period had
-        // no data — show "нет данных" rather than "стабильно" to avoid misleading teachers.
         const badgeLabel =
           metric.delta_value === null
             ? t('kpi.noComparison')
@@ -97,14 +98,16 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
           >
             <CardHeader className="flex-row items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   {metric.label}
                 </div>
-                <CardTitle className="mt-3 text-3xl font-semibold text-foreground">{displayValue}</CardTitle>
-                {/* Benchmark baseline (issue 15) */}
+                <CardTitle className="text-foreground mt-3 text-3xl font-semibold">{displayValue}</CardTitle>
                 {metric.benchmark !== null && metric.benchmark !== undefined && (
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {metric.benchmark_label}: {metric.unit === '%' ? `${metric.benchmark}%` : metric.benchmark}
+                  <div className="text-muted-foreground mt-1 text-xs">
+                    {metric.benchmark_label}:{' '}
+                    {metric.unit === '%'
+                      ? `${numberFormatter.format(metric.benchmark)}%`
+                      : numberFormatter.format(metric.benchmark)}
                   </div>
                 )}
                 <Sparkline
@@ -120,15 +123,14 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
               )}
             </CardHeader>
             <CardContent className="space-y-1">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-muted-foreground text-sm">
                 {metric.delta_value === null
                   ? t('kpi.noComparison')
                   : t('kpi.changePeriod', {
-                      delta: `${metric.delta_value > 0 ? '+' : ''}${metric.delta_value}${metric.unit ?? ''}`,
+                      delta: `${metric.delta_value > 0 ? '+' : ''}${numberFormatter.format(metric.delta_value)}${metric.unit ?? ''}`,
                     })}
               </div>
-              {/* Metric definition for returning learners, at-risk, content health, difficulty (issue 3) */}
-              {definition && <div className="text-xs leading-4 text-muted-foreground">{definition}</div>}
+              {definition && <div className="text-muted-foreground text-xs leading-4">{definition}</div>}
             </CardContent>
           </Card>
         );

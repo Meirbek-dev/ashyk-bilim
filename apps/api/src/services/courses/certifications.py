@@ -8,6 +8,7 @@ from sqlmodel import Session, select
 from ulid import ULID
 
 from src.core.timezone import now as tz_now
+from src.db.courses.activities import Activity
 from src.db.courses.certifications import (
     CertificateUser,
     CertificateUserRead,
@@ -16,7 +17,6 @@ from src.db.courses.certifications import (
     Certifications,
     CertificationUpdate,
 )
-from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.courses import Course
 from src.db.trail_steps import TrailStep
 from src.db.users import AnonymousUser, PublicUser
@@ -597,8 +597,9 @@ async def check_course_completion_and_create_certificate(
         return False
 
     # Get all activities in the course
-    statement = select(ChapterActivity).where(ChapterActivity.course_id == course_id)
-    course_activities = db_session.exec(statement).all()
+    course_activities = db_session.exec(
+        select(Activity).where(Activity.course_id == course_id)
+    ).all()
 
     if not course_activities:
         return False  # No activities in course

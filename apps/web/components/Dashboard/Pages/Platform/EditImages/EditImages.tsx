@@ -1,21 +1,26 @@
 'use client';
 import {
+  getLogoMediaDirectory,
+  getPlatformThumbnailImage,
+  getPreviewMediaDirectory,
+  getThumbnailMediaDirectory,
+} from '@services/media/media';
+import {
   updatePlatform,
   uploadPlatformLogo,
   uploadPlatformPreview,
   uploadPlatformThumbnail,
 } from '@/services/settings/platform';
-import { getLogoMediaDirectory, getPreviewMediaDirectory, getThumbnailMediaDirectory } from '@services/media/media';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@components/ui/dialog';
 import { GripVertical, ImageIcon, Images, Info, Plus, StarIcon, UploadCloud, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { SiLoom, SiYoutube } from '@icons-pack/react-simple-icons';
 import { constructAcceptValue } from '@/lib/constants';
 import type { ChangeEvent, MouseEvent } from 'react';
 import type { DropResult } from '@hello-pangea/dnd';
+import NextImage from '@components/ui/NextImage';
 import { useState, useTransition } from 'react';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
@@ -77,8 +82,6 @@ const getAddPreviewOptions = (t: Function, isPreviewUploading: boolean, setSelec
 
 export default function EditImages() {
   const router = useRouter();
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
   const platform = usePlatform() as any;
   const tNotify = useTranslations('DashPage.Notifications');
   const t = useTranslations('DashPage.PlatformSettings.Images');
@@ -127,7 +130,7 @@ export default function EditImages() {
         startTransition(() => setIsLogoUploading(true));
         const loadingToast = toast.loading(tNotify('uploadingLogo'));
         try {
-          await uploadPlatformLogo(file, access_token);
+          await uploadPlatformLogo(file);
           await new Promise((r) => setTimeout(r, 1500));
           toast.success(tNotify('logoUpdatedSuccess'), { id: loadingToast });
           router.refresh();
@@ -148,7 +151,7 @@ export default function EditImages() {
         startTransition(() => setIsThumbnailUploading(true));
         const loadingToast = toast.loading(tNotify('uploadingThumbnail'));
         try {
-          await uploadPlatformThumbnail(file, access_token);
+          await uploadPlatformThumbnail(file);
           await new Promise((r) => setTimeout(r, 1500));
           toast.success(tNotify('thumbnailUpdatedSuccess'), { id: loadingToast });
           router.refresh();
@@ -181,7 +184,7 @@ export default function EditImages() {
 
       try {
         const uploadPromises = files.map(async (file) => {
-          const response = await uploadPlatformPreview(file, access_token);
+          const response = await uploadPlatformPreview(file);
           return {
             id: response.name_in_disk,
             url: URL.createObjectURL(file),
@@ -194,27 +197,24 @@ export default function EditImages() {
         const newPreviews = await Promise.all(uploadPromises);
         const updatedPreviews = [...previews, ...newPreviews];
 
-        await updatePlatform(
-          {
-            previews: {
-              images: updatedPreviews
-                .filter((p) => p.type === 'image')
-                .map((p) => ({
-                  filename: p.filename,
-                  order: p.order,
-                })),
-              videos: updatedPreviews
-                .filter((p) => p.type === 'youtube' || p.type === 'loom')
-                .map((p) => ({
-                  type: p.type,
-                  url: p.url,
-                  id: p.id,
-                  order: p.order,
-                })),
-            },
+        await updatePlatform({
+          previews: {
+            images: updatedPreviews
+              .filter((p) => p.type === 'image')
+              .map((p) => ({
+                filename: p.filename,
+                order: p.order,
+              })),
+            videos: updatedPreviews
+              .filter((p) => p.type === 'youtube' || p.type === 'loom')
+              .map((p) => ({
+                type: p.type,
+                url: p.url,
+                id: p.id,
+                order: p.order,
+              })),
           },
-          access_token,
-        );
+        });
 
         setPreviews(updatedPreviews);
         toast.success(tNotify('previewsAddedSuccess', { count: files.length }), {
@@ -235,14 +235,11 @@ export default function EditImages() {
       const updatedPreviews = previews.filter((p) => p.id !== id);
       const updatedPreviewFilenames = updatedPreviews.map((p) => p.filename);
 
-      await updatePlatform(
-        {
-          previews: {
-            images: updatedPreviewFilenames,
-          },
+      await updatePlatform({
+        previews: {
+          images: updatedPreviewFilenames,
         },
-        access_token,
-      );
+      });
 
       startTransition(() => setPreviews(updatedPreviews));
       toast.success(tNotify('previewRemovedSuccess'), { id: loadingToast });
@@ -299,27 +296,24 @@ export default function EditImages() {
 
       const updatedPreviews = [...previews, newPreview];
 
-      await updatePlatform(
-        {
-          previews: {
-            images: updatedPreviews
-              .filter((p) => p.type === 'image')
-              .map((p) => ({
-                filename: p.filename,
-                order: p.order,
-              })),
-            videos: updatedPreviews
-              .filter((p) => p.type === 'youtube' || p.type === 'loom')
-              .map((p) => ({
-                type: p.type,
-                url: p.url,
-                id: p.id,
-                order: p.order,
-              })),
-          },
+      await updatePlatform({
+        previews: {
+          images: updatedPreviews
+            .filter((p) => p.type === 'image')
+            .map((p) => ({
+              filename: p.filename,
+              order: p.order,
+            })),
+          videos: updatedPreviews
+            .filter((p) => p.type === 'youtube' || p.type === 'loom')
+            .map((p) => ({
+              type: p.type,
+              url: p.url,
+              id: p.id,
+              order: p.order,
+            })),
         },
-        access_token,
-      );
+      });
 
       setPreviews(updatedPreviews);
       setVideoUrl('');
@@ -348,27 +342,24 @@ export default function EditImages() {
     // Update the order in the backend
     const loadingToast = toast.loading(tNotify('updatingPreviewOrder'));
     try {
-      await updatePlatform(
-        {
-          previews: {
-            images: reorderedItems
-              .filter((p) => p.type === 'image')
-              .map((p) => ({
-                filename: p.filename,
-                order: p.order,
-              })),
-            videos: reorderedItems
-              .filter((p) => p.type === 'youtube' || p.type === 'loom')
-              .map((p) => ({
-                type: p.type,
-                url: p.url,
-                id: p.id,
-                order: p.order,
-              })),
-          },
+      await updatePlatform({
+        previews: {
+          images: reorderedItems
+            .filter((p) => p.type === 'image')
+            .map((p) => ({
+              filename: p.filename,
+              order: p.order,
+            })),
+          videos: reorderedItems
+            .filter((p) => p.type === 'youtube' || p.type === 'loom')
+            .map((p) => ({
+              type: p.type,
+              url: p.url,
+              id: p.id,
+              order: p.order,
+            })),
         },
-        access_token,
-      );
+      });
 
       toast.success(tNotify('previewOrderUpdatedSuccess'), {
         id: loadingToast,
@@ -387,33 +378,33 @@ export default function EditImages() {
   };
 
   return (
-    <div className="soft-shadow mx-0 mb-16 rounded-xl bg-white px-3 py-3 sm:mx-10 sm:mb-0">
-      <div className="mb-2 flex flex-col -space-y-1 rounded-md bg-gray-50 px-5 py-3">
-        <h1 className="text-xl font-bold text-gray-800">{t('title')}</h1>
-        <h2 className="text-base text-gray-500">{t('description')}</h2>
+    <div className="soft-shadow border-border bg-card text-card-foreground mx-0 mb-16 rounded-xl border px-3 py-3 shadow-sm sm:mx-10 sm:mb-0">
+      <div className="bg-muted mb-2 flex flex-col gap-1 rounded-md px-5 py-3">
+        <h1 className="text-foreground text-xl font-bold">{t('title')}</h1>
+        <h2 className="text-muted-foreground text-base">{t('description')}</h2>
       </div>
       <Tabs
         defaultValue="logo"
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-3 rounded-lg bg-gray-100 p-1">
+        <TabsList className="bg-muted grid w-full grid-cols-3 rounded-lg p-1">
           <TabsTrigger
             value="logo"
-            className="flex items-center space-x-2 transition-all data-[state=active]:bg-white data-[state=active]:shadow-xs"
+            className="data-[state=active]:bg-background flex items-center gap-2 transition-all data-[state=active]:shadow-xs"
           >
             <StarIcon size={16} />
             <span>{t('Tabs.logo')}</span>
           </TabsTrigger>
           <TabsTrigger
             value="thumbnail"
-            className="flex items-center space-x-2 transition-all data-[state=active]:bg-white data-[state=active]:shadow-xs"
+            className="data-[state=active]:bg-background flex items-center gap-2 transition-all data-[state=active]:shadow-xs"
           >
             <ImageIcon size={16} />
             <span>{t('Tabs.thumbnail')}</span>
           </TabsTrigger>
           <TabsTrigger
             value="previews"
-            className="flex items-center space-x-2 transition-all data-[state=active]:bg-white data-[state=active]:shadow-xs"
+            className="data-[state=active]:bg-background flex items-center gap-2 transition-all data-[state=active]:shadow-xs"
           >
             <Images size={16} />
             <span>{t('Tabs.previews')}</span>
@@ -425,21 +416,23 @@ export default function EditImages() {
           className="mt-2"
         >
           <div className="flex w-full flex-col space-y-5">
-            <div className="w-full rounded-xl bg-muted/30 py-8 transition-all duration-300">
-              <div className="flex flex-col items-center justify-center space-y-8">
-                <div className="group relative">
-                  <img
+            <div className="bg-muted/30 w-full rounded-xl py-8 transition-all duration-300">
+              <div className="flex flex-col items-center justify-center gap-8">
+                <div className="group relative h-[125px] w-[250px]">
+                  <NextImage
                     src={
                       platform?.logo_image
                         ? localLogo || getLogoMediaDirectory(platform?.logo_image)
                         : '/empty_thumbnail.webp'
                     }
                     alt="Лого организации"
+                    fill
                     className={cn(
-                      'size-auto max-h-[125px] min-h-[100px] min-w-[200px] max-w-[250px] rounded-lg bg-white object-contain shadow-md',
-                      'border-2 border-gray-100 transition-all duration-300 hover:border-blue-200',
+                      'rounded-lg bg-background object-contain shadow-md',
+                      'border-2 border-border transition-all duration-300 hover:border-primary/40',
                       isLogoUploading && 'opacity-50',
                     )}
+                    sizes="100vw"
                   />
                 </div>
 
@@ -491,18 +484,19 @@ export default function EditImages() {
           className="mt-2"
         >
           <div className="flex w-full flex-col space-y-5">
-            <div className="w-full rounded-xl bg-muted/30 py-8 transition-all duration-300">
+            <div className="bg-muted/30 w-full rounded-xl py-8 transition-all duration-300">
               <div className="flex flex-col items-center justify-center space-y-8">
-                <div className="group relative">
-                  <img
+                <div className="group relative h-[125px] w-[250px]">
+                  <NextImage
                     src={
                       platform?.thumbnail_image
-                        ? localThumbnail || getThumbnailMediaDirectory(platform?.thumbnail_image)
+                        ? localThumbnail || getPlatformThumbnailImage(platform.thumbnail_image)
                         : '/empty_thumbnail.webp'
                     }
                     alt="Platform thumbnail"
+                    fill
                     className={cn(
-                      'size-auto max-h-[125px] min-h-[100px] min-w-[200px] max-w-[250px] rounded-lg bg-white object-contain shadow-md',
+                      'rounded-lg bg-white object-contain shadow-md',
                       'border-2 border-gray-100 transition-all duration-300 hover:border-purple-200',
                       isThumbnailUploading && 'opacity-50',
                     )}
@@ -559,7 +553,7 @@ export default function EditImages() {
           className="mt-4"
         >
           <div className="flex w-full flex-col space-y-5">
-            <div className="w-full rounded-xl bg-muted/30 py-6 transition-all duration-300">
+            <div className="bg-muted/30 w-full rounded-xl py-6 transition-all duration-300">
               <div className="flex flex-col items-center justify-center space-y-6">
                 <DragDropContext onDragEnd={handleDragEnd}>
                   <Droppable
@@ -612,16 +606,20 @@ export default function EditImages() {
                                   <GripVertical size={14} />
                                 </div>
                                 {preview.type === 'image' ? (
-                                  <img
-                                    src={getPreviewMediaDirectory(preview.id)}
-                                    alt={`Preview ${preview.id}`}
+                                  <div
                                     className={cn(
-                                      'size-auto max-h-28 max-w-48 rounded-xl bg-white object-contain',
-                                      'border border-gray-200 hover:border-gray-300',
-                                      'transition-colors duration-200',
+                                      'relative h-28 w-48 rounded-xl bg-white',
                                       snapshot.isDragging ? 'shadow-lg' : 'shadow-xs hover:shadow-md',
                                     )}
-                                  />
+                                  >
+                                    <NextImage
+                                      src={getPreviewMediaDirectory(preview.id)}
+                                      alt={`Preview ${preview.id}`}
+                                      fill
+                                      className="rounded-xl object-contain"
+                                      sizes="100vw"
+                                    />
+                                  </div>
                                 ) : (
                                   <div
                                     className={cn(
@@ -679,7 +677,10 @@ export default function EditImages() {
                                 </div>
                                 <span className="text-sm font-medium text-gray-600">{t('Buttons.addPreview')}</span>
                               </DialogTrigger>
-                              <DialogContent className="sm:max-w-[600px]">
+                              <DialogContent
+                                className="sm:max-w-[600px]"
+                                aria-describedby={undefined}
+                              >
                                 <DialogHeader>
                                   <DialogTitle>{t('Dialog.AddPreview.title')}</DialogTitle>
                                 </DialogHeader>

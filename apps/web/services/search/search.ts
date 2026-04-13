@@ -1,10 +1,14 @@
-import { RequestBodyWithAuthHeader, getResponseMetadata } from '@services/utils/ts/requests';
-import { getAPIUrl } from '@services/config/config';
+import { getResponseMetadata } from '@/lib/api-client';
+import { apiFetch } from '@/lib/api-client';
 
-export async function searchContent(query: string, page = 1, limit = 20, next: any, access_token?: any) {
-  const result: any = await fetch(
-    `${getAPIUrl()}search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
-    RequestBodyWithAuthHeader('GET', null, next, access_token),
-  );
+export interface SearchContentParams {
+  query: string;
+  page?: number;
+  limit?: number;
+  next?: any;
+}
+
+export async function searchContent({ query, page = 1, limit = 20 }: SearchContentParams) {
+  const result = await apiFetch(`search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
   return await getResponseMetadata(result);
 }

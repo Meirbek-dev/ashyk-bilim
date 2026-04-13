@@ -1,77 +1,93 @@
 'use client';
 
 import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field';
+import { AuthErrorBanner, AuthSubmitButton } from '@components/auth/AuthForm';
+import { getAbsoluteUrl, getPublicAPIUrl } from '@services/config/config';
+import { loginAction } from '@/app/actions/auth';
+import { getPostAuthRedirect, normalizeReturnTo } from '@/lib/auth/redirect';
 import PasswordInput from '@components/ui/custom/password-input';
-import { valibotResolver } from '@hookform/resolvers/valibot';
 import { SiGoogle } from '@icons-pack/react-simple-icons';
-import { getAbsoluteUrl } from '@services/config/config';
-import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Separator } from '@components/ui/separator';
-import { useState, useTransition } from 'react';
+import { useActionState, useTransition } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@components/ui/button';
 import AuthLogo from '@components/auth/logo';
 import AuthCard from '@components/auth/card';
 import { Input } from '@components/ui/input';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
-import { useForm } from 'react-hook-form';
-import { signIn } from 'next-auth/react';
 import * as v from 'valibot';
 
-const createValidationSchema = (t: (key: string, values?: any) => string) =>
-  v.object({
-    email: v.pipe(v.string(), v.minLength(1, t('required')), v.email(t('invalidEmail'))),
-    password: v.pipe(v.string(), v.minLength(1, t('required')), v.minLength(8, t('passwordMinLength', { length: 8 }))),
-  });
+/** Validates returnTo, rejecting open-redirect attempts. */
+function getSafeReturnTo(raw: string | null): string {
+  return getPostAuthRedirect(normalizeReturnTo(raw));
+}
 
-type LoginFormData = v.InferOutput<ReturnType<typeof createValidationSchema>>;
+interface LoginState {
+  error: string | null;
+  fieldErrors: { email?: string; password?: string };
+}
 
 const LoginClient = () => {
   const validationT = useTranslations('Validation');
   const t = useTranslations('Auth.Login');
-  const [error, setError] = useState('');
-  const [isPending, startTransition] = useTransition();
-  const validationSchema = createValidationSchema(validationT);
+  const searchParams = useSearchParams();
+  const [isPendingGoogle, startGoogleTransition] = useTransition();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: valibotResolver(validationSchema),
-    defaultValues: { email: '', password: '' },
+  const schema = v.object({
+    email: v.pipe(v.string(), v.minLength(1, validationT('required')), v.email(validationT('invalidEmail'))),
+    password: v.pipe(
+      v.string(),
+      v.minLength(1, validationT('required')),
+      v.minLength(8, validationT('passwordMinLength', { length: 8 })),
+    ),
   });
 
-  const onSubmit = (values: LoginFormData) => {
-    startTransition(async () => {
-      try {
-        const res = await signIn('credentials', {
-          redirect: false,
-          email: values.email,
-          password: values.password,
-        });
+  const [state, action, isPending] = useActionState(
+    async (_prev: LoginState, formData: FormData): Promise<LoginState> => {
+      const result = v.safeParse(schema, {
+        email: formData.get('email'),
+        password: formData.get('password'),
+      });
 
-        if (res?.error) {
-          setError(t('wrongCredentials'));
-          return;
-        }
-
-        if (res?.ok) {
-          globalThis.location.href = '/redirect_from_auth';
-        }
-      } catch {
-        setError(t('wrongCredentials'));
+      if (!result.success) {
+        const flat = v.flatten(result.issues);
+        return {
+          error: null,
+          fieldErrors: {
+            email: flat.nested?.email?.[0],
+            password: flat.nested?.password?.[0],
+          },
+        };
       }
-    });
-  };
+
+      const response = await loginAction({
+        email: result.output.email,
+        password: result.output.password,
+        returnTo: searchParams.get('returnTo'),
+      });
+
+      if (!response.ok) {
+        const message = response.reason === 'service_unavailable' ? t('serviceUnavailable') : t('wrongCredentials');
+        return { error: message, fieldErrors: {} };
+      }
+
+      return { error: null, fieldErrors: {} };
+    },
+    { error: null, fieldErrors: {} },
+  );
 
   const handleGoogleSignIn = () => {
-    startTransition(() => {
-      signIn('google', {
-        callbackUrl: '/redirect_from_auth',
-      });
+    startGoogleTransition(() => {
+      const postLoginPath = getSafeReturnTo(searchParams.get('returnTo'));
+      const frontendCallback = getAbsoluteUrl(postLoginPath.startsWith('/') ? postLoginPath : '/redirect_from_auth');
+      const authorizeUrl = new URL(`${getPublicAPIUrl()}auth/google/authorize`);
+      authorizeUrl.searchParams.set('callback', frontendCallback);
+      globalThis.location.href = authorizeUrl.toString();
     });
   };
+
+  const anyPending = isPending || isPendingGoogle;
 
   return (
     <AuthCard>
@@ -85,7 +101,7 @@ const LoginClient = () => {
       <Button
         className="mt-8 w-full gap-3"
         onClick={handleGoogleSignIn}
-        disabled={isPending}
+        disabled={anyPending}
       >
         <SiGoogle />
         {t('signInWithGoogle')}
@@ -97,42 +113,46 @@ const LoginClient = () => {
         <Separator />
       </div>
 
-      {error ? (
-        <div className="mb-4 flex w-full items-center gap-2 rounded-md bg-red-200 p-3 text-red-950">
-          <AlertTriangle size={18} />
-          <span className="text-sm font-semibold">{error}</span>
+      {state.error ? (
+        <div className="mb-4">
+          <AuthErrorBanner message={state.error} />
         </div>
       ) : null}
 
       <form
         className="w-full space-y-4"
-        onSubmit={handleSubmit(onSubmit)}
+        action={action}
       >
+        <input
+          type="hidden"
+          name="returnTo"
+          value={searchParams.get('returnTo') ?? ''}
+        />
         <Field>
           <FieldLabel>{t('email')}</FieldLabel>
           <FieldContent>
             <Input
+              name="email"
               type="email"
               placeholder={t('emailPlaceholder')}
               autoComplete="email"
               className="w-full"
-              {...register('email')}
             />
           </FieldContent>
-          <FieldError>{errors.email?.message}</FieldError>
+          <FieldError>{state.fieldErrors.email}</FieldError>
         </Field>
 
         <Field>
           <FieldLabel>{t('password')}</FieldLabel>
           <FieldContent>
             <PasswordInput
+              name="password"
               placeholder={t('passwordPlaceholder')}
               autoComplete="current-password"
               className="w-full"
-              {...register('password')}
             />
           </FieldContent>
-          <FieldError>{errors.password?.message}</FieldError>
+          <FieldError>{state.fieldErrors.password}</FieldError>
         </Field>
 
         <div className="flex justify-end">
@@ -145,23 +165,11 @@ const LoginClient = () => {
           </Link>
         </div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={isPending}
-        >
-          {isPending ? (
-            <>
-              <Loader2
-                className="mr-2 h-4 w-4 animate-spin"
-                aria-hidden="true"
-              />
-              {t('loading')}
-            </>
-          ) : (
-            t('login')
-          )}
-        </Button>
+        <AuthSubmitButton
+          isPending={anyPending}
+          label={t('login')}
+          pendingLabel={t('loading')}
+        />
       </form>
 
       <p className="mt-5 text-center text-sm">

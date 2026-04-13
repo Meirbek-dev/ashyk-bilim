@@ -1,7 +1,6 @@
 'use server';
 
-import { RequestBodyWithAuthHeader } from '@services/utils/ts/requests';
-import { getAPIUrl } from '@services/config/config';
+import { apiFetch } from '@/lib/api-client';
 import { tags } from '@/lib/cacheTags';
 
 interface QuizSubmissionPayload {
@@ -13,12 +12,13 @@ interface QuizSubmissionPayload {
   violations?: Record<string, any>;
 }
 
-export async function submitQuizBlock(activity_id: number, data: QuizSubmissionPayload, access_token: string) {
+export async function submitQuizBlock(activity_id: number, data: QuizSubmissionPayload) {
   try {
-    const result = await fetch(
-      `${getAPIUrl()}blocks/quiz/${activity_id}`,
-      RequestBodyWithAuthHeader('POST', data, null, access_token),
-    );
+    const result = await apiFetch(`blocks/quiz/${activity_id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
     const response = await result.json();
     const { revalidateTag } = await import('next/cache');
     revalidateTag(tags.activities, 'max');
@@ -30,13 +30,13 @@ export async function submitQuizBlock(activity_id: number, data: QuizSubmissionP
   }
 }
 
-export async function getQuizAttempts(activity_id: number, access_token: string, user_id?: number) {
+export async function getQuizAttempts(activity_id: number, user_id?: number) {
   try {
-    const url = user_id
-      ? `${getAPIUrl()}blocks/quiz/${activity_id}/attempts?user_id=${user_id}`
-      : `${getAPIUrl()}blocks/quiz/${activity_id}/attempts`;
+    const path = user_id
+      ? `blocks/quiz/${activity_id}/attempts?user_id=${user_id}`
+      : `blocks/quiz/${activity_id}/attempts`;
 
-    const result = await fetch(url, RequestBodyWithAuthHeader('GET', null, null, access_token));
+    const result = await apiFetch(path);
     return await result.json();
   } catch (error) {
     console.log('error', error);
@@ -44,12 +44,9 @@ export async function getQuizAttempts(activity_id: number, access_token: string,
   }
 }
 
-export async function getQuizStats(activity_id: number, access_token: string) {
+export async function getQuizStats(activity_id: number) {
   try {
-    const result = await fetch(
-      `${getAPIUrl()}blocks/quiz/${activity_id}/stats`,
-      RequestBodyWithAuthHeader('GET', null, null, access_token),
-    );
+    const result = await apiFetch(`blocks/quiz/${activity_id}/stats`);
     return await result.json();
   } catch (error) {
     console.log('error', error);

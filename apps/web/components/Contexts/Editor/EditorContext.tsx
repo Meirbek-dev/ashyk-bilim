@@ -1,12 +1,14 @@
 'use client';
 import { createContext, use } from 'react';
 import type { ReactNode } from 'react';
+import type { EditorMode } from '@components/Objects/Editor/core';
 
 // Properly typed context
 export const EditorProviderContext = createContext<EditorProviderState | null>(null);
 
 export interface EditorProviderState {
   isEditable: boolean;
+  mode?: EditorMode;
 }
 
 interface EditorProviderProps {

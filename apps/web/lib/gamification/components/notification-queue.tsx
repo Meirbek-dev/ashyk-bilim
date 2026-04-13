@@ -59,7 +59,7 @@ export function useXPNotificationQueue(options: XPNotificationQueueOptions = {})
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const [queue, setQueue] = useState<BatchedNotification[]>([]);
   const [visible, setVisible] = useState<BatchedNotification[]>([]);
-  const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const timeoutsRef = useRef(new Map());
 
   // Add notification to queue with batching logic
   function addNotification(notification: Omit<XPNotification, 'id' | 'timestamp'>) {
@@ -324,7 +324,7 @@ export function useContextualPosition(
 
   // Use refs for mutable values so we can reference them from stable callbacks
   const rafRef = useRef<number | null>(null);
-  const mountedRef = useRef<boolean>(false);
+  const mountedRef = useRef(false);
 
   // computePosition and scheduleCompute are declared inside the effect to keep
   // listener references stable and avoid stale-closure issues; see useEffect below.

@@ -15,7 +15,6 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlmodel import Session
 
-from src.core.events.database import get_db_session
 from src.db.gamification import (
     DashboardRead,
     GamificationProfile,
@@ -31,7 +30,9 @@ from src.db.gamification import (
 from src.db.gamification import (
     StreakType as DBStreakType,
 )
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
+from src.infra.db.session import get_db_session
 from src.security.auth import get_current_user
 from src.security.rbac import PermissionCheckerDep
 from src.services.gamification import service
@@ -42,6 +43,11 @@ from src.services.gamification.service import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+class UserRankRead(PydanticStrictBaseModel):
+    user_id: int
+    rank: int | None = None
 
 
 def _profile_to_read(p: GamificationProfile) -> ProfileRead:
@@ -81,11 +87,11 @@ def _transaction_to_read(tx: XPTransaction) -> TransactionRead:
     )
 
 
-@router.get("/")
+@router.get("/", response_model=DashboardRead)
 async def get_unified_dashboard(
     user: Annotated[PublicUser, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db_session)],
-):
+) -> DashboardRead:
     """Unified endpoint: Get complete gamification dashboard, profile, leaderboard, and config"""
     try:
         data = service.get_dashboard_data(db, user.id, include_leaderboard=True)
@@ -229,18 +235,18 @@ async def get_leaderboard(
         raise HTTPException(status_code=500, detail="Failed to get leaderboard")
 
 
-@router.get("/rank")
+@router.get("/rank", response_model=UserRankRead)
 async def get_user_rank(
     user: Annotated[PublicUser, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db_session)],
-):
+) -> UserRankRead:
     """Return the current user's rank within the platform."""
     try:
         rank = service.get_user_rank(db, user.id)
         if rank is None:
             service.get_profile(db, user.id)
             rank = service.get_user_rank(db, user.id)
-        return {"user_id": user.id, "rank": rank}
+        return UserRankRead(user_id=user.id, rank=rank)
     except Exception as e:
         logger.exception("User rank error for user %s: %s", user.id, e)
         raise HTTPException(status_code=500, detail="Failed to get user rank")

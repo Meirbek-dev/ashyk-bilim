@@ -1,0 +1,55 @@
+name: Contract Sync
+
+on:
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - 'apps/web/**'
+      - 'package.json'
+      - 'turbo.json'
+      - '.github/workflows/contract-sync.yaml'
+  push:
+    branches:
+      - openu
+    paths:
+      - 'apps/api/**'
+      - 'apps/web/**'
+      - 'package.json'
+      - 'turbo.json'
+      - '.github/workflows/contract-sync.yaml'
+
+jobs:
+  contract-sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: latest
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install API dependencies
+        run: uv sync
+        working-directory: ./apps/api
+
+      - name: Install workspace dependencies
+        run: bun install --no-frozen-lockfile
+
+      - name: Regenerate contracts
+        run: bun run generate:contracts
+
+      - name: Verify generated artifacts are committed
+        run: git diff --exit-code -- apps/api/openapi.json apps/web/lib/api/generated/schema.ts

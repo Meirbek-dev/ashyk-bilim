@@ -11,11 +11,11 @@ import {
   Upload,
 } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import NextImage from '@components/ui/NextImage';
 import { NodeViewWrapper } from '@tiptap/react';
 import { useTranslations } from 'next-intl';
 
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import { getActivityBlockMediaDirectory } from '@services/media/media';
 import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { uploadNewImageFile } from '@services/blocks/Image/images';
@@ -75,34 +75,37 @@ const ALIGNMENT_CONFIG = {
 
 interface UseImageUploadOptions {
   activityUuid: string;
-  accessToken: string;
   onSuccess: (blockObject: BlockObject) => void;
+  t: ReturnType<typeof useTranslations>;
 }
 
-function useImageUpload({ activityUuid, accessToken, onSuccess }: UseImageUploadOptions) {
+function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileSelect = useCallback((selectedFile: File | null) => {
-    setError(null);
+  const handleFileSelect = useCallback(
+    (selectedFile: File | null) => {
+      setError(null);
 
-    if (!selectedFile) {
-      setFile(null);
-      setPreview(null);
-      return;
-    }
+      if (!selectedFile) {
+        setFile(null);
+        setPreview(null);
+        return;
+      }
 
-    // Validate file type
-    if (!selectedFile.type.startsWith('image/')) {
-      setError('Please select a valid image file');
-      return;
-    }
+      // Validate file type
+      if (!selectedFile.type.startsWith('image/')) {
+        setError(t('invalidImageFile'));
+        return;
+      }
 
-    setFile(selectedFile);
-    setPreview(URL.createObjectURL(selectedFile));
-  }, []);
+      setFile(selectedFile);
+      setPreview(URL.createObjectURL(selectedFile));
+    },
+    [t],
+  );
 
   const handleUpload = useCallback(async () => {
     if (!file) return;
@@ -111,16 +114,16 @@ function useImageUpload({ activityUuid, accessToken, onSuccess }: UseImageUpload
     setError(null);
 
     try {
-      const result = await uploadNewImageFile(file, activityUuid, accessToken);
+      const result = await uploadNewImageFile(file, activityUuid);
       onSuccess(result);
       setFile(null);
       setPreview(null);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Upload failed');
+      setError(error instanceof Error ? error.message : t('uploadFailed'));
     } finally {
       setIsUploading(false);
     }
-  }, [file, activityUuid, accessToken, onSuccess]);
+  }, [file, activityUuid, onSuccess, t]);
 
   const reset = useCallback(() => {
     setFile(null);
@@ -247,11 +250,15 @@ function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset
   if (preview) {
     return (
       <div className="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
-        <img
-          src={preview}
-          alt="Preview"
-          className="mx-auto max-h-48 rounded-md object-contain"
-        />
+        <div className="mx-auto h-48 w-full overflow-hidden rounded-md">
+          <NextImage
+            src={preview}
+            alt={t('previewImageAlt')}
+            fill
+            className="object-contain"
+            sizes="100vw"
+          />
+        </div>
         <div className="mt-4 flex justify-center gap-2">
           <button
             type="button"
@@ -414,16 +421,11 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
   usePlatform();
   const course = useCourse();
   const { isEditable } = useEditorProvider();
-  const session = usePlatformSession() as {
-    data?: { tokens?: { access_token: string } };
-  } | null;
-
   const [blockObject, setBlockObject] = useState(node.attrs.blockObject);
   const [alignment, setAlignment] = useState<Alignment>(node.attrs.alignment || 'center');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const activityUuid = extension.options.activity.activity_uuid;
-  const accessToken = session?.data?.tokens?.access_token || '';
   const initialWidth = node.attrs.size?.width && node.attrs.size.width > 0 ? node.attrs.size.width : DEFAULT_WIDTH;
 
   // Image URL computation
@@ -431,23 +433,23 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
     if (!blockObject || !course) return null;
 
     const fileId = `${blockObject.content.file_id}.${blockObject.content.file_format}`;
-    return getActivityBlockMediaDirectory(
-      course.courseStructure.course_uuid,
-      activityUuid,
-      blockObject.block_uuid,
+    return getActivityBlockMediaDirectory({
+      courseId: course.courseStructure.course_uuid,
+      activityId: activityUuid,
+      blockId: blockObject.block_uuid,
       fileId,
-      'imageBlock',
-    );
+      type: 'imageBlock',
+    });
   }, [blockObject, course, activityUuid]);
 
   // Upload handling
   const { file, preview, isUploading, error, handleFileSelect, handleUpload, reset } = useImageUpload({
     activityUuid,
-    accessToken,
     onSuccess: (newBlockObject) => {
       setBlockObject(newBlockObject);
       updateAttributes({ blockObject: newBlockObject });
     },
+    t,
   });
 
   // Resize handling

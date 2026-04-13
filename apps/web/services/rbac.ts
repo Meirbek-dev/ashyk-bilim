@@ -15,23 +15,20 @@ import type {
   UserRBACData,
   UserRoleAssignment,
 } from '@/types/permissions';
-import { getAPIUrl } from '@/services/config/config';
+import { apiFetch } from '@/lib/api-client';
 
 // ============================================================================
 // Internal helpers
 // ============================================================================
 
-const api = (path: string) => `${getAPIUrl()}${path}`;
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const headers = new Headers(options?.headers);
+  headers.set('Content-Type', 'application/json');
 
-async function request<T>(url: string, token: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    credentials: 'include',
+  const res = await apiFetch(path, {
+    method: options?.method,
+    body: options?.body,
+    headers,
   });
 
   if (!res.ok) {
@@ -46,73 +43,73 @@ async function request<T>(url: string, token: string, options?: RequestInit): Pr
 // My permissions
 // ============================================================================
 
-export function fetchMyPermissions(token: string): Promise<UserRBACData> {
-  return request(api('rbac/me/permissions'), token);
+export function fetchMyPermissions(): Promise<UserRBACData> {
+  return request('rbac/me/permissions');
 }
 
 // ============================================================================
 // Permissions - read-only
 // ============================================================================
 
-export function listAllPermissions(token: string): Promise<Permission[]> {
-  return request(api('roles/permissions/all'), token);
+export function listAllPermissions(): Promise<Permission[]> {
+  return request('roles/permissions/all');
 }
 
 // ============================================================================
 // Roles - CRUD
 // ============================================================================
 
-export function listRoles(token: string): Promise<Role[]> {
-  return request(api('roles'), token);
+export function listRoles(): Promise<Role[]> {
+  return request('roles');
 }
 
-export function getRole(token: string, roleId: number): Promise<Role> {
-  return request(api(`roles/${roleId}`), token);
+export function getRole(roleId: number): Promise<Role> {
+  return request(`roles/${roleId}`);
 }
 
-export function getRolePermissions(token: string, roleId: number): Promise<Permission[]> {
-  return request(api(`roles/${roleId}/permissions`), token);
+export function getRolePermissions(roleId: number): Promise<Permission[]> {
+  return request(`roles/${roleId}/permissions`);
 }
 
-export function createRole(token: string, body: CreateRoleBody): Promise<Role> {
-  return request(api('roles'), token, {
+export function createRole(body: CreateRoleBody): Promise<Role> {
+  return request('roles', {
     method: 'POST',
     body: JSON.stringify(body),
   });
 }
 
-export function updateRole(token: string, roleId: number, body: UpdateRoleBody): Promise<Role> {
-  return request(api(`roles/${roleId}`), token, {
+export function updateRole(roleId: number, body: UpdateRoleBody): Promise<Role> {
+  return request(`roles/${roleId}`, {
     method: 'PUT',
     body: JSON.stringify(body),
   });
 }
 
-export function deleteRole(token: string, roleId: number): Promise<void> {
-  return request(api(`roles/${roleId}`), token, { method: 'DELETE' });
+export function deleteRole(roleId: number): Promise<void> {
+  return request(`roles/${roleId}`, { method: 'DELETE' });
 }
 
-export function getRoleUsersCount(token: string, roleId: number): Promise<{ count: number }> {
-  return request(api(`roles/${roleId}/users/count`), token);
+export function getRoleUsersCount(roleId: number): Promise<{ count: number }> {
+  return request(`roles/${roleId}/users/count`);
 }
 
-export function listRoleAuditLog(token: string, page = 1, pageSize = 20): Promise<RoleAuditListResponse> {
-  return request(api(`roles/audit-log?page=${page}&page_size=${pageSize}`), token);
+export function listRoleAuditLog(page = 1, pageSize = 20): Promise<RoleAuditListResponse> {
+  return request(`roles/audit-log?page=${page}&page_size=${pageSize}`);
 }
 
 // ============================================================================
 // Role ↔ Permission assignment
 // ============================================================================
 
-export function addPermissionToRole(token: string, roleId: number, permissionId: number): Promise<void> {
-  return request(api(`roles/${roleId}/permissions`), token, {
+export function addPermissionToRole(roleId: number, permissionId: number): Promise<void> {
+  return request(`roles/${roleId}/permissions`, {
     method: 'POST',
     body: JSON.stringify({ permission_id: permissionId }),
   });
 }
 
-export function removePermissionFromRole(token: string, roleId: number, permissionId: number): Promise<void> {
-  return request(api(`roles/${roleId}/permissions/${permissionId}`), token, {
+export function removePermissionFromRole(roleId: number, permissionId: number): Promise<void> {
+  return request(`roles/${roleId}/permissions/${permissionId}`, {
     method: 'DELETE',
   });
 }
@@ -121,19 +118,19 @@ export function removePermissionFromRole(token: string, roleId: number, permissi
 // User ↔ Role assignment
 // ============================================================================
 
-export function listUserRoles(token: string): Promise<UserRoleAssignment[]> {
-  return request<UserRoleAssignment[]>(api('rbac/user-roles'), token);
+export function listUserRoles(): Promise<UserRoleAssignment[]> {
+  return request<UserRoleAssignment[]>('rbac/user-roles');
 }
 
-export function assignRoleToUser(token: string, userId: number, roleId: number): Promise<void> {
-  return request(api('rbac/roles/assign'), token, {
+export function assignRoleToUser(userId: number, roleId: number): Promise<void> {
+  return request('rbac/roles/assign', {
     method: 'POST',
     body: JSON.stringify({ user_id: userId, role_id: roleId }),
   });
 }
 
-export function removeRoleFromUser(token: string, userId: number, roleId: number): Promise<void> {
-  return request(api('rbac/roles/revoke'), token, {
+export function removeRoleFromUser(userId: number, roleId: number): Promise<void> {
+  return request('rbac/roles/revoke', {
     method: 'POST',
     body: JSON.stringify({ user_id: userId, role_id: roleId }),
   });
@@ -143,9 +140,8 @@ export function removeRoleFromUser(token: string, userId: number, roleId: number
 // Users (used by role assignment UI)
 // ============================================================================
 
-export function listUsers(token: string, limit = 100): Promise<UserBasic[]> {
-  // The endpoint may return { users: [...] } or a flat array.
-  return request<UserBasic[] | { users: UserBasic[] }>(api(`platform/users?limit=${limit}`), token).then((data) =>
+export function listUsers(limit = 100): Promise<UserBasic[]> {
+  return request<UserBasic[] | { users: UserBasic[] }>(`members?limit=${limit}`).then((data) =>
     Array.isArray(data) ? data : data.users,
   );
 }

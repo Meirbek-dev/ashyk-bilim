@@ -32,7 +32,12 @@ export default function PlatformUserSettingsPage(props: { params: Promise<{ subp
     () => [
       { id: 'general', label: 'general', icon: Info, component: UserEditGeneral },
       { id: 'profile', label: 'profile', icon: UserIcon, component: UserProfile },
-      { id: 'gamification', label: 'gamification', icon: Trophy, component: UserGamificationSettings },
+      {
+        id: 'gamification',
+        label: 'gamification',
+        icon: Trophy,
+        component: UserGamificationSettings,
+      },
       { id: 'security', label: 'password', icon: Lock, component: UserEditPassword },
     ],
     [],

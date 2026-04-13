@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useExamDetail, useUpdateExamSettings } from '@/features/exams/hooks/useExam';
+import { useCourseContributors } from '@/hooks/courses/useCourseContributors';
+
+import { useEffect, useMemo, useState } from 'react';
 import { Search, UserCheck, UserX } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
-import { getAPIUrl } from '@/services/config/config';
 import { Checkbox } from '@components/ui/checkbox';
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
@@ -21,77 +23,47 @@ interface Student {
 
 interface WhitelistManagementProps {
   examUuid: string;
-  courseId: number;
-  accessToken: string;
+  courseUuid: string;
   currentWhitelist: number[];
   onWhitelistUpdated: () => void;
 }
 
 export default function WhitelistManagement({
   examUuid,
-  courseId,
-  accessToken,
+  courseUuid,
   currentWhitelist,
   onWhitelistUpdated,
 }: WhitelistManagementProps) {
   const t = useTranslations('Components.WhitelistManagement');
-  const [students, setStudents] = useState<Student[]>([]);
-  const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set(currentWhitelist));
+  const [selectedUserIds, setSelectedUserIds] = useState(new Set(currentWhitelist));
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`;
+  const contributorsQuery = useCourseContributors(normalizedCourseUuid);
+  const { data: examData, refetch: refetchExam } = useExamDetail(examUuid);
+  const updateExamSettingsMutation = useUpdateExamSettings(examUuid);
+  const isLoading = contributorsQuery.isPending;
+  const isSaving = updateExamSettingsMutation.isPending;
+  const students = useMemo<Student[]>(() => {
+    const contributors = Array.isArray(contributorsQuery.data?.data) ? contributorsQuery.data.data : [];
 
-  const fetchEnrolledStudents = useEffectEvent(async () => {
-    try {
-      setIsLoading(true);
-
-      // First, get course_uuid from course_id
-      const courseResponse = await fetch(`${getAPIUrl()}courses/id/${courseId}`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      if (!courseResponse.ok) throw new Error('Failed to fetch course');
-
-      const courseData = await courseResponse.json();
-
-      // Then get contributors (enrolled users) using course_uuid
-      const response = await fetch(`${getAPIUrl()}courses/${courseData.course_uuid}/contributors`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch contributors');
-
-      const data = await response.json();
-
-      // Transform contributor data to student format
-      const studentsData = data.map((contributor: any) => ({
-        id: contributor.user_id,
-        user_id: contributor.user_id,
-        user_name:
-          (contributor.user &&
-            ((contributor.user.first_name || '') + ' ' + (contributor.user.last_name || '')).trim()) ||
-          contributor.user?.username ||
-          contributor.user?.email ||
-          'Unknown',
-        user_email: contributor.user?.email || '',
-      }));
-
-      setStudents(studentsData);
-    } catch (error) {
-      console.error('Error fetching students:', error);
-      toast.error(t('errorFetchingStudents'));
-    } finally {
-      setIsLoading(false);
-    }
-  });
+    return contributors.map((contributor: any) => ({
+      id: contributor.user_id,
+      user_id: contributor.user_id,
+      user_name:
+        (contributor.user && ((contributor.user.first_name || '') + ' ' + (contributor.user.last_name || '')).trim()) ||
+        contributor.user?.username ||
+        contributor.user?.email ||
+        'Unknown',
+      user_email: contributor.user?.email || '',
+    }));
+  }, [contributorsQuery.data?.data]);
 
   useEffect(() => {
-    fetchEnrolledStudents();
-  }, [courseId]);
+    if (contributorsQuery.error) {
+      console.error('Error fetching students:', contributorsQuery.error);
+      toast.error(t('errorFetchingStudents'));
+    }
+  }, [contributorsQuery.error, t]);
 
   useEffect(() => {
     setSelectedUserIds(new Set(currentWhitelist));
@@ -117,38 +89,23 @@ export default function WhitelistManagement({
 
   const handleSaveWhitelist = async () => {
     try {
-      setIsSaving(true);
+      const latestExamData = (examData ?? (await refetchExam()).data) as
+        | { settings?: Record<string, unknown> }
+        | undefined;
 
-      // Fetch current exam settings so we merge user-provided whitelist into existing settings
-      const examResp = await fetch(`${getAPIUrl()}exams/${examUuid}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      if (!latestExamData) throw new Error('Failed to fetch exam settings');
+      const existingSettings = latestExamData.settings || {};
 
-      if (!examResp.ok) throw new Error('Failed to fetch exam settings');
-      const examData = await examResp.json();
-      const existingSettings = examData.settings || {};
-
-      // Merge and ensure access mode is WHITELIST so changes persist and the whitelist is effective
+      // Merge and ensure access mode is WHITELIST so changes persist and the whitelist is effective,
       const mergedSettings = {
         ...existingSettings,
         whitelist_user_ids: [...selectedUserIds],
         access_mode: existingSettings.access_mode === 'WHITELIST' ? 'WHITELIST' : 'WHITELIST',
       };
 
-      const response = await fetch(`${getAPIUrl()}exams/${examUuid}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          settings: mergedSettings,
-        }),
-      });
+      await updateExamSettingsMutation.mutateAsync(mergedSettings);
 
-      if (!response.ok) throw new Error('Failed to update whitelist');
-
-      // If access_mode was not WHITELIST before, inform the user that it has been set
+      // If access_mode was not WHITELIST before, inform the user that it has been set,
       if (existingSettings.access_mode !== 'WHITELIST') {
         toast.success(t('whitelistUpdated') + '. ' + t('accessModeSetToWhitelist'));
       } else {
@@ -159,8 +116,6 @@ export default function WhitelistManagement({
     } catch (error) {
       console.error('Error updating whitelist:', error);
       toast.error(t('errorUpdatingWhitelist'));
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -229,7 +184,7 @@ export default function WhitelistManagement({
             filteredStudents.map((student) => (
               <div
                 key={student.user_id}
-                className="flex items-center space-x-2 rounded-md p-2 hover:bg-gray-50"
+                className="hover:bg-muted flex items-center space-x-2 rounded-md p-2"
               >
                 <Checkbox
                   id={`student-${student.user_id}`}

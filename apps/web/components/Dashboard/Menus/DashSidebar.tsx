@@ -13,22 +13,11 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import {
-  Backpack,
-  BadgeDollarSign,
-  BarChart3,
-  BookCopy,
-  Home,
-  LogOut,
-  School,
-  Settings,
-  ShieldCheck,
-  Users,
-} from 'lucide-react';
+import { Backpack, BarChart3, BookCopy, Home, LogOut, School, Settings, ShieldCheck, Users } from 'lucide-react';
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
+import { useSession } from '@/hooks/useSession';
 import platformLogoLight from '@public/platform_logo_light.svg';
+import { logout } from '@services/auth/auth';
 import { getAbsoluteUrl } from '@services/config/config';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,7 +27,6 @@ import AppLink from '@/components/ui/AppLink';
 import { Badge } from '@/components/ui/badge';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { signOut } from 'next-auth/react';
 import Image from 'next/image';
 
 interface NavigationItem {
@@ -98,15 +86,8 @@ const SidebarSkeleton = () => (
 const useNavigationItems = () => {
   const pathname = usePathname();
   const t = useTranslations('SidebarMenu');
-  const {
-    canSeePlatform,
-    canSeeCourses,
-    canSeeAssignments,
-    canSeeAnalytics,
-    canSeeUsers,
-    canSeeAdmin,
-    canSeePayments,
-  } = useNavigationPermissions();
+  const { canSeePlatform, canSeeCourses, canSeeAssignments, canSeeAnalytics, canSeeUsers, canSeeAdmin } =
+    useNavigationPermissions();
 
   return [
     {
@@ -160,22 +141,11 @@ const useNavigationItems = () => {
           },
         ]
       : []),
-    ...(canSeePayments
-      ? [
-          {
-            title: t('tooltips.payments'),
-            href: '/dash/payments/customers',
-            icon: BadgeDollarSign,
-            tooltip: t('tooltips.payments'),
-            isActive: pathname.startsWith('/dash/payments'),
-          },
-        ]
-      : []),
     ...(canSeePlatform
       ? [
           {
             title: t('tooltips.platform'),
-            href: '/dash/platform/settings/general',
+            href: '/dash/platform/settings/landing',
             icon: School,
             tooltip: t('tooltips.platform'),
             isActive: pathname.startsWith('/dash/platform'),
@@ -238,8 +208,7 @@ const NavItem = ({ item, isCollapsed }: { item: NavigationItem; isCollapsed: boo
 );
 
 const DashSidebar = ({ className }: SidebarProps) => {
-  const platform = usePlatform();
-  const session = usePlatformSession();
+  const { user } = useSession();
   const { state, toggleSidebar } = useSidebar();
   const t = useTranslations('SidebarMenu');
   const navigationItems = useNavigationItems();
@@ -249,10 +218,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
 
   async function handleLogout() {
     try {
-      await signOut({
-        redirect: true,
-        callbackUrl: getAbsoluteUrl('/login'),
-      });
+      await logout({ redirectTo: getAbsoluteUrl('/login') });
     } catch (error) {
       console.error('Logout failed:', error);
       // Could add toast notification here
@@ -279,7 +245,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
     };
   }, []);
 
-  if (!session.data?.user) {
+  if (!user) {
     return <SidebarSkeleton />;
   }
 
@@ -302,23 +268,23 @@ const DashSidebar = ({ className }: SidebarProps) => {
             aria-label={t('ariaLabels.goToHomepage')}
           >
             <div className="bg-primary/80 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-linear-to-br p-1.5 shadow-sm">
-              <Image
-                alt={t('ariaLabels.platformLogo')}
-                width={24}
-                height={24}
-                src={platformLogoLight}
-                className="h-full w-full object-contain"
-                priority
-              />
+              <div className="relative h-full w-full">
+                <Image
+                  alt={t('ariaLabels.platformLogo')}
+                  src={platformLogoLight}
+                  fill
+                  sizes="28px"
+                  className="object-contain"
+                  priority
+                />
+              </div>
             </div>
             <div
               className={`overflow-hidden transition-all duration-300 ${
                 isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
               }`}
             >
-              <h2 className="text-sidebar-foreground text-lg leading-tight font-semibold">
-                {platform?.name || t('platformName')}
-              </h2>
+              <h2 className="text-sidebar-foreground text-lg leading-tight font-semibold">{t('platformName')}</h2>
             </div>
           </AppLink>
 
@@ -355,7 +321,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
           <div className={`flex min-w-0 items-center gap-3 ${isCollapsed ? 'flex-col gap-2' : ''}`}>
             <div className="relative shrink-0">
               <UserAvatar
-                username={session.data.user.username}
+                username={user.username}
                 size="sm"
                 variant="outline"
                 showProfilePopup
@@ -366,8 +332,8 @@ const DashSidebar = ({ className }: SidebarProps) => {
                 isCollapsed ? 'hidden w-0 opacity-0' : 'w-auto opacity-100'
               }`}
             >
-              <p className="text-sidebar-foreground truncate text-sm font-medium">@{session.data.user.username}</p>
-              <p className="text-sidebar-foreground/60 truncate text-xs">{session.data.user.email}</p>
+              <p className="text-sidebar-foreground truncate text-sm font-medium">@{user.username}</p>
+              <p className="text-sidebar-foreground/60 truncate text-xs">{user.email}</p>
             </div>
           </div>
 
@@ -380,7 +346,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
                   aria-label={t('ariaLabels.userSettings')}
                 />
               }
-              tooltip={isCollapsed ? t('tooltips.userSettings', { username: session.data.user.username }) : undefined}
+              tooltip={isCollapsed ? t('tooltips.userSettings', { username: user.username }) : undefined}
               size="sm"
               className={`hover:bg-sidebar-accent/50 flex-1 transition-all duration-200 ${
                 isCollapsed ? 'w-full justify-center' : ''

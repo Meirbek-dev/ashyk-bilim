@@ -2,12 +2,12 @@
 
 import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
+import { reportClientError } from '@/services/telemetry/client';
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const t = useTranslations('Errors');
 
   useEffect(() => {
-    // Log the error to console with full details
     console.error('Root Error Boundary Caught:', {
       message: error.message,
       name: error.name,
@@ -18,8 +18,19 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
     });
 
-    // Send to external logging service if needed
-    // fetch('/api/log-error', { ... })
+    void reportClientError({
+      digest: error.digest,
+      error: {
+        cause: error.cause,
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      },
+      page: typeof globalThis.window !== 'undefined' ? globalThis.location.pathname : 'unknown',
+      url: typeof globalThis.window !== 'undefined' ? globalThis.location.href : 'unknown',
+    }).catch((loggingError: unknown) => {
+      console.error('Failed to report root error boundary event:', loggingError);
+    });
   }, [error]);
 
   return (
@@ -28,15 +39,15 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         <h2 className="mb-4 text-2xl font-bold">{t('somethingWentWrong')}</h2>
 
         {error.digest && (
-          <p className="mb-4 text-sm text-gray-600">
-            {t('errorReference')} <code className="rounded bg-gray-100 px-2 py-1">{error.digest}</code>
+          <p className="text-muted-foreground dark:text-muted-foreground mb-4 text-sm">
+            {t('errorReference')} <code className="bg-muted/70 text-foreground rounded px-2 py-1">{error.digest}</code>
           </p>
         )}
 
         {process.env.NODE_ENV !== 'production' && (
           <details className="mb-4 text-left">
             <summary className="cursor-pointer font-semibold">{t('technicalDetails')}</summary>
-            <div className="mt-2 rounded bg-red-50 p-4">
+            <div className="bg-destructive/10 dark:bg-destructive/20 mt-2 rounded p-4">
               <p className="mb-2 font-mono text-sm">
                 <strong>{t('errorLabel')}</strong> {error.message}
               </p>
@@ -47,7 +58,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
 
         <button
           onClick={reset}
-          className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
+          className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-md px-6 py-2"
         >
           {t('tryAgain')}
         </button>

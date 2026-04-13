@@ -31,10 +31,10 @@ const LinkInputTooltip = ({ onSave, onCancel, currentUrl = '' }: LinkInputToolti
   };
 
   return (
-    <div className="absolute top-full left-0 z-1000 mt-1 rounded-md border border-gray-300/50 bg-white p-2 shadow-md">
+    <div className="border-border bg-popover absolute top-full left-0 z-[1000] mt-1.5 rounded-lg border p-2 shadow-md">
       <form
         action={handleSubmit}
-        className="flex items-center gap-1"
+        className="flex items-center gap-1.5"
       >
         <input
           name="url"
@@ -43,24 +43,24 @@ const LinkInputTooltip = ({ onSave, onCancel, currentUrl = '' }: LinkInputToolti
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-[200px] rounded border border-gray-300/50 px-2 py-1 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+          className="border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/30 w-52 rounded-md border px-2.5 py-1 text-xs focus:ring-1 focus:outline-none"
         />
-        <div className="flex gap-0.5">
+        <div className="flex gap-1">
           <button
             type="submit"
             disabled={!url.trim()}
-            className="flex cursor-pointer items-center justify-center rounded bg-green-50 p-1 text-green-600 transition-colors hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-green-50"
+            className="text-muted-foreground hover:bg-accent hover:text-foreground flex items-center justify-center rounded-md p-1 transition-colors disabled:pointer-events-none disabled:opacity-40"
             title={t('saveLink')}
           >
-            <Check size={18} />
+            <Check size={16} />
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="flex cursor-pointer items-center justify-center rounded bg-red-50 p-1 text-red-600 transition-colors hover:bg-red-100"
+            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex items-center justify-center rounded-md p-1 transition-colors"
             title={t('cancel')}
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
       </form>

@@ -24,7 +24,7 @@ export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBac
         <CardDescription>{t('gradingBacklog.description')}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="text-4xl font-semibold text-foreground">{backlogCount}</div>
+        <div className="text-foreground text-4xl font-semibold">{backlogCount}</div>
         <div className="mt-4 flex flex-wrap gap-2">
           {gradingAlerts.length ? (
             gradingAlerts.map((alert) => (

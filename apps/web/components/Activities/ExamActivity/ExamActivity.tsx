@@ -2,19 +2,26 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import useSWR, { mutate } from 'swr';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { getAPIUrl, getAbsoluteUrl } from '@/services/config/config';
+import { apiFetch } from '@/lib/api-client';
+import { queryKeys } from '@/lib/react-query/queryKeys';
+import { getAbsoluteUrl } from '@/services/config/config';
 import { useContributorStatus } from '@/hooks/useContributorStatus';
+import { courseKeys } from '@/hooks/courses/courseKeys';
+import {
+  useExamActivity,
+  useExamAllAttempts,
+  useExamMyAttempts,
+  useExamQuestions,
+} from '@/features/exams/hooks/useExam';
+import { examMyAttemptsQueryOptions } from '@/features/exams/queries/exams.query';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
 import type { AttemptData } from './state/examFlowReducer';
-import { swrFetcher } from '@/services/utils/ts/requests';
 import { examFlowReducer } from './state/examFlowReducer';
 import ExamResultsDashboard from './ExamResultsDashboard';
-import { getTrailSwrKey } from '@services/courses/keys';
 import ExamTakingInterface from './ExamTakingInterface';
 import QuestionManagement from './QuestionManagement';
 import { examActions } from './state/examActions';
@@ -25,16 +32,34 @@ import ExamSettings from './ExamSettings';
 import ExamResults from './ExamResults';
 import ExamLayout from './ExamLayout';
 
+interface ActivityObject {
+  activity_uuid: string;
+  name: string;
+}
+
+interface ChapterActivity {
+  activity_uuid: string;
+}
+
+interface CourseChapter {
+  activities?: ChapterActivity[];
+}
+
+interface CourseObject {
+  course_uuid: string;
+  withUnpublishedActivities?: boolean;
+  chapters?: CourseChapter[];
+}
+
 interface ExamActivityProps {
-  activity: any;
-  course: any;
+  activity: ActivityObject;
+  course: CourseObject;
 }
 
 export default function ExamActivity({ activity, course }: ExamActivityProps) {
   const t = useTranslations('Activities.ExamActivity');
-  const session = usePlatformSession();
-  const accessToken = session?.data?.tokens?.access_token;
   const { contributorStatus } = useContributorStatus(course.course_uuid);
+  const queryClient = useQueryClient();
 
   // Centralized state management with reducer
   const [state, dispatch] = useReducer(examFlowReducer, { phase: 'loading' });
@@ -44,40 +69,19 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
   const isTeacher = contributorStatus === 'ACTIVE';
 
   // Fetch exam data
-  const {
-    data: exam,
-    error: examError,
-    mutate: mutateExam,
-  } = useSWR(accessToken ? `${getAPIUrl()}exams/activity/${activity.activity_uuid}` : null, (url) =>
-    swrFetcher(url, accessToken),
-  );
+  const { data: exam, error: examError, refetch: mutateExam } = useExamActivity(activity.activity_uuid);
 
   // Safe exam uuid reference to avoid accessing property on undefined
   const examUuid = exam?.exam_uuid ?? null;
 
   // Fetch questions
-  const {
-    data: questions,
-    error: questionsError,
-    mutate: mutateQuestions,
-  } = useSWR(examUuid && accessToken ? `${getAPIUrl()}exams/${examUuid}/questions` : null, (url) =>
-    swrFetcher(url, accessToken),
-  );
+  const { data: questions, error: questionsError, refetch: mutateQuestions } = useExamQuestions(examUuid);
 
   // Fetch user's attempts (fetch for both students and teachers now)
-  const {
-    data: userAttempts,
-    error: attemptsError,
-    mutate: mutateAttempts,
-  } = useSWR(examUuid && accessToken ? `${getAPIUrl()}exams/${examUuid}/attempts/me` : null, (url) =>
-    swrFetcher(url, accessToken),
-  );
+  const { data: userAttempts, error: attemptsError, refetch: mutateAttempts } = useExamMyAttempts(examUuid);
 
   // Fetch all attempts for teachers
-  const { data: allAttempts } = useSWR(
-    examUuid && accessToken && isTeacher ? `${getAPIUrl()}exams/${examUuid}/attempts/all` : null,
-    (url) => swrFetcher(url, accessToken),
-  );
+  const { data: allAttempts } = useExamAllAttempts(examUuid, { enabled: isTeacher });
 
   // Update state based on loaded data
   useEffect(() => {
@@ -134,7 +138,7 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
 
     // Revalidate trail data
     try {
-      await mutate([getTrailSwrKey(), accessToken]);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() });
     } catch (error) {
       console.warn('Failed to revalidate trail after exam completion', error);
     }
@@ -142,22 +146,19 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
     // Revalidate course meta
     try {
       const withUnpublishedActivities = course?.withUnpublishedActivities || false;
-      await mutate(
-        `${getAPIUrl()}courses/${course?.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`,
-      );
+      await queryClient.invalidateQueries({
+        queryKey: courseKeys.structure(course?.course_uuid, withUnpublishedActivities),
+      });
     } catch (error) {
       console.warn('Failed to revalidate course meta after exam completion', error);
     }
 
-    // Fetch the completed attempt
-    const completedAttempt = await fetch(`${getAPIUrl()}exams/${examUuid}/attempts/me`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    }).then((res) => res.json());
+    const completedAttempt = examUuid ? await queryClient.fetchQuery(examMyAttemptsQueryOptions(examUuid)) : [];
 
     const lastAttempt = completedAttempt[0];
     dispatch(examActions.submitExam(lastAttempt));
     isCompletingRef.current = false;
-  }, [mutateAttempts, course, examUuid, accessToken]);
+  }, [mutateAttempts, course, examUuid, queryClient]);
 
   const router = useRouter();
 
@@ -169,9 +170,10 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
   const handleProceedToNextActivity = useCallback(() => {
     try {
       const cleanCurrent = activity.activity_uuid?.replace('activity_', '');
-      const allActivities: any[] = [];
-      (course?.chapters || []).forEach((chapter: any) =>
-        (chapter.activities || []).forEach((a: any) =>
+      type FlatActivity = ChapterActivity & { cleanUuid: string };
+      const allActivities: FlatActivity[] = [];
+      (course?.chapters ?? []).forEach((chapter) =>
+        (chapter.activities ?? []).forEach((a) =>
           allActivities.push({ ...a, cleanUuid: a.activity_uuid?.replace('activity_', '') }),
         ),
       );
@@ -241,7 +243,12 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
     const totalAttempts = allAttempts?.length ?? 0;
     const avgScore =
       allAttempts && allAttempts.length > 0
-        ? Math.round(allAttempts.reduce((s: number, a: any) => s + (a.percentage || 0), 0) / allAttempts.length)
+        ? Math.round(
+            allAttempts.reduce(
+              (s: number, a: AttemptData) => s + ((a as AttemptData & { percentage?: number }).percentage ?? 0),
+              0,
+            ) / allAttempts.length,
+          )
         : 0;
 
     return (
@@ -274,7 +281,6 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
               <QuestionManagement
                 examUuid={examUuid}
                 questions={questions}
-                accessToken={accessToken!}
                 onQuestionsChange={() => mutateQuestions()}
               />
             </TabsContent>
@@ -285,8 +291,7 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
             >
               <ExamSettings
                 exam={exam}
-                courseId={course.id}
-                accessToken={accessToken!}
+                courseUuid={course.course_uuid}
                 onSettingsUpdated={() => mutateExam()}
               />
             </TabsContent>
@@ -299,7 +304,6 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
                 <ExamResultsDashboard
                   examUuid={examUuid}
                   attempts={allAttempts}
-                  accessToken={accessToken!}
                   onViewAttempt={(attemptUuid) => {
                     toast.info(t('viewAttempt', { attempt: attemptUuid }));
                   }}
@@ -321,7 +325,6 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
           exam={state.exam}
           questionCount={state.questions.length}
           userAttempts={state.userAttempts}
-          accessToken={accessToken!}
           onStartExam={handleStartExam}
           onReviewAttempt={handleReviewAttempt}
           isTeacher={isTeacher}
@@ -338,7 +341,6 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
           exam={state.exam}
           questions={state.questions}
           attempt={state.attempt}
-          accessToken={accessToken!}
           onComplete={handleCompleteExam}
         />
       </ExamLayout>
@@ -348,12 +350,9 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
   const handleRetry = async () => {
     // Start a new attempt if allowed
     try {
-      const response = await fetch(`${getAPIUrl()}exams/${exam.exam_uuid}/attempts/start`, {
+      const response = await apiFetch(`exams/${exam.exam_uuid}/attempts/start`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {

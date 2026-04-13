@@ -1,4 +1,4 @@
-import { getPublicConfig, getServerConfig } from './env';
+import { getPublicConfig, getServerConfigResult } from './env';
 
 const toAbsoluteUrl = (path: string, baseUrl: string) => new URL(path, baseUrl).toString();
 
@@ -24,21 +24,28 @@ const isUnsupportedCookieDomain = (host?: string | null) => {
 
 /**
  * Resolves the API base URL (always ending with a slash).
- * Client code should use getAPIUrl() / getPublicAPIUrl().
- * Server code should use getServerAPIUrl().
+ * Shared code should use getAPIUrl(). It resolves to the public browser URL
+ * on the client and the internal Docker/backend URL on the server.
+ * Server-only code can use getServerAPIUrl() explicitly when needed.
  */
 export const getPublicAPIUrl = () => getPublicConfig().apiUrl;
 
 export const getServerAPIUrl = () => {
-  const { internalApiUrl } = getServerConfig();
-  if (!internalApiUrl) {
-    throw new Error('INTERNAL_API_URL is required for server-side API requests');
+  const serverConfigResult = getServerConfigResult();
+  if (serverConfigResult.success && serverConfigResult.config.internalApiUrl) {
+    return serverConfigResult.config.internalApiUrl;
   }
 
-  return internalApiUrl;
+  return getPublicAPIUrl();
 };
 
-export const getAPIUrl = () => getPublicAPIUrl();
+export const getAPIUrl = () => {
+  if (typeof globalThis.window === 'undefined') {
+    return getServerAPIUrl();
+  }
+
+  return getPublicAPIUrl();
+};
 
 export const getSiteUrl = () => getPublicConfig().siteUrl;
 
@@ -50,7 +57,7 @@ export const getTopLevelCookieDomain = () => {
   const override = process.env.COOKIE_DOMAIN?.trim();
   if (override) return override;
 
-  const cookieSourceUrl = process.env.NEXTAUTH_URL?.trim() || getSiteUrl();
+  const cookieSourceUrl = process.env.APP_URL?.trim() || getSiteUrl();
   const { hostname } = new URL(cookieSourceUrl);
   return isUnsupportedCookieDomain(hostname) ? undefined : hostname;
 };

@@ -18,7 +18,7 @@ export const FILE_TYPES = {
   document: {
     extensions: ['.pdf'],
     mimeTypes: ['application/pdf'],
-    maxSize: 50 * 1024 * 1024, // 50MB
+    maxSize: 100 * 1024 * 1024, // 100MB
   },
 } as const;
 

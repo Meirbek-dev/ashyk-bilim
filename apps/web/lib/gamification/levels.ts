@@ -10,9 +10,30 @@ import type { LevelInfo } from '@/types/gamification/profile';
 
 // Level configuration with RPG-style progression (translation keys)
 export const LEVEL_CONFIG: Record<number, LevelInfo> = {
-  1: { level: 1, title: 'novice', color: 'text-gray-500', icon: Target, minXP: 0, unlocks: ['basicProfile'] },
-  5: { level: 5, title: 'apprentice', color: 'text-blue-500', icon: Star, minXP: 1000, unlocks: ['avatarFrames'] },
-  10: { level: 10, title: 'scholar', color: 'text-purple-500', icon: Zap, minXP: 3000, unlocks: ['customAvatarHat'] },
+  1: {
+    level: 1,
+    title: 'novice',
+    color: 'text-gray-500',
+    icon: Target,
+    minXP: 0,
+    unlocks: ['basicProfile'],
+  },
+  5: {
+    level: 5,
+    title: 'apprentice',
+    color: 'text-blue-500',
+    icon: Star,
+    minXP: 1000,
+    unlocks: ['avatarFrames'],
+  },
+  10: {
+    level: 10,
+    title: 'scholar',
+    color: 'text-purple-500',
+    icon: Zap,
+    minXP: 3000,
+    unlocks: ['customAvatarHat'],
+  },
   15: {
     level: 15,
     title: 'expert',
@@ -61,7 +82,11 @@ export function getLevelInfo(level: number, t: (key: string) => string): LevelIn
     .map(Number)
     .toSorted((a, b) => b - a);
   const currentLevelConfig = availableLevels.find((configLevel) => level >= configLevel) || 1;
-  const baseConfig = LEVEL_CONFIG[currentLevelConfig]!;
+  const baseConfig = LEVEL_CONFIG[currentLevelConfig] ?? LEVEL_CONFIG[1];
+
+  if (!baseConfig) {
+    throw new Error('Invalid level configuration');
+  }
 
   return {
     ...baseConfig,

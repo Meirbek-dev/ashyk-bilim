@@ -31,6 +31,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { NodeViewWrapper } from '@tiptap/react';
 import { useTranslations } from 'next-intl';
 import DOMPurify from 'dompurify';
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
 
 // ============================================================================
 // TYPES & CONSTANTS
@@ -52,6 +53,15 @@ interface SupportedProduct {
   guide: string;
 }
 
+interface EmbedNodeAttrs {
+  embedUrl: string | null;
+  embedCode: string | null;
+  embedType: EmbedType | null;
+  embedHeight: number;
+  embedWidth: string;
+  alignment: Alignment;
+}
+
 const SCRIPT_BASED_EMBEDS: Record<string, ScriptEmbedConfig> = {
   twitter: {
     src: 'https://platform.twitter.com/widgets.js',
@@ -68,7 +78,12 @@ const SCRIPT_BASED_EMBEDS: Record<string, ScriptEmbedConfig> = {
 };
 
 const SUPPORTED_PRODUCTS: SupportedProduct[] = [
-  { name: 'G Docs', icon: SiGoogledocs, color: '#4285F4', guide: 'https://support.google.com/docs/answer/183965' },
+  {
+    name: 'G Docs',
+    icon: SiGoogledocs,
+    color: '#4285F4',
+    guide: 'https://support.google.com/docs/answer/183965',
+  },
   {
     name: 'YouTube',
     icon: SiYoutube,
@@ -77,15 +92,30 @@ const SUPPORTED_PRODUCTS: SupportedProduct[] = [
   },
   { name: 'GitHub', icon: SiGithub, color: '#181717', guide: 'https://emgithub.com/' },
 
-  { name: 'CodePen', icon: BoxIcon, color: '#000000', guide: 'https://blog.codepen.io/documentation/embedded-pens/' },
-  { name: 'Figma', icon: SiFigma, color: '#F24E1E', guide: 'https://help.figma.com/hc/en-us/articles/360041057214' },
+  {
+    name: 'CodePen',
+    icon: BoxIcon,
+    color: '#000000',
+    guide: 'https://blog.codepen.io/documentation/embedded-pens/',
+  },
+  {
+    name: 'Figma',
+    icon: SiFigma,
+    color: '#F24E1E',
+    guide: 'https://help.figma.com/hc/en-us/articles/360041057214',
+  },
   {
     name: 'GMaps',
     icon: SiGooglemaps,
     color: '#4285F4',
     guide: 'https://developers.google.com/maps/documentation/embed/get-started',
   },
-  { name: 'Canva', icon: SiCrewai, color: '#00C4CC', guide: 'https://www.canva.com/help/article/embed-designs' },
+  {
+    name: 'Canva',
+    icon: SiCrewai,
+    color: '#00C4CC',
+    guide: 'https://www.canva.com/help/article/embed-designs',
+  },
   {
     name: 'Notion',
     icon: SiNotion,
@@ -513,7 +543,7 @@ const EmptyState = ({
 // MAIN COMPONENT
 // ============================================================================
 
-const EmbedObjectsComponent = (props: any) => {
+const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
   const t = useTranslations('DashPage.Editor.EmbedObjects');
   const { updateAttributes } = props;
   const isMobile = useIsMobile();
@@ -795,7 +825,12 @@ const EmbedObjectsComponent = (props: any) => {
           <>
             <div
               className="absolute top-0 right-0 bottom-0 flex w-4 cursor-ew-resize items-center justify-center bg-white/70 opacity-0 transition-opacity hover:bg-white/90 hover:opacity-100"
+              role="button"
+              tabIndex={0}
               onMouseDown={(e) => handleResizeStart(e, 'horizontal')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as any, 'horizontal');
+              }}
             >
               <GripVertical
                 size={16}
@@ -804,7 +839,12 @@ const EmbedObjectsComponent = (props: any) => {
             </div>
             <div
               className="absolute right-0 bottom-0 left-0 flex h-4 cursor-ns-resize items-center justify-center bg-white/70 opacity-0 transition-opacity hover:bg-white/90 hover:opacity-100"
+              role="button"
+              tabIndex={0}
               onMouseDown={(e) => handleResizeStart(e, 'vertical')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') handleResizeStart(e as any, 'vertical');
+              }}
             >
               <GripHorizontal
                 size={16}

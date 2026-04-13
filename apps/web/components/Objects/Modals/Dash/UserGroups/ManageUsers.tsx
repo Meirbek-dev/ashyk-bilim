@@ -1,14 +1,13 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { linkUserToUserGroup, unLinkUserToUserGroup } from '@services/usergroups/usergroups';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { swrFetcher } from '@services/utils/ts/requests';
+import { useAllMembers, useUserGroupUsers } from '@/features/users/hooks/useUsers';
 import type { ColumnDef } from '@tanstack/react-table';
-import { getAPIUrl } from '@services/config/config';
+import { queryKeys } from '@/lib/react-query/queryKeys';
 import DataTable from '@components/ui/data-table';
 import { Check, Plus, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 
 interface ManageUsersProps {
@@ -27,12 +26,10 @@ interface UserRow {
 
 const ManageUsers = (props: ManageUsersProps) => {
   const t = useTranslations('Components.ManageUsers');
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
-  const { data: Users } = useSWR(`${getAPIUrl()}platform/users`, (url) => swrFetcher(url, access_token));
-  const { data: UGusers } = useSWR(`${getAPIUrl()}usergroups/${props.usergroup_id}/users`, (url) =>
-    swrFetcher(url, access_token),
-  );
+  const queryClient = useQueryClient();
+  const { data: Users } = useAllMembers();
+  const userGroupUsersKey = queryKeys.userGroups.users(props.usergroup_id);
+  const { data: UGusers } = useUserGroupUsers(props.usergroup_id);
 
   // Normalize Users response which may be either an array or a paginated object { users: [], total, ... }
   const platformUsersList = (data: any) => {
@@ -50,20 +47,20 @@ const ManageUsers = (props: ManageUsersProps) => {
   };
 
   const handleLinkUser = async (user_id: number) => {
-    const res = await linkUserToUserGroup(props.usergroup_id, user_id, access_token);
+    const res = await linkUserToUserGroup(props.usergroup_id, user_id);
     if (res.status === 200) {
       toast.success(t('linkSuccess'));
-      mutate(`${getAPIUrl()}usergroups/${props.usergroup_id}/users`);
+      await queryClient.invalidateQueries({ queryKey: userGroupUsersKey });
     } else {
       toast.error(t('linkError', { error: res.data?.detail || t('unknownError') }));
     }
   };
 
   const handleUnlinkUser = async (user_id: number) => {
-    const res = await unLinkUserToUserGroup(props.usergroup_id, user_id, access_token);
+    const res = await unLinkUserToUserGroup(props.usergroup_id, user_id);
     if (res.status === 200) {
       toast.success(t('unlinkSuccess'));
-      mutate(`${getAPIUrl()}usergroups/${props.usergroup_id}/users`);
+      await queryClient.invalidateQueries({ queryKey: userGroupUsersKey });
     } else {
       toast.error(t('unlinkError', { error: res.data?.detail || t('unknownError') }));
     }

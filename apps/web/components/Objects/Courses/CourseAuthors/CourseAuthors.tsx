@@ -10,32 +10,32 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@components/ui/form';
 import { createCourseUpdate, deleteCourseUpdate } from '@services/courses/updates';
 import { AlertTriangle, Loader2, PencilLine, Rss, TentTree } from 'lucide-react';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field';
 import { getUserAvatarMediaDirectory } from '@services/media/media';
+import { queryKeys } from '@/lib/react-query/queryKeys';
 import { Actions, Resources, Scopes } from '@/types/permissions';
-import { getCourseUpdatesSwrKey } from '@services/courses/keys';
-import { useCourse } from '@components/Contexts/CourseContext';
+import { useCourseUpdates } from '@/features/courses/hooks/useCourseQueries';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useDateFnsLocale } from '@/hooks/useDateFnsLocale';
-import { swrFetcher } from '@services/utils/ts/requests';
+import { useQueryClient } from '@tanstack/react-query';
 import UserAvatar from '@components/Objects/UserAvatar';
-import { usePermissions } from '@/components/Security';
+import { useSession } from '@/hooks/useSession';
 import { format, formatDistanceToNow } from 'date-fns';
-import { getAPIUrl } from '@services/config/config';
+import { Controller, useForm } from 'react-hook-form';
 import { Textarea } from '@components/ui/textarea';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useState, useTransition } from 'react';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { useTranslations } from 'next-intl';
-import { useForm } from 'react-hook-form';
 import { motion } from 'motion/react';
-import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import * as v from 'valibot';
+
+const getCourseUpdatesQueryKey = (courseUuid?: string | null) =>
+  courseUuid ? queryKeys.courses.updates(courseUuid) : (['courses', 'updates', 'disabled'] as const);
 
 interface Author {
   user: {
@@ -53,6 +53,7 @@ interface Author {
 
 interface CourseAuthorsProps {
   authors: Author[];
+  courseUuid: string;
 }
 
 const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: boolean }) => {
@@ -81,7 +82,7 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
                 size={isMobile ? 'xl' : '2xl'}
                 variant="outline"
                 avatar_url={
-                  author.user.avatar_image
+                  author.user.avatar_image && author.user.user_uuid
                     ? getUserAvatarMediaDirectory(author.user.user_uuid, author.user.avatar_image)
                     : ''
                 }
@@ -152,20 +153,12 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
   );
 };
 
-const UpdatesSection = () => {
+const UpdatesSection = ({ courseUuid }: { courseUuid: string }) => {
   const [selectedView, setSelectedView] = useState('list');
-  const { can } = usePermissions();
+  const { can } = useSession();
   const canManageCourse =
-    can(Actions.MANAGE, Resources.COURSE, Scopes.OWN) || can(Actions.MANAGE, Resources.COURSE, Scopes.PLATFORM);
-  const course = useCourse();
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
-  const UPDATES_KEY = course?.courseStructure?.course_uuid
-    ? getCourseUpdatesSwrKey(course?.courseStructure?.course_uuid)
-    : null;
-  const { data: updates } = useSWR(UPDATES_KEY && access_token ? [UPDATES_KEY, access_token] : null, ([url, token]) =>
-    swrFetcher(url, token),
-  );
+    can(Resources.COURSE, Actions.MANAGE, Scopes.OWN) || can(Resources.COURSE, Actions.MANAGE, Scopes.PLATFORM);
+  const { data: updates } = useCourseUpdates(courseUuid);
   const t = useTranslations('Courses.CourseAuthors');
 
   return (
@@ -209,7 +202,14 @@ const UpdatesSection = () => {
         className="relative"
       >
         <div className="-mr-1 max-h-[300px] overflow-y-auto pr-1">
-          {selectedView === 'list' ? <UpdatesListView /> : <NewUpdateForm setSelectedView={setSelectedView} />}
+          {selectedView === 'list' ? (
+            <UpdatesListView courseUuid={courseUuid} />
+          ) : (
+            <NewUpdateForm
+              courseUuid={courseUuid}
+              setSelectedView={setSelectedView}
+            />
+          )}
         </div>
       </motion.div>
     </div>
@@ -223,14 +223,20 @@ const createUpdateFormSchema = (t: (key: string) => string) =>
   });
 
 type UpdateFormValues = v.InferOutput<ReturnType<typeof createUpdateFormSchema>>;
+type UpdateFormInputValues = v.InferInput<ReturnType<typeof createUpdateFormSchema>>;
 
-const NewUpdateForm = ({ setSelectedView }: { setSelectedView: (view: string) => void }) => {
-  const course = useCourse();
-  const session = usePlatformSession() as any;
+const NewUpdateForm = ({
+  courseUuid,
+  setSelectedView,
+}: {
+  courseUuid: string;
+  setSelectedView: (view: string) => void;
+}) => {
+  const queryClient = useQueryClient();
   const t = useTranslations('Courses.CourseAuthors');
   const validationSchema = createUpdateFormSchema(t);
 
-  const form = useForm<UpdateFormValues>({
+  const form = useForm<UpdateFormInputValues, any, UpdateFormValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       title: '',
@@ -242,14 +248,16 @@ const NewUpdateForm = ({ setSelectedView }: { setSelectedView: (view: string) =>
     const body = {
       title: values.title,
       content: values.content,
-      course_uuid: course.courseStructure.course_uuid,
+      course_uuid: courseUuid,
     };
-    const res = await createCourseUpdate(body, session.data?.tokens?.access_token);
+    const res = await createCourseUpdate(body);
     if (res.status === 200) {
       toast.success(t('updateAddedSuccess'));
       setSelectedView('list');
       form.reset();
-      mutate([getCourseUpdatesSwrKey(course?.courseStructure.course_uuid), session.data?.tokens?.access_token] as any);
+      void queryClient.invalidateQueries({
+        queryKey: getCourseUpdatesQueryKey(courseUuid),
+      });
     } else {
       toast.error(t('updateAddFailed'));
     }
@@ -257,72 +265,66 @@ const NewUpdateForm = ({ setSelectedView }: { setSelectedView: (view: string) =>
 
   return (
     <div className="space-y-4">
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-4"
-        >
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('updateTitle')}</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    placeholder={t('updateTitlePlaceholder')}
-                    className="border-neutral-200 bg-white focus:border-neutral-300 focus:ring-neutral-200"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="content"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('updateContent')}</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder={t('updateContentPlaceholder')}
-                    className="h-[120px] resize-none border-neutral-200 bg-white focus:border-neutral-300 focus:ring-neutral-200"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="flex justify-end space-x-2 pt-2">
-            <Button
-              type="submit"
-              className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-colors duration-150"
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting ? t('publishing') : t('publishUpdate')}
-            </Button>
-          </div>
-        </form>
-      </Form>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-4"
+      >
+        <Controller
+          control={form.control}
+          name="title"
+          render={({ field, fieldState }) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>{t('updateTitle')}</FieldLabel>
+              <FieldContent>
+                <Input
+                  type="text"
+                  id={field.name}
+                  placeholder={t('updateTitlePlaceholder')}
+                  className="border-neutral-200 bg-white focus:border-neutral-300 focus:ring-neutral-200"
+                  {...field}
+                />
+              </FieldContent>
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+        <Controller
+          control={form.control}
+          name="content"
+          render={({ field, fieldState }) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>{t('updateContent')}</FieldLabel>
+              <FieldContent>
+                <Textarea
+                  placeholder={t('updateContentPlaceholder')}
+                  id={field.name}
+                  className="h-[120px] resize-none border-neutral-200 bg-white focus:border-neutral-300 focus:ring-neutral-200"
+                  {...field}
+                />
+              </FieldContent>
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+        <div className="flex justify-end space-x-2 pt-2">
+          <Button
+            type="submit"
+            className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-colors duration-150"
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting ? t('publishing') : t('publishUpdate')}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 };
 
-const UpdatesListView = () => {
-  const course = useCourse();
-  const { can } = usePermissions();
+const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
+  const { can } = useSession();
   const canManageCourse =
-    can(Actions.MANAGE, Resources.COURSE, Scopes.OWN) || can(Actions.MANAGE, Resources.COURSE, Scopes.PLATFORM);
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
-  const { data: updates } = useSWR(
-    `${getAPIUrl()}courses/${course?.courseStructure?.course_uuid}/updates`,
-    (url: string) => swrFetcher(url, access_token),
-  );
+    can(Resources.COURSE, Actions.MANAGE, Scopes.OWN) || can(Resources.COURSE, Actions.MANAGE, Scopes.PLATFORM);
+  const { data: updates } = useCourseUpdates(courseUuid);
   const t = useTranslations('Courses.CourseAuthors');
   const locale = useDateFnsLocale();
 
@@ -364,7 +366,10 @@ const UpdatesListView = () => {
             </div>
             {canManageCourse ? (
               <div className="ml-4 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                <DeleteUpdateButton update={update} />
+                <DeleteUpdateButton
+                  courseUuid={courseUuid}
+                  update={update}
+                />
               </div>
             ) : null}
           </div>
@@ -374,9 +379,8 @@ const UpdatesListView = () => {
   );
 };
 
-const DeleteUpdateButton = ({ update }: any) => {
-  const session = usePlatformSession() as any;
-  const course = useCourse();
+const DeleteUpdateButton = ({ courseUuid, update }: { courseUuid: string; update: any }) => {
+  const queryClient = useQueryClient();
   const t = useTranslations('Courses.CourseAuthors');
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -384,19 +388,14 @@ const DeleteUpdateButton = ({ update }: any) => {
   function handleDelete() {
     startTransition(async () => {
       const toast_loading = toast.loading(t('deletingUpdate'));
-      const res = await deleteCourseUpdate(
-        course.courseStructure.course_uuid,
-        update.courseupdate_uuid,
-        session.data?.tokens?.access_token,
-      );
+      const res = await deleteCourseUpdate(courseUuid, update.courseupdate_uuid);
 
       if (res.status === 200) {
         toast.dismiss(toast_loading);
         toast.success(t('updateDeletedSuccess'));
-        mutate([
-          getCourseUpdatesSwrKey(course?.courseStructure.course_uuid),
-          session.data?.tokens?.access_token,
-        ] as any);
+        void queryClient.invalidateQueries({
+          queryKey: getCourseUpdatesQueryKey(courseUuid),
+        });
         setIsOpen(false);
       } else {
         toast.dismiss(toast_loading);
@@ -462,7 +461,7 @@ const DeleteUpdateButton = ({ update }: any) => {
   );
 };
 
-const CourseAuthors = ({ authors }: CourseAuthorsProps) => {
+const CourseAuthors = ({ authors, courseUuid }: CourseAuthorsProps) => {
   const isMobile = useIsMobile();
 
   // Filter active authors and sort by role priority
@@ -486,7 +485,7 @@ const CourseAuthors = ({ authors }: CourseAuthorsProps) => {
         authors={sortedAuthors}
         isMobile={isMobile}
       />
-      <UpdatesSection />
+      <UpdatesSection courseUuid={courseUuid} />
     </div>
   );
 };

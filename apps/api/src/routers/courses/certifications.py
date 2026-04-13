@@ -4,13 +4,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel import Session
 
-from src.core.events.database import get_db_session
 from src.db.courses.certifications import (
     CertificationCreate,
     CertificationRead,
     CertificationUpdate,
 )
 from src.db.users import PublicUser
+from src.infra.db.session import get_db_session
 from src.security.auth import get_current_user
 from src.services.courses.certifications import (
     create_certification,

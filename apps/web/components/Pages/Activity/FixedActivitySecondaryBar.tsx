@@ -5,6 +5,7 @@ import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { getAbsoluteUrl } from '@services/config/config';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import NextImage from '@components/ui/NextImage';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
@@ -31,67 +32,56 @@ const NavigationButtons = ({
   navigateToActivity: (activity: any) => void;
   t: (key: string, values?: Record<string, any>) => string;
 }) => (
-  <div className="flex items-center space-x-2 sm:space-x-3">
+  <div className="flex items-center gap-1">
     <button
       onClick={() => {
         navigateToActivity(prevActivity);
       }}
-      className={`flex items-center space-x-1 rounded-md px-1.5 py-1.5 transition-all duration-200 sm:space-x-2 sm:px-2 ${
-        prevActivity ? 'text-gray-700 hover:bg-gray-100' : 'cursor-not-allowed text-gray-300'
-      }`}
       disabled={!prevActivity}
+      className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors disabled:pointer-events-none disabled:opacity-30"
       title={
         prevActivity
-          ? t('NavigationButtons.previousActivityTitle', {
-              activityName: prevActivity.name,
-            })
+          ? t('NavigationButtons.previousActivityTitle', { activityName: prevActivity.name })
           : t('NavigationButtons.noPreviousActivity')
       }
     >
       <ChevronLeft
-        size={16}
-        className="shrink-0 sm:h-5 sm:w-5"
+        size={15}
+        className="shrink-0"
       />
       <div className="hidden flex-col items-start sm:flex">
-        <span className="text-xs text-gray-500">{t('NavigationButtons.previous')}</span>
-        <span className="max-w-[100px] truncate text-left text-sm font-medium sm:max-w-[150px]">
-          {prevActivity ? prevActivity.name : t('NavigationButtons.noPreviousActivity')}
+        <span className="text-muted-foreground text-xs">{t('NavigationButtons.previous')}</span>
+        <span className="text-foreground max-w-[120px] truncate text-left text-xs font-medium">
+          {prevActivity ? prevActivity.name : '—'}
         </span>
       </div>
     </button>
 
-    <span className="px-1 text-sm font-medium text-gray-500 sm:px-2">
-      {t('NavigationButtons.currentOfTotal', {
-        currentIndex: currentIndex + 1,
-        totalActivities: allActivities.length,
-      })}
+    <span className="text-muted-foreground px-2 text-xs font-medium tabular-nums select-none">
+      {currentIndex + 1} / {allActivities.length}
     </span>
 
     <button
       onClick={() => {
         navigateToActivity(nextActivity);
       }}
-      className="flex items-center space-x-1 rounded-md px-1.5 py-1.5 transition-all duration-200 sm:space-x-2 sm:px-2"
       disabled={!nextActivity}
+      className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors disabled:pointer-events-none disabled:opacity-30"
       title={
         nextActivity
-          ? t('NavigationButtons.nextActivityTitle', {
-              activityName: nextActivity.name,
-            })
+          ? t('NavigationButtons.nextActivityTitle', { activityName: nextActivity.name })
           : t('NavigationButtons.noNextActivity')
       }
     >
       <div className="hidden flex-col items-end sm:flex">
-        <span className={`text-xs ${nextActivity ? 'text-gray-500' : 'text-gray-500'}`}>
-          {t('NavigationButtons.next')}
-        </span>
-        <span className="max-w-[100px] truncate text-right text-sm font-medium sm:max-w-[150px]">
-          {nextActivity ? nextActivity.name : t('NavigationButtons.noNextActivity')}
+        <span className="text-muted-foreground text-xs">{t('NavigationButtons.next')}</span>
+        <span className="text-foreground max-w-[120px] truncate text-right text-xs font-medium">
+          {nextActivity ? nextActivity.name : '—'}
         </span>
       </div>
       <ChevronRight
-        size={16}
-        className="shrink-0 sm:h-5 sm:w-5"
+        size={15}
+        className="shrink-0"
       />
     </button>
   </div>
@@ -100,26 +90,29 @@ const NavigationButtons = ({
 // Course info component
 const CourseInfo = ({
   course,
-  platform,
   t,
 }: {
   course: any;
   platform: any;
   t: (key: string, values?: Record<string, any>) => string;
 }) => (
-  <div className="flex min-w-0 shrink items-center space-x-2 sm:space-x-4">
-    <img
-      className="h-[20px] w-[35px] shrink-0 rounded-md object-cover sm:h-[26px] sm:w-[45px]"
-      src={
-        course.thumbnail_image
-          ? `${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)}`
-          : '/empty_thumbnail.webp'
-      }
-      alt=""
-    />
-    <div className="hidden min-w-0 flex-col -space-y-0.5 sm:block">
-      <p className="text-sm font-medium text-gray-500">{t('CourseInfo.course')}</p>
-      <h1 className="truncate text-base font-semibold text-gray-900">{course.name}</h1>
+  <div className="flex min-w-0 shrink items-center gap-3">
+    <div className="relative h-8 w-[52px] shrink-0 overflow-hidden rounded">
+      <NextImage
+        src={
+          course.thumbnail_image
+            ? `${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)}`
+            : '/empty_thumbnail.webp'
+        }
+        alt={course.name || ''}
+        fill
+        className="object-cover"
+        sizes="60px"
+      />
+    </div>
+    <div className="hidden min-w-0 sm:block">
+      <p className="text-muted-foreground text-xs">{t('CourseInfo.course')}</p>
+      <p className="text-foreground truncate text-sm font-semibold">{course.name}</p>
     </div>
   </div>
 );
@@ -130,7 +123,7 @@ export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryB
   const [isScrolled, setIsScrolled] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
   const mainActivityInfoRef = useRef<HTMLDivElement | null>(null);
-  const platform = usePlatform() as any;
+  const platform = usePlatform();
 
   const { allActivities, currentIndex } = (() => {
     const allActivities: any[] = [];
@@ -209,28 +202,26 @@ export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryB
 
   return (
     <div
-      className={`fade-in slide-in-from-top animate-in fixed top-[60px] right-0 left-0 z-40 bg-white/90 backdrop-blur-xl transition-all duration-300 ${
-        isScrolled ? 'soft-shadow' : ''
+      className={`animate-in fade-in slide-in-from-top border-border bg-background/95 fixed top-[60px] right-0 left-0 z-40 border-b backdrop-blur-lg transition-shadow duration-200 ${
+        isScrolled ? 'shadow-xs' : ''
       }`}
     >
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between py-2">
+        <div className="flex h-14 items-center justify-between gap-4">
           <CourseInfo
             course={props.course}
             platform={platform}
             t={t}
           />
 
-          <div className="flex shrink-0 items-center">
-            <NavigationButtons
-              prevActivity={prevActivity}
-              nextActivity={nextActivity}
-              currentIndex={currentIndex}
-              allActivities={allActivities}
-              navigateToActivity={navigateToActivity}
-              t={t}
-            />
-          </div>
+          <NavigationButtons
+            prevActivity={prevActivity}
+            nextActivity={nextActivity}
+            currentIndex={currentIndex}
+            allActivities={allActivities}
+            navigateToActivity={navigateToActivity}
+            t={t}
+          />
         </div>
       </div>
     </div>

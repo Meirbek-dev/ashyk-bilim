@@ -1,6 +1,4 @@
-'use server';
-
-import { getAPIUrl } from '@services/config/config';
+import { apiFetch } from '@/lib/api-client';
 
 export interface CodeChallengeSettings {
   uuid: string;
@@ -51,16 +49,8 @@ export interface Judge0Language {
   name: string;
 }
 
-/**
- * Get supported programming languages
- */
-export async function getLanguages(accessToken: string): Promise<Judge0Language[]> {
-  const response = await fetch(`${getAPIUrl()}code-challenges/languages`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: 'force-cache',
-  });
+export async function getLanguages(): Promise<Judge0Language[]> {
+  const response = await apiFetch('code-challenges/languages', { cache: 'force-cache' });
 
   if (!response.ok) {
     throw new Error('Failed to fetch languages');
@@ -69,18 +59,8 @@ export async function getLanguages(accessToken: string): Promise<Judge0Language[
   return response.json();
 }
 
-/**
- * Get code challenge settings for an activity
- */
-export async function getCodeChallengeSettings(
-  activityUuid: string,
-  accessToken: string,
-): Promise<CodeChallengeSettings | null> {
-  const response = await fetch(`${getAPIUrl()}code-challenges/${activityUuid}/settings`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+export async function getCodeChallengeSettings(activityUuid: string): Promise<CodeChallengeSettings | null> {
+  const response = await apiFetch(`code-challenges/${activityUuid}/settings`);
 
   if (response.status === 404) {
     return null;
@@ -93,20 +73,13 @@ export async function getCodeChallengeSettings(
   return response.json();
 }
 
-/**
- * Create or update code challenge settings
- */
 export async function saveCodeChallengeSettings(
   activityUuid: string,
   settings: Partial<CodeChallengeSettings>,
-  accessToken: string,
 ): Promise<CodeChallengeSettings> {
-  const response = await fetch(`${getAPIUrl()}code-challenges/${activityUuid}/settings`, {
+  const response = await apiFetch(`code-challenges/${activityUuid}/settings`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settings),
   });
 
@@ -118,25 +91,15 @@ export async function saveCodeChallengeSettings(
   return response.json();
 }
 
-/**
- * Submit code for evaluation
- */
 export async function submitCode(
   activityUuid: string,
   sourceCode: string,
   languageId: number,
-  accessToken: string,
 ): Promise<CodeSubmission> {
-  const response = await fetch(`${getAPIUrl()}code-challenges/${activityUuid}/submit`, {
+  const response = await apiFetch(`code-challenges/${activityUuid}/submit`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({
-      source_code: sourceCode,
-      language_id: languageId,
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source_code: sourceCode, language_id: languageId }),
   });
 
   if (!response.ok) {
@@ -147,25 +110,15 @@ export async function submitCode(
   return response.json();
 }
 
-/**
- * Run code against visible test cases
- */
 export async function runTests(
   activityUuid: string,
   sourceCode: string,
   languageId: number,
-  accessToken: string,
 ): Promise<{ results: TestCaseResult[] }> {
-  const response = await fetch(`${getAPIUrl()}code-challenges/${activityUuid}/test`, {
+  const response = await apiFetch(`code-challenges/${activityUuid}/test`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({
-      source_code: sourceCode,
-      language_id: languageId,
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source_code: sourceCode, language_id: languageId }),
   });
 
   if (!response.ok) {
@@ -176,15 +129,11 @@ export async function runTests(
   return response.json();
 }
 
-/**
- * Run code with custom input
- */
 export async function runCustomTest(
   activityUuid: string,
   sourceCode: string,
   languageId: number,
   stdin: string,
-  accessToken: string,
 ): Promise<{
   stdout?: string;
   stderr?: string;
@@ -194,17 +143,10 @@ export async function runCustomTest(
   time_ms?: number;
   memory_kb?: number;
 }> {
-  const response = await fetch(`${getAPIUrl()}code-challenges/${activityUuid}/custom-test`, {
+  const response = await apiFetch(`code-challenges/${activityUuid}/custom-test`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({
-      source_code: sourceCode,
-      language_id: languageId,
-      stdin,
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source_code: sourceCode, language_id: languageId, stdin }),
   });
 
   if (!response.ok) {
@@ -215,15 +157,8 @@ export async function runCustomTest(
   return response.json();
 }
 
-/**
- * Get submission status
- */
-export async function getSubmission(submissionUuid: string, accessToken: string): Promise<CodeSubmission> {
-  const response = await fetch(`${getAPIUrl()}code-challenges/submissions/${submissionUuid}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+export async function getSubmission(submissionUuid: string): Promise<CodeSubmission> {
+  const response = await apiFetch(`code-challenges/submissions/${submissionUuid}`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch submission');
@@ -232,15 +167,8 @@ export async function getSubmission(submissionUuid: string, accessToken: string)
   return response.json();
 }
 
-/**
- * Get user's submissions for an activity
- */
-export async function getSubmissions(activityUuid: string, accessToken: string): Promise<CodeSubmission[]> {
-  const response = await fetch(`${getAPIUrl()}code-challenges/${activityUuid}/submissions`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+export async function getSubmissions(activityUuid: string): Promise<CodeSubmission[]> {
+  const response = await apiFetch(`code-challenges/${activityUuid}/submissions`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch submissions');
@@ -249,12 +177,8 @@ export async function getSubmissions(activityUuid: string, accessToken: string):
   return response.json();
 }
 
-/**
- * Get leaderboard for competitive challenges
- */
 export async function getLeaderboard(
   activityUuid: string,
-  accessToken: string,
   limit = 50,
 ): Promise<
   {
@@ -267,11 +191,7 @@ export async function getLeaderboard(
     first_solved_at: string;
   }[]
 > {
-  const response = await fetch(`${getAPIUrl()}code-challenges/${activityUuid}/leaderboard?limit=${limit}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+  const response = await apiFetch(`code-challenges/${activityUuid}/leaderboard?limit=${limit}`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch leaderboard');
@@ -280,13 +200,7 @@ export async function getLeaderboard(
   return response.json();
 }
 
-/**
- * Get analytics for instructors
- */
-export async function getAnalytics(
-  activityUuid: string,
-  accessToken: string,
-): Promise<{
+export async function getAnalytics(activityUuid: string): Promise<{
   total_submissions: number;
   unique_users: number;
   success_rate: number;
@@ -295,11 +209,7 @@ export async function getAnalytics(
   language_distribution: Record<string, number>;
   score_distribution: Record<string, number>;
 }> {
-  const response = await fetch(`${getAPIUrl()}code-challenges/${activityUuid}/analytics`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+  const response = await apiFetch(`code-challenges/${activityUuid}/analytics`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch analytics');

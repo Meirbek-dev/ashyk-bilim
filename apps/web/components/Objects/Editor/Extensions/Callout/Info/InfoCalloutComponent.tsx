@@ -3,6 +3,7 @@ import { NodeViewContent, NodeViewWrapper } from '@tiptap/react';
 import { Info, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
 
 interface CalloutOptions {
   dismissible?: boolean;
@@ -10,7 +11,9 @@ interface CalloutOptions {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const InfoCalloutComponent = (props: any) => {
+type InfoCalloutAttrs = CalloutOptions;
+
+const InfoCalloutComponent = (props: TypedNodeViewProps<InfoCalloutAttrs>) => {
   const editorState = useEditorProvider();
   const { isEditable } = editorState;
   const [dismissed, setDismissed] = useState(false);
@@ -73,11 +76,11 @@ const InfoCalloutComponent = (props: any) => {
         >
           <Info />
         </div>
-        <div className="w-full break-words grow">
+        <div className="w-full grow break-words">
           <NodeViewContent
             className={cn(
               'm-[5px] p-2 rounded-lg',
-              isEditable ? 'border-2 border-dashed border-[#1f3a8a12]' : 'border-none',
+              isEditable ? 'border-2 border-dashed border-muted/30' : 'border-none',
               options.size === 'sm'
                 ? 'max-sm:mx-[3px] max-sm:my-[3px] max-sm:p-1'
                 : 'max-sm:w-full max-sm:mx-0 max-sm:my-[5px] max-sm:p-2',
@@ -86,7 +89,7 @@ const InfoCalloutComponent = (props: any) => {
         </div>
         {options.dismissible && !isEditable ? (
           <button
-            className="bg-transparent border-0 cursor-pointer flex items-center justify-center p-1 ml-2 rounded-full hover:bg-black/10"
+            className="ml-2 flex cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-1 hover:bg-black/10"
             onClick={() => {
               setDismissed(true);
             }}

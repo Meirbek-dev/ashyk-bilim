@@ -15,7 +15,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ className, placeholder, id: propId, ...props }, ref) => {
     const generatedId = useId();
     const id = propId || generatedId;
-    const [isVisible, setIsVisible] = useState<boolean>(false);
+    const [isVisible, setIsVisible] = useState(false);
     const t = useTranslations('Auth');
 
     const toggleVisibility = () => {

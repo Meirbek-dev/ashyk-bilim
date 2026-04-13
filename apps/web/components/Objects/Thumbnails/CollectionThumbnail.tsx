@@ -12,13 +12,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import { PermissionTooltip } from '@/components/Utils/PermissionTooltip';
 import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { deleteCollection } from '@services/courses/collections';
 import { AlertTriangle, Crown, Loader2, X } from 'lucide-react';
-import { revalidateTags } from '@services/utils/ts/requests';
+import { revalidateTags } from '@/lib/api-client';
 import { getAbsoluteUrl } from '@services/config/config';
 import { useState, useTransition } from 'react';
 import { Badge } from '@components/ui/badge';
@@ -37,7 +35,6 @@ const removeCollectionPrefix = (collectionid: string) => {
 const CollectionThumbnail = (props: PropsType) => {
   const t = useTranslations('Components.CollectionThumbnail');
   const tCommon = useTranslations('Common');
-  const platform = usePlatform() as any;
 
   // Use backend metadata for ownership and permissions
   const isOwner = props.collection.is_owner ?? false;
@@ -101,7 +98,6 @@ const CollectionThumbnail = (props: PropsType) => {
 const CollectionAdminEditsArea = (props: any) => {
   const t = useTranslations('Components.CollectionThumbnail');
   const router = useRouter();
-  const session = usePlatformSession() as any;
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -110,7 +106,7 @@ const CollectionAdminEditsArea = (props: any) => {
 
   async function deleteCollectionUI() {
     startTransition(async () => {
-      await deleteCollection(props.collection_uuid, session.data?.tokens?.access_token);
+      await deleteCollection(props.collection_uuid);
       await revalidateTags(['collections']);
       setIsOpen(false);
       router.refresh();

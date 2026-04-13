@@ -1,21 +1,20 @@
 'use client';
+import { useQueryClient } from '@tanstack/react-query';
 import { BookOpen, BookX, EllipsisVertical, Eye, Layers2, Monitor, Pencil, UserRoundPen } from 'lucide-react';
 import EditAssignmentModal from '@components/Objects/Modals/Activities/Assignments/EditAssignmentModal';
 import { AssignmentProvider, useAssignments } from '@components/Contexts/Assignments/AssignmentContext';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip';
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs';
 import { updateAssignment } from '@services/courses/assignments';
 import { updateActivity } from '@services/courses/activities';
+import { queryKeys } from '@/lib/react-query/queryKeys';
 import { useParams, useSearchParams } from 'next/navigation';
-import { getAPIUrl } from '@services/config/config';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { mutate } from 'swr';
 
 import AssignmentEditorSubPage from '@/app/_shared/dash/assignments/[assignmentuuid]/subpages/AssignmentEditorSubPage';
 
@@ -32,8 +31,8 @@ const PlatformAssignmentPage = () => {
 
   if (isMobile) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#f8f8f8] p-4">
-        <div className="rounded-lg bg-white p-6 text-center shadow-md">
+      <div className="bg-muted flex h-screen w-full items-center justify-center p-4">
+        <div className="border-border bg-card text-card-foreground rounded-lg border p-6 text-center shadow-sm">
           <h2 className="mb-4 text-xl font-bold">{t('desktopOnlyTitle')}</h2>
           <Monitor
             className="mx-auto my-5"
@@ -49,7 +48,7 @@ const PlatformAssignmentPage = () => {
   return (
     <div className="flex h-screen w-full flex-col">
       <AssignmentProvider assignment_uuid={`assignment_${params.assignmentuuid}`}>
-        <div className="soft-shadow z-10 flex shrink-0 flex-col bg-white shadow-[0px_4px_16px_rgba(0,0,0,0.06)]">
+        <div className="soft-shadow border-border bg-card text-card-foreground z-10 flex shrink-0 flex-col border-b shadow-sm">
           <div className="mr-10 flex h-full justify-between">
             <div className="mr-10 pl-10 tracking-tighter">
               <BrdCmpx />
@@ -64,32 +63,34 @@ const PlatformAssignmentPage = () => {
             </div>
           </div>
           <div className="mr-10 flex space-x-2 pt-2 pl-10 text-sm font-semibold tracking-tight">
-            <div
+            <button
+              type="button"
               onClick={() => {
                 setSelectedSubPage('editor');
               }}
               className={`border-primary flex w-fit space-x-4 py-2 text-center transition-all ease-linear ${
                 selectedSubPage === 'editor' ? 'border-b-4' : 'opacity-50'
-              } cursor-pointer`}
+              }`}
             >
               <div className="mx-2 flex items-center space-x-2.5">
                 <Layers2 size={16} />
                 <div>{t('editor')}</div>
               </div>
-            </div>
-            <div
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 setSelectedSubPage('submissions');
               }}
               className={`border-primary flex w-fit space-x-4 py-2 text-center transition-all ease-linear ${
                 selectedSubPage === 'submissions' ? 'border-b-4' : 'opacity-50'
-              } cursor-pointer`}
+              }`}
             >
               <div className="mx-2 flex items-center space-x-2.5">
                 <UserRoundPen size={16} />
                 <div>{t('submissions')}</div>
               </div>
-            </div>
+            </button>
           </div>
         </div>
         <div className="flex min-h-0 w-full flex-1">
@@ -117,26 +118,20 @@ const BrdCmpx = () => {
 };
 
 const PublishingState = () => {
+  const queryClient = useQueryClient();
   const t = useTranslations('DashPage.Assignments.AssignmentPage');
   const assignment = useAssignments();
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   async function updateAssignmentPublishState(assignmentUUID: string) {
-    const res = await updateAssignment(
-      { published: !assignment?.assignment_object?.published },
-      assignmentUUID,
-      access_token,
-    );
+    const res = await updateAssignment({ published: !assignment?.assignment_object?.published }, assignmentUUID);
     const res2 = await updateActivity(
       { published: !assignment?.assignment_object?.published },
       assignment?.activity_object?.activity_uuid,
-      access_token,
     );
     const toast_loading = toast.loading(t('updateLoading'));
     if (res.success && res2) {
-      mutate(`${getAPIUrl()}assignments/${assignmentUUID}`);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.assignments.detail(assignmentUUID) });
       toast.success(t('updateSuccess'));
       toast.dismiss(toast_loading);
     } else {
@@ -165,15 +160,16 @@ const PublishingState = () => {
           sideOffset={10}
           content={t('editDetailsTooltip')}
         >
-          <div
+          <button
+            type="button"
             onClick={() => {
               setIsEditModalOpen(true);
             }}
-            className="flex cursor-pointer items-center space-x-2 rounded-md border bg-background px-3 py-2 font-medium text-foreground shadow-sm hover:bg-accent"
+            className="bg-background text-foreground hover:bg-accent flex items-center space-x-2 rounded-md border px-3 py-2 font-medium shadow-sm"
           >
             <Pencil size={18} />
             <p className="text-sm font-bold">{t('edit')}</p>
-          </div>
+          </button>
         </ToolTip>
 
         <ToolTip
@@ -185,7 +181,7 @@ const PublishingState = () => {
           <Link
             target="_blank"
             href={`/course/${assignment?.course_object?.course_uuid.replace('course_', '')}/activity/${assignment?.activity_object?.activity_uuid.replace('activity_', '')}`}
-            className="flex cursor-pointer items-center space-x-2 rounded-md border bg-background px-3 py-2 font-medium text-foreground shadow-sm hover:bg-accent"
+            className="bg-background text-foreground hover:bg-accent flex cursor-pointer items-center space-x-2 rounded-md border px-3 py-2 font-medium shadow-sm"
           >
             <Eye size={18} />
             <p className="text-sm font-bold">{t('preview')}</p>
@@ -198,13 +194,14 @@ const PublishingState = () => {
             sideOffset={10}
             content={t('unpublishTooltip')}
           >
-            <div
+            <button
+              type="button"
               onClick={() => updateAssignmentPublishState(assignment?.assignment_object?.assignment_uuid)}
-              className="flex cursor-pointer items-center space-x-2 rounded-md border bg-background px-3 py-2 font-medium text-foreground shadow-sm hover:bg-accent"
+              className="bg-background text-foreground hover:bg-accent flex items-center space-x-2 rounded-md border px-3 py-2 font-medium shadow-sm"
             >
               <BookX size={18} />
               <p className="text-sm font-bold">{t('unpublish')}</p>
-            </div>
+            </button>
           </ToolTip>
         ) : null}
         {!assignment?.assignment_object?.published && (
@@ -214,13 +211,14 @@ const PublishingState = () => {
             sideOffset={10}
             content={t('publishTooltip')}
           >
-            <div
+            <button
+              type="button"
               onClick={() => updateAssignmentPublishState(assignment?.assignment_object?.assignment_uuid)}
-              className="flex cursor-pointer items-center space-x-2 rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center space-x-2 rounded-md px-3 py-2 font-medium shadow-sm"
             >
               <BookOpen size={18} />
               <p className="text-sm font-bold">{t('publish')}</p>
-            </div>
+            </button>
           </ToolTip>
         )}
       </div>
@@ -231,7 +229,6 @@ const PublishingState = () => {
             setIsEditModalOpen(false);
           }}
           assignment={assignment?.assignment_object}
-          accessToken={access_token}
         />
       ) : null}
     </>

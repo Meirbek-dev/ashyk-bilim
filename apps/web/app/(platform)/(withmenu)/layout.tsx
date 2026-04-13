@@ -1,6 +1,6 @@
-import WithMenuClientLayout from './with-menu-client-layout';
+import MainShell from './main-shell';
 import '@styles/globals.css';
 
 export default function PlatformWithMenuLayout({ children }: { children: React.ReactNode }) {
-  return <WithMenuClientLayout>{children}</WithMenuClientLayout>;
+  return <MainShell>{children}</MainShell>;
 }

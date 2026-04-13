@@ -19,17 +19,15 @@ These values are used only by the Node.js server runtime.
 
 - `INTERNAL_API_URL`: Optional internal API base URL for server-side/container traffic, for example
   `http://localhost:9000/api/v1/`
-- `NEXTAUTH_URL`: NextAuth canonical URL
-- `NEXTAUTH_SECRET`: NextAuth secret
-- `GOOGLE_CLIENT_ID`: Google OAuth client id
-- `GOOGLE_CLIENT_SECRET`: Google OAuth client secret
-- `COOKIE_DOMAIN`: Optional override for unusual cookie-domain deployments. In common cases this is
-  derived automatically from `NEXTAUTH_URL`
+- `APP_URL`: Canonical frontend origin used for same-origin validation and cookie derivation, for
+  example `https://example.com`
 
 ## Notes
 
 - Do not configure protocol, host, top-domain, and SSL as separate frontend env variables. Those
-  values are derived from `NEXT_PUBLIC_SITE_URL` and `NEXTAUTH_URL`.
+  values are derived from `NEXT_PUBLIC_SITE_URL` and `APP_URL`.
+- Authentication is fully backend-managed via HttpOnly SameSite=strict cookies. The frontend does
+  not hold or sign JWT tokens; no auth secret is needed in the web environment.
 - `docker compose` must receive the public `NEXT_PUBLIC_*` values at build time via shell env or
   `--env-file extra/.env`. `env_file` inside the service definition does not populate Docker build
   args.

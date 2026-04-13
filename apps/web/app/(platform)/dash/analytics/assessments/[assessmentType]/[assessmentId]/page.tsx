@@ -8,7 +8,6 @@ import { getAnalyticsAssessmentTypeLabel } from '@/lib/analytics/labels';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { AssessmentType } from '@/types/analytics';
 import { Badge } from '@/components/ui/badge';
-import { auth } from '@/auth';
 
 export default function PlatformAnalyticsAssessmentDetailPage(props: {
   params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>;
@@ -27,23 +26,16 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { assessmentType, assessmentId } = await props.params;
-  const session = await auth();
-  const accessToken = session?.tokens?.access_token;
   const query = normalizeAnalyticsQuery(await props.searchParams);
   const locale = await getLocale();
   const t = await getTranslations('TeacherAnalytics');
 
-  if (!accessToken) {
-    return (
-      <AnalyticsEmptyState
-        title={t('pages.assessmentDetailTitle')}
-        description={t('pages.assessmentDetailDesc')}
-      />
-    );
-  }
-
   try {
-    const detail = await getTeacherAssessmentDetail(assessmentType, Number(assessmentId), accessToken, query);
+    const detail = await getTeacherAssessmentDetail({
+      assessmentType,
+      assessmentId: Number(assessmentId),
+      query,
+    });
     return (
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
         <Card className="border-slate-200 bg-white/90 shadow-sm">
@@ -56,7 +48,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-4">
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">
+              <div className="text-xs tracking-wide text-slate-500 uppercase">
                 {t('pages.assessmentStatSubmissionRate')}
               </div>
               <div className="mt-2 text-3xl font-semibold">
@@ -65,14 +57,14 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">{t('pages.assessmentStatPassRate')}</div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentStatPassRate')}</div>
               <div className="mt-2 text-3xl font-semibold">
                 {detail.summary.pass_rate ?? t('atRisk.na')}
                 {detail.summary.pass_rate !== null ? '%' : ''}
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">
+              <div className="text-xs tracking-wide text-slate-500 uppercase">
                 {t('pages.assessmentStatMedianScore')}
               </div>
               <div className="mt-2 text-3xl font-semibold">
@@ -81,7 +73,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">{t('pages.assessmentStatGenerated')}</div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentStatGenerated')}</div>
               <div className="mt-2 text-lg font-semibold">{new Date(detail.generated_at).toLocaleString(locale)}</div>
             </div>
           </CardContent>

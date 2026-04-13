@@ -1,21 +1,16 @@
 'use client';
 
-import { AlertCircle, BookOpen, Loader2, LogIn, ShoppingCart } from 'lucide-react';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { BookOpen, Loader2, LogIn } from 'lucide-react';
+import { useSession } from '@/hooks/useSession';
 import { getUserAvatarMediaDirectory } from '@services/media/media';
-import { useEffect, useRef, useState, useTransition } from 'react';
-import { getProductsByCourse } from '@services/payments/products';
-import Modal from '@/components/Objects/Elements/Modal/Modal';
-import { checkPaidAccess } from '@services/payments/payments';
-import { revalidateTags } from '@services/utils/ts/requests';
+import { useState, useTransition } from 'react';
+import { revalidateTags } from '@/lib/api-client';
 import { startCourse } from '@services/courses/activity';
 import { getAbsoluteUrl } from '@services/config/config';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import UserAvatar from '../../UserAvatar';
-
-import CoursePaidOptions from './CoursePaidOptions';
 
 interface Author {
   user: {
@@ -91,7 +86,7 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
               size="sm"
               variant="outline"
               avatar_url={
-                author.user.avatar_image
+                author.user.avatar_image && author.user.user_uuid
                   ? getUserAvatarMediaDirectory(author.user.user_uuid, author.user.avatar_image)
                   : ''
               }
@@ -142,20 +137,9 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
 const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMobileProps) => {
   const t = useTranslations('Courses.CourseActionsMobile');
   const router = useRouter();
-  const session = usePlatformSession() as any;
-  // stable primitives to avoid effects depending on the whole session object
-  const accessToken = session.data?.tokens?.access_token;
-  const userId = session.data?.user?.id;
-
-  // one-shot guards to avoid repeated requests when context identity changes
-  const fetchedLinkedProductsRef = useRef<Record<string, boolean>>({});
-  const checkedAccessRef = useRef<Record<string, boolean>>({});
-  const [linkedProducts, setLinkedProducts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user: currentUser } = useSession();
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
   // Clean up course UUID by removing 'course_' prefix if it exists
   const cleanCourseUuid = course.course_uuid?.replace('course_', '');
@@ -166,45 +150,8 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
       return cleanRunCourseUuid === cleanCourseUuid;
     }) ?? false;
 
-  useEffect(() => {
-    const fetchLinkedProducts = async () => {
-      try {
-        const response = await getProductsByCourse(course.id, accessToken);
-        setLinkedProducts(response.data || []);
-      } catch {
-        console.error('Failed to fetch linked products');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // run once per course id to avoid loops caused by unstable session/context identity
-    if (fetchedLinkedProductsRef.current[course.id]) return;
-    fetchedLinkedProductsRef.current[course.id] = true;
-    fetchLinkedProducts();
-  }, [course.id, accessToken]);
-
-  useEffect(() => {
-    const checkAccess = async () => {
-      if (!userId) return;
-      try {
-        const response = await checkPaidAccess(course.id, accessToken);
-        setHasAccess(response.has_access);
-      } catch {
-        console.error('Failed to check course access');
-        setHasAccess(false);
-      }
-    };
-
-    if (linkedProducts.length === 0) return;
-    const checkKey = `${course.id}:${accessToken || 'no-token'}`;
-    if (checkedAccessRef.current[checkKey]) return;
-    checkedAccessRef.current[checkKey] = true;
-    checkAccess();
-  }, [course.id, accessToken, userId, linkedProducts]);
-
   const handleCourseAction = async () => {
-    if (!session.data?.user) {
+    if (!currentUser) {
       router.push(getAbsoluteUrl('/signup'));
       return;
     }
@@ -245,7 +192,7 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
 
     startTransition(() => setIsActionLoading(true));
     try {
-      await startCourse(`course_${courseuuid}`, session.data?.tokens?.access_token);
+      await startCourse(`course_${courseuuid}`);
       await revalidateTags(['courses']);
 
       // Get the first activity from the first chapter
@@ -269,14 +216,6 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="mt-4 mb-8 flex h-16 items-center justify-center rounded-lg bg-gray-100">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-      </div>
-    );
-  }
-
   // Filter active authors and sort by role priority
   const sortedAuthors = [...course.authors]
     .filter((author) => author.authorship_status === 'ACTIVE')
@@ -297,99 +236,30 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
       <div className="flex flex-col space-y-4">
         <MultipleAuthors authors={sortedAuthors} />
 
-        {linkedProducts.length > 0 ? (
-          <div className="space-y-3">
-            {hasAccess ? (
-              <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-                  <span className="text-sm font-semibold text-green-800">{t('ownCourse')}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-amber-800" />
-                  <span className="text-sm font-semibold text-amber-800">{t('paidCourse')}</span>
-                </div>
-              </div>
-            )}
-
-            {hasAccess ? (
-              <button
-                onClick={handleCourseAction}
-                disabled={isActionLoading || isPending}
-                className="bg-primary hover:bg-primary/90 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:bg-neutral-700"
-              >
-                {isActionLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isStarted ? (
-                  <>
-                    <BookOpen className="h-4 w-4" />
-                    {t('continueLearning')}
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="h-4 w-4" />
-                    {t('startCourse')}
-                  </>
-                )}
-              </button>
-            ) : (
-              <>
-                <Modal
-                  isDialogOpen={isModalOpen}
-                  onOpenChange={setIsModalOpen}
-                  dialogContent={<CoursePaidOptions course={course} />}
-                  dialogTitle={t('modalTitle')}
-                  dialogDescription={t('modalDescription')}
-                  minWidth="sm"
-                />
-                <button
-                  onClick={() => {
-                    setIsModalOpen(true);
-                  }}
-                  disabled={isActionLoading || isPending}
-                  className="bg-primary hover:bg-primary/90 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:bg-neutral-700"
-                >
-                  {isActionLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <ShoppingCart className="h-4 w-4" />
-                      {t('purchaseCourse')}
-                    </>
-                  )}
-                </button>
-              </>
-            )}
-          </div>
-        ) : (
-          <button
-            onClick={handleCourseAction}
-            disabled={isActionLoading || isPending}
-            className="bg-primary hover:bg-primary/90 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:bg-neutral-700"
-          >
-            {isActionLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : !session.data?.user ? (
-              <>
-                <LogIn className="h-4 w-4" />
-                {t('signIn')}
-              </>
-            ) : isStarted ? (
-              <>
-                <BookOpen className="h-4 w-4" />
-                {t('continueLearning')}
-              </>
-            ) : (
-              <>
-                <LogIn className="h-4 w-4" />
-                {t('startCourse')}
-              </>
-            )}
-          </button>
-        )}
+        <button
+          onClick={handleCourseAction}
+          disabled={isActionLoading || isPending}
+          className="bg-primary hover:bg-primary/90 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:bg-neutral-700"
+        >
+          {isActionLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : !currentUser ? (
+            <>
+              <LogIn className="h-4 w-4" />
+              {t('signIn')}
+            </>
+          ) : isStarted ? (
+            <>
+              <BookOpen className="h-4 w-4" />
+              {t('continueLearning')}
+            </>
+          ) : (
+            <>
+              <LogIn className="h-4 w-4" />
+              {t('startCourse')}
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

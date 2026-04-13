@@ -1,83 +1,32 @@
-"""Simple Redis helper utilities (sync) with safe fallback and JSON (or orjson) serialization.
+"""Redis helpers — thin shim over src.infra.redis.
 
-API:
-- get_redis_client() -> Optional[redis.Redis]
-- get_json(key) -> Optional[dict]
-- set_json(key, dict, ttl_seconds)
-- delete_keys(*keys)
+Public API (backward-compatible):
+  get_redis_client()       -> sync client or None
+  get_async_redis_client() -> async client or None
+  get_json / set_json / delete_keys convenience helpers
 
-Design:
-- Lazy, cached client instance
-- Uses orjson if available for speed, falls back to json
-- Swallows exceptions and logs, so callers can be simple and robust
-- Easy to patch in tests (patch get_redis_client or this module functions)
+Clients are configured during lifespan startup via src.infra.redis.configure().
+There are no module-level connection pools here.
 """
 
 from __future__ import annotations
 
+import json
 import logging
-from typing import Optional
 
-try:
-    import redis
-except Exception:  # pragma: no cover - environment without redis installed
-    redis = None
-
-try:
-    import orjson as _orjson  # type: ignore
-
-    def _dumps(o: object) -> bytes:  # type: ignore
-        return _orjson.dumps(o)
-
-    def _loads(b: bytes) -> object:  # type: ignore
-        return _orjson.loads(b)
-
-except Exception:  # pragma: no cover - orjson optional
-    import json as _json
-
-    def _dumps(o: object) -> bytes:  # type: ignore
-        return _json.dumps(o, default=str).encode()
-
-    def _loads(b: bytes) -> object:  # type: ignore
-        return _json.loads(b.decode())
-
+from src.infra import redis as _infra_redis
 
 _logger = logging.getLogger(__name__)
-_client: redis.Redis | None = None
 
 
-def get_redis_client() -> redis.Redis | None:
-    """Return a cached redis client or None if not configured/available."""
-    global _client
-    if _client is not None:
-        return _client
+def get_redis_client():
+    """Return the synchronous Redis client, or None if not configured."""
+    return _infra_redis.get_sync()
 
-    if redis is None:
-        _logger.debug("redis package not available")
-        return None
 
-    # Delay importing platform config so tests can import this module without
-    # triggering heavier application imports (which may require optional deps).
-    try:
-        from config.config import get_settings
-
-        cfg = get_settings()
-        url = getattr(cfg.redis_config, "redis_connection_string", None)
-        if not url:
-            _logger.debug("no redis connection string configured")
-            return None
-    except Exception:
-        _logger.debug("no platform config available for redis client")
-        return None
-
-    try:
-        _client = redis.Redis.from_url(url)
-        # Optionally test connection (PING) lazily when first used; defer to callers
-        return _client
-    except Exception as exc:
-        _logger.exception("Failed to initialize redis client: %s", exc)
-        _client = None
-        return None
+def get_async_redis_client():
+    """Return the asynchronous Redis client, or None if not configured."""
+    return _infra_redis.get_async()
 
 
 def get_json(key: str) -> dict | None:
@@ -88,7 +37,7 @@ def get_json(key: str) -> dict | None:
         raw = r.get(key)
         if not raw:
             return None
-        return _loads(raw)
+        return json.loads(raw)
     except Exception:
         _logger.exception("redis get_json failed for key=%s", key)
         return None
@@ -99,7 +48,7 @@ def set_json(key: str, value: object, ttl: int | None = None) -> None:
     if not r:
         return
     try:
-        payload = _dumps(value)
+        payload = json.dumps(value, default=str).encode()
         if ttl:
             r.setex(key, ttl, payload)
         else:

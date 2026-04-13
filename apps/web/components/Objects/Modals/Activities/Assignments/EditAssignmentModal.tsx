@@ -1,27 +1,27 @@
 'use client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field';
+import { Controller, useForm } from 'react-hook-form';
 import { BarLoader } from '@components/Objects/Loaders/BarLoader';
 import { updateAssignment } from '@services/courses/assignments';
+import { queryKeys } from '@/lib/react-query/queryKeys';
 import Modal from '@/components/Objects/Elements/Modal/Modal';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { de, enUS, es, fr, ru } from 'date-fns/locale';
 import { useLocale, useTranslations } from 'next-intl';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
-import { getAPIUrl } from '@services/config/config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useRef, useTransition } from 'react';
+import { useRef } from 'react';
 import { CalendarIcon } from 'lucide-react';
-import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { FC } from 'react';
 import { toast } from 'sonner';
 import * as v from 'valibot';
-import { mutate } from 'swr';
 
 interface Assignment {
   assignment_uuid: string;
@@ -34,14 +34,12 @@ interface Assignment {
 interface EditAssignmentFormProps {
   onClose: () => void;
   assignment: Assignment;
-  accessToken: string;
 }
 
 interface EditAssignmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   assignment: Assignment;
-  accessToken: string;
 }
 
 interface FormValues {
@@ -59,7 +57,11 @@ const createValidationSchema = (t: (key: string) => string) =>
     grading_type: v.picklist(['NUMERIC', 'PERCENTAGE']),
   });
 
-const EditAssignmentForm: FC<EditAssignmentFormProps> = ({ onClose, assignment, accessToken }) => {
+type EditAssignmentInput = v.InferInput<ReturnType<typeof createValidationSchema>>;
+type EditAssignmentOutput = v.InferOutput<ReturnType<typeof createValidationSchema>>;
+
+const EditAssignmentForm: FC<EditAssignmentFormProps> = ({ onClose, assignment }) => {
+  const queryClient = useQueryClient();
   const validationT = useTranslations('Validation');
   const t = useTranslations('Components.EditAssignmentModal');
   const fullLocale = useLocale();
@@ -79,7 +81,7 @@ const EditAssignmentForm: FC<EditAssignmentFormProps> = ({ onClose, assignment, 
   };
 
   const dateFnsLocale = getDateFnsLocale(locale);
-  const todayRef = useRef<Date>(
+  const todayRef = useRef(
     (() => {
       const d = new Date();
       d.setHours(0, 0, 0, 0);
@@ -88,7 +90,7 @@ const EditAssignmentForm: FC<EditAssignmentFormProps> = ({ onClose, assignment, 
   );
   const today = todayRef.current;
 
-  const form = useForm<FormValues>({
+  const form = useForm<EditAssignmentInput, any, EditAssignmentOutput>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       title: assignment.title || '',
@@ -98,28 +100,22 @@ const EditAssignmentForm: FC<EditAssignmentFormProps> = ({ onClose, assignment, 
     },
   });
 
-  const [isPending, startTransition] = useTransition();
-
-  const onSubmit = (values: FormValues) => {
+  const onSubmit = async (values: EditAssignmentOutput) => {
     const toastLoading = toast.loading(t('updateLoading'));
-    startTransition(() => {
-      void (async () => {
-        try {
-          const res = await updateAssignment(values, assignment.assignment_uuid, accessToken);
-          if (res.success) {
-            mutate(`${getAPIUrl()}assignments/${assignment.assignment_uuid}`);
-            toast.success(t('updateSuccess'));
-            onClose();
-          } else {
-            toast.error(t('updateError'));
-          }
-        } catch {
-          toast.error(t('updateErrorGeneric'));
-        } finally {
-          toast.dismiss(toastLoading);
-        }
-      })();
-    });
+    try {
+      const res = await updateAssignment(values, assignment.assignment_uuid);
+      if (res.success) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.assignments.detail(assignment.assignment_uuid) });
+        toast.success(t('updateSuccess'));
+        onClose();
+      } else {
+        toast.error(t('updateError'));
+      }
+    } catch {
+      toast.error(t('updateErrorGeneric'));
+    } finally {
+      toast.dismiss(toastLoading);
+    }
   };
 
   const gradingTypes = [
@@ -128,159 +124,159 @@ const EditAssignmentForm: FC<EditAssignmentFormProps> = ({ onClose, assignment, 
   ];
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-4"
-      >
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('assignmentTitle')}</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="text"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('assignmentDescription')}</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="due_date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('dueDate')}</FormLabel>
-              <Popover>
-                <PopoverTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !field.value && 'text-muted-foreground',
-                      )}
-                    />
-                  }
-                >
-                  {field.value ? (
-                    format(new Date(field.value), 'PPP', { locale: dateFnsLocale })
-                  ) : (
-                    <span>{t('selectDeadline')}</span>
-                  )}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-auto p-0"
-                  align="start"
-                >
-                  <Calendar
-                    mode="single"
-                    captionLayout="dropdown"
-                    selected={field.value ? new Date(field.value) : undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        const isoDate = `${year}-${month}-${day}`;
-                        field.onChange(isoDate);
-                      } else {
-                        field.onChange('');
-                      }
-                    }}
-                    disabled={{ before: today }}
-                    locale={dateFnsLocale}
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="grading_type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('gradingType')}</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value}
-                items={gradingTypes}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={validationT('selectGradingType')} />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectGroup>
-                    {gradingTypes.map((item) => (
-                      <SelectItem
-                        key={item.value}
-                        value={item.value}
-                      >
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="mt-6 flex justify-end space-x-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-          >
-            {t('cancel')}
-          </Button>
-          <Button
-            type="submit"
-            disabled={isPending || form.formState.isSubmitting}
-          >
-            {isPending || form.formState.isSubmitting ? (
-              <BarLoader
-                cssOverride={{ borderRadius: 60 }}
-                width={30}
-                color="#ffffff"
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="space-y-4"
+    >
+      <Controller
+        control={form.control}
+        name="title"
+        render={({ field, fieldState }) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>{t('assignmentTitle')}</FieldLabel>
+            <FieldContent>
+              <Input
+                id={field.name}
+                type="text"
+                {...field}
               />
-            ) : (
-              t('saveChanges')
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+            </FieldContent>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      <Controller
+        control={form.control}
+        name="description"
+        render={({ field, fieldState }) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>{t('assignmentDescription')}</FieldLabel>
+            <FieldContent>
+              <Textarea
+                id={field.name}
+                {...field}
+              />
+            </FieldContent>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      <Controller
+        control={form.control}
+        name="due_date"
+        render={({ field, fieldState }) => (
+          <Field>
+            <FieldLabel>{t('dueDate')}</FieldLabel>
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !field.value && 'text-muted-foreground',
+                    )}
+                  />
+                }
+              >
+                {field.value ? (
+                  format(new Date(field.value), 'PPP', { locale: dateFnsLocale })
+                ) : (
+                  <span>{t('selectDeadline')}</span>
+                )}
+                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-auto p-0"
+                align="start"
+              >
+                <Calendar
+                  mode="single"
+                  captionLayout="dropdown"
+                  selected={field.value ? new Date(field.value) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      const isoDate = `${year}-${month}-${day}`;
+                      field.onChange(isoDate);
+                    } else {
+                      field.onChange('');
+                    }
+                  }}
+                  disabled={{ before: today }}
+                  locale={dateFnsLocale}
+                />
+              </PopoverContent>
+            </Popover>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      <Controller
+        control={form.control}
+        name="grading_type"
+        render={({ field, fieldState }) => (
+          <Field>
+            <FieldLabel>{t('gradingType')}</FieldLabel>
+            <Select
+              onValueChange={field.onChange}
+              value={field.value}
+              items={gradingTypes}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={validationT('selectGradingType')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {gradingTypes.map((item) => (
+                    <SelectItem
+                      key={item.value}
+                      value={item.value}
+                    >
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      <div className="mt-6 flex justify-end space-x-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+        >
+          {t('cancel')}
+        </Button>
+        <Button
+          type="submit"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting ? (
+            <BarLoader
+              cssOverride={{ borderRadius: 60 }}
+              width={30}
+              color="#ffffff"
+            />
+          ) : (
+            t('saveChanges')
+          )}
+        </Button>
+      </div>
+    </form>
   );
 };
 
-const EditAssignmentModal: FC<EditAssignmentModalProps> = ({ isOpen, onClose, assignment, accessToken }) => {
+const EditAssignmentModal: FC<EditAssignmentModalProps> = ({ isOpen, onClose, assignment }) => {
   const t = useTranslations('Components.EditAssignmentModal');
   return (
     <Modal
@@ -292,7 +288,6 @@ const EditAssignmentModal: FC<EditAssignmentModalProps> = ({ isOpen, onClose, as
         <EditAssignmentForm
           onClose={onClose}
           assignment={assignment}
-          accessToken={accessToken}
         />
       }
       dialogTitle={t('editAssignment')}

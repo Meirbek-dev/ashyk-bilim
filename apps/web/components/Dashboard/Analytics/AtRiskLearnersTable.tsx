@@ -41,8 +41,8 @@ export default function AtRiskLearnersTable({
         const courseHref = row.original.course_uuid ? `/dash/analytics/courses/${row.original.course_uuid}` : undefined;
         return (
           <div>
-            <div className="font-medium text-foreground">{row.original.user_display_name}</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-foreground font-medium">{row.original.user_display_name}</div>
+            <div className="text-muted-foreground text-xs">
               {t('atRisk.userNumber', { userId: row.original.user_id })}
             </div>
             {courseHref && (
@@ -80,7 +80,7 @@ export default function AtRiskLearnersTable({
               {getAnalyticsRiskLevelLabel(t, row.original.risk_level)} · {row.original.risk_score}
             </Badge>
             {/* Readable component breakdown replacing the old I/P/F/M/G abbreviations */}
-            <div className="max-w-[280px] text-[11px] leading-4 text-muted-foreground">
+            <div className="text-muted-foreground max-w-[280px] text-[11px] leading-4">
               {[
                 [t('atRisk.riskComponents.inactivity'), c.inactivity],
                 [t('atRisk.riskComponents.progress'), c.progress],
@@ -100,7 +100,7 @@ export default function AtRiskLearnersTable({
       accessorKey: 'reason_codes',
       header: t('atRisk.colReasons'),
       cell: ({ row }) => (
-        <div className="max-w-[220px] whitespace-normal text-xs text-muted-foreground">
+        <div className="text-muted-foreground max-w-[220px] text-xs whitespace-normal">
           {row.original.reason_codes.map((code) => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
         </div>
       ),
@@ -114,7 +114,7 @@ export default function AtRiskLearnersTable({
           ? `/dash/analytics/courses/${row.original.course_uuid}`
           : '/dash/assignments';
         return (
-          <div className="max-w-[280px] space-y-1 whitespace-normal text-sm text-muted-foreground">
+          <div className="text-muted-foreground max-w-[280px] space-y-1 text-sm whitespace-normal">
             <span>{row.original.recommended_action}</span>
             {hasGradingBlock && gradingHref && (
               <Link

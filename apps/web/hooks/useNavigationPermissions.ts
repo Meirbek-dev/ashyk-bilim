@@ -5,15 +5,12 @@ import {
   canSeeAssignments,
   canSeeCourses,
   canSeePlatform,
-  canSeePayments,
   canSeeUsers,
 } from '@/lib/rbac/navigation-policy';
-import { usePaymentsEnabled } from '@components/Hooks/usePaymentsEnabled';
-import { usePermissions } from '@/components/Security';
+import { useSession } from '@/hooks/useSession';
 
 export function useNavigationPermissions() {
-  const { can } = usePermissions();
-  const { isEnabled: arePaymentsEnabled } = usePaymentsEnabled();
+  const { can } = useSession();
 
   const hasPlatformAccess = canSeePlatform(can);
   const hasCoursesAccess = canSeeCourses(can);
@@ -21,7 +18,6 @@ export function useNavigationPermissions() {
   const hasAnalyticsAccess = canSeeAnalytics(can);
   const hasUsersAccess = canSeeUsers(can);
   const hasAdminAccess = canSeeAdmin(can);
-  const hasPaymentsAccess = arePaymentsEnabled && canSeePayments(can);
   const hasDashboardAccess = canAccessDashboard(can);
 
   return {
@@ -30,7 +26,6 @@ export function useNavigationPermissions() {
     canSeeAnalytics: hasAnalyticsAccess,
     canSeeUsers: hasUsersAccess,
     canSeeAdmin: hasAdminAccess,
-    canSeePayments: hasPaymentsAccess,
     canSeePlatform: hasPlatformAccess,
     canAccessDashboard: hasDashboardAccess,
   };

@@ -7,14 +7,21 @@ __pycache__
 .pytest_cache
 .ruff_cache
 .mypy_cache
+.pyrefly_cache
 .python-version
 
 .git
 .gitignore
 
+# Runtime data directories — mounted as volumes, must not be baked into the image
+content
 logs
 temp-restore
 backups
+
+# Generated / local files
+.logfire
+openapi.json
 
 .env
 .env.*

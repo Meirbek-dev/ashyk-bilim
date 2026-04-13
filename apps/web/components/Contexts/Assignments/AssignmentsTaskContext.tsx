@@ -1,108 +1,61 @@
 'use client';
 
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { getAssignmentTask } from '@services/courses/assignments';
-import { createContext, use, useEffect, useReducer } from 'react';
-import { getAPIUrl } from '@services/config/config';
 import type { ReactNode } from 'react';
-import { mutate } from 'swr';
+import { create } from 'zustand';
 
-import { useAssignments } from './AssignmentContext';
+// ---------------------------------------------------------------------------
+// Store shape
+// ---------------------------------------------------------------------------
 
-interface State {
+export interface AssignmentTaskData {
+  assignment_task_uuid?: string;
+  assignment_type?: string;
+  title?: string;
+  description?: string;
+  hint?: string | null;
+  max_grade_value?: number;
+  reference_file?: string | null;
+  contents?: {
+    questions?: unknown[];
+    settings?: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface AssignmentsTaskStore {
+  /** The full task object currently open in the editor (empty object = none). */
+  assignmentTask: AssignmentTaskData;
+
+  /** UUID of the task currently selected in the sidebar task list. */
   selectedAssignmentTaskUUID: string | null;
-  assignmentTask: Record<string, any>;
-  reloadTrigger: number;
+
+  /**
+   * Monotonically-increasing counter.  Increment via `reload()` to signal
+   * that the task list should be re-fetched.
+   */
+  reloadKey: number;
+
+  setAssignmentTask: (task: Record<string, unknown>) => void;
+  setSelectedTaskUUID: (uuid: string | null) => void;
+  reload: () => void;
 }
 
-interface Action {
-  type: 'setSelectedAssignmentTaskUUID' | 'setAssignmentTask' | 'reload' | 'SET_MULTIPLE_STATES';
-  payload?: any;
-}
+// ---------------------------------------------------------------------------
+// Store
+// ---------------------------------------------------------------------------
 
-const initialState: State = {
-  selectedAssignmentTaskUUID: null,
+export const useAssignmentsTaskStore = create<AssignmentsTaskStore>((set) => ({
   assignmentTask: {},
-  reloadTrigger: 0,
-};
+  selectedAssignmentTaskUUID: null,
+  reloadKey: 0,
 
-export const AssignmentsTaskContext = createContext<State | undefined>(undefined);
-export const AssignmentsTaskDispatchContext = createContext<React.Dispatch<Action> | undefined>(undefined);
+  setAssignmentTask: (task) => set({ assignmentTask: task }),
+  setSelectedTaskUUID: (uuid) => set({ selectedAssignmentTaskUUID: uuid }),
+  reload: () => set((s) => ({ reloadKey: s.reloadKey + 1 })),
+}));
 
-export const AssignmentsTaskProvider = ({ children }: { children: ReactNode }) => {
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
-  const assignment = useAssignments();
+// ---------------------------------------------------------------------------
+// Provider (pass-through — kept for JSX compatibility)
+// ---------------------------------------------------------------------------
 
-  const [state, dispatch] = useReducer(assignmentsTaskReducer, initialState);
-
-  async function fetchAssignmentTask(assignmentTaskUUID: string) {
-    const res = await getAssignmentTask(assignmentTaskUUID, access_token);
-
-    if (res.success) {
-      dispatch({ type: 'setAssignmentTask', payload: res.data });
-    }
-  }
-
-  useEffect(() => {
-    const loadIfNeeded = async () => {
-      if (state.selectedAssignmentTaskUUID) {
-        const res = await getAssignmentTask(state.selectedAssignmentTaskUUID, access_token);
-        if (res.success) dispatch({ type: 'setAssignmentTask', payload: res.data });
-        mutate(`${getAPIUrl()}assignments/${assignment.assignment_object?.assignment_uuid}/tasks`);
-      }
-    };
-
-    void loadIfNeeded();
-  }, [
-    state.selectedAssignmentTaskUUID,
-    state.reloadTrigger,
-    assignment.assignment_object?.assignment_uuid,
-    access_token,
-  ]);
-
-  return (
-    <AssignmentsTaskContext.Provider value={state}>
-      <AssignmentsTaskDispatchContext.Provider value={dispatch}>{children}</AssignmentsTaskDispatchContext.Provider>
-    </AssignmentsTaskContext.Provider>
-  );
-};
-
-export function useAssignmentsTask() {
-  const context = use(AssignmentsTaskContext);
-  if (context === undefined) {
-    throw new Error('useAssignmentsTask must be used within an AssignmentsTaskProvider');
-  }
-  return context;
-}
-
-export function useAssignmentsTaskDispatch() {
-  const context = use(AssignmentsTaskDispatchContext);
-  if (context === undefined) {
-    throw new Error('useAssignmentsTaskDispatch must be used within an AssignmentsTaskProvider');
-  }
-  return context;
-}
-
-function assignmentsTaskReducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'setSelectedAssignmentTaskUUID': {
-      return { ...state, selectedAssignmentTaskUUID: action.payload };
-    }
-    case 'setAssignmentTask': {
-      return { ...state, assignmentTask: action.payload };
-    }
-    case 'reload': {
-      return { ...state, reloadTrigger: state.reloadTrigger + 1 };
-    }
-    case 'SET_MULTIPLE_STATES': {
-      return {
-        ...state,
-        ...action.payload,
-      };
-    }
-    default: {
-      return state;
-    }
-  }
-}
+export const AssignmentsTaskProvider = ({ children }: { children: ReactNode }) => <>{children}</>;

@@ -2,22 +2,21 @@
 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createCertification, deleteCertification, updateCertification } from '@services/courses/certifications';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { SectionHeader } from '@components/Dashboard/Courses/SectionHeader';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertTriangle, Award, FileText, Sparkles } from 'lucide-react';
+import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field';
+import { useSyncDirtySection } from '@/hooks/useSyncDirtySection';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCourse } from '@components/Contexts/CourseContext';
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import { useDirtySection } from '@/hooks/useDirtySection';
 import { useSaveSection } from '@/hooks/useSaveSection';
 import { Separator } from '@/components/ui/separator';
 import CertificatePreview from './CertificatePreview';
 import { Textarea } from '@/components/ui/textarea';
-import { useForm, useWatch } from 'react-hook-form';
 import { Spinner } from '@components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -72,48 +71,79 @@ const _certFormSchemaForTypes = v.object({
 });
 
 type FormValues = v.InferOutput<typeof _certFormSchemaForTypes>;
+type FormInputValues = v.InferInput<typeof _certFormSchemaForTypes>;
 
 const EditCourseCertification = () => {
   const [error, setError] = useState('');
-  const [hasHydrated, setHasHydrated] = useState(false);
 
   const course = useCourse();
   const { isLoading, courseStructure, editorData } = course;
-  const session = usePlatformSession();
-  const access_token = session?.data?.tokens?.access_token;
+
   const t = useTranslations('Certificates.EditCourseCertification');
   const tCommon = useTranslations('Common');
+
+  const certificationTypeItems = useMemo(
+    () =>
+      (
+        [
+          'completion',
+          'achievement',
+          'assessment',
+          'participation',
+          'mastery',
+          'professional',
+          'continuing',
+          'workshop',
+          'specialization',
+        ] as const
+      ).map((type) => ({ value: type, label: t(`certificationTypes.${type}`) })),
+    [t],
+  );
 
   const formSchema = useMemo(
     () =>
       v.pipe(
         v.object({
           enable_certification: v.boolean(),
-          certification_name: v.pipe(v.string(), v.maxLength(100, t('maxCharacters100'))),
-          certification_description: v.pipe(v.string(), v.maxLength(700, t('maxCharacters500'))),
-          certification_type: v.picklist([
-            'completion',
-            'achievement',
-            'assessment',
-            'participation',
-            'mastery',
-            'professional',
-            'continuing',
-            'workshop',
-            'specialization',
-          ]),
-          certificate_pattern: v.picklist([
-            'royal',
-            'tech',
-            'nature',
-            'geometric',
-            'vintage',
-            'waves',
-            'minimal',
-            'professional',
-            'academic',
-            'modern',
-          ]),
+          certification_name: v.pipe(
+            v.string(t('certificationNameRequired')),
+            v.minLength(1, t('certificationNameRequired')),
+            v.maxLength(100, t('maxCharacters100')),
+          ),
+          certification_description: v.pipe(
+            v.string(t('certificationDescriptionRequired')),
+            v.minLength(1, t('certificationDescriptionRequired')),
+            v.maxLength(700, t('maxCharacters500')),
+          ),
+          certification_type: v.picklist(
+            [
+              'completion',
+              'achievement',
+              'assessment',
+              'participation',
+              'mastery',
+              'professional',
+              'continuing',
+              'workshop',
+              'specialization',
+            ],
+            t('certificationTypeRequired'),
+          ),
+          certificate_pattern: v.picklist(
+            [
+              'royal',
+              'tech',
+              'nature',
+              'geometric',
+              'vintage',
+              'waves',
+              'minimal',
+              'professional',
+              'academic',
+              'modern',
+            ],
+            t('certificatePatternRequired'),
+          ),
           certificate_instructor: v.optional(v.string()),
         }),
         v.check((data) => {
@@ -128,10 +158,10 @@ const EditCourseCertification = () => {
 
   const certifications = editorData.certifications.data ?? [];
   const certificationsError = editorData.certifications.error;
-  const existingCertification = certifications[0];
+  const [existingCertification] = certifications;
   const hasExistingCertification = Boolean(existingCertification);
 
-  const form = useForm<FormValues>({
+  const form = useForm<FormInputValues, any, FormValues>({
     resolver: valibotResolver(formSchema),
     defaultValues: {
       enable_certification: false,
@@ -143,24 +173,10 @@ const EditCourseCertification = () => {
     },
   });
 
-  const certificationTypeItems = (
-    [
-      'completion',
-      'achievement',
-      'assessment',
-      'participation',
-      'mastery',
-      'professional',
-      'continuing',
-      'workshop',
-      'specialization',
-    ] as const
-  ).map((type) => ({ value: type, label: t(`certificationTypes.${type}`) }));
-
   const getInitialValues = useCallback((): FormValues => {
     const getInstructorName = () => {
       if (courseStructure?.authors?.length > 0) {
-        const author = courseStructure.authors[0];
+        const [author] = courseStructure.authors;
         const firstName = author.user?.first_name || '';
         const lastName = author.user?.last_name || '';
         if (firstName || lastName) return `${firstName} ${lastName}`.trim();
@@ -179,70 +195,66 @@ const EditCourseCertification = () => {
     };
   }, [courseStructure, existingCertification, hasExistingCertification]);
 
-  const initialValuesRef = useRef<FormValues>(form.getValues());
+  const serverValues = useMemo(() => {
+    if (editorData.certifications.data === null || isLoading) {
+      return null;
+    }
+    return getInitialValues();
+  }, [editorData.certifications.data, getInitialValues, isLoading]);
 
-  const { isDirty, isDirtyRef, markDirty, markClean } = useDirtySection('certification');
+  const serverValuesSignature = useMemo(() => {
+    if (!serverValues) return '';
+    return JSON.stringify(serverValues);
+  }, [serverValues]);
+
+  const hydratedServerValuesSignatureRef = useRef('');
+
+  const { isDirty } = form.formState;
+  useSyncDirtySection('certification', isDirty);
+
+  const handleDiscard = () => {
+    if (serverValues) form.reset(serverValues);
+    setError('');
+  };
+
   const { isSaving, saveWithEditorRefresh } = useSaveSection({
+    section: 'certification',
     errorMessage: t('certificationError'),
     onError: setError,
   });
 
-  // Initialize form when data is ready
+  // Hydrate form from server data on load / when server data changes.
   useEffect(() => {
-    if (editorData.certifications.data !== null && !isLoading) {
-      if (isDirtyRef.current) return;
-      const newValues = getInitialValues();
-      form.reset(newValues);
-      initialValuesRef.current = newValues;
-      markClean();
-      setHasHydrated(true);
-    }
-  }, [editorData.certifications.data, isLoading, form, getInitialValues, isDirtyRef, markClean]);
+    if (!serverValues) return;
+    if (hydratedServerValuesSignatureRef.current === serverValuesSignature) return;
+    form.reset(serverValues, { keepDirtyValues: true });
+    hydratedServerValuesSignatureRef.current = serverValuesSignature;
+  }, [serverValues, serverValuesSignature, form]);
 
   // Subscribe to individual watched fields to avoid over-rendering
-  const isEnabled = useWatch({ control: form.control, name: 'enable_certification' });
-  const certificationName = useWatch({ control: form.control, name: 'certification_name' });
-  const certificationDescription = useWatch({ control: form.control, name: 'certification_description' });
-  const certificationType = useWatch({ control: form.control, name: 'certification_type' });
-  const certificatePattern = useWatch({ control: form.control, name: 'certificate_pattern' });
-  const certificateInstructor = useWatch({ control: form.control, name: 'certificate_instructor' });
-
-  // Track dirty state on form value changes
-  useEffect(() => {
-    if (!isLoading && hasHydrated) {
-      const currentValues = {
-        enable_certification: isEnabled,
-        certification_name: certificationName,
-        certification_description: certificationDescription,
-        certification_type: certificationType,
-        certificate_pattern: certificatePattern,
-        certificate_instructor: certificateInstructor,
-      };
-      const dirty = JSON.stringify(initialValuesRef.current) !== JSON.stringify(currentValues);
-      if (dirty) markDirty();
-      else markClean();
-    }
-  }, [
-    isEnabled,
-    certificationName,
-    certificationDescription,
-    certificationType,
-    certificatePattern,
-    certificateInstructor,
-    isLoading,
-    hasHydrated,
-    markDirty,
-    markClean,
-  ]);
-
-  const handleDiscard = () => {
-    form.reset(initialValuesRef.current);
-    markClean();
-    setError('');
-  };
+  const isEnabled = useWatch({
+    control: form.control,
+    name: 'enable_certification',
+    defaultValue: false,
+  });
+  const certificationName = useWatch({ control: form.control, name: 'certification_name', defaultValue: '' });
+  const certificationDescription = useWatch({
+    control: form.control,
+    name: 'certification_description',
+    defaultValue: '',
+  });
+  const certificationType = useWatch({ control: form.control, name: 'certification_type', defaultValue: 'completion' });
+  const certificatePattern = useWatch({
+    control: form.control,
+    name: 'certificate_pattern',
+    defaultValue: 'professional',
+  });
+  const certificateInstructor = useWatch({ control: form.control, name: 'certificate_instructor', defaultValue: '' });
 
   const handleSaveCertification = form.handleSubmit(async (values) => {
-    if (!(access_token && courseStructure) || !isDirty) return;
+    if (!courseStructure || !isDirty) return;
+
+    const isCertificationEnabled = values.enable_certification;
 
     const config = {
       certification_name: values.certification_name,
@@ -256,22 +268,31 @@ const EditCourseCertification = () => {
 
     await saveWithEditorRefresh(
       async () => {
-        if (values.enable_certification) {
+        if (isCertificationEnabled) {
           if (existingCertification) {
-            return updateCertification(existingCertification.certification_uuid, config, access_token, {
-              courseUuid: courseStructure.course_uuid,
-              lastKnownUpdateDate: courseStructure.update_date,
+            return updateCertification({
+              certification_uuid: existingCertification.certification_uuid,
+              config,
+
+              options: {
+                courseUuid: courseStructure.course_uuid,
+                lastKnownUpdateDate: courseStructure.update_date,
+              },
             });
           }
 
-          return createCertification(courseStructure.id, config, access_token, {
-            courseUuid: courseStructure.course_uuid,
-            lastKnownUpdateDate: courseStructure.update_date,
+          return createCertification({
+            course_id: courseStructure.id,
+            config,
+            options: {
+              courseUuid: courseStructure.course_uuid,
+              lastKnownUpdateDate: courseStructure.update_date,
+            },
           });
         }
 
         if (existingCertification) {
-          return deleteCertification(existingCertification.certification_uuid, access_token, {
+          return deleteCertification(existingCertification.certification_uuid, {
             courseUuid: courseStructure.course_uuid,
             lastKnownUpdateDate: courseStructure.update_date,
           });
@@ -280,14 +301,13 @@ const EditCourseCertification = () => {
         return { success: true };
       },
       {
-        successMessage: values.enable_certification
+        successMessage: isCertificationEnabled
           ? hasExistingCertification
             ? tCommon('saved')
             : t('certificationCreated')
           : t('certificationRemoved'),
         onSuccess: () => {
-          initialValuesRef.current = values;
-          markClean();
+          form.reset(values);
           setError('');
         },
       },
@@ -330,19 +350,25 @@ const EditCourseCertification = () => {
               onSave={handleSaveCertification}
               onDiscard={handleDiscard}
             >
-              <Label
-                htmlFor="cert-toggle"
-                className="cursor-pointer"
-              >
-                <Switch
-                  id="cert-toggle"
-                  checked={isEnabled}
-                  onCheckedChange={(checked) => {
-                    form.setValue('enable_certification', checked, { shouldDirty: true });
-                  }}
-                  disabled={isSaving}
-                />
-              </Label>
+              <Controller
+                control={form.control}
+                name="enable_certification"
+                render={({ field }) => (
+                  <Label
+                    htmlFor="cert-toggle"
+                    className="cursor-pointer"
+                  >
+                    <Switch
+                      id="cert-toggle"
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked);
+                      }}
+                      disabled={isSaving}
+                    />
+                  </Label>
+                )}
+              />
             </SectionHeader>
           </CardHeader>
 
@@ -358,192 +384,189 @@ const EditCourseCertification = () => {
             )}
 
             {isEnabled && (
-              <Form {...form}>
-                <form className="space-y-8">
-                  <div className="grid gap-8 lg:grid-cols-5">
-                    {/* Configuration */}
-                    <div className="space-y-8 lg:col-span-3">
-                      {/* Basic Information */}
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <FileText className="text-muted-foreground h-5 w-5" />
-                          <h3 className="text-lg font-semibold">{t('basicInfo')}</h3>
-                        </div>
-                        <p className="text-muted-foreground text-sm">{t('basicInfoDesc')}</p>
-                        <Separator />
-
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <FormField
-                            control={form.control}
-                            name="certification_name"
-                            render={({ field }) => (
-                              <FormItem className="sm:col-span-2">
-                                <FormLabel>{t('certificationName')}</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    placeholder={t('certificationNamePlaceholder')}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="certification_type"
-                            render={({ field }) => (
-                              <FormItem className="sm:col-span-2">
-                                <FormLabel>{t('certificationType')}</FormLabel>
-                                <Select
-                                  value={field.value}
-                                  onValueChange={field.onChange}
-                                  items={certificationTypeItems}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue>{t(`certificationTypes.${field.value}`)}</SelectValue>
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectGroup>
-                                      {certificationTypeItems.map((item) => (
-                                        <SelectItem
-                                          key={item.value}
-                                          value={item.value}
-                                        >
-                                          {item.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="certification_description"
-                            render={({ field }) => (
-                              <FormItem className="sm:col-span-2">
-                                <FormLabel>{t('certificationDescription')}</FormLabel>
-                                <FormControl>
-                                  <Textarea
-                                    {...field}
-                                    placeholder={t('certificationDescriptionPlaceholder')}
-                                    className="min-h-[120px] resize-none"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+              <div className="space-y-8">
+                <div className="grid gap-8 lg:grid-cols-5">
+                  {/* Configuration */}
+                  <div className="space-y-8 lg:col-span-3">
+                    {/* Basic Information */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <FileText className="text-muted-foreground h-5 w-5" />
+                        <h3 className="text-lg font-semibold">{t('basicInfo')}</h3>
                       </div>
+                      <p className="text-muted-foreground text-sm">{t('basicInfoDesc')}</p>
+                      <Separator />
 
-                      {/* Design Section */}
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="text-muted-foreground h-5 w-5" />
-                          <h3 className="text-lg font-semibold">{t('certificateDesign')}</h3>
-                        </div>
-                        <p className="text-muted-foreground text-sm">{t('certificateDesignDesc')}</p>
-                        <Separator />
-
-                        <FormField
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Controller
                           control={form.control}
-                          name="certificate_pattern"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{t('certificatePattern')}</FormLabel>
-                              <FormControl>
-                                <RadioGroup
-                                  value={field.value}
-                                  onValueChange={field.onChange}
-                                  className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
-                                >
-                                  {CERTIFICATE_PATTERNS.map((pattern) => (
-                                    <Label
-                                      key={pattern.value}
-                                      htmlFor={`pattern-${pattern.value}`}
-                                      className={`hover:border-primary/50 relative flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                                        field.value === pattern.value ? 'border-primary bg-primary/5' : 'border-border'
-                                      }`}
-                                    >
-                                      <RadioGroupItem
-                                        value={pattern.value}
-                                        id={`pattern-${pattern.value}`}
-                                        className="sr-only"
-                                      />
-                                      <span className="text-2xl">{pattern.icon}</span>
-                                      <span className="text-xs font-medium">
-                                        {t(`certificatePatterns.${pattern.value}`)}
-                                      </span>
-                                      {field.value === pattern.value && (
-                                        <Badge
-                                          variant="secondary"
-                                          className="absolute -top-2 -right-2"
-                                        >
-                                          ✓
-                                        </Badge>
-                                      )}
-                                    </Label>
-                                  ))}
-                                </RadioGroup>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
+                          name="certification_name"
+                          render={({ field, fieldState }) => (
+                            <Field className="sm:col-span-2">
+                              <FieldLabel htmlFor={field.name}>{t('certificationName')}</FieldLabel>
+                              <FieldContent>
+                                <Input
+                                  id={field.name}
+                                  {...field}
+                                  placeholder={t('certificationNamePlaceholder')}
+                                />
+                              </FieldContent>
+                              <FieldError errors={[fieldState.error]} />
+                            </Field>
                           )}
                         />
 
-                        <FormField
+                        <Controller
                           control={form.control}
-                          name="certificate_instructor"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{t('certificateInstructor')}</FormLabel>
-                              <FormControl>
-                                <Input
+                          name="certification_type"
+                          render={({ field, fieldState }) => (
+                            <Field className="sm:col-span-2">
+                              <FieldLabel>{t('certificationType')}</FieldLabel>
+                              <Select
+                                value={field.value || 'completion'}
+                                onValueChange={field.onChange}
+                                items={certificationTypeItems}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue>{t(`certificationTypes.${field.value || 'completion'}`)}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectGroup>
+                                    {certificationTypeItems.map((item) => (
+                                      <SelectItem
+                                        key={item.value}
+                                        value={item.value}
+                                      >
+                                        {item.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                              <FieldError errors={[fieldState.error]} />
+                            </Field>
+                          )}
+                        />
+
+                        <Controller
+                          control={form.control}
+                          name="certification_description"
+                          render={({ field, fieldState }) => (
+                            <Field className="sm:col-span-2">
+                              <FieldLabel htmlFor={field.name}>{t('certificationDescription')}</FieldLabel>
+                              <FieldContent>
+                                <Textarea
+                                  id={field.name}
                                   {...field}
-                                  placeholder={t('certificateInstructorPlaceholder')}
+                                  placeholder={t('certificationDescriptionPlaceholder')}
+                                  className="min-h-[120px] resize-none"
                                 />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
+                              </FieldContent>
+                              <FieldError errors={[fieldState.error]} />
+                            </Field>
                           )}
                         />
                       </div>
                     </div>
 
-                    {/* Preview */}
-                    <div className="lg:col-span-2">
-                      <div className="sticky top-6">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base">
-                              <Award className="h-4 w-4" />
-                              {t('previewCertificate')}
-                            </CardTitle>
-                            <CardDescription>{t('livePreviewCertificate')}</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <CertificatePreview
-                              certificationName={certificationName || ''}
-                              certificationDescription={certificationDescription || ''}
-                              certificationType={certificationType || 'completion'}
-                              certificatePattern={certificatePattern || 'professional'}
-                              certificateInstructor={certificateInstructor}
-                            />
-                          </CardContent>
-                        </Card>
+                    {/* Design Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="text-muted-foreground h-5 w-5" />
+                        <h3 className="text-lg font-semibold">{t('certificateDesign')}</h3>
                       </div>
+                      <p className="text-muted-foreground text-sm">{t('certificateDesignDesc')}</p>
+                      <Separator />
+
+                      <Controller
+                        control={form.control}
+                        name="certificate_pattern"
+                        render={({ field, fieldState }) => (
+                          <Field>
+                            <FieldLabel>{t('certificatePattern')}</FieldLabel>
+                            <RadioGroup
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+                            >
+                              {CERTIFICATE_PATTERNS.map((pattern) => (
+                                <Label
+                                  key={pattern.value}
+                                  htmlFor={`pattern-${pattern.value}`}
+                                  className={`hover:border-primary/50 relative flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
+                                    field.value === pattern.value ? 'border-primary bg-primary/5' : 'border-border'
+                                  }`}
+                                >
+                                  <RadioGroupItem
+                                    value={pattern.value}
+                                    id={`pattern-${pattern.value}`}
+                                    className="sr-only"
+                                  />
+                                  <span className="text-2xl">{pattern.icon}</span>
+                                  <span className="text-xs font-medium">
+                                    {t(`certificatePatterns.${pattern.value}`)}
+                                  </span>
+                                  {field.value === pattern.value && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="absolute -top-2 -right-2"
+                                    >
+                                      ✓
+                                    </Badge>
+                                  )}
+                                </Label>
+                              ))}
+                            </RadioGroup>
+                            <FieldError errors={[fieldState.error]} />
+                          </Field>
+                        )}
+                      />
+
+                      <Controller
+                        control={form.control}
+                        name="certificate_instructor"
+                        render={({ field, fieldState }) => (
+                          <Field>
+                            <FieldLabel htmlFor={field.name}>{t('certificateInstructor')}</FieldLabel>
+                            <FieldContent>
+                              <Input
+                                id={field.name}
+                                {...field}
+                                placeholder={t('certificateInstructorPlaceholder')}
+                              />
+                            </FieldContent>
+                            <FieldError errors={[fieldState.error]} />
+                          </Field>
+                        )}
+                      />
                     </div>
                   </div>
-                </form>
-              </Form>
+
+                  {/* Preview */}
+                  <div className="lg:col-span-2">
+                    <div className="sticky top-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-base">
+                            <Award className="h-4 w-4" />
+                            {t('previewCertificate')}
+                          </CardTitle>
+                          <CardDescription>{t('livePreviewCertificate')}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <CertificatePreview
+                            certificationName={certificationName}
+                            certificationDescription={certificationDescription}
+                            certificationType={certificationType}
+                            certificatePattern={certificatePattern}
+                            certificateInstructor={certificateInstructor}
+                          />
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {!isEnabled && (
@@ -556,7 +579,10 @@ const EditCourseCertification = () => {
                 <Button
                   type="button"
                   onClick={() => {
-                    form.setValue('enable_certification', true, { shouldDirty: true });
+                    form.setValue('enable_certification', true, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                    });
                   }}
                   disabled={isSaving}
                 >

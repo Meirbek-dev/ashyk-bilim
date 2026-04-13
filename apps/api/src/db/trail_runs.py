@@ -88,11 +88,3 @@ class TrailRunRead(PydanticStrictBaseModel):
         if isinstance(v, str):
             return StatusEnum(v)
         return v
-
-
-def rebuild_trail_run_models() -> None:
-    """Rebuild trail run models to resolve forward references"""
-    from src.db.trail_steps import rebuild_trail_step_models
-
-    rebuild_trail_step_models()
-    TrailRunRead.model_rebuild()

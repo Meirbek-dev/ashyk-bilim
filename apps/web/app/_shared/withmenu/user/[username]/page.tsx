@@ -1,4 +1,4 @@
-import { getUserByUsername } from '@services/users/users';
+import { getUserByUsername } from '@/lib/users/server';
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
 
@@ -63,7 +63,7 @@ async function UserPage({ params }: UserPageProps) {
   if (hasError) {
     return (
       <div className="container mx-auto py-8">
-        <div className="soft-shadow rounded-xl bg-white p-6">
+        <div className="soft-shadow bg-card rounded-xl p-6">
           <p className="text-red-600">{t('profileLoadError')}</p>
         </div>
       </div>

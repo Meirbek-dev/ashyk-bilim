@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth/session';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,7 +10,7 @@ const corsHeaders = {
 } as const;
 
 async function requireAuthenticatedSession() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
   }

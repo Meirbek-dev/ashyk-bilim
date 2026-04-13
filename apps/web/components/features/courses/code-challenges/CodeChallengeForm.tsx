@@ -1,8 +1,7 @@
 'use client';
 
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import { useFieldArray, useForm } from 'react-hook-form';
-import type { SubmitHandler } from 'react-hook-form';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { Grip, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
@@ -147,7 +146,7 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
 
   const schema = useMemo(() => createCodeChallengeFormSchema(t), [t]);
 
-  const form = useForm<CodeChallengeFormInput>({
+  const form = useForm<CodeChallengeFormInput, any, CodeChallengeFormData>({
     resolver: valibotResolver(schema),
     defaultValues: {
       title: '',
@@ -194,9 +193,13 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
     name: 'hints',
   });
 
-  const watchAllowedLanguages = form.watch('allowed_languages');
-  const watchEnableHints = form.watch('enable_hints');
-  const watchGradingStrategy = form.watch('grading_strategy');
+  const watchAllowedLanguages = useWatch({ control: form.control, name: 'allowed_languages', defaultValue: [71] });
+  const watchEnableHints = useWatch({ control: form.control, name: 'enable_hints', defaultValue: false });
+  const watchGradingStrategy = useWatch({
+    control: form.control,
+    name: 'grading_strategy',
+    defaultValue: 'partial',
+  });
 
   // Use item arrays for Select components so we follow the shared pattern and keep labels localized.
   const difficultyItems = [
@@ -235,14 +238,11 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
   // Compute a safe default language id for the language Tabs (avoid undefined access)
   const defaultLanguageId = watchAllowedLanguages?.[0] ?? JUDGE0_LANGUAGES?.[0]?.id ?? 71;
 
-  const handleFormSubmit: SubmitHandler<CodeChallengeFormInput> = async (data) => {
+  const handleFormSubmit = async (data: CodeChallengeFormData) => {
     try {
-      // Parse the raw input into the canonical, fully-populated output type
-      const parsed: CodeChallengeFormData = v.parse(schema, data);
-      await onSubmit(parsed);
+      await onSubmit(data);
       toast.success(t('challengeSaved'));
     } catch (error) {
-      // If something unexpected fails, show an error.
       toast.error(t('saveFailed'));
       throw error;
     }
@@ -411,7 +411,10 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
                         min={100}
                         max={30_000}
                         {...field}
-                        onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 2000)}
+                        value={field.value ?? ''}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === '' ? undefined : Number.parseInt(e.target.value, 10))
+                        }
                       />
                     </FieldContent>
                     <FieldDescription>{t('form.timeLimitHint')}</FieldDescription>
@@ -432,7 +435,10 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
                         min={1024}
                         max={2_097_152}
                         {...field}
-                        onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 262_144)}
+                        value={field.value ?? ''}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === '' ? undefined : Number.parseInt(e.target.value, 10))
+                        }
                       />
                     </FieldContent>
                     <FieldDescription>{t('form.memoryLimitHint')}</FieldDescription>
@@ -572,7 +578,12 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
                                 min={0}
                                 max={10_000}
                                 {...field}
-                                onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
+                                value={field.value ?? ''}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    e.target.value === '' ? undefined : Number.parseInt(e.target.value, 10),
+                                  )
+                                }
                               />
                             </FieldContent>
                             <FieldError errors={[fieldState.error]} />
@@ -642,6 +653,7 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
                     />
                     <div className="mt-2 flex gap-2">
                       <Button
+                        type="button"
                         size="sm"
                         variant="outline"
                         onClick={() => {
@@ -653,6 +665,7 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
                         {t('selectAll')}
                       </Button>
                       <Button
+                        type="button"
                         size="sm"
                         variant="ghost"
                         onClick={() => field.onChange([])}
@@ -820,7 +833,12 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
                                     min={0}
                                     max={100}
                                     {...field}
-                                    onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
+                                    value={field.value ?? ''}
+                                    onChange={(e) =>
+                                      field.onChange(
+                                        e.target.value === '' ? undefined : Number.parseInt(e.target.value, 10),
+                                      )
+                                    }
                                   />
                                 </FieldContent>
                                 <FieldDescription>%</FieldDescription>

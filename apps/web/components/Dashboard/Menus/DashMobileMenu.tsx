@@ -1,37 +1,20 @@
 'use client';
 
-import {
-  Backpack,
-  BadgeDollarSign,
-  BarChart3,
-  BookCopy,
-  Home,
-  School,
-  Settings,
-  ShieldCheck,
-  Users,
-} from 'lucide-react';
+import { Backpack, BarChart3, BookCopy, Home, School, Settings, ShieldCheck, Users } from 'lucide-react';
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useSession } from '@/hooks/useSession';
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip';
 import AppLink from '@/components/ui/AppLink';
 import { useTranslations } from 'next-intl';
 
 const DashMobileMenu = () => {
-  const session = usePlatformSession() as any;
+  const { user: currentUser } = useSession();
   const t = useTranslations('SidebarMenu');
-  const {
-    canSeePlatform,
-    canSeeCourses,
-    canSeeAssignments,
-    canSeeAnalytics,
-    canSeeUsers,
-    canSeeAdmin,
-    canSeePayments,
-  } = useNavigationPermissions();
+  const { canSeePlatform, canSeeCourses, canSeeAssignments, canSeeAnalytics, canSeeUsers, canSeeAdmin } =
+    useNavigationPermissions();
 
   return (
-    <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lg supports-[backdrop-filter]:bg-sidebar/90 supports-[backdrop-filter]:backdrop-blur-md">
+    <div className="border-sidebar-border bg-sidebar text-sidebar-foreground supports-[backdrop-filter]:bg-sidebar/90 fixed right-0 bottom-0 left-0 z-50 border-t shadow-lg supports-[backdrop-filter]:backdrop-blur-md">
       <div className="flex h-16 items-center justify-around px-2">
         <ToolTip
           content={t('tooltips.home')}
@@ -99,23 +82,6 @@ const DashMobileMenu = () => {
             </AppLink>
           </ToolTip>
         ) : null}
-        {canSeePayments ? (
-          <ToolTip
-            content={t('tooltips.payments')}
-            slateBlack
-            sideOffset={8}
-            side="top"
-          >
-            <AppLink
-              href="/dash/payments/customers"
-              className="flex flex-col items-center p-2"
-              aria-label={t('ariaLabels.managePayments')}
-            >
-              <BadgeDollarSign size={20} />
-              <span className="mt-1 text-xs">{t('mobile.payments')}</span>
-            </AppLink>
-          </ToolTip>
-        ) : null}
         {canSeeUsers ? (
           <ToolTip
             content={t('tooltips.users')}
@@ -141,7 +107,7 @@ const DashMobileMenu = () => {
             side="top"
           >
             <AppLink
-              href="/dash/platform/settings/general"
+              href="/dash/platform/settings/landing"
               className="flex flex-col items-center p-2"
               aria-label={t('ariaLabels.platformSettings')}
             >
@@ -169,7 +135,7 @@ const DashMobileMenu = () => {
         ) : null}
         <ToolTip
           content={t('tooltips.userSettings', {
-            username: session.data.user.username,
+            username: currentUser?.username ?? '',
           })}
           slateBlack
           sideOffset={8}

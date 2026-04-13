@@ -2,9 +2,8 @@
 
 import EditSocials from '@/components/Dashboard/Pages/Platform/EditSocials/EditSocials';
 import EditLanding from '@/components/Dashboard/Pages/Platform/EditLanding/EditLanding';
-import EditGeneral from '@/components/Dashboard/Pages/Platform/EditGeneral/EditGeneral';
 import EditImages from '@/components/Dashboard/Pages/Platform/EditImages/EditImages';
-import { ImageIcon, LayoutDashboardIcon, Share2Icon, TextIcon } from 'lucide-react';
+import { ImageIcon, LayoutDashboardIcon, Share2Icon } from 'lucide-react';
 import SettingsHeader from '@components/Dashboard/Misc/SettingsHeader';
 import SettingsTabs from '@components/Dashboard/Misc/SettingsTabs';
 import { getAbsoluteUrl } from '@services/config/config';
@@ -27,7 +26,6 @@ interface TabItem {
 }
 
 const SETTING_TABS: TabItem[] = [
-  { id: 'general', label: 'general', icon: TextIcon, titleKey: 'generalTitle', descriptionKey: 'generalDescription' },
   {
     id: 'landing',
     label: 'landing',
@@ -42,19 +40,25 @@ const SETTING_TABS: TabItem[] = [
     titleKey: 'previewsTitle',
     descriptionKey: 'previewsDescription',
   },
-  { id: 'socials', label: 'socials', icon: Share2Icon, titleKey: 'socialsTitle', descriptionKey: 'socialsDescription' },
+  {
+    id: 'socials',
+    label: 'socials',
+    icon: Share2Icon,
+    titleKey: 'socialsTitle',
+    descriptionKey: 'socialsDescription',
+  },
 ];
 
 export default function PlatformSettingsPage(props: { params: Promise<{ subpage: string }> }) {
   const t = useTranslations('DashPage.PlatformSettings');
   const params = use(props.params);
 
-  const currentTab = useMemo(
-    () => SETTING_TABS.find((tab) => tab.id === params.subpage) || SETTING_TABS[0],
-    [params.subpage],
-  );
-  const pageTitle = useMemo(() => t(currentTab!.titleKey), [currentTab, t]);
-  const pageDescription = useMemo(() => t(currentTab!.descriptionKey), [currentTab, t]);
+  const currentTab = useMemo<TabItem>(() => {
+    const tab = SETTING_TABS.find((tabItem) => tabItem.id === params.subpage);
+    return tab ?? SETTING_TABS[0]!;
+  }, [params.subpage]);
+  const pageTitle = useMemo(() => t(currentTab.titleKey), [currentTab, t]);
+  const pageDescription = useMemo(() => t(currentTab.descriptionKey), [currentTab, t]);
 
   return (
     <div className="bg-background flex h-full w-full flex-col">
@@ -85,9 +89,6 @@ export default function PlatformSettingsPage(props: { params: Promise<{ subpage:
 const ContentRenderer = ({ subpage }: { subpage: string }) => {
   const content = useMemo(() => {
     switch (subpage) {
-      case 'general': {
-        return <EditGeneral />;
-      }
       case 'previews': {
         return <EditImages />;
       }

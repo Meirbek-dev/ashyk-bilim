@@ -1,6 +1,33 @@
 import ScenariosExtension from './ScenariosExtension';
-import { ReactNodeViewRenderer } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
+import { type CommandProps, Node, mergeAttributes } from '@tiptap/core';
+import { nodeView } from '@components/Objects/Editor/core';
+
+export interface ScenarioOption {
+  id: string;
+  text: string;
+  nextScenarioId: string | null;
+}
+
+export interface Scenario {
+  id: string;
+  text: string;
+  imageUrl?: string;
+  options: ScenarioOption[];
+}
+
+export interface ScenarioAttrs {
+  title: string;
+  scenarios: Scenario[];
+  currentScenarioId: string;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    scenarios: {
+      insertScenarios: () => ReturnType;
+    };
+  }
+}
 
 export default Node.create({
   name: 'scenarios',
@@ -42,7 +69,16 @@ export default Node.create({
     return ['scenarios-block', mergeAttributes(HTMLAttributes), 0];
   },
 
+  addCommands() {
+    return {
+      insertScenarios:
+        () =>
+        ({ commands }: CommandProps) =>
+          commands.insertContent({ type: this.name }),
+    };
+  },
+
   addNodeView() {
-    return ReactNodeViewRenderer(ScenariosExtension);
+    return nodeView(ScenariosExtension);
   },
 });

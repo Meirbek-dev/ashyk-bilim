@@ -1,22 +1,25 @@
 'use client';
 
 import { ArrowBigDown, ArrowBigUp, Clock, Edit, Trash2 } from 'lucide-react';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { useFormatter, useNow, useTranslations } from 'next-intl';
 import { Actions, Resources, Scopes } from '@/types/permissions';
 import RichContentRenderer from './rich-content-renderer';
 import UserAvatar from '@components/Objects/UserAvatar';
-import { usePermissions } from '@/components/Security';
+import { useSession } from '@/hooks/useSession';
 import { Button } from '@/components/ui/button';
 import { useState, useTransition } from 'react';
 import { Badge } from '@/components/ui/badge';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
+import { hasMeaningfulText } from './text';
 
-const RichTextEditor = dynamic(() => import('./rich-text-editor'), {
-  ssr: false,
-  loading: () => <div className="h-[80px] w-full animate-pulse rounded-lg border bg-muted/40" />,
-});
+const RichTextEditor = dynamic(
+  () => import('@components/Objects/Editor/views/DiscussionEditor').then((m) => ({ default: m.DiscussionEditor })),
+  {
+    ssr: false,
+    loading: () => <div className="bg-muted/40 h-[80px] w-full animate-pulse rounded-lg border" />,
+  },
+);
 
 interface DiscussionReplyProps {
   reply: any;
@@ -41,9 +44,8 @@ export default function DiscussionReply({
   const [_isPending, startTransition] = useTransition();
   const format = useFormatter();
   const now = useNow();
-  const platform = usePlatform();
-  const { can } = usePermissions();
-  const canModerateDiscussion = can(Actions.MODERATE, Resources.DISCUSSION, Scopes.PLATFORM);
+  const { can } = useSession();
+  const canModerateDiscussion = can(Resources.DISCUSSION, Actions.MODERATE, Scopes.PLATFORM);
 
   const isOwnReply = reply.username === currentUser?.username;
   const netScore = reply.upvotes - reply.downvotes;
@@ -52,15 +54,6 @@ export default function DiscussionReply({
     const first = firstName || '';
     const last = lastName || '';
     return `${first} ${last}`.trim() || reply.username;
-  };
-
-  const hasMeaningfulText = (value: string) => {
-    // Check if content has meaningful text (not just empty HTML tags)
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = value;
-    const textContent = tempDiv.textContent || tempDiv.textContent || '';
-
-    return textContent.trim().length > 0;
   };
 
   const handleEditSubmit = (formData: FormData) => {
@@ -81,9 +74,9 @@ export default function DiscussionReply({
   };
 
   return (
-    <div className="group relative ml-6 border-l-2 border-slate-200 py-4 pl-6 transition-colors hover:border-slate-300">
+    <div className="group border-border hover:border-muted-foreground relative ml-6 border-l-2 py-4 pl-6 transition-colors">
       {/* Connection line dot */}
-      <div className="absolute top-6 left-[-5px] h-2 w-2 rounded-full bg-slate-300 transition-colors group-hover:bg-slate-400" />
+      <div className="bg-border group-hover:bg-foreground absolute top-6 left-[-5px] h-2 w-2 rounded-full transition-colors" />
 
       <div className="flex gap-3">
         <UserAvatar
@@ -97,10 +90,10 @@ export default function DiscussionReply({
           {/* Header */}
           <div className="mb-2 flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="truncate font-medium text-slate-900">
+              <span className="text-foreground truncate font-medium">
                 {getUserDisplayName(reply.firstName, reply.lastName)}
               </span>
-              <span className="truncate text-sm text-slate-500">@{reply.username}</span>
+              <span className="text-muted-foreground truncate text-sm">@{reply.username}</span>
               {isAuthorAdmin(reply.username) && (
                 <Badge
                   variant="destructive"
@@ -109,13 +102,13 @@ export default function DiscussionReply({
                   {t('admin')}
                 </Badge>
               )}
-              <div className="flex shrink-0 items-center gap-1 text-xs text-slate-400">
+              <div className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs">
                 <Clock size={12} />
                 <span>{format.relativeTime(new Date(reply.createDate), now)}</span>
                 {reply.updateDate &&
                   reply.createDate &&
                   new Date(reply.updateDate).getTime() !== new Date(reply.createDate).getTime() && (
-                    <span className="text-xs text-slate-400">({t('edited')})</span>
+                    <span className="text-muted-foreground text-xs">({t('edited')})</span>
                   )}
               </div>
             </div>
@@ -131,7 +124,7 @@ export default function DiscussionReply({
                       setEditing(true);
                       setEditContent(reply.replyMessage);
                     }}
-                    className="h-7 w-7 p-0 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+                    className="text-muted-foreground hover:bg-primary/10 hover:text-primary h-7 w-7 p-0"
                   >
                     <Edit size={12} />
                   </Button>
@@ -140,7 +133,7 @@ export default function DiscussionReply({
                   variant="ghost"
                   size="sm"
                   onClick={() => onDeleteReply(postId, reply.id)}
-                  className="h-7 w-7 p-0 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-7 w-7 p-0"
                 >
                   <Trash2 size={12} />
                 </Button>
@@ -190,22 +183,22 @@ export default function DiscussionReply({
               <div className="mb-3">
                 <RichContentRenderer
                   content={reply.replyMessage}
-                  className="text-sm leading-relaxed text-slate-700"
+                  className="text-muted-foreground text-sm leading-relaxed"
                 />
               </div>
 
               {/* Voting section */}
               <div className="flex items-center gap-3">
-                <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                <div className="border-border bg-muted flex items-center overflow-hidden rounded-lg border">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onVoteReply(postId, reply.id, 'up')}
                     className={cn(
-                      'h-8 rounded-none border-slate-200 border-r px-3 transition-all',
+                      'h-8 rounded-none border-border border-r px-3 transition-all',
                       reply.userVote === 'up'
-                        ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-green-600',
+                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                        : 'text-muted-foreground hover:bg-muted/70 hover:text-emerald-600',
                     )}
                   >
                     <ArrowBigUp
@@ -222,8 +215,8 @@ export default function DiscussionReply({
                     className={cn(
                       'h-8 rounded-none px-3 transition-all',
                       reply.userVote === 'down'
-                        ? 'bg-red-50 text-red-700 hover:bg-red-100'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-red-600',
+                        ? 'bg-destructive/20 text-destructive hover:bg-destructive/30'
+                        : 'text-muted-foreground hover:bg-muted/70 hover:text-destructive',
                     )}
                   >
                     <ArrowBigDown

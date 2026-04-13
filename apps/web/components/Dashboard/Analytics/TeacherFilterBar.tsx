@@ -98,13 +98,16 @@ export default function TeacherFilterBar({
   const resetHref = useMemo(() => basePath, [basePath]);
 
   return (
-    <div className="mb-6 flex flex-col gap-4 rounded-xl border bg-card p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+    <section
+      aria-label={t('filters.sectionAriaLabel')}
+      className="bg-card mb-6 flex flex-col gap-4 rounded-xl border border-slate-200 p-4 shadow-sm md:flex-row md:items-center md:justify-between dark:border-slate-700 dark:bg-slate-800"
+    >
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wider uppercase">
           <Filter className="h-3.5 w-3.5" />
           {t('filters.label')}
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-2 text-sm">
           <Badge variant="outline">{t('filters.scopedCourses', { count: courseCount })}</Badge>
           <Badge variant="outline">
             {t('filters.buckets', { bucket: getAnalyticsBucketLabel(t, query.bucket || 'day') })}
@@ -131,6 +134,7 @@ export default function TeacherFilterBar({
               }))
             }
             className="w-full"
+            aria-label={t('filters.windowSelect')}
           >
             {windows.map((windowValue) => (
               <NativeSelectOption
@@ -151,6 +155,7 @@ export default function TeacherFilterBar({
               }))
             }
             className="w-full"
+            aria-label={t('filters.compareSelect')}
           >
             {compareOptions.map((compareValue) => (
               <NativeSelectOption
@@ -171,6 +176,7 @@ export default function TeacherFilterBar({
               }))
             }
             className="w-full"
+            aria-label={t('filters.bucketSelect')}
           >
             {bucketOptions.map((bucketValue) => (
               <NativeSelectOption
@@ -186,6 +192,7 @@ export default function TeacherFilterBar({
             value={formState.course_ids}
             onChange={(event) => setFormState((state) => ({ ...state, course_ids: event.target.value }))}
             className="w-full"
+            aria-label={t('filters.courseSelect')}
           >
             <NativeSelectOption value="">{t('filters.allCourses')}</NativeSelectOption>
             {courseOptions.map((option) => (
@@ -202,6 +209,7 @@ export default function TeacherFilterBar({
             value={formState.cohort_ids}
             onChange={(event) => setFormState((state) => ({ ...state, cohort_ids: event.target.value }))}
             className="w-full"
+            aria-label={t('filters.cohortSelect')}
           >
             <NativeSelectOption value="">{t('filters.allCohorts')}</NativeSelectOption>
             {cohortOptions.map((option) => (
@@ -218,6 +226,7 @@ export default function TeacherFilterBar({
             value={formState.timezone}
             onChange={(event) => setFormState((state) => ({ ...state, timezone: event.target.value }))}
             className="w-full"
+            aria-label={t('filters.timezoneSelect')}
           >
             {COMMON_TIMEZONES.map((tz) => (
               <NativeSelectOption
@@ -233,6 +242,7 @@ export default function TeacherFilterBar({
             value={formState.sort_by}
             onChange={(event) => setFormState((state) => ({ ...state, sort_by: event.target.value }))}
             className="w-full lg:col-span-2"
+            aria-label={t('filters.sortBySelect')}
           >
             {sortOptions.map((option) => (
               <NativeSelectOption
@@ -253,6 +263,7 @@ export default function TeacherFilterBar({
               }))
             }
             className="w-full"
+            aria-label={t('filters.sortOrderSelect')}
           >
             <NativeSelectOption value="desc">{t('filters.descending')}</NativeSelectOption>
             <NativeSelectOption value="asc">{t('filters.ascending')}</NativeSelectOption>
@@ -292,6 +303,6 @@ export default function TeacherFilterBar({
           </Button>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

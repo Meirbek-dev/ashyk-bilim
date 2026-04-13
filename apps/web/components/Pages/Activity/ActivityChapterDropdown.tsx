@@ -94,7 +94,7 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
     >
       <button
         onClick={toggleDropdown}
-        className="soft-shadow flex items-center space-x-2 rounded-full bg-white p-2.5 px-5 text-gray-700 transition delay-150 duration-300 ease-in-out hover:bg-gray-50"
+        className="soft-shadow border-border bg-card text-foreground hover:bg-muted flex items-center space-x-2 rounded-full border p-2.5 px-5 transition delay-150 duration-300 ease-in-out"
         aria-label={t('viewAllActivities')}
         title={t('viewAllActivities')}
       >
@@ -104,15 +104,15 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
 
       {isOpen ? (
         <div
-          className={`absolute z-50 mt-2 ${isMobile ? 'right-0 w-[90vw] sm:w-72' : 'right-0 w-72'} fade-in animate-in max-h-[70vh] cursor-pointer overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl duration-200`}
+          className={`absolute z-50 mt-2 ${isMobile ? 'right-0 w-[90vw] sm:w-72' : 'right-0 w-72'} fade-in animate-in border-border bg-card max-h-[70vh] cursor-pointer overflow-y-auto rounded-lg border py-1 shadow-xl duration-200`}
         >
-          <div className="flex items-center justify-between border-b border-gray-100 px-3 py-1.5">
-            <h3 className="text-sm font-semibold text-gray-800">{t('courseContent')}</h3>
+          <div className="border-border flex items-center justify-between border-b px-3 py-1.5">
+            <h3 className="text-foreground text-sm font-semibold">{t('courseContent')}</h3>
             <button
               onClick={() => {
                 setIsOpen(false);
               }}
-              className="cursor-pointer rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-full p-1"
             >
               <X size={14} />
             </button>
@@ -126,7 +126,7 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
               >
                 <div className="flex items-center border-y border-gray-100 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-600">
                   <div className="flex items-center space-x-1.5">
-                    <div className="flex h-4 w-4 items-center justify-center rounded-full bg-gray-500 text-[10px] font-bold text-white">
+                    <div className="bg-primary text-primary-foreground flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold">
                       {index + 1}
                     </div>
                     <span>{chapter.name}</span>

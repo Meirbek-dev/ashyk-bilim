@@ -4,16 +4,30 @@
       "AI": "ИИ",
       "aiSender": "ИИ",
       "askAI": "Спросить ИИ",
+      "closePanel": "Закрыть панель ИИ",
+      "copy": "Копировать",
+      "copied": "Скопировано!",
       "errorTitle": "Что-то пошло не так",
       "examplesAbbr": "пр. ",
       "hello": "Здравствуйте",
       "howCanWeHelp": "чем могу помочь?",
       "logoAlt": "Логотип Ashyq Bilim AI",
       "placeholder": "Спросите ИИ об этой лекции",
+      "defaultUser": "Пользователь",
+      "dismiss": "Закрыть",
       "questionAbout": "О чём эта активность?",
       "questionExamples": "Объясните эту активность на практических примерах",
       "questionFlashcards": "Создайте карточки по этой активности",
+      "stopGeneration": "Остановить генерацию",
       "usernameComma": "{username},"
+    },
+    "AIStatus": {
+      "aborted": "Запрос отменён.",
+      "analyzing": "Анализируем ваш запрос без дополнительного поиска.",
+      "generating": "Формируем ответ.",
+      "processing": "Подготавливаем ваш запрос.",
+      "retrieving": "Подбираем релевантный контекст курса.",
+      "working": "Обрабатываем ваш запрос."
     },
     "AICanvaToolkit": {
       "aiIconAlt": "Иконка ИИ",
@@ -66,10 +80,11 @@
       "sendMessage": "Отправить сообщение",
       "thinking": "Думаю...",
       "translateExample": "Японский, арабский, немецкий и т.д.",
-      "translatePlaceholder": "Перевести выбранный текст на",
+      "translatePlaceholder": "Перевести выделенный текст",
       "translateToLanguageMissing": "Пожалуйста, введите язык для перевода",
       "typePromptBelow": "Введите ваш запрос ниже",
       "userInputPlaceholder": "Спросить ИИ",
+      "stop": "Остановить",
       "writerPlaceholder": "Написать о..."
     },
     "AssignmentBoxUI": {
@@ -87,12 +102,28 @@
     },
     "AssignmentStudentActivity": {
       "assignment": "Задание",
+      "blankLabel": "Поле {index}",
       "descriptionTitle": "Описание задания",
       "dueDate": "Срок сдачи",
+      "emptyOption": "Пустой вариант",
       "hint": "Подсказка",
+      "loadSubmissionError": "Не удалось загрузить ваш ответ по заданию.",
       "noTasks": "Нет доступных заданий",
+      "points": "{count, plural, =0 {# баллов} one {# балл} few {# балла} many {# баллов} other {# баллов}}",
+      "progressSaved": "Прогресс сохранён",
+      "questionLabel": "Вопрос {index}",
       "referenceDocument": "Справочный документ",
-      "task": "Задание {index}"
+      "saveProgress": "Сохранить прогресс",
+      "saveSubmissionError": "Не удалось сохранить ваш ответ.",
+      "signInToSave": "Войдите в систему, чтобы сохранить ответ.",
+      "task": "Задание {index}",
+      "taskContentUnavailable": "Содержимое этого задания пока недоступно в режиме студента.",
+      "taskTypeFile": "Загрузка файла",
+      "taskTypeForm": "Форма",
+      "taskTypeOther": "Другое",
+      "taskTypeQuiz": "Тест",
+      "untitledQuestion": "Вопрос без текста",
+      "unsavedChanges": "Есть несохранённые изменения"
     },
     "CodeChallenges": {
       "actualOutput": "Ваш вывод",
@@ -572,7 +603,11 @@
       "sso": "Единый вход (SSO)",
       "title": "Вход - Ashyq Bilim",
       "welcomeBack": "С возвращением! Пожалуйста, введите ваши данные.",
+      "sessionExpired": "Сеанс истек. Пожалуйста, войдите снова.",
+      "sessionRevoked": "Ваш сеанс был отозван. Пожалуйста, войдите снова.",
+      "sessionRecoveryFailed": "Не удалось восстановить сеанс. Пожалуйста, войдите снова.",
       "wrongCredentials": "Неверный адрес электронной почты или пароль",
+      "serviceUnavailable": "Сервис временно недоступен. Пожалуйста, попробуйте ещё раз.",
       "loginTitle": "Войти",
       "noAccount": "Нет аккаунта?"
     },
@@ -839,6 +874,7 @@
       "certificationRemoved": "Сертификация успешно удалена",
       "certificationSettings": "Настройки сертификации",
       "certificationType": "Тип сертификации",
+      "certificationTypeRequired": "Требуется тип сертификации",
       "certificationTypes": {
         "achievement": "За достижение",
         "assessment": "По результатам оценки",
@@ -852,6 +888,7 @@
       },
       "certificationUpdated": "Сертификация успешно обновлена",
       "courseCertification": "Сертификация курса",
+      "certificatePatternRequired": "Требуется шаблон сертификата",
       "creatingCertification": "Создание сертификации...",
       "creatingCertificationDescription": "Пожалуйста, подождите, идёт настройка сертификации курса.",
       "enableCertification": "Включите и настройте сертификаты для студентов, завершивших курс",
@@ -880,6 +917,7 @@
   },
   "Common": {
     "close": "Закрыть",
+    "cancel": "Отмена",
     "DataTable": {
       "searchPlaceholder": "Поиск по таблице...",
       "emptyMessage": "Строки не найдены.",
@@ -1001,11 +1039,12 @@
     "DocumentPdfModal": {
       "ariaLabel": "Выбрать PDF-документ для загрузки",
       "createActivity": "Создать активность",
+      "fileTooLarge": "Размер файла превышает лимит 100 МБ",
       "noFileSelected": "Файл не выбран",
       "pdfDocumentFile": "Файл PDF документа",
       "pdfDocumentName": "Название PDF документа",
       "selectFile": "Выбрать PDF файл",
-      "supportedFormats": "Поддерживаемый формат: PDF",
+      "supportedFormats": "Поддерживаемый формат: PDF • Максимальный размер: 100 МБ",
       "valueMissingFile": "Пожалуйста, предоставьте PDF-документ для активности",
       "valueMissingName": "Пожалуйста, укажите название для PDF-активности"
     },
@@ -1342,9 +1381,6 @@
       "step8Button": "Создать задание",
       "step8Desc": "Вовлекайте студентов в выполнение заданий, отслеживайте их прогресс и предоставляйте обратную связь с помощью интуитивно понятной системы оценивания.",
       "step8Title": "Создание и оценка заданий",
-      "step9Button": "Настройки оплаты",
-      "step9Desc": "Настройте планы оплаты, продавайте курсы и управляйте подписками с помощью интегрированной системы оплаты.",
-      "step9Title": "Монетизируйте свой контент",
       "triggerText": "Онбординг"
     },
     "NavMenu": {
@@ -2070,18 +2106,23 @@
       "deletingActivity": "Удаление активности...",
       "editAssignmentButton": "Редактировать задание",
       "editPageButton": "Редактировать страницу",
+      "openEditPage": "Открыть страницу редактирования",
       "failedToUpdateActivityName": "Не удалось обновить название активности",
       "noAccessToken": "Требуется аутентификация",
       "ownerLabel": "Создатель",
-      "ownerBadge": "Вы создали эту активность",
       "previewTooltip": "Предварительный просмотр активности",
+      "ownerBadge": "Вы создали эту активность",
       "publish": "Опубликовать",
       "publishButton": "Опубликовать",
       "unpublish": "Снять с публикации",
       "unpublishButton": "Снять с публикации",
       "updateFailed": "Не удалось обновить активность",
       "updating": "Обновление активности...",
-      "editButton": "Редактировать"
+      "editButton": "Редактировать",
+      "draftBadge": "Черновик",
+      "liveBadge": "Опубликовано",
+      "save": "Сохранить",
+      "cancel": "Отмена"
     },
     "ChapterElement": {
       "chapterNamePlaceholder": "Название главы",
@@ -2111,6 +2152,8 @@
         "currentThumbnailAlt": "Текущая миниатюра курса",
         "errors": {
           "fileTooLarge": "Размер файла ({fileSize}МБ) превышает лимит в 8МБ",
+          "imageReadFailed": "Не удалось прочитать выбранное изображение",
+          "invalidAspectRatio": "Изображение должно быть в соотношении 16:9. Выбранный файл: {width}x{height}",
           "invalidMimeType": "Недопустимый тип файла: {fileType}. Пожалуйста, загружайте изображения PNG или JPG/JPEG",
           "invalidVideoMimeType": "Недопустимый тип файла: {fileType}. Пожалуйста, загружайте видео MP4, MKV или WebM",
           "pleaseSelectAFile": "Пожалуйста, выберите файл",
@@ -2125,7 +2168,7 @@
         "pleaseSelectAFile": "Пожалуйста, выберите файл",
         "selectImageFile": "Выберите файл изображения",
         "selectVideoFile": "Выберите видеофайл",
-        "supportedFormats": "Поддерживаемые форматы: JPG, PNG (макс. 8МБ)",
+        "supportedFormats": "Поддерживаемые форматы: JPG, PNG (макс. 8МБ, 16:9)",
         "supportedVideoFormats": "Поддерживаемые форматы: MP4, MKV, WebM (макс. 100МБ)",
         "thumbnailPreviewAlt": "Предварительный просмотр миниатюры курса",
         "thumbnailUpdatedSuccessfully": "Миниатюра успешно обновлена",
@@ -2186,6 +2229,10 @@
     "NewActivityModal": {
       "buttonText": "Добавить активность",
       "description": "Создайте новую активность для этой главы.",
+      "quickCreate": {
+        "codeChallengeName": "Новый код-челлендж",
+        "dynamicPageName": "Новая динамическая страница"
+      },
       "title": "Добавить активность"
     },
     "Structure": {
@@ -2197,18 +2244,33 @@
       "chapterCreateFailed": "Не удалось создать главу",
       "chapterCreatedSuccess": "Глава успешно создана",
       "creatingChapter": "Создание...",
+      "chapterNamePlaceholder": "Название главы",
       "saveOrderError": "Не удалось сохранить новый порядок контента",
       "savingOrder": "Применяются изменения учебного плана",
       "curriculumChangesApplyImmediately": "Изменения учебного плана применяются немедленно",
       "curriculumInlineFeedback": "Перетаскивание, изменение порядка и создание глав сохраняются по мере работы.",
       "refreshAfterError": "Последнее изменение структуры не удалось сохранить. Просмотрите текущий учебный план и попробуйте снова.",
-      "title": "Учебный план курса"
+      "title": "Учебный план курса",
+      "confirmChapter": "Подтвердить",
+      "cancel": "Отмена",
+      "selectItemHint": "Нажмите + Добавить активность под главой, чтобы начать",
+      "selectItemHintDescription": "Выберите тип активности и заполните детали. Изменения сохраняются сразу.",
+      "emptyStateTitle": "Создайте учебный план",
+      "emptyStateDescription": "Добавьте первый раздел, чтобы организовать уроки и задания.",
+      "emptyStateAction": "Добавить первый раздел"
     },
     "Conflict": {
       "title": "Этот курс изменился в другом редакторе",
       "description": "Пока вы редактировали курс, кто-то сохранил более новую версию.",
       "reloadWarning": "Перед следующей попыткой загрузите актуальные данные курса. Перезагрузка удалит несохраненные изменения на этой странице.",
-      "reloadButton": "Загрузить актуальный курс",
+      "draftSummaryTitle": "Ваши несохраненные изменения",
+      "serverSummaryTitle": "Текущее состояние курса",
+      "keepMineButton": "Повторить с моими изменениями",
+      "useTheirsButton": "Отбросить мои изменения",
+      "emptyDraftSummary": "Для этого раздела нет сохраненного черновика.",
+      "emptyServerSummary": "Актуальный снимок курса пока недоступен.",
+      "reloadButton": "Загрузить актуальное",
+      "saveAnywayButton": "Сохранить всё равно",
       "reviewDraftButton": "Продолжить просматривать черновик"
     },
     "activityNamePlaceholder": "Название активности",
@@ -2231,7 +2293,11 @@
     "deleting": "Удаление...",
     "edit": "Редактировать",
     "editButton": "Редактировать",
-    "noActivities": "Пока нет активностей"
+    "noActivities": "Пока нет активностей",
+    "deleteChapterConfirmationBreakdown": "Это безвозвратно удалит раздел и его {count, plural, =0 {0 занятий} one {# занятие} few {# занятия} other {# занятий}} ({published} опубликованных, {drafts} черновиков).",
+    "noActivitiesHint": "Добавьте первое задание ниже",
+    "save": "Сохранить",
+    "cancel": "Отмена"
   },
   "CourseEndView": {
     "backToCourse": "Вернуться к курсу",
@@ -2319,12 +2385,7 @@
       "authors": "Авторы",
       "leaveCourse": "Покинуть курс",
       "loading": "Загрузка...",
-      "modalDescription": "Выберите способ оплаты, чтобы получить доступ к этому курсу",
-      "modalTitle": "Купить курс",
       "moreAuthors": "& еще {count}",
-      "ownCourse": "Вы приобрели этот курсом",
-      "paidCourse": "Платный курс",
-      "purchaseCourse": "Купить курс",
       "signIn": "Войти",
       "startCourse": "Начать курс"
     },
@@ -2371,25 +2432,6 @@
       "updates": "обновления",
       "updatesAppearHere": "Обновления по этому курсу появятся здесь"
     },
-    "CoursePaidOptions": {
-      "benefits": "Преимущества:",
-      "checkoutError": "Не удалось начать процесс оформления заказа",
-      "choosePrice": "Выберите цену",
-      "failedToLoad": "Не удалось загрузить варианты продукта",
-      "loading": "Загрузка...",
-      "minimumPrice": "Минимальная цена:",
-      "oneTimePayment": "Единовременный платеж",
-      "perMonth": "(в месяц)",
-      "perMonthSuffix": "/месяц",
-      "price": "Цена:",
-      "processing": "Обработка...",
-      "purchaseNow": "Купить сейчас",
-      "requestError": "Произошла ошибка при обработке запроса",
-      "showLess": "Показать меньше",
-      "showMore": "Показать больше",
-      "subscribeNow": "Подписаться сейчас",
-      "subscription": "Подписка"
-    },
     "CourseUpdates": {
       "addNewCourseUpdate": "Добавить новое обновление курса",
       "addNewUpdateTitle": "Добавить новое обновление курса",
@@ -2428,7 +2470,6 @@
       "updates": "Обновления"
     },
     "CoursesActions": {
-      "accessCheckError": "Не удалось проверить доступ к курсу. Пожалуйста, повторите попытку позже.",
       "activitiesCompleted": "{completed} из {total} активностей завершено",
       "applicationPending": "Заявка на участие в качестве автора на рассмотрении",
       "applyToContribute": "Подать заявку на участие",
@@ -2452,21 +2493,13 @@
       "contributorApplicationSuccess": "Ваша заявка на участие успешно отправлена",
       "courseCompleted": "Курс завершён!",
       "courseProgress": "Прогресс курса",
-      "courseRequiresPurchase": "Для доступа к содержимому этого курса требуется покупка.",
       "leaveCourse": "Покинуть курс",
       "leaveCourseError": "Не удалось покинуть курс. Пожалуйста, повторите попытку позже.",
       "leaveError": "Не удалось покинуть курс. Пожалуйста, повторите попытку позже.",
       "leaveSuccess": "Успешно покинули курс",
       "leavingCourse": "Покидаем курс...",
       "leftCourseSuccess": "Успешно покинули курс",
-      "modalDescription": "Выберите способ оплаты, чтобы получить доступ к этому курсу",
-      "modalTitle": "Купить курс",
       "moreAuthors": "& еще {count}",
-      "ownCourseDescription": "Вы приобрели этот курс и имеете полный доступ ко всему содержимому.",
-      "ownCourseTitle": "Вы являетесь владельцем этого курса",
-      "paidCourse": "Платный курс",
-      "paidCourseDescription": "Для доступа к содержимому этого курса требуется покупка.",
-      "paidCourseTitle": "Платный курс",
       "progressCard": {
         "activitiesCompletedLabel": "активностей завершено",
         "chapterActivitiesCount": "{completed}/{total} активностей",
@@ -2474,9 +2507,7 @@
         "completedAllActivities": "Отличная работа! Вы завершили все активности.",
         "courseCompleted": "Курс завершён!"
       },
-      "purchaseCourse": "Купить курс",
       "readyToBegin": "Готовы начать?",
-      "selectPaymentOption": "Выберите способ оплаты, чтобы получить доступ к этому курсу",
       "startCourse": "Начать курс",
       "startCourseError": "Не удалось начать курс. Пожалуйста, повторите попытку позже.",
       "startError": "Не удалось начать курс. Пожалуйста, повторите попытку позже.",
@@ -2486,13 +2517,7 @@
       "startingCourse": "Начинаем курс...",
       "submittingContributorApplication": "Отправка заявки на участие...",
       "youAreAContributor": "Вы являетесь автором",
-      "youAreContributor": "Вы являетесь автором",
-      "youHavePurchasedThisCourse": "Вы приобрели этот курс и имеете полный доступ ко всему содержимому.",
-      "youOwnThisCourse": "Вы являетесь владельцем этого курса"
-    },
-    "PaidCourseActivityDisclaimer": {
-      "message": "Для доступа содержимому требуется покупка курса.",
-      "paidContent": "Платный контент"
+      "youAreContributor": "Вы являетесь автором"
     },
     "access": "Доступ",
     "content": "Содержимое",
@@ -3175,7 +3200,8 @@
       "Tasks": {
         "addTask": "Добавить задание",
         "addTaskModalDescription": "Создайте новое задание",
-        "addTaskModalTitle": "Добавить задание"
+        "addTaskModalTitle": "Добавить задание",
+        "openTask": "Открыть задание"
       },
       "addQuestion": "Добавить вопрос",
       "evaluate": "Оценить",
@@ -3188,10 +3214,30 @@
       "noQuestionsFound": "Вопросов не найдено",
       "optionPlaceholder": "Введите текст варианта",
       "questionPlaceholder": "Введите текст вопроса",
+      "assignmentStatusDescription": "Отслеживайте статус сдачи на уровне задания до перехода к проверке отдельных задач.",
+      "assignmentStatusEmpty": "Статусы на уровне задания пока недоступны.",
+      "assignmentStatusGrade": "Оценка",
+      "assignmentStatusGraded": "Проверено",
+      "assignmentStatusGradedCount": "Проверено: {count}",
+      "assignmentStatusLearner": "Студент",
+      "assignmentStatusLate": "С опозданием",
+      "assignmentStatusLoadErrorDescription": "Не удалось загрузить статусы на уровне задания.",
+      "assignmentStatusLoadErrorTitle": "Панель статусов недоступна",
+      "assignmentStatusLoading": "Загрузка статусов на уровне задания...",
+      "assignmentStatusNotSubmitted": "Не отправлено",
+      "assignmentStatusNotYetSubmitted": "Пока не отправлено",
+      "assignmentStatusPending": "В ожидании",
+      "assignmentStatusState": "Статус",
+      "assignmentStatusSubmitted": "Отправлено",
+      "assignmentStatusSubmittedAt": "Отправлено",
+      "assignmentStatusSubmittedCount": "Отправлено: {count}",
+      "assignmentStatusTitle": "Обзор статусов задания",
+      "assignmentStatusTotal": "Студентов: {count}",
       "submission": "Отправленная работа",
       "submitted": "Отправлено",
       "tasks": "Задания",
-      "title": "Задания"
+      "title": "Задания",
+      "submissionsTitle": "Работы студентов"
     },
     "Card": {
       "AccountSettings": {
@@ -3203,6 +3249,14 @@
         "errorOccurred": "Произошла ошибка",
         "title": "Курсы"
       },
+      "Assignments": {
+        "description": "Просматривайте и оценивайте задания по вашим курсам",
+        "title": "Задания"
+      },
+      "Analytics": {
+        "description": "Доступ к панелям аналитики и экспорт отчетов",
+        "title": "Аналитика"
+      },
       "Platform": {
         "description": "Настройте общие параметры платформы",
         "title": "Платформа"
@@ -3211,6 +3265,12 @@
         "description": "Управляйте пользователями и ролями Ashyq Bilim",
         "title": "Пользователи"
       },
+      "Admin": {
+        "description": "Администрирование организации и системные настройки",
+        "title": "Администрирование",
+        "badge": "Системно"
+      },
+      "noAccess": "У вас пока нет доступа к функциям панели управления.",
       "platformLogo": "Логотип Ashyq Bilim",
       "touUniversity": "Торайгыров Университет"
     },
@@ -3264,7 +3324,7 @@
         "header": {
           "description": "Просматривайте каталог в таблице, ориентированной на управление, фильтруйте по этапам жизненного цикла и сразу переходите к созданию нового курса или существующему рабочему пространству курса.",
           "label": "Управление курсами",
-          "title": "Управление рабочими пространствами курсов"
+          "title": "Управление курсами"
         },
         "pagination": {
           "next": "Далее",
@@ -3500,12 +3560,10 @@
         },
         "steps": {
           "basics": "Основы",
-          "launch": "Запуск",
           "template": "Шаблон"
         },
         "summary": {
           "heading": "Сводка настройки",
-          "launchDestination": "Точка входа",
           "selectedOutlineCourse": "Выбранный курс-структура",
           "sourceCourse": "Исходный курс",
           "template": "Шаблон",
@@ -3564,13 +3622,11 @@
         "previewButton": "Предпросмотр",
         "reviewButton": "Проверка",
         "tabs": {
-          "access": "Доступ",
           "certificate": "Сертификат",
-          "collaboration": "Совместная работа",
-          "curriculum": "Учебный план",
+          "content": "Контент",
           "details": "Детали",
-          "overview": "Обзор",
-          "reviewPublish": "Проверка и публикация"
+          "publish": "Проверка и публикация",
+          "settings": "Настройки"
         },
         "untitledCourse": "Курс без названия",
         "unsavedDialogLeave": "Покинуть рабочее пространство",
@@ -3775,6 +3831,8 @@
       "failedToRemoveContributor": "Не удалось удалить {username}: {reason}",
       "failedToRemoveContributorsGeneral": "Не удалось удалить соавторов",
       "failedToRemoveSelectedContributors": "Не удалось удалить выбранных соавторов",
+      "removeSelectedConfirmMessage": "Это удалит {count, plural, one {# соавтора} few {# соавторов} many {# соавторов} other {# соавторов}} из курса.",
+      "removeSelectedConfirmTitle": "Удалить {count, plural, one {# соавтора} few {# соавторов} many {# соавторов} other {# соавторов}}?",
       "failedToUpdateContributor": "Не удалось обновить соавтора",
       "inactive": "Неактивный",
       "maintainer": "Модератор",
@@ -3922,7 +3980,10 @@
         "dropOrClick": "Перетащите изображение сюда или кликните, чтобы выбрать",
         "expand": "Развернуть",
         "imageViewer": "Просмотр изображения",
+        "invalidImageFile": "Пожалуйста, выберите допустимый файл изображения",
+        "previewImageAlt": "Предпросмотр",
         "supportedFormats": "Поддерживаемые форматы: JPG, PNG, WebP, GIF",
+        "uploadFailed": "Не удалось загрузить изображение",
         "upload": "Загрузить",
         "uploading": "Загрузка..."
       },
@@ -4074,6 +4135,7 @@
       "Toolbar": {
         "addColumnRight": "Добавить столбец справа",
         "addRowBelow": "Добавить строку ниже",
+        "aiEditor": "ИИ-редактор",
         "aria": {
           "insertInteractiveScenarios": "Вставить интерактивные сценарии"
         },
@@ -4089,6 +4151,7 @@
         "calloutWarning": "Выноска (Предупреждение)",
         "clickMe": "Нажми меня",
         "codeBlock": "Блок кода",
+        "codeBlockLanguage": "Язык кода",
         "codeInline": "Встроенный код",
         "defaultInfoCalloutText": "Информация",
         "defaultScenario": {
@@ -4133,22 +4196,37 @@
         "headingLevel": "Заголовок {level}",
         "image": "Изображение",
         "infoCallout": "Информационная выноска",
+        "insert": "Вставить",
+        "insertGroups": {
+          "callouts": "Выноски",
+          "interactive": "Интерактивные",
+          "media": "Медиа",
+          "text": "Текст"
+        },
         "insertTable": "Вставить новую таблицу (3×3)",
         "interactiveQuiz": "Интерактивный тест",
         "interactiveScenarios": "Интерактивные сценарии",
         "italic": "Курсив",
         "link": "Ссылка",
+        "lists": "Списки",
         "listOptions": {
           "bulletList": "Маркированный список",
           "orderedList": "Нумерованный список"
         },
         "mathEquation": "Математическое уравнение (LaTeX)",
+        "plainText": "Обычный текст",
+        "slashBlocks": "Блоки",
+        "slashEmbedDescription": "Встроить {label}",
+        "slashInsertDescription": "Вставить блок {label}",
+        "slashNoResults": "Ничего не найдено.",
+        "slashSearchPlaceholder": "Поиск блоков...",
         "orderedList": "Нумерованный список",
         "paragraph": "Параграф",
         "pdfDocument": "PDF Документ",
         "redo": "Повторить",
         "strike": "Зачеркнутый",
         "table": "Таблица",
+        "tableOfContents": "Содержание",
         "undo": "Отменить",
         "user": "Пользователь",
         "video": "Видео",
@@ -4786,183 +4864,6 @@
       "socials": "Социальные сети",
       "socialsDescription": "Управление ссылками на социальные сети",
       "socialsTitle": "Социальные сети"
-    },
-    "Payments": {
-      "Configuration": {
-        "aboutStripe": {
-          "acceptPayments": "Принимайте платежи за курсы и подписки",
-          "accessAnalytics": "Получайте доступ к подробной аналитике платежей",
-          "handleCurrencies": "Работайте с несколькими валютами и способами оплаты",
-          "learnMore": "Узнать больше о Stripe",
-          "manageSubscriptions": "Управляйте регулярными платежами и подписками",
-          "title": "О интеграции со Stripe"
-        },
-        "accountNotConfigured": "Аккаунт Stripe не настроен",
-        "configUpdatedSuccess": "Конфигурация успешно обновлена",
-        "connectButton": "Подключить аккаунт Stripe",
-        "connectedStatus": "Подключено",
-        "connectingButton": "Подключение к Stripe...",
-        "deletingStripeConfig": "Удаление конфигурации Stripe...",
-        "editModalDescription": "Обновите данные аккаунта Stripe",
-        "editModalTitle": "Редактировать конфигурацию Stripe",
-        "enableButton": "Включить платежи Stripe",
-        "enablingStripe": "Включение Stripe...",
-        "errorLoading": "Ошибка загрузки конфигурации платежей",
-        "errors": {
-          "deleteStripeConfigFailed": "Не удалось удалить конфигурацию Stripe",
-          "enableStripeFailed": "Не удалось включить Stripe",
-          "loadStripeConfigFailed": "Не удалось загрузить существующую конфигурацию",
-          "startStripeOnboardingFailed": "Не удалось начать регистрацию в Stripe",
-          "updateConfigFailed": "Не удалось обновить конфигурацию"
-        },
-        "linkedAccountLabel": "ID связанного аккаунта",
-        "loading": "Загрузка...",
-        "notConnectedStatus": "Не подключено",
-        "pageDescription": "Управляйте конфигурацией платежей",
-        "pageTitle": "Конфигурация платежей",
-        "removeConnectionButton": "Удалить подключение",
-        "removeConnectionConfirmation": "Вы уверены, что хотите удалить подключение Stripe? Это отключит платежи.",
-        "removeConnectionTitle": "Удалить подключение Stripe",
-        "saveButton": "Сохранить",
-        "startingStripeOnboarding": "Запуск регистрации в Stripe",
-        "stripeAccountIdLabel": "ID аккаунта Stripe",
-        "stripeAccountIdPlaceholder": "acct_...",
-        "stripeConfigDeletedSuccess": "Конфигурация Stripe успешно удалена",
-        "stripeEnabledSuccess": "Stripe успешно включен",
-        "updatingConfig": "Обновление конфигурации..."
-      },
-      "CustomersPage": {
-        "amountHeader": "Сумма",
-        "description": "Просматривайте и управляйте информацией о ваших клиентах",
-        "errors": {
-          "loadCustomersFailed": "Ошибка загрузки клиентов"
-        },
-        "noCustomerData": "Нет данных о клиентах",
-        "noCustomers": "Клиенты не найдены",
-        "oneTimeType": "Единовременный",
-        "productHeader": "Продукт",
-        "purchaseDateHeader": "Дата покупки",
-        "statusHeader": "Статус",
-        "subscriptionType": "Подписка",
-        "title": "Клиенты",
-        "typeHeader": "Тип",
-        "userHeader": "Пользователь"
-      },
-      "LinkCourseModal": {
-        "alreadyLinked": "Уже связано",
-        "linkCourseButton": "Связать курс",
-        "noCoursesFound": "Курсы не найдены",
-        "searchPlaceholder": "Поиск курсов..."
-      },
-      "LinkedCourses": {
-        "linkCourseButton": "Связать курс",
-        "linkModalDescription": "Выберите курсы для привязки к этому продукту",
-        "linkModalTitle": "Привязать курсы к продукту",
-        "noCoursesLinked": "К этому продукту еще не привязаны курсы.",
-        "title": "Связанные курсы"
-      },
-      "ProductForm": {
-        "benefitsLabel": "Преимущества (необязательно)",
-        "benefitsPlaceholder": "Перечислите преимущества, по одному на строку",
-        "currencyLabel": "Валюта",
-        "currencyPlaceholder": "Выберите валюту",
-        "descriptionLabel": "Описание",
-        "descriptionPlaceholder": "Опишите продукт",
-        "errors": {
-          "amountMin": "Сумма должна быть не менее 1",
-          "amountRequired": "Требуется сумма",
-          "currencyRequired": "Требуется валюта",
-          "descriptionRequired": "Требуется описание",
-          "nameRequired": "Требуется название продукта",
-          "priceTypeRequired": "Требуется тип цены",
-          "productTypeRequired": "Требуется тип продукта"
-        },
-        "minAmountLabel": "Минимальная сумма",
-        "nameLabel": "Название продукта",
-        "namePlaceholder": "Введите название продукта",
-        "priceLabel": "Цена",
-        "priceTypeLabel": "Тип цены",
-        "priceTypePlaceholder": "Выберите тип цены",
-        "priceTypes": {
-          "customer_choice": "Выбор клиента (мин. цена)",
-          "fixed_price": "Фиксированная цена"
-        },
-        "productTypeLabel": "Тип продукта",
-        "productTypePlaceholder": "Выберите тип продукта",
-        "productTypes": {
-          "one_time": "Единовременный платеж",
-          "subscription": "Подписка"
-        },
-        "submitButton": "Создать продукт",
-        "submittingButton": "Создание..."
-      },
-      "ProductPage": {
-        "archiveButton": "Архивировать",
-        "archiveConfirmButton": "Архивировать продукт",
-        "archiveConfirmationMessage": "Вы уверены, что хотите архивировать этот продукт?",
-        "archiveConfirmationTitle": "Архивировать {productName}?",
-        "benefitsLabel": "Преимущества:",
-        "createModalDescription": "Создайте платный курс",
-        "createModalTitle": "Создать новый платный курс",
-        "createProductButton": "Создать новый платный курс",
-        "editButton": "Редактировать",
-        "editForm": {
-          "benefitsLabel": "Преимущества",
-          "benefitsPlaceholder": "Преимущества продукта",
-          "cancelButton": "Отмена",
-          "currencyLabel": "Валюта",
-          "currencyPlaceholder": "Валюта",
-          "descriptionLabel": "Описание",
-          "descriptionPlaceholder": "Описание продукта",
-          "nameLabel": "Название продукта",
-          "namePlaceholder": "Название продукта",
-          "priceLabel": "Цена",
-          "pricePlaceholder": "Цена",
-          "productUpdatedSuccess": "Продукт успешно обновлен",
-          "saveButton": "Сохранить",
-          "savingButton": "Сохранение...",
-          "updateProductFailed": "Не удалось обновить продукт"
-        },
-        "errors": {
-          "archiveProductFailed": "Не удалось архивировать данные: {error}"
-        },
-        "loadError": "Не удалось загрузить продукты",
-        "loading": "Загрузка...",
-        "noProducts": "Нет доступных продуктов. Создайте новый продукт, чтобы начать.",
-        "oneTimeType": "Единовременный",
-        "priceLabel": "Цена:",
-        "productArchivedSuccess": "Продукт успешно заархивирован",
-        "showLess": "Показать меньше",
-        "showMore": "Показать больше",
-        "subscriptionType": "Подписка"
-      },
-      "configuration": "Настройка платежей",
-      "configurationInfo": "Настройте и управляйте своим платежным шлюзом",
-      "configureStripe": "Настройте свою учетную запись Stripe.",
-      "contactAdmin": "Пожалуйста, свяжитесь с администратором, чтобы включить платежи.",
-      "createProducts": "Создавайте продукты или подписки.",
-      "customerInfo": "Просмотр и управление информацией о клиентах",
-      "customers": "Клиенты",
-      "goToConfiguration": "Перейти к конфигурации",
-      "notAvailable": "Платежи недоступны",
-      "notEnabledMessage": "Функция платежей находится в разработке.",
-      "overview": "Обзор",
-      "paidProducts": "Платные продукты",
-      "paidProductsInfo": "Управление платными продуктами и ценами",
-      "productsSubscriptions": "Продукты и подписки",
-      "startSelling": "Начните продавать свои курсы!",
-      "title": "Платежи",
-      "unconfiguredAlertTitle": "Требуется настройка платежей"
-    },
-    "Stripe": {
-      "completing": "Завершение подключения...",
-      "connectError": "Ошибка подключения учетной записи Stripe",
-      "connectionFailed": "Подключение не удалось.",
-      "connectionSuccess": "Подключение успешно!",
-      "missingParameters": "Отсутствуют параметры для проверки подключения Stripe.",
-      "pleaseWait": "Пожалуйста, подождите, пока мы подключим вашу учетную запись Stripe.",
-      "returnToDashboard": "Теперь вы можете вернуться на панель управления.",
-      "tryAgainOrContact": "Пожалуйста, попробуйте еще раз или свяжитесь со службой поддержки, если проблема не исчезнет."
     },
     "UserAccountSettings": {
       "Gamification": {
@@ -5950,7 +5851,7 @@
         "actionsHeader": "Действия",
         "activeUsersTitle": "Активные пользователи",
         "cannotEditSelf": "Вы не можете изменить свою роль",
-        "cannotManageHigherRole": "Вы не можете управлять пользователями с более высокой ролью, чем у вас",
+        "cannotManageHigherRole": "Вы не можете управлять пользователями с более высокой ролью или равной вашей",
         "description": "Управляйте пользователями, назначайте роли и разрешения",
         "editRoleButton": "Изменить роль",
         "errors": {
@@ -6117,6 +6018,163 @@
     "sunrise": "Рассвет",
     "sunset_blaze": "Закатное пламя",
     "volcanic": "Вулканический"
+  },
+  "Grading": {
+    "Table": {
+      "needGrading": "ожидают проверки",
+      "total": "Всего: {count}",
+      "selectAll": "Выбрать все работы на этой странице",
+      "selectSubmission": "Выбрать работу студента {student}",
+      "selectedCount": "Выбрано работ: {count}",
+      "clearSelection": "Очистить выбор",
+      "batchGrade": "Пакетное оценивание",
+      "student": "Студент",
+      "attempt": "Попытка",
+      "submitted": "Отправлено",
+      "status": "Статус",
+      "statusDraft": "Черновик",
+      "statusPending": "На проверке",
+      "statusGraded": "Проверено",
+      "statusPublished": "Выставлено",
+      "statusReturned": "Возвращено",
+      "score": "Оценка",
+      "scorePlaceholder": "0–100",
+      "scoreInputAria": "Изменить оценку для {student}",
+      "quickSaveAria": "Сохранить оценку для {student}",
+      "empty": "Нет сданных работ",
+      "prev": "Пред.",
+      "next": "След.",
+      "pageOf": "Страница {page} из {pages}",
+      "grade": "Проверить",
+      "view": "Просмотр",
+      "filterAll": "Все",
+      "filterNeedsGrading": "Ожидают проверки",
+      "filterGraded": "Проверено",
+      "filterLate": "С опозданием",
+      "searchPlaceholder": "Поиск студента...",
+      "sortBy": "Сортировка",
+      "sortByDate": "По дате отправки",
+      "sortByScore": "По оценке",
+      "sortByAttempt": "По номеру попытки",
+      "exportCSV": "Экспорт CSV",
+      "filterPending": "На проверке",
+      "filterPublished": "Опубликовано",
+      "filterReturned": "Возвращено"
+    },
+    "Stats": {
+      "total": "Всего сдано",
+      "needsGrading": "Ожидают проверки",
+      "avgScore": "Средняя оценка",
+      "passRate": "Процент успеваемости"
+    },
+    "Panel": {
+      "title": "Панель оценивания",
+      "loading": "Загрузка...",
+      "notYetSubmitted": "Ещё не сдано",
+      "noData": "Нет данных",
+      "attempt": "Попытка",
+      "finalScore": "Итоговая оценка",
+      "autoScore": "Автоматическая оценка",
+      "feedback": "Комментарий",
+      "optional": "необязательно",
+      "feedbackPlaceholder": "Добавьте комментарий или отзыв...",
+      "returnToStudent": "Вернуть студенту",
+      "saveGrade": "Сохранить оценку",
+      "saving": "Сохранение...",
+      "gradeSaved": "Оценка сохранена",
+      "returned": "Работа возвращена студенту",
+      "saveFailed": "Не удалось сохранить оценку",
+      "invalidScore": "Оценка должна быть от 0 до 100",
+      "previous": "Предыдущий",
+      "next": "Следующий",
+      "manualReviewRequired": "Эта работа требует ручной проверки",
+      "needsReview": "Требует проверки",
+      "noBreakdown": "Нет детализации ответов",
+      "confirmReturnTitle": "Подтвердите возврат студенту",
+      "confirmReturnDesc": "Работа будет возвращена студенту. Студент сможет повторно сдать работу.",
+      "cancel": "Отмена",
+      "confirm": "Подтвердить",
+      "saveDraft": "Сохранить черновик",
+      "publishGrade": "Выставить оценку",
+      "gradePublished": "Оценка выставлена",
+      "confirmPublishTitle": "Выставить оценку?",
+      "confirmPublishDesc": "Студент сможет увидеть оценку и комментарий.",
+      "unsavedTitle": "Несохранённые изменения",
+      "unsavedDesc": "Есть несохранённые изменения. Отменить их и продолжить?",
+      "discardAndContinue": "Отменить и продолжить",
+      "late": "С опозданием",
+      "autoSum": "Авто-сумма",
+      "useAutoScore": "Применить авто-оценку",
+      "useAutoSum": "Применить авто-сумму",
+      "studentAnswer": "Ответ студента",
+      "itemScore": "Баллы",
+      "itemFeedback": "Комментарий",
+      "itemFeedbackPlaceholder": "Добавьте комментарий к этому пункту...",
+      "correctAnswer": "Правильный ответ"
+    },
+    "Batch": {
+      "title": "Пакетное оценивание ({count} работ)",
+      "subtitle": "Изменено черновиков: {count}",
+      "close": "Закрыть панель пакетного оценивания",
+      "position": "Студент {current} из {total}: {student}",
+      "indicatorNotEdited": "Не изменено",
+      "indicatorEdited": "Изменено",
+      "saveDraft": "Сохранить черновик",
+      "draftSaved": "Черновики хранятся локально до отправки",
+      "submitAll": "Отправить все ({count})",
+      "submitting": "Отправка...",
+      "confirmSubmitTitle": "Отправить оценки выбранным студентам?",
+      "confirmSubmitDesc": "Отправить оценки для {count} студентов? Это действие нельзя отменить.",
+      "confirmSubmitAction": "Отправить все ({count})",
+      "nothingToSubmit": "Измените хотя бы одну работу перед отправкой",
+      "scoreRequired": "Для каждой изменённой работы нужна итоговая оценка",
+      "submitSummary": "Отправлено оценок: {succeeded}, ошибок: {failed}",
+      "submitFailed": "Не удалось отправить пакет оценок",
+      "unknownError": "Неизвестная ошибка",
+      "unsavedTitle": "Несохранённые черновики",
+      "unsavedDesc": "У вас есть локальные черновики оценивания, которые ещё не отправлены. Закрыть панель и отбросить их?"
+    },
+    "Result": {
+      "score": "Оценка",
+      "passed": "Зачтено",
+      "failed": "Не зачтено",
+      "autoScore": "Автоматическая оценка",
+      "teacherFeedback": "Комментарий преподавателя",
+      "yourAnswer": "Ваш ответ",
+      "correctAnswer": "Правильный ответ",
+      "breakdown": "Детализация по вопросам",
+      "pendingReview": "Ожидает проверки",
+      "waitingForGrade": "Ожидание оценки..."
+    },
+    "SubmissionShell": {
+      "bannerSubmittedTitle": "Работа сдана",
+      "bannerSubmittedDesc": "Ваша работа отправлена. Ожидайте проверки преподавателя.",
+      "bannerGradedTitle": "Работа проверена",
+      "bannerGradedDesc": "Ваша работа проверяется преподавателем.",
+      "bannerLateTitle": "Работа сдана с опозданием",
+      "bannerLateDesc": "Ваша работа была отправлена после истечения срока.",
+      "bannerReturnedTitle": "Работа возвращена",
+      "bannerReturnedDesc": "Преподаватель попросил вас переработать и повторно сдать работу.",
+      "score": "Оценка",
+      "readyToSubmit": "Готовы сдать работу?",
+      "returnedResubmit": "Работа возвращена. Вы можете исправить и повторно отправить.",
+      "bannerPendingTitle": "Работа отправлена",
+      "bannerPendingDesc": "Ваша работа отправлена и ожидает проверки преподавателя.",
+      "bannerPublishedTitle": "Оценка опубликована",
+      "bannerPublishedDesc": "Ваша оценка и отзыв теперь доступны."
+    },
+    "SubmitButton": {
+      "submitForGrading": "Сдать на проверку",
+      "submitting": "Отправка...",
+      "submitted": "Успешно отправлено",
+      "alreadySubmitted": "Уже отправлено",
+      "notAuthenticated": "Войдите в систему для отправки",
+      "submitFailed": "Не удалось отправить. Попробуйте ещё раз.",
+      "confirmTitle": "Сдать на проверку?",
+      "confirmDescription": "После отправки изменить ответы будет невозможно.",
+      "cancel": "Отмена",
+      "confirmSubmit": "Сдать"
+    }
   },
   "Header": {
     "adminBadge": "АДМИН",
@@ -6285,7 +6343,6 @@
       "manageAnalytics": "Открыть панель аналитики преподавателя",
       "manageAssignments": "Управление заданиями",
       "manageCourses": "Управление курсами",
-      "managePayments": "Управление платежами и выставлением счетов",
       "manageUsers": "Управление пользователями",
       "platformSettings": "Настройки платформы",
       "platformLogo": "Логотип Ashyq Bilim",
@@ -6310,7 +6367,6 @@
       "courses": "Курсы",
       "home": "Главная",
       "platform": "Платформа",
-      "payments": "Платежи",
       "settings": "Настройки",
       "users": "Пользователи"
     },
@@ -6324,7 +6380,6 @@
       "logout": "Выйти",
       "metrics": "Метрики",
       "platform": "Настройки платформы",
-      "payments": "Платежи",
       "userSettings": "Настройки @{username}",
       "users": "Пользователи"
     }
@@ -6383,7 +6438,16 @@
       "sortCompletion": "Завершение",
       "sortActiveLearners": "Активные учащиеся",
       "sortDifficulty": "Сложность",
-      "sortSignals": "Сигналы"
+      "sortSignals": "Сигналы",
+      "sectionAriaLabel": "Элементы управления фильтром аналитики",
+      "windowSelect": "Выберите период",
+      "compareSelect": "Выберите сравнение",
+      "bucketSelect": "Выберите шаг",
+      "courseSelect": "Выберите курс",
+      "cohortSelect": "Выберите когорту",
+      "timezoneSelect": "Выберите часовой пояс",
+      "sortBySelect": "Выберите поле сортировки",
+      "sortOrderSelect": "Выберите порядок сортировки"
     },
     "labels": {
       "bucket": {
@@ -6509,6 +6573,7 @@
       "visibleRows": "{count} видимых строк",
       "showingRows": "{from}–{to} из {total}",
       "page": "Страница {current} из {total}",
+      "pagination": "Пагинация",
       "prev": "Назад",
       "next": "Вперёд",
       "rowsPerPage": "Строк на страницу",
@@ -6569,9 +6634,11 @@
       "colMedian": "Медиана",
       "colDifficulty": "Сложность",
       "colSignals": "Сигналы",
+      "viewAssessment": "Просмотр задания {title}",
       "healthy": "В норме",
       "searchPlaceholder": "Поиск по заданиям...",
-      "emptyMessage": "Нет проблемных заданий для текущего охвата."
+      "emptyMessage": "Нет проблемных заданий для текущего охвата.",
+      "rowCount": "{count} проблемных заданий"
     },
     "atRisk": {
       "defaultTitle": "Учащиеся в зоне риска",
@@ -6780,9 +6847,9 @@
       "description": "Тёплая тема, вдохновлённая кофе, с насыщенными мокко и кремовыми тонами",
       "name": "Мокко мусс"
     },
-    "mono": {
-      "description": "Ультраминималистичная монохромная тема с чистым чёрным и белым, без теней",
-      "name": "Моно"
+    "dark": {
+      "description": "Экспериментальная тёмная тема с глубокими контрастами и мягкими акцентами для комфортной работы ночью",
+      "name": "Тёмная (бета)"
     },
     "nature": {
       "description": "Свежая природная тема с органическими зелёными тонами и земляными акцентами",
@@ -6906,6 +6973,7 @@
     "loadingCertificate": "Загрузка...",
     "noCertificateAvailable": "Сертификат недоступен",
     "quitCourseButton": "Покинуть курс",
+    "stepsLabel": "шагов",
     "viewCertificate": "Просмотреть сертификат"
   },
   "TrailPage": {
@@ -6913,13 +6981,14 @@
     "myProgress": "Мой прогресс",
     "noCourses": "Вы еще не начали ни одного курса.",
     "noCoursesInProgress": "Нет начатых курсов",
-    "quitAllCourses": "Покинуть все курсы",
-    "quitAllCoursesConfirmation": "Вы уверены, что хотите покинуть все курсы? Это действие нельзя отменить, и вы потеряете весь прогресс.",
-    "quitAllCoursesDialogTitle": "Покинуть все курсы?",
-    "quittingProgress": "Покидание курсов ({progress}%)",
     "startACourseToSeeYourProgress": "Начните курс, чтобы увидеть свой прогресс здесь",
     "startExploring": "Начните изучать курсы!",
     "title": "Прогресс"
+  },
+  "UnauthorizedPage": {
+    "button": "Вернуться на главную",
+    "message": "У вас нет прав доступа к этой странице.",
+    "title": "Нет доступа"
   },
   "UserProfilePage": {
     "aboutTitle": "О себе",

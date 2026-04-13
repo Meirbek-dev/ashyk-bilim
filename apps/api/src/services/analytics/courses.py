@@ -484,14 +484,14 @@ def get_teacher_course_detail(
 
     ordered_steps = []
     chapter_order = {
-        item.chapter_id: item.order
+        item.id: item.order
         for item in context.course_chapters
         if item.course_id == course_id
     }
     for chapter_activity in context.chapter_activities:
         if chapter_activity.course_id != course_id:
             continue
-        activity = context.activities_by_id.get(chapter_activity.activity_id)
+        activity = context.activities_by_id.get(chapter_activity.id)
         if activity is None:
             continue
         ordered_steps.append(
@@ -564,7 +564,7 @@ def get_teacher_course_detail(
             (
                 item
                 for item in context.chapter_activities
-                if item.activity_id == step.activity_id and item.course_id == course_id
+                if item.id == step.activity_id and item.course_id == course_id
             ),
             None,
         )

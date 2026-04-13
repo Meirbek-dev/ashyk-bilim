@@ -1,17 +1,17 @@
 'use server';
 
-import { RequestBodyWithAuthHeader, getResponseMetadata } from '@services/utils/ts/requests';
-import { getAPIUrl } from '@services/config/config';
+import { getResponseMetadata } from '@/lib/api-client';
+import { apiFetch } from '@/lib/api-client';
 import { tags } from '@/lib/cacheTags';
 
-export async function createCourseUpdate(body: any, access_token: string) {
-  const result: any = await fetch(
-    `${getAPIUrl()}courses/${body.course_uuid}/updates`,
-    RequestBodyWithAuthHeader('POST', body, null, access_token),
-  );
+export async function createCourseUpdate(body: any) {
+  const result = await apiFetch(`courses/${body.course_uuid}/updates`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
   const metadata = await getResponseMetadata(result);
 
-  // Revalidate courses cache after creating update
   if (metadata.success) {
     const { revalidateTag } = await import('next/cache');
     revalidateTag(tags.courses, 'max');
@@ -20,14 +20,12 @@ export async function createCourseUpdate(body: any, access_token: string) {
   return metadata;
 }
 
-export async function deleteCourseUpdate(course_uuid: string, update_uuid: number, access_token: string) {
-  const result: any = await fetch(
-    `${getAPIUrl()}courses/${course_uuid}/update/${update_uuid}`,
-    RequestBodyWithAuthHeader('DELETE', null, null, access_token),
-  );
+export async function deleteCourseUpdate(course_uuid: string, update_uuid: number) {
+  const result = await apiFetch(`courses/${course_uuid}/update/${update_uuid}`, {
+    method: 'DELETE',
+  });
   const metadata = await getResponseMetadata(result);
 
-  // Revalidate courses cache after deleting update
   if (metadata.success) {
     const { revalidateTag } = await import('next/cache');
     revalidateTag(tags.courses, 'max');

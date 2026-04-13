@@ -1,18 +1,16 @@
 'use client';
 
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@components/ui/form';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field';
+import { queryKeys } from '@/lib/react-query/queryKeys';
 import { createUserGroup } from '@services/usergroups/usergroups';
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import { getAPIUrl } from '@services/config/config';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
-import { useTransition } from 'react';
 import { toast } from 'sonner';
 import * as v from 'valibot';
-import { mutate } from 'swr';
 
 interface AddUserGroupProps {
   setCreateUserGroupModal: any;
@@ -25,14 +23,14 @@ const createValidationSchema = (t: (key: string) => string) =>
   });
 
 type UserGroupFormValues = v.InferOutput<ReturnType<typeof createValidationSchema>>;
+type UserGroupInputValues = v.InferInput<ReturnType<typeof createValidationSchema>>;
 
 const AddUserGroup = (props: AddUserGroupProps) => {
+  const queryClient = useQueryClient();
   const t = useTranslations('Components.AddUserGroup');
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
   const validationSchema = createValidationSchema(t);
 
-  const form = useForm<UserGroupFormValues>({
+  const form = useForm<UserGroupInputValues, any, UserGroupFormValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       name: '',
@@ -40,75 +38,58 @@ const AddUserGroup = (props: AddUserGroupProps) => {
     },
   });
 
-  const [isPending, startTransition] = useTransition();
-
-  const handleSubmit = (values: UserGroupFormValues) => {
+  const handleSubmit = async (values: UserGroupFormValues) => {
     const toastID = toast.loading(t('toastLoading'));
-    startTransition(() => {
-      void (async () => {
-        const res = await createUserGroup(values, access_token);
-        if (res.status === 200) {
-          mutate(`${getAPIUrl()}usergroups`);
-          props.setCreateUserGroupModal(false);
-          toast.success(t('toastSuccess'), { id: toastID });
-        } else {
-          toast.error(t('toastError'), { id: toastID });
-        }
-      })();
-    });
+    const res = await createUserGroup(values);
+    if (res.status === 200) {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all() });
+      props.setCreateUserGroupModal(false);
+      toast.success(t('toastSuccess'), { id: toastID });
+      return;
+    }
+
+    toast.error(t('toastError'), { id: toastID });
   };
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(handleSubmit)}
-        className="space-y-4"
-      >
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('nameLabel')}</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <form
+      onSubmit={form.handleSubmit(handleSubmit)}
+      className="space-y-4"
+    >
+      <Field>
+        <FieldLabel htmlFor="name">{t('nameLabel')}</FieldLabel>
+        <FieldContent>
+          <Input
+            id="name"
+            type="text"
+            {...form.register('name')}
+          />
+        </FieldContent>
+        <FieldError errors={[form.formState.errors.name]} />
+      </Field>
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('descriptionLabel')}</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <Field>
+        <FieldLabel htmlFor="description">{t('descriptionLabel')}</FieldLabel>
+        <FieldContent>
+          <Input
+            id="description"
+            type="text"
+            {...form.register('description')}
+          />
+        </FieldContent>
+        <FieldError errors={[form.formState.errors.description]} />
+      </Field>
 
-        <div className="flex py-4">
-          <Button
-            type="submit"
-            className="w-full rounded-md p-2 text-center font-bold shadow-md hover:cursor-pointer"
-            disabled={isPending || form.formState.isSubmitting}
-          >
-            {isPending || form.formState.isSubmitting ? t('loadingButton') : t('createButton')}
-          </Button>
-        </div>
-      </form>
-    </Form>
+      <div className="flex py-4">
+        <Button
+          type="submit"
+          className="w-full rounded-md p-2 text-center font-bold shadow-md hover:cursor-pointer"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting ? t('loadingButton') : t('createButton')}
+        </Button>
+      </div>
+    </form>
   );
 };
 

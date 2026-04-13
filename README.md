@@ -54,6 +54,17 @@ Here is how you can help :
 
 TLDR: Run `docker-compose up -d` and inspect the logs, should be ready to go in less than 2 mins
 
+```bash
+# Start core stack
+docker compose --profile core up -d
+
+# Start with code execution tier
+docker compose --profile core --profile code-runner up -d
+
+# Production (with resource limits)
+docker compose -f docker-compose.yml -f compose.prod.yml --profile core up -d
+```
+
 ### Deployment environment
 
 For Docker deployments, keep the live application configuration in `extra/.env`.

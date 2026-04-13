@@ -39,7 +39,6 @@ class ResourceType(StrEnum):
     ANALYTICS = "analytics"
     TRAIL = "trail"
     EXAM = "exam"
-    PAYMENT = "payment"
     API_TOKEN = "api_token"
 
 

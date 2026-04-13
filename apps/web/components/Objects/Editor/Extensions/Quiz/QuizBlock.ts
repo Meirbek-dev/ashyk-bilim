@@ -1,7 +1,33 @@
-import { ReactNodeViewRenderer } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
+import { type CommandProps, Node, mergeAttributes } from '@tiptap/core';
 
 import QuizBlockComponent from './QuizBlockComponent';
+import { nodeView } from '@components/Objects/Editor/core';
+
+export interface QuizAnswer {
+  answer_id: string;
+  answer: string;
+  correct: boolean;
+}
+
+export interface QuizQuestion {
+  question_id: string;
+  question: string;
+  type: 'multiple_choice' | 'custom_answer';
+  answers: QuizAnswer[];
+}
+
+export interface QuizBlockAttrs {
+  quizId: string | null;
+  questions: QuizQuestion[];
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    blockQuiz: {
+      insertQuizBlock: () => ReturnType;
+    };
+  }
+}
 
 export default Node.create({
   name: 'blockQuiz',
@@ -11,7 +37,7 @@ export default Node.create({
   addAttributes() {
     return {
       quizId: {
-        value: null,
+        default: null,
       },
       questions: {
         default: [],
@@ -31,7 +57,16 @@ export default Node.create({
     return ['block-quiz', mergeAttributes(HTMLAttributes), 0];
   },
 
+  addCommands() {
+    return {
+      insertQuizBlock:
+        () =>
+        ({ commands }: CommandProps) =>
+          commands.insertContent({ type: this.name }),
+    };
+  },
+
   addNodeView() {
-    return ReactNodeViewRenderer(QuizBlockComponent);
+    return nodeView(QuizBlockComponent);
   },
 });

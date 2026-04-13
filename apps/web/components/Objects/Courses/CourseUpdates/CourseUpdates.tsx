@@ -12,39 +12,34 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@components/ui/form';
 import { createCourseUpdate, deleteCourseUpdate } from '@services/courses/updates';
 import { AlertTriangle, Loader2, PencilLine, Rss, TentTree } from 'lucide-react';
 import { useEffectEvent, useLayoutEffect, useState, useTransition } from 'react';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field';
+import { queryKeys } from '@/lib/react-query/queryKeys';
 import { Actions, Resources, Scopes } from '@/types/permissions';
-import { getCourseUpdatesSwrKey } from '@services/courses/keys';
+import { useCourseUpdates } from '@/features/courses/hooks/useCourseQueries';
 import { useCourse } from '@components/Contexts/CourseContext';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useDateFnsLocale } from '@/hooks/useDateFnsLocale';
-import { swrFetcher } from '@services/utils/ts/requests';
-import { usePermissions } from '@/components/Security';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSession } from '@/hooks/useSession';
 import { format, formatDistanceToNow } from 'date-fns';
+import { Controller, useForm } from 'react-hook-form';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { useTranslations } from 'next-intl';
-import { useForm } from 'react-hook-form';
 import { motion } from 'motion/react';
-import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import * as v from 'valibot';
 
+const getCourseUpdatesQueryKey = (courseUuid?: string | null) =>
+  courseUuid ? queryKeys.courses.updates(courseUuid) : (['courses', 'updates', 'disabled'] as const);
+
 const CourseUpdates = () => {
   const course = useCourse();
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
-  const UPDATES_KEY = course?.courseStructure?.course_uuid
-    ? getCourseUpdatesSwrKey(course?.courseStructure?.course_uuid)
-    : null;
-  const { data: updates } = useSWR(UPDATES_KEY && access_token ? [UPDATES_KEY, access_token] : null, ([url, token]) =>
-    swrFetcher(url, token),
-  );
+  const { data: updates } = useCourseUpdates(course?.courseStructure?.course_uuid);
   const [isModelOpen, setIsModelOpen] = useState(false);
   const t = useTranslations('Courses.CourseUpdates');
 
@@ -67,9 +62,10 @@ const CourseUpdates = () => {
 
   return (
     <div className="soft-shadow relative z-20 rounded-full bg-white px-5 py-1 transition-all ease-linear hover:bg-neutral-50">
-      <div
+      <button
+        type="button"
         onClick={handleModelOpen}
-        className="flex items-center space-x-2 font-normal text-gray-600 hover:cursor-pointer"
+        className="flex items-center space-x-2 font-normal text-gray-600"
       >
         <div>
           <Rss size={16} />
@@ -82,7 +78,7 @@ const CourseUpdates = () => {
             </span>
           ) : null}
         </div>
-      </div>
+      </button>
       {isModelOpen ? (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -103,9 +99,9 @@ const CourseUpdates = () => {
 
 const UpdatesSection = () => {
   const [selectedView, setSelectedView] = useState('list');
-  const { can } = usePermissions();
+  const { can } = useSession();
   const canUpdateCourse =
-    can(Actions.UPDATE, Resources.COURSE, Scopes.OWN) || can(Actions.UPDATE, Resources.COURSE, Scopes.PLATFORM);
+    can(Resources.COURSE, Actions.UPDATE, Scopes.OWN) || can(Resources.COURSE, Actions.UPDATE, Scopes.PLATFORM);
   const t = useTranslations('Courses.CourseUpdates');
   return (
     <div className="soft-shadow w-[700px] overflow-hidden rounded-lg bg-white/95 backdrop-blur-md">
@@ -115,15 +111,16 @@ const UpdatesSection = () => {
           <span>{t('updates')}</span>
         </div>
         {canUpdateCourse ? (
-          <div
+          <button
+            type="button"
             onClick={() => {
               setSelectedView('new');
             }}
-            className="flex cursor-pointer items-center space-x-2 bg-gray-100 px-4 py-2 text-xs font-medium outline-1 outline-neutral-200/40 hover:bg-gray-200"
+            className="flex items-center space-x-2 bg-gray-100 px-4 py-2 text-xs font-medium outline-1 outline-neutral-200/40 hover:bg-gray-200"
           >
             <PencilLine size={14} />
             <span>{t('newUpdate')}</span>
-          </div>
+          </button>
         ) : null}
       </div>
       <div className="">
@@ -141,14 +138,15 @@ const createUpdateFormSchema = (t: (key: string) => string) =>
   });
 
 type UpdateFormValues = v.InferOutput<ReturnType<typeof createUpdateFormSchema>>;
+type UpdateFormInputValues = v.InferInput<ReturnType<typeof createUpdateFormSchema>>;
 
 const NewUpdateForm = ({ setSelectedView }: any) => {
   const course = useCourse();
-  const session = usePlatformSession() as any;
+  const queryClient = useQueryClient();
   const t = useTranslations('Courses.CourseUpdates');
   const validationSchema = createUpdateFormSchema(t);
 
-  const form = useForm<UpdateFormValues>({
+  const form = useForm<UpdateFormInputValues, any, UpdateFormValues>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       title: '',
@@ -157,12 +155,13 @@ const NewUpdateForm = ({ setSelectedView }: any) => {
   });
 
   const onSubmit = async (values: UpdateFormValues) => {
+    const courseUuid = course.courseStructure.course_uuid;
+    const updatesQueryKey = getCourseUpdatesQueryKey(courseUuid);
     const body = {
       title: values.title,
       content: values.content,
-      course_uuid: course.courseStructure.course_uuid,
+      course_uuid: courseUuid,
     };
-    const UPDATES_KEY = getCourseUpdatesSwrKey(course.courseStructure.course_uuid);
 
     const optimistic = {
       id: `temp-${Date.now()}`,
@@ -172,22 +171,18 @@ const NewUpdateForm = ({ setSelectedView }: any) => {
     };
 
     // Optimistically add the update to the list
-    await mutate(
-      [UPDATES_KEY, session.data?.tokens?.access_token] as any,
-      (prev: any) => [optimistic, ...(prev || [])],
-      false,
-    );
+    queryClient.setQueryData(updatesQueryKey, (prev: any[] | undefined) => [optimistic, ...(prev || [])]);
 
-    const res = await createCourseUpdate(body, session.data?.tokens?.access_token);
+    const res = await createCourseUpdate(body);
     if (res.status === 200) {
       toast.success(t('updateAddedSuccess'));
       setSelectedView('list');
       form.reset();
       // Revalidate to get the actual server-side object and remove optimistic placeholder
-      mutate([UPDATES_KEY, session.data?.tokens?.access_token] as any);
+      void queryClient.invalidateQueries({ queryKey: updatesQueryKey });
     } else {
       // Rollback by revalidating
-      mutate([UPDATES_KEY, session.data?.tokens?.access_token] as any);
+      void queryClient.invalidateQueries({ queryKey: updatesQueryKey });
       toast.error(t('updateAddFailed'));
     }
   };
@@ -199,62 +194,72 @@ const NewUpdateForm = ({ setSelectedView }: any) => {
         <div className="rounded-full px-3 py-0.5 text-lg font-bold text-black">{t('addNewCourseUpdate')}</div>
       </div>
       <div className="-py-2 px-5">
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-medium">{t('title')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      style={{ backgroundColor: 'white' }}
-                      type="text"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-medium">{t('content')}</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      style={{ backgroundColor: 'white', height: '100px' }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end py-2">
-              <button
-                type="button"
-                onClick={() => setSelectedView('list')}
-                className="rounded-md px-4 py-2 text-sm font-semibold text-gray-500 antialiased"
-              >
-                {t('cancel')}
-              </button>
-              <Button
-                type="submit"
-                className="rounded-md px-4 py-2 text-sm font-semibold antialiased"
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting ? t('adding') : t('addUpdate')}
-              </Button>
-            </div>
-          </form>
-        </Form>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-4"
+        >
+          <Controller
+            control={form.control}
+            name="title"
+            render={({ field, fieldState }) => (
+              <Field>
+                <FieldLabel
+                  className="text-sm font-medium"
+                  htmlFor={field.name}
+                >
+                  {t('title')}
+                </FieldLabel>
+                <FieldContent>
+                  <Input
+                    {...field}
+                    id={field.name}
+                    style={{ backgroundColor: 'white' }}
+                    type="text"
+                  />
+                </FieldContent>
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
+          <Controller
+            control={form.control}
+            name="content"
+            render={({ field, fieldState }) => (
+              <Field>
+                <FieldLabel
+                  className="text-sm font-medium"
+                  htmlFor={field.name}
+                >
+                  {t('content')}
+                </FieldLabel>
+                <FieldContent>
+                  <Textarea
+                    {...field}
+                    id={field.name}
+                    style={{ backgroundColor: 'white', height: '100px' }}
+                  />
+                </FieldContent>
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
+          <div className="flex justify-end py-2">
+            <button
+              type="button"
+              onClick={() => setSelectedView('list')}
+              className="rounded-md px-4 py-2 text-sm font-semibold text-gray-500 antialiased"
+            >
+              {t('cancel')}
+            </button>
+            <Button
+              type="submit"
+              className="rounded-md px-4 py-2 text-sm font-semibold antialiased"
+              disabled={form.formState.isSubmitting}
+            >
+              {form.formState.isSubmitting ? t('adding') : t('addUpdate')}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -262,17 +267,10 @@ const NewUpdateForm = ({ setSelectedView }: any) => {
 
 const UpdatesListView = () => {
   const course = useCourse();
-  const session = usePlatformSession() as any;
-  const { can } = usePermissions();
+  const { can } = useSession();
   const canUpdateCourse =
-    can(Actions.UPDATE, Resources.COURSE, Scopes.OWN) || can(Actions.UPDATE, Resources.COURSE, Scopes.PLATFORM);
-  const access_token = session?.data?.tokens?.access_token;
-  const UPDATES_KEY = course?.courseStructure?.course_uuid
-    ? getCourseUpdatesSwrKey(course?.courseStructure?.course_uuid)
-    : null;
-  const { data: updates } = useSWR(UPDATES_KEY && access_token ? [UPDATES_KEY, access_token] : null, ([url, token]) =>
-    swrFetcher(url, token),
-  );
+    can(Resources.COURSE, Actions.UPDATE, Scopes.OWN) || can(Resources.COURSE, Actions.UPDATE, Scopes.PLATFORM);
+  const { data: updates } = useCourseUpdates(course?.courseStructure?.course_uuid);
   const t = useTranslations('Courses.CourseUpdates');
   const locale = useDateFnsLocale();
 
@@ -293,7 +291,10 @@ const UpdatesListView = () => {
                     }
                     className="text-xs font-semibold text-gray-300"
                   >
-                    {formatDistanceToNow(new Date(update.creation_date), { addSuffix: true, locale })}
+                    {formatDistanceToNow(new Date(update.creation_date), {
+                      addSuffix: true,
+                      locale,
+                    })}
                   </span>
                 </div>
                 {canUpdateCourse ? <DeleteUpdateButton update={update} /> : null}
@@ -316,24 +317,22 @@ const UpdatesListView = () => {
 };
 
 const DeleteUpdateButton = ({ update }: any) => {
-  const session = usePlatformSession() as any;
   const course = useCourse();
+  const queryClient = useQueryClient();
   const t = useTranslations('Courses.CourseUpdates');
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleDelete() {
     startTransition(async () => {
-      const res = await deleteCourseUpdate(
-        course.courseStructure.course_uuid,
-        update.courseupdate_uuid,
-        session.data?.tokens?.access_token,
-      );
+      const res = await deleteCourseUpdate(course.courseStructure.course_uuid, update.courseupdate_uuid);
       const toast_loading = toast.loading(t('deletingUpdate'));
       if (res.status === 200) {
         toast.dismiss(toast_loading);
         toast.success(t('successfullDelete'));
-        mutate([getCourseUpdatesSwrKey(course?.courseStructure.course_uuid), session.data?.tokens?.access_token]);
+        void queryClient.invalidateQueries({
+          queryKey: getCourseUpdatesQueryKey(course?.courseStructure.course_uuid),
+        });
         setIsOpen(false);
       } else {
         toast.dismiss(toast_loading);
@@ -348,6 +347,7 @@ const DeleteUpdateButton = ({ update }: any) => {
       onOpenChange={setIsOpen}
     >
       <AlertDialogTrigger
+        nativeButton={false}
         render={
           <div
             id="delete-update-button"

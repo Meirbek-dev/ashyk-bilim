@@ -2,19 +2,22 @@
 
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from '@/components/ui/navigation-menu';
 import { HeaderProfileBox } from '@/components/Security/HeaderProfileBox';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useSession } from '@/hooks/useSession';
 import { BookCopy, Menu, Signpost, SquareLibrary, X } from 'lucide-react';
 import { LocaleSwitcher } from '@/components/Utils/LocaleSwitcher';
 import { SearchBar } from '@/components/Objects/Search/SearchBar';
-import { useEffect, useState, useSyncExternalStore } from 'react';
 import platformLogoFull from '@public/platform_logo_full.svg';
+import platformLogoLightFull from '@public/platform_logo_light_full.svg';
+import { NAVBAR_HEIGHT } from '@/lib/constants';
 import { getAbsoluteUrl } from '@/services/config/config';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
 import Link from '@components/ui/AppLink';
 import Image from 'next/image';
+import { useTheme } from 'next-themes';
 
 interface NavigationLinkProps {
   href: string;
@@ -55,27 +58,41 @@ const NavigationLinkItem = ({ href, type }: NavigationLinkProps) => {
 };
 
 export default function NavBar() {
+  const { theme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
   const t = useTranslations('Components.NavMenu');
-  const session = usePlatformSession();
-  const isAuthenticated = session.status === 'authenticated';
+  const { isAuthenticated } = useSession();
 
-  // Use useSyncExternalStore for focus mode from localStorage
+  // Use local state for focus mode from localStorage (avoid getSnapshot sync warning)
   const isOnActivityPage = pathname?.includes('/activity/') ?? false;
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
-  function subscribe(callback: () => void) {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'globalFocusMode' && isOnActivityPage) {
-        callback();
+  useEffect(() => {
+    if (!isOnActivityPage) {
+      setIsFocusMode(false);
+      return;
+    }
+
+    const readFocusMode = () => {
+      try {
+        return localStorage.getItem('globalFocusMode') === 'true';
+      } catch {
+        return false;
       }
     };
 
-    const handleFocusModeChange = (e: CustomEvent) => {
-      if (isOnActivityPage) {
-        callback();
+    setIsFocusMode(readFocusMode());
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'globalFocusMode') {
+        setIsFocusMode(readFocusMode());
       }
+    };
+
+    const handleFocusModeChange = () => {
+      setIsFocusMode(readFocusMode());
     };
 
     globalThis.addEventListener('storage', handleStorageChange);
@@ -85,23 +102,7 @@ export default function NavBar() {
       globalThis.removeEventListener('storage', handleStorageChange);
       globalThis.removeEventListener('focusModeChange', handleFocusModeChange as EventListener);
     };
-  }
-
-  function getSnapshot() {
-    if (!isOnActivityPage) return 'false';
-    try {
-      return localStorage.getItem('globalFocusMode') ?? 'false';
-    } catch {
-      return 'false';
-    }
-  }
-
-  function getServerSnapshot() {
-    return 'false';
-  }
-
-  const isFocusModeString = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const isFocusMode = isFocusModeString === 'true';
+  }, [isOnActivityPage]);
 
   useEffect(() => {
     // Scroll detection for header background
@@ -181,13 +182,17 @@ export default function NavBar() {
   return (
     <>
       {/* Backdrop blur */}
-      <div className="bg-background/85 fixed top-0 right-0 left-0 -z-10 h-[52px] backdrop-blur-sm" />
+      <div
+        className="bg-background/85 fixed top-0 right-0 left-0 -z-10 backdrop-blur-sm"
+        style={{ height: NAVBAR_HEIGHT }}
+      />
 
       {/* Main header */}
       <header
-        className={`border-border/60 fixed top-0 right-0 left-0 z-50 h-[52px] border-b shadow-sm transition-colors ${
+        className={`border-border/60 fixed top-0 right-0 left-0 z-50 border-b shadow-sm transition-colors ${
           isScrolled ? 'bg-background/97' : 'bg-background/92'
         } backdrop-blur-sm`}
+        style={{ height: NAVBAR_HEIGHT }}
       >
         <div className="mx-auto flex h-full w-full items-center justify-between px-4 sm:px-6 lg:px-12">
           {/* Left section */}
@@ -299,7 +304,7 @@ export default function NavBar() {
               e.stopPropagation();
             }}
             style={{
-              maxHeight: 'calc(100vh - 52px)',
+              maxHeight: `calc(100vh - ${NAVBAR_HEIGHT}px)`,
               overflowY: 'auto',
               overflowX: 'visible',
             }}

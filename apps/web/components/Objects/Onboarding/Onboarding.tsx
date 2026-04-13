@@ -1,20 +1,7 @@
 'use client';
-import {
-  ArrowRight,
-  Book,
-  Check,
-  CreditCard,
-  Globe,
-  Info,
-  PictureInPicture,
-  Sparkle,
-  Sprout,
-  SquareUser,
-} from 'lucide-react';
+import { ArrowRight, Book, Check, Globe, Info, PictureInPicture, Sparkle, Sprout, SquareUser } from 'lucide-react';
 import OnBoardAssignments from '@public/onboarding/OnBoardAssignments.png';
 import OnBoardActivities from '@public/onboarding/OnBoardActivities.png';
-import OnBoardPayments from '@public/onboarding/OnBoardPayments.png';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
 import OnBoardWelcome from '@public/onboarding/OnBoardWelcome.png';
 import OnBoardCourses from '@public/onboarding/OnBoardCourses.png';
 import OnBoardEditor from '@public/onboarding/OnBoardEditor.png';
@@ -25,7 +12,7 @@ import OnBoardMore from '@public/onboarding/OnBoardMore.png';
 import OnBoardUGs from '@public/onboarding/OnBoardUGs.png';
 import OnBoardAI from '@public/onboarding/OnBoardAI.png';
 import { getAbsoluteUrl } from '@services/config/config';
-import { usePermissions } from '@/components/Security';
+import { useSession } from '@/hooks/useSession';
 import type { StaticImageData } from 'next/image';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRouter } from 'next/navigation';
@@ -96,10 +83,9 @@ const Onboarding: FC = () => {
   });
   const isMobile = useIsMobile();
   const router = useRouter();
-  const platform = usePlatform();
-  const { can } = usePermissions();
+  const { can } = useSession();
   const canManagePlatform =
-    can(Actions.MANAGE, Resources.PLATFORM, Scopes.OWN) || can(Actions.MANAGE, Resources.PLATFORM, Scopes.PLATFORM);
+    can(Resources.PLATFORM, Actions.MANAGE, Scopes.OWN) || can(Resources.PLATFORM, Actions.MANAGE, Scopes.PLATFORM);
 
   const onboardingData: OnboardingStep[] = [
     {
@@ -188,20 +174,6 @@ const Onboarding: FC = () => {
             router.push(getAbsoluteUrl('/dash/assignments?new=true'));
           },
           icon: <Book size={16} />,
-        },
-      ],
-    },
-    {
-      imageSrc: OnBoardPayments,
-      title: t('step9Title'),
-      description: t('step9Desc'),
-      buttons: [
-        {
-          label: t('step9Button'),
-          action: () => {
-            router.push(getAbsoluteUrl('/dash/payments/customers'));
-          },
-          icon: <CreditCard size={16} />,
         },
       ],
     },

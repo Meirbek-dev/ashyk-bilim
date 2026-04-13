@@ -136,7 +136,7 @@ class ExamBase(SQLModelStrictBaseModel):
     chapter_id: int
     activity_id: int
 
-    settings: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    settings: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class ExamCreate(ExamBase):
@@ -160,7 +160,7 @@ class ExamUpdate(SQLModelStrictBaseModel):
     title: str | None = None
     description: str | None = None
     published: bool | None = None
-    settings: dict | None = None
+    settings: dict[str, object] | None = None
     update_date: str | None = None
 
 
@@ -199,7 +199,9 @@ class QuestionBase(SQLModelStrictBaseModel):
     # SINGLE_CHOICE/MULTIPLE_CHOICE: [{"text": "...", "is_correct": bool}]
     # TRUE_FALSE: [{"text": "True", "is_correct": bool}, {"text": "False", "is_correct": bool}]
     # MATCHING: [{"left": "...", "right": "..."}]
-    answer_options: list[dict] = Field(default_factory=list, sa_column=Column(JSON))
+    answer_options: list[dict[str, object]] = Field(
+        default_factory=list, sa_column=Column(JSON)
+    )
 
     exam_id: int | None = None
 
@@ -233,7 +235,7 @@ class QuestionReadStudent(SQLModelStrictBaseModel):
     question_type: QuestionTypeEnum
     points: int
     order_index: int
-    answer_options: list[dict]  # is_correct stripped
+    answer_options: list[dict[str, object]]  # is_correct stripped
 
     @classmethod
     def from_question(
@@ -269,7 +271,7 @@ class QuestionUpdate(SQLModelStrictBaseModel):
     points: int | None = None
     explanation: str | None = None
     order_index: int | None = None
-    answer_options: list[dict] | None = None
+    answer_options: list[dict[str, object]] | None = None
 
     @field_validator("question_type", mode="before")
     @classmethod
@@ -315,13 +317,15 @@ class ExamAttemptBase(SQLModelStrictBaseModel):
     max_score: int | None = None
 
     # Stores student answers: {question_id: selected_answer_indices or answer_data}
-    answers: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    answers: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
 
     # Question order for this attempt (list of question IDs)
     question_order: list[int] = Field(default_factory=list, sa_column=Column(JSON))
 
     # Violation tracking
-    violations: list[dict] = Field(default_factory=list, sa_column=Column(JSON))
+    violations: list[dict[str, object]] = Field(
+        default_factory=list, sa_column=Column(JSON)
+    )
 
     # Preview mode flag (teacher testing, exclude from analytics)
     is_preview: bool = Field(default=False)
@@ -361,8 +365,8 @@ class ExamAttemptUpdate(SQLModelStrictBaseModel):
     status: AttemptStatusEnum | None = None
     score: int | None = None
     max_score: int | None = None
-    answers: dict | None = None
-    violations: list[dict] | None = None
+    answers: dict[str, object] | None = None
+    violations: list[dict[str, object]] | None = None
     submitted_at: str | None = None
 
     @field_validator("status", mode="before")
@@ -402,4 +406,4 @@ class ExamCreateWithActivity(SQLModelStrictBaseModel):
     chapter_id: int
     exam_title: str
     exam_description: str
-    settings: dict = Field(default_factory=dict)
+    settings: dict[str, object] = Field(default_factory=dict)

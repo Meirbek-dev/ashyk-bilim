@@ -1,10 +1,11 @@
 import { getServerGamificationDashboard } from '@/services/gamification/server';
-import { getPlatformContextInfo } from '@/services/platform/platform';
+import { getSession } from '@/lib/auth/session';
 import LandingClassic from '@components/Landings/LandingClassic';
-import { getOptionalSession } from '@/lib/get-optional-session';
 import LandingCustom from '@components/Landings/LandingCustom';
 import { getCollections } from '@services/courses/collections';
+import { getPlatform } from '@/services/platform/platform';
 import { getCourses } from '@services/courses/courses';
+import { connection } from 'next/server';
 
 function isExpectedPrerenderCancellation(error: unknown): boolean {
   if (!(error instanceof Error)) {
@@ -33,14 +34,15 @@ function logLandingFetchError(scope: string, error: unknown) {
 }
 
 export async function LandingContent() {
-  try {
-    const session = await getOptionalSession();
-    const access_token = session?.tokens?.access_token;
+  // Must be outside any try/catch — this is a Next.js prerender-completion
+  // signal that has to propagate unchanged up the component tree.
+  await connection();
 
+  try {
     // Fetch platform info with detailed error handling
     let platform;
     try {
-      platform = await getPlatformContextInfo(access_token || undefined);
+      platform = await getPlatform();
     } catch (error) {
       console.error('[LandingContent] Failed to fetch platform info:', {
         message: error instanceof Error ? error.message : 'Unknown error',
@@ -51,33 +53,34 @@ export async function LandingContent() {
       });
     }
 
-    const hasCustomLanding = platform.config?.config?.landing?.enabled;
+    const hasCustomLanding = platform?.landing?.enabled;
 
     // Only fetch gamification data if user is authenticated
-    const gamificationPromise = access_token
-      ? getServerGamificationDashboard(access_token).catch((error: unknown) => {
+    const session = await getSession();
+    const gamificationPromise = session
+      ? getServerGamificationDashboard().catch((error: unknown) => {
           logLandingFetchError('Gamification fetch failed', error);
           return null;
         })
       : Promise.resolve(null);
 
-    if (hasCustomLanding) {
+    if (hasCustomLanding && platform?.landing) {
       const gamificationData = await gamificationPromise;
 
       return (
         <LandingCustom
-          landing={platform.config.config.landing}
+          landing={platform.landing as { sections: any[]; enabled: boolean }}
           gamificationData={gamificationData}
         />
       );
     }
 
     const [coursesData, collections, gamificationData] = await Promise.all([
-      getCourses('', access_token || undefined).catch((error: unknown) => {
+      getCourses(undefined, 1, 20).catch((error: unknown) => {
         logLandingFetchError('Courses fetch failed', error);
         return { courses: [], total: 0 };
       }),
-      getCollections(access_token).catch((error: unknown) => {
+      getCollections().catch((error: unknown) => {
         logLandingFetchError('Collections fetch failed', error);
         return [];
       }),
@@ -95,6 +98,10 @@ export async function LandingContent() {
       />
     );
   } catch (error) {
+    if (isExpectedPrerenderCancellation(error)) {
+      throw error;
+    }
+
     console.error('[LandingContent] Critical error:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,

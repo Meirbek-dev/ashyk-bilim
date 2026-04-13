@@ -1,13 +1,11 @@
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@components/ui/avatar';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useSession } from '@/hooks/useSession';
+import { useUserByUsername } from '@/lib/users/client';
 import { getUserAvatarMediaDirectory } from '@services/media/media';
-import { getUserByUsername } from '@services/users/users';
 import { getAbsoluteUrl } from '@services/config/config';
-import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
 import { User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -45,11 +43,16 @@ const variantStyles = {
   ghost: 'border-0',
 };
 
+const isExternalUrl = (url: string) => url.startsWith('http://') || url.startsWith('https://');
+
+const extractExternalUrl = (url: string): string | null => {
+  const matches = /avatars\/(https?:\/\/[^/]+.*$)/.exec(url);
+  return matches?.[1] ?? null;
+};
+
 const UserAvatar = (props: UserAvatarProps) => {
   const t = useTranslations('Components.UserAvatar');
-  const session = usePlatformSession() as any;
-  const params = useParams();
-  const [userData, setUserData] = useState<any>(null);
+  const { user: currentUser } = useSession();
 
   const {
     size = 'md',
@@ -63,116 +66,50 @@ const UserAvatar = (props: UserAvatarProps) => {
     fallbackText,
   } = props;
 
-  useEffect(() => {
-    const fetchUserByUsername = async () => {
-      if (username) {
-        try {
-          const data = await getUserByUsername(username);
-          setUserData(data);
-        } catch (error) {
-          console.error('Error fetching user by username:', error);
-        }
-      }
-    };
-
-    fetchUserByUsername();
-  }, [username]);
-
-  const isExternalUrl = (url: string): boolean => {
-    return url.startsWith('http://') || url.startsWith('https://');
-  };
-
-  const extractExternalUrl = (url: string): string | null => {
-    // Check if the URL contains an embedded external URL
-    const matches = /avatars\/(https?:\/\/[^/]+.*$)/.exec(url);
-    if (matches?.[1]) {
-      return matches[1];
-    }
-    return null;
-  };
+  // Shared query caching deduplicates identical username lookups across components.
+  const { data: userData } = useUserByUsername(username);
 
   const getAvatarUrl = (): string => {
-    // If predefined avatar is specified
     if (predefined_avatar) {
       const avatarType = predefined_avatar === 'ai' ? 'platform_logo.svg' : 'empty_avatar.webp';
       return getAbsoluteUrl(`/${avatarType}`);
     }
 
-    // If avatar_url prop is provided
     if (avatar_url) {
-      // Check if it's a malformed URL (external URL processed through getUserAvatarMediaDirectory)
-      const extractedUrl = extractExternalUrl(avatar_url);
-      if (extractedUrl) {
-        return extractedUrl;
-      }
-      // If it's a direct external URL
-      if (isExternalUrl(avatar_url)) {
-        return avatar_url;
-      }
-      // Otherwise use as is
-      return avatar_url;
+      return extractExternalUrl(avatar_url) ?? (isExternalUrl(avatar_url) ? avatar_url : avatar_url);
     }
 
-    // If we have user data from username fetch
     if (userData?.avatar_image) {
-      const avatarUrl = userData.avatar_image;
-      // If it's an external URL (e.g., from Google, Facebook, etc.), use it directly
-      if (isExternalUrl(avatarUrl)) {
-        return avatarUrl;
-      }
-      // Otherwise, get the local avatar URL
-      return getUserAvatarMediaDirectory(userData.user_uuid, avatarUrl);
+      const url = userData.avatar_image;
+      return isExternalUrl(url) ? url : getUserAvatarMediaDirectory(userData.user_uuid, url);
     }
 
-    // If username was provided but no user data found, don't fall back to session
-    // This prevents showing the wrong user's avatar for usernames that don't exist
-    if (username) {
-      return getAbsoluteUrl('/empty_avatar.webp');
+    // Username given but no data yet — show empty rather than falling through to session user.
+    if (username) return getAbsoluteUrl('/empty_avatar.webp');
+
+    // No username — show the current session user's avatar.
+    if (currentUser?.avatar_image) {
+      const url = currentUser.avatar_image;
+      return isExternalUrl(url) ? url : getUserAvatarMediaDirectory(currentUser.user_uuid, url);
     }
 
-    // If user has an avatar in session (only if session exists and no username was provided)
-    if (session?.data?.user?.avatar_image) {
-      const avatarUrl = session.data.user.avatar_image;
-      // If it's an external URL (e.g., from Google, Facebook, etc.), use it directly
-      if (isExternalUrl(avatarUrl)) {
-        return avatarUrl;
-      }
-      // Otherwise, get the local avatar URL
-      return getUserAvatarMediaDirectory(session.data.user.user_uuid, avatarUrl);
-    }
-
-    // Fallback to empty avatar
     return getAbsoluteUrl('/empty_avatar.webp');
   };
 
   const getFallbackText = (): string => {
     if (fallbackText) return fallbackText;
 
-    // Try to get initials from userData
     if (userData?.first_name && userData?.last_name) {
       return `${userData.first_name[0]}${userData.last_name[0]}`.toUpperCase();
     }
 
-    // If we have a username prop, use it for fallback regardless of fetch status
-    if (username && username.length > 0) {
-      return username.charAt(0).toUpperCase();
+    if (username) return username.charAt(0).toUpperCase();
+
+    if (currentUser?.first_name && currentUser?.last_name) {
+      return `${currentUser.first_name[0]}${currentUser.last_name[0]}`.toUpperCase();
     }
 
-    // Try to get initials from session
-    if (session?.data?.user?.first_name && session?.data?.user?.last_name) {
-      return `${session.data.user.first_name[0]}${session.data.user.last_name[0]}`.toUpperCase();
-    }
-
-    // Try to get first letter from username
-    if (userData?.username) {
-      return userData.username[0].toUpperCase();
-    }
-
-    if (session?.data?.user?.username) {
-      return session.data.user.username[0].toUpperCase();
-    }
-
-    return '?';
+    return userData?.username?.[0]?.toUpperCase() ?? currentUser?.username?.[0]?.toUpperCase() ?? '?';
   };
 
   const avatarElement = (
@@ -188,8 +125,10 @@ const UserAvatar = (props: UserAvatarProps) => {
     </Avatar>
   );
 
-  if (showProfilePopup && (userId || userData?.id)) {
-    return <UserProfilePopup userId={userId || userData?.id}>{avatarElement}</UserProfilePopup>;
+  const popupUserId = userId ?? userData?.id ?? null;
+
+  if (showProfilePopup && popupUserId) {
+    return <UserProfilePopup userId={popupUserId}>{avatarElement}</UserProfilePopup>;
   }
 
   return avatarElement;

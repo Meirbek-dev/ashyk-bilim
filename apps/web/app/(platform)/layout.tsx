@@ -1,9 +1,19 @@
-import { getPlatformContextInfo } from '@/services/platform/platform';
-import PlatformClientProviders from './platform-client-providers';
+import { PlatformContextProvider } from '@/components/Contexts/PlatformContext';
+import { getPlatform } from '@/services/platform/platform';
+import { Suspense } from 'react';
+import type { ReactNode } from 'react';
 import '@styles/globals.css';
 
-export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
-  const initialPlatform = await getPlatformContextInfo();
+async function PlatformLayoutContent({ children }: { children: ReactNode }) {
+  const initialPlatform = await getPlatform();
 
-  return <PlatformClientProviders initialPlatform={initialPlatform}>{children}</PlatformClientProviders>;
+  return <PlatformContextProvider initialPlatform={initialPlatform}>{children}</PlatformContextProvider>;
+}
+
+export default function PlatformLayout({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={<PlatformContextProvider>{children}</PlatformContextProvider>}>
+      <PlatformLayoutContent>{children}</PlatformLayoutContent>
+    </Suspense>
+  );
 }

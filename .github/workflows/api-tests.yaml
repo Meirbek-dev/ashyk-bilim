@@ -35,14 +35,14 @@ jobs:
       - name: Run tests
         run: |
           cd apps/api
-          uv run pytest src/tests/ -v --tb=short
+          uv run python -m pytest src/tests/ -v --tb=short
         env:
           TESTING: "true"
 
       - name: Run security tests with coverage
         run: |
           cd apps/api
-          uv run pytest src/tests/security/ --cov=src.security --cov-report=html --cov-report=term-missing
+          uv run python -m pytest src/tests/security/ --cov=src.security --cov-report=html --cov-report=term-missing
         env:
           TESTING: "true"
 

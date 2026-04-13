@@ -11,10 +11,7 @@ const PublicEnvSchema = v.object({
 
 const ServerEnvSchema = v.object({
   INTERNAL_API_URL: v.optional(UrlSchema),
-  NEXTAUTH_SECRET: NonEmptyStringSchema,
-  NEXTAUTH_URL: UrlSchema,
-  GOOGLE_CLIENT_ID: NonEmptyStringSchema,
-  GOOGLE_CLIENT_SECRET: NonEmptyStringSchema,
+  APP_URL: v.optional(UrlSchema),
   COOKIE_DOMAIN: v.optional(NonEmptyStringSchema),
 });
 
@@ -35,12 +32,9 @@ export interface PublicConfig {
 
 export interface ServerConfig {
   internalApiUrl?: string;
-  nextAuthUrl: string;
-  nextAuthOrigin: string;
-  nextAuthHost: string;
-  nextAuthSecret: string;
-  googleClientId: string;
-  googleClientSecret: string;
+  appUrl: string;
+  appOrigin: string;
+  appHost: string;
   cookieDomain?: string;
   cookieSecure: boolean;
 }
@@ -87,9 +81,11 @@ const isUnsupportedCookieDomain = (host?: string | null) => {
   return false;
 };
 
+const normalizeCookieDomain = (value: string): string => value.trim().replace(/^\.+/, '');
+
 const deriveCookieDomain = (inputUrl: string, explicitCookieDomain?: string) => {
   const manualDomain = getOptionalEnvValue(explicitCookieDomain);
-  if (manualDomain) return manualDomain;
+  if (manualDomain) return normalizeCookieDomain(manualDomain);
 
   const { hostname } = new URL(inputUrl);
   return isUnsupportedCookieDomain(hostname) ? undefined : hostname;
@@ -119,10 +115,7 @@ const readPublicEnvInput = () => ({
 
 const readServerEnvInput = () => ({
   INTERNAL_API_URL: getOptionalEnvValue(process.env.INTERNAL_API_URL),
-  NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-  NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+  APP_URL: getOptionalEnvValue(process.env.APP_URL) ?? process.env.NEXT_PUBLIC_SITE_URL,
   COOKIE_DOMAIN: getOptionalEnvValue(process.env.COOKIE_DOMAIN),
 });
 
@@ -141,19 +134,21 @@ const buildPublicConfig = (env: PublicEnv): PublicConfig => {
 };
 
 const buildServerConfig = (env: ServerEnv): ServerConfig => {
-  const nextAuthUrl = new URL(env.NEXTAUTH_URL).toString();
-  const nextAuth = new URL(nextAuthUrl);
+  const resolvedAppUrl = env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+  if (!resolvedAppUrl) {
+    throw new Error('APP_URL or NEXT_PUBLIC_SITE_URL must be configured');
+  }
+
+  const appUrl = new URL(resolvedAppUrl).toString();
+  const app = new URL(appUrl);
 
   return {
     internalApiUrl: env.INTERNAL_API_URL ? normalizePathUrl(env.INTERNAL_API_URL) : undefined,
-    nextAuthUrl,
-    nextAuthOrigin: nextAuth.origin,
-    nextAuthHost: nextAuth.host,
-    nextAuthSecret: env.NEXTAUTH_SECRET,
-    googleClientId: env.GOOGLE_CLIENT_ID,
-    googleClientSecret: env.GOOGLE_CLIENT_SECRET,
-    cookieDomain: deriveCookieDomain(nextAuthUrl, env.COOKIE_DOMAIN),
-    cookieSecure: nextAuth.protocol === 'https:',
+    appUrl,
+    appOrigin: app.origin,
+    appHost: app.host,
+    cookieDomain: deriveCookieDomain(appUrl, env.COOKIE_DOMAIN),
+    cookieSecure: app.protocol === 'https:',
   };
 };
 
@@ -265,10 +260,7 @@ export const getServerEnv = () => {
 
   return {
     INTERNAL_API_URL: serverConfig.internalApiUrl,
-    NEXTAUTH_SECRET: serverConfig.nextAuthSecret,
-    NEXTAUTH_URL: serverConfig.nextAuthUrl,
-    GOOGLE_CLIENT_ID: serverConfig.googleClientId,
-    GOOGLE_CLIENT_SECRET: serverConfig.googleClientSecret,
+    APP_URL: serverConfig.appUrl,
     COOKIE_DOMAIN: serverConfig.cookieDomain,
   };
 };

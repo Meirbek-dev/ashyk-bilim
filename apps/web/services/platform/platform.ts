@@ -1,61 +1,52 @@
 'use server';
 
-import {
-  RequestBodyFormWithAuthHeader,
-  RequestBodyWithAuthHeader,
-  errorHandling,
-  getResponseMetadata,
-} from '@services/utils/ts/requests';
-import { CacheProfiles, cacheLife, cacheTag } from '@/lib/cache';
+import { errorHandling, getResponseMetadata } from '@/lib/api-client';
+import { apiFetch } from '@/lib/api-client';
+import type { CustomResponseTyping } from '@/lib/api-client';
 import { getServerAPIUrl } from '@services/config/config';
+import type { components } from '@/lib/api/generated';
 import { tags } from '@/lib/cacheTags';
 
-/*
- This file includes POST, PUT, DELETE requests and cached GET requests
- Client-side GET requests are called from the frontend using SWR
-*/
+type PlatformRead = components['schemas']['PlatformRead'];
+type PlatformDetailResponse = components['schemas']['PlatformDetailResponse'];
+type PlatformLandingUploadResponse = components['schemas']['PlatformLandingUploadResponse'];
 
-async function fetchPlatform(access_token?: string) {
-  'use cache';
-  cacheTag(tags.platform);
-  cacheLife(CacheProfiles.platform);
+type ResponseMetadata<T> = Omit<CustomResponseTyping, 'data'> & {
+  data: T | null;
+};
 
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (access_token) {
-    headers.Authorization = `Bearer ${access_token}`;
+async function getTypedResponseMetadata<T>(response: Response): Promise<ResponseMetadata<T>> {
+  return (await getResponseMetadata(response)) as ResponseMetadata<T>;
+}
+
+async function fetchPlatform(): Promise<PlatformRead | null> {
+  try {
+    const result = await apiFetch('platform', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      baseUrl: getServerAPIUrl(),
+      signal: AbortSignal.timeout(8000),
+    });
+    return await errorHandling(result);
+  } catch {
+    return null;
   }
+}
 
-  const result = await fetch(`${getServerAPIUrl()}platform`, {
-    method: 'GET',
-    headers,
+export async function getPlatform() {
+  return fetchPlatform();
+}
+
+export async function updateLanding(
+  landing_object: Record<string, unknown>,
+): Promise<ResponseMetadata<PlatformDetailResponse>> {
+  const result = await apiFetch('landing', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(landing_object),
   });
-  return await errorHandling(result);
-}
+  const metadata = await getTypedResponseMetadata<PlatformDetailResponse>(result);
 
-export async function getContextInfo(_next?: unknown, access_token?: string) {
-  return fetchPlatform(access_token);
-}
-
-export async function getPlatformContextInfo(access_token?: string) {
-  return fetchPlatform(access_token);
-}
-
-export async function getContextInfoWithoutCredentials(_next?: unknown) {
-  return await fetchPlatform();
-}
-
-export async function getContextInfoNoAsync(next: unknown, access_token: string) {
-  return await fetch(`${getServerAPIUrl()}platform`, RequestBodyWithAuthHeader('GET', null, next, access_token));
-}
-
-export async function updateLanding(landing_object: any, access_token: string) {
-  const result = await fetch(
-    `${getServerAPIUrl()}platform/landing`,
-    RequestBodyWithAuthHeader('PUT', landing_object, null, access_token),
-  );
-  const metadata = await getResponseMetadata(result);
-
-  // Revalidate platform cache after landing update
   if (metadata.success) {
     const { revalidateTag } = await import('next/cache');
     revalidateTag(tags.platform, 'max');
@@ -64,25 +55,20 @@ export async function updateLanding(landing_object: any, access_token: string) {
   return metadata;
 }
 
-export async function uploadLandingContent(content_file: File, access_token: string) {
+export async function uploadLandingContent(
+  content_file: File,
+): Promise<ResponseMetadata<PlatformLandingUploadResponse>> {
   const formData = new FormData();
   formData.append('content_file', content_file);
 
-  const result = await fetch(
-    `${getServerAPIUrl()}platform/landing/content`,
-    RequestBodyFormWithAuthHeader('POST', formData, null, access_token),
-  );
-  return await getResponseMetadata(result);
+  const result = await apiFetch('landing/content', { method: 'POST', body: formData });
+  return await getTypedResponseMetadata<PlatformLandingUploadResponse>(result);
 }
 
-export async function removeUser(user_id: number, access_token: string) {
-  const result = await fetch(
-    `${getServerAPIUrl()}platform/users/${user_id}`,
-    RequestBodyWithAuthHeader('DELETE', null, null, access_token),
-  );
-  const metadata = await getResponseMetadata(result);
+export async function removeUser(user_id: number): Promise<ResponseMetadata<PlatformDetailResponse>> {
+  const result = await apiFetch(`members/${user_id}`, { method: 'DELETE' });
+  const metadata = await getTypedResponseMetadata<PlatformDetailResponse>(result);
 
-  // Revalidate cache after user removal
   if (metadata.success) {
     const { revalidateTag } = await import('next/cache');
     revalidateTag(tags.platform, 'max');

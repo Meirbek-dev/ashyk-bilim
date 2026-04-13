@@ -70,7 +70,7 @@ FILE_TYPES = {
     "document": {
         "extensions": [".pdf"],
         "mime_types": ["application/pdf"],
-        "max_size": 50 * 1024 * 1024,  # 50MB
+        "max_size": 100 * 1024 * 1024,  # 100MB
         "validator": lambda content: content.startswith(b"%PDF-"),
     },
 }

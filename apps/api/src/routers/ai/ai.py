@@ -10,8 +10,8 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlmodel import Session
 
-from src.core.events.database import get_db_session
 from src.db.users import PublicUser
+from src.infra.db.session import get_db_session
 from src.security.auth import get_current_user
 from src.services.ai.ai import (
     ai_send_activity_chat_message,

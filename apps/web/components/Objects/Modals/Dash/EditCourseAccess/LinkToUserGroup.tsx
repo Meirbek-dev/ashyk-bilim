@@ -2,16 +2,14 @@
 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import { linkResourcesToUserGroup } from '@services/usergroups/usergroups';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { getAPIUrl, getAbsoluteUrl } from '@services/config/config';
+import { getAbsoluteUrl } from '@services/config/config';
 import { useCourse } from '@components/Contexts/CourseContext';
-import { swrFetcher } from '@services/utils/ts/requests';
+import { useUserGroups } from '@/features/users/hooks/useUsers';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
 import { Info } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import useSWR from 'swr';
 
 interface UserGroup {
   id: number;
@@ -26,19 +24,18 @@ interface LinkToUserGroupProps {
 const LinkToUserGroup = (props: LinkToUserGroupProps) => {
   const t = useTranslations('Components.LinkToUserGroup');
   const course = useCourse();
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
   const { courseStructure } = course;
 
-  const { data: usergroups } = useSWR(courseStructure ? `${getAPIUrl()}usergroups` : null, (url) =>
-    swrFetcher(url, access_token),
-  );
+  const { data: usergroups } = useUserGroups({ enabled: Boolean(courseStructure) });
   const [selectedUserGroup, setSelectedUserGroup] = useState<number | null>(null);
 
   // Use first usergroup as default if not explicitly set
   const effectiveUserGroup = selectedUserGroup ?? usergroups?.[0]?.id ?? null;
 
-  const usergroupItems = (usergroups || []).map((group: UserGroup) => ({ value: String(group.id), label: group.name }));
+  const usergroupItems = (usergroups || []).map((group: UserGroup) => ({
+    value: String(group.id),
+    label: group.name,
+  }));
 
   const handleLink = async () => {
     if (!effectiveUserGroup) {
@@ -47,7 +44,7 @@ const LinkToUserGroup = (props: LinkToUserGroupProps) => {
     }
 
     try {
-      const res = await linkResourcesToUserGroup(effectiveUserGroup, courseStructure.course_uuid, access_token, {
+      const res = await linkResourcesToUserGroup(effectiveUserGroup, courseStructure.course_uuid, {
         courseUuid: courseStructure.course_uuid,
       });
       if (res.status === 200) {

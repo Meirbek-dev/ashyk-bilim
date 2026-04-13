@@ -5,11 +5,16 @@ import {
   getCourseWorkflowToneClass,
 } from '@components/Dashboard/Courses/courseWorkflowUi';
 import {
-  bulkAddContributors,
-  bulkRemoveContributors,
-  editContributor,
-  updateCourseAccess,
-} from '@services/courses/courses';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,18 +26,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SectionHeader } from '@components/Dashboard/Courses/SectionHeader';
+import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+
 import { Check, ChevronDown, Search, UserPen, Users } from 'lucide-react';
 import { getUserAvatarMediaDirectory } from '@services/media/media';
+import { useSyncDirtySection } from '@/hooks/useSyncDirtySection';
 import { useCourse } from '@components/Contexts/CourseContext';
-import { useDirtySection } from '@/hooks/useDirtySection';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup } from '@/components/ui/radio-group';
 import UserAvatar from '@components/Objects/UserAvatar';
-import { searchContent } from '@services/search/search';
 import { useSaveSection } from '@/hooks/useSaveSection';
 import { useDebouncedValue } from '@/hooks/useDebounce';
+import { useCourseEditorStore } from '@/stores/courses';
+import { useSearchContent } from '@/features/search/hooks/useSearch';
 import { useLocale, useTranslations } from 'next-intl';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useEffect, useRef, useState } from 'react';
@@ -74,7 +81,7 @@ interface Contributor {
 }
 
 interface BulkAddResponse {
-  successful: string[];
+  successful: { username: string; user_id: number }[];
   failed: { username: string; reason: string }[];
 }
 
@@ -168,81 +175,71 @@ const StatusDropdown = ({
   </DropdownMenu>
 );
 
+const sortContributors = (list: Contributor[]) => {
+  const creator = list.find((c) => c.authorship === 'CREATOR');
+  const others = list.filter((c) => c.authorship !== 'CREATOR');
+  return creator ? [creator, ...others] : others;
+};
+
 const EditCourseContributors = () => {
   const t = useTranslations('DashPage.EditCourseContributors');
   const locale = useLocale() as Locale;
-  const session = usePlatformSession();
-  const access_token = session?.data?.tokens?.access_token;
   const course = useCourse();
-  const { courseStructure, editorData, refreshCourseEditor, showConflict } = course;
+  const { courseStructure, editorData } = course;
   const contributors = (editorData.contributors.data ?? []) as Contributor[];
   const isContributorsLoading = course.isEditorDataLoading && editorData.contributors.data === null;
+  const setConflict = useCourseEditorStore((state) => state.setConflict);
+  const {
+    addContributors,
+    removeContributors,
+    updateAccess,
+    updateContributor: updateContributorMutation,
+  } = useCoursesMutations(courseStructure?.course_uuid ?? '');
 
   const [isOpenToContributors, setIsOpenToContributors] = useState<boolean | undefined>(
     () => courseStructure?.open_to_contributors,
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  const [searchResultsOverride, setSearchResultsOverride] = useState<SearchUser[] | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [isRemoveConfirmOpen, setIsRemoveConfirmOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [selectedContributors, setSelectedContributors] = useState<number[]>([]);
-  const initialRef = useRef<boolean | undefined>(courseStructure?.open_to_contributors);
+  const hasSearchQuery = debouncedSearch.trim().length > 0;
+  const { data: contributorSearchResponse, isFetching: isSearching } = useSearchContent(debouncedSearch, {
+    limit: 5,
+    enabled: hasSearchQuery,
+  });
+  const fetchedSearchResults: SearchUser[] =
+    contributorSearchResponse?.success && contributorSearchResponse.data?.users
+      ? contributorSearchResponse.data.users.map((user: SearchUser) => ({
+          ...user,
+          avatar_url: user.avatar_image ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image) : '',
+        }))
+      : [];
+  const searchResults: SearchUser[] = hasSearchQuery ? (searchResultsOverride ?? fetchedSearchResults) : [];
 
-  const { isDirty, isDirtyRef, markDirty, markClean } = useDirtySection('contributors');
-  const { isSaving, save } = useSaveSection({ onSuccess: markClean });
+  const isDirtyRef = useRef(false);
+  isDirtyRef.current =
+    isOpenToContributors !== undefined && isOpenToContributors !== courseStructure?.open_to_contributors;
+  const isDirty = isDirtyRef.current;
 
-  // Sync external updates when not dirty
+  const handleDiscard = () => setIsOpenToContributors(courseStructure?.open_to_contributors);
+
+  useSyncDirtySection('contributors', isDirty);
+
+  const { isSaving, save } = useSaveSection({
+    section: 'contributors',
+  });
+
+  // Rehydrate from server when not dirty
   useEffect(() => {
-    if (isDirtyRef.current) return;
-    setIsOpenToContributors(courseStructure?.open_to_contributors);
-    initialRef.current = courseStructure?.open_to_contributors;
-    markClean();
-  }, [courseStructure?.open_to_contributors, isDirtyRef, markClean]);
-
-  // Track dirty state on toggle change
-  useEffect(() => {
-    const dirty = isOpenToContributors !== undefined && isOpenToContributors !== initialRef.current;
-    if (dirty) markDirty();
-    else markClean();
-  }, [isOpenToContributors, markDirty, markClean]);
-
-  // Debounced user search
-  useEffect(() => {
-    const searchUsers = async () => {
-      if (debouncedSearch.trim().length === 0) {
-        setSearchResults([]);
-        setIsSearching(false);
-        setSearchOpen(false);
-        return;
-      }
-      setIsSearching(true);
-      setSearchOpen(true);
-      try {
-        const response = await searchContent(debouncedSearch, 1, 5, null, access_token);
-        if (response.success && response.data?.users) {
-          const users = response.data.users.map((user: SearchUser) =>
-            Object.assign(user, {
-              avatar_url: user.avatar_image ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image) : '',
-            }),
-          );
-          setSearchResults(users);
-        } else {
-          setSearchResults([]);
-        }
-      } catch (error) {
-        console.error(t('errorSearchingUsers'), error);
-        setSearchResults([]);
-      }
-      setIsSearching(false);
-    };
-
-    if (access_token) {
-      searchUsers();
+    if (!isDirtyRef.current) {
+      setIsOpenToContributors(courseStructure?.open_to_contributors);
     }
-  }, [debouncedSearch, access_token, t]);
+  }, [courseStructure?.open_to_contributors]);
 
   const masterCheckboxChecked = (() => {
     const nonCreatorContributors = contributors.filter((c) => c.authorship !== 'CREATOR');
@@ -253,29 +250,46 @@ const EditCourseContributors = () => {
     setSelectedUsers((prev) => (prev.includes(username) ? prev.filter((u) => u !== username) : [...prev, username]));
   };
 
+  const raiseContributorConflict = (message: string | undefined, pendingSave: () => Promise<unknown>) => {
+    setConflict({
+      message: message || t('failedToUpdateContributor'),
+      pendingSave,
+    });
+  };
+
   const handleAddContributors = async () => {
     if (selectedUsers.length === 0 || isAdding) return;
+
+    const selectedUserObjects = searchResults.filter((user) => selectedUsers.includes(user.username));
     setIsAdding(true);
     try {
-      const response = await bulkAddContributors(courseStructure.course_uuid, selectedUsers, access_token);
-      if (response.status === 409) {
-        showConflict(response.data?.detail);
+      const response = await addContributors(selectedUsers, selectedUserObjects, {
+        lastKnownUpdateDate: courseStructure.update_date,
+      });
+      const result = response.data as BulkAddResponse;
+
+      if (result.successful.length > 0) {
+        toast.success(t('successfullyAddedContributors', { count: result.successful.length }));
+      }
+
+      for (const failure of result.failed) {
+        toast.error(t('failedToAddContributor', { username: failure.username, reason: failure.reason }));
+      }
+
+      const failedUsernames = new Set(result.failed.map((failure) => failure.username));
+      setSelectedUsers(result.failed.map((failure) => failure.username));
+      setSearchQuery(result.failed.length > 0 ? searchQuery : '');
+      setSearchOpen(result.failed.length > 0);
+      setSearchResultsOverride(searchResults.filter((user) => failedUsernames.has(user.username)));
+    } catch (error: any) {
+      if (error?.status === 409) {
+        raiseContributorConflict(error?.detail || error?.message, async () => {
+          await addContributors(selectedUsers, selectedUserObjects, {
+            lastKnownUpdateDate: courseStructure.update_date,
+          });
+        });
         return;
       }
-      if (response.status === 200) {
-        const result = response.data as BulkAddResponse;
-        if (result.successful.length > 0) {
-          toast.success(t('successfullyAddedContributors', { count: result.successful.length }));
-        }
-        result.failed.forEach((failure) => {
-          toast.error(t('failedToAddContributor', { username: failure.username, reason: failure.reason }));
-        });
-        await refreshCourseEditor();
-        setSelectedUsers([]);
-        setSearchQuery('');
-        setSearchOpen(false);
-      }
-    } catch (error) {
       console.error(t('errorAddingContributors'), error);
       toast.error(t('failedToAddContributorsGeneral'));
     } finally {
@@ -298,24 +312,35 @@ const EditCourseContributors = () => {
         authorship: data.authorship || currentContributor.authorship,
         authorship_status: data.authorship_status || currentContributor.authorship_status,
       };
-      const res = await editContributor(
-        courseStructure.course_uuid,
-        contributorId,
-        updatedData.authorship,
-        updatedData.authorship_status,
-        access_token,
-      );
-      if (res.status === 409) {
-        showConflict(res.data?.detail);
-        return;
-      }
+      const res = await updateContributorMutation(contributorId, updatedData, {
+        lastKnownUpdateDate: courseStructure.update_date,
+      });
+
       if (res.status === 200 && res.data?.status === 'success') {
         toast.success(res.data.detail || t('successfullyUpdatedContributor'));
-        await refreshCourseEditor();
       } else {
         toast.error(res.data?.detail || t('failedToUpdateContributor'));
       }
-    } catch {
+    } catch (error: any) {
+      if (error?.status === 409) {
+        raiseContributorConflict(error?.detail || error?.message, async () => {
+          await updateContributorMutation(
+            contributorId,
+            {
+              authorship:
+                data.authorship ||
+                contributors.find((contributor) => contributor.user_id === contributorId)?.authorship,
+              authorship_status:
+                data.authorship_status ||
+                contributors.find((contributor) => contributor.user_id === contributorId)?.authorship_status,
+            },
+            {
+              lastKnownUpdateDate: courseStructure.update_date,
+            },
+          );
+        });
+        return;
+      }
       toast.error(t('errorUpdatingContributor'));
     }
   };
@@ -337,57 +362,72 @@ const EditCourseContributors = () => {
     }
   };
 
-  const sortContributors = (list: Contributor[]) => {
-    const creator = list.find((c) => c.authorship === 'CREATOR');
-    const others = list.filter((c) => c.authorship !== 'CREATOR');
-    return creator ? [creator, ...others] : others;
-  };
-
   const handleContributorSelect = (userId: number) => {
     setSelectedContributors((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
   };
 
   const handleBulkRemove = async () => {
     if (selectedContributors.length === 0) return;
+
     try {
-      const selectedUsernames = contributors
+      const selectedContributorRows = contributors.filter((c) => selectedContributors.includes(c.user_id));
+      const selectedUsernames = selectedContributorRows.map((c) => c.user.username);
+      const selectedUserIds = selectedContributorRows
         .filter((c) => selectedContributors.includes(c.user_id))
-        .map((c) => c.user.username);
-      const response = await bulkRemoveContributors(courseStructure.course_uuid, selectedUsernames, access_token);
-      if (response.status === 409) {
-        showConflict(response.data?.detail);
+        .map((c) => c.user_id);
+      const response = await removeContributors(selectedUsernames, selectedUserIds, {
+        lastKnownUpdateDate: courseStructure.update_date,
+      });
+      const result = response.data as BulkAddResponse;
+
+      if (result.successful.length > 0) {
+        toast.success(t('successfullyRemovedContributors', { count: result.successful.length }));
+      }
+
+      for (const failure of result.failed) {
+        toast.error(t('failedToRemoveContributor', { username: failure.username, reason: failure.reason }));
+      }
+
+      const failedUsernames = new Set(result.failed.map((failure) => failure.username));
+      setSelectedContributors(
+        contributors
+          .filter((contributor) => failedUsernames.has(contributor.user.username))
+          .map((contributor) => contributor.user_id),
+      );
+    } catch (error: any) {
+      if (error?.status === 409) {
+        raiseContributorConflict(error?.detail || error?.message, async () => {
+          const retryRows = contributors.filter((contributor) => selectedContributors.includes(contributor.user_id));
+          await removeContributors(
+            retryRows.map((contributor) => contributor.user.username),
+            retryRows.map((contributor) => contributor.user_id),
+            {
+              lastKnownUpdateDate: courseStructure.update_date,
+            },
+          );
+        });
         return;
       }
-      if (response.status === 200) {
-        toast.success(t('successfullyRemovedContributors', { count: selectedContributors.length }));
-        await refreshCourseEditor();
-        setSelectedContributors([]);
-      }
-    } catch (error) {
       console.error(t('errorRemovingContributors'), error);
       toast.error(t('failedToRemoveContributorsGeneral'));
     }
   };
 
-  const handleDiscard = () => {
-    setIsOpenToContributors(initialRef.current);
-    markClean();
+  const handleConfirmBulkRemove = async () => {
+    setIsRemoveConfirmOpen(false);
+    await handleBulkRemove();
   };
 
   const handleContributorAccessSave = async () => {
-    if (!(access_token && isOpenToContributors !== undefined) || !isDirty) return;
-    await save(async () => {
-      const response = await updateCourseAccess(
-        courseStructure.course_uuid,
+    if (isOpenToContributors === undefined || !isDirty) return;
+    await save(async () =>
+      updateAccess(
         { open_to_contributors: isOpenToContributors },
-        access_token,
-        { lastKnownUpdateDate: courseStructure.update_date },
-      );
-      if (response.success) {
-        initialRef.current = isOpenToContributors;
-      }
-      return response;
-    });
+        {
+          lastKnownUpdateDate: courseStructure.update_date,
+        },
+      ),
+    );
   };
 
   if (!courseStructure) return null;
@@ -460,21 +500,29 @@ const EditCourseContributors = () => {
               onOpenChange={setSearchOpen}
             >
               <PopoverTrigger
-                render={<div className="relative w-full" />}
+                render={(triggerProps) => (
+                  <div
+                    {...triggerProps}
+                    className={`relative w-full ${triggerProps.className ?? ''}`}
+                  >
+                    <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+                    <Input
+                      className="pl-8"
+                      placeholder={t('searchUsersPlaceholder')}
+                      value={searchQuery}
+                      onFocus={() => setSearchOpen(true)}
+                      onChange={(e) => {
+                        const nextQuery = e.target.value;
+                        setSearchQuery(nextQuery);
+                        setSearchResultsOverride(null);
+                        if (nextQuery.trim()) setSearchOpen(true);
+                        else setSearchOpen(false);
+                      }}
+                    />
+                  </div>
+                )}
                 nativeButton={false}
-              >
-                <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
-                <Input
-                  className="pl-8"
-                  placeholder={t('searchUsersPlaceholder')}
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    if (e.target.value.trim()) setSearchOpen(true);
-                    else setSearchOpen(false);
-                  }}
-                />
-              </PopoverTrigger>
+              />
               <PopoverContent
                 className="w-(--anchor-width) p-0"
                 align="start"
@@ -482,7 +530,7 @@ const EditCourseContributors = () => {
                 <Command>
                   <CommandList>
                     {isSearching ? (
-                      <div className="p-4 text-center text-sm text-muted-foreground">{t('searchingMessage')}</div>
+                      <div className="text-muted-foreground p-4 text-center text-sm">{t('searchingMessage')}</div>
                     ) : (
                       <>
                         <CommandEmpty>{t('noUsersFoundMessage')}</CommandEmpty>
@@ -511,13 +559,13 @@ const EditCourseContributors = () => {
                                   showProfilePopup
                                 />
                                 <div className="min-w-0 flex-1">
-                                  <div className="truncate font-medium text-foreground">
+                                  <div className="text-foreground truncate font-medium">
                                     {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
                                   </div>
-                                  <div className="text-xs text-muted-foreground">@{user.username}</div>
+                                  <div className="text-muted-foreground text-xs">@{user.username}</div>
                                 </div>
                                 {isExisting && (
-                                  <span className="shrink-0 rounded border bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                                  <span className="bg-muted text-muted-foreground shrink-0 rounded border px-2 py-0.5 text-xs">
                                     {t('alreadyContributorMessage')}
                                   </span>
                                 )}
@@ -534,7 +582,7 @@ const EditCourseContributors = () => {
 
             {selectedUsers.length > 0 && (
               <div className={courseWorkflowMutedPanelClass + ' flex items-center justify-between'}>
-                <span className="text-sm text-foreground">
+                <span className="text-foreground text-sm">
                   {t('usersSelectedMessage', { count: selectedUsers.length })}
                 </span>
                 <div className="flex gap-2">
@@ -557,10 +605,10 @@ const EditCourseContributors = () => {
             )}
           </div>
 
-          <div className="rounded-xl border bg-card">
+          <div className="bg-card rounded-xl border">
             {selectedContributors.length > 0 && (
-              <div className="flex items-center justify-between rounded-t-xl border-b bg-muted/60 px-4 py-3">
-                <span className="text-sm text-foreground">
+              <div className="bg-muted/60 flex items-center justify-between rounded-t-xl border-b px-4 py-3">
+                <span className="text-foreground text-sm">
                   {t('contributorsSelectedMessage', { count: selectedContributors.length })}
                 </span>
                 <div className="flex gap-2">
@@ -572,7 +620,7 @@ const EditCourseContributors = () => {
                     {t('clearButton')}
                   </Button>
                   <Button
-                    onClick={handleBulkRemove}
+                    onClick={() => setIsRemoveConfirmOpen(true)}
                     variant="destructive"
                     size="sm"
                   >
@@ -582,8 +630,36 @@ const EditCourseContributors = () => {
               </div>
             )}
 
+            <AlertDialog
+              open={isRemoveConfirmOpen}
+              onOpenChange={setIsRemoveConfirmOpen}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogMedia className="bg-muted text-foreground">
+                    <Users className="size-8" />
+                  </AlertDialogMedia>
+                  <AlertDialogTitle>
+                    {t('removeSelectedConfirmTitle', { count: selectedContributors.length })}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t('removeSelectedConfirmMessage', { count: selectedContributors.length })}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel />
+                  <AlertDialogAction
+                    variant="destructive"
+                    onClick={handleConfirmBulkRemove}
+                  >
+                    {t('removeSelectedButton')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
             {isContributorsLoading ? (
-              <div className="px-4 py-6 text-center text-sm text-muted-foreground">{t('loadingContributors')}</div>
+              <div className="text-muted-foreground px-4 py-6 text-center text-sm">{t('loadingContributors')}</div>
             ) : (
               <ScrollArea className="max-h-[520px]">
                 <Table>
@@ -617,7 +693,7 @@ const EditCourseContributors = () => {
                       <TableRow
                         key={`${contributor.user_id}-${contributor.id}`}
                         className={`${selectedContributors.includes(contributor.user_id) ? 'bg-muted/60' : ''} ${
-                          contributor.authorship !== 'CREATOR' ? 'cursor-pointer hover:bg-muted/50' : ''
+                          contributor.authorship !== 'CREATOR' ? 'hover:bg-muted/50 cursor-pointer' : ''
                         }`}
                         onClick={(e) => {
                           if (
@@ -672,7 +748,7 @@ const EditCourseContributors = () => {
                             getStatusStyle={getStatusStyle}
                           />
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="text-muted-foreground text-sm">
                           {formatDate(contributor.creation_date, locale)}
                         </TableCell>
                       </TableRow>

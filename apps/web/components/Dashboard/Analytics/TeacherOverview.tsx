@@ -129,22 +129,22 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
 
   const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
     <Card className="shadow-sm">
-      <CardContent className={`${height} animate-pulse rounded-lg bg-muted`} />
+      <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
     </Card>
   );
 
   return (
     <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
-      <section className="overflow-hidden rounded-xl border bg-card p-6 shadow-sm md:p-8">
+      <section className="bg-card overflow-hidden rounded-xl border p-6 shadow-sm md:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
               {t('overview.label')}
             </div>
-            <h1 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            <h1 className="text-foreground mt-3 max-w-3xl text-3xl font-semibold tracking-tight md:text-4xl">
               {t('overview.heading')}
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
+            <p className="text-muted-foreground mt-3 max-w-3xl text-sm leading-6 md:text-base">
               {t('overview.description')}
             </p>
           </div>
@@ -209,31 +209,31 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
             <CardDescription>{t('overview.freshnessDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border bg-muted p-4">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">
+            <div className="bg-muted rounded-lg border p-4">
+              <div className="text-muted-foreground text-xs tracking-wider uppercase">
                 {t('overview.labelGenerated')}
               </div>
-              <div className="mt-2 text-lg font-semibold text-foreground">
+              <div className="text-foreground mt-2 text-lg font-semibold">
                 {new Date(data.generated_at).toLocaleString(locale)}
               </div>
             </div>
-            <div className="rounded-lg border bg-muted p-4">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">
+            <div className="bg-muted rounded-lg border p-4">
+              <div className="text-muted-foreground text-xs tracking-wider uppercase">
                 {t('overview.labelFreshness')}
               </div>
-              <div className="mt-2 text-lg font-semibold text-foreground">
+              <div className="text-foreground mt-2 text-lg font-semibold">
                 {formatFreshness(data.freshness_seconds)}
               </div>
             </div>
-            <div className="rounded-lg border bg-muted p-4">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">
+            <div className="bg-muted rounded-lg border p-4">
+              <div className="text-muted-foreground text-xs tracking-wider uppercase">
                 {t('overview.labelScopedCourses')}
               </div>
-              <div className="mt-2 text-lg font-semibold text-foreground">{data.scope.course_ids.length}</div>
+              <div className="text-foreground mt-2 text-lg font-semibold">{data.scope.course_ids.length}</div>
             </div>
-            <div className="rounded-lg border bg-muted p-4">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">{t('overview.labelCohorts')}</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">
+            <div className="bg-muted rounded-lg border p-4">
+              <div className="text-muted-foreground text-xs tracking-wider uppercase">{t('overview.labelCohorts')}</div>
+              <div className="text-foreground mt-2 text-lg font-semibold">
                 {data.scope.cohort_ids.length || t('overview.cohortsAll')}
               </div>
             </div>
@@ -251,7 +251,7 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
             data.alerts.map((alert) => (
               <div
                 key={alert.id}
-                className="rounded-lg border bg-muted p-4"
+                className="bg-muted rounded-lg border p-4"
               >
                 <div className="mb-2 flex items-center gap-2">
                   <Badge
@@ -265,16 +265,16 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
                   >
                     {getAnalyticsSeverityLabel(t, alert.severity)}
                   </Badge>
-                  <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                  <span className="text-muted-foreground text-xs tracking-wider uppercase">
                     {getAnalyticsAlertTypeLabel(t, alert.type)}
                   </span>
                 </div>
-                <div className="font-medium text-foreground">{alert.title}</div>
-                <div className="mt-2 text-sm leading-6 text-muted-foreground">{alert.body}</div>
+                <div className="text-foreground font-medium">{alert.title}</div>
+                <div className="text-muted-foreground mt-2 text-sm leading-6">{alert.body}</div>
               </div>
             ))
           ) : (
-            <div className="text-sm text-muted-foreground">{t('overview.alertsEmpty')}</div>
+            <div className="text-muted-foreground text-sm">{t('overview.alertsEmpty')}</div>
           )}
         </CardContent>
       </Card>
@@ -289,7 +289,7 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
             >
               {t('overview.previewLabel')}
             </Badge>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {t('overview.showingCourses', { total: data.course_total })}
             </span>
           </div>
@@ -299,7 +299,7 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
               storageKey="overview-courses"
             />
           </Suspense>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-sm">
             <Link
               href="/dash/analytics/courses"
               className="text-blue-600 hover:underline"
@@ -316,7 +316,7 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
             >
               {t('overview.previewLabel')}
             </Badge>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {t('overview.showingAssessments', { total: data.assessment_total })}
             </span>
           </div>
@@ -326,7 +326,7 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
               storageKey="overview-assessments"
             />
           </Suspense>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-sm">
             <Link
               href="/dash/analytics/assessments"
               className="text-blue-600 hover:underline"
@@ -346,8 +346,11 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
           >
             {t('overview.previewLabel')}
           </Badge>
-          <span className="text-xs text-muted-foreground">
-            {t('riskDistribution.preview', { shown: data.at_risk_preview.length, total: data.at_risk_total })}
+          <span className="text-muted-foreground text-xs">
+            {t('riskDistribution.preview', {
+              shown: data.at_risk_preview.length,
+              total: data.at_risk_total,
+            })}
           </span>
         </div>
         <Suspense fallback={<SectionFallback height="h-[320px]" />}>
@@ -359,7 +362,7 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
           />
         </Suspense>
         {data.at_risk_total > 0 && (
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-sm">
             <Link
               href="/dash/analytics/learners/at-risk"
               className="text-blue-600 hover:underline"

@@ -221,7 +221,11 @@ export function getAllAccessories(level: number): AvatarAccessory[] {
 export function getNextUnlock(level: number): AvatarUnlock | null {
   const allItems = [
     ...AVATAR_FRAMES.map((f) => ({ type: 'frame' as const, item: f, level: f.unlockLevel })),
-    ...AVATAR_ACCESSORIES.map((a) => ({ type: 'accessory' as const, item: a, level: a.unlockLevel })),
+    ...AVATAR_ACCESSORIES.map((a) => ({
+      type: 'accessory' as const,
+      item: a,
+      level: a.unlockLevel,
+    })),
   ];
 
   const nextItem = allItems.filter((item) => item.level > level).toSorted((a, b) => a.level - b.level)[0];

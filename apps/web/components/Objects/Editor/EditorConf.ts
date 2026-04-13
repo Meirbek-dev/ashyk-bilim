@@ -1,16 +1,33 @@
 import { Link as LinkExtension } from '@tiptap/extension-link';
 
-export const getLinkExtension = () => {
+type LinkOptions = Parameters<typeof LinkExtension.configure>[0];
+
+interface LinkValidationContext {
+  defaultProtocol: string;
+  defaultValidate: (url: string) => boolean;
+  protocols: Array<string | { scheme: string }>;
+}
+
+const LINK_DEFAULTS: LinkOptions = {
+  openOnClick: true,
+  HTMLAttributes: {
+    target: '_blank',
+    rel: 'noopener noreferrer',
+  },
+  autolink: true,
+  defaultProtocol: 'https',
+  protocols: ['http', 'https'],
+};
+
+export const getLinkExtension = (options: Partial<LinkOptions> = {}) => {
   return LinkExtension.configure({
-    openOnClick: true,
+    ...LINK_DEFAULTS,
+    ...options,
     HTMLAttributes: {
-      target: '_blank',
-      rel: 'noopener noreferrer',
+      ...LINK_DEFAULTS.HTMLAttributes,
+      ...options.HTMLAttributes,
     },
-    autolink: true,
-    defaultProtocol: 'https',
-    protocols: ['http', 'https'],
-    isAllowedUri: (url: string, ctx: any) => {
+    isAllowedUri: (url: string, ctx: LinkValidationContext) => {
       try {
         // construct URL
         const parsedUrl = url.includes(':') ? new URL(url) : new URL(`${ctx.defaultProtocol}://${url}`);
@@ -29,7 +46,9 @@ export const getLinkExtension = () => {
         }
 
         // only allow protocols specified in ctx.protocols
-        const allowedProtocols = ctx.protocols.map((p: any) => (typeof p === 'string' ? p : p.scheme));
+        const allowedProtocols = ctx.protocols.map((protocol) =>
+          typeof protocol === 'string' ? protocol : protocol.scheme,
+        );
 
         if (!allowedProtocols.includes(protocol)) {
           return false;

@@ -1,5 +1,4 @@
 'use client'; // Error components must be Client Components
-
 import ErrorUI from '@/components/Objects/Elements/Error/Error';
 import { useEffect } from 'react';
 

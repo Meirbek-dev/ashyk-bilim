@@ -1,5 +1,7 @@
 'use client';
 
+import { apiFetch } from '@/lib/api-client';
+
 import { Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -7,7 +9,6 @@ import { toast } from 'sonner';
 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@components/ui/radio-group';
-import { getAPIUrl } from '@/services/config/config';
 import { Textarea } from '@components/ui/textarea';
 import { Checkbox } from '@components/ui/checkbox';
 import { Button } from '@components/ui/button';
@@ -28,23 +29,15 @@ interface Question {
 interface QuestionEditorProps {
   question: Question | null;
   examUuid: string;
-  accessToken: string;
   onSave: () => void;
   onCancel: () => void;
   autoFocus?: boolean;
 }
 
-export default function QuestionEditor({
-  question,
-  examUuid,
-  accessToken,
-  onSave,
-  onCancel,
-  autoFocus,
-}: QuestionEditorProps) {
+export default function QuestionEditor({ question, examUuid, onSave, onCancel, autoFocus }: QuestionEditorProps) {
   const t = useTranslations('Components.QuestionManagement');
   const [formData, setFormData] = useState<Question>(
-    question || {
+    question ?? {
       question_text: '',
       question_type: 'SINGLE_CHOICE',
       points: 1,
@@ -63,9 +56,9 @@ export default function QuestionEditor({
   }, [autoFocus]);
 
   useEffect(() => {
-    // If parent supplies a different question (e.g., opening for edit/new), update form
+    // If parent supplies a different question (e.g., opening for edit/new), update form,
     setFormData(
-      question || {
+      question ?? {
         question_text: '',
         question_type: 'SINGLE_CHOICE',
         points: 1,
@@ -87,7 +80,7 @@ export default function QuestionEditor({
       return;
     }
 
-    // Validate that at least one answer is marked as correct
+    // Validate that at least one answer is marked as correct,
     if (formData.question_type !== 'MATCHING') {
       const hasCorrectAnswer = formData.answer_options.some((opt) => opt.is_correct);
       if (!hasCorrectAnswer) {
@@ -100,16 +93,10 @@ export default function QuestionEditor({
 
     try {
       const isEditing = Boolean(formData.question_uuid);
-      const url = isEditing
-        ? `${getAPIUrl()}exams/questions/${formData.question_uuid}`
-        : `${getAPIUrl()}exams/${examUuid}/questions`;
-
-      const response = await fetch(url, {
+      const path = isEditing ? `exams/questions/${formData.question_uuid}` : `exams/${examUuid}/questions`;
+      const response = await apiFetch(path, {
         method: isEditing ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question_text: formData.question_text,
           question_type: formData.question_type,
@@ -133,7 +120,7 @@ export default function QuestionEditor({
   };
 
   const addOption = () => {
-    // Prevent adding options for TRUE_FALSE - it's a fixed two-option question
+    // Prevent adding options for TRUE_FALSE - it's a fixed two-option question,
     if (formData.question_type === 'TRUE_FALSE') return;
 
     setFormData({
@@ -146,7 +133,7 @@ export default function QuestionEditor({
   };
 
   const removeOption = (index: number) => {
-    // Prevent removing options for TRUE_FALSE - options are fixed
+    // Prevent removing options for TRUE_FALSE - options are fixed,
     if (formData.question_type === 'TRUE_FALSE') return;
 
     setFormData({
@@ -166,12 +153,12 @@ export default function QuestionEditor({
 
   // When switching question types, normalize options:
   // - TRUE_FALSE: ensure two options, labeled True/False, and at most one marked correct
-  // - SINGLE_CHOICE: ensure at most one marked correct
+  // - SINGLE_CHOICE: ensure at most one marked correct,
   useEffect(() => {
     setFormData((prev) => {
       if (prev.question_type === 'TRUE_FALSE') {
         const opts = [...prev.answer_options];
-        // ensure at least two options
+        // ensure at least two options,
         if (opts.length < 2) {
           return {
             ...prev,
@@ -182,17 +169,17 @@ export default function QuestionEditor({
           };
         }
 
-        // ensure texts are present
+        // ensure texts are present,
         const normalized = opts
           .slice(0, 2)
-          .map((o, i) => Object.assign({}, o, { text: o.text || (i === 0 ? t('true') : t('false')) }));
+          .map((o, i) => Object.assign(o, { text: o.text || (i === 0 ? t(`true`) : t(`false`)) }));
         const firstCorrect = normalized.findIndex((o) => o.is_correct);
         if (firstCorrect === -1) {
           return { ...prev, answer_options: normalized };
         }
         return {
           ...prev,
-          answer_options: normalized.map((o, i) => Object.assign({}, o, { is_correct: i === firstCorrect })),
+          answer_options: normalized.map((o, i) => Object.assign(o, { is_correct: i === firstCorrect })),
         };
       }
 
@@ -201,7 +188,10 @@ export default function QuestionEditor({
         if (firstCorrect === -1) return prev;
         return {
           ...prev,
-          answer_options: prev.answer_options.map((o, i) => ({ ...o, is_correct: i === firstCorrect })),
+          answer_options: prev.answer_options.map((o, i) => ({
+            ...o,
+            is_correct: i === firstCorrect,
+          })),
         };
       }
 
@@ -384,7 +374,10 @@ export default function QuestionEditor({
                 })()}
                 onValueChange={(value: any) => {
                   const i = Number.parseInt(String(value), 10);
-                  const newOptions = formData.answer_options.map((opt, idx) => ({ ...opt, is_correct: idx === i }));
+                  const newOptions = formData.answer_options.map((opt, idx) => ({
+                    ...opt,
+                    is_correct: idx === i,
+                  }));
                   setFormData({ ...formData, answer_options: newOptions });
                 }}
                 className="flex flex-col gap-2"

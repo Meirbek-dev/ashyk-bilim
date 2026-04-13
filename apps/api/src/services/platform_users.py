@@ -6,18 +6,14 @@ from sqlmodel import Session, select
 
 from src.db.permission_enums import ADMIN_ROLE_SLUGS
 from src.db.permissions import Role, RoleRead, UserRole
-from src.db.platform import (
-    PaginatedPlatformUsers,
-    PlatformUser,
-    rebuild_platform_models,
-)
+from src.db.platform import PaginatedPlatformUsers, PlatformUser
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.rbac import PermissionChecker
 
-rebuild_platform_models()
+logger = logging.getLogger(__name__)
 
 
-async def get_platform_users(
+def get_platform_users(
     request: Request,
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
@@ -57,7 +53,7 @@ async def get_platform_users(
         user_roles = roles_by_user.get(user.id, [])
 
         if not user_roles:
-            logging.warning(f"No roles found for user {user.id} in platform")
+            logger.warning("No roles found for user %s in platform", user.id)
             continue
 
         role = user_roles[0]
@@ -83,7 +79,7 @@ async def get_platform_users(
     )
 
 
-async def remove_platform_user(
+def remove_platform_user(
     request: Request,
     user_id: int,
     db_session: Session,
@@ -127,7 +123,7 @@ async def remove_platform_user(
     return {"detail": "User removed from platform"}
 
 
-async def update_platform_user_role(
+def update_platform_user_role(
     request: Request,
     user_id: int,
     role_id: int,

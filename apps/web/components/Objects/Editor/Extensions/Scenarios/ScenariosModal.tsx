@@ -4,6 +4,7 @@ import SimpleAlertDialog from '@/components/ui/alert-dialog-simple';
 import Modal from '@/components/Objects/Elements/Modal/Modal';
 import { Textarea } from '@components/ui/textarea';
 import React, { useEffect, useState } from 'react';
+import NextImage from '@components/ui/NextImage';
 import { Button } from '@components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@components/ui/input';
@@ -40,7 +41,7 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
   onSave,
 }) => {
   const [title, setTitle] = useState(initialTitle);
-  const [scenarios, setScenarios] = useState<Scenario[]>(initialScenarios);
+  const [scenarios, setScenarios] = useState(initialScenarios);
   const [currentScenarioId, setCurrentScenarioId] = useState(initialCurrentScenarioId);
 
   const [showPreview, setShowPreview] = useState(false);
@@ -262,14 +263,13 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
               {/* Scenario Text */}
               <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 {previewScenario.imageUrl && (
-                  <div className="mb-4">
-                    <img
+                  <div className="relative mb-4 h-48 w-full overflow-hidden rounded-lg border border-slate-200">
+                    <NextImage
                       src={previewScenario.imageUrl}
                       alt={t('scenarioIllustrationAlt')}
-                      className="h-48 w-full rounded-lg border border-slate-200 object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
+                      fill
+                      className="object-cover"
+                      sizes="100vw"
                     />
                   </div>
                 )}

@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
 from src.services.utils.chunked_upload import (
@@ -20,7 +21,42 @@ from src.services.utils.upload_content import upload_content
 router = APIRouter()
 
 
-@router.post("/initiate")
+class ChunkedUploadInitiateResponse(PydanticStrictBaseModel):
+    upload_id: str
+    message: str
+
+
+class ChunkedUploadChunkResponse(PydanticStrictBaseModel):
+    success: bool
+    upload_id: str
+    chunk_index: int
+    chunks_received: int
+    total_chunks: int
+    is_complete: bool
+
+
+class ChunkedUploadCompleteResponse(PydanticStrictBaseModel):
+    success: bool
+    filename: str
+    file_size: int
+    message: str
+
+
+class ChunkedUploadStatusResponse(PydanticStrictBaseModel):
+    upload_id: str
+    filename: str
+    chunks_received: int
+    total_chunks: int
+    is_complete: bool
+    file_size: int
+
+
+class ChunkedUploadCancelResponse(PydanticStrictBaseModel):
+    success: bool
+    message: str
+
+
+@router.post("/initiate", response_model=ChunkedUploadInitiateResponse)
 async def initiate_chunked_upload(
     directory: Annotated[str, Form()],
     type_of_dir: Annotated[str, Form()],
@@ -59,7 +95,7 @@ async def initiate_chunked_upload(
     }
 
 
-@router.post("/chunk")
+@router.post("/chunk", response_model=ChunkedUploadChunkResponse)
 async def upload_chunk(
     upload_id: Annotated[str, Form()],
     chunk_index: Annotated[int, Form()],
@@ -89,7 +125,7 @@ async def upload_chunk(
     }
 
 
-@router.post("/complete")
+@router.post("/complete", response_model=ChunkedUploadCompleteResponse)
 async def complete_chunked_upload(
     upload_id: Annotated[str, Form()],
     current_user: Annotated[PublicUser, Depends(get_current_user)] = None,
@@ -133,7 +169,7 @@ async def complete_chunked_upload(
         raise
 
 
-@router.get("/status/{upload_id}")
+@router.get("/status/{upload_id}", response_model=ChunkedUploadStatusResponse)
 async def get_upload_status(
     upload_id: str,
     current_user: Annotated[PublicUser, Depends(get_current_user)] = None,
@@ -150,7 +186,7 @@ async def get_upload_status(
     return get_session_status(upload_id)
 
 
-@router.delete("/{upload_id}")
+@router.delete("/{upload_id}", response_model=ChunkedUploadCancelResponse)
 async def cancel_upload(
     upload_id: str,
     current_user: Annotated[PublicUser, Depends(get_current_user)] = None,

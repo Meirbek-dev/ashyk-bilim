@@ -5,7 +5,7 @@
  * Bypasses nginx request size limits and provides progress tracking.
  */
 
-import { getAPIUrl } from '@services/config/config';
+import { apiFetch } from '@/lib/api-client';
 
 // Default chunk size: 2MB (small enough to bypass most nginx configs)
 const DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024;
@@ -16,7 +16,6 @@ export interface ChunkedUploadOptions {
   typeOfDir: 'platform' | 'users';
   uuid?: string;
   filename: string;
-  accessToken: string;
   chunkSize?: number;
   onProgress?: (progress: {
     uploadedBytes: number;
@@ -62,7 +61,6 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
     typeOfDir,
     uuid,
     filename,
-    accessToken,
     chunkSize = DEFAULT_CHUNK_SIZE,
     onProgress,
     onChunkComplete,
@@ -70,10 +68,6 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
   } = options;
 
   try {
-    if (!accessToken) {
-      throw new Error('accessToken is required for chunked uploads');
-    }
-
     if (typeOfDir === 'users' && !uuid) {
       throw new Error('uuid is required when typeOfDir is "users"');
     }
@@ -94,11 +88,8 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
     initiateFormData.append('total_chunks', totalChunks.toString());
     initiateFormData.append('file_size', file.size.toString());
 
-    const initiateResponse = await fetch(`${getAPIUrl()}uploads/initiate`, {
+    const initiateResponse = await apiFetch('uploads/initiate', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
       body: initiateFormData,
     });
 
@@ -108,7 +99,6 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
         status: initiateResponse.status,
         body,
       });
-      // Throw a clearer error message for the caller
       throw new Error(
         body?.detail ? JSON.stringify(body.detail) : `Failed to initiate upload (status ${initiateResponse.status})`,
       );
@@ -129,11 +119,8 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
       chunkFormData.append('chunk_index', i.toString());
       chunkFormData.append('chunk', chunk, `chunk_${i}`);
 
-      const chunkResponse = await fetch(`${getAPIUrl()}uploads/chunk`, {
+      const chunkResponse = await apiFetch('uploads/chunk', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
         body: chunkFormData,
       });
 
@@ -147,7 +134,6 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
 
       uploadedBytes += chunk.size;
 
-      // Report progress
       if (onProgress) {
         onProgress({
           uploadedBytes,
@@ -169,11 +155,8 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
     const completeFormData = new FormData();
     completeFormData.append('upload_id', upload_id);
 
-    const completeResponse = await fetch(`${getAPIUrl()}uploads/complete`, {
+    const completeResponse = await apiFetch('uploads/complete', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
       body: completeFormData,
     });
 
@@ -206,13 +189,8 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
 /**
  * Get upload status
  */
-export async function getUploadStatus(uploadId: string, accessToken: string): Promise<any> {
-  const response = await fetch(`${getAPIUrl()}uploads/status/${uploadId}`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+export async function getUploadStatus(uploadId: string): Promise<any> {
+  const response = await apiFetch(`uploads/status/${uploadId}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -225,13 +203,8 @@ export async function getUploadStatus(uploadId: string, accessToken: string): Pr
 /**
  * Cancel upload
  */
-export async function cancelUpload(uploadId: string, accessToken: string): Promise<void> {
-  const response = await fetch(`${getAPIUrl()}uploads/${uploadId}`, {
-    method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+export async function cancelUpload(uploadId: string): Promise<void> {
+  const response = await apiFetch(`uploads/${uploadId}`, { method: 'DELETE' });
 
   if (!response.ok) {
     const error = await response.json();

@@ -1,19 +1,15 @@
 'use client';
-import {
-  useAssignmentsTask,
-  useAssignmentsTaskDispatch,
-} from '@components/Contexts/Assignments/AssignmentsTaskContext';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@components/ui/form';
+import { useAssignmentsTaskStore } from '@components/Contexts/Assignments/AssignmentsTaskContext';
 import { AlertCircle, Cloud, Download, File, Info, Loader2, UploadCloud } from 'lucide-react';
 import { updateAssignmentTask, updateReferenceFile } from '@services/courses/assignments';
 import { useAssignments } from '@components/Contexts/Assignments/AssignmentContext';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { Field, FieldContent, FieldError, FieldLabel } from '@components/ui/field';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { getTaskRefFileDir } from '@services/media/media';
 import { constructAcceptValue } from '@/lib/constants';
+import { Controller, useForm } from 'react-hook-form';
 import { DragDropContext } from '@hello-pangea/dnd';
 import { Textarea } from '@components/ui/textarea';
 import { Button } from '@components/ui/button';
@@ -22,7 +18,6 @@ import { Input } from '@components/ui/input';
 import { Badge } from '@components/ui/badge';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
-import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as v from 'valibot';
 
@@ -41,24 +36,24 @@ const createValidationSchema = (t: (key: string) => string) =>
   });
 
 type TaskFormData = v.InferOutput<ReturnType<typeof createValidationSchema>>;
+type TaskFormInput = v.InferInput<ReturnType<typeof createValidationSchema>>;
 
 export const AssignmentTaskGeneralEdit = () => {
   const t = useTranslations('DashPage.Assignments.TaskGeneralEdit');
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
-  const assignmentTaskState = useAssignmentsTask();
-  const assignmentTaskStateHook = useAssignmentsTaskDispatch();
+  const assignmentTask = useAssignmentsTaskStore((s) => s.assignmentTask);
+  const selectedAssignmentTaskUUID = useAssignmentsTaskStore((s) => s.selectedAssignmentTaskUUID);
+  const reload = useAssignmentsTaskStore((s) => s.reload);
   const assignment = useAssignments();
   const validationSchema = createValidationSchema(t);
 
   // Check if assignment task data is loaded and task is selected
-  const isTaskSelected = assignmentTaskState?.selectedAssignmentTaskUUID !== null;
+  const isTaskSelected = selectedAssignmentTaskUUID !== null;
   const isTaskLoaded =
-    assignmentTaskState?.assignmentTask &&
-    Object.keys(assignmentTaskState.assignmentTask).length > 0 &&
-    assignmentTaskState.selectedAssignmentTaskUUID === assignmentTaskState.assignmentTask.assignment_task_uuid;
+    assignmentTask &&
+    Object.keys(assignmentTask).length > 0 &&
+    selectedAssignmentTaskUUID === assignmentTask.assignment_task_uuid;
 
-  const form = useForm<TaskFormData>({
+  const form = useForm<TaskFormInput, any, TaskFormData>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       title: '',
@@ -69,48 +64,42 @@ export const AssignmentTaskGeneralEdit = () => {
     mode: 'onChange',
   });
 
-  const [isPending, startTransition] = useTransition();
-
-  const handleSubmit = (values: TaskFormData) => {
+  const handleSubmit = async (values: TaskFormData) => {
     if (!isTaskLoaded) {
       toast.error(t('taskNotLoaded'));
       return;
     }
 
-    startTransition(() => {
-      void (async () => {
-        try {
-          const res = await updateAssignmentTask(
-            values,
-            assignmentTaskState.assignmentTask.assignment_task_uuid,
-            assignment.assignment_object.assignment_uuid,
-            access_token,
-          );
-          if (res.success) {
-            assignmentTaskStateHook({ type: 'reload' });
-            toast.success(t('saveSuccess'));
-          } else {
-            toast.error(t('saveError'));
-          }
-        } catch (error) {
-          console.error('Error updating assignment task:', error);
-          toast.error(t('saveError'));
-        }
-      })();
-    });
+    try {
+      const assignmentTaskUUID = assignmentTask?.assignment_task_uuid;
+      const assignmentUUID = assignment?.assignment_object?.assignment_uuid;
+
+      if (!assignmentTaskUUID || !assignmentUUID) {
+        toast.error(t('saveError'));
+        return;
+      }
+
+      const res = await updateAssignmentTask({
+        body: values,
+        assignmentTaskUUID,
+        assignmentUUID,
+      });
+      if (res.success) {
+        reload();
+        toast.success(t('saveSuccess'));
+      } else {
+        toast.error(t('saveError'));
+      }
+    } catch (error) {
+      console.error('Error updating assignment task:', error);
+      toast.error(t('saveError'));
+    }
   };
 
   // Update form values when assignment task changes
   useEffect(() => {
-    console.log('Form data update:', {
-      isTaskLoaded,
-      selectedTaskUUID: assignmentTaskState?.selectedAssignmentTaskUUID,
-      taskUUID: assignmentTaskState?.assignmentTask?.assignment_task_uuid,
-      taskData: assignmentTaskState?.assignmentTask,
-    });
-
     if (isTaskLoaded) {
-      const taskData = assignmentTaskState.assignmentTask;
+      const taskData = assignmentTask;
       form.reset({
         title: taskData.title || '',
         description: taskData.description || '',
@@ -118,7 +107,7 @@ export const AssignmentTaskGeneralEdit = () => {
         max_grade_value: taskData.max_grade_value || 20,
       });
     }
-  }, [assignmentTaskState.assignmentTask, form, isTaskLoaded, assignmentTaskState.selectedAssignmentTaskUUID]);
+  }, [assignmentTask, form, isTaskLoaded, selectedAssignmentTaskUUID]);
 
   // Show message if no task is selected
   if (!isTaskSelected) {
@@ -144,114 +133,96 @@ export const AssignmentTaskGeneralEdit = () => {
   }
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(handleSubmit)}
-        className="space-y-6"
-      >
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('title')}</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  placeholder={t('titlePlaceholder')}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <form
+      onSubmit={form.handleSubmit(handleSubmit)}
+      className="space-y-6"
+    >
+      <Field>
+        <FieldLabel htmlFor="title">{t('title')}</FieldLabel>
+        <FieldContent>
+          <Input
+            id="title"
+            type="text"
+            placeholder={t('titlePlaceholder')}
+            {...form.register('title')}
+          />
+        </FieldContent>
+        <FieldError errors={[form.formState.errors.title]} />
+      </Field>
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('description')}</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder={t('descriptionPlaceholder')}
-                  className="min-h-[100px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <Field>
+        <FieldLabel htmlFor="description">{t('description')}</FieldLabel>
+        <FieldContent>
+          <Textarea
+            id="description"
+            placeholder={t('descriptionPlaceholder')}
+            className="min-h-[100px]"
+            {...form.register('description')}
+          />
+        </FieldContent>
+        <FieldError errors={[form.formState.errors.description]} />
+      </Field>
 
-        <FormField
-          control={form.control}
-          name="hint"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('hint')}</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder={t('hintPlaceholder')}
-                  className="min-h-[80px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <Field>
+        <FieldLabel htmlFor="hint">{t('hint')}</FieldLabel>
+        <FieldContent>
+          <Textarea
+            id="hint"
+            placeholder={t('hintPlaceholder')}
+            className="min-h-[80px]"
+            {...form.register('hint')}
+          />
+        </FieldContent>
+        <FieldError errors={[form.formState.errors.hint]} />
+      </Field>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between space-x-3">
-            <FormLabel>{t('referenceFile')}</FormLabel>
-            <div className="flex items-center space-x-1.5 text-xs text-gray-500">
-              <Info size={16} />
-              <p>{t('allowedFormats')}</p>
-            </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between space-x-3">
+          <FieldLabel>{t('referenceFile')}</FieldLabel>
+          <div className="flex items-center space-x-1.5 text-xs text-gray-500">
+            <Info size={16} />
+            <p>{t('allowedFormats')}</p>
           </div>
-          <UpdateTaskRef />
         </div>
+        <UpdateTaskRef />
+      </div>
 
-        <FormField
-          control={form.control}
-          name="max_grade_value"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('maxGradeValue')}</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  {...field}
-                  onChange={(e) => {
-                    field.onChange(Number(e.target.value));
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <Controller
+        control={form.control}
+        name="max_grade_value"
+        render={({ field, fieldState }) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>{t('maxGradeValue')}</FieldLabel>
+            <FieldContent>
+              <Input
+                id={field.name}
+                type="number"
+                {...field}
+                value={field.value ?? ''}
+                onChange={(e) => {
+                  field.onChange(e.target.value === '' ? undefined : Number(e.target.value));
+                }}
+              />
+            </FieldContent>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
 
-        <Button
-          type="submit"
-          className="mt-4 w-full bg-green-500 px-4 py-2 font-semibold text-white hover:bg-green-600"
-          disabled={isPending || form.formState.isSubmitting}
-        >
-          {isPending || form.formState.isSubmitting ? t('saving') : t('save')}
-        </Button>
-      </form>
-    </Form>
+      <Button
+        type="submit"
+        className="mt-4 w-full bg-green-500 px-4 py-2 font-semibold text-white hover:bg-green-600"
+        disabled={form.formState.isSubmitting}
+      >
+        {form.formState.isSubmitting ? t('saving') : t('save')}
+      </Button>
+    </form>
   );
 };
 const UpdateTaskRef = () => {
   const t = useTranslations('DashPage.Assignments.TaskGeneralEdit');
-  const session = usePlatformSession();
-  const platform = usePlatform() as any;
-  const access_token = session?.data?.tokens?.access_token;
-  const assignmentTaskState = useAssignmentsTask();
-  const assignmentTaskStateHook = useAssignmentsTaskDispatch();
+  const assignmentTask = useAssignmentsTaskStore((s) => s.assignmentTask);
+  const reload = useAssignmentsTaskStore((s) => s.reload);
   const assignment = useAssignments();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -259,8 +230,8 @@ const UpdateTaskRef = () => {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const hasReferenceFile = Boolean(assignmentTaskState.assignmentTask?.reference_file);
-  const fileName = assignmentTaskState.assignmentTask?.reference_file;
+  const hasReferenceFile = Boolean(assignmentTask?.reference_file);
+  const fileName = assignmentTask?.reference_file;
   const fileExtension = fileName?.split('.').pop()?.toUpperCase();
 
   const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -268,13 +239,22 @@ const UpdateTaskRef = () => {
 
   const getTaskRefDirUI = () => {
     if (!fileName) return '';
-    return getTaskRefFileDir(
-      assignment.course_object.course_uuid,
-      assignment.activity_object.activity_uuid,
-      assignment.assignment_object.assignment_uuid,
-      assignmentTaskState.assignmentTask.assignment_task_uuid,
-      fileName,
-    );
+    const courseUUID = assignment?.course_object?.course_uuid;
+    const activityUUID = assignment?.activity_object?.activity_uuid;
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid;
+    const assignmentTaskUUID = assignmentTask?.assignment_task_uuid;
+
+    if (!courseUUID || !activityUUID || !assignmentUUID || !assignmentTaskUUID) {
+      return '';
+    }
+
+    return getTaskRefFileDir({
+      courseUUID,
+      activityUUID,
+      assignmentUUID,
+      assignmentTaskUUID,
+      fileID: fileName,
+    });
   };
 
   const validateFile = (file: File | null) => {
@@ -285,11 +265,7 @@ const UpdateTaskRef = () => {
     return null;
   };
   const handleFileUpload = async (file: File) => {
-    if (!access_token) {
-      setError(t('authRequiredUpload'));
-      return;
-    }
-    if (!assignmentTaskState.assignmentTask || !assignment) {
+    if (!assignmentTask || !assignment) {
       setError(t('missingAssignmentInfo'));
       return;
     }
@@ -304,20 +280,27 @@ const UpdateTaskRef = () => {
     setError(null);
 
     try {
-      const res = await updateReferenceFile(
+      const assignmentTaskUUID = assignmentTask?.assignment_task_uuid;
+      const assignmentUUID = assignment?.assignment_object?.assignment_uuid;
+
+      if (!assignmentTaskUUID || !assignmentUUID) {
+        setError(t('missingAssignmentInfo'));
+        return;
+      }
+
+      const res = await updateReferenceFile({
         file,
-        assignmentTaskState.assignmentTask.assignment_task_uuid,
-        assignment.assignment_object.assignment_uuid,
-        access_token,
-      );
+        assignmentTaskUUID,
+        assignmentUUID,
+      });
 
       if (!res.success) {
         setError(res.data?.detail || t('uploadFailed'));
         return;
       }
 
-      assignmentTaskStateHook({ type: 'reload' });
-      toast.success(t('fileUploadSuccess'));
+      reload();
+      toast.success(t('refFileUpdateSuccess'));
     } catch (error) {
       console.error(error);
       setError(t('uploadFailed'));

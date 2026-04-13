@@ -2,13 +2,14 @@ import { FileText } from 'lucide-react';
 
 import { getAssignmentsFromCourses } from '@services/courses/assignments';
 import { CourseCard } from '@/app/_shared/dash/assignments/ClientParts';
-import { getPlatformContextInfo } from '@/services/platform/platform';
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs';
 import { getEditableCourses } from '@services/courses/courses';
+import { getPlatform } from '@/services/platform/platform';
 import { Card, CardContent } from '@/components/ui/card';
 import { getTranslations } from 'next-intl/server';
 import { Spinner } from '@components/ui/spinner';
-import { auth } from '@/auth';
+
+const EDITABLE_COURSES_PAGE_SIZE = 100;
 
 interface Course {
   course_uuid: string;
@@ -22,26 +23,35 @@ interface Assignment {
   description: string;
 }
 
+async function getAllEditableCourses() {
+  const firstPage = await getEditableCourses(1, EDITABLE_COURSES_PAGE_SIZE);
+
+  if (firstPage.total <= firstPage.courses.length) {
+    return firstPage;
+  }
+
+  const totalPages = Math.ceil(firstPage.total / EDITABLE_COURSES_PAGE_SIZE);
+  const remainingPages = Array.from({ length: totalPages - 1 }, (_, index) =>
+    getEditableCourses(index + 2, EDITABLE_COURSES_PAGE_SIZE),
+  );
+  const remainingResults = await Promise.all(remainingPages);
+
+  return {
+    ...firstPage,
+    courses: [...firstPage.courses, ...remainingResults.flatMap((result) => result.courses)],
+  };
+}
+
 export default async function PlatformAssignmentsPage() {
   const t = await getTranslations('DashPage.Assignments.HomePage');
 
-  const session = await auth();
-  const access_token = session?.tokens?.access_token;
-
-  if (!access_token) {
-    return <LoadingState />;
-  }
-
-  const platform = await getPlatformContextInfo(access_token);
-  const coursesData = await getEditableCourses(access_token);
+  const platform = await getPlatform();
+  const coursesData = await getAllEditableCourses();
   const courses = coursesData?.courses || [];
 
   let courseAssignments: Assignment[][] = [];
   if (courses.length > 0) {
-    const res = await getAssignmentsFromCourses(
-      courses.map((course: Course) => course.course_uuid),
-      access_token,
-    );
+    const res = await getAssignmentsFromCourses(courses.map((course: Course) => course.course_uuid));
 
     const assignmentsMap = res.data as Record<string, Assignment[]>;
     courseAssignments = courses.map((course: Course) => assignmentsMap[course.course_uuid] || []);

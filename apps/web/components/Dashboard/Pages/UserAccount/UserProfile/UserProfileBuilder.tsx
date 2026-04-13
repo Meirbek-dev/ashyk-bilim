@@ -19,16 +19,16 @@ import {
 } from 'lucide-react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover';
+import { updateProfile } from '@/lib/users/client';
 import { createElement, useEffect, useEffectEvent, useState } from 'react';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
+import { useSession } from '@/hooks/useSession';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
-import { updateProfile } from '@services/settings/profile';
 import { de, enUS, es, fr, ru } from 'date-fns/locale';
+import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Textarea } from '@components/ui/textarea';
 import { Checkbox } from '@components/ui/checkbox';
 import { Calendar } from '@components/ui/calendar';
-import { getUser } from '@services/users/users';
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
 import { Input } from '@components/ui/input';
@@ -230,8 +230,9 @@ interface ProfileData {
 }
 
 const UserProfileBuilder = () => {
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
+  const router = useRouter();
+  const { user: currentUser } = useSession();
+  const me = currentUser;
   const tNotify = useTranslations('DashPage.Notifications');
   const t = useTranslations('DashPage.UserProfileBuilder');
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -243,36 +244,38 @@ const UserProfileBuilder = () => {
 
   // Initialize profile data from user data
   const fetchUserDataEvent = useEffectEvent(async () => {
-    if (session?.data?.user?.id && access_token) {
-      try {
-        setIsLoading(true);
-        const userData = await getUser(session.data.user.id);
+    if (!me) {
+      return;
+    }
 
-        if (userData.profile) {
-          try {
-            const profileSections =
-              typeof userData.profile === 'string' ? JSON.parse(userData.profile).sections : userData.profile.sections;
+    try {
+      setIsLoading(true);
+      const userData = me;
 
-            setProfileData({
-              sections: profileSections || [],
-            });
-          } catch (error) {
-            console.error('Error parsing profile data:', error);
-            setProfileData({ sections: [] });
-          }
+      if (userData.profile) {
+        try {
+          const profileSections =
+            typeof userData.profile === 'string' ? JSON.parse(userData.profile).sections : userData.profile.sections;
+
+          setProfileData({
+            sections: profileSections || [],
+          });
+        } catch (error) {
+          console.error('Error parsing profile data:', error);
+          setProfileData({ sections: [] });
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error(t('Errors.profileLoadFailed'));
-      } finally {
-        setIsLoading(false);
       }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast.error(t('Errors.profileLoadFailed'));
+    } finally {
+      setIsLoading(false);
     }
   });
 
   useEffect(() => {
     fetchUserDataEvent();
-  }, [session?.data?.user?.id, access_token]);
+  }, [me]);
 
   const createEmptySection = (t: Function, type: keyof typeof SECTION_TYPE_KEYS): ProfileSection => {
     const sectionTypesConfig = getSectionTypesConfig(t);
@@ -405,15 +408,20 @@ const UserProfileBuilder = () => {
     const loadingToast = toast.loading(tNotify('savingProfile'));
 
     try {
-      // Get fresh user data before update
-      const userData = await getUser(session.data.user.id);
+      if (!currentUser?.id) {
+        throw new Error('User not found');
+      }
 
       // Update only the profile field
-      userData.profile = profileData;
+      const userData = {
+        ...me,
+        profile: profileData,
+      };
 
-      const res = await updateProfile(userData, userData.id, access_token);
+      const res = await updateProfile(userData, currentUser.id);
 
       if (res.status === 200) {
+        router.refresh();
         toast.success(tNotify('profileUpdateSuccess'), { id: loadingToast });
       } else {
         toast.error(tNotify('profileUpdateFailed'), { id: loadingToast });
@@ -559,7 +567,10 @@ const UserProfileBuilder = () => {
                     addSection(value as keyof typeof SECTION_TYPE_KEYS);
                   }
                 }}
-                items={Object.entries(getSectionTypesConfig(t)).map(([type, { label }]) => ({ value: type, label }))}
+                items={Object.entries(getSectionTypesConfig(t)).map(([type, { label }]) => ({
+                  value: type,
+                  label,
+                }))}
               >
                 <SelectTrigger
                   className="bg-primary w-full border-0 p-0"

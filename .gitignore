@@ -52,6 +52,11 @@ fly.toml
 # Backup files
 backups/
 .idea
+
+# TLS certificates — managed outside source control
+certs/*.pem
+certs/*.crt
+certs/*.key
 temp-restore
 tmpclaude-*-cwd
 

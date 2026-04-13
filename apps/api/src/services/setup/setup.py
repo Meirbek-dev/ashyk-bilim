@@ -8,6 +8,7 @@ from ulid import ULID
 from src.db.permission_enums import RoleSlug
 from src.db.platform import Platform, PlatformCreate
 from src.db.users import User, UserCreate, UserRead
+from src.repositories.role_repository import RoleRepository
 from src.security.rbac import PermissionChecker
 from src.security.security import security_hash_password
 
@@ -17,9 +18,7 @@ def install_default_elements(db_session: Session) -> bool:
     """
     Install default elements including system roles and permissions.
     """
-    checker = PermissionChecker(db_session)
-    created_roles = checker.seed_default_roles()
-
+    created_roles = RoleRepository(db_session).seed_default_roles()
     return len(created_roles) > 0
 
 
@@ -38,13 +37,12 @@ def install_create_platform(platform_object: PlatformCreate, db_session: Session
     return platform_record
 
 
-async def install_create_platform_user(user_object: UserCreate, db_session: Session):
+def install_create_platform_user(user_object: UserCreate, db_session: Session):
     user = User.model_validate(user_object)
 
     # Complete the user object
     user.user_uuid = f"user_{ULID()}"
     user.password = security_hash_password(user_object.password)
-    user.email_verified = False
     user.creation_date = str(datetime.now())
     user.update_date = str(datetime.now())
 

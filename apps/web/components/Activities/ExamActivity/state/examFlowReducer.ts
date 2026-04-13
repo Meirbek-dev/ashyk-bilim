@@ -71,11 +71,17 @@ export type ExamFlowState =
 
 export type ExamFlowAction =
   | { type: 'SET_LOADING' }
-  | { type: 'SET_PRE_EXAM'; payload: { exam: ExamData; questions: QuestionData[]; userAttempts: AttemptData[] } }
+  | {
+      type: 'SET_PRE_EXAM';
+      payload: { exam: ExamData; questions: QuestionData[]; userAttempts: AttemptData[] };
+    }
   | { type: 'START_EXAM'; payload: { attempt: AttemptData } }
   | { type: 'SUBMIT_EXAM'; payload: { attempt: AttemptData } }
   | { type: 'VIEW_RESULTS'; payload: { attempt: AttemptData } }
-  | { type: 'REVIEW_ATTEMPT'; payload: { attempt: AttemptData; returnPhase: 'pre-exam' | 'manage' } }
+  | {
+      type: 'REVIEW_ATTEMPT';
+      payload: { attempt: AttemptData; returnPhase: 'pre-exam' | 'manage' };
+    }
   | { type: 'EXIT_REVIEW' }
   | { type: 'BACK_TO_PRE_EXAM'; payload: { userAttempts: AttemptData[] } }
   | { type: 'ENTER_MANAGEMENT_MODE' }

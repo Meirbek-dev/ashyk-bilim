@@ -20,19 +20,17 @@ import {
   FileCog,
   FileStack,
   Globe,
-  LayoutDashboard,
   ShieldCheck,
   Sparkles,
-  Users,
 } from 'lucide-react';
-import CourseConflictDialog from '@components/Dashboard/Pages/Course/CourseConflictDialog';
+import ConflictAlert from '@components/Dashboard/Pages/Course/ConflictResolutionModal';
+import { buildCourseWorkspacePath, prefixedCourseUuid } from '@/lib/course-management';
 import type { CourseWorkspaceCapabilities } from '@/lib/course-management-server';
 import { CourseProvider, useCourse } from '@components/Contexts/CourseContext';
-import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import type { CourseWorkspaceStage } from '@/lib/course-management';
-import { buildCourseWorkspacePath } from '@/lib/course-management';
 import { getAbsoluteUrl } from '@services/config/config';
 import { CourseStatusBadge } from './courseWorkflowUi';
+import { useDirtyGuard } from '@/hooks/useDirtyGuard';
 import { Button } from '@/components/ui/button';
 import AppLink from '@/components/ui/AppLink';
 import { useTranslations } from 'next-intl';
@@ -55,45 +53,51 @@ function CourseWorkspaceChrome({
 }: Omit<CourseWorkspacePageShellProps, 'initialCourse'>) {
   const t = useTranslations('DashPage.CourseManagement.Workspace');
   const course = useCourse();
-  const hasDirtySections = Object.values(course.dirtySections).some(Boolean);
   const { readiness } = course;
-  const unsavedChangesGuard = useUnsavedChangesGuard(hasDirtySections, {
+  const dirtyGuard = useDirtyGuard({
     interceptInAppNavigation: true,
     message: t('unsavedChangesWarning'),
   });
   const stageConfig = [
-    { key: 'overview', label: t('tabs.overview'), icon: LayoutDashboard, capability: 'canViewWorkspace' },
     { key: 'details', label: t('tabs.details'), icon: FileCog, capability: 'canEditDetails' },
-    { key: 'curriculum', label: t('tabs.curriculum'), icon: FileStack, capability: 'canEditCurriculum' },
-    { key: 'access', label: t('tabs.access'), icon: Globe, capability: 'canManageAccess' },
-    { key: 'collaboration', label: t('tabs.collaboration'), icon: Users, capability: 'canManageCollaboration' },
-    { key: 'certificate', label: t('tabs.certificate'), icon: Sparkles, capability: 'canManageCertificate' },
-    { key: 'review', label: t('tabs.reviewPublish'), icon: CheckCircle2, capability: 'canReviewCourse' },
+    {
+      key: 'curriculum',
+      label: t('tabs.content'),
+      icon: FileStack,
+      capability: 'canEditCurriculum',
+    },
+    { key: 'access', label: t('tabs.settings'), icon: Globe, capability: 'canManageSettings' },
+    {
+      key: 'certificate',
+      label: t('tabs.certificate'),
+      icon: Sparkles,
+      capability: 'canManageCertificate',
+    },
+    { key: 'review', label: t('tabs.publish'), icon: CheckCircle2, capability: 'canReviewCourse' },
   ] as const;
   const visibleStages = stageConfig.filter((stage) => capabilities[stage.capability]);
 
   return (
-    <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-background">
-      <CourseConflictDialog />
+    <div className="bg-background flex min-h-screen min-w-0 flex-1 flex-col">
       <AlertDialog
-        open={unsavedChangesGuard.isPromptOpen}
+        open={dirtyGuard.isPromptOpen}
         onOpenChange={(open) => {
-          if (!open) unsavedChangesGuard.cancelNavigation();
+          if (!open) dirtyGuard.cancelNavigation();
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogMedia className="rounded-lg bg-muted/80 p-3 text-foreground dark:bg-muted/60">
+            <AlertDialogMedia className="bg-muted/80 text-foreground dark:bg-muted/60 rounded-lg p-3">
               <AlertTriangle className="size-8" />
             </AlertDialogMedia>
             <AlertDialogTitle>{t('unsavedDialogTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>{unsavedChangesGuard.promptMessage}</AlertDialogDescription>
+            <AlertDialogDescription>{dirtyGuard.promptMessage}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t('unsavedDialogStay')}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={unsavedChangesGuard.confirmNavigation}
+              onClick={dirtyGuard.confirmNavigation}
             >
               {t('unsavedDialogLeave')}
             </AlertDialogAction>
@@ -101,28 +105,28 @@ function CourseWorkspaceChrome({
         </AlertDialogContent>
       </AlertDialog>
 
-      <header className="sticky top-0 z-20 border-b border-border bg-background shadow-sm">
+      <header className="border-border bg-background sticky top-0 z-20 border-b shadow-sm">
         {/* Title row */}
         <div className="flex h-16 items-center gap-4 px-4 lg:px-8">
           {/* Breadcrumb */}
           <AppLink
             href="/dash/courses"
-            className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground flex shrink-0 items-center gap-2 text-sm transition-colors"
           >
             <BookCopy className="size-4 shrink-0" />
             <span className="hidden sm:inline">{t('breadcrumb')}</span>
           </AppLink>
 
-          <ChevronRight className="size-4 shrink-0 text-muted-foreground/50" />
+          <ChevronRight className="text-muted-foreground/50 size-4 shrink-0" />
 
-          <h1 className="min-w-0 flex-1 truncate text-base font-semibold text-foreground dark:text-foreground">
+          <h1 className="text-foreground dark:text-foreground min-w-0 flex-1 truncate text-base font-semibold">
             {course.courseStructure.name || t('untitledCourse')}
           </h1>
 
           <div className="hidden shrink-0 items-center gap-2 sm:flex">
             <CourseStatusBadge status={course.courseStructure.public ? 'public' : 'private'} />
             <CourseStatusBadge status={readiness.readyToPublish ? 'ready' : 'needs-review'} />
-            {hasDirtySections ? <CourseStatusBadge status="unsaved" /> : null}
+            {dirtyGuard.hasDrafts ? <CourseStatusBadge status="unsaved" /> : null}
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
@@ -135,7 +139,7 @@ function CourseWorkspaceChrome({
                 className="gap-2"
               >
                 <ShieldCheck className="size-4" />
-                <span className="hidden sm:inline">{t('reviewButton')}</span>
+                <span className="hidden sm:inline">{t('tabs.publish')}</span>
               </Button>
             ) : null}
             <Button
@@ -152,7 +156,7 @@ function CourseWorkspaceChrome({
         </div>
 
         {/* Tab nav row */}
-        <div className="flex h-12 items-end gap-0 overflow-x-auto border-t border-border/50 px-4 lg:px-8">
+        <div className="border-border/50 flex h-12 items-end gap-0 overflow-x-auto border-t px-4 lg:px-8">
           {visibleStages.map((stage) => {
             const Icon = stage.icon;
             const isActive = stage.key === activeStage;
@@ -169,9 +173,9 @@ function CourseWorkspaceChrome({
                 )}
               >
                 <Icon className={cn('size-4 shrink-0', isActive && 'text-primary')} />
-                <span className="whitespace-nowrap hidden sm:inline">{stage.label}</span>
+                <span className="hidden whitespace-nowrap sm:inline">{stage.label}</span>
                 {stage.key === 'review' && !readiness.readyToPublish && readiness.issues.length > 0 ? (
-                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive/10 px-1.5 text-xs font-semibold text-destructive dark:bg-destructive/20 dark:text-destructive">
+                  <span className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold">
                     {readiness.issues.length}
                   </span>
                 ) : null}
@@ -181,7 +185,10 @@ function CourseWorkspaceChrome({
         </div>
       </header>
 
-      <main className="min-w-0 flex-1 px-4 py-8 lg:px-8">{children}</main>
+      <main className="min-w-0 flex-1 px-4 py-8 lg:px-8">
+        <ConflictAlert />
+        {children}
+      </main>
     </div>
   );
 }
@@ -195,7 +202,7 @@ export default function CourseWorkspacePageShell({
 }: CourseWorkspacePageShellProps) {
   return (
     <CourseProvider
-      courseuuid={`course_${courseuuid}`}
+      courseuuid={prefixedCourseUuid(courseuuid)}
       withUnpublishedActivities
       initialCourse={initialCourse}
     >

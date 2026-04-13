@@ -38,13 +38,13 @@ export default function CourseWorkspaceOverview({
         <div className={`${courseWorkflowCardClass} p-6`}>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                 {t('readyLabel')}
               </div>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+              <h2 className="text-foreground mt-2 text-2xl font-semibold tracking-tight">
                 {readiness.readyToPublish ? t('readyTitle') : t('notReadyTitle')}
               </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-6">
                 {readiness.readyToPublish ? t('readyDescription') : t('notReadyDescription')}
               </p>
             </div>
@@ -61,10 +61,10 @@ export default function CourseWorkspaceOverview({
             ) : null}
           </div>
           {capabilities.canReviewCourse ? (
-            <div className="mt-4 text-sm text-muted-foreground">
+            <div className="text-muted-foreground mt-4 text-sm">
               <AppLink
                 href={buildCourseWorkspacePath(courseuuid, 'review')}
-                className="font-medium text-foreground underline underline-offset-4"
+                className="text-foreground font-medium underline underline-offset-4"
               >
                 {t('reviewReadiness')}
               </AppLink>
@@ -73,21 +73,21 @@ export default function CourseWorkspaceOverview({
         </div>
 
         <div className={courseWorkflowSummaryCardClass}>
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
             {t('workspacePulse')}
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
             <div className={courseWorkflowMutedPanelClass}>
               <div className="text-muted-foreground">{t('chapters')}</div>
-              <div className="mt-1 text-3xl font-semibold text-foreground">{stats.chapters}</div>
+              <div className="text-foreground mt-1 text-3xl font-semibold">{stats.chapters}</div>
             </div>
             <div className={courseWorkflowMutedPanelClass}>
               <div className="text-muted-foreground">{t('activities')}</div>
-              <div className="mt-1 text-3xl font-semibold text-foreground">{stats.activities}</div>
+              <div className="text-foreground mt-1 text-3xl font-semibold">{stats.activities}</div>
             </div>
             <div className={courseWorkflowMutedPanelClass}>
               <div className="text-muted-foreground">{t('contributors')}</div>
-              <div className="mt-1 text-3xl font-semibold text-foreground">{contributors.length}</div>
+              <div className="text-foreground mt-1 text-3xl font-semibold">{contributors.length}</div>
             </div>
           </div>
         </div>
@@ -95,7 +95,7 @@ export default function CourseWorkspaceOverview({
 
       <section className="grid gap-4 lg:grid-cols-3">
         <div className={`${courseWorkflowCardClass} p-5`}>
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <div className="text-foreground flex items-center gap-2 text-sm font-semibold">
             <CheckCircle2 className="size-4" />
             {t('readinessChecklist')}
           </div>
@@ -104,31 +104,31 @@ export default function CourseWorkspaceOverview({
               <AppLink
                 key={item.id}
                 href={buildCourseWorkspacePath(courseuuid, item.href || 'overview')}
-                className="flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors hover:bg-muted/50"
+                className="hover:bg-muted/50 flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors"
               >
                 <CourseStatusBadge status={item.complete ? 'ready' : 'needs-review'} />
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-foreground">{tReadiness(`checklist.${item.id}.title`)}</div>
-                  <div className="text-sm text-muted-foreground">{tReadiness(`checklist.${item.id}.description`)}</div>
+                  <div className="text-foreground font-medium">{tReadiness(`checklist.${item.id}.title`)}</div>
+                  <div className="text-muted-foreground text-sm">{tReadiness(`checklist.${item.id}.description`)}</div>
                 </div>
-                <ArrowRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
+                <ArrowRight className="text-muted-foreground ml-auto size-4 shrink-0" />
               </AppLink>
             ))}
           </div>
         </div>
 
         <div className={`${courseWorkflowCardClass} p-5`}>
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <div className="text-foreground flex items-center gap-2 text-sm font-semibold">
             <FileStack className="size-4" />
             {t('curriculumSnapshot')}
           </div>
-          <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+          <div className="text-muted-foreground mt-4 space-y-3 text-sm">
             <div className={courseWorkflowMutedPanelClass}>
-              <div className="font-medium text-foreground">{t('chapterCount', { count: stats.chapters })}</div>
+              <div className="text-foreground font-medium">{t('chapterCount', { count: stats.chapters })}</div>
               <div className="mt-1">{t('activityCountDescription', { count: stats.activities })}</div>
             </div>
             <div className={courseWorkflowMutedPanelClass}>
-              <div className="font-medium text-foreground">{t('nextStep')}</div>
+              <div className="text-foreground font-medium">{t('nextStep')}</div>
               <div className="mt-1">{t('nextStepDescription')}</div>
             </div>
           </div>
@@ -144,21 +144,21 @@ export default function CourseWorkspaceOverview({
         </div>
 
         <div className={`${courseWorkflowCardClass} p-5`}>
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <div className="text-foreground flex items-center gap-2 text-sm font-semibold">
             <Users className="size-4" />
             {t('governanceSnapshot')}
           </div>
-          <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+          <div className="text-muted-foreground mt-4 space-y-3 text-sm">
             <div className={courseWorkflowMutedPanelClass}>
-              <div className="font-medium text-foreground">{t('sections.access')}</div>
+              <div className="text-foreground font-medium">{t('sections.access')}</div>
               <div className="mt-1 flex items-center gap-2">
-                <Globe className="size-4 text-muted-foreground" />
+                <Globe className="text-muted-foreground size-4" />
                 {course.courseStructure.public ? t('access.publicState') : t('access.privateState')}
               </div>
               {isPrivateWithNoGroups && capabilities.canManageAccess ? (
-                <Alert className="mt-2 border-border bg-muted py-2 text-foreground">
+                <Alert className="border-border bg-muted text-foreground mt-2 py-2">
                   <AlertTriangle className="size-3.5" />
-                  <AlertDescription className="text-xs text-muted-foreground">
+                  <AlertDescription className="text-muted-foreground text-xs">
                     {t.rich('access.privateNoGroupsWarning', {
                       link: (chunks) => (
                         <AppLink
@@ -174,11 +174,11 @@ export default function CourseWorkspaceOverview({
               ) : null}
             </div>
             <div className={courseWorkflowMutedPanelClass}>
-              <div className="font-medium text-foreground">{t('sections.collaboration')}</div>
+              <div className="text-foreground font-medium">{t('sections.collaboration')}</div>
               <div className="mt-1">{t('collaboration.loadedRecords', { count: contributors.length })}</div>
             </div>
             <div className={courseWorkflowMutedPanelClass}>
-              <div className="font-medium text-foreground">{t('sections.certificate')}</div>
+              <div className="text-foreground font-medium">{t('sections.certificate')}</div>
               <div className="mt-1">
                 {certifications.length > 0 ? t('certificate.configured') : t('certificate.notConfigured')}
               </div>

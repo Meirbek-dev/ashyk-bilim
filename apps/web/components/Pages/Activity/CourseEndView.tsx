@@ -1,20 +1,18 @@
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview';
+import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications';
 import { Document, Font, Image, Page, StyleSheet, Text, View, pdf } from '@react-pdf/renderer';
 import { ArrowLeft, BookOpen, Download, Loader2, Shield, Target, Trophy } from 'lucide-react';
-import { useOptionalGamificationContext } from '@/components/Contexts/GamificationContext';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import { getCourseThumbnailMediaDirectory } from '@services/media/media';
-import { getUserCertificates } from '@services/courses/certifications';
-import { usePlatform } from '@/components/Contexts/PlatformContext';
 import SimpleAlertDialog from '@/components/ui/alert-dialog-simple';
+import { useGamificationStore } from '@/stores/gamification';
 import { getAbsoluteUrl } from '@services/config/config';
 import { useLocale, useTranslations } from 'next-intl';
-import { useWindowSize } from '@/hooks/useWindowSize';
 import { useEffect, useRef, useState } from 'react';
 // Gamification imports
 import { LevelProgress } from '@/lib/gamification';
+import NextImage from '@components/ui/NextImage';
 import Link from '@components/ui/ServerLink';
-import ReactConfetti from 'react-confetti';
+import confetti from 'canvas-confetti';
 import type { FC } from 'react';
 import QRCode from 'qrcode';
 
@@ -27,28 +25,16 @@ interface CourseEndViewProps {
 }
 
 const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbnailImage, course, trailData }) => {
-  const { width, height } = useWindowSize();
-  const platform = usePlatform() as any;
-  const session = usePlatformSession();
-  const [userCertificate, setUserCertificate] = useState<any>(null);
-  const [isLoadingCertificate, setIsLoadingCertificate] = useState(false);
-  const [certificateError, setCertificateError] = useState<string | null>(null);
   const locale = useLocale();
   const t = useTranslations('Certificates.CourseEndView');
   const [dialogAlertOpen, setDialogAlertOpen] = useState(false);
   const [dialogAlertMessage, setDialogAlertMessage] = useState('');
-  const qrCodeLink = getAbsoluteUrl(
-    `/certificates/${userCertificate?.certificate_user.user_certification_uuid}/verify`,
-  );
 
-  // Gamification state via unified context
-  const gamificationContext = useOptionalGamificationContext();
-  const gamificationProfile = gamificationContext?.profile ?? null;
-  const gamificationRefetch = gamificationContext?.refetch;
+  const gamificationProfile = useGamificationStore((s) => s.profile);
+  const gamificationRefetch = useGamificationStore((s) => s.refetch);
 
-  // Refs to prevent repeated runs that may trigger network loops
-  const fetchedCertificateRef = useRef(false);
   const refetchedOnMountRef = useRef(false);
+  const refetchedOnCertificateRef = useRef(false);
 
   // Check if course is actually completed
   const isCourseCompleted = (() => {
@@ -80,52 +66,28 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     const completedActivities = allActivities.filter((activity: any) => isActivityDone(activity)).length;
     return totalActivities > 0 && completedActivities === totalActivities;
   })();
+  const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`;
+  const certificateQuery = useUserCertificateByCourse(isCourseCompleted ? normalizedCourseUuid : null);
+  const userCertificate = certificateQuery.data?.data?.[0] ?? null;
+  const isLoadingCertificate = isCourseCompleted && certificateQuery.isPending;
+  const certificateError = certificateQuery.error
+    ? t('loadingError')
+    : !isLoadingCertificate && isCourseCompleted && !userCertificate
+      ? t('noCertificateFound')
+      : null;
+  const qrCodeLink = getAbsoluteUrl(
+    `/certificates/${userCertificate?.certificate_user.user_certification_uuid}/verify`,
+  );
 
-  // Fetch user certificate when course is completed
   useEffect(() => {
-    // Prevent repeated requests if we've already tried fetching the certificate
-    if (!isCourseCompleted || fetchedCertificateRef.current) return;
+    if (!userCertificate || typeof gamificationRefetch !== 'function') return;
+    if (refetchedOnCertificateRef.current) return;
 
-    const fetchUserCertificate = async () => {
-      // Mark as attempted to avoid loops; we can reset this manually if needed
-      fetchedCertificateRef.current = true;
-
-      if (!session?.data?.tokens?.access_token) {
-        setCertificateError(t('authRequired'));
-        return;
-      }
-
-      setIsLoadingCertificate(true);
-      setCertificateError(null);
-      try {
-        const cleanCourseUuid = courseUuid.replace('course_', '');
-        const result = await getUserCertificates(`course_${cleanCourseUuid}`, session.data.tokens.access_token);
-
-        if (result.success && result.data && result.data.length > 0) {
-          setUserCertificate(result.data[0]);
-
-          // Refetch gamification data to show course completion XP in recent activity
-          if (typeof gamificationRefetch === 'function') {
-            gamificationRefetch().catch((error: unknown) =>
-              console.warn('Failed to refetch gamification after course completion:', error),
-            );
-          }
-        } else {
-          console.warn('No certificate found. Result:', result);
-          setCertificateError(t('noCertificateFound'));
-        }
-      } catch (error) {
-        console.error('Error fetching user certificate:', error);
-        setCertificateError(t('loadingError'));
-      } finally {
-        setIsLoadingCertificate(false);
-      }
-    };
-
-    fetchUserCertificate();
-    // Only depend on stable primitives and the refetch function to avoid
-    // triggering this effect when the whole context object identity changes.
-  }, [isCourseCompleted, courseUuid, session?.data?.tokens?.access_token, t, gamificationRefetch]);
+    refetchedOnCertificateRef.current = true;
+    gamificationRefetch().catch((error: unknown) =>
+      console.warn('Failed to refetch gamification after course completion:', error),
+    );
+  }, [userCertificate, gamificationRefetch]);
 
   // Refetch gamification data on mount if course is completed
   // This ensures recent activity feed shows course completion XP
@@ -143,6 +105,84 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     }, 1000);
     return () => clearTimeout(timer);
   }, [isCourseCompleted, gamificationRefetch]);
+
+  useEffect(() => {
+    if (!isCourseCompleted) return;
+
+    const colors = ['#6366f1', '#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#ffffff'];
+
+    // Big opening bursts
+    confetti({
+      particleCount: 140,
+      spread: 100,
+      origin: { y: 0.4 },
+      scalar: 1.6,
+      ticks: 400,
+      colors,
+    });
+    const t1 = setTimeout(() => {
+      confetti({
+        particleCount: 90,
+        spread: 80,
+        shapes: ['star'],
+        scalar: 2.2,
+        origin: { y: 0.4 },
+        ticks: 350,
+        colors,
+      });
+    }, 200);
+    const t2 = setTimeout(() => {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { x: 0.2, y: 0.5 },
+        scalar: 1.5,
+        ticks: 300,
+        colors,
+      });
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { x: 0.8, y: 0.5 },
+        scalar: 1.5,
+        ticks: 300,
+        colors,
+      });
+    }, 500);
+
+    // Continuous cannons from both sides for 3 seconds
+    const end = Date.now() + 3000;
+    const interval = setInterval(() => {
+      if (Date.now() > end) {
+        clearInterval(interval);
+        return;
+      }
+      confetti({
+        particleCount: 7,
+        angle: 60,
+        spread: 58,
+        origin: { x: 0, y: 0.65 },
+        scalar: 1.4,
+        ticks: 300,
+        colors,
+      });
+      confetti({
+        particleCount: 7,
+        angle: 120,
+        spread: 58,
+        origin: { x: 1, y: 0.65 },
+        scalar: 1.4,
+        ticks: 300,
+        colors,
+      });
+    }, 50);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearInterval(interval);
+    };
+  }, [isCourseCompleted]);
 
   // Generate PDF using @react-pdf/renderer
   const downloadCertificate = async () => {
@@ -800,16 +840,6 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
     // Show congratulations for completed course
     return (
       <div className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden px-4 text-center">
-        <div className="pointer-events-none fixed inset-0 z-50">
-          <ReactConfetti
-            width={width}
-            height={height}
-            numberOfPieces={200}
-            recycle={false}
-            colors={['#6366f1', '#10b981', '#3b82f6']}
-          />
-        </div>
-
         <SimpleAlertDialog
           open={dialogAlertOpen}
           onOpenChange={setDialogAlertOpen}
@@ -818,11 +848,15 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
         <div className="soft-shadow relative z-10 mb-2 w-full space-y-6 rounded-2xl bg-white p-8">
           <div className="flex flex-col items-center space-y-6">
             {thumbnailImage ? (
-              <img
-                className="h-[114px] w-[200px] rounded-lg object-cover shadow-md"
-                src={`${getCourseThumbnailMediaDirectory(courseUuid, thumbnailImage)}`}
-                alt={courseName}
-              />
+              <div className="relative h-[114px] w-[200px] overflow-hidden rounded-lg shadow-md">
+                <NextImage
+                  src={`${getCourseThumbnailMediaDirectory(courseUuid, thumbnailImage)}`}
+                  alt={courseName}
+                  fill
+                  className="object-cover"
+                  sizes="100vw"
+                />
+              </div>
             ) : null}
 
             <div className="rounded-full bg-emerald-100 p-4">
@@ -958,11 +992,15 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
       <div className="soft-shadow w-full max-w-2xl space-y-6 rounded-2xl bg-white p-8">
         <div className="flex flex-col items-center space-y-6">
           {thumbnailImage ? (
-            <img
-              className="h-[114px] w-[200px] rounded-lg object-cover shadow-md"
-              src={`${getCourseThumbnailMediaDirectory(courseUuid, thumbnailImage)}`}
-              alt={courseName}
-            />
+            <div className="relative h-[114px] w-[200px] overflow-hidden rounded-lg shadow-md">
+              <NextImage
+                src={`${getCourseThumbnailMediaDirectory(courseUuid, thumbnailImage)}`}
+                alt={courseName}
+                fill
+                className="object-cover"
+                sizes="100vw"
+              />
+            </div>
           ) : null}
 
           <div className="rounded-full bg-blue-100 p-4">
@@ -998,7 +1036,10 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
               </div>
 
               <div className="text-sm text-gray-500">
-                {t('progressCompleted', { completed: progressInfo.completed, total: progressInfo.total })}
+                {t('progressCompleted', {
+                  completed: progressInfo.completed,
+                  total: progressInfo.total,
+                })}
               </div>
             </div>
           </div>

@@ -7,7 +7,7 @@ import {
   updatePreferencesOnServer,
   updateStreakOnServer,
 } from '@/services/gamification/server';
-import type { DashboardData, PlatformLeaderboard, XPAwardResponse } from '@/types/gamification';
+import type { DashboardData, PlatformLeaderboard, XPAwardRequest, XPAwardResponse } from '@/types/gamification';
 
 export async function getDashboardDataAction(): Promise<DashboardData | null> {
   const data = await getServerGamificationDashboard();
@@ -19,9 +19,8 @@ export async function getLeaderboardAction(limit = 20): Promise<PlatformLeaderbo
   return data ?? null;
 }
 
-export async function awardXPAction(payload: Record<string, any>): Promise<XPAwardResponse> {
-  const result = await awardXPOnServer(payload);
-  return result as XPAwardResponse;
+export async function awardXPAction(payload: XPAwardRequest): Promise<XPAwardResponse> {
+  return awardXPOnServer(payload);
 }
 
 export async function updateStreakAction(type: 'login' | 'learning') {

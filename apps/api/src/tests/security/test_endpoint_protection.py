@@ -26,7 +26,6 @@ EXEMPT_ENDPOINTS = {
     "/auth/logout",
     "/auth/register",
     "/auth/refresh",
-    "/auth/verify-email",
     "/auth/reset-password",
     # Public platform discovery
     "/platform",  # GET only (public read)

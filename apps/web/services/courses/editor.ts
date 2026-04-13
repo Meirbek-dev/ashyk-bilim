@@ -1,5 +1,5 @@
-import { fetchResponseMetadata } from '@services/utils/ts/requests';
-import { getAPIUrl } from '@services/config/config';
+import { getResponseMetadata } from '@/lib/api-client';
+import { apiFetch } from '@/lib/api-client';
 
 export interface CourseEditorResource<T> {
   data: T | null;
@@ -48,20 +48,14 @@ const toArrayResource = (response: {
     return createResource<any[]>([], response.status, detail, true);
   }
 
-  return createResource<any[]>(Array.isArray(response.data) ? response.data : [], response.status, null, true);
+  return createResource(Array.isArray(response.data) ? response.data : [], response.status, null, true);
 };
 
-export const getCourseMetadataKey = (courseUuid: string, withUnpublishedActivities = false) =>
-  `${getAPIUrl()}courses/${courseUuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`;
-
-export const getCourseEditorBundleKey = (courseUuid?: string | null, accessToken?: string | null) =>
-  courseUuid && accessToken ? ['course-editor-bundle', courseUuid, accessToken] : null;
-
-export async function getCourseEditorBundle(courseUuid: string, accessToken: string): Promise<CourseEditorBundle> {
+export async function getCourseEditorBundle(courseUuid: string): Promise<CourseEditorBundle> {
   const [contributors, linkedUserGroups, certifications] = await Promise.all([
-    fetchResponseMetadata(`${getAPIUrl()}courses/${courseUuid}/contributors`, accessToken),
-    fetchResponseMetadata(`${getAPIUrl()}usergroups/resource/${courseUuid}`, accessToken),
-    fetchResponseMetadata(`${getAPIUrl()}certifications/course/${courseUuid}`, accessToken),
+    apiFetch(`courses/${courseUuid}/contributors`).then(getResponseMetadata),
+    apiFetch(`usergroups/resource/${courseUuid}`).then(getResponseMetadata),
+    apiFetch(`certifications/course/${courseUuid}`).then(getResponseMetadata),
   ]);
 
   return {

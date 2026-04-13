@@ -1,7 +1,31 @@
 import { ReactNodeViewRenderer } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
+import { type CommandProps, Node, mergeAttributes } from '@tiptap/core';
 
 import ImageBlockComponent from './ImageBlockComponent';
+
+export type ImageBlockAlignment = 'left' | 'center' | 'right';
+
+export interface ImageBlockObject {
+  block_uuid: string;
+  content: {
+    file_id: string;
+    file_format: string;
+  };
+}
+
+export interface ImageBlockAttrs {
+  blockObject: ImageBlockObject | null;
+  size: { width: number };
+  alignment: ImageBlockAlignment;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    blockImage: {
+      insertImageBlock: () => ReturnType;
+    };
+  }
+}
 
 export default Node.create({
   name: 'blockImage',
@@ -15,7 +39,9 @@ export default Node.create({
         default: null,
       },
       size: {
-        width: 300,
+        default: {
+          width: 300,
+        },
       },
       alignment: {
         default: 'center',
@@ -33,6 +59,15 @@ export default Node.create({
 
   renderHTML({ HTMLAttributes }) {
     return ['block-image', mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addCommands() {
+    return {
+      insertImageBlock:
+        () =>
+        ({ commands }: CommandProps) =>
+          commands.insertContent({ type: this.name }),
+    };
   },
 
   addNodeView() {

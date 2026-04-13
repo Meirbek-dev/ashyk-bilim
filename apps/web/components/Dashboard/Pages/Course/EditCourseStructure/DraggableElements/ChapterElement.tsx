@@ -9,16 +9,9 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { AlertTriangle, GripVertical, Hexagon, Loader2, MoreHorizontal, Pencil, Save, Trash2, X } from 'lucide-react';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
-import { deleteChapter, updateChapter } from '@services/courses/chapters';
-import { useCourse } from '@components/Contexts/CourseContext';
+import { AlertTriangle, Check, GripVertical, Hexagon, Loader2, Pencil, Trash2, X as XIcon } from 'lucide-react';
+import { useChapterMutations } from '@/hooks/mutations/useChapterMutations';
+import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,10 +20,9 @@ import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import NewActivityButton from '../Buttons/NewActivityButton';
+import NewActivityButton from '@/components/Dashboard/Pages/Course/EditCourseStructure/Buttons/NewActivityButton';
 import ActivityElement from './ActivityElement';
 
-// Types
 type ActivityType =
   | 'TYPE_VIDEO'
   | 'TYPE_DOCUMENT'
@@ -45,7 +37,6 @@ interface Activity {
   activity_type: ActivityType;
   name: string;
   published: boolean;
-  // Backend permission metadata
   can_update?: boolean;
   can_delete?: boolean;
   is_owner?: boolean;
@@ -67,36 +58,23 @@ interface ChapterElementProps {
   course_uuid: string;
 }
 
-interface PlatformSession {
-  data?: {
-    tokens?: {
-      access_token?: string;
-    };
-  };
-}
-
 const ChapterElement = ({ chapter, chapterIndex, course_uuid }: ChapterElementProps) => {
-  // Hooks
-  const session = usePlatformSession() as PlatformSession;
-  const access_token = session?.data?.tokens?.access_token;
-  const course = useCourse();
-  const { showConflict } = course;
+  const { deleteChapter, updateChapter } = useChapterMutations(course_uuid, true);
   const t = useTranslations('CourseEdit');
 
-  // State
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(chapter?.name ?? '');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeletingChapter, setIsDeletingChapter] = useState(false);
 
-  // Derived values
   const activities = chapter.activities ?? [];
+  const publishedCount = activities.filter((a) => a.published).length;
+  const draftCount = activities.length - publishedCount;
 
-  // Handlers
   const handleStartEdit = () => {
-    setIsEditing(true);
     setEditedName(chapter.name);
+    setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
@@ -105,30 +83,16 @@ const ChapterElement = ({ chapter, chapterIndex, course_uuid }: ChapterElementPr
   };
 
   const handleSaveEdit = async () => {
-    if (!access_token) {
-      toast.error('Authentication required');
-      return;
-    }
-
     const trimmedName = editedName.trim();
     if (!trimmedName || trimmedName === chapter.name) {
       handleCancelEdit();
       return;
     }
-
     setIsSavingEdit(true);
     try {
-      await updateChapter(chapter.id, { name: trimmedName }, access_token, {
-        courseUuid: course_uuid,
-        lastKnownUpdateDate: course.courseStructure.update_date,
-      });
-      await course.refreshCourseMeta();
+      await updateChapter(chapter.chapter_uuid, { name: trimmedName });
       setIsEditing(false);
     } catch (error: any) {
-      if (error?.status === 409) {
-        showConflict(error?.detail || error?.message);
-        return;
-      }
       toast.error(error?.message || t('chapterUpdateFailed'));
       setEditedName(chapter.name);
     } finally {
@@ -137,24 +101,11 @@ const ChapterElement = ({ chapter, chapterIndex, course_uuid }: ChapterElementPr
   };
 
   const handleDeleteChapter = async () => {
-    if (!access_token) {
-      toast.error('Authentication required');
-      return;
-    }
-
     setIsDeletingChapter(true);
     try {
-      await deleteChapter(chapter.id, access_token, {
-        courseUuid: course_uuid,
-        lastKnownUpdateDate: course.courseStructure.update_date,
-      });
-      await course.refreshCourseMeta();
+      await deleteChapter(chapter.chapter_uuid);
       setIsDeleteDialogOpen(false);
     } catch (error: any) {
-      if (error?.status === 409) {
-        showConflict(error?.detail || error?.message);
-        return;
-      }
       toast.error(error?.message || t('chapterDeleteFailed'));
       setIsDeleteDialogOpen(false);
     } finally {
@@ -165,14 +116,13 @@ const ChapterElement = ({ chapter, chapterIndex, course_uuid }: ChapterElementPr
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleSaveEdit();
+      void handleSaveEdit();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       handleCancelEdit();
     }
   };
 
-  // Early validation (moved below all hooks to satisfy Rules of Hooks)
   if (!chapter?.chapter_uuid) {
     return null;
   }
@@ -192,138 +142,147 @@ const ChapterElement = ({ chapter, chapterIndex, course_uuid }: ChapterElementPr
           )}
         >
           {/* Chapter Header */}
-          <div className="flex items-center justify-between gap-3 border-b px-4 py-4 sm:px-6">
-            {/* Left Section: Drag Handle + Icon + Name */}
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              {/* Drag Handle */}
-              <div
-                {...provided.dragHandleProps}
-                className="cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
-              >
-                <GripVertical className="h-5 w-5" />
-              </div>
+          <div className="flex items-center gap-3 border-b px-4 py-3 sm:px-6">
+            {/* Drag Handle */}
+            <div
+              {...provided.dragHandleProps}
+              className="text-muted-foreground hover:text-foreground flex-shrink-0 cursor-grab active:cursor-grabbing"
+            >
+              <GripVertical className="h-5 w-5" />
+            </div>
 
-              {/* Chapter Icon */}
-              <div className="bg-muted flex-shrink-0 rounded-lg p-2">
-                <Hexagon
-                  className="text-muted-foreground h-4 w-4"
-                  strokeWidth={2.5}
-                />
-              </div>
+            {/* Chapter Icon */}
+            <div className="bg-muted flex-shrink-0 rounded-lg p-2">
+              <Hexagon
+                className="text-muted-foreground h-4 w-4"
+                strokeWidth={2.5}
+              />
+            </div>
 
-              {/* Chapter Name - Editable */}
-              <div className="min-w-0 flex-1">
-                {isEditing ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="text"
-                      value={editedName}
-                      onChange={(e) => setEditedName(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder={t('chapterNamePlaceholder')}
-                      className="h-8 text-sm"
+            {/* Chapter Name */}
+            <div className="min-w-0 flex-1">
+              {isEditing ? (
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={t('chapterNamePlaceholder')}
+                    className="h-8 text-sm"
+                    disabled={isSavingEdit}
+                  />
+                  <ToolTip
+                    content={t('save')}
+                    side="top"
+                  >
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 flex-shrink-0 p-0 text-emerald-600 hover:text-emerald-700"
+                      onClick={() => void handleSaveEdit()}
                       disabled={isSavingEdit}
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleSaveEdit}
-                      disabled={isSavingEdit || !editedName.trim()}
-                      className="h-8 w-8 p-0"
                     >
-                      {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     </Button>
+                  </ToolTip>
+                  <ToolTip
+                    content={t('cancel')}
+                    side="top"
+                  >
                     <Button
                       size="sm"
                       variant="ghost"
+                      className="h-8 w-8 flex-shrink-0 p-0"
                       onClick={handleCancelEdit}
                       disabled={isSavingEdit}
-                      className="h-8 w-8 p-0"
                     >
-                      <X className="h-4 w-4" />
+                      <XIcon className="h-4 w-4" />
                     </Button>
-                  </div>
-                ) : (
-                  <div className="group flex items-center gap-2">
-                    <h3 className="truncate text-sm font-medium text-foreground sm:text-base">{chapter.name}</h3>
+                  </ToolTip>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-foreground truncate text-sm font-medium sm:text-base">{chapter.name}</span>
+                  <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+                    {activities.length}
+                  </span>
+                  <ToolTip
+                    content={t('edit')}
+                    side="top"
+                  >
                     <Button
                       size="sm"
                       variant="ghost"
+                      className="text-muted-foreground hover:text-foreground h-7 w-7 flex-shrink-0 p-0"
                       onClick={handleStartEdit}
-                      className="h-7 w-7 p-0 opacity-0 transition-opacity group-hover:opacity-100"
                     >
-                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                  </div>
-                )}
-              </div>
+                  </ToolTip>
+                </div>
+              )}
             </div>
 
-            {/* Right Section: Actions */}
-            <div className="flex-shrink-0">
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0"
-                    />
-                  }
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={handleStartEdit}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    {t('edit')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onSelect={() => setIsDeleteDialogOpen(true)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t('deleteChapterButton')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <AlertDialog
-                open={isDeleteDialogOpen}
-                onOpenChange={setIsDeleteDialogOpen}
+            {/* Delete */}
+            {!isEditing && (
+              <ToolTip
+                content={t('deleteChapterButton')}
+                side="top"
               >
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogMedia className="bg-muted text-foreground">
-                      <AlertTriangle className="size-8" />
-                    </AlertDialogMedia>
-                    <AlertDialogTitle>{t('deleteChapterTitle', { name: chapter.name })}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {activities.length > 0
-                        ? t('deleteChapterConfirmationWithCount', { count: activities.length })
-                        : t('deleteChapterConfirmation')}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isDeletingChapter} />
-                    <AlertDialogAction
-                      variant="destructive"
-                      onClick={handleDeleteChapter}
-                      disabled={isDeletingChapter}
-                    >
-                      {isDeletingChapter ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {t('deleting')}
-                        </>
-                      ) : (
-                        t('deleteChapterButton')
-                      )}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-destructive h-8 w-8 flex-shrink-0 p-0"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </ToolTip>
+            )}
+
+            <AlertDialog
+              open={isDeleteDialogOpen}
+              onOpenChange={setIsDeleteDialogOpen}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogMedia className="bg-muted text-foreground">
+                    <AlertTriangle className="size-8" />
+                  </AlertDialogMedia>
+                  <AlertDialogTitle>{t('deleteChapterTitle', { name: chapter.name })}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {activities.length > 0
+                      ? t('deleteChapterConfirmationBreakdown', {
+                          count: activities.length,
+                          published: publishedCount,
+                          drafts: draftCount,
+                        })
+                      : t('deleteChapterConfirmation')}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeletingChapter} />
+                  <AlertDialogAction
+                    variant="destructive"
+                    onClick={handleDeleteChapter}
+                    disabled={isDeletingChapter}
+                  >
+                    {isDeletingChapter ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t('deleting')}
+                      </>
+                    ) : (
+                      t('deleteChapterButton')
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
+
+          {/* Activities */}
           <Droppable
             droppableId={chapter.chapter_uuid}
             type="activity"
@@ -347,8 +306,9 @@ const ChapterElement = ({ chapter, chapterIndex, course_uuid }: ChapterElementPr
                     />
                   ))
                 ) : (
-                  <div className="flex min-h-[60px] items-center justify-center text-sm text-muted-foreground">
-                    {t('noActivities')}
+                  <div className="flex min-h-[60px] flex-col items-center justify-center gap-1 py-4 text-center">
+                    <p className="text-muted-foreground text-sm font-medium">{t('noActivities')}</p>
+                    <p className="text-muted-foreground/70 text-xs">{t('noActivitiesHint')}</p>
                   </div>
                 )}
                 {provided.placeholder}
@@ -356,7 +316,6 @@ const ChapterElement = ({ chapter, chapterIndex, course_uuid }: ChapterElementPr
             )}
           </Droppable>
 
-          {/* New Activity Button */}
           <div className="px-4 pb-4">
             <NewActivityButton chapterId={chapter.id} />
           </div>

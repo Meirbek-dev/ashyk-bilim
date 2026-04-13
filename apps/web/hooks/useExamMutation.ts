@@ -2,7 +2,7 @@
 
 import { calculateExponentialBackoffDelay } from '@/lib/retry';
 import { useCallback, useRef, useState } from 'react';
-import { getAPIUrl } from '@services/config/config';
+import { apiFetch } from '@/lib/api-client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -221,7 +221,7 @@ export function useExamMutation<TData = unknown, TVariables = void>(options: Mut
 /**
  * Helper hook specifically for exam submission with built-in error handling
  */
-export function useExamSubmission(accessToken: string, onSuccess?: () => void) {
+export function useExamSubmission(onSuccess?: () => void) {
   const t = useTranslations('Activities.ExamActivity');
 
   const mutation = useExamMutation({
@@ -234,12 +234,9 @@ export function useExamSubmission(accessToken: string, onSuccess?: () => void) {
       attemptUuid: string;
       answers: Record<number, any>;
     }) => {
-      const response = await fetch(`${getAPIUrl()}exams/${examUuid}/attempts/${attemptUuid}/submit`, {
+      const response = await apiFetch(`exams/${examUuid}/attempts/${attemptUuid}/submit`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(answers),
       });
 

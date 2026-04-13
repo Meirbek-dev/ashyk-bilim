@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 
-from src.core.events.database import get_db_session
 from src.db.collections import (
     CollectionCreate,
     CollectionRead,
@@ -10,6 +9,7 @@ from src.db.collections import (
     CollectionUpdate,
 )
 from src.db.users import AnonymousUser
+from src.infra.db.session import get_db_session
 from src.security.auth import get_current_user, get_current_user_optional
 from src.services.courses.collections import (
     create_collection,

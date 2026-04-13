@@ -1,21 +1,20 @@
 'use client';
+import { useQueryClient } from '@tanstack/react-query';
 import { BookOpen, BookX, EllipsisVertical, Eye, Layers2, Monitor, Pencil, UserRoundPen } from 'lucide-react';
 import EditAssignmentModal from '@components/Objects/Modals/Activities/Assignments/EditAssignmentModal';
 import { AssignmentProvider, useAssignments } from '@components/Contexts/Assignments/AssignmentContext';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip';
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs';
 import { updateAssignment } from '@services/courses/assignments';
 import { updateActivity } from '@services/courses/activities';
+import { queryKeys } from '@/lib/react-query/queryKeys';
 import { useParams, useSearchParams } from 'next/navigation';
-import { getAPIUrl } from '@services/config/config';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { mutate } from 'swr';
 
 import AssignmentEditorSubPage from './subpages/AssignmentEditorSubPage';
 
@@ -33,7 +32,7 @@ const AssignmentEdit = () => {
   if (isMobile) {
     // TODO: Work on a better mobile experience
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#f8f8f8] p-4">
+      <div className="bg-muted flex h-screen w-full items-center justify-center p-4">
         <div className="rounded-lg bg-white p-6 text-center shadow-md">
           <h2 className="mb-4 text-xl font-bold">{t('desktopOnlyTitle')}</h2>
           <Monitor
@@ -118,26 +117,20 @@ const BrdCmpx = () => {
 };
 
 const PublishingState = () => {
+  const queryClient = useQueryClient();
   const t = useTranslations('DashPage.Assignments.AssignmentPage');
   const assignment = useAssignments();
-  const session = usePlatformSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   async function updateAssignmentPublishState(assignmentUUID: string) {
-    const res = await updateAssignment(
-      { published: !assignment?.assignment_object?.published },
-      assignmentUUID,
-      access_token,
-    );
+    const res = await updateAssignment({ published: !assignment?.assignment_object?.published }, assignmentUUID);
     const res2 = await updateActivity(
       { published: !assignment?.assignment_object?.published },
       assignment?.activity_object?.activity_uuid,
-      access_token,
     );
     const toast_loading = toast.loading(t('updateLoading'));
     if (res.success && res2) {
-      mutate(`${getAPIUrl()}assignments/${assignmentUUID}`);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.assignments.detail(assignmentUUID) });
       toast.success(t('updateSuccess'));
       toast.dismiss(toast_loading);
     } else {
@@ -170,7 +163,7 @@ const PublishingState = () => {
             onClick={() => {
               setIsEditModalOpen(true);
             }}
-            className="flex cursor-pointer items-center space-x-2 rounded-md border bg-background px-3 py-2 font-medium text-foreground shadow-sm hover:bg-accent"
+            className="bg-background text-foreground hover:bg-accent flex cursor-pointer items-center space-x-2 rounded-md border px-3 py-2 font-medium shadow-sm"
           >
             <Pencil size={18} />
             <p className="text-sm font-bold">{t('edit')}</p>
@@ -186,7 +179,7 @@ const PublishingState = () => {
           <Link
             target="_blank"
             href={`/course/${assignment?.course_object?.course_uuid.replace('course_', '')}/activity/${assignment?.activity_object?.activity_uuid.replace('activity_', '')}`}
-            className="flex cursor-pointer items-center space-x-2 rounded-md border bg-background px-3 py-2 font-medium text-foreground shadow-sm hover:bg-accent"
+            className="bg-background text-foreground hover:bg-accent flex cursor-pointer items-center space-x-2 rounded-md border px-3 py-2 font-medium shadow-sm"
           >
             <Eye size={18} />
             <p className="text-sm font-bold">{t('preview')}</p>
@@ -201,7 +194,7 @@ const PublishingState = () => {
           >
             <div
               onClick={() => updateAssignmentPublishState(assignment?.assignment_object?.assignment_uuid)}
-              className="flex cursor-pointer items-center space-x-2 rounded-md border bg-background px-3 py-2 font-medium text-foreground shadow-sm hover:bg-accent"
+              className="bg-background text-foreground hover:bg-accent flex cursor-pointer items-center space-x-2 rounded-md border px-3 py-2 font-medium shadow-sm"
             >
               <BookX size={18} />
               <p className="text-sm font-bold">{t('unpublish')}</p>
@@ -217,7 +210,7 @@ const PublishingState = () => {
           >
             <div
               onClick={() => updateAssignmentPublishState(assignment?.assignment_object?.assignment_uuid)}
-              className="flex cursor-pointer items-center space-x-2 rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 flex cursor-pointer items-center space-x-2 rounded-md px-3 py-2 font-medium shadow-sm"
             >
               <BookOpen size={18} />
               <p className="text-sm font-bold">{t('publish')}</p>
@@ -232,7 +225,6 @@ const PublishingState = () => {
             setIsEditModalOpen(false);
           }}
           assignment={assignment?.assignment_object}
-          accessToken={access_token}
         />
       ) : null}
     </>

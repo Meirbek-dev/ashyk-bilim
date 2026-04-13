@@ -7,7 +7,6 @@ import {
   toggleDiscussionLike,
   updateDiscussion,
 } from '@services/courses/discussions';
-import { usePlatformSession } from '@/components/Contexts/SessionContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { useEffect, useRef, useState } from 'react';
 import DiscussionPost from './discussion-post';
@@ -83,8 +82,6 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
     }
     return [];
   });
-  const session = usePlatformSession();
-  const access_token = session?.data?.tokens?.access_token;
   const postsRafRef = useRef<number | null>(null);
 
   // Update posts when initialPosts changes
@@ -107,20 +104,11 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
   }, [initialPosts]);
 
   const handleSubmitDiscussion = async (content: string) => {
-    if (!access_token) {
-      console.error('Missing access token');
-      return;
-    }
-
     try {
-      const newDiscussion = await createDiscussion(
-        courseUuid,
-        {
-          content,
-          type: 'post',
-        },
-        access_token,
-      );
+      const newDiscussion = await createDiscussion(courseUuid, {
+        content,
+        type: 'post',
+      });
 
       // If the new discussion doesn't have user data, populate it with current user
       if (!newDiscussion.user && currentUser) {
@@ -158,11 +146,6 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
   };
 
   const handleSubmitReply = async (postId: string, replyContent: string) => {
-    if (!access_token) {
-      console.error('Missing access token');
-      return;
-    }
-
     // Find the parent post to get its ID
     const parentPost = posts.find((post) => post.id === postId);
     if (!parentPost) {
@@ -171,15 +154,11 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
     }
 
     try {
-      const newReply = await createDiscussion(
-        courseUuid,
-        {
-          content: replyContent,
-          type: 'reply',
-          parent_discussion_id: Number.parseInt(parentPost.id, 10),
-        },
-        access_token,
-      );
+      const newReply = await createDiscussion(courseUuid, {
+        content: replyContent,
+        type: 'reply',
+        parent_discussion_id: Number.parseInt(parentPost.id, 10),
+      });
 
       // If the new reply doesn't have user data, populate it with current user
       if (!newReply.user && currentUser) {
@@ -234,19 +213,16 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
   };
 
   const handleVotePost = async (postId: string, voteType: 'up' | 'down') => {
-    // Find the post
     const post = posts.find((p) => p.id === postId);
-    if (!(post && access_token)) return;
+    if (!post) return;
 
     try {
       let response;
 
       if (voteType === 'up') {
-        // Call the toggle like API
-        response = await toggleDiscussionLike(courseUuid, post.discussion_uuid, access_token);
+        response = await toggleDiscussionLike(courseUuid, post.discussion_uuid);
       } else {
-        // Call the toggle dislike API
-        response = await toggleDiscussionDislike(courseUuid, post.discussion_uuid, access_token);
+        response = await toggleDiscussionDislike(courseUuid, post.discussion_uuid);
       }
 
       // Update UI based on API response
@@ -277,12 +253,6 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
   };
 
   const handleVoteReply = async (postId: string, replyId: string, voteType: 'up' | 'down') => {
-    if (!access_token) {
-      console.error('Missing access token');
-      return;
-    }
-
-    // Find the reply to get its discussion_uuid
     const post = posts.find((p) => p.id === postId);
     if (!post) {
       console.error('Post not found:', postId);
@@ -299,11 +269,9 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       let response;
 
       if (voteType === 'up') {
-        // Call the toggle like API
-        response = await toggleDiscussionLike(courseUuid, reply.discussion_uuid, access_token);
+        response = await toggleDiscussionLike(courseUuid, reply.discussion_uuid);
       } else {
-        // Call the toggle dislike API
-        response = await toggleDiscussionDislike(courseUuid, reply.discussion_uuid, access_token);
+        response = await toggleDiscussionDislike(courseUuid, reply.discussion_uuid);
       }
 
       // Update UI based on API response
@@ -342,10 +310,10 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
 
   const handleDeletePost = async (postId: string) => {
     const post = posts.find((p) => p.id === postId);
-    if (!(post && access_token)) return;
+    if (!post) return;
 
     try {
-      await deleteDiscussion(courseUuid, post.discussion_uuid, access_token);
+      await deleteDiscussion(courseUuid, post.discussion_uuid);
       setPosts(posts.filter((post) => post.id !== postId));
 
       // Refresh data from server
@@ -358,12 +326,6 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
   };
 
   const handleDeleteReply = async (postId: string, replyId: string) => {
-    if (!access_token) {
-      console.error('Missing access token');
-      return;
-    }
-
-    // Find the reply to get its discussion_uuid
     const post = posts.find((p) => p.id === postId);
     if (!post) {
       console.error('Post not found:', postId);
@@ -377,7 +339,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
     }
 
     try {
-      await deleteDiscussion(courseUuid, reply.discussion_uuid, access_token);
+      await deleteDiscussion(courseUuid, reply.discussion_uuid);
 
       // Update local state
       setPosts(
@@ -397,10 +359,10 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
 
   const handleEditPost = async (postId: string, newMessage: string) => {
     const post = posts.find((p) => p.id === postId);
-    if (!(post && access_token)) return;
+    if (!post) return;
 
     try {
-      await updateDiscussion(courseUuid, post.discussion_uuid, { content: newMessage }, access_token);
+      await updateDiscussion(courseUuid, post.discussion_uuid, { content: newMessage });
       setPosts(
         posts.map((post) =>
           post.id === postId ? { ...post, postMessage: newMessage, updateDate: new Date().toISOString() } : post,
@@ -417,12 +379,6 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
   };
 
   const handleEditReply = async (postId: string, replyId: string, newMessage: string) => {
-    if (!access_token) {
-      console.error('Missing access token');
-      return;
-    }
-
-    // Find the reply to get its discussion_uuid
     const post = posts.find((p) => p.id === postId);
     if (!post) {
       console.error('Post not found:', postId);
@@ -436,12 +392,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
     }
 
     try {
-      const updatedReply = await updateDiscussion(
-        courseUuid,
-        reply.discussion_uuid,
-        { content: newMessage },
-        access_token,
-      );
+      const updatedReply = await updateDiscussion(courseUuid, reply.discussion_uuid, { content: newMessage });
 
       // Update local state with the updated reply data from server
       setPosts(

@@ -1,7 +1,19 @@
-import { ReactNodeViewRenderer } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
+import { type CommandProps, Node, mergeAttributes } from '@tiptap/core';
 
 import UserBlockComponent from './UserBlockComponent';
+import { nodeView } from '@components/Objects/Editor/core';
+
+export interface UserBlockAttrs {
+  user_id: string | number | null;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    blockUser: {
+      insertUserBlock: () => ReturnType;
+    };
+  }
+}
 
 export default Node.create({
   name: 'blockUser',
@@ -29,7 +41,16 @@ export default Node.create({
     return ['block-user', mergeAttributes(HTMLAttributes), 0];
   },
 
+  addCommands() {
+    return {
+      insertUserBlock:
+        () =>
+        ({ commands }: CommandProps) =>
+          commands.insertContent({ type: this.name }),
+    };
+  },
+
   addNodeView() {
-    return ReactNodeViewRenderer(UserBlockComponent);
+    return nodeView(UserBlockComponent);
   },
 });

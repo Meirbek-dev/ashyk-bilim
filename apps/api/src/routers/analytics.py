@@ -7,9 +7,9 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select as sa_select
 from sqlmodel import Session
 
-from src.core.events.database import get_db_session
 from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
+from src.infra.db.session import get_db_session
 from src.security.auth import get_current_user
 from src.security.rbac import PermissionChecker
 from src.services.analytics import (
@@ -25,6 +25,14 @@ from src.services.analytics import (
     get_teacher_overview,
 )
 from src.services.analytics.filters import AnalyticsFilters, get_analytics_filters
+from src.services.analytics.schemas import (
+    AtRiskLearnersResponse,
+    TeacherAssessmentDetailResponse,
+    TeacherAssessmentListResponse,
+    TeacherCourseDetailResponse,
+    TeacherCourseListResponse,
+    TeacherOverviewResponse,
+)
 from src.services.analytics.scope import (
     ensure_assessment_in_scope,
     ensure_course_in_scope,
@@ -78,7 +86,7 @@ def _assessment_scope_for(
     return scope
 
 
-@router.get("/teacher/overview")
+@router.get("/teacher/overview", response_model=TeacherOverviewResponse)
 async def teacher_overview_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
@@ -88,7 +96,7 @@ async def teacher_overview_platform(
     return get_teacher_overview(db_session, scope, filters)
 
 
-@router.get("/teacher/courses")
+@router.get("/teacher/courses", response_model=TeacherCourseListResponse)
 async def teacher_courses_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
@@ -98,7 +106,10 @@ async def teacher_courses_platform(
     return get_teacher_course_list(db_session, scope, filters)
 
 
-@router.get("/teacher/courses/by-uuid/{course_uuid}")
+@router.get(
+    "/teacher/courses/by-uuid/{course_uuid}",
+    response_model=TeacherCourseDetailResponse,
+)
 async def teacher_course_detail_by_uuid_platform(
     course_uuid: str,
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
@@ -119,7 +130,7 @@ async def teacher_course_detail_by_uuid_platform(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.get("/teacher/courses/{course_id}")
+@router.get("/teacher/courses/{course_id}", response_model=TeacherCourseDetailResponse)
 async def teacher_course_detail_platform(
     course_id: int,
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
@@ -133,7 +144,7 @@ async def teacher_course_detail_platform(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.get("/teacher/assessments")
+@router.get("/teacher/assessments", response_model=TeacherAssessmentListResponse)
 async def teacher_assessments_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
@@ -143,7 +154,10 @@ async def teacher_assessments_platform(
     return get_teacher_assessment_list(db_session, scope, filters)
 
 
-@router.get("/teacher/assessments/{assessment_type}/{assessment_id}")
+@router.get(
+    "/teacher/assessments/{assessment_type}/{assessment_id}",
+    response_model=TeacherAssessmentDetailResponse,
+)
 async def teacher_assessment_detail_platform(
     assessment_type: str,
     assessment_id: int,
@@ -166,7 +180,7 @@ async def teacher_assessment_detail_platform(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.get("/teacher/learners/at-risk")
+@router.get("/teacher/learners/at-risk", response_model=AtRiskLearnersResponse)
 async def teacher_at_risk_learners_platform(
     filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
