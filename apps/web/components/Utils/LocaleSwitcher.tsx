@@ -56,7 +56,7 @@ export const LocaleSwitcher = ({
     <div
       className={cn("flex items-center gap-2", isMobile && "w-full", className)}
     >
-      <Languages size={22} stroke="1" />
+      <Languages size={22} strokeWidth={1} />
       <NativeSelect
         value={currentLocale}
         onChange={(event) => handleLocaleChange(event.target.value as Locale)}

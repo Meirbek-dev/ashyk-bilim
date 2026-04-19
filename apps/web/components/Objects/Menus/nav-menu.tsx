@@ -164,7 +164,7 @@ const DesktopNavLink = ({ def, label }: NavLinkProps) => {
         href={getAbsoluteUrl(href)}
         aria-current={isActive ? "page" : undefined}
         className={cn(
-          "group relative flex h-10 items-center gap-2 rounded-md px-3.5 text-sm font-medium outline-none transition-colors duration-200",
+          "group/navlink relative flex h-10 items-center gap-2 rounded-md px-3.5 text-base font-medium outline-none transition-colors duration-200",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           isActive
             ? "bg-accent text-foreground"
@@ -179,7 +179,7 @@ const DesktopNavLink = ({ def, label }: NavLinkProps) => {
             "shrink-0 transition-colors",
             isActive
               ? "text-primary"
-              : "text-muted-foreground/70 group-hover:text-foreground",
+              : "text-muted-foreground/70 group-hover/navlink:text-foreground",
           )}
         />
         <span className="tracking-tight">{label}</span>
@@ -202,7 +202,7 @@ const MobileNavLink = ({ def, label, onNavigate }: NavLinkProps) => {
       onClick={onNavigate}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "group flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium outline-none transition-colors",
+        "group/navlink flex w-full items-center gap-3 rounded-lg px-3 py-3 text-base font-medium outline-none transition-colors",
         "focus-visible:ring-2 focus-visible:ring-ring",
         isActive
           ? "bg-accent text-foreground"
@@ -217,7 +217,7 @@ const MobileNavLink = ({ def, label, onNavigate }: NavLinkProps) => {
           "shrink-0",
           isActive
             ? "text-primary"
-            : "text-muted-foreground/70 group-hover:text-foreground",
+            : "text-muted-foreground/70 group-hover/navlink:text-foreground",
         )}
       />
       <span className="flex-1">{label}</span>
@@ -270,7 +270,7 @@ export default function NavBar() {
       )}
       style={{ height: NAVBAR_HEIGHT }}
     >
-      <div className="mx-auto flex h-full w-full max-w-screen-2xl items-center gap-3 px-4 sm:gap-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-full w-full items-center gap-3 px-4 sm:gap-4 sm:px-6 lg:px-8">
         {/* ── Left: logo + desktop nav ─────────────────────────────── */}
         <div className="flex min-w-0 items-center gap-6 lg:gap-8">
           <Link
