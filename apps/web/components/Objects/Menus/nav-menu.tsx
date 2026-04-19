@@ -63,6 +63,7 @@ export default function NavBar() {
   const pathname = usePathname();
   const t = useTranslations('Components.NavMenu');
   const { isAuthenticated } = useSession();
+  const mobileMenuTop = NAVBAR_HEIGHT;
 
   // Use local state for focus mode from localStorage (avoid getSnapshot sync warning)
   const isOnActivityPage = pathname?.includes('/activity/') ?? false;
@@ -110,6 +111,8 @@ export default function NavBar() {
       setIsScrolled(scrollY > 20);
     };
 
+    handleScroll();
+
     const listenerOptions = { passive: true } as any;
     window.addEventListener('scroll', handleScroll, listenerOptions);
 
@@ -119,8 +122,12 @@ export default function NavBar() {
   }, []);
 
   function toggleMenu() {
-    setIsMenuOpen(!isMenuOpen);
+    setIsMenuOpen((previousState) => !previousState);
   }
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
 
   // Close mobile menu when clicking outside or pressing escape
   useEffect(() => {
@@ -130,13 +137,15 @@ export default function NavBar() {
 
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Element;
-      // Only close if clicking outside the mobile menu and not on menu trigger or select dropdown
+      // Keep the menu open while interacting with portal-based controls rendered above it.
       if (
         isMenuOpen &&
         !target.closest('[data-mobile-menu]') &&
         !target.closest('[data-menu-trigger]') &&
         !target.closest('[data-radix-select-content]') &&
-        !target.closest('[data-slot="select-content"]')
+        !target.closest('[data-slot="select-content"]') &&
+        !target.closest('[data-slot="dropdown-menu-content"]') &&
+        !target.closest('[data-slot="popover-content"]')
       ) {
         setIsMenuOpen(false);
       }
@@ -283,7 +292,10 @@ export default function NavBar() {
 
       {/* Mobile menu */}
       {isMenuOpen ? (
-        <div className="fixed inset-0 z-60 md:hidden">
+        <div
+          className="fixed inset-x-0 bottom-0 z-60 md:hidden"
+          style={{ top: mobileMenuTop }}
+        >
           {/* Overlay */}
           <button
             type="button"
@@ -296,10 +308,10 @@ export default function NavBar() {
 
           {/* Menu panel */}
           <div
-            className="border-border/70 bg-background/96 absolute right-0 left-0 border-b shadow-lg backdrop-blur-sm"
+            className="border-border/70 bg-background/96 absolute top-0 right-0 left-0 border-b shadow-lg backdrop-blur-sm"
             data-mobile-menu
             style={{
-              maxHeight: `calc(100vh - ${NAVBAR_HEIGHT}px)`,
+              maxHeight: '100%',
               overflowY: 'auto',
               overflowX: 'visible',
             }}
