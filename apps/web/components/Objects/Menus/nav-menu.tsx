@@ -7,7 +7,6 @@ import { BookCopy, Menu, Signpost, SquareLibrary, X } from 'lucide-react';
 import { LocaleSwitcher } from '@/components/Utils/LocaleSwitcher';
 import { SearchBar } from '@/components/Objects/Search/SearchBar';
 import platformLogoFull from '@public/platform_logo_full.svg';
-import platformLogoLightFull from '@public/platform_logo_light_full.svg';
 import { NAVBAR_HEIGHT } from '@/lib/constants';
 import { getAbsoluteUrl } from '@/services/config/config';
 import { Button } from '@/components/ui/button';
@@ -17,15 +16,15 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import Link from '@components/ui/AppLink';
 import Image from 'next/image';
-import { useTheme } from 'next-themes';
 
 interface NavigationLinkProps {
   href: string;
   type: 'courses' | 'collections' | 'trail';
+  onNavigate?: () => void;
 }
 
 // Navigation link component with icon and label
-const NavigationLinkItem = ({ href, type }: NavigationLinkProps) => {
+const NavigationLinkItem = ({ href, type, onNavigate }: NavigationLinkProps) => {
   const t = useTranslations('Components.NavMenuLinks');
   const pathname = usePathname();
 
@@ -43,6 +42,7 @@ const NavigationLinkItem = ({ href, type }: NavigationLinkProps) => {
       <Link
         prefetch={false}
         href={getAbsoluteUrl(href)}
+        onClick={onNavigate}
         className={`hover:text-primary flex max-h-[36px] items-center gap-3 rounded-md px-4 py-2 font-medium transition-colors ${
           isActive ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
         }`}
@@ -58,7 +58,6 @@ const NavigationLinkItem = ({ href, type }: NavigationLinkProps) => {
 };
 
 export default function NavBar() {
-  const { theme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
@@ -286,39 +285,32 @@ export default function NavBar() {
       {isMenuOpen ? (
         <div className="fixed inset-0 z-60 md:hidden">
           {/* Overlay */}
-          <div
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
             onClick={() => {
               setIsMenuOpen(false);
             }}
-            role="button"
-            tabIndex={-1}
             aria-label={t('overlayClose')}
           />
 
           {/* Menu panel */}
           <div
-            className="border-border/60 bg-background/95 absolute right-0 left-0 border-b shadow-lg backdrop-blur-sm"
+            className="border-border/70 bg-background/96 absolute right-0 left-0 border-b shadow-lg backdrop-blur-sm"
             data-mobile-menu
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
             style={{
               maxHeight: `calc(100vh - ${NAVBAR_HEIGHT}px)`,
               overflowY: 'auto',
               overflowX: 'visible',
             }}
           >
-            <div className="space-y-6 px-4 py-6">
+            <div className="space-y-5 px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
               {/* Mobile Search */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2 px-2">
-                  <div className="bg-primary h-4 w-1 rounded-full" />
-                  <Label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                    {t('search')}
-                  </Label>
-                </div>
-                <div>
+                <Label className="text-muted-foreground px-1 text-[11px] font-semibold tracking-[0.16em] uppercase">
+                  {t('search')}
+                </Label>
+                <div className="rounded-2xl border border-border/60 bg-background p-3 shadow-sm">
                   <SearchBar
                     isMobile
                     className="w-full"
@@ -328,46 +320,34 @@ export default function NavBar() {
 
               {/* Mobile Navigation */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2 px-2">
-                  <div className="bg-primary h-4 w-1 rounded-full" />
-                  <Label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                    {t('navigation')}
-                  </Label>
-                </div>
-                <div className="border-border/30 bg-accent/20 rounded-xl border p-3">
+                <Label className="text-muted-foreground px-1 text-[11px] font-semibold tracking-[0.16em] uppercase">
+                  {t('navigation')}
+                </Label>
+                <div className="rounded-2xl border border-border/60 bg-background p-2 shadow-sm">
                   <nav className="space-y-1">
                     <div className="space-y-1">
-                      <div
-                        onClick={() => {
+                      <NavigationLinkItem
+                        href="/courses"
+                        type="courses"
+                        onNavigate={() => {
                           setIsMenuOpen(false);
                         }}
-                      >
-                        <NavigationLinkItem
-                          href="/courses"
-                          type="courses"
-                        />
-                      </div>
-                      <div
-                        onClick={() => {
+                      />
+                      <NavigationLinkItem
+                        href="/collections"
+                        type="collections"
+                        onNavigate={() => {
                           setIsMenuOpen(false);
                         }}
-                      >
-                        <NavigationLinkItem
-                          href="/collections"
-                          type="collections"
-                        />
-                      </div>
+                      />
                       {isAuthenticated && (
-                        <div
-                          onClick={() => {
+                        <NavigationLinkItem
+                          href="/trail"
+                          type="trail"
+                          onNavigate={() => {
                             setIsMenuOpen(false);
                           }}
-                        >
-                          <NavigationLinkItem
-                            href="/trail"
-                            type="trail"
-                          />
-                        </div>
+                        />
                       )}
                     </div>
                   </nav>
@@ -376,19 +356,11 @@ export default function NavBar() {
 
               {/* Mobile locale switcher */}
               <div className="space-y-3 sm:hidden">
-                <div className="flex items-center gap-2 px-2">
-                  <div className="bg-primary h-4 w-1 rounded-full" />
-                  <Label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                    {t('language')}
-                  </Label>
-                </div>
-                <div className="border-border/30 bg-accent/20 rounded-xl border p-4">
-                  <div
-                    className="flex min-h-[44px] items-center"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                  >
+                <Label className="text-muted-foreground px-1 text-[11px] font-semibold tracking-[0.16em] uppercase">
+                  {t('language')}
+                </Label>
+                <div className="rounded-2xl border border-border/60 bg-background p-4 shadow-sm">
+                  <div className="flex min-h-[44px] items-center">
                     <LocaleSwitcher
                       className="w-full"
                       isMobile
@@ -398,14 +370,11 @@ export default function NavBar() {
               </div>
 
               {/* Mobile profile */}
-              <div className="border-border/50 space-y-3 border-t pt-6">
-                <div className="flex items-center gap-2 px-2">
-                  <div className="bg-primary h-4 w-1 rounded-full" />
-                  <Label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                    {t('account')}
-                  </Label>
-                </div>
-                <div className="border-border/30 bg-accent/20 rounded-xl border p-4">
+              <div className="space-y-3 border-t border-border/60 pt-5">
+                <Label className="text-muted-foreground px-1 text-[11px] font-semibold tracking-[0.16em] uppercase">
+                  {t('account')}
+                </Label>
+                <div className="rounded-2xl border border-border/60 bg-background p-4 shadow-sm">
                   <div className="flex min-h-[44px] items-center justify-center">
                     <HeaderProfileBox />
                   </div>

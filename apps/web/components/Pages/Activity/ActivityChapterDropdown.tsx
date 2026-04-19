@@ -13,6 +13,29 @@ interface ActivityChapterDropdownProps {
   trailData?: any;
 }
 
+function getActivityTypeIcon(activityType: string) {
+  switch (activityType) {
+    case 'TYPE_VIDEO': {
+      return <Video size={10} />;
+    }
+    case 'TYPE_DOCUMENT': {
+      return <FileText size={10} />;
+    }
+    case 'TYPE_DYNAMIC': {
+      return <StickyNote size={10} />;
+    }
+    case 'TYPE_ASSIGNMENT': {
+      return <Backpack size={10} />;
+    }
+    case 'TYPE_EXAM': {
+      return <ClipboardList size={10} />;
+    }
+    default: {
+      return <FileText size={10} />;
+    }
+  }
+}
+
 export default function ActivityChapterDropdown(props: ActivityChapterDropdownProps): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -38,30 +61,6 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
 
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
-  };
-
-  // Function to get the appropriate icon for activity type
-  const getActivityTypeIcon = (activityType: string) => {
-    switch (activityType) {
-      case 'TYPE_VIDEO': {
-        return <Video size={10} />;
-      }
-      case 'TYPE_DOCUMENT': {
-        return <FileText size={10} />;
-      }
-      case 'TYPE_DYNAMIC': {
-        return <StickyNote size={10} />;
-      }
-      case 'TYPE_ASSIGNMENT': {
-        return <Backpack size={10} />;
-      }
-      case 'TYPE_EXAM': {
-        return <ClipboardList size={10} />;
-      }
-      default: {
-        return <FileText size={10} />;
-      }
-    }
   };
 
   const getActivityTypeLabel = (activityType: string) => {
@@ -93,6 +92,7 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
       ref={dropdownRef}
     >
       <button
+        type="button"
         onClick={toggleDropdown}
         className="soft-shadow border-border bg-card text-foreground hover:bg-muted flex items-center space-x-2 rounded-full border p-2.5 px-5 transition delay-150 duration-300 ease-in-out"
         aria-label={t('viewAllActivities')}
@@ -104,11 +104,12 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
 
       {isOpen ? (
         <div
-          className={`absolute z-50 mt-2 ${isMobile ? 'right-0 w-[90vw] sm:w-72' : 'right-0 w-72'} fade-in animate-in border-border bg-card max-h-[70vh] cursor-pointer overflow-y-auto rounded-lg border py-1 shadow-xl duration-200`}
+          className={`absolute z-50 mt-2 ${isMobile ? 'left-1/2 w-[min(calc(100vw-1rem),22rem)] -translate-x-1/2' : 'right-0 w-72'} fade-in animate-in border-border bg-card max-h-[70vh] cursor-pointer overflow-y-auto overscroll-contain rounded-lg border py-1 shadow-xl duration-200`}
         >
           <div className="border-border flex items-center justify-between border-b px-3 py-1.5">
             <h3 className="text-foreground text-sm font-semibold">{t('courseContent')}</h3>
             <button
+              type="button"
               onClick={() => {
                 setIsOpen(false);
               }}

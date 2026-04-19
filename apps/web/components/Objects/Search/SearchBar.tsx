@@ -384,7 +384,7 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
       </div>
 
       <div
-        className={`soft-shadow divide-border border-border bg-card text-card-foreground absolute z-50 mt-2 w-full divide-y overflow-hidden rounded-xl border transition-all duration-200 ease-in-out ${showResults ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'} ${isMobile ? 'max-w-full' : 'min-w-[240px]'}`}
+        className={`soft-shadow divide-border border-border bg-card text-card-foreground absolute z-50 mt-2 max-h-[min(60vh,28rem)] w-full divide-y overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border transition-all duration-200 ease-in-out ${showResults ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'} ${isMobile ? 'max-w-full' : 'min-w-[240px]'}`}
       >
         {showResults ? (
           !searchQuery.trim() ? (

@@ -2,154 +2,141 @@
 
 import { Backpack, BarChart3, BookCopy, Home, School, Settings, ShieldCheck, Users } from 'lucide-react';
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions';
-import { useSession } from '@/hooks/useSession';
-import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip';
 import AppLink from '@/components/ui/AppLink';
+import { cn } from '@/lib/utils';
+import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import type { LucideIcon } from 'lucide-react';
 
 const DashMobileMenu = () => {
-  const { user: currentUser } = useSession();
+  const pathname = usePathname();
   const t = useTranslations('SidebarMenu');
   const { canSeePlatform, canSeeCourses, canSeeAssignments, canSeeAnalytics, canSeeUsers, canSeeAdmin } =
     useNavigationPermissions();
 
+  const navigationItems: {
+    href: string;
+    icon: LucideIcon;
+    label: string;
+    tooltip: string;
+    isActive: boolean;
+  }[] = [
+    {
+      href: '/dash',
+      icon: Home,
+      label: t('mobile.home'),
+      tooltip: t('tooltips.home'),
+      isActive: pathname === '/dash',
+    },
+    ...(canSeeCourses
+      ? [
+          {
+            href: '/dash/courses',
+            icon: BookCopy,
+            label: t('mobile.courses'),
+            tooltip: t('tooltips.courses'),
+            isActive: pathname.startsWith('/dash/courses'),
+          },
+        ]
+      : []),
+    ...(canSeeAssignments
+      ? [
+          {
+            href: '/dash/assignments',
+            icon: Backpack,
+            label: t('mobile.assignments'),
+            tooltip: t('tooltips.assignments'),
+            isActive: pathname.startsWith('/dash/assignments'),
+          },
+        ]
+      : []),
+    ...(canSeeAnalytics
+      ? [
+          {
+            href: '/dash/analytics',
+            icon: BarChart3,
+            label: t('mobile.analytics'),
+            tooltip: t('tooltips.analytics'),
+            isActive: pathname.startsWith('/dash/analytics'),
+          },
+        ]
+      : []),
+    ...(canSeeUsers
+      ? [
+          {
+            href: '/dash/users/settings/users',
+            icon: Users,
+            label: t('mobile.users'),
+            tooltip: t('tooltips.users'),
+            isActive: pathname.startsWith('/dash/users'),
+          },
+        ]
+      : []),
+    ...(canSeePlatform
+      ? [
+          {
+            href: '/dash/platform/settings/landing',
+            icon: School,
+            label: t('mobile.platform'),
+            tooltip: t('tooltips.platform'),
+            isActive: pathname.startsWith('/dash/platform'),
+          },
+        ]
+      : []),
+    ...(canSeeAdmin
+      ? [
+          {
+            href: '/dash/admin',
+            icon: ShieldCheck,
+            label: t('mobile.admin'),
+            tooltip: t('tooltips.admin'),
+            isActive: pathname.startsWith('/dash/admin'),
+          },
+        ]
+      : []),
+    {
+      href: '/dash/user-account/settings/general',
+      icon: Settings,
+      label: t('mobile.settings'),
+      tooltip: t('ariaLabels.userAccountSettings'),
+      isActive: pathname.startsWith('/dash/user-account'),
+    },
+  ];
+
   return (
-    <div className="border-sidebar-border bg-sidebar text-sidebar-foreground supports-[backdrop-filter]:bg-sidebar/90 fixed right-0 bottom-0 left-0 z-50 border-t shadow-lg supports-[backdrop-filter]:backdrop-blur-md">
-      <div className="flex h-16 items-center justify-around px-2">
-        <ToolTip
-          content={t('tooltips.home')}
-          slateBlack
-          sideOffset={8}
-          side="top"
-        >
-          <AppLink
-            href="/"
-            className="flex flex-col items-center p-2"
-            aria-label={t('ariaLabels.home')}
-          >
-            <Home size={20} />
-            <span className="mt-1 text-xs">{t('mobile.home')}</span>
-          </AppLink>
-        </ToolTip>
-        {canSeeCourses ? (
-          <ToolTip
-            content={t('tooltips.courses')}
-            slateBlack
-            sideOffset={8}
-            side="top"
-          >
-            <AppLink
-              href="/dash/courses"
-              className="flex flex-col items-center p-2"
-              aria-label={t('ariaLabels.manageCourses')}
-            >
-              <BookCopy size={20} />
-              <span className="mt-1 text-xs">{t('mobile.courses')}</span>
-            </AppLink>
-          </ToolTip>
-        ) : null}
-        {canSeeAssignments ? (
-          <ToolTip
-            content={t('tooltips.assignments')}
-            slateBlack
-            sideOffset={8}
-            side="top"
-          >
-            <AppLink
-              href="/dash/assignments"
-              className="flex flex-col items-center p-2"
-              aria-label={t('ariaLabels.manageAssignments')}
-            >
-              <Backpack size={20} />
-              <span className="mt-1 text-xs">{t('mobile.assignments')}</span>
-            </AppLink>
-          </ToolTip>
-        ) : null}
-        {canSeeAnalytics ? (
-          <ToolTip
-            content={t('tooltips.analytics')}
-            slateBlack
-            sideOffset={8}
-            side="top"
-          >
-            <AppLink
-              href="/dash/analytics"
-              className="flex flex-col items-center p-2"
-              aria-label={t('ariaLabels.manageAnalytics')}
-            >
-              <BarChart3 size={20} />
-              <span className="mt-1 text-xs">{t('mobile.analytics')}</span>
-            </AppLink>
-          </ToolTip>
-        ) : null}
-        {canSeeUsers ? (
-          <ToolTip
-            content={t('tooltips.users')}
-            slateBlack
-            sideOffset={8}
-            side="top"
-          >
-            <AppLink
-              href="/dash/users/settings/users"
-              className="flex flex-col items-center p-2"
-              aria-label={t('ariaLabels.manageUsers')}
-            >
-              <Users size={20} />
-              <span className="mt-1 text-xs">{t('mobile.users')}</span>
-            </AppLink>
-          </ToolTip>
-        ) : null}
-        {canSeePlatform ? (
-          <ToolTip
-            content={t('tooltips.platform')}
-            slateBlack
-            sideOffset={8}
-            side="top"
-          >
-            <AppLink
-              href="/dash/platform/settings/landing"
-              className="flex flex-col items-center p-2"
-              aria-label={t('ariaLabels.platformSettings')}
-            >
-              <School size={20} />
-              <span className="mt-1 text-xs">{t('mobile.platform')}</span>
-            </AppLink>
-          </ToolTip>
-        ) : null}
-        {canSeeAdmin ? (
-          <ToolTip
-            content={t('tooltips.admin')}
-            slateBlack
-            sideOffset={8}
-            side="top"
-          >
-            <AppLink
-              href="/dash/admin"
-              className="flex flex-col items-center p-2"
-              aria-label={t('ariaLabels.admin')}
-            >
-              <ShieldCheck size={20} />
-              <span className="mt-1 text-xs">{t('mobile.admin')}</span>
-            </AppLink>
-          </ToolTip>
-        ) : null}
-        <ToolTip
-          content={t('tooltips.userSettings', {
-            username: currentUser?.username ?? '',
+    <div className="border-border/80 bg-background/95 supports-[backdrop-filter]:bg-background/90 fixed inset-x-0 bottom-0 z-50 border-t shadow-[0_-10px_30px_rgba(15,23,42,0.08)] supports-[backdrop-filter]:backdrop-blur">
+      <div className="mx-auto w-full max-w-screen-sm px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
+        <nav className="no-scrollbar grid auto-cols-[minmax(4.5rem,1fr)] grid-flow-col gap-1 overflow-x-auto">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <AppLink
+                key={item.href}
+                href={item.href}
+                aria-label={item.tooltip}
+                aria-current={item.isActive ? 'page' : undefined}
+                title={item.tooltip}
+                className={cn(
+                  'focus-visible:ring-ring/50 flex min-h-14 min-w-[4.5rem] flex-col items-center justify-center rounded-2xl px-3 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2',
+                  item.isActive
+                    ? 'bg-accent text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+                )}
+              >
+                <span
+                  className={cn(
+                    'flex h-8 w-8 items-center justify-center rounded-full transition-colors',
+                    item.isActive ? 'bg-background text-foreground' : 'text-muted-foreground',
+                  )}
+                >
+                  <Icon size={18} />
+                </span>
+                <span className="mt-1 truncate text-[11px] font-medium leading-tight">{item.label}</span>
+              </AppLink>
+            );
           })}
-          slateBlack
-          sideOffset={8}
-          side="top"
-        >
-          <AppLink
-            href="/dash/user-account/settings/general"
-            className="flex flex-col items-center p-2"
-            aria-label={t('ariaLabels.userAccountSettings')}
-          >
-            <Settings size={20} />
-            <span className="mt-1 text-xs">{t('mobile.settings')}</span>
-          </AppLink>
-        </ToolTip>
+        </nav>
       </div>
     </div>
   );

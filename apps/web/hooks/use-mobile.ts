@@ -1,19 +1,32 @@
 import * as React from 'react';
 
 const MOBILE_BREAKPOINT = 768;
+const MOBILE_MEDIA_QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`;
+
+function subscribe(callback: () => void) {
+  if (typeof globalThis.window === 'undefined') {
+    return () => undefined;
+  }
+
+  const mediaQueryList = globalThis.matchMedia(MOBILE_MEDIA_QUERY);
+  const handler = () => {
+    callback();
+  };
+
+  mediaQueryList.addEventListener('change', handler);
+  return () => mediaQueryList.removeEventListener('change', handler);
+}
+
+function getSnapshot() {
+  if (typeof globalThis.window === 'undefined') {
+    return false;
+  }
+
+  return globalThis.matchMedia(MOBILE_MEDIA_QUERY).matches;
+}
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined);
-
-  React.useEffect(() => {
-    const mql = globalThis.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    };
-    mql.addEventListener('change', onChange);
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    return () => mql.removeEventListener('change', onChange);
-  }, []);
-
-  return Boolean(isMobile);
+  return React.useSyncExternalStore(subscribe, getSnapshot, () => false);
 }
+
+export { MOBILE_BREAKPOINT };

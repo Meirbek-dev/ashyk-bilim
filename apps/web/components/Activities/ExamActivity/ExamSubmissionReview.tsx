@@ -79,13 +79,13 @@ export default function ExamSubmissionReview({
 
           <div className="space-y-5 text-left">
             {/* Summary Stats */}
-            <div className="border-border overflow-hidden rounded-xl border bg-gradient-to-br from-gray-50 to-white shadow-sm">
+            <div className="border-border bg-muted/30 overflow-hidden rounded-xl border shadow-sm">
               <div className="grid gap-0 divide-y divide-gray-100">
                 <div className="flex items-center justify-between p-4">
                   <span className="text-foreground font-medium">{`${t('totalQuestions')}:`}</span>
                   <span className="text-xl font-bold text-blue-600">{totalQuestions}</span>
                 </div>
-                <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-white p-4">
+                <div className="flex items-center justify-between bg-green-50/70 p-4">
                   <div className="flex items-center gap-2">
                     <div className="rounded-lg bg-green-600 p-1.5">
                       <CheckCircle2 className="h-4 w-4 text-white" />
@@ -94,7 +94,7 @@ export default function ExamSubmissionReview({
                   </div>
                   <span className="text-xl font-bold text-green-600">{answeredCount}</span>
                 </div>
-                <div className="flex items-center justify-between bg-gradient-to-r from-orange-50 to-white p-4">
+                <div className="flex items-center justify-between bg-orange-50/70 p-4">
                   <div className="flex items-center gap-2">
                     <div className="rounded-lg bg-orange-600 p-1.5">
                       <AlertTriangle className="h-4 w-4 text-white" />
@@ -104,7 +104,7 @@ export default function ExamSubmissionReview({
                   <span className="text-xl font-bold text-orange-600">{unansweredQuestions.length}</span>
                 </div>
                 {hasFlagged && (
-                  <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-white p-4">
+                  <div className="flex items-center justify-between bg-blue-50/70 p-4">
                     <div className="flex items-center gap-2">
                       <div className="rounded-lg bg-blue-600 p-1.5">
                         <Flag className="h-4 w-4 text-white" />
@@ -176,7 +176,7 @@ export default function ExamSubmissionReview({
             )}
 
             {/* Confirmation Checkbox */}
-            <div className="overflow-hidden rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-blue-200 bg-blue-50/70 p-5 shadow-sm">
               <div className="flex items-start gap-4">
                 <Checkbox
                   id="confirm-submission"

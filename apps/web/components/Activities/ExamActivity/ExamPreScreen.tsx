@@ -88,26 +88,25 @@ export default function ExamPreScreen({
             <CardContent className="space-y-8">
               {/* Exam Information with modern grid */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div className="group border-border relative overflow-hidden rounded-xl border bg-gradient-to-br from-blue-50 to-blue-100/50 p-5 transition-all duration-200 hover:shadow-lg hover:shadow-blue-100">
+                <div className="border-border bg-card rounded-2xl border p-5 shadow-sm transition-colors hover:bg-muted/30">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-lg">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
                       <FileText className="h-6 w-6" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600">{t('totalQuestions')}</p>
+                      <p className="text-muted-foreground text-sm font-medium">{t('totalQuestions')}</p>
                       <p className="text-foreground mt-1 text-3xl font-bold">{questionCount}</p>
                     </div>
                   </div>
-                  <div className="absolute right-0 bottom-0 h-20 w-20 translate-x-8 translate-y-8 rounded-full bg-blue-600/10" />
                 </div>
 
-                <div className="group border-border relative overflow-hidden rounded-xl border bg-gradient-to-br from-orange-50 to-orange-100/50 p-5 transition-all duration-200 hover:shadow-lg hover:shadow-orange-100">
+                <div className="border-border bg-card rounded-2xl border p-5 shadow-sm transition-colors hover:bg-muted/30">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-orange-600 text-white shadow-lg">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-orange-600 text-white shadow-sm">
                       <Clock className="h-6 w-6" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600">{t('timeLimit')}</p>
+                      <p className="text-muted-foreground text-sm font-medium">{t('timeLimit')}</p>
                       <p className="text-foreground mt-1 text-3xl font-bold">
                         {timeLimit || <span className="text-2xl">{t('unlimited')}</span>}
                       </p>
@@ -116,30 +115,28 @@ export default function ExamPreScreen({
                       )}
                     </div>
                   </div>
-                  <div className="absolute right-0 bottom-0 h-20 w-20 translate-x-8 translate-y-8 rounded-full bg-orange-600/10" />
                 </div>
 
                 {attemptLimit && attemptLimit > 0 && !isTeacher && (
-                  <div className="group border-border relative overflow-hidden rounded-xl border bg-gradient-to-br from-purple-50 to-purple-100/50 p-5 transition-all duration-200 hover:shadow-lg hover:shadow-purple-100">
+                  <div className="border-border bg-card rounded-2xl border p-5 shadow-sm transition-colors hover:bg-muted/30">
                     <div className="flex items-start gap-4">
-                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-purple-600 text-white shadow-lg">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white shadow-sm">
                         <Users className="h-6 w-6" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600">{t('attemptsRemaining')}</p>
+                        <p className="text-muted-foreground text-sm font-medium">{t('attemptsRemaining')}</p>
                         <p className="text-foreground mt-1 text-3xl font-bold">
                           {remainingAttempts !== null ? remainingAttempts : t('unlimited')}
                         </p>
                       </div>
                     </div>
-                    <div className="absolute right-0 bottom-0 h-20 w-20 translate-x-8 translate-y-8 rounded-full bg-purple-600/10" />
                   </div>
                 )}
 
                 {isTeacher && (
-                  <div className="group relative overflow-hidden rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-blue-100/80 to-indigo-100/50 p-5 transition-all duration-200 hover:shadow-lg hover:shadow-blue-200">
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-5 shadow-sm">
                     <div className="flex items-start gap-4">
-                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-lg">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
                         <InfinityIcon />
                       </div>
                       <div className="flex-1">
@@ -152,7 +149,7 @@ export default function ExamPreScreen({
               </div>
 
               {/* Instructions with modern design */}
-              <div className="space-y-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50 p-6">
+              <div className="border-border bg-muted/30 space-y-5 rounded-2xl border p-6">
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 text-white">
                     <CircleAlertIcon className="m-1.5" />
@@ -203,7 +200,7 @@ export default function ExamPreScreen({
 
               {/* Anti-Cheating Warnings with modern alert */}
               {(settings.tab_switch_detection || settings.copy_paste_protection || settings.devtools_detection) && (
-                <Alert className="border-l-4 border-l-red-500 bg-gradient-to-r from-red-50 to-red-100/50">
+                <Alert className="border-l-4 border-l-red-500 border-red-200 bg-red-50/80">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600 text-white">
                     <AlertCircle className="size-6" />
                   </div>

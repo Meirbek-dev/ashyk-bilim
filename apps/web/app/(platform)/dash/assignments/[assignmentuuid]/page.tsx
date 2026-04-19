@@ -1,15 +1,15 @@
 'use client';
 import { useQueryClient } from '@tanstack/react-query';
-import { BookOpen, BookX, EllipsisVertical, Eye, Layers2, Monitor, Pencil, UserRoundPen } from 'lucide-react';
+import { BookOpen, BookX, EllipsisVertical, Eye, Layers2, Pencil, UserRoundPen } from 'lucide-react';
 import EditAssignmentModal from '@components/Objects/Modals/Activities/Assignments/EditAssignmentModal';
 import { AssignmentProvider, useAssignments } from '@components/Contexts/Assignments/AssignmentContext';
+import DesktopOnlyGuard from '@components/Dashboard/Misc/DesktopOnlyGuard';
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip';
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs';
 import { updateAssignment } from '@services/courses/assignments';
 import { updateActivity } from '@services/courses/activities';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { useParams, useSearchParams } from 'next/navigation';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
 import dynamic from 'next/dynamic';
@@ -27,80 +27,69 @@ const PlatformAssignmentPage = () => {
   const params = useParams<{ assignmentuuid: string }>();
   const searchParams = useSearchParams();
   const [selectedSubPage, setSelectedSubPage] = useState(searchParams.get('subpage') || 'editor');
-  const isMobile = useIsMobile();
-
-  if (isMobile) {
-    return (
-      <div className="bg-muted flex h-screen w-full items-center justify-center p-4">
-        <div className="border-border bg-card text-card-foreground rounded-lg border p-6 text-center shadow-sm">
-          <h2 className="mb-4 text-xl font-bold">{t('desktopOnlyTitle')}</h2>
-          <Monitor
-            className="mx-auto my-5"
-            size={60}
-          />
-          <p>{t('desktopOnlyMessage1')}</p>
-          <p>{t('desktopOnlyMessage2')}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="flex h-screen w-full flex-col">
-      <AssignmentProvider assignment_uuid={`assignment_${params.assignmentuuid}`}>
-        <div className="soft-shadow border-border bg-card text-card-foreground z-10 flex shrink-0 flex-col border-b shadow-sm">
-          <div className="mr-10 flex h-full justify-between">
-            <div className="mr-10 pl-10 tracking-tighter">
-              <BrdCmpx />
-              <div className="flex w-100 justify-between">
-                <div className="flex text-2xl font-bold">
-                  <div className="flex items-center gap-2">{t('assignmentTools')}</div>
+    <DesktopOnlyGuard
+      title={t('desktopOnlyTitle')}
+      description={t('desktopOnlyMessage1')}
+      supportingText={t('desktopOnlyMessage2')}
+    >
+      <div className="flex h-screen w-full flex-col">
+        <AssignmentProvider assignment_uuid={`assignment_${params.assignmentuuid}`}>
+          <div className="soft-shadow border-border bg-card text-card-foreground z-10 flex shrink-0 flex-col border-b shadow-sm">
+            <div className="mr-10 flex h-full justify-between">
+              <div className="mr-10 pl-10 tracking-tighter">
+                <BrdCmpx />
+                <div className="flex w-100 justify-between">
+                  <div className="flex text-2xl font-bold">
+                    <div className="flex items-center gap-2">{t('assignmentTools')}</div>
+                  </div>
                 </div>
               </div>
+              <div className="flex flex-col justify-center antialiased">
+                <PublishingState />
+              </div>
             </div>
-            <div className="flex flex-col justify-center antialiased">
-              <PublishingState />
+            <div className="mr-10 flex space-x-2 pt-2 pl-10 text-sm font-semibold tracking-tight">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSubPage('editor');
+                }}
+                className={`border-primary flex w-fit space-x-4 py-2 text-center transition-all ease-linear ${
+                  selectedSubPage === 'editor' ? 'border-b-4' : 'opacity-50'
+                }`}
+              >
+                <div className="mx-2 flex items-center space-x-2.5">
+                  <Layers2 size={16} />
+                  <div>{t('editor')}</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSubPage('submissions');
+                }}
+                className={`border-primary flex w-fit space-x-4 py-2 text-center transition-all ease-linear ${
+                  selectedSubPage === 'submissions' ? 'border-b-4' : 'opacity-50'
+                }`}
+              >
+                <div className="mx-2 flex items-center space-x-2.5">
+                  <UserRoundPen size={16} />
+                  <div>{t('submissions')}</div>
+                </div>
+              </button>
             </div>
           </div>
-          <div className="mr-10 flex space-x-2 pt-2 pl-10 text-sm font-semibold tracking-tight">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedSubPage('editor');
-              }}
-              className={`border-primary flex w-fit space-x-4 py-2 text-center transition-all ease-linear ${
-                selectedSubPage === 'editor' ? 'border-b-4' : 'opacity-50'
-              }`}
-            >
-              <div className="mx-2 flex items-center space-x-2.5">
-                <Layers2 size={16} />
-                <div>{t('editor')}</div>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedSubPage('submissions');
-              }}
-              className={`border-primary flex w-fit space-x-4 py-2 text-center transition-all ease-linear ${
-                selectedSubPage === 'submissions' ? 'border-b-4' : 'opacity-50'
-              }`}
-            >
-              <div className="mx-2 flex items-center space-x-2.5">
-                <UserRoundPen size={16} />
-                <div>{t('submissions')}</div>
-              </div>
-            </button>
+          <div className="flex min-h-0 w-full flex-1">
+            {selectedSubPage === 'editor' && <AssignmentEditorSubPage assignmentuuid={params.assignmentuuid} />}
+            {selectedSubPage === 'submissions' && (
+              <AssignmentSubmissionsSubPage assignment_uuid={params.assignmentuuid} />
+            )}
           </div>
-        </div>
-        <div className="flex min-h-0 w-full flex-1">
-          {selectedSubPage === 'editor' && <AssignmentEditorSubPage assignmentuuid={params.assignmentuuid} />}
-          {selectedSubPage === 'submissions' && (
-            <AssignmentSubmissionsSubPage assignment_uuid={params.assignmentuuid} />
-          )}
-        </div>
-      </AssignmentProvider>
-    </div>
+        </AssignmentProvider>
+      </div>
+    </DesktopOnlyGuard>
   );
 };
 

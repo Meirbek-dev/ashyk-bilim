@@ -248,8 +248,8 @@ export default function ExamResults({
     <div className="mx-auto max-w-7xl space-y-8 p-6">
       {/* Score Card */}
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br px-6 py-8 text-center">
-          <div className="inline-flex items-center justify-center gap-3 text-4xl font-bold text-blue-900">
+        <div className="bg-muted/30 border-border border-b px-6 py-8 text-center">
+          <div className="inline-flex items-center justify-center gap-3 text-4xl font-bold text-foreground">
             {t('examCompleted')}
           </div>
 
@@ -294,7 +294,7 @@ export default function ExamResults({
 
           {/* Statistics */}
           <div className="grid gap-5 md:grid-cols-3">
-            <div className="group relative overflow-hidden rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-green-100/50 p-6 shadow-sm transition-all hover:shadow-md hover:shadow-green-100">
+            <div className="rounded-xl border border-green-200 bg-green-50/70 p-6 shadow-sm">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-green-600 shadow-lg">
                   <CheckCircle2 className="h-8 w-8 text-white" />
@@ -304,10 +304,9 @@ export default function ExamResults({
                   <p className="text-3xl font-bold text-green-600">{correctCount}</p>
                 </div>
               </div>
-              <div className="absolute right-0 bottom-0 h-20 w-20 translate-x-8 translate-y-8 rounded-full bg-green-600/10" />
             </div>
 
-            <div className="group relative overflow-hidden rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-red-100/50 p-6 shadow-sm transition-all hover:shadow-md hover:shadow-red-100">
+            <div className="rounded-xl border border-red-200 bg-red-50/70 p-6 shadow-sm">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-red-600 shadow-lg">
                   <XCircle className="h-8 w-8 text-white" />
@@ -317,10 +316,9 @@ export default function ExamResults({
                   <p className="text-3xl font-bold text-red-600">{incorrectCount}</p>
                 </div>
               </div>
-              <div className="absolute right-0 bottom-0 h-20 w-20 translate-x-8 translate-y-8 rounded-full bg-red-600/10" />
             </div>
 
-            <div className="group border-border relative overflow-hidden rounded-xl border bg-gradient-to-br from-gray-50 to-gray-100/50 p-6 shadow-sm transition-all hover:shadow-md hover:shadow-gray-100">
+            <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gray-600 shadow-lg">
                   <AlertCircle className="h-8 w-8 text-white" />
@@ -330,7 +328,6 @@ export default function ExamResults({
                   <p className="text-3xl font-bold text-gray-600">{unansweredCount}</p>
                 </div>
               </div>
-              <div className="absolute right-0 bottom-0 h-20 w-20 translate-x-8 translate-y-8 rounded-full bg-gray-600/10" />
             </div>
           </div>
 

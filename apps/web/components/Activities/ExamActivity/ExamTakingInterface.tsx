@@ -3,6 +3,7 @@
 import { apiFetch } from '@/lib/api-client';
 
 import { createInitialTakingState, examTakingReducer } from './state/examTakingReducer';
+import ExamQuestionNavigation, { ExamQuestionNavigationMobile } from './ExamQuestionNavigation';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useExamPersistence } from '@/hooks/useExamPersistence';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
@@ -406,14 +407,30 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
   };
 
   const answeredCount = orderedQuestions.filter((q) => isAnswered(q.id)).length;
+  const answeredQuestionIndexes = orderedQuestions.reduce<Set<number>>((set, question, index) => {
+    if (isAnswered(question.id)) {
+      set.add(index);
+    }
+
+    return set;
+  }, new Set<number>());
   const remainingViolations = settings.violation_threshold
     ? Math.max(settings.violation_threshold - violationCount, 0)
     : undefined;
+  const recoverableData = persistence.getRecoverableData();
+
+  const openSubmitConfirmation = () => {
+    const unansweredQuestions = orderedQuestions
+      .map((q, idx) => (!isAnswered(q.id) ? idx + 1 : null))
+      .filter((n): n is number => n !== null);
+
+    dispatch({ type: 'SHOW_SUBMIT_CONFIRMATION', unansweredQuestions });
+  };
 
   return (
     <div
       ref={examContainerRef}
-      className="mx-auto max-w-full space-y-6 p-4 md:p-6"
+      className="mx-auto max-w-full space-y-6 p-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6"
     >
       {/* Header with Timer, Progress, and primary actions */}
       <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
@@ -447,12 +464,7 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
           <Button
             size="sm"
             variant="outline"
-            onClick={() => {
-              const unansweredQuestions = orderedQuestions
-                .map((q, idx) => (!isAnswered(q.id) ? idx + 1 : null))
-                .filter((n): n is number => n !== null);
-              dispatch({ type: 'SHOW_SUBMIT_CONFIRMATION', unansweredQuestions });
-            }}
+            onClick={openSubmitConfirmation}
             className="hidden md:inline-flex"
           >
             {t('reviewAndSubmit')}
@@ -532,9 +544,7 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
             <AlertDialogTitle>{t('recoverPreviousAnswers')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('recoverPreviousAnswersDescription', {
-                time: persistence.getRecoverableData()
-                  ? new Date(persistence.getRecoverableData()!.lastSaved).toLocaleTimeString()
-                  : '',
+                time: recoverableData ? new Date(recoverableData.lastSaved).toLocaleTimeString() : '',
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -613,12 +623,7 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
               </Button>
             ) : (
               <Button
-                onClick={() => {
-                  const unansweredQuestions = orderedQuestions
-                    .map((q, idx) => (!answers[q.id] ? idx + 1 : null))
-                    .filter((n): n is number => n !== null);
-                  dispatch({ type: 'SHOW_SUBMIT_CONFIRMATION', unansweredQuestions });
-                }}
+                onClick={openSubmitConfirmation}
                 disabled={isSubmitting}
                 className="w-full bg-green-600 hover:bg-green-700 md:w-auto"
               >
@@ -630,105 +635,28 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
         </div>
 
         {/* Question Navigation Sidebar */}
-        <div className="order-first lg:order-last">
-          <Card className="sticky top-6">
-            <CardHeader>
-              <CardTitle className="text-base">{t('questions')}</CardTitle>
-              <CardDescription className="text-xs">{t('questionNavigatorDescription')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-5 gap-2 md:grid-cols-8 lg:grid-cols-5">
-                {orderedQuestions.map((question, index) => {
-                  const answered = isAnswered(question.id);
-                  const current = index === currentIndex;
-
-                  let bgColor = 'bg-muted hover:bg-gray-200';
-                  let textColor = 'text-gray-600';
-
-                  if (current) {
-                    bgColor = 'bg-blue-500 hover:bg-blue-600';
-                    textColor = 'text-white';
-                  } else if (answered) {
-                    bgColor = 'bg-green-100 hover:bg-green-200';
-                    textColor = 'text-green-700';
-                  }
-
-                  return (
-                    <button
-                      key={question.id}
-                      onClick={() => dispatch({ type: 'NAVIGATE_TO_QUESTION', index })}
-                      className={`relative flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition-colors ${bgColor} ${textColor}`}
-                      aria-label={t('questionAriaLabel', {
-                        number: index + 1,
-                        answered: answered ? 'true' : 'false',
-                      })}
-                    >
-                      {index + 1}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Legend */}
-              <div className="mt-4 space-y-2 border-t pt-4 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded bg-green-100" />
-                  <span className="text-gray-600">{t('answered')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded bg-blue-500" />
-                  <span className="text-gray-600">{t('current')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="bg-muted h-4 w-4 rounded" />
-                  <span className="text-gray-600">{t('unanswered')}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="order-first hidden lg:order-last lg:block">
+          <ExamQuestionNavigation
+            totalQuestions={orderedQuestions.length}
+            currentQuestionIndex={currentIndex}
+            answeredQuestions={answeredQuestionIndexes}
+            onQuestionSelect={(index) => dispatch({ type: 'NAVIGATE_TO_QUESTION', index })}
+          />
         </div>
       </div>
 
       {/* Mobile bottom nav */}
-      <div className="bg-card fixed right-0 bottom-0 left-0 z-50 border-t lg:hidden">
-        <div className="px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => dispatch({ type: 'NAVIGATE_TO_QUESTION', index: Math.max(0, currentIndex - 1) })}
-              disabled={currentIndex === 0}
-              className="flex-1"
-            >
-              {t('previous')}
-            </Button>
-
-            {currentIndex < orderedQuestions.length - 1 ? (
-              <Button
-                size="sm"
-                onClick={() => dispatch({ type: 'NAVIGATE_TO_QUESTION', index: currentIndex + 1 })}
-                className="flex-1"
-              >
-                {t('next')}
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                onClick={() => {
-                  const unansweredQuestions = orderedQuestions
-                    .map((q, idx) => (!isAnswered(q.id) ? idx + 1 : null))
-                    .filter((n): n is number => n !== null);
-                  dispatch({ type: 'SHOW_SUBMIT_CONFIRMATION', unansweredQuestions });
-                }}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-                disabled={isSubmitting}
-              >
-                {t('reviewAndSubmit')}
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+      <ExamQuestionNavigationMobile
+        totalQuestions={orderedQuestions.length}
+        currentQuestionIndex={currentIndex}
+        answeredQuestions={answeredQuestionIndexes}
+        onQuestionSelect={(index) => dispatch({ type: 'NAVIGATE_TO_QUESTION', index })}
+        onPrevious={() => dispatch({ type: 'NAVIGATE_TO_QUESTION', index: Math.max(0, currentIndex - 1) })}
+        onNext={() => dispatch({ type: 'NAVIGATE_TO_QUESTION', index: currentIndex + 1 })}
+        onSubmit={openSubmitConfirmation}
+        canGoNext={currentIndex < orderedQuestions.length - 1}
+        canGoPrevious={currentIndex > 0}
+      />
 
       {/* Confirmation Dialog */}
       <AlertDialog

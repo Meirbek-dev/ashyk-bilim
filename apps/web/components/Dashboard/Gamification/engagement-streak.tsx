@@ -70,12 +70,12 @@ export function EngagementStreak({ profile, className }: EngagementStreakProps) 
                   repeatDelay: 2,
                 }}
                 className={cn(
-                  'flex h-12 w-12 items-center justify-center rounded-full',
-                  engagement.isActive ? 'bg-linear-to-br from-orange-500 to-red-500' : 'bg-muted',
+                  'flex h-12 w-12 items-center justify-center rounded-full border',
+                  engagement.isActive ? 'border-orange-200 bg-orange-50 text-orange-600' : 'bg-muted border-border',
                 )}
               >
                 {engagement.isActive ? (
-                  <Flame className="h-6 w-6 text-white" />
+                  <Flame className="h-6 w-6" />
                 ) : (
                   <Calendar className="text-muted-foreground h-6 w-6" />
                 )}

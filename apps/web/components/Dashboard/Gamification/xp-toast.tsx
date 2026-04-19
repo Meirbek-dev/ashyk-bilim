@@ -13,7 +13,7 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useReducedData } from '@/hooks/use-reduced-data';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -32,9 +32,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
   // Force compact mode on mobile or reduced data
   const shouldUseCompact = compact || isMobile || prefersReducedData;
 
-  // Generate random values once for particle animations to avoid purity violations
-  // Use useState with lazy initialization to compute Math.random() only once
-  const [compactParticles] = useState(() =>
+  const compactParticlesRef = useRef(
     Array.from({ length: 8 }, () => ({
       xOffset: (Math.random() - 0.5) * 100,
       yOffset: (Math.random() - 0.5) * 100,
@@ -42,13 +40,16 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
     })),
   );
 
-  const [fullscreenParticles] = useState(() =>
+  const fullscreenParticlesRef = useRef(
     Array.from({ length: 30 }, () => ({
       xOffset: (Math.random() - 0.5) * 600,
       yOffset: (Math.random() - 0.5) * 600,
       delay: Math.random() * 0.8,
     })),
   );
+
+  const compactParticles = compactParticlesRef.current;
+  const fullscreenParticles = fullscreenParticlesRef.current;
 
   useEffect(() => {
     // Auto-dismiss after 4 seconds (3s on mobile for faster flow)
@@ -70,7 +71,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
         animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, x: 0, y: 0 }}
         exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 100 }}
         transition={prefersReducedMotion ? { duration: 0.2 } : { type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed right-6 bottom-6 z-100 max-w-[calc(100vw-3rem)] rounded-2xl border-2 border-yellow-500 bg-linear-to-br from-yellow-500/20 to-orange-500/20 p-4 shadow-2xl backdrop-blur-md md:max-w-sm md:p-6"
+        className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] z-100 w-[min(calc(100vw-2rem),24rem)] rounded-2xl border border-amber-300 bg-background/95 p-4 shadow-xl backdrop-blur-md md:right-6 md:bottom-6 md:max-w-sm md:p-6"
         onClick={onDismiss}
       >
         {/* Subtle sparkle effect (skip if reduced motion or reduced data) */}
@@ -104,8 +105,8 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
             transition={prefersReducedMotion ? { duration: 0.2 } : { type: 'spring', stiffness: 400, damping: 15 }}
             className="shrink-0"
           >
-            <div className="rounded-full border-2 border-yellow-500 bg-yellow-500/20 p-2 md:p-3">
-              <Sparkles className="h-6 w-6 text-yellow-500 md:h-8 md:w-8" />
+            <div className="rounded-2xl border border-amber-300 bg-amber-50 p-2.5 md:p-3">
+              <Sparkles className="h-6 w-6 text-amber-600 md:h-8 md:w-8" />
             </div>
           </motion.div>
 
@@ -122,7 +123,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: prefersReducedMotion ? 0 : 0.3 }}
-              className="text-base font-semibold text-yellow-500 md:text-lg"
+              className="text-base font-semibold text-amber-700 md:text-lg"
             >
               {t('reachedLevel', { level: newLevel })}
             </motion.p>
@@ -154,7 +155,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
         animate={{ scale: 1, rotate: 0, opacity: 1 }}
         exit={{ scale: 0.5, rotate: 15, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className="relative mx-4 max-w-lg rounded-3xl border-4 border-yellow-500 bg-linear-to-br from-yellow-500/20 via-orange-500/20 to-red-500/10 p-12 text-center shadow-2xl"
+        className="relative mx-4 max-w-lg rounded-3xl border border-amber-300 bg-background p-12 text-center shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Sparkles animation */}
@@ -174,7 +175,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
                 delay: particle.delay,
                 repeat: 2,
               }}
-              className="absolute top-1/2 left-1/2 h-2 w-2 rounded-full bg-yellow-400 shadow-lg shadow-yellow-400/50"
+              className="absolute top-1/2 left-1/2 h-2 w-2 rounded-full bg-amber-300 shadow-lg shadow-amber-200/60"
             />
           ))}
         </div>
@@ -191,8 +192,8 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
           }}
           className="relative"
         >
-          <div className="mb-4 inline-flex rounded-full border-4 border-yellow-500/50 bg-yellow-500/30 p-4">
-            <Sparkles className="h-20 w-20 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
+          <div className="mb-4 inline-flex rounded-full border border-amber-300 bg-amber-50 p-4">
+            <Sparkles className="h-20 w-20 text-amber-600" />
           </div>
         </motion.div>
 
@@ -209,9 +210,9 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5, type: 'spring' }}
-          className="mb-6 inline-block rounded-2xl border-2 border-yellow-500/50 bg-yellow-500/20 px-8 py-3"
+          className="mb-6 inline-block rounded-2xl border border-amber-300 bg-amber-50 px-8 py-3"
         >
-          <p className="text-4xl font-black text-yellow-500 drop-shadow-md">{t('reachedLevel', { level: newLevel })}</p>
+          <p className="text-4xl font-black text-amber-700">{t('reachedLevel', { level: newLevel })}</p>
         </motion.div>
 
         <motion.button
@@ -221,7 +222,7 @@ export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: Lev
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onDismiss}
-          className="mt-4 rounded-xl bg-yellow-500 px-8 py-3 font-bold text-black shadow-lg shadow-yellow-500/30 transition-all hover:bg-yellow-400 hover:shadow-yellow-400/40"
+          className="mt-4 rounded-xl bg-amber-500 px-8 py-3 font-bold text-black shadow-lg shadow-amber-200/60 transition-all hover:bg-amber-400"
         >
           {t('continue')}
         </motion.button>

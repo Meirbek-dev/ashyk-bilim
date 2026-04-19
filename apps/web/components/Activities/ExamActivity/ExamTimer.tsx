@@ -18,10 +18,10 @@ const getTimerColor = (seconds: number | null): string => {
 };
 
 const getTimerBgColor = (seconds: number | null): string => {
-  if (seconds === null) return 'bg-gradient-to-br from-blue-50 to-blue-100';
-  if (seconds <= 60) return 'bg-gradient-to-br from-red-50 to-red-100';
-  if (seconds <= 300) return 'bg-gradient-to-br from-orange-50 to-orange-100';
-  return 'bg-gradient-to-br from-blue-50 to-blue-100';
+  if (seconds === null) return 'border-blue-200 bg-blue-50/80';
+  if (seconds <= 60) return 'border-red-200 bg-red-50/90';
+  if (seconds <= 300) return 'border-orange-200 bg-orange-50/90';
+  return 'border-blue-200 bg-blue-50/80';
 };
 
 interface ExamTimerProps {
@@ -80,9 +80,6 @@ export default function ExamTimer({ startedAt, timeLimitMinutes, onExpire, class
             : 'border-blue-400 shadow-sm'
       } ${getTimerBgColor(remaining)} ${className}`}
     >
-      {/* Background gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent" />
-
       {/* Content */}
       <div className="relative flex items-center gap-3 px-5 py-3">
         <div
@@ -93,7 +90,7 @@ export default function ExamTimer({ startedAt, timeLimitMinutes, onExpire, class
           <Clock className={`h-5 w-5 text-white ${remaining <= 60 ? 'animate-pulse' : ''}`} />
         </div>
         <div className="flex-1">
-          <p className="text-xs font-medium text-gray-600">{t('timeRemaining')}</p>
+          <p className="text-muted-foreground text-xs font-medium">{t('timeRemaining')}</p>
           <p className={`text-2xl font-bold tracking-tight tabular-nums ${getTimerColor(remaining)}`}>
             {formatTime(remaining)}
           </p>
@@ -102,7 +99,7 @@ export default function ExamTimer({ startedAt, timeLimitMinutes, onExpire, class
 
       {/* Progress bar at bottom */}
       {timeLimitMinutes && (
-        <div className="absolute right-0 bottom-0 left-0 h-1.5 bg-gray-200/50">
+        <div className="absolute right-0 bottom-0 left-0 h-1.5 bg-black/5">
           <div
             className={`h-full transition-all duration-1000 ease-linear ${
               remaining <= 60 ? 'bg-red-600' : remaining <= 300 ? 'bg-orange-600' : 'bg-blue-600'

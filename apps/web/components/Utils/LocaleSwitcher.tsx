@@ -48,24 +48,7 @@ export const LocaleSwitcher = ({ className, isMobile }: LocaleSwitcherProps) => 
       value={currentLocale}
       onValueChange={(value) => value && handleLocaleChange(value as Locale)}
       disabled={isPending}
-      items={localeItems}
     >
-      <SelectContent
-        className={cn(isMobile && 'z-80')}
-        side="bottom"
-        sideOffset={4}
-      >
-        <SelectGroup>
-          {localeItems.map((locale) => (
-            <SelectItem
-              key={locale.value}
-              value={locale.value}
-            >
-              {locale.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
       {isMobile ? (
         <SelectTrigger
           className={cn('w-auto touch-manipulation', isMobile && 'w-full', className)}
@@ -90,12 +73,12 @@ export const LocaleSwitcher = ({ className, isMobile }: LocaleSwitcherProps) => 
         sideOffset={4}
       >
         <SelectGroup>
-          {locales.map((locale) => (
+          {localeItems.map((locale) => (
             <SelectItem
-              key={locale}
-              value={locale}
+              key={locale.value}
+              value={locale.value}
             >
-              {t(locale)}
+              {locale.label}
             </SelectItem>
           ))}
         </SelectGroup>
