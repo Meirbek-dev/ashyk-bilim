@@ -1,6 +1,6 @@
 'use client';
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { createCertification, deleteCertification, updateCertification } from '@services/courses/certifications';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Controller, useForm, useWatch } from 'react-hook-form';
@@ -422,27 +422,21 @@ const EditCourseCertification = () => {
                           render={({ field, fieldState }) => (
                             <Field className="sm:col-span-2">
                               <FieldLabel>{t('certificationType')}</FieldLabel>
-                              <Select
+                              <NativeSelect
                                 value={field.value || 'completion'}
-                                onValueChange={field.onChange}
-                                items={certificationTypeItems}
+                                onChange={(event) => field.onChange(event.target.value)}
+                                className="w-full"
+                                aria-label={t('certificationType')}
                               >
-                                <SelectTrigger>
-                                  <SelectValue>{t(`certificationTypes.${field.value || 'completion'}`)}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectGroup>
-                                    {certificationTypeItems.map((item) => (
-                                      <SelectItem
-                                        key={item.value}
-                                        value={item.value}
-                                      >
-                                        {item.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectGroup>
-                                </SelectContent>
-                              </Select>
+                                {certificationTypeItems.map((item) => (
+                                  <NativeSelectOption
+                                    key={item.value}
+                                    value={item.value}
+                                  >
+                                    {item.label}
+                                  </NativeSelectOption>
+                                ))}
+                              </NativeSelect>
                               <FieldError errors={[fieldState.error]} />
                             </Field>
                           )}

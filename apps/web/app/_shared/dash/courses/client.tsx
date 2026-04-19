@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AlertTriangle, LayoutGrid, List, MoreHorizontal, Search, Sparkles, Trash2, Workflow, X } from 'lucide-react';
 import { CourseStatusBadge, courseWorkflowSummaryCardClass } from '@components/Dashboard/Courses/courseWorkflowUi';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import CourseThumbnail, { removeCoursePrefix } from '@components/Objects/Thumbnails/CourseThumbnail';
 import { deleteCourseFromBackend, updateCourseAccess } from '@services/courses/courses';
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail';
@@ -595,22 +595,15 @@ const CoursesHome = ({
 
           <div className="flex items-center gap-3">
             <label className="text-muted-foreground text-sm font-medium">{t('sort.label')}</label>
-            <Select
+            <NativeSelect
               value={sortBy}
-              onValueChange={(value) => updateRoute({ sort: value, page: '1' })}
-              items={[
-                { value: 'updated', label: t('sort.updated') },
-                { value: 'name', label: t('sort.name') },
-              ]}
+              onChange={(event) => updateRoute({ sort: event.target.value, page: '1' })}
+              className="w-[180px]"
+              aria-label={t('sortBy')}
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="updated">{t('sort.updated')}</SelectItem>
-                <SelectItem value="name">{t('sort.name')}</SelectItem>
-              </SelectContent>
-            </Select>
+              <NativeSelectOption value="updated">{t('sort.updated')}</NativeSelectOption>
+              <NativeSelectOption value="name">{t('sort.name')}</NativeSelectOption>
+            </NativeSelect>
           </div>
         </div>
 

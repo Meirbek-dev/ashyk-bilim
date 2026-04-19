@@ -1,5 +1,5 @@
 import { ArrowRight, CheckCircle, GitBranch, Image, Play, Plus, RotateCcw, Save, Settings, Trash2 } from 'lucide-react';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import SimpleAlertDialog from '@/components/ui/alert-dialog-simple';
 import Modal from '@/components/Objects/Elements/Modal/Modal';
 import { Textarea } from '@components/ui/textarea';
@@ -515,31 +515,28 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
                               />
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-medium text-slate-500">→</span>
-                                <Select
+                                <NativeSelect
                                   value={option.nextScenarioId ?? '__end'}
-                                  onValueChange={(val) =>
+                                  onChange={(event) =>
                                     updateOption(scenario.id, option.id, {
-                                      nextScenarioId: val === '__end' ? null : val,
+                                      nextScenarioId: event.target.value === '__end' ? null : event.target.value,
                                     })
                                   }
-                                  items={nextScenarioOptions}
+                                  className="flex-1 text-xs"
+                                  aria-label={t('endScenarioOption')}
                                 >
-                                  <SelectTrigger className="flex-1 text-xs">
-                                    <SelectValue placeholder={t('endScenarioOption')} />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectGroup>
-                                      {nextScenarioOptions.map((item) => (
-                                        <SelectItem
-                                          key={item.value}
-                                          value={item.value}
-                                        >
-                                          {item.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  </SelectContent>
-                                </Select>
+                                  <NativeSelectOption value="__end">
+                                    {t('endScenarioOption')}
+                                  </NativeSelectOption>
+                                  {nextScenarioOptions.map((item) => (
+                                    <NativeSelectOption
+                                      key={item.value}
+                                      value={item.value}
+                                    >
+                                      {item.label}
+                                    </NativeSelectOption>
+                                  ))}
+                                </NativeSelect>
                               </div>
                             </div>
                             <Button

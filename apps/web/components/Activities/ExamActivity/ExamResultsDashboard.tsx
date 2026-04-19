@@ -12,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Download, Eye, TrendingDown, TrendingUp, Users } from 'lucide-react';
@@ -357,48 +357,36 @@ export default function ExamResultsDashboard({
               onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-sm"
             />
-            <Select
+            <NativeSelect
               value={statusFilter}
-              onValueChange={(value) => value !== null && setStatusFilter(value)}
-              items={statusItems}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="w-[180px]"
+              aria-label={t('filterByStatus')}
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder={t('filterByStatus')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {statusItems.map((item) => (
-                    <SelectItem
-                      key={item.value}
-                      value={item.value}
-                    >
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <Select
+              {statusItems.map((item) => (
+                <NativeSelectOption
+                  key={item.value}
+                  value={item.value}
+                >
+                  {item.label}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+            <NativeSelect
               value={sortBy}
-              onValueChange={(value) => value !== null && setSortBy(value)}
-              items={sortItems}
+              onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
+              className="w-[180px]"
+              aria-label={t('sortBy')}
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder={t('sortBy')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {sortItems.map((item) => (
-                    <SelectItem
-                      key={item.value}
-                      value={item.value}
-                    >
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+              {sortItems.map((item) => (
+                <NativeSelectOption
+                  key={item.value}
+                  value={item.value}
+                >
+                  {item.label}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
             <Button
               variant="outline"
               size="sm"

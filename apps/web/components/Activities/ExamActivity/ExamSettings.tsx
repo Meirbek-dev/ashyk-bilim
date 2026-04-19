@@ -3,7 +3,7 @@
 import { apiFetch } from '@/lib/api-client';
 import { useExamConfig } from '@/features/exams/hooks/useExam';
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -412,27 +412,21 @@ export default function ExamSettings({ exam, courseUuid, onSettingsUpdated }: Ex
               render={({ field }) => (
                 <Field>
                   <FieldLabel>{t('accessMode')}</FieldLabel>
-                  <Select
-                    onValueChange={field.onChange}
+                  <NativeSelect
+                    onChange={(event) => field.onChange(event.target.value)}
                     value={field.value ?? 'NO_ACCESS'}
-                    items={accessModes}
+                    className="w-full"
+                    aria-label={t('accessMode')}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('selectAccessMode')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {accessModes.map((item) => (
-                          <SelectItem
-                            key={item.value}
-                            value={item.value}
-                          >
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                    {accessModes.map((item) => (
+                      <NativeSelectOption
+                        key={item.value}
+                        value={item.value}
+                      >
+                        {item.label}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
                   <FieldDescription>{t('accessModeDescription')}</FieldDescription>
                   <FieldError errors={[form.formState.errors.access_mode]} />
                 </Field>

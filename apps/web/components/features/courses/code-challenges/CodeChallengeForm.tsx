@@ -7,7 +7,7 @@ import { useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import * as v from 'valibot';
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -334,29 +334,21 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
                 render={({ field, fieldState }) => (
                   <Field>
                     <FieldLabel>{t('form.difficulty')}</FieldLabel>
-                    <Select
-                      items={difficultyItems}
-                      onValueChange={field.onChange}
+                    <NativeSelect
                       value={field.value}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      className="w-full"
+                      aria-label={t('form.difficulty')}
                     >
-                      <FieldContent>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('form.selectDifficulty')} />
-                        </SelectTrigger>
-                      </FieldContent>
-                      <SelectContent>
-                        <SelectGroup>
-                          {difficultyItems.map((item) => (
-                            <SelectItem
-                              key={item.value}
-                              value={item.value}
-                            >
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                      {difficultyItems.map((item) => (
+                        <NativeSelectOption
+                          key={item.value}
+                          value={item.value}
+                        >
+                          {item.label}
+                        </NativeSelectOption>
+                      ))}
+                    </NativeSelect>
                     <FieldError errors={[fieldState.error]} />
                   </Field>
                 )}
@@ -368,29 +360,21 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
                 render={({ field, fieldState }) => (
                   <Field>
                     <FieldLabel>{t('form.gradingStrategy')}</FieldLabel>
-                    <Select
-                      items={gradingStrategyItems}
-                      onValueChange={field.onChange}
+                    <NativeSelect
                       value={field.value}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      className="w-full"
+                      aria-label={t('form.gradingStrategy')}
                     >
-                      <FieldContent>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('form.selectGradingStrategy')} />
-                        </SelectTrigger>
-                      </FieldContent>
-                      <SelectContent>
-                        <SelectGroup>
-                          {gradingStrategyItems.map((item) => (
-                            <SelectItem
-                              key={item.value}
-                              value={item.value}
-                            >
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                      {gradingStrategyItems.map((item) => (
+                        <NativeSelectOption
+                          key={item.value}
+                          value={item.value}
+                        >
+                          {item.label}
+                        </NativeSelectOption>
+                      ))}
+                    </NativeSelect>
                     <FieldDescription>{t(`gradingStrategyOptions.${field.value}Hint`)}</FieldDescription>
                     <FieldError errors={[fieldState.error]} />
                   </Field>

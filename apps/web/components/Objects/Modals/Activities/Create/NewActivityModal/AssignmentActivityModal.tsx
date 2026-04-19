@@ -1,6 +1,6 @@
 'use client';
 import { useQueryClient } from '@tanstack/react-query';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { createAssignmentWithActivity } from '@services/courses/assignments';
 import { courseKeys } from '@/hooks/courses/courseKeys';
@@ -227,27 +227,21 @@ const NewAssignment = ({ submitActivity, chapterId, course, closeModal }: any) =
         render={({ field, fieldState }) => (
           <Field>
             <FieldLabel>{t('gradingType')}</FieldLabel>
-            <Select
-              onValueChange={field.onChange}
+            <NativeSelect
+              onChange={(event) => field.onChange(event.target.value)}
               value={field.value}
-              items={gradingTypeItems}
+              className="w-full"
+              aria-label={validationT('selectGradingType')}
             >
-              <SelectTrigger>
-                <SelectValue placeholder={validationT('selectGradingType')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {gradingTypeItems.map((item) => (
-                    <SelectItem
-                      key={item.value}
-                      value={item.value}
-                    >
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+              {gradingTypeItems.map((item) => (
+                <NativeSelectOption
+                  key={item.value}
+                  value={item.value}
+                >
+                  {item.label}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
             <FieldError errors={[fieldState.error]} />
           </Field>
         )}

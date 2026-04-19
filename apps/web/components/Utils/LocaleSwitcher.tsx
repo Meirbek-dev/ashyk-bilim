@@ -1,6 +1,6 @@
 'use client';
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { updateUserLocale } from '@/lib/users/client';
 import { useSession } from '@/hooks/useSession';
 import { useLocale, useTranslations } from 'next-intl';
@@ -44,45 +44,24 @@ export const LocaleSwitcher = ({ className, isMobile }: LocaleSwitcherProps) => 
   };
 
   return (
-    <Select
-      value={currentLocale}
-      onValueChange={(value) => value && handleLocaleChange(value as Locale)}
-      disabled={isPending}
-    >
-      {isMobile ? (
-        <SelectTrigger
-          className={cn('w-auto touch-manipulation', isMobile && 'w-full', className)}
-          aria-label={t('selectLanguage')}
-        >
-          <Languages size={22} />
-          {isMobile ? <SelectValue placeholder={t('selectLanguage')}>{t(currentLocale)}</SelectValue> : null}
-        </SelectTrigger>
-      ) : (
-        <SelectTrigger
-          className={cn('w-auto touch-manipulation', isMobile && 'w-full', className)}
-          aria-label={t('selectLanguage')}
-          withChevron={false}
-        >
-          <Languages size={22} />
-          {isMobile ? <SelectValue placeholder={t('selectLanguage')}>{t(currentLocale)}</SelectValue> : null}
-        </SelectTrigger>
-      )}
-      <SelectContent
-        className={cn(isMobile && 'z-80')}
-        side="bottom"
-        sideOffset={4}
+    <div className={cn('flex items-center gap-2', isMobile && 'w-full', className)}>
+      <Languages size={22} />
+      <NativeSelect
+        value={currentLocale}
+        onChange={(event) => handleLocaleChange(event.target.value as Locale)}
+        disabled={isPending}
+        className={cn('w-auto touch-manipulation', isMobile && 'w-full')}
+        aria-label={t('selectLanguage')}
       >
-        <SelectGroup>
-          {localeItems.map((locale) => (
-            <SelectItem
-              key={locale.value}
-              value={locale.value}
-            >
-              {locale.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+        {localeItems.map((locale) => (
+          <NativeSelectOption
+            key={locale.value}
+            value={locale.value}
+          >
+            {locale.label}
+          </NativeSelectOption>
+        ))}
+      </NativeSelect>
+    </div>
   );
 };

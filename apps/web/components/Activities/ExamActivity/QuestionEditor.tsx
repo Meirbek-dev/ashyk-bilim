@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@components/ui/native-select';
 import { RadioGroup, RadioGroupItem } from '@components/ui/radio-group';
 import { Textarea } from '@components/ui/textarea';
 import { Checkbox } from '@components/ui/checkbox';
@@ -228,27 +228,21 @@ export default function QuestionEditor({ question, examUuid, onSave, onCancel, a
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="question-type">{t('questionType')}</Label>
-            <Select
+            <NativeSelect
               value={formData.question_type}
-              onValueChange={(value: any) => setFormData({ ...formData, question_type: value })}
-              items={questionTypes}
+              onChange={(event) => setFormData({ ...formData, question_type: event.target.value as Question['question_type'] })}
+              className="w-full"
+              aria-label={t('questionType')}
             >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {questionTypes.map((item) => (
-                    <SelectItem
-                      key={item.value}
-                      value={item.value}
-                    >
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+              {questionTypes.map((item) => (
+                <NativeSelectOption
+                  key={item.value}
+                  value={item.value}
+                >
+                  {item.label}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
           </div>
 
           <div>

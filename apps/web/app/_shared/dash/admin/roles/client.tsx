@@ -45,7 +45,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Actions, PermissionGuard, Resources, Scopes } from '@/components/Security';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSession } from '@/hooks/useSession';
@@ -934,25 +934,22 @@ export default function RBACAdminClient() {
                   className="pl-8"
                 />
               </div>
-              <Select
+              <NativeSelect
                 value={permissionResourceFilter}
-                onValueChange={(value) => setPermissionResourceFilter(value ?? 'all')}
+                onChange={(event) => setPermissionResourceFilter(event.target.value)}
+                className="w-full md:w-56"
+                aria-label={t('allResources')}
               >
-                <SelectTrigger className="w-full md:w-56">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('allResources')}</SelectItem>
-                  {resourceOptions.map((resource) => (
-                    <SelectItem
-                      key={resource}
-                      value={resource}
-                    >
-                      {resource}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <NativeSelectOption value="all">{t('allResources')}</NativeSelectOption>
+                {resourceOptions.map((resource) => (
+                  <NativeSelectOption
+                    key={resource}
+                    value={resource}
+                  >
+                    {resource}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
             </div>
 
             <div className="space-y-6 py-2">

@@ -6,7 +6,7 @@ import { Code2, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as v from 'valibot';
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -141,27 +141,21 @@ export default function CodeChallengeActivityModal({
               return (
                 <Field>
                   <FieldLabel>{t('difficulty')}</FieldLabel>
-                  <Select
-                    items={difficultyItems}
+                  <NativeSelect
                     value={field.value}
-                    onValueChange={field.onChange}
+                    onChange={(event) => field.onChange(event.target.value)}
+                    className="w-full"
+                    aria-label={t('difficulty')}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('selectDifficulty')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {difficultyItems.map((item) => (
-                          <SelectItem
-                            key={item.value}
-                            value={item.value}
-                          >
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                    {difficultyItems.map((item) => (
+                      <NativeSelectOption
+                        key={item.value}
+                        value={item.value}
+                      >
+                        {item.label}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
                   <FieldError errors={[fieldState.error]} />
                 </Field>
               );
@@ -180,27 +174,21 @@ export default function CodeChallengeActivityModal({
               return (
                 <Field>
                   <FieldLabel>{t('type')}</FieldLabel>
-                  <Select
-                    items={subtypeItems}
+                  <NativeSelect
                     value={field.value}
-                    onValueChange={field.onChange}
+                    onChange={(event) => field.onChange(event.target.value)}
+                    className="w-full"
+                    aria-label={t('type')}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('selectType')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {subtypeItems.map((item) => (
-                          <SelectItem
-                            key={item.value}
-                            value={item.value}
-                          >
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                    {subtypeItems.map((item) => (
+                      <NativeSelectOption
+                        key={item.value}
+                        value={item.value}
+                      >
+                        {item.label}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
                   <FieldDescription>
                     {field.value === 'competitive' ? t('typeCompetitiveHint') : t('typeGeneralHint')}
                   </FieldDescription>

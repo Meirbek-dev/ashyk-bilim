@@ -1,6 +1,6 @@
 'use client';
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@components/ui/native-select';
 import { linkResourcesToUserGroup } from '@services/usergroups/usergroups';
 import { getAbsoluteUrl } from '@services/config/config';
 import { useCourse } from '@components/Contexts/CourseContext';
@@ -72,27 +72,21 @@ const LinkToUserGroup = (props: LinkToUserGroupProps) => {
               {t('userGroupNameLabel')}
             </span>
 
-            <Select
-              onValueChange={(value) => value && setSelectedUserGroup(Number(value))}
+            <NativeSelect
+              onChange={(event) => setSelectedUserGroup(Number(event.target.value))}
               value={effectiveUserGroup?.toString()}
-              items={usergroupItems}
+              className="mx-5 mt-2 w-fit min-w-32"
+              aria-label={t('selectUserGroup')}
             >
-              <SelectTrigger className="mx-5 mt-2 w-fit min-w-32">
-                <SelectValue placeholder={t('selectUserGroup')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {usergroupItems.map((group: { value: string; label: string }) => (
-                    <SelectItem
-                      key={group.value}
-                      value={group.value}
-                    >
-                      {group.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+              {usergroupItems.map((group: { value: string; label: string }) => (
+                <NativeSelectOption
+                  key={group.value}
+                  value={group.value}
+                >
+                  {group.label}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
           </div>
         )}
         {usergroups?.length === 0 && (

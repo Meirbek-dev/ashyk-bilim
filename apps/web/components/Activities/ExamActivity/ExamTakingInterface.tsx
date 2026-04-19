@@ -22,7 +22,7 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 import type { AttemptData, ExamData, QuestionData } from './state/examFlowReducer';
 import { RadioGroup, RadioGroupItem } from '@components/ui/radio-group';
@@ -358,32 +358,29 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
                   <span className="min-w-[200px] text-base font-medium">{option.left}</span>
                   <span className="text-gray-400">→</span>
                   <div className="flex-1">
-                    <Select
+                    <NativeSelect
                       value={matchAnswers[option.left || ''] ?? ''}
-                      onValueChange={(val) =>
+                      onChange={(event) =>
                         handleAnswerChange(questionId, {
                           ...matchAnswers,
-                          [option.left || '']: val,
+                          [option.left || '']: event.target.value,
                         })
                       }
-                      items={matchOptions}
+                      className="w-full"
+                      aria-label={t('selectMatch')}
                     >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={t('selectMatch')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {matchOptions.map((opt) => (
-                            <SelectItem
-                              key={opt.value}
-                              value={opt.value}
-                            >
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                      <NativeSelectOption value="" disabled hidden>
+                        {t('selectMatch')}
+                      </NativeSelectOption>
+                      {matchOptions.map((opt) => (
+                        <NativeSelectOption
+                          key={opt.value}
+                          value={opt.value}
+                        >
+                          {opt.label}
+                        </NativeSelectOption>
+                      ))}
+                    </NativeSelect>
                   </div>
                 </div>
               );

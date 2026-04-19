@@ -1,6 +1,6 @@
 'use client';
 import { useQueryClient } from '@tanstack/react-query';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@components/ui/native-select';
 import { assignRoleToUser, removeRoleFromUser } from '@/services/rbac';
 import { Field, FieldError, FieldLabel } from '@components/ui/field';
 import { BarLoader } from '@components/Objects/Loaders/BarLoader';
@@ -106,39 +106,28 @@ const RolesUpdate: FC<Props> = (props) => {
           render={({ field, fieldState }) => (
             <Field>
               <FieldLabel>{t('rolesLabel')}</FieldLabel>
-              <Select
-                onValueChange={field.onChange}
+              <NativeSelect
+                onChange={(event) => field.onChange(event.target.value)}
                 value={field.value}
                 disabled={!roles || Boolean(rolesError)}
-                items={
-                  !roles || rolesError
-                    ? undefined
-                    : sortedRoles.map((role: any) => ({
-                        value: role.id.toString(),
-                        label: role.name,
-                      }))
-                }
+                className="w-full"
+                aria-label={t('selectRolePlaceholder')}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('selectRolePlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {!roles || rolesError ? (
-                    <div className="text-muted-foreground px-3 py-2">{t('loadingRoles')}</div>
-                  ) : (
-                    <SelectGroup>
-                      {sortedRoles.map((role: any) => (
-                        <SelectItem
-                          key={role.id}
-                          value={role.id.toString()}
-                        >
-                          {role.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  )}
-                </SelectContent>
-              </Select>
+                {!roles || rolesError ? (
+                  <NativeSelectOption value="" disabled>
+                    {t('loadingRoles')}
+                  </NativeSelectOption>
+                ) : (
+                  sortedRoles.map((role: any) => (
+                    <NativeSelectOption
+                      key={role.id}
+                      value={role.id.toString()}
+                    >
+                      {role.name}
+                    </NativeSelectOption>
+                  ))
+                )}
+              </NativeSelect>
               <FieldError errors={[fieldState.error]} />
             </Field>
           )}

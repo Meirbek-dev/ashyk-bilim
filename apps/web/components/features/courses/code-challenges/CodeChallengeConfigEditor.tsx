@@ -13,7 +13,7 @@ import {
 } from '@/features/code-challenges/hooks/useCodeChallenge';
 import * as v from 'valibot';
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
@@ -380,27 +380,21 @@ export default function CodeChallengeConfigEditor({ activityUuid, courseId }: Co
                 render={({ field, fieldState }) => (
                   <Field>
                     <FieldLabel>{t('gradingStrategyLabel')}</FieldLabel>
-                    <Select
-                      items={gradingStrategyItems}
-                      onValueChange={field.onChange}
+                    <NativeSelect
                       value={field.value}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      className="w-full"
+                      aria-label={t('gradingStrategyLabel')}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('selectGradingStrategy')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {gradingStrategyItems.map((item) => (
-                            <SelectItem
-                              key={item.value}
-                              value={item.value}
-                            >
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                      {gradingStrategyItems.map((item) => (
+                        <NativeSelectOption
+                          key={item.value}
+                          value={item.value}
+                        >
+                          {item.label}
+                        </NativeSelectOption>
+                      ))}
+                    </NativeSelect>
                     <FieldDescription>{t('gradingStrategyDescription')}</FieldDescription>
                     <FieldError errors={[fieldState.error]} />
                   </Field>
