@@ -219,6 +219,71 @@ const getSectionDisplayName = (t: Function, section: LandingSection) => {
   return t(`SectionTypes.${sectionTypeKey}.label`);
 };
 
+const createEmptySection = (t: Function, type: keyof typeof SECTION_TYPE_KEYS): LandingSection => {
+  switch (type) {
+    case 'hero': {
+      return {
+        type: 'hero',
+        title: t('EmptySections.hero.title'),
+        background: {
+          type: 'solid',
+          color: '#ffffff',
+        },
+        heading: {
+          text: t('EmptySections.hero.heading'),
+          color: '#000000',
+          size: 'large',
+        },
+        subheading: {
+          text: t('EmptySections.hero.subheading'),
+          color: '#666666',
+          size: 'medium',
+        },
+        buttons: [],
+        illustration: undefined,
+        contentAlign: 'center',
+      };
+    }
+    case 'text-and-image': {
+      return {
+        type: 'text-and-image',
+        title: t('EmptySections.textAndImage.title'),
+        text: t('EmptySections.textAndImage.text'),
+        flow: 'left',
+        image: {
+          url: '',
+          alt: '',
+        },
+        buttons: [],
+      };
+    }
+    case 'logos': {
+      return {
+        type: 'logos',
+        title: t('EmptySections.logos.title'),
+        logos: [],
+      };
+    }
+    case 'people': {
+      return {
+        type: 'people',
+        title: t('EmptySections.people.title'),
+        people: [],
+      };
+    }
+    case 'featured-courses': {
+      return {
+        type: 'featured-courses',
+        title: t('EmptySections.featuredCourses.title'),
+        courses: [],
+      };
+    }
+    default: {
+      throw new Error(t('Errors.invalidSectionType'));
+    }
+  }
+};
+
 // Helper factories that produce item lists (use t at call site)
 const makeBackgroundTypeItems = (t: Function) => [
   { value: 'solid', label: t('HeroEditor.Background.solid') },
@@ -324,71 +389,6 @@ const EditLanding = () => {
       ...prev,
       sections: [...prev.sections, newSection],
     }));
-  };
-
-  const createEmptySection = (t: Function, type: keyof typeof SECTION_TYPE_KEYS): LandingSection => {
-    switch (type) {
-      case 'hero': {
-        return {
-          type: 'hero',
-          title: t('EmptySections.hero.title'),
-          background: {
-            type: 'solid',
-            color: '#ffffff',
-          },
-          heading: {
-            text: t('EmptySections.hero.heading'),
-            color: '#000000',
-            size: 'large',
-          },
-          subheading: {
-            text: t('EmptySections.hero.subheading'),
-            color: '#666666',
-            size: 'medium',
-          },
-          buttons: [],
-          illustration: undefined,
-          contentAlign: 'center',
-        };
-      }
-      case 'text-and-image': {
-        return {
-          type: 'text-and-image',
-          title: t('EmptySections.textAndImage.title'),
-          text: t('EmptySections.textAndImage.text'),
-          flow: 'left',
-          image: {
-            url: '',
-            alt: '',
-          },
-          buttons: [],
-        };
-      }
-      case 'logos': {
-        return {
-          type: 'logos',
-          title: t('EmptySections.logos.title'),
-          logos: [],
-        };
-      }
-      case 'people': {
-        return {
-          type: 'people',
-          title: t('EmptySections.people.title'),
-          people: [],
-        };
-      }
-      case 'featured-courses': {
-        return {
-          type: 'featured-courses',
-          title: t('EmptySections.featuredCourses.title'),
-          courses: [],
-        };
-      }
-      default: {
-        throw new Error(t('Errors.invalidSectionType'));
-      }
-    }
   };
 
   const updateSection = (index: number, updatedSection: LandingSection) => {
@@ -502,6 +502,14 @@ const EditLanding = () => {
                                 onClick={() => {
                                   setSelectedSection(index);
                                 }}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    setSelectedSection(index);
+                                  }
+                                }}
+                                role="button"
+                                tabIndex={0}
                                 className={`cursor-pointer rounded-lg border bg-white/80 p-4 backdrop-blur-xs ${
                                   selectedSection === index
                                     ? 'border-blue-500 bg-blue-50 shadow-xs ring-2 ring-blue-500/20'

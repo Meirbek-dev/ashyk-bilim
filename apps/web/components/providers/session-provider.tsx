@@ -82,7 +82,7 @@ function useSessionBroadcastListener(onLogout: () => void, onSessionRefresh: () 
     if (typeof BroadcastChannel === 'undefined') return;
 
     const channel = new BroadcastChannel(AUTH_BROADCAST_CHANNEL);
-    channel.onmessage = (event: MessageEvent<AuthBroadcastMessage>) => {
+    const handleMessage = (event: MessageEvent<AuthBroadcastMessage>) => {
       if (event.data.type === 'logout') {
         onLogout();
       }
@@ -90,7 +90,10 @@ function useSessionBroadcastListener(onLogout: () => void, onSessionRefresh: () 
         onSessionRefresh();
       }
     };
+
+    channel.addEventListener('message', handleMessage);
     return () => {
+      channel.removeEventListener('message', handleMessage);
       channel.close();
     };
   }, [onLogout, onSessionRefresh]);
