@@ -1,6 +1,6 @@
 # Usage:
-#   docker compose up -d                              # start everything
-#   docker compose run --rm migrate                   # run migrations (manual)
+#   docker-compose up -d                              # start everything
+#   docker-compose run --rm migrate                   # run migrations (manual)
 
 networks:
   app-net: {}

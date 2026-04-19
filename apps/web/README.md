@@ -34,13 +34,13 @@ change the container or host mapping.
 docker stop learnhouse-web; docker rm learnhouse-web
 ```
 
-## Run via root `docker compose` (recommended)
+## Run via root `docker-compose` (recommended)
 
 The repo includes a root Dockerfile and compose setup that can build and run both `api` and `web`
 together. From the repo root:
 
 ```powershell
-docker compose up -d --build app
+docker-compose up -d --build app
 ```
 
 ## Environment variables (important)
@@ -51,7 +51,7 @@ docker compose up -d --build app
 - `extra/.env` is the deployment env file used by the `app` service at runtime.
 - `extra/example-conf.env` is the deployment template; `apps/web/.env.example` is the local web-only
   example.
-- When using root `docker compose`, pass build-time public env via shell env or
+- When using root `docker-compose`, pass build-time public env via shell env or
   `--env-file extra/.env` because `env_file` does not populate Docker build args.
 
 ## Troubleshooting

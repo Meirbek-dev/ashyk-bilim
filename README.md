@@ -56,13 +56,13 @@ TLDR: Run `docker-compose up -d` and inspect the logs, should be ready to go in 
 
 ```bash
 # Start core stack
-docker compose --profile core up -d
+docker-compose --profile core up -d
 
 # Start with code execution tier
-docker compose --profile core --profile code-runner up -d
+docker-compose --profile core --profile code-runner up -d
 
 # Production (with resource limits)
-docker compose -f docker-compose.yml -f compose.prod.yml --profile core up -d
+docker-compose -f docker-compose.yml -f compose.prod.yml --profile core up -d
 ```
 
 ### Deployment environment
@@ -74,7 +74,7 @@ For Docker deployments, keep the live application configuration in `extra/.env`.
 - `apps/api/config/config.yaml` is reference-only and is not loaded at runtime.
 - `apps/api/.env.example` and `apps/web/.env.example` are local development examples, not deployment
   sources.
-- When building with `docker compose`, pass public web build variables with `--env-file extra/.env`
+- When building with `docker-compose`, pass public web build variables with `--env-file extra/.env`
   or exported shell variables because `env_file` does not populate Docker build args.
 
 - [Self Hosting](https://docs.learnhouse.app/self-hosting/hosting-guide)

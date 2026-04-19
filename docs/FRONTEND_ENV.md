@@ -28,7 +28,7 @@ These values are used only by the Node.js server runtime.
   values are derived from `NEXT_PUBLIC_SITE_URL` and `APP_URL`.
 - Authentication is fully backend-managed via HttpOnly SameSite=strict cookies. The frontend does
   not hold or sign JWT tokens; no auth secret is needed in the web environment.
-- `docker compose` must receive the public `NEXT_PUBLIC_*` values at build time via shell env or
+- `docker-compose` must receive the public `NEXT_PUBLIC_*` values at build time via shell env or
   `--env-file extra/.env`. `env_file` inside the service definition does not populate Docker build
   args.
 - For full-stack deployments, copy `extra/example-conf.env` to `extra/.env` and keep both frontend

@@ -89,33 +89,33 @@ sudo chmod 644 ./certs/cert.pem ./certs/key.pem
 Add a Certbot deploy hook to reload nginx after renewal:
 
 ```bash
-docker compose exec nginx nginx -s reload
+docker-compose exec nginx nginx -s reload
 ```
 
 ### 4. Build images
 
 ```bash
-docker compose build
+docker-compose build
 ```
 
 ### 5. Start the database and apply migrations
 
 ```bash
-docker compose up -d db redis
-docker compose ps db                  # wait until (healthy)
-docker compose run --rm migrate
+docker-compose up -d db redis
+docker-compose ps db                  # wait until (healthy)
+docker-compose run --rm migrate
 ```
 
 ### 6. Start all services
 
 ```bash
-docker compose up -d
+docker-compose up -d
 ```
 
 ### 8. Verify
 
 ```bash
-docker compose ps
+docker-compose ps
 curl -fsS https://cs-mooc.tou.edu.kz/api/health
 curl -fsS https://cs-mooc.tou.edu.kz/api/v1/health
 ```
@@ -126,24 +126,24 @@ curl -fsS https://cs-mooc.tou.edu.kz/api/v1/health
 
 ```bash
 # 1. Backup first
-docker compose exec backup backup
+docker-compose exec backup backup
 
 # 2. Pull and build
 git pull
-docker compose build
+docker-compose build
 
 # 3. Apply migrations (only if this release includes schema changes)
-docker compose ps db                  # confirm healthy
-docker compose run --rm migrate
-docker compose run --rm --entrypoint "" migrate \
+docker-compose ps db                  # confirm healthy
+docker-compose run --rm migrate
+docker-compose run --rm --entrypoint "" migrate \
   uv run --no-sync alembic current   # verify revision
 
 # 4. Restart application containers
-docker compose up -d --no-deps web api nginx
+docker-compose up -d --no-deps web api nginx
 
 # 5. Verify
-docker compose ps
-docker compose logs --tail=50 api
+docker-compose ps
+docker-compose logs --tail=50 api
 curl -fsS https://cs-mooc.tou.edu.kz/api/v1/health
 ```
 
@@ -157,27 +157,27 @@ The `migrate` service reuses the `ashyq-bilim-api` image.
 **Apply:**
 
 ```bash
-docker compose run --rm migrate
+docker-compose run --rm migrate
 ```
 
 **Verify current revision:**
 
 ```bash
-docker compose run --rm --entrypoint "" migrate \
+docker-compose run --rm --entrypoint "" migrate \
   uv run --no-sync alembic current
 ```
 
 **Rollback one step:**
 
 ```bash
-docker compose run --rm --entrypoint "" migrate \
+docker-compose run --rm --entrypoint "" migrate \
   uv run --no-sync alembic downgrade -1
 ```
 
 **Rollback to a specific revision:**
 
 ```bash
-docker compose run --rm --entrypoint "" migrate \
+docker-compose run --rm --entrypoint "" migrate \
   uv run --no-sync alembic downgrade <revision_id>
 ```
 
@@ -193,7 +193,7 @@ docker compose run --rm --entrypoint "" migrate \
 # 1. Downgrade schema if needed (see Migrations above)
 # 2. Check out / re-tag the previous image
 # 3. Restart
-docker compose up -d --no-deps web api
+docker-compose up -d --no-deps web api
 ```
 
 ---
@@ -203,13 +203,13 @@ docker compose up -d --no-deps web api
 Backups run daily at 02:00 via `offen/docker-volume-backup`. Start the service:
 
 ```bash
-docker compose up -d backup
+docker-compose up -d backup
 ```
 
 **Trigger a manual backup:**
 
 ```bash
-docker compose exec backup backup
+docker-compose exec backup backup
 ```
 
 **What gets backed up:**
@@ -246,7 +246,7 @@ GPG_PASSPHRASE: ...
 
 ```bash
 # 1. Stop the application
-docker compose down
+docker-compose down
 
 # 2. Extract the backup
 mkdir -p temp-restore
@@ -272,11 +272,11 @@ docker run --rm \
   alpine sh -c "cd /data && cp -a /backup/. ."
 
 # 4. Start
-docker compose up -d
+docker-compose up -d
 
 # 5. Verify
-docker compose ps
-docker compose exec db psql -U openu -d openu -c "SELECT COUNT(*) FROM alembic_version;"
+docker-compose ps
+docker-compose exec db psql -U openu -d openu -c "SELECT COUNT(*) FROM alembic_version;"
 
 # 6. Clean up
 rm -rf temp-restore
@@ -314,4 +314,4 @@ rm -rf temp-restore
 
 **PostgreSQL version mismatch after restore** — the image in `extra/Dockerfile.db` must match the major version in the backup. Run `pg_upgrade` or pin the image version.
 
-**Backup not running** — `docker compose logs backup` to inspect. Check disk space with `df -h`.
+**Backup not running** — `docker-compose logs backup` to inspect. Check disk space with `df -h`.

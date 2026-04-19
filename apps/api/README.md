@@ -29,14 +29,14 @@ docker run -d --name learnhouse-api --env-file extra/.env -p 8000:8000 learnhous
 docker stop learnhouse-api; docker rm learnhouse-api
 ```
 
-## Run via root `docker compose` (recommended)
+## Run via root `docker-compose` (recommended)
 
 The monorepo includes a root Dockerfile and a compose setup that builds/starts both API and web. Use
 the compose command from the repository root to build and run the app service/manage multiple
 containers:
 
 ```powershell
-docker compose up -d --build app
+docker-compose up -d --build app
 ```
 
 ## Environment and notes
