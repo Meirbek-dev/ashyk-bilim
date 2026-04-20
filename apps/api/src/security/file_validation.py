@@ -139,12 +139,13 @@ FILE_TYPES = {
         "validator": validate_video_content,
     },
     "audio": {
-        "extensions": [".mp3", ".wav", ".ogg", ".m4a"],
+        "extensions": [".mp3", ".wav", ".ogg", ".m4a", ".opus", ".oga"],
         "mime_types": [
             "audio/mpeg",
             "audio/wav",
             "audio/x-wav",
             "audio/ogg",
+            "audio/opus",
             "audio/mp4",
             "audio/x-m4a",
         ],
@@ -152,7 +153,7 @@ FILE_TYPES = {
         "validator": validate_audio_content,
     },
     "document": {
-        "extensions": [".pdf", ".pptx", ".docx", ".zip", ".srt", ".vtt"],
+        "extensions": [".pdf", ".pptx", ".docx", ".zip", ".srt", ".vtt", ".txt"],
         "mime_types": [
             "application/pdf",
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",

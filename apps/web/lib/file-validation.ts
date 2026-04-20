@@ -16,12 +16,12 @@ export const FILE_TYPES = {
     maxSize: 1000 * 1024 * 1024, // 1000MB
   },
   audio: {
-    extensions: ['.mp3', '.wav', '.ogg', '.m4a'],
-    mimeTypes: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/mp4', 'audio/x-m4a'],
+    extensions: ['.mp3', '.wav', '.ogg', '.m4a', '.opus', '.oga'],
+    mimeTypes: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/opus', 'audio/mp4', 'audio/x-m4a'],
     maxSize: 100 * 1024 * 1024, // 100MB
   },
   document: {
-    extensions: ['.pdf', '.pptx', '.docx', '.zip', '.srt', '.vtt'],
+    extensions: ['.pdf', '.pptx', '.docx', '.zip', '.srt', '.vtt', '.txt'],
     mimeTypes: [
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -55,7 +55,7 @@ export function validateFile(
     return { valid: false, error: 'SVG files are not allowed for security reasons' };
   }
 
-  // Find matching file type
+  // Find matching file type by MIME
   let matchedType: FileType | null = null;
   for (const type of allowedTypes) {
     const config = FILE_TYPES[type];
@@ -65,11 +65,25 @@ export function validateFile(
     }
   }
 
+  // Fallback to extension-only matching when MIME is unavailable or generic
+  if (!matchedType) {
+    const fileExtension = file.name.toLowerCase().split('.').pop();
+    if (fileExtension) {
+      for (const type of allowedTypes) {
+        const config = FILE_TYPES[type] as { extensions: readonly string[] };
+        if (config.extensions.includes(`.${fileExtension}`)) {
+          matchedType = type;
+          break;
+        }
+      }
+    }
+  }
+
   if (!matchedType) {
     const allowedMimes = allowedTypes.flatMap((type) => FILE_TYPES[type].mimeTypes);
     return {
       valid: false,
-      error: `Invalid file type: ${file.type}. Allowed types: ${allowedMimes.join(', ')}`,
+      error: `Invalid file type: ${file.type || file.name}. Allowed types: ${allowedMimes.join(', ')}`,
     };
   }
 
@@ -105,7 +119,7 @@ export function getFileTypeDescription(allowedTypes: FileType[]): string {
 
   const maxSizes = [...new Set(allowedTypes.map((type) => FILE_TYPES[type].maxSize))];
   // Safely read the first/max size
-  const onlyMaxSize = maxSizes[0];
+  const [onlyMaxSize] = maxSizes;
   // Guard against undefined - TypeScript can't infer that maxSizes[0] exists even when length === 1
   const maxSizeStr =
     maxSizes.length === 1 && typeof onlyMaxSize !== 'undefined' ? `${onlyMaxSize / 1024 / 1024}MB` : 'varies';
