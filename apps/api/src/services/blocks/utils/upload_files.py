@@ -24,11 +24,20 @@ async def upload_file_and_return_file_object(
         for fmt in list_of_allowed_file_formats
     ):
         allowed_types.append("image")
-    if any(fmt in ["mp4", "webm", "mkv", "mov", "avi", "flv"] for fmt in list_of_allowed_file_formats):
+    if any(
+        fmt in ["mp4", "webm", "mkv", "mov", "avi", "flv"]
+        for fmt in list_of_allowed_file_formats
+    ):
         allowed_types.append("video")
-    if any(fmt in ["mp3", "wav", "ogg", "m4a", "opus", "oga"] for fmt in list_of_allowed_file_formats):
+    if any(
+        fmt in ["mp3", "wav", "ogg", "m4a", "opus", "oga"]
+        for fmt in list_of_allowed_file_formats
+    ):
         allowed_types.append("audio")
-    if any(fmt in ["pdf", "pptx", "docx", "zip", "srt", "vtt", "txt"] for fmt in list_of_allowed_file_formats):
+    if any(
+        fmt in ["pdf", "pptx", "docx", "zip", "srt", "vtt", "txt"]
+        for fmt in list_of_allowed_file_formats
+    ):
         allowed_types.append("document")
 
     if not allowed_types:

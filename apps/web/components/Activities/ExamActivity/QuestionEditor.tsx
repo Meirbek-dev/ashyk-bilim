@@ -230,7 +230,9 @@ export default function QuestionEditor({ question, examUuid, onSave, onCancel, a
             <Label htmlFor="question-type">{t('questionType')}</Label>
             <NativeSelect
               value={formData.question_type}
-              onChange={(event) => setFormData({ ...formData, question_type: event.target.value as Question['question_type'] })}
+              onChange={(event) =>
+                setFormData({ ...formData, question_type: event.target.value as Question['question_type'] })
+              }
               className="w-full"
               aria-label={t('questionType')}
             >

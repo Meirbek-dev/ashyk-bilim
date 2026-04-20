@@ -58,9 +58,11 @@ def validate_audio_content(content: bytes) -> bool:
         return True
 
     # M4A: MP4 container with audio brand
-    return (
-        magic_bytes[4:8] == b"ftyp"
-        and magic_bytes[8:12] in (b"M4A ", b"isom", b"mp42", b"mp41")
+    return magic_bytes[4:8] == b"ftyp" and magic_bytes[8:12] in (
+        b"M4A ",
+        b"isom",
+        b"mp42",
+        b"mp41",
     )
 
 
@@ -102,7 +104,11 @@ def validate_document_content(content: bytes) -> bool:
         return True
 
     # PPTX / DOCX / ZIP: ZIP container header
-    if content.startswith(b"PK\x03\x04") or content.startswith(b"PK\x05\x06") or content.startswith(b"PK\x07\x08"):
+    if (
+        content.startswith(b"PK\x03\x04")
+        or content.startswith(b"PK\x05\x06")
+        or content.startswith(b"PK\x07\x08")
+    ):
         return True
 
     # VTT: WEBVTT
@@ -111,7 +117,7 @@ def validate_document_content(content: bytes) -> bool:
 
     # SRT: plain text subtitle
     try:
-        decoded = content.decode('utf-8-sig')
+        decoded = content.decode("utf-8-sig")
         return bool(decoded.strip())
     except UnicodeDecodeError:
         return False
@@ -121,7 +127,13 @@ def validate_document_content(content: bytes) -> bool:
 FILE_TYPES = {
     "image": {
         "extensions": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"],
-        "mime_types": ["image/jpeg", "image/png", "image/gif", "image/webp", "image/avif"],
+        "mime_types": [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+            "image/avif",
+        ],
         "max_size": 10 * 1024 * 1024,  # 10MB
         "validator": validate_image_content,
     },

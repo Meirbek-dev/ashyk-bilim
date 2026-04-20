@@ -525,9 +525,7 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
                                   className="flex-1 text-xs"
                                   aria-label={t('endScenarioOption')}
                                 >
-                                  <NativeSelectOption value="__end">
-                                    {t('endScenarioOption')}
-                                  </NativeSelectOption>
+                                  <NativeSelectOption value="__end">{t('endScenarioOption')}</NativeSelectOption>
                                   {nextScenarioOptions.map((item) => (
                                     <NativeSelectOption
                                       key={item.value}

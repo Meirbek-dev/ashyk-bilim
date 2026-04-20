@@ -191,15 +191,19 @@ const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
   const remainingCount = authors.length - 3;
 
   const authorsText = useMemo(() => {
-    const hasAllNames = displayedAuthors.every((a) => a.user.first_name && a.user.last_name);
+    // 1. Map authors to their preferred display name
+    const names = displayedAuthors.map((a) => {
+      const fullName = getAuthorFullName(a.user);
+      // If fullName is just an empty string (no first/last name), use username
+      return fullName.trim() !== '' ? fullName : a.user.username;
+    });
 
-    if (!hasAllNames) {
-      return t('authorLabel', { count: authors.length });
-    }
+    // 2. Join the names
+    const joinedNames = names.join(', ');
 
-    const names = displayedAuthors.map((a) => getAuthorFullName(a.user)).join(', ');
-    return hasMoreAuthors ? `${names} +${remainingCount}` : names;
-  }, [displayedAuthors, hasMoreAuthors, remainingCount, authors.length, t]);
+    // 3. Append count if there are more authors
+    return hasMoreAuthors ? `${joinedNames} +${remainingCount}` : joinedNames;
+  }, [displayedAuthors, hasMoreAuthors, remainingCount]);
 
   if (authors.length === 0) return null;
 
@@ -322,7 +326,9 @@ const CourseActions: FC<CourseActionsProps> = ({
               href={courseUrl}
             />
           }
-          aria-label={t('continueLearning', { defaultValue: 'Continue Learning' })}
+          aria-label={t('continueLearning', {
+            defaultValue: 'Continue Learning',
+          })}
           size="sm"
           className="w-full"
         >

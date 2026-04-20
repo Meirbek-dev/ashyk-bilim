@@ -369,7 +369,11 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
                       className="w-full"
                       aria-label={t('selectMatch')}
                     >
-                      <NativeSelectOption value="" disabled hidden>
+                      <NativeSelectOption
+                        value=""
+                        disabled
+                        hidden
+                      >
                         {t('selectMatch')}
                       </NativeSelectOption>
                       {matchOptions.map((opt) => (

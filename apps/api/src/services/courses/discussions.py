@@ -330,7 +330,7 @@ async def delete_discussion(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-    """Delete a discussion (soft delete)"""
+    """Delete a discussion."""
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
@@ -354,11 +354,8 @@ async def delete_discussion(
             "discussion:moderate",
         )
 
-    # Soft delete
-    discussion.status = DiscussionStatusEnum.DELETED
-    discussion.update_date = str(datetime.now())
-
-    db_session.add(discussion)
+    # Hard delete discussion and related cascaded entities
+    db_session.delete(discussion)
     db_session.commit()
 
     return {"message": "Discussion deleted successfully"}

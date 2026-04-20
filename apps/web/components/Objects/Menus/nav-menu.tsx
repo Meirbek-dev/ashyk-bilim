@@ -1,51 +1,35 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
-import Image from "next/image";
-import {
-  BookCopy,
-  Menu,
-  Signpost,
-  SquareLibrary,
-  type LucideIcon,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import Image from 'next/image';
+import { BookCopy, Menu, Signpost, SquareLibrary, type LucideIcon } from 'lucide-react';
 
 // Components & UI
-import Link from "@components/ui/AppLink";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
-} from "@/components/ui/navigation-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
-import { SearchBar } from "@/components/Objects/Search/SearchBar";
-import { LocaleSwitcher } from "@/components/Utils/LocaleSwitcher";
-import { HeaderProfileBox } from "@/components/Security/HeaderProfileBox";
+import Link from '@components/ui/AppLink';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { NavigationMenu, NavigationMenuItem, NavigationMenuList } from '@/components/ui/navigation-menu';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import { SearchBar } from '@/components/Objects/Search/SearchBar';
+import { LocaleSwitcher } from '@/components/Utils/LocaleSwitcher';
+import { HeaderProfileBox } from '@/components/Security/HeaderProfileBox';
 
 // Hooks & Config
-import { useSession } from "@/hooks/useSession";
-import { getAbsoluteUrl } from "@/services/config/config";
-import { NAVBAR_HEIGHT } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { useSession } from '@/hooks/useSession';
+import { getAbsoluteUrl } from '@/services/config/config';
+import { NAVBAR_HEIGHT } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 // Assets
-import platformLogoFull from "@public/platform_logo_full.svg";
+import platformLogoFull from '@public/platform_logo_full.svg';
 
 // ----------------------------------------------------------------------
 // Types & Config
 // ----------------------------------------------------------------------
-type NavLinkType = "courses" | "collections" | "trail";
+type NavLinkType = 'courses' | 'collections' | 'trail';
 
 interface NavLinkDef {
   type: NavLinkType;
@@ -55,9 +39,9 @@ interface NavLinkDef {
 }
 
 const NAV_LINKS: NavLinkDef[] = [
-  { type: "courses", href: "/courses", icon: BookCopy },
-  { type: "collections", href: "/collections", icon: SquareLibrary },
-  { type: "trail", href: "/trail", icon: Signpost, authRequired: true },
+  { type: 'courses', href: '/courses', icon: BookCopy },
+  { type: 'collections', href: '/collections', icon: SquareLibrary },
+  { type: 'trail', href: '/trail', icon: Signpost, authRequired: true },
 ];
 
 const SCROLL_THRESHOLD = 8;
@@ -69,7 +53,7 @@ function useIsActive(href: string): boolean {
   const pathname = usePathname();
   return useMemo(() => {
     if (!pathname) return false;
-    if (href === "/") return pathname === "/";
+    if (href === '/') return pathname === '/';
     return pathname === href || pathname.startsWith(`${href}/`);
   }, [pathname, href]);
 }
@@ -88,7 +72,7 @@ function useFocusMode(enabled: boolean): boolean {
 
     const read = (): boolean => {
       try {
-        return localStorage.getItem("globalFocusMode") === "true";
+        return localStorage.getItem('globalFocusMode') === 'true';
       } catch {
         return false;
       }
@@ -98,15 +82,15 @@ function useFocusMode(enabled: boolean): boolean {
 
     const sync = () => setIsFocusMode(read());
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "globalFocusMode") sync();
+      if (e.key === 'globalFocusMode') sync();
     };
 
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("focusModeChange", sync as EventListener);
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focusModeChange', sync as EventListener);
 
     return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("focusModeChange", sync as EventListener);
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focusModeChange', sync as EventListener);
     };
   }, [enabled]);
 
@@ -134,9 +118,9 @@ function useScrollElevation(threshold = SCROLL_THRESHOLD): boolean {
     };
 
     update();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener('scroll', onScroll);
       if (rafId !== 0) cancelAnimationFrame(rafId);
     };
   }, [threshold]);
@@ -162,13 +146,11 @@ const DesktopNavLink = ({ def, label }: NavLinkProps) => {
       <Link
         prefetch={false}
         href={getAbsoluteUrl(href)}
-        aria-current={isActive ? "page" : undefined}
+        aria-current={isActive ? 'page' : undefined}
         className={cn(
-          "group/navlink relative flex h-10 items-center gap-2 rounded-md px-3.5 text-base font-medium outline-none transition-colors duration-200",
-          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          isActive
-            ? "bg-accent text-primary"
-            : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+          'group/navlink relative flex h-10 items-center gap-2 rounded-md px-3.5 text-base font-medium outline-none transition-colors duration-200',
+          'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          isActive ? 'bg-accent text-primary' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
         )}
       >
         <Icon
@@ -176,10 +158,8 @@ const DesktopNavLink = ({ def, label }: NavLinkProps) => {
           strokeWidth={2.25}
           aria-hidden="true"
           className={cn(
-            "shrink-0 transition-colors",
-            isActive
-              ? "text-primary"
-              : "text-muted-foreground/70 group-hover/navlink:text-foreground",
+            'shrink-0 transition-colors',
+            isActive ? 'text-primary' : 'text-muted-foreground/70 group-hover/navlink:text-foreground',
           )}
         />
         <span className="tracking-tight">{label}</span>
@@ -200,13 +180,11 @@ const MobileNavLink = ({ def, label, onNavigate }: NavLinkProps) => {
       prefetch={false}
       href={getAbsoluteUrl(href)}
       onClick={onNavigate}
-      aria-current={isActive ? "page" : undefined}
+      aria-current={isActive ? 'page' : undefined}
       className={cn(
-        "group/navlink flex w-full items-center gap-3 rounded-lg px-3 py-3 text-base font-medium outline-none transition-colors",
-        "focus-visible:ring-2 focus-visible:ring-ring",
-        isActive
-          ? "bg-accent text-foreground"
-          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+        'group/navlink flex w-full items-center gap-3 rounded-lg px-3 py-3 text-base font-medium outline-none transition-colors',
+        'focus-visible:ring-2 focus-visible:ring-ring',
+        isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
       )}
     >
       <Icon
@@ -214,16 +192,14 @@ const MobileNavLink = ({ def, label, onNavigate }: NavLinkProps) => {
         strokeWidth={2.25}
         aria-hidden="true"
         className={cn(
-          "shrink-0",
-          isActive
-            ? "text-primary"
-            : "text-muted-foreground/70 group-hover/navlink:text-foreground",
+          'shrink-0',
+          isActive ? 'text-primary' : 'text-muted-foreground/70 group-hover/navlink:text-foreground',
         )}
       />
       <span className="flex-1">{label}</span>
       {isActive && (
         <span
-          className="h-1.5 w-1.5 rounded-full bg-primary"
+          className="bg-primary h-1.5 w-1.5 rounded-full"
           aria-hidden="true"
         />
       )}
@@ -237,18 +213,15 @@ const MobileNavLink = ({ def, label, onNavigate }: NavLinkProps) => {
 export default function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
-  const t = useTranslations("Components.NavMenu");
-  const tLinks = useTranslations("Components.NavMenuLinks");
+  const t = useTranslations('Components.NavMenu');
+  const tLinks = useTranslations('Components.NavMenuLinks');
   const { isAuthenticated } = useSession();
 
-  const isOnActivityPage = pathname?.includes("/activity/") ?? false;
+  const isOnActivityPage = pathname?.includes('/activity/') ?? false;
   const isFocusMode = useFocusMode(isOnActivityPage);
   const isScrolled = useScrollElevation();
 
-  const visibleLinks = useMemo(
-    () => NAV_LINKS.filter((l) => !l.authRequired || isAuthenticated),
-    [isAuthenticated],
-  );
+  const visibleLinks = useMemo(() => NAV_LINKS.filter((l) => !l.authRequired || isAuthenticated), [isAuthenticated]);
 
   // Auto-close the mobile sheet on route change
   useEffect(() => {
@@ -262,11 +235,11 @@ export default function NavBar() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 w-full border-b border-border/60",
-        "transition-[background-color,box-shadow,backdrop-filter] duration-200",
+        'fixed inset-x-0 top-0 z-50 w-full border-b border-border/60',
+        'transition-[background-color,box-shadow,backdrop-filter] duration-200',
         isScrolled
-          ? "bg-background/85 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-background/75"
-          : "bg-background",
+          ? 'bg-background/85 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-background/75'
+          : 'bg-background',
       )}
       style={{ height: NAVBAR_HEIGHT }}
     >
@@ -274,13 +247,13 @@ export default function NavBar() {
         {/* ── Left: logo + desktop nav ─────────────────────────────── */}
         <div className="flex min-w-0 items-center gap-6 lg:gap-8">
           <Link
-            href={getAbsoluteUrl("/")}
-            aria-label={t("logoAlt")}
-            className="flex shrink-0 items-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            href={getAbsoluteUrl('/')}
+            aria-label={t('logoAlt')}
+            className="focus-visible:ring-ring focus-visible:ring-offset-background flex shrink-0 items-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           >
             <Image
               src={platformLogoFull}
-              alt={t("logoAlt")}
+              alt={t('logoAlt')}
               width={120}
               height={36}
               className="h-9 w-auto object-contain"
@@ -288,7 +261,10 @@ export default function NavBar() {
             />
           </Link>
 
-          <nav aria-label={t("navigation")} className="hidden md:flex">
+          <nav
+            aria-label={t('navigation')}
+            className="hidden md:flex"
+          >
             <NavigationMenu>
               <NavigationMenuList className="gap-0.5">
                 {visibleLinks.map((def) => (
@@ -321,14 +297,17 @@ export default function NavBar() {
             <HeaderProfileBox />
           </div>
 
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+          <Sheet
+            open={isMenuOpen}
+            onOpenChange={setIsMenuOpen}
+          >
             <SheetTrigger
               render={(triggerProps) => (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-10 w-10 md:hidden"
-                  aria-label={t("openMenu")}
+                  aria-label={t('openMenu')}
                   {...triggerProps}
                 >
                   <Menu className="h-5 w-5" />
@@ -340,11 +319,11 @@ export default function NavBar() {
               side="right"
               className="flex w-full flex-col gap-0 p-0 sm:max-w-sm"
             >
-              <SheetHeader className="border-b border-border/60 px-6 py-4">
-                <SheetTitle className="sr-only">{t("navigation")}</SheetTitle>
+              <SheetHeader className="border-border/60 border-b px-6 py-4">
+                <SheetTitle className="sr-only">{t('navigation')}</SheetTitle>
                 <Image
                   src={platformLogoFull}
-                  alt={t("logoAlt")}
+                  alt={t('logoAlt')}
                   width={180}
                   height={65}
                   className="h-8 w-auto object-contain"
@@ -353,20 +332,23 @@ export default function NavBar() {
 
               <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-5">
                 <section className="space-y-2">
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t("search")}
+                  <Label className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
+                    {t('search')}
                   </Label>
-                  <SearchBar isMobile className="w-full" />
+                  <SearchBar
+                    isMobile
+                    className="w-full"
+                  />
                 </section>
 
                 <Separator />
 
                 <section className="space-y-2">
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t("navigation")}
+                  <Label className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
+                    {t('navigation')}
                   </Label>
                   <nav
-                    aria-label={t("navigation")}
+                    aria-label={t('navigation')}
                     className="flex flex-col gap-1"
                   >
                     {visibleLinks.map((def) => (
@@ -382,18 +364,21 @@ export default function NavBar() {
 
                 <section className="space-y-2 sm:hidden">
                   <Separator />
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t("language")}
+                  <Label className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
+                    {t('language')}
                   </Label>
-                  <LocaleSwitcher className="w-full" isMobile />
+                  <LocaleSwitcher
+                    className="w-full"
+                    isMobile
+                  />
                 </section>
               </div>
 
-              <div className="mt-auto border-t border-border/60 bg-muted/30 px-6 py-4">
-                <Label className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {t("account")}
+              <div className="border-border/60 bg-muted/30 mt-auto border-t px-6 py-4">
+                <Label className="text-muted-foreground mb-2 block text-[11px] font-semibold tracking-wider uppercase">
+                  {t('account')}
                 </Label>
-                <div className="flex items-center justify-center rounded-lg border border-border/60 bg-background p-3">
+                <div className="border-border/60 bg-background flex items-center justify-center rounded-lg border p-3">
                   <HeaderProfileBox />
                 </div>
               </div>

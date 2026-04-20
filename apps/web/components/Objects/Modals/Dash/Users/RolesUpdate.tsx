@@ -114,7 +114,10 @@ const RolesUpdate: FC<Props> = (props) => {
                 aria-label={t('selectRolePlaceholder')}
               >
                 {!roles || rolesError ? (
-                  <NativeSelectOption value="" disabled>
+                  <NativeSelectOption
+                    value=""
+                    disabled
+                  >
                     {t('loadingRoles')}
                   </NativeSelectOption>
                 ) : (

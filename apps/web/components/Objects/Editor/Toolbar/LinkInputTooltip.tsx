@@ -38,7 +38,10 @@ const LinkInputTooltip = ({ onSave, onCancel, currentUrl = '' }: LinkInputToolti
         action={handleSubmit}
         className="flex items-center gap-1.5"
       >
-        <label htmlFor={inputId} className="sr-only">
+        <label
+          htmlFor={inputId}
+          className="sr-only"
+        >
           {t('enterUrl')}
         </label>
         <input
