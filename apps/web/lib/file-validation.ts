@@ -6,8 +6,8 @@
 // File type configurations (matches backend)
 export const FILE_TYPES = {
   image: {
-    extensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
-    mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+    extensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'],
+    mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'],
     maxSize: 10 * 1024 * 1024, // 10MB
   },
   video: {

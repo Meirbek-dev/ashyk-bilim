@@ -30,6 +30,10 @@ def validate_image_content(content: bytes) -> bool:
     if magic_bytes.startswith((b"GIF87a", b"GIF89a")):
         return True
 
+    # AVIF: ftyp..avif / avis
+    if magic_bytes[4:8] == b"ftyp" and magic_bytes[8:12] in (b"avif", b"avis"):
+        return True
+
     # WebP: RIFF....WEBP
     return bool(magic_bytes.startswith(b"RIFF") and b"WEBP" in content[:16])
 
@@ -56,8 +60,8 @@ def validate_video_content(content: bytes) -> bool:
 # File type configurations
 FILE_TYPES = {
     "image": {
-        "extensions": [".jpg", ".jpeg", ".png", ".gif", ".webp"],
-        "mime_types": ["image/jpeg", "image/png", "image/gif", "image/webp"],
+        "extensions": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"],
+        "mime_types": ["image/jpeg", "image/png", "image/gif", "image/webp", "image/avif"],
         "max_size": 10 * 1024 * 1024,  # 10MB
         "validator": validate_image_content,
     },

@@ -7,6 +7,7 @@ export const ACCEPTED_FILE_FORMATS = {
   jpg: 'image/jpeg',
   png: 'image/png',
   webp: 'image/webp',
+  avif: 'image/avif',
   gif: 'image/gif',
   pdf: 'application/pdf',
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',

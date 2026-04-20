@@ -297,7 +297,7 @@ const CourseClient = (props: any) => {
                   return (
                     <div className="border-border bg-muted relative aspect-video w-full overflow-hidden rounded-xl border">
                       <NextImage
-                        src="/empty_thumbnail.webp"
+                        src="/empty_thumbnail.avif"
                         alt=""
                         fill
                         className="object-cover"

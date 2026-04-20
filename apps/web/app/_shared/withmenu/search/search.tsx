@@ -360,7 +360,7 @@ const SearchPage = () => {
                             src={
                               course.thumbnail_image
                                 ? getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)
-                                : '/empty_thumbnail.webp'
+                                : '/empty_thumbnail.avif'
                             }
                             alt={course.name}
                             fill

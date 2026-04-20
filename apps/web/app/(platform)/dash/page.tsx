@@ -1,5 +1,5 @@
 import { BarChart2, BookCopy, ClipboardList, School, Settings, ShieldCheck, Users, ChevronRight } from 'lucide-react';
-import touEmblemLight from '@/app/_shared/dash/images/tou_emblem_light.webp';
+import touEmblemLight from '@/app/_shared/dash/images/tou_emblem_light.avif';
 import ServerLink from '@/components/ui/ServerLink';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';

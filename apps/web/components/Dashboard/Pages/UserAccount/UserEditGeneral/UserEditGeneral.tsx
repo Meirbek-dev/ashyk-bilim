@@ -46,7 +46,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import * as v from 'valibot';
 
-const SUPPORTED_FILES = constructAcceptValue(['jpg', 'png', 'webp', 'gif']);
+const SUPPORTED_FILES = constructAcceptValue(['jpg', 'png', 'webp', 'gif', 'avif']);
 
 const iconComponentMap = {
   'briefcase': Briefcase,

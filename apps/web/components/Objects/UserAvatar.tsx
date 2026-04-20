@@ -71,7 +71,7 @@ const UserAvatar = (props: UserAvatarProps) => {
 
   const getAvatarUrl = (): string => {
     if (predefined_avatar) {
-      const avatarType = predefined_avatar === 'ai' ? 'platform_logo.svg' : 'empty_avatar.webp';
+      const avatarType = predefined_avatar === 'ai' ? 'platform_logo.svg' : 'empty_avatar.avif';
       return getAbsoluteUrl(`/${avatarType}`);
     }
 
@@ -85,7 +85,7 @@ const UserAvatar = (props: UserAvatarProps) => {
     }
 
     // Username given but no data yet — show empty rather than falling through to session user.
-    if (username) return getAbsoluteUrl('/empty_avatar.webp');
+    if (username) return getAbsoluteUrl('/empty_avatar.avif');
 
     // No username — show the current session user's avatar.
     if (currentUser?.avatar_image) {
@@ -93,7 +93,7 @@ const UserAvatar = (props: UserAvatarProps) => {
       return isExternalUrl(url) ? url : getUserAvatarMediaDirectory(currentUser.user_uuid, url);
     }
 
-    return getAbsoluteUrl('/empty_avatar.webp');
+    return getAbsoluteUrl('/empty_avatar.avif');
   };
 
   const getFallbackText = (): string => {

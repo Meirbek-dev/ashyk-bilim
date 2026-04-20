@@ -62,7 +62,7 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
                 style={{
                   backgroundImage: course.thumbnail_image
                     ? `url(${getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)})`
-                    : `url('/empty_thumbnail.webp')`,
+                    : `url('/empty_thumbnail.avif')`,
                 }}
               />
             </Link>

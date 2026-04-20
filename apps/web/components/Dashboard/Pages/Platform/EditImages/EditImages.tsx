@@ -29,7 +29,7 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-const SUPPORTED_FILES = constructAcceptValue(['png', 'jpg']);
+const SUPPORTED_FILES = constructAcceptValue(['png', 'jpg', 'webp', 'avif']);
 
 interface Preview {
   id: string;
@@ -423,7 +423,7 @@ export default function EditImages() {
                     src={
                       platform?.logo_image
                         ? localLogo || getLogoMediaDirectory(platform?.logo_image)
-                        : '/empty_thumbnail.webp'
+                        : '/empty_thumbnail.avif'
                     }
                     alt="Лого организации"
                     fill
@@ -491,7 +491,7 @@ export default function EditImages() {
                     src={
                       platform?.thumbnail_image
                         ? localThumbnail || getPlatformThumbnailImage(platform.thumbnail_image)
-                        : '/empty_thumbnail.webp'
+                        : '/empty_thumbnail.avif'
                     }
                     alt="Platform thumbnail"
                     fill

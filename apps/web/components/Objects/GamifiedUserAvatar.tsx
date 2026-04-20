@@ -104,7 +104,7 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
   const { data: userData } = useUserByUsername(username);
 
   const getAvatarUrl = (): string => {
-    if (predefined_avatar) return getAbsoluteUrl('/empty_avatar.webp');
+    if (predefined_avatar) return getAbsoluteUrl('/empty_avatar.avif');
 
     if (avatar_url) {
       const extracted = extractExternalUrl(avatar_url);
@@ -120,7 +120,7 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
     }
 
     // Username given but no data yet — show empty rather than falling through to session user.
-    if (username) return getAbsoluteUrl('/empty_avatar.webp');
+    if (username) return getAbsoluteUrl('/empty_avatar.avif');
 
     // No username — show the current session user's avatar.
     if (currentUser?.avatar_image) {
@@ -128,7 +128,7 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
       return isExternalUrl(url) ? url : getUserAvatarMediaDirectory(currentUser.user_uuid, url);
     }
 
-    return getAbsoluteUrl('/empty_avatar.webp');
+    return getAbsoluteUrl('/empty_avatar.avif');
   };
 
   const getFallbackText = (): string => {

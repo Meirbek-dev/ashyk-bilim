@@ -58,7 +58,7 @@ interface ImageBlockProps {
 // Constants
 // ============================================================================
 
-const SUPPORTED_FILES = constructAcceptValue(['jpg', 'png', 'webp', 'gif']);
+const SUPPORTED_FILES = constructAcceptValue(['jpg', 'png', 'webp', 'gif', 'avif']);
 const DEFAULT_WIDTH = 400;
 const MIN_WIDTH = 150;
 const MAX_WIDTH = 1200;

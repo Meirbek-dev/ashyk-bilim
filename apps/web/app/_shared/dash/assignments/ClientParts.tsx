@@ -145,7 +145,7 @@ export const CourseThumbnail = ({ course, platform, courseId }: any) => {
   const t = useTranslations('DashPage.Assignments.HomePage');
   const thumbnailUrl = course.thumbnail_image
     ? getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)
-    : '/empty_thumbnail.webp';
+    : '/empty_thumbnail.avif';
 
   return (
     <Link

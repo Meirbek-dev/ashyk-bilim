@@ -203,7 +203,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
       if (type === 'image') {
         return course.courseStructure.thumbnail_image
           ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, course.courseStructure.thumbnail_image)
-          : '/empty_thumbnail.webp';
+          : '/empty_thumbnail.avif';
       }
       return course.courseStructure.thumbnail_video
         ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, course.courseStructure.thumbnail_video)

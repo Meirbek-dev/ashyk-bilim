@@ -526,7 +526,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const thumbnailUrl = useMemo(() => {
     return course.thumbnail_image
       ? getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)
-      : '../empty_thumbnail.webp';
+      : '../empty_thumbnail.avif';
   }, [course.thumbnail_image, course.course_uuid]);
 
   const courseUrl = useMemo(
