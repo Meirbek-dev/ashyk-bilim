@@ -45,7 +45,7 @@ const Trail = () => {
   const { user: currentUser } = useSession();
   const t = useTranslations('TrailPage');
 
-  const { data: trail } = useTrailCurrent();
+  const { data: trail, isLoading: isTrailLoading } = useTrailCurrent();
 
   const gamificationProfile = useGamificationStore((s) => s.profile);
   const recentTransactions = useGamificationStore((s) => s.dashboard?.recent_transactions ?? EMPTY_RECENT_TRANSACTIONS);
@@ -76,9 +76,9 @@ const Trail = () => {
             )}
           </div>
 
-          {!trail ? (
+          {isTrailLoading ? (
             <TrailCourseSkeletons />
-          ) : trail.runs.length === 0 ? (
+          ) : !trail || trail.runs.length === 0 ? (
             <div className="border-border bg-card rounded-xl border py-12 text-center">
               <div className="bg-muted mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
                 <BookOpen className="text-muted-foreground h-6 w-6" />

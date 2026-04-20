@@ -40,11 +40,12 @@ export default function CourseGridClient({ initialCourses, initialTotal }: Cours
   const totalPages = Math.ceil(totalCount / COURSES_PER_PAGE);
 
   // Fetch trail data to show progress on course thumbnails (auth-required)
-  const { data: trailData } = useTrailCurrent({ enabled: isAuthenticated });
+  const { data: trailData, isLoading: trailQueryLoading } = useTrailCurrent({ enabled: isAuthenticated });
 
-  // Only show loading state for authenticated users; unauthenticated users
-  // never fetch trail data so !trailData would be true forever.
-  const isTrailLoading = isAuthenticated && !trailData;
+  // Only show loading state for authenticated users while the query is in-flight.
+  // Using isLoading (not !trailData) so new users whose trail returns 404 don't
+  // get stuck showing a spinner after the query settles in error state.
+  const isTrailLoading = isAuthenticated && trailQueryLoading;
 
   // Generate pagination range
   const paginationRange = useMemo(() => {

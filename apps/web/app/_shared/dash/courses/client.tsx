@@ -90,9 +90,9 @@ const CoursesHome = ({
   const [selectedCourseUuids, setSelectedCourseUuids] = useState<string[]>([]);
   const [isBulkPending, startBulkTransition] = useTransition();
   const [pendingBulkAction, setPendingBulkAction] = useState<BulkActionKind | null>(null);
-  const { data: trailData } = useTrailCurrent({ enabled: isAuthenticated });
+  const { data: trailData, isLoading: trailQueryLoading } = useTrailCurrent({ enabled: isAuthenticated });
 
-  const isTrailLoading = isAuthenticated && !trailData;
+  const isTrailLoading = isAuthenticated && trailQueryLoading;
 
   const totalPages = Math.max(1, Math.ceil(totalCourses / pageSize));
   const hasPagination = totalPages > 1;

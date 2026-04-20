@@ -2510,7 +2510,6 @@
       "readyToBegin": "Готовы начать?",
       "startCourse": "Начать курс",
       "startCourseError": "Не удалось начать курс. Пожалуйста, повторите попытку позже.",
-      "startError": "Не удалось начать курс. Пожалуйста, повторите попытку позже.",
       "startLearningJourney": "Начните свой путь обучения с {totalActivities} {totalActivities, plural, one {увлекательным занятием} few {увлекательными занятиями} many {увлекательными занятиями} other {увлекательными занятиями}}",
       "startSuccess": "Курс успешно начат",
       "startedCourseSuccess": "Курс успешно начат",
