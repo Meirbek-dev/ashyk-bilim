@@ -35,13 +35,17 @@ export default function CourseReviewPublish({
   const { readiness } = course;
   const stats = getCourseContentStats(course.courseStructure);
   const contributors = course.editorData.contributors.data ?? [];
-  const contributorNames = contributors
+  const contributorNameItems = contributors
     .slice(0, 3)
-    .map((contributor: any) => {
+    .map((contributor: any, index: number) => {
       const parts = [contributor?.user?.first_name, contributor?.user?.last_name].filter(Boolean);
-      return parts.join(' ') || contributor?.user?.username || contributor?.user?.email;
+      const label = parts.join(' ') || contributor?.user?.username || contributor?.user?.email;
+      return {
+        key: contributor?.user?.user_uuid || contributor?.user?.username || contributor?.id || `contributor-${index}`,
+        label,
+      };
     })
-    .filter(Boolean);
+    .filter((item) => item.label);
   const [isPending, startTransition] = useTransition();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -208,14 +212,14 @@ export default function CourseReviewPublish({
                 <div className="text-muted-foreground mt-1 text-sm">
                   {tOverview('collaboration.loadedRecords', { count: contributors.length })}
                 </div>
-                {contributorNames.length > 0 ? (
+                {contributorNameItems.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {contributorNames.map((name) => (
+                    {contributorNameItems.map((contributor) => (
                       <span
-                        key={name}
+                        key={contributor.key}
                         className="bg-background text-foreground rounded-full border px-2.5 py-1 text-xs"
                       >
-                        {name}
+                        {contributor.label}
                       </span>
                     ))}
                   </div>

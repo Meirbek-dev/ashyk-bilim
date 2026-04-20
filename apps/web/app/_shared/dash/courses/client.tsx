@@ -599,7 +599,7 @@ const CoursesHome = ({
               value={sortBy}
               onChange={(event) => updateRoute({ sort: event.target.value, page: '1' })}
               className="w-[180px]"
-              aria-label={t('sortBy')}
+              aria-label={t('sort.label')}
             >
               <NativeSelectOption value="updated">{t('sort.updated')}</NativeSelectOption>
               <NativeSelectOption value="name">{t('sort.name')}</NativeSelectOption>
