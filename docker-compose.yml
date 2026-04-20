@@ -14,7 +14,7 @@ services:
   # Edge
   # ---------------------------------------------------------------------------
   nginx:
-    image: nginx:1.29.5-alpine
+    image: nginx:1.29.8-alpine
     restart: unless-stopped
     ports:
       - "80:80"
