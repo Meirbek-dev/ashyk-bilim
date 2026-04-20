@@ -23,7 +23,7 @@ export const PLATFORM_BRAND_NAME = 'Ashyq Bilim';
 export const PLATFORM_DESCRIPTION = 'Образовательная платформа для онлайн-обучения';
 export const PLATFORM_LABEL = 'ashyq-bilim';
 export const PLATFORM_THUMBNAIL_IMAGE_PATH = '/platform_logo_full.svg';
-export const NAVBAR_HEIGHT = 64;
+export const NAVBAR_HEIGHT = 60;
 
 /**
  * Constructs the 'accept' attribute value for an input element.
