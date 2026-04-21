@@ -47,30 +47,40 @@ def _accessible_courses_filter(
     authenticated users; only the creator and explicit authors/group members can
     access them.
 
-    Returns the query with joins and WHERE clause applied.
+    Returns the query with EXISTS and WHERE clause applied.
     """
     if isinstance(current_user, AnonymousUser):
         return query.where(Course.public)
 
-    return (
-        query.outerjoin(
-            UserGroupResource, UserGroupResource.resource_uuid == Course.course_uuid
+    has_usergroup = (
+        select(1)
+        .select_from(UserGroupResource)
+        .join(
+            UserGroupUser, UserGroupUser.usergroup_id == UserGroupResource.usergroup_id
         )
-        .outerjoin(
-            UserGroupUser,
-            and_(
-                UserGroupUser.usergroup_id == UserGroupResource.usergroup_id,
-                UserGroupUser.user_id == current_user.id,
-            ),
-        )
-        .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
         .where(
-            or_(
-                Course.public,
-                Course.creator_id == current_user.id,
-                UserGroupUser.user_id == current_user.id,
-                ResourceAuthor.user_id == current_user.id,
-            )
+            UserGroupResource.resource_uuid == Course.course_uuid,
+            UserGroupUser.user_id == current_user.id,
+        )
+        .exists()
+    )
+
+    is_author = (
+        select(1)
+        .select_from(ResourceAuthor)
+        .where(
+            ResourceAuthor.resource_uuid == Course.course_uuid,
+            ResourceAuthor.user_id == current_user.id,
+        )
+        .exists()
+    )
+
+    return query.where(
+        or_(
+            Course.public,
+            Course.creator_id == current_user.id,
+            has_usergroup,
+            is_author,
         )
     )
 
@@ -97,6 +107,87 @@ def _apply_course_sort(query, sort_by: str | None):
     if sort_by == "name":
         return query.order_by(func.lower(Course.name).asc(), Course.id.asc())
     return query.order_by(Course.update_date.desc(), Course.id.desc())
+
+
+def _apply_lms_sort(query, current_user: "PublicUser | AnonymousUser"):
+    from sqlalchemy import case, func, select
+
+    from src.db.trail_runs import TrailRun
+
+    if isinstance(current_user, AnonymousUser):
+        return query.order_by(Course.creation_date.desc(), Course.id.desc())
+
+    is_creator_author = (
+        select(1)
+        .select_from(ResourceAuthor)
+        .where(
+            ResourceAuthor.resource_uuid == Course.course_uuid,
+            ResourceAuthor.user_id == current_user.id,
+            ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+            ResourceAuthor.authorship == ResourceAuthorshipEnum.CREATOR,
+        )
+        .exists()
+    )
+    
+    is_creator = case(
+        (Course.creator_id == current_user.id, 1),
+        (is_creator_author, 1),
+        else_=0
+    )
+
+    is_collaborator_author = (
+        select(1)
+        .select_from(ResourceAuthor)
+        .where(
+            ResourceAuthor.resource_uuid == Course.course_uuid,
+            ResourceAuthor.user_id == current_user.id,
+            ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+            ResourceAuthor.authorship != ResourceAuthorshipEnum.CREATOR,
+        )
+        .exists()
+    )
+    is_collaborator = case((is_collaborator_author, 1), else_=0)
+
+    last_accessed = (
+        select(TrailRun.update_date)
+        .where(
+            TrailRun.course_id == Course.id,
+            TrailRun.user_id == current_user.id,
+        )
+        .order_by(TrailRun.update_date.desc())
+        .limit(1)
+        .correlate(Course)
+        .scalar_subquery()
+    )
+
+    in_progress_exists = (
+        select(1)
+        .where(
+            TrailRun.course_id == Course.id,
+            TrailRun.user_id == current_user.id,
+            TrailRun.status == "STATUS_IN_PROGRESS",
+        )
+        .exists()
+    )
+    in_progress = case((in_progress_exists, 1), else_=0)
+
+    popularity = (
+        select(func.count())
+        .select_from(TrailRun)
+        .where(TrailRun.course_id == Course.id)
+        .correlate(Course)
+        .scalar_subquery()
+    )
+
+    return query.order_by(
+        is_creator.desc(),
+        is_collaborator.desc(),
+        in_progress.desc(),
+        last_accessed.desc().nulls_last(),
+        popularity.desc(),
+        Course.creation_date.desc(),
+        Course.id.desc(),
+    )
 
 
 def _course_uuid_candidates(course_uuid: str) -> tuple[str, ...]:
@@ -628,12 +719,15 @@ async def get_courses(
     from sqlalchemy.orm import aliased
 
     offset = (page - 1) * limit
-    # Step 1: Build a subquery that selects the paginated course IDs
-    # with proper access filtering
+    # Step 1: Fetch paginated course IDs using LMS sorting
     id_query = select(Course.id)
     id_query = _accessible_courses_filter(id_query, current_user)
-    id_query = id_query.distinct().offset(offset).limit(limit)
-    id_subquery = id_query.subquery()
+    id_query = _apply_lms_sort(id_query, current_user)
+    id_query = id_query.offset(offset).limit(limit)
+
+    course_ids = db_session.exec(id_query).all()
+    if not course_ids:
+        return []
 
     # Step 2: Single query – fetch courses + authors via outer join
     AuthorRA = aliased(ResourceAuthor)
@@ -641,23 +735,23 @@ async def get_courses(
 
     combined_query = (
         select(Course, AuthorRA, AuthorUser)
-        .where(Course.id.in_(select(id_subquery.c.id)))
+        .where(Course.id.in_(course_ids))
         .outerjoin(AuthorRA, AuthorRA.resource_uuid == Course.course_uuid)
         .outerjoin(AuthorUser, AuthorRA.user_id == AuthorUser.id)
-        .order_by(Course.id, AuthorRA.id.asc())
+        .order_by(AuthorRA.id.asc())
     )
 
     results = db_session.exec(combined_query).all()
 
-    if not results:
-        return []
-
-    # Group results by course, preserving insertion order
+    # Group results by course, preserving correct sorting order
     courses_map: OrderedDict[int, tuple] = OrderedDict()
+    for cid in course_ids:
+        courses_map[cid] = (None, [])
+
     for course, ra, author_user in results:
         cid = course.id
-        if cid not in courses_map:
-            courses_map[cid] = (course, [])
+        if courses_map[cid][0] is None:
+            courses_map[cid] = (course, courses_map[cid][1])
         if ra is not None and author_user is not None:
             courses_map[cid][1].append(
                 AuthorWithRole(
@@ -795,7 +889,7 @@ async def search_courses(
         )
 
     # Apply pagination
-    query = _apply_course_sort(query, "updated").offset(offset).limit(limit)
+    query = _apply_lms_sort(query, current_user).offset(offset).limit(limit)
 
     courses = db_session.exec(query).all()
 
@@ -1512,12 +1606,21 @@ async def count_editable_courses(
         if not has_own_update:
             return 0
 
-        query = (
-            select(func.count(Course.id.distinct()))
-            .join(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
+        is_active_author = (
+            select(1)
+            .select_from(ResourceAuthor)
             .where(
+                ResourceAuthor.resource_uuid == Course.course_uuid,
                 ResourceAuthor.user_id == current_user.id,
                 ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
+            )
+            .exists()
+        )
+
+        query = select(func.count(Course.id.distinct())).where(
+            or_(
+                Course.creator_id == current_user.id,
+                is_active_author,
             )
         )
 
