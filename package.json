@@ -12,7 +12,8 @@
     "services": "docker-compose up -d db redis",
     "services:judge0": "docker-compose up -d db redis judge0-workers judge0-server",
     "check-types": "turbo run check-types",
-    "format": "turbo run format"
+    "format": "turbo run format",
+    "lint": "turbo run lint"
   },
   "devDependencies": {
     "turbo": "^2.9.6"

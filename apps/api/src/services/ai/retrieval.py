@@ -2,11 +2,11 @@ import asyncio
 import hashlib
 import logging
 
+import sqlalchemy.exc
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column, MetaData, Table, Text, delete, select, text
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-import sqlalchemy.exc
 from sqlmodel import Session
 
 from config.config import get_settings

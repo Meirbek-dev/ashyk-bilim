@@ -48,7 +48,7 @@ export async function setUserLocale(locale: Locale) {
 
   try {
     const maxAge = 30 * 24 * 60 * 60; // 30 days
-    const value = encodeURIComponent(locale as string);
+    const value = encodeURIComponent(locale);
     // Use a reasonably safe cookie; avoid Secure flag here because
     // this function can be used in development over http.
     document.cookie = `${COOKIE_NAME}=${value}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;

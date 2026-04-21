@@ -104,11 +104,7 @@ def validate_document_content(content: bytes) -> bool:
         return True
 
     # PPTX / DOCX / ZIP: ZIP container header
-    if (
-        content.startswith(b"PK\x03\x04")
-        or content.startswith(b"PK\x05\x06")
-        or content.startswith(b"PK\x07\x08")
-    ):
+    if content.startswith((b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08")):
         return True
 
     # VTT: WEBVTT

@@ -188,7 +188,7 @@ interface AuthorsDisplayProps {
 const AuthorsDisplay: FC<AuthorsDisplayProps> = ({ authors, t }) => {
   // LMS Best Practice: Sort authors so CREATORs/Main instructors appear first.
   const sortedAuthors = useMemo(() => {
-    return [...authors].sort((a, b) => {
+    return [...authors].toSorted((a, b) => {
       if (a.authorship === 'CREATOR' && b.authorship !== 'CREATOR') return -1;
       if (b.authorship === 'CREATOR' && a.authorship !== 'CREATOR') return 1;
       return 0;

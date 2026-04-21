@@ -25,7 +25,7 @@ type ResponseMetadata<T> = Omit<CustomResponseTyping, 'data'> & {
 };
 
 async function getTypedResponseMetadata<T>(response: Response): Promise<ResponseMetadata<T>> {
-  return (await getResponseMetadata(response)) as ResponseMetadata<T>;
+  return await getResponseMetadata(response);
 }
 
 interface UploadProgress {

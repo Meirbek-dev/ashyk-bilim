@@ -152,7 +152,7 @@ export function getAccessTokenExpiry(accessToken: string | undefined): number | 
     if (typeof payload !== 'object' || payload === null || !('exp' in payload)) {
       return null;
     }
-    const expiry = (payload as { exp: unknown }).exp;
+    const expiry = payload.exp;
     return typeof expiry === 'number' ? expiry * 1000 : null;
   } catch {
     return null;

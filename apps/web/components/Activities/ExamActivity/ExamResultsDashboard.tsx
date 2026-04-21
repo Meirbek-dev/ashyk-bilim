@@ -374,7 +374,7 @@ export default function ExamResultsDashboard({
             </NativeSelect>
             <NativeSelect
               value={sortBy}
-              onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
+              onChange={(event) => setSortBy(event.target.value)}
               className="w-[180px]"
               aria-label={t('sortBy')}
             >

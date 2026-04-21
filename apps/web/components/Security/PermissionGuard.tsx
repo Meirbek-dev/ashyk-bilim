@@ -60,20 +60,20 @@ interface PermissionErrorBoundaryState {
 }
 
 export class PermissionErrorBoundary extends Component<PermissionErrorBoundaryProps, PermissionErrorBoundaryState> {
-  constructor(props: PermissionErrorBoundaryProps) {
+  public constructor(props: PermissionErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(): PermissionErrorBoundaryState {
+  public static getDerivedStateFromError(): PermissionErrorBoundaryState {
     return { hasError: true };
   }
 
-  override componentDidCatch(error: Error) {
+  public override componentDidCatch(error: Error) {
     console.error('PermissionErrorBoundary caught error:', error);
   }
 
-  override render() {
+  public override render() {
     if (this.state.hasError) {
       return <>{this.props.fallback ?? null}</>;
     }

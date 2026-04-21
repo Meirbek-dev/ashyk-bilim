@@ -5,11 +5,11 @@ import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from joserfc import jwt
-from joserfc.errors import JoseError
-from joserfc._rfc7519.claims import JWTClaimsRegistry
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
+from joserfc import jwt
+from joserfc._rfc7519.claims import JWTClaimsRegistry
+from joserfc.errors import JoseError
 from sqlmodel import Session, select
 
 from src.db.strict_base_model import PydanticStrictBaseModel

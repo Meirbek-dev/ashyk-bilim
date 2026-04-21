@@ -8,11 +8,11 @@
  */
 
 export class APIError extends Error {
-  status: number;
-  code: string;
-  detail: unknown;
+  public status: number;
+  public code: string;
+  public detail: unknown;
 
-  constructor(response: unknown) {
+  public constructor(response: unknown) {
     const r = response as Record<string, any> | null | undefined;
     const message: string =
       (typeof r?.data?.detail === 'string' ? r.data.detail : null) ?? r?.HTTPmessage ?? r?.message ?? 'Request failed';

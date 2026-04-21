@@ -6,10 +6,10 @@ from typing import Any
 
 import httpx
 from authlib.integrations.httpx_client import AsyncOAuth2Client
+from fastapi import HTTPException
 from joserfc import jwt
 from joserfc._rfc7519.claims import JWTClaimsRegistry
 from joserfc.errors import JoseError
-from fastapi import HTTPException
 
 from src.security.keys import get_private_key, get_public_key
 from src.services.cache.redis_client import get_redis_client

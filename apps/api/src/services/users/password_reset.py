@@ -5,10 +5,10 @@ import time
 import uuid
 from typing import Any
 
+from fastapi import HTTPException
 from joserfc import jwt
 from joserfc._rfc7519.claims import JWTClaimsRegistry
 from joserfc.errors import JoseError
-from fastapi import HTTPException
 from pydantic import EmailStr
 from sqlmodel import Session, select
 

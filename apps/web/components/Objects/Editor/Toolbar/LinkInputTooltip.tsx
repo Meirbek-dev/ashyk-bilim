@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl';
-import { useId, type KeyboardEvent } from 'react';
+import { useId } from 'react';
+import type { KeyboardEvent } from 'react';
 import { Check, X } from 'lucide-react';
 import { useState } from 'react';
 

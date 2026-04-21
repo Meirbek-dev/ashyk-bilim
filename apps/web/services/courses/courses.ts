@@ -97,7 +97,7 @@ interface EditableCoursesSummary {
 }
 
 async function getTypedResponseMetadata<T>(response: Response): Promise<ResponseMetadata<T>> {
-  return (await getResponseMetadata(response)) as ResponseMetadata<T>;
+  return await getResponseMetadata(response);
 }
 
 function normalizeTags(tags: string | null | undefined): string[] {

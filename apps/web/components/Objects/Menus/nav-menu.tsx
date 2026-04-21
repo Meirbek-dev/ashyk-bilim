@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import { BookCopy, Menu, Signpost, SquareLibrary, type LucideIcon } from 'lucide-react';
+import { BookCopy, Menu, Signpost, SquareLibrary } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 // Components & UI
 import Link from '@components/ui/AppLink';
@@ -85,12 +86,12 @@ function useFocusMode(enabled: boolean): boolean {
       if (e.key === 'globalFocusMode') sync();
     };
 
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('focusModeChange', sync as EventListener);
+    globalThis.addEventListener('storage', onStorage);
+    globalThis.addEventListener('focusModeChange', sync);
 
     return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('focusModeChange', sync as EventListener);
+      globalThis.removeEventListener('storage', onStorage);
+      globalThis.removeEventListener('focusModeChange', sync);
     };
   }, [enabled]);
 

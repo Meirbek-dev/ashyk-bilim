@@ -386,14 +386,14 @@ const ActivityClient = (props: ActivityClientProps) => {
       }
     };
 
-    globalThis.addEventListener('focusModeChange', handler as EventListener);
+    globalThis.addEventListener('focusModeChange', handler);
     globalThis.addEventListener('storage', handler);
 
     // Run once to initialize
     handler();
 
     return () => {
-      globalThis.removeEventListener('focusModeChange', handler as EventListener);
+      globalThis.removeEventListener('focusModeChange', handler);
       globalThis.removeEventListener('storage', handler);
     };
   }, []);

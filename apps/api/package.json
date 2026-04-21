@@ -7,6 +7,7 @@
     "migrate": "uv run --no-sync alembic upgrade head",
     "format": "uv run ruff format",
     "lint": "uv run ruff check --fix --unsafe-fixes",
+    "test": "uv run pytest",
     "generate:openapi": "uv run python scripts/export_openapi.py",
     "generate:contracts": "uv run python scripts/export_openapi.py"
   }

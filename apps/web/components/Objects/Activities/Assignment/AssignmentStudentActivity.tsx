@@ -417,7 +417,7 @@ const TaskContent = ({ task, t }: TaskContentProps) => {
     return (
       <InteractiveQuizTask
         task={task}
-        questions={task.contents?.questions as QuizQuestion[] | undefined}
+        questions={task.contents?.questions}
         t={t}
       />
     );
@@ -427,7 +427,7 @@ const TaskContent = ({ task, t }: TaskContentProps) => {
     return (
       <InteractiveFormTask
         task={task}
-        questions={task.contents?.questions as FormQuestion[] | undefined}
+        questions={task.contents?.questions}
         t={t}
       />
     );

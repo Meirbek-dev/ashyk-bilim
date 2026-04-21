@@ -628,7 +628,7 @@ export function CodeChallengeForm({ activityUuid, initialData, onSubmit, onCance
                     <ComboboxMultiple<{ id: number; name: string }>
                       options={JUDGE0_LANGUAGES}
                       value={field.value}
-                      onChange={(vals) => field.onChange(vals as number[])}
+                      onChange={(vals) => field.onChange(vals)}
                       getOptionValue={(o) => o.id}
                       getOptionLabel={(o) => o.name}
                       placeholder={t('form.selectLanguages')}

@@ -24,9 +24,9 @@ import base64
 from functools import lru_cache
 from typing import Any
 
-from joserfc.jwk import OKPKey
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from joserfc.jwk import OKPKey
 
 from config.config import get_settings
 

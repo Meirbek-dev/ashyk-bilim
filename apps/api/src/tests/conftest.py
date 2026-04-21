@@ -6,7 +6,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 # Ensure src/ is on the Python path for all tests
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))  # noqa: E402
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 # Provide an explicit settings baseline so tests do not rely on a local backend .env file.
 os.environ.setdefault("PLATFORM_DOMAIN", "example.test")

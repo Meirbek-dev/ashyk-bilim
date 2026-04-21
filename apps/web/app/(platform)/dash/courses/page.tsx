@@ -87,7 +87,7 @@ async function PlatformDashCoursesPageInner(props: {
       sortBy={sortBy}
       pageSize={COURSES_PER_PAGE}
       preset={preset}
-      summaryCounts={summary as CourseDashboardSummary}
+      summaryCounts={summary}
     />
   );
 }

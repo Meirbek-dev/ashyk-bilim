@@ -12,7 +12,7 @@
     "test": "vitest",
     "lint": "eslint . --cache",
     "lint:fix": "eslint --fix . --cache",
-    "oxlint": "oxlint --type-aware --fix --fix-suggestions --fix-dangerously",
+    "oxlint": "oxlint --type-aware --type-check --fix --fix-suggestions --fix-dangerously",
     "format": "oxfmt --write",
     "start": "next start",
     "check-types": "next typegen && tsgo --noEmit",

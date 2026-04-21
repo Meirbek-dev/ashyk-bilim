@@ -4,10 +4,10 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from joserfc import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import HTTPException, Request, Response
+from joserfc import jwt
 from sqlmodel import Session
 
 from config.config import reload_platform_config_cache

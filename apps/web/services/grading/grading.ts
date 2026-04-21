@@ -45,7 +45,7 @@ export async function submitAssessment(
 
 export async function getMySubmissions(activityId: number): Promise<Submission[]> {
   const res = await apiFetch(`grading/submissions/me?activity_id=${activityId}`, {
-    next: { tags: ['submissions'] } as any,
+    next: { tags: ['submissions'] },
   });
   const meta = await getResponseMetadata(res);
   if (!meta.success) return [];
@@ -54,7 +54,7 @@ export async function getMySubmissions(activityId: number): Promise<Submission[]
 
 export async function getMySubmissionResult(submissionUuid: string): Promise<Submission | null> {
   const res = await apiFetch(`grading/submissions/me/${submissionUuid}`, {
-    next: { tags: ['submissions'] } as any,
+    next: { tags: ['submissions'] },
   });
   const meta = await getResponseMetadata(res);
   if (!meta.success) return null;
@@ -83,7 +83,7 @@ export async function getSubmissionsForActivity(
   if (options.pageSize) params.set('page_size', String(options.pageSize));
 
   const res = await apiFetch(`grading/submissions?${params}`, {
-    next: { tags: ['submissions'] } as any,
+    next: { tags: ['submissions'] },
   });
   const meta = await getResponseMetadata(res);
   if (!meta.success) return { items: [], total: 0, page: 1, page_size: 25, pages: 1 };
@@ -92,7 +92,7 @@ export async function getSubmissionsForActivity(
 
 export async function getSubmissionStats(activityId: number): Promise<SubmissionStats | null> {
   const res = await apiFetch(`grading/submissions/stats?activity_id=${activityId}`, {
-    next: { tags: ['submissions'] } as any,
+    next: { tags: ['submissions'] },
   });
   const meta = await getResponseMetadata(res);
   if (!meta.success) return null;
@@ -101,7 +101,7 @@ export async function getSubmissionStats(activityId: number): Promise<Submission
 
 export async function getSubmission(submissionUuid: string): Promise<Submission | null> {
   const res = await apiFetch(`grading/submissions/${submissionUuid}`, {
-    next: { tags: ['submissions'] } as any,
+    next: { tags: ['submissions'] },
   });
   const meta = await getResponseMetadata(res);
   if (!meta.success) return null;

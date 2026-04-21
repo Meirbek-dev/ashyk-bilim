@@ -85,7 +85,7 @@ export function DiscussionEditor({
       } catch {
         // treat as HTML string
       }
-      editor.commands.setContent(parsedContent as Parameters<typeof editor.commands.setContent>[0]);
+      editor.commands.setContent(parsedContent);
     }
   }, [editor, content]);
 

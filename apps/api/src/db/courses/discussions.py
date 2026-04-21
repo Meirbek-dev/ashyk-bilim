@@ -106,7 +106,6 @@ class CourseDiscussionRead(SQLModelStrictBaseModel):
     creation_date: str
     update_date: str
     user: UserRead | None = None
-    # ruff: noqa: UP037
     replies: list["CourseDiscussionRead"] | None = None
     is_liked: bool = False
     is_disliked: bool = False
