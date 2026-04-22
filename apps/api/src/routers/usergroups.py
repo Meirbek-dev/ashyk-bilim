@@ -8,6 +8,13 @@ from src.db.users import PublicUser, UserRead
 from src.infra.db.session import get_db_session
 from src.security.auth import get_current_user
 from src.security.rbac import PermissionCheckerDep
+
+# NOTE: Endpoints below intentionally do NOT call ``checker.require`` at the
+# router layer for mutations scoped to a single usergroup.  The service layer
+# performs the check with the correct ``resource_owner_id`` context so that
+# ``:own``-scoped permissions (instructors editing groups they created) resolve
+# correctly.  A context-free router check would reject those callers before the
+# service layer runs.
 from src.services.users.usergroups import (
     add_resources_to_usergroup,
     add_users_to_usergroup,
@@ -113,17 +120,14 @@ async def api_update_usergroup(
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_current_user)],
-    checker: PermissionCheckerDep,
     usergroup_id: int,
     usergroup_object: UserGroupUpdate,
 ) -> UserGroupRead:
     """
     Update UserGroup
 
-    **Required Permission**: `usergroup:update:platform`
+    **Required Permission**: `usergroup:update:platform` or `usergroup:update:own`
     """
-    checker.require(current_user.id, "usergroup:update")
-
     return await update_usergroup_by_id(
         request, db_session, current_user, usergroup_id, usergroup_object
     )
@@ -135,16 +139,13 @@ async def api_delete_usergroup(
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_current_user)],
-    checker: PermissionCheckerDep,
     usergroup_id: int,
 ) -> str:
     """
     Delete UserGroup
 
-    **Required Permission**: `usergroup:delete:platform`
+    **Required Permission**: `usergroup:delete:platform` or `usergroup:delete:own`
     """
-    checker.require(current_user.id, "usergroup:delete")
-
     return await delete_usergroup_by_id(request, db_session, current_user, usergroup_id)
 
 
@@ -154,17 +155,14 @@ async def api_add_users_to_usergroup(
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_current_user)],
-    checker: PermissionCheckerDep,
     usergroup_id: int,
     user_ids: str,
 ) -> str:
     """
     Add Users to UserGroup
 
-    **Required Permission**: `usergroup:manage:platform`
+    **Required Permission**: `usergroup:manage:platform` or `usergroup:manage:own`
     """
-    checker.require(current_user.id, "usergroup:manage")
-
     return await add_users_to_usergroup(
         request, db_session, current_user, usergroup_id, user_ids
     )

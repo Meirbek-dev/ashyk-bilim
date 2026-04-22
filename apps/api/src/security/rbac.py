@@ -112,21 +112,32 @@ class PermissionChecker:
         permission: str,
         *,
         resource_owner_id: int | None = None,
+        is_owner: bool | None = None,
         is_assigned: bool = False,
     ) -> bool:
         """Return True if user has the permission.
 
         Args:
-            user_id: The user to check.
+            user_id: The user to check. ``0`` is the anonymous (guest) user.
             permission: "resource:action" (2-part). Scope is resolved from context.
-            resource_owner_id: The creator/owner of the resource. Enables "own" scope.
-            is_assigned: Set to True when the service layer has already verified that
-                this resource is assigned to the user (e.g. course enrollment confirmed).
-                Required to unlock ``assigned``-scope permissions.
+            resource_owner_id: The creator/owner of the resource. Enables ``own`` scope
+                when it equals ``user_id``. Ignored when ``is_owner`` is supplied.
+            is_owner: Explicit ownership signal from the caller. Use this when
+                ownership is not a single ``creator_id == user_id`` check — for
+                example, a course with multiple active authors (CREATOR/MAINTAINER/
+                CONTRIBUTOR). When ``True``, the ``own`` scope is satisfied.
+            is_assigned: Set to True when the service layer has verified that this
+                resource is assigned to the user (enrollment, explicit assignment,
+                etc.). Unlocks ``assigned``-scope permissions.
         """
         granted = self._get_or_load(user_id)
         return self._resolve(
-            permission, granted, user_id, resource_owner_id, is_assigned
+            permission,
+            granted,
+            user_id,
+            resource_owner_id=resource_owner_id,
+            is_owner=is_owner,
+            is_assigned=is_assigned,
         )
 
     def require(
@@ -135,6 +146,7 @@ class PermissionChecker:
         permission: str,
         *,
         resource_owner_id: int | None = None,
+        is_owner: bool | None = None,
         is_assigned: bool = False,
     ) -> None:
         """check() + raise PermissionDenied when False."""
@@ -142,6 +154,7 @@ class PermissionChecker:
             user_id,
             permission,
             resource_owner_id=resource_owner_id,
+            is_owner=is_owner,
             is_assigned=is_assigned,
         ):
             raise PermissionDenied(permission=permission)
@@ -352,17 +365,33 @@ class PermissionChecker:
         return self._cache[user_id]
 
     def _load_guest_permissions(self) -> set[str]:
-        """Return the permissions assigned to the global ``guest`` system role."""
+        """Return the permissions for the anonymous/guest user.
+
+        Reads from the DB-backed ``guest`` system role. Falls back to the
+        in-memory ``SYSTEM_ROLES`` definition only when the role has not been
+        seeded yet (e.g. an existing database upgraded from before the guest
+        role existed).  If an admin has seeded the role and deliberately
+        revoked all its permissions, we respect that and return an empty set.
+        """
+        from src.db.permission_enums import SYSTEM_ROLES, RoleSlug
         from src.db.permissions import Permission, Role, RolePermission
 
-        query = (
-            select(Permission.name)
-            .join(RolePermission, RolePermission.permission_id == Permission.id)
-            .join(Role, Role.id == RolePermission.role_id)
-            .where(Role.slug == "guest")
-            .distinct()
-        )
-        return set(self.db.exec(query).all())
+        guest_role = self.db.exec(
+            select(Role).where(Role.slug == RoleSlug.GUEST.value)
+        ).first()
+        if guest_role is not None:
+            perms = self.db.exec(
+                select(Permission.name)
+                .join(RolePermission, RolePermission.permission_id == Permission.id)
+                .where(RolePermission.role_id == guest_role.id)
+                .distinct()
+            ).all()
+            return set(perms)
+
+        # Fallback: role not seeded yet — use the in-memory definition so
+        # anonymous browsing of public content keeps working.
+        guest_def = SYSTEM_ROLES.get(RoleSlug.GUEST, {})
+        return set(guest_def.get("permissions", []))
 
     def _load_permissions(self, user_id: int) -> set[str]:
         """Single JOIN query -> set of permission name strings (3-part)."""
@@ -400,7 +429,9 @@ class PermissionChecker:
         permission: str,
         granted: set[str],
         user_id: int,
-        resource_owner_id: int | None,
+        *,
+        resource_owner_id: int | None = None,
+        is_owner: bool | None = None,
         is_assigned: bool = False,
     ) -> bool:
         """Resolve whether a 2-part permission is satisfied by the granted set.
@@ -408,8 +439,10 @@ class PermissionChecker:
         Checks scopes from broadest to narrowest:
         1. all      - always passes
         2. platform - passes (membership implied by loaded permissions)
-        3. assigned - passes only when is_assigned=True (caller verified assignment)
-        4. own      - passes if resource_owner_id == user_id
+        3. assigned - passes only when is_assigned=True
+        4. own      - passes when is_owner=True, or resource_owner_id == user_id
+                      (fallback when is_owner not supplied). Anonymous users
+                      (user_id == 0) never satisfy ``own``.
         """
         parts = permission.split(":")
         if len(parts) != 2:
@@ -417,25 +450,24 @@ class PermissionChecker:
 
         resource, action = parts
 
-        # 1. "all" scope
         if PermissionChecker._has_perm(granted, resource, action, "all"):
             return True
 
-        # 2. "platform" scope
         if PermissionChecker._has_perm(granted, resource, action, "platform"):
             return True
 
-        # 3. "assigned" scope — the caller must pass is_assigned=True to confirm
-        #    the service layer has verified the resource is assigned to this user
-        #    (e.g. confirmed course enrollment, explicit assignment record, etc.).
         if is_assigned and PermissionChecker._has_perm(
             granted, resource, action, "assigned"
         ):
             return True
 
-        # 4. "own" scope - user owns the resource
-        if resource_owner_id is not None and resource_owner_id == user_id:
-            if PermissionChecker._has_perm(granted, resource, action, "own"):
+        if user_id != 0:
+            owns = (
+                is_owner
+                if is_owner is not None
+                else (resource_owner_id is not None and resource_owner_id == user_id)
+            )
+            if owns and PermissionChecker._has_perm(granted, resource, action, "own"):
                 return True
 
         return False

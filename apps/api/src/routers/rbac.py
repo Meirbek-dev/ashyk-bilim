@@ -127,12 +127,9 @@ def check_permission(
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
     checker: PermissionCheckerDep,
 ):
-    if isinstance(current_user, AnonymousUser):
-        return PermissionCheckResponse(
-            granted=False,
-            permission=f"{body.resource}:{body.action}",
-        )
-
+    # Anonymous users resolve through the ``guest`` role (user_id=0), so public
+    # read actions return granted=True. Returning a hard False here would hide
+    # public UI affordances (e.g. "view course" buttons) from signed-out users.
     perm = f"{body.resource}:{body.action}"
     granted = checker.check(current_user.id, perm)
     return PermissionCheckResponse(granted=granted, permission=perm)
@@ -147,10 +144,6 @@ def check_permissions_batch(
     checker: PermissionCheckerDep,
 ):
     perms = [f"{c.resource}:{c.action}" for c in body.checks]
-
-    if isinstance(current_user, AnonymousUser):
-        return BatchPermissionCheckResponse(results=dict.fromkeys(perms, False))
-
     results = checker.check_many(current_user.id, perms)
     return BatchPermissionCheckResponse(results=results)
 
@@ -165,8 +158,11 @@ def get_my_permissions(
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
     checker: PermissionCheckerDep,
 ):
+    # Anonymous users resolve to the guest role's permissions so the frontend
+    # can gate public UI on the same Set.has() path used for signed-in users.
     if isinstance(current_user, AnonymousUser):
-        return UserPermissionsResponse(roles=[], permissions=[])
+        permissions = sorted(checker.get_expanded_permissions(0))
+        return UserPermissionsResponse(roles=[], permissions=permissions)
 
     roles = checker.get_user_roles(current_user.id)
     permissions = sorted(checker.get_expanded_permissions(current_user.id))
