@@ -113,13 +113,14 @@ const VERIFY_TIMEOUT_MS = 5000;
  * Full session validation (JTI blocklist, Redis session check) still happens
  * server-side in FastAPI on every authenticated API call.
  */
-export async function verifyTokenSignature(token: string): Promise<boolean> {
-  if (!JWKS) {
+export async function verifyTokenSignature(token: string, jwksOverride?: any): Promise<boolean> {
+  const jwks = jwksOverride ?? JWKS;
+  if (!jwks) {
     // JWKS not configured — fall back to expiry-only check
     return !isAccessTokenExpired(token);
   }
   try {
-    const verifyPromise = jwtVerify(token, JWKS, {
+    const verifyPromise = jwtVerify(token, jwks, {
       issuer: 'ashyq-bilim-auth',
       audience: 'ashyq-bilim-api',
       algorithms: ['EdDSA'],

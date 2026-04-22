@@ -1,8 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-
-// Set environment variables BEFORE any imports that might use them
-process.env.INTERNAL_API_URL = 'http://api:8000';
-
 import { jwtVerify } from 'jose';
 
 // Mock 'jose'
@@ -23,6 +19,8 @@ vi.mock('./lib/auth/cookie-bridge', () => ({
 import { verifyTokenSignature } from '@/proxy';
 
 describe('verifyTokenSignature timeout', () => {
+  const mockJWKS = {};
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
@@ -36,7 +34,7 @@ describe('verifyTokenSignature timeout', () => {
     // Mock jwtVerify to hang indefinitely by returning a promise that never resolves
     (jwtVerify as any).mockReturnValue(new Promise(() => {}));
 
-    const verifyPromise = verifyTokenSignature('test-token');
+    const verifyPromise = verifyTokenSignature('test-token', mockJWKS);
     
     // Fast forward 6 seconds (timeout is 5s)
     await vi.advanceTimersByTimeAsync(6000);
@@ -48,7 +46,7 @@ describe('verifyTokenSignature timeout', () => {
   it('should return true when jwtVerify resolves quickly', async () => {
     (jwtVerify as any).mockResolvedValue({ payload: {} });
     
-    const result = await verifyTokenSignature('test-token');
+    const result = await verifyTokenSignature('test-token', mockJWKS);
     expect(result).toBe(true);
   });
 });

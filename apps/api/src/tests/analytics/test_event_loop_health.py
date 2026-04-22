@@ -1,5 +1,6 @@
 import asyncio
 import time
+import inspect
 from unittest.mock import patch, MagicMock
 from sqlalchemy.orm import Session
 
@@ -77,4 +78,4 @@ async def test_all_analytics_endpoints_are_async():
     """
     from src.routers.analytics import router
     for route in router.routes:
-        assert asyncio.iscoroutinefunction(route.endpoint), f"Endpoint {route.path} is not async"
+        assert inspect.iscoroutinefunction(route.endpoint), f"Endpoint {route.path} is not async"
