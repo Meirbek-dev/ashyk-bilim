@@ -21,21 +21,26 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
         detail = exc.detail
+        headers = exc.headers
         if isinstance(detail, dict):
             error_code = detail.get("error_code")
             message = detail.get("message")
             if isinstance(error_code, str) and isinstance(message, str):
-                return JSONResponse(status_code=exc.status_code, content=detail)
+                return JSONResponse(
+                    status_code=exc.status_code, content=detail, headers=headers
+                )
             return JSONResponse(
                 status_code=exc.status_code,
                 content={
                     "error_code": "HTTP_ERROR",
                     "message": str(message if message is not None else detail),
                 },
+                headers=headers,
             )
         return JSONResponse(
             status_code=exc.status_code,
             content={"error_code": "HTTP_ERROR", "message": str(detail)},
+            headers=headers,
         )
 
     @app.exception_handler(RequestValidationError)
