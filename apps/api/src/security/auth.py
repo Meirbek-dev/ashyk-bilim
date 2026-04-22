@@ -228,7 +228,7 @@ async def _is_roles_stale(user_uuid: str, roles_version: int) -> bool:
     try:
         roles_updated_at = int(raw)
         return roles_updated_at > roles_version
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return False
 
 

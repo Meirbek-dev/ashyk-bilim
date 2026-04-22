@@ -160,7 +160,9 @@ async def teacher_assessments_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    return await asyncio.to_thread(get_teacher_assessment_list, db_session, scope, filters)
+    return await asyncio.to_thread(
+        get_teacher_assessment_list, db_session, scope, filters
+    )
 
 
 @router.get(
@@ -251,7 +253,8 @@ async def teacher_assessment_outcomes_export_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="export")
     return _csv_response(
-        await asyncio.to_thread(export_assessment_outcomes_csv, db_session, scope, filters),
+        await asyncio.to_thread(
+            export_assessment_outcomes_csv, db_session, scope, filters
+        ),
         "teacher-assessment-outcomes.csv",
     )
-

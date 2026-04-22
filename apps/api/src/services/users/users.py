@@ -417,6 +417,7 @@ async def _create_and_validate_user(
     # Password strength validation
     if user_object.password:
         from src.routers.auth import MIN_PASSWORD_LENGTH
+
         if len(user_object.password) < MIN_PASSWORD_LENGTH:
             raise HTTPException(
                 status_code=400,
