@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getServerAPIUrl } from '@services/config/config';
+import { apiFetch } from '@/lib/api-client';
 import { REFRESH_TOKEN_COOKIE_NAME } from '@/lib/auth/types';
 import {
   applyResponseCookiesToNextResponse,
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Server-side POST to FastAPI — never visible to the browser.
-  const response = await fetch(`${getServerAPIUrl()}auth/refresh`, {
+  const response = await apiFetch('auth/refresh', {
     method: 'POST',
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     cache: 'no-store',
