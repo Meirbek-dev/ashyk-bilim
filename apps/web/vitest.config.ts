@@ -8,16 +8,15 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  define: {
-    'process.env': {},
-  },
   test: {
+    globals: true,
+    setupFiles: ['./tests/setup.ts'],
     environment: 'jsdom',
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     browser: {
-      enabled: true,
+      enabled: false, // Default to false, can be overridden by --browser
       provider: playwright(),
       instances: [{ browser: 'chromium' }, { browser: 'firefox' }, { browser: 'webkit' }],
     },
@@ -30,4 +29,4 @@ export default defineConfig({
       '@public': path.resolve(__dirname, 'public'),
     },
   },
-});
+}));
