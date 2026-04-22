@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { apiFetch } from '@/lib/api-client';
 
 // Mock the config and auth redirect to avoid side effects
@@ -15,26 +15,37 @@ vi.mock('@/lib/auth/redirect', () => ({
 describe('apiFetch timeout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // We need to global.fetch because Vitest/jsdom might not have it or it's a stub
     global.fetch = vi.fn();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should abort the request when it exceeds DEFAULT_TIMEOUT_MS', async () => {
-    // Mock fetch to never resolve
-    (global.fetch as any).mockImplementation(() => new Promise((resolve) => {
-        // Just hang
-    }));
+    // Mock fetch to reject when the signal is aborted
+    (global.fetch as any).mockImplementation((url, options) => {
+      return new Promise((_, reject) => {
+        if (options?.signal) {
+          if (options.signal.aborted) {
+             const error = new Error('The operation was aborted');
+             error.name = 'AbortError';
+             reject(error);
+             return;
+          }
+          options.signal.addEventListener('abort', () => {
+            const error = new Error('The operation was aborted');
+            error.name = 'AbortError';
+            reject(error);
+          }, { once: true });
+        }
+      });
+    });
 
-    // We can't easily wait 15 seconds in a unit test, 
-    // but we can check if the signal is passed correctly.
-    const fetchPromise = apiFetch('test-endpoint');
-    
-    // Fast-forward time
-    vi.useFakeTimers();
-    
     const promise = apiFetch('test-endpoint');
     
-    // Move forward by 16 seconds
+    // Move forward by 16 seconds (DEFAULT_TIMEOUT_MS is 15s)
     await vi.advanceTimersByTimeAsync(16000);
     
     await expect(promise).rejects.toThrow();
@@ -42,8 +53,6 @@ describe('apiFetch timeout', () => {
     const lastCall = (global.fetch as any).mock.calls[0];
     const signal = lastCall[1].signal;
     expect(signal.aborted).toBe(true);
-    
-    vi.useRealTimers();
   });
 
   it('should resolve normally if within timeout', async () => {

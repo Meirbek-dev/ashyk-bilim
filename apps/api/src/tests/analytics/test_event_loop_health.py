@@ -1,11 +1,13 @@
 import asyncio
 import time
 from unittest.mock import patch, MagicMock
+from sqlalchemy.orm import Session
 
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
 
+from src.infra.db.session import get_db_session
 from src.app.factory import create_app
 from src.services.analytics.filters import AnalyticsFilters
 
@@ -27,6 +29,9 @@ async def test_analytics_does_not_block_event_loop():
     request is still 'running' in its thread.
     """
     app = create_app()
+    
+    # Mock the database session dependency
+    app.dependency_overrides[get_db_session] = lambda: MagicMock(spec=Session)
     
     # We need to mock the service call that we wrapped in to_thread
     # get_teacher_overview is one of them.
@@ -58,6 +63,9 @@ async def test_analytics_does_not_block_event_loop():
                     
                     # Clean up
                     await analytics_task
+    
+    # Clear overrides
+    app.dependency_overrides = {}
 
 @pytest.mark.asyncio
 async def test_all_analytics_endpoints_are_async():
