@@ -21,17 +21,11 @@ const nextConfig: NextConfig = {
   // Build & Environment
   output: 'standalone',
   reactStrictMode: true,
-  compress: true,
 
   allowedDevOrigins: ['https://cs-mooc.tou.edu.kz', 'http://192.168.12.35', 'http://192.168.1.46'],
   experimental: {
     serverActions: {
       allowedOrigins: ['cs-mooc.tou.edu.kz', 'localhost:3000'],
-    },
-    // High-performance caching presets for LMS/Dashboard environments
-    staleTimes: {
-      dynamic: 30, // Keep dynamic pages fresh (e.g., student progress)
-      static: 300, // Longer cache for static course content
     },
     // Turbopack / Package Optimization
     optimizePackageImports: [
@@ -62,20 +56,6 @@ const nextConfig: NextConfig = {
 
   // Required for certain heavy TipTap extensions with Turbopack
   transpilePackages: ['@tiptap/extension-code-block-lowlight', 'lowlight'],
-
-  // 7. Security & Networking
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-        ],
-      },
-    ];
-  },
 };
 
 const withNextIntl = createNextIntlPlugin();
