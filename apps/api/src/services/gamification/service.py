@@ -83,10 +83,10 @@ def _fetch_count(db: Session, stmt: SelectOfScalar[int]) -> int:
         first = None
         try:
             first = result.one_or_none()
-        except AttributeError, TypeError:
+        except (AttributeError, TypeError):
             try:
                 first = result.first()
-            except AttributeError, TypeError:
+            except (AttributeError, TypeError):
                 first = None
         if first is None:
             return 0
@@ -95,7 +95,7 @@ def _fetch_count(db: Session, stmt: SelectOfScalar[int]) -> int:
         return 0
     try:
         return int(value)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         return 0
 
 
@@ -234,10 +234,9 @@ def award_xp(
             return profile, existing_tx, False, False
         msg = f"Database error: {e}"
         raise GamificationError(msg)
-    except SQLAlchemyError, ValueError, TypeError:
+    except (SQLAlchemyError, ValueError, TypeError):
         db.rollback()
         raise
-
 
 def update_streak(db: Session, user_id: int, streak_type: str) -> GamificationProfile:
     profile = get_profile(db, user_id)

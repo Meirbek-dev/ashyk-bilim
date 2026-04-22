@@ -86,6 +86,14 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
     });
 
     if (!isServer && response.status === 401) {
+      const wwwAuth = response.headers.get('WWW-Authenticate');
+      if (wwwAuth?.includes('error="roles_stale"')) {
+        const { pathname, search } = globalThis.location;
+        const refreshUrl = `/api/auth/refresh?returnTo=${encodeURIComponent(pathname + search)}`;
+        globalThis.location.assign(refreshUrl);
+        return response;
+      }
+
       const { pathname } = globalThis.location;
       if (!isAuthRoute(pathname)) {
         globalThis.location.assign(buildLoginRedirect());

@@ -136,7 +136,7 @@ def get_challenge_settings(activity: Activity) -> CodeChallengeSettings:
     """Parse challenge settings from activity.details"""
     try:
         return CodeChallengeSettings.model_validate(activity.details or {})
-    except ValidationError, ValueError:
+    except (ValidationError, ValueError):
         return CodeChallengeSettings()
 
 
@@ -331,7 +331,7 @@ async def submit_code_challenge(
         source_code = sanitize_code(source_code)
     except CodeValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except ValueError, UnicodeDecodeError:
+    except (ValueError, UnicodeDecodeError):
         raise HTTPException(status_code=400, detail="Invalid source code encoding")
 
     # Get language name
@@ -341,7 +341,7 @@ async def submit_code_challenge(
             (lang.name for lang in languages if lang.id == submission.language_id),
             f"Language {submission.language_id}",
         )
-    except Judge0Error, Judge0UnavailableError:
+    except (Judge0Error, Judge0UnavailableError):
         language_name = f"Language {submission.language_id}"
 
     # Create submission record
@@ -533,7 +533,7 @@ async def run_visible_tests(
         source_code = sanitize_code(source_code)
     except CodeValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except ValueError, UnicodeDecodeError:
+    except (ValueError, UnicodeDecodeError):
         raise HTTPException(status_code=400, detail="Invalid source code encoding")
 
     # Run only visible tests
@@ -606,7 +606,7 @@ async def run_custom_test(
         )
     except CodeValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except ValueError, UnicodeDecodeError:
+    except (ValueError, UnicodeDecodeError):
         raise HTTPException(status_code=400, detail="Invalid encoding")
 
     try:

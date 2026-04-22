@@ -45,7 +45,7 @@ def _rate_limit_key(request: Request) -> str:
                 token = parts[1]
                 return f"token:{hashlib.sha256(token.encode()).hexdigest()}"
             return f"auth:{hashlib.sha256(auth.encode()).hexdigest()}"
-        except IndexError, AttributeError:
+        except (IndexError, AttributeError):
             pass
 
     # Fallback to remote address

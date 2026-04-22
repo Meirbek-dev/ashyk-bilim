@@ -795,5 +795,5 @@ def assessment_pass_threshold(settings: dict | None) -> float:
     raw = (settings or {}).get("passing_score", 60)
     try:
         return float(raw)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         return 60.0

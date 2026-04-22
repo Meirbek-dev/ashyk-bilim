@@ -21,7 +21,7 @@ from src.db.permissions import Role, UserRole
 from src.db.users import AnonymousUser, PublicUser
 from src.db.users import User as UserModel
 from src.infra.db.session import get_db_session
-from src.security.auth import get_current_user
+from src.security.auth import get_current_user, get_current_user_optional
 from src.security.rbac import PermissionCheckerDep, mark_user_roles_updated
 
 audit_log = logging.getLogger("rbac.audit")
@@ -124,7 +124,7 @@ class UserRoleAssignmentResponse(BaseModel):
 def check_permission(
     request: Request,
     body: PermissionCheckRequest,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user_optional)],
     checker: PermissionCheckerDep,
 ):
     # Anonymous users resolve through the ``guest`` role (user_id=0), so public
@@ -140,7 +140,7 @@ def check_permission(
 def check_permissions_batch(
     request: Request,
     body: BatchPermissionCheckRequest,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user_optional)],
     checker: PermissionCheckerDep,
 ):
     perms = [f"{c.resource}:{c.action}" for c in body.checks]
@@ -155,7 +155,7 @@ def check_permissions_batch(
 
 @router.get("/me/permissions", response_model=UserPermissionsResponse)
 def get_my_permissions(
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user_optional)],
     checker: PermissionCheckerDep,
 ):
     # Anonymous users resolve to the guest role's permissions so the frontend

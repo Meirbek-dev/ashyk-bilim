@@ -10,7 +10,7 @@ Two entry points:
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlmodel import Session
@@ -37,7 +37,7 @@ def write_audit_event(
     """
     try:
         entry = AuthAuditLog(
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             user_id=user_id,
             event_type=event_type,
             session_id=session_id,

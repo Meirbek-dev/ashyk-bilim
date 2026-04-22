@@ -314,7 +314,7 @@ async def _get_activity_data(
 
         cache_manager.db_cache.set(cache_key, (activity, course))
         return activity, course
-    except ActivityNotFoundError, RetrievalError:
+    except (ActivityNotFoundError, RetrievalError):
         raise
     except Exception as exc:
         raise ActivityNotFoundError(
@@ -453,7 +453,7 @@ async def generate_chat_answer(
         ) from exc
     except ActivityNotFoundError:
         raise
-    except AITimeoutError, RetrievalError:
+    except (AITimeoutError, RetrievalError):
         raise
     except Exception as exc:
         msg = f"Unexpected error during AI processing: {exc!s}"

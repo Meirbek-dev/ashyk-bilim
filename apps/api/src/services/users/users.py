@@ -365,15 +365,12 @@ def delete_user_by_id(
 # Utils & Security functions
 
 
-def security_get_user(request: Request, db_session: Session, email: str) -> User:
-    """Get user by email for security purposes."""
+def security_get_user(request: Request, db_session: Session, email: str) -> User | None:
+    """Get user by email for security purposes. Returns None if not found instead of raising."""
     try:
         return _get_user_by_field(db_session, "email", email)
     except HTTPException:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User with Email does not exist",
-        )
+        return None
 
 
 # Helper functions for user operations

@@ -218,12 +218,12 @@ class PermissionChecker:
 
         # Scope hierarchy expansion: broader scopes imply narrower ones.
         # "all"      → also implies "platform", "assigned", "own"
-        # "platform" → also implies "own"
+        # "platform" → also implies "assigned", "own"
         # This ensures the frontend's exact Set.has() lookups work correctly
         # (e.g. a user with course:update:platform also passes a check for course:update:own).
         scope_implies: dict[str, list[str]] = {
             "all": ["platform", "assigned", "own"],
-            "platform": ["own"],
+            "platform": ["assigned", "own"],
         }
 
         hierarchy_expanded: set[str] = set()
