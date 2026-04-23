@@ -48,23 +48,27 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
   return (
     <GeneralWrapper>
       {/* Header Section */}
-      <div className="mb-10 flex flex-col items-start gap-4 border-b border-border pb-8 pt-4">
+      <div className="border-border mb-10 flex flex-col items-start gap-4 border-b pt-4 pb-8">
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="rounded-md px-2 py-1 font-medium">
+          <Badge
+            variant="secondary"
+            className="rounded-md px-2 py-1 font-medium"
+          >
             <Layers className="mr-1.5 h-3.5 w-3.5" />
             {t('collection')}
           </Badge>
-          <Badge variant="outline" className="rounded-md px-2 py-1 font-medium text-muted-foreground">
+          <Badge
+            variant="outline"
+            className="text-muted-foreground rounded-md px-2 py-1 font-medium"
+          >
             {tCol('courseCount', { count: col.courses.length })}
           </Badge>
         </div>
-        
+
         <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">{col.name}</h1>
-        
+
         {col.description && (
-          <p className="mt-2 max-w-[800px] leading-relaxed text-muted-foreground md:text-lg">
-            {col.description}
-          </p>
+          <p className="text-muted-foreground mt-2 max-w-[800px] leading-relaxed md:text-lg">{col.description}</p>
         )}
       </div>
 
@@ -75,9 +79,9 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
             prefetch={false}
             href={getAbsoluteUrl(`/course/${course.course_uuid.replace('course_', '')}`)}
             key={course.course_uuid}
-            className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm transition-all hover:border-primary/20 hover:shadow-md"
+            className="group border-border bg-card text-card-foreground hover:border-primary/20 flex flex-col overflow-hidden rounded-xl border shadow-sm transition-all hover:shadow-md"
           >
-            <div className="relative aspect-[16/9] w-full overflow-hidden border-b border-border/50 bg-muted">
+            <div className="border-border/50 bg-muted relative aspect-[16/9] w-full overflow-hidden border-b">
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
                 style={{
@@ -88,21 +92,21 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             </div>
-            
+
             <div className="flex flex-1 flex-col p-4">
-              <h3 className="line-clamp-2 text-lg font-semibold transition-colors group-hover:text-primary">
+              <h3 className="group-hover:text-primary line-clamp-2 text-lg font-semibold transition-colors">
                 {course.name}
               </h3>
             </div>
           </Link>
         ))}
       </div>
-      
+
       {col.courses.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center bg-muted/30 mt-8">
-          <Layers className="mb-4 h-12 w-12 text-muted-foreground/30" />
+        <div className="border-border bg-muted/30 mt-8 flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center">
+          <Layers className="text-muted-foreground/30 mb-4 h-12 w-12" />
           <h3 className="text-xl font-semibold">No courses found</h3>
-          <p className="mt-2 text-muted-foreground">This collection doesn't have any courses yet.</p>
+          <p className="text-muted-foreground mt-2">This collection doesn't have any courses yet.</p>
         </div>
       )}
     </GeneralWrapper>

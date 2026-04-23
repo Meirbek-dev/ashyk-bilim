@@ -9,8 +9,9 @@ from src.db.courses.quiz import (
     QuizSubmissionRequest,
     QuizSubmissionResponse,
 )
+from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
-from src.security.auth import get_current_user
+from src.security.auth import get_current_user, get_current_user_optional
 from src.services.blocks.block_types.imageBlock.imageBlock import (
     create_image_block,
     get_image_block,
@@ -28,7 +29,6 @@ from src.services.blocks.block_types.videoBlock.videoBlock import (
     create_video_block,
     get_video_block,
 )
-from src.services.users.users import PublicUser
 
 router = APIRouter()
 
@@ -56,7 +56,9 @@ async def api_get_image_file_block(
     request: Request,
     block_uuid: str,
     db_session=Depends(get_db_session),
-    current_user: Annotated[PublicUser, Depends(get_current_user)] = None,
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ] = None,
 ) -> BlockRead:
     """
     Get image file
@@ -88,7 +90,9 @@ async def api_get_video_file_block(
     request: Request,
     block_uuid: str,
     db_session=Depends(get_db_session),
-    current_user: Annotated[PublicUser, Depends(get_current_user)] = None,
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ] = None,
 ) -> BlockRead:
     """
     Get video file
@@ -120,7 +124,9 @@ async def api_get_pdf_file_block(
     request: Request,
     block_uuid: str,
     db_session=Depends(get_db_session),
-    current_user: Annotated[PublicUser, Depends(get_current_user)] = None,
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ] = None,
 ) -> BlockRead:
     """
     Get pdf file

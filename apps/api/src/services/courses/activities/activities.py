@@ -99,15 +99,22 @@ async def create_activity(
 async def get_activity(
     request: Request,
     activity_uuid: str,
-    current_user: PublicUser,
+    current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
     activity = _get_activity_by_uuid(activity_uuid, db_session)
+    course = _get_course_for_activity(activity, db_session)
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "activity:read", resource_owner_id=activity.creator_id
-    )
+
+    # For public courses, guests can read published activities.
+    # Otherwise, require explicit activity:read permission.
+    is_public_and_published = course.public and activity.published
+    if not is_public_and_published:
+        checker.require(
+            current_user.id, "activity:read", resource_owner_id=activity.creator_id
+        )
+
     activity_read = ActivityRead.model_validate(activity)
 
     can_update = checker.check(

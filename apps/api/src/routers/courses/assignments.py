@@ -14,9 +14,9 @@ from src.db.courses.assignments import (
     AssignmentUserSubmissionRead,
     AssignmentUserSubmissionWithUserRead,
 )
-from src.db.users import PublicUser
+from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
-from src.security.auth import get_current_user
+from src.security.auth import get_current_user, get_current_user_optional
 from src.services.courses.activities.assignments import (
     create_assignment,
     create_assignment_task,
@@ -67,7 +67,9 @@ async def api_create_assignments(
 async def api_read_assignment(
     request: Request,
     assignment_uuid: str,
-    current_user: Annotated[PublicUser, Depends(get_current_user)],
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ],
     db_session=Depends(get_db_session),
 ) -> AssignmentRead:
     """
@@ -80,7 +82,9 @@ async def api_read_assignment(
 async def api_read_assignment_from_activity(
     request: Request,
     activity_uuid: str,
-    current_user: Annotated[PublicUser, Depends(get_current_user)],
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ],
     db_session=Depends(get_db_session),
 ) -> AssignmentRead:
     """

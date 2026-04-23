@@ -148,7 +148,7 @@ export const AssignmentTaskGeneralEdit = () => {
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-          <p className="mt-2 text-muted-foreground">{t('loadingTask')}</p>
+          <p className="text-muted-foreground mt-2">{t('loadingTask')}</p>
         </div>
       </div>
     );

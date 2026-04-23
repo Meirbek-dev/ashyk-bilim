@@ -332,7 +332,9 @@ async def api_search_platform_courses(
     query: str,
     page: int = 1,
     limit: int = 20,
-    current_user: Annotated[PublicUser, Depends(get_current_user)] = None,
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ] = None,
     db_session=Depends(get_db_session),
 ) -> list[CourseRead]:
     return await search_courses(request, current_user, query, db_session, page, limit)
@@ -461,10 +463,12 @@ async def api_get_course_contributors(
     request: Request,
     course_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
-    current_user: Annotated[PublicUser, Depends(get_current_user)],
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ],
 ):
     """
-    Get all contributors for a course
+    Get all contributors for a specific course
     """
     return await get_course_contributors(request, course_uuid, current_user, db_session)
 
@@ -534,7 +538,9 @@ async def api_get_course_user_rights(
     request: Request,
     course_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
-    current_user: Annotated[PublicUser, Depends(get_current_user)],
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ],
 ) -> dict:
     """
     Get detailed user rights for a specific course.

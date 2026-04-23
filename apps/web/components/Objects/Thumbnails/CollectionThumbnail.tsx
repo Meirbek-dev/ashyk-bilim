@@ -34,8 +34,8 @@ const removeCollectionPrefix = (collectionid: string) => collectionid.replace('c
 const CollectionMosaic = ({ courses }: { courses: any[] }) => {
   if (!courses || courses.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-muted">
-        <Layers className="h-8 w-8 text-muted-foreground/50" />
+      <div className="bg-muted flex h-full w-full items-center justify-center">
+        <Layers className="text-muted-foreground/50 h-8 w-8" />
       </div>
     );
   }
@@ -46,17 +46,17 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
 
   if (courseImages.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-muted">
-        <Layers className="h-8 w-8 text-muted-foreground/50" />
+      <div className="bg-muted flex h-full w-full items-center justify-center">
+        <Layers className="text-muted-foreground/50 h-8 w-8" />
       </div>
     );
   }
 
   if (courseImages.length === 1) {
     return (
-      <div 
-        className="h-full w-full bg-cover bg-center" 
-        style={{ backgroundImage: `url(${courseImages[0]})` }} 
+      <div
+        className="h-full w-full bg-cover bg-center"
+        style={{ backgroundImage: `url(${courseImages[0]})` }}
       />
     );
   }
@@ -64,8 +64,14 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
   if (courseImages.length === 2) {
     return (
       <div className="flex h-full w-full">
-        <div className="h-full w-1/2 border-r border-background bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[0]})` }} />
-        <div className="h-full w-1/2 bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[1]})` }} />
+        <div
+          className="border-background h-full w-1/2 border-r bg-cover bg-center"
+          style={{ backgroundImage: `url(${courseImages[0]})` }}
+        />
+        <div
+          className="h-full w-1/2 bg-cover bg-center"
+          style={{ backgroundImage: `url(${courseImages[1]})` }}
+        />
       </div>
     );
   }
@@ -73,21 +79,42 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
   if (courseImages.length === 3) {
     return (
       <div className="flex h-full w-full">
-        <div className="h-full w-1/2 border-r border-background bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[0]})` }} />
+        <div
+          className="border-background h-full w-1/2 border-r bg-cover bg-center"
+          style={{ backgroundImage: `url(${courseImages[0]})` }}
+        />
         <div className="flex h-full w-1/2 flex-col">
-          <div className="h-1/2 w-full border-b border-background bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[1]})` }} />
-          <div className="h-1/2 w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[2]})` }} />
+          <div
+            className="border-background h-1/2 w-full border-b bg-cover bg-center"
+            style={{ backgroundImage: `url(${courseImages[1]})` }}
+          />
+          <div
+            className="h-1/2 w-full bg-cover bg-center"
+            style={{ backgroundImage: `url(${courseImages[2]})` }}
+          />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-[1px] bg-background">
-      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[0]})` }} />
-      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[1]})` }} />
-      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[2]})` }} />
-      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[3]})` }} />
+    <div className="bg-background grid h-full w-full grid-cols-2 grid-rows-2 gap-[1px]">
+      <div
+        className="h-full w-full bg-cover bg-center"
+        style={{ backgroundImage: `url(${courseImages[0]})` }}
+      />
+      <div
+        className="h-full w-full bg-cover bg-center"
+        style={{ backgroundImage: `url(${courseImages[1]})` }}
+      />
+      <div
+        className="h-full w-full bg-cover bg-center"
+        style={{ backgroundImage: `url(${courseImages[2]})` }}
+      />
+      <div
+        className="h-full w-full bg-cover bg-center"
+        style={{ backgroundImage: `url(${courseImages[3]})` }}
+      />
     </div>
   );
 };
@@ -100,17 +127,17 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
   const canDelete = collection.can_delete ?? false;
 
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md hover:border-primary/20">
+    <div className="group border-border bg-card hover:border-primary/20 relative flex h-full flex-col overflow-hidden rounded-xl border shadow-sm transition-all hover:shadow-md">
       <Link
         prefetch={false}
         href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid)}`)}
-        className="relative block aspect-[16/9] w-full overflow-hidden border-b border-border/50"
+        className="border-border/50 relative block aspect-[16/9] w-full overflow-hidden border-b"
       >
         <CollectionMosaic courses={collection.courses} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
       </Link>
 
-      <div className="absolute right-2 top-2 z-10 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+      <div className="absolute top-2 right-2 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         <CollectionDeleteAction
           collection_uuid={collection.collection_uuid}
           collection={collection}
@@ -123,19 +150,22 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
           <Link
             prefetch={false}
             href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid)}`)}
-            className="line-clamp-2 text-base font-semibold text-foreground transition-colors hover:text-primary"
+            className="text-foreground hover:text-primary line-clamp-2 text-base font-semibold transition-colors"
           >
             {collection.name}
           </Link>
         </div>
-        
+
         <div className="mt-auto flex items-center justify-between pt-2">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
+          <div className="text-muted-foreground flex items-center gap-1.5">
             <Layers className="h-4 w-4" />
             <p className="text-sm font-medium">{t('courseCount', { count: collection.courses.length })}</p>
           </div>
           {isOwner && (
-            <Badge variant="secondary" className="gap-1 rounded-md px-2 py-0.5 text-xs font-medium">
+            <Badge
+              variant="secondary"
+              className="gap-1 rounded-md px-2 py-0.5 text-xs font-medium"
+            >
               <Crown className="h-3 w-3" />
               {tCommon('owner')}
             </Badge>
@@ -202,7 +232,7 @@ const CollectionDeleteAction = ({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending} />
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm"
               onClick={handleDelete}
               disabled={isPending}
             >

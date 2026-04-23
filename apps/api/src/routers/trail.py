@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, Request
 
 from src.db.trails import TrailCreate, TrailRead
+from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
-from src.security.auth import get_current_user
+from src.security.auth import get_current_user, get_current_user_optional
 from src.services.trail.trail import (
     Trail,
     add_activity_to_trail,
@@ -32,12 +33,14 @@ async def api_start_trail(
 @router.get("")
 async def api_get_user_trail(
     request: Request,
-    user=Depends(get_current_user),
+    user=Depends(get_current_user_optional),
     db_session=Depends(get_db_session),
 ) -> TrailRead:
     """
     Get a user trails
     """
+    if isinstance(user, AnonymousUser):
+        return TrailRead(user_id=0, runs=[], trail_uuid="anonymous")
     return await get_user_trails(request, user=user, db_session=db_session)
 
 

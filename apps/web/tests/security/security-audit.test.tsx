@@ -34,7 +34,21 @@ const mockUser = {
 
 const mockSession: Session = {
   user: mockUser,
-  roles: [{ role: { id: 1, name: 'User', slug: 'user', priority: 10, is_system: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), permissions_count: 0, users_count: 1 } }],
+  roles: [
+    {
+      role: {
+        id: 1,
+        name: 'User',
+        slug: 'user',
+        priority: 10,
+        is_system: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        permissions_count: 0,
+        users_count: 1,
+      },
+    },
+  ],
   permissions: ['course:read:own', 'course:update:own'],
   permissions_timestamp: Date.now(),
   expiresAt: Date.now() + 86400000,

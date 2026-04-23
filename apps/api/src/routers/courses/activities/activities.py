@@ -9,9 +9,9 @@ from src.db.courses.activities import (
     ActivityUpdate,
 )
 from src.db.strict_base_model import PydanticStrictBaseModel
-from src.db.users import PublicUser
+from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
-from src.security.auth import get_current_user
+from src.security.auth import get_current_user, get_current_user_optional
 from src.services.courses.activities.activities import (
     create_activity,
     delete_activity,
@@ -46,7 +46,9 @@ async def api_create_activity(
 async def api_get_activity(
     request: Request,
     activity_uuid: str,
-    current_user: Annotated[PublicUser, Depends(get_current_user)],
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ],
     db_session=Depends(get_db_session),
 ) -> ActivityReadWithPermissions:
     return await get_activity(

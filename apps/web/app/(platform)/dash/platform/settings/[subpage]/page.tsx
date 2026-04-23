@@ -80,7 +80,7 @@ export default function PlatformSettingsPage(props: { params: Promise<{ subpage:
 
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto py-6 lg:py-8">
-          <Card className="shadow-sm ring-1 ring-foreground/10">
+          <Card className="ring-foreground/10 shadow-sm ring-1">
             <CardContent className="p-0">
               <ContentRenderer subpage={params.subpage} />
             </CardContent>

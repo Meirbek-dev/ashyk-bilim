@@ -10,8 +10,9 @@ from src.db.courses.chapters import (
     ChapterUpdate,
     ChapterUpdateOrder,
 )
+from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
-from src.security.auth import get_current_user
+from src.security.auth import get_current_user, get_current_user_optional
 from src.services.courses.chapters import (
     create_chapter,
     delete_chapter,
@@ -21,7 +22,6 @@ from src.services.courses.chapters import (
     reorder_chapters_and_activities,
     update_chapter,
 )
-from src.services.users.users import PublicUser
 
 router = APIRouter()
 
@@ -40,7 +40,9 @@ async def api_create_coursechapter(
 async def api_get_coursechapter(
     request: Request,
     chapter_uuid: str,
-    current_user: Annotated[PublicUser, Depends(get_current_user)],
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ],
     db_session=Depends(get_db_session),
 ) -> ChapterRead:
     return await get_chapter(request, chapter_uuid, current_user, db_session)

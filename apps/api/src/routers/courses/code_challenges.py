@@ -46,7 +46,7 @@ from src.db.courses.courses import Course
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import AnonymousUser, PublicUser, User
 from src.infra.db.session import get_db_session
-from src.security.auth import get_current_user
+from src.security.auth import get_current_user, get_current_user_optional
 from src.security.rbac import (
     AuthenticationRequired,
     PermissionChecker,
@@ -118,12 +118,15 @@ async def check_challenge_access(
     require_instructor: bool = False,
 ) -> Course:
     """Check user access to the challenge"""
-    if isinstance(user, AnonymousUser):
-        raise AuthenticationRequired
-
     course = db_session.get(Course, activity.course_id)
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
+
+    if course.public and not require_instructor:
+        return course
+
+    if isinstance(user, AnonymousUser):
+        raise AuthenticationRequired
 
     checker = PermissionChecker(db_session)
     perm = "course:update" if require_instructor else "course:read"
@@ -162,7 +165,9 @@ async def check_judge0_health():
 @router.get("/{activity_uuid}", response_model=ActivityRead)
 async def get_code_challenge(
     activity_uuid: str,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ],
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     """Get code challenge activity details"""
@@ -176,7 +181,9 @@ async def get_code_challenge(
 @router.get("/{activity_uuid}/settings")
 async def get_challenge_settings_endpoint(
     activity_uuid: str,
-    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_current_user)],
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_current_user_optional)
+    ],
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     """Get code challenge settings (visible tests only for students)"""
@@ -189,9 +196,11 @@ async def get_challenge_settings_endpoint(
     # Check if user is instructor
     from src.services.courses.activities.exams import is_course_contributor_or_admin
 
-    is_instructor = await is_course_contributor_or_admin(
-        current_user.id, course, db_session
-    )
+    is_instructor = False
+    if not isinstance(current_user, AnonymousUser):
+        is_instructor = await is_course_contributor_or_admin(
+            current_user.id, course, db_session
+        )
 
     # For students, hide hidden tests and reference solution
     if not is_instructor:

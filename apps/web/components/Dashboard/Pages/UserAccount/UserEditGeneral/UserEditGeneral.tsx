@@ -410,7 +410,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                 <Field>
                   <FieldLabel htmlFor={field.name}>
                     {t('bio')}
-                    <span className="ml-1 text-xs text-muted-foreground">
+                    <span className="text-muted-foreground ml-1 text-xs">
                       ({400 - (field.value?.length || 0)} {t('charactersLeft')})
                     </span>
                   </FieldLabel>
@@ -544,7 +544,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
 
         {/* Profile Picture Section */}
         <div className="w-full lg:w-80">
-          <Card className="h-full bg-muted/30">
+          <Card className="bg-muted/30 h-full">
             <CardContent className="flex flex-col items-center space-y-6 pt-6">
               <Label className="text-base font-semibold">{t('profilePicture')}</Label>
 
@@ -569,18 +569,18 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                     size="3xl"
                     variant="outline"
                     avatar_url={URL.createObjectURL(profilePicture.localAvatar)}
-                    className="ring-4 ring-background shadow-xl"
+                    className="ring-background shadow-xl ring-4"
                   />
                 ) : (
                   <UserAvatar
                     size="3xl"
                     variant="outline"
-                    className="ring-4 ring-background shadow-xl"
+                    className="ring-background shadow-xl ring-4"
                   />
                 )}
                 {profilePicture.isLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/60 backdrop-blur-sm">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <div className="bg-background/60 absolute inset-0 flex items-center justify-center rounded-full backdrop-blur-sm">
+                    <Loader2 className="text-primary h-8 w-8 animate-spin" />
                   </div>
                 )}
               </div>
@@ -606,7 +606,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                   {t('changeAvatar')}
                 </Button>
 
-                <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+                <div className="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg p-3 text-xs">
                   <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <p>{t('recommendedSize')}</p>
                 </div>
@@ -778,7 +778,7 @@ const UserEditGeneral = () => {
     return (
       <Card className="mx-0 sm:mx-10">
         <div className="flex min-h-[400px] items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="text-primary h-8 w-8 animate-spin" />
         </div>
       </Card>
     );
