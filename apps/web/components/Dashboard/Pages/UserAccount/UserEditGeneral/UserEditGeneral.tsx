@@ -20,6 +20,8 @@ import {
   UploadCloud,
   Users,
 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/card';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import { updateProfile, updateUserAvatar } from '@/lib/users/client';
 import { useSession } from '@/hooks/useSession';
@@ -173,7 +175,7 @@ const DetailCard = ({
   };
 
   return (
-    <div className="space-y-2 rounded-lg border bg-white p-4 shadow-sm">
+    <div className="bg-card ring-foreground/10 space-y-2 rounded-lg p-4 ring-1">
       <div className="mb-3 flex items-center justify-between">
         <Input
           value={localLabel}
@@ -185,15 +187,15 @@ const DetailCard = ({
           type="button"
           variant="ghost"
           size="sm"
-          className="text-red-500 hover:text-red-700"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={handleRemove}
         >
           {t('detailRemove')}
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
           <Label>{t('detailIconLabel')}</Label>
           <Select
             value={detail.icon}
@@ -224,7 +226,7 @@ const DetailCard = ({
             </SelectContent>
           </Select>
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>{t('detailTextLabel')}</Label>
           <Input
             value={detail.text}
@@ -294,16 +296,16 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
   const details = useWatch({ control: form.control, name: 'details', defaultValue: {} });
 
   return (
-    <div>
-      <div className="flex flex-col gap-0">
-        <div className="mx-3 my-3 flex flex-col -space-y-1 rounded-md bg-gray-50 px-5 py-3">
-          <h1 className="text-xl font-bold text-gray-800">{t('title')}</h1>
-          <h2 className="text-base text-gray-500">{t('description')}</h2>
-        </div>
+    <div className="flex flex-col gap-6">
+      <CardHeader className="px-5 pb-0">
+        <CardTitle className="text-2xl">{t('title')}</CardTitle>
+        <CardDescription>{t('description')}</CardDescription>
+      </CardHeader>
 
-        <div className="mx-5 my-5 mt-0 flex flex-col gap-8 lg:flex-row">
-          {/* Profile Information Section */}
-          <div className="min-w-0 flex-1 space-y-4">
+      <div className="mx-5 mb-5 flex flex-col gap-8 lg:flex-row">
+        {/* Profile Information Section */}
+        <div className="min-w-0 flex-1 space-y-6">
+          <div className="space-y-4">
             <Controller
               control={form.control}
               name="email"
@@ -319,10 +321,10 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                     />
                   </FieldContent>
                   <FieldError errors={[fieldState.error]} />
-                  <div className="mt-2 flex items-center space-x-2 rounded-md bg-amber-50 p-2 text-amber-600">
-                    <AlertTriangle size={16} />
-                    <span className="text-sm">{t('emailChangeWarning')}</span>
-                  </div>
+                  <Alert className="mt-2 border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <AlertDescription>{t('emailChangeWarning')}</AlertDescription>
+                  </Alert>
                 </Field>
               )}
             />
@@ -345,59 +347,61 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
               )}
             />
 
-            <Controller
-              control={form.control}
-              name="first_name"
-              render={({ field, fieldState }) => (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>{t('firstName')}</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id={field.name}
-                      placeholder={t('firstNamePlaceholder')}
-                      {...field}
-                    />
-                  </FieldContent>
-                  <FieldError errors={[fieldState.error]} />
-                </Field>
-              )}
-            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Controller
+                control={form.control}
+                name="first_name"
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>{t('firstName')}</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id={field.name}
+                        placeholder={t('firstNamePlaceholder')}
+                        {...field}
+                      />
+                    </FieldContent>
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
 
-            <Controller
-              control={form.control}
-              name="middle_name"
-              render={({ field, fieldState }) => (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>{t('middleName')}</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id={field.name}
-                      placeholder={t('middleNamePlaceholder')}
-                      {...field}
-                    />
-                  </FieldContent>
-                  <FieldError errors={[fieldState.error]} />
-                </Field>
-              )}
-            />
+              <Controller
+                control={form.control}
+                name="middle_name"
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>{t('middleName')}</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id={field.name}
+                        placeholder={t('middleNamePlaceholder')}
+                        {...field}
+                      />
+                    </FieldContent>
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
 
-            <Controller
-              control={form.control}
-              name="last_name"
-              render={({ field, fieldState }) => (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>{t('lastName')}</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id={field.name}
-                      placeholder={t('lastNamePlaceholder')}
-                      {...field}
-                    />
-                  </FieldContent>
-                  <FieldError errors={[fieldState.error]} />
-                </Field>
-              )}
-            />
+              <Controller
+                control={form.control}
+                name="last_name"
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>{t('lastName')}</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id={field.name}
+                        placeholder={t('lastNamePlaceholder')}
+                        {...field}
+                      />
+                    </FieldContent>
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
+            </div>
 
             <Controller
               control={form.control}
@@ -406,7 +410,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                 <Field>
                   <FieldLabel htmlFor={field.name}>
                     {t('bio')}
-                    <span className="text-sm text-gray-500">
+                    <span className="ml-1 text-xs text-muted-foreground">
                       ({400 - (field.value?.length || 0)} {t('charactersLeft')})
                     </span>
                   </FieldLabel>
@@ -414,7 +418,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                     <Textarea
                       id={field.name}
                       placeholder={t('bioPlaceholder')}
-                      className="min-h-[150px]"
+                      className="min-h-[120px] resize-none"
                       maxLength={400}
                       {...field}
                     />
@@ -423,209 +427,211 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                 </Field>
               )}
             />
+          </div>
 
-            {/* Theme Selector */}
-            <ThemeSelector className="border-t pt-6" />
+          {/* Theme Selector */}
+          <ThemeSelector className="border-t pt-6" />
 
-            <div className="space-y-4">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <Label>{t('additionalDetails')}</Label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-red-500 hover:bg-red-50 hover:text-red-700"
-                      onClick={() => {
-                        form.setValue('details', {});
-                      }}
-                    >
-                      {t('clearAll')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const newDetails = { ...details };
-                        const id = `detail-${Date.now()}`;
-                        newDetails[id] = {
-                          id,
-                          label: t('newDetail'),
-                          icon: '',
-                          text: '',
-                        };
-                        form.setValue('details', newDetails);
-                      }}
-                    >
-                      {t('addDetail')}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(DETAIL_TEMPLATES).map(([key, template]) => (
-                    <Button
-                      key={key}
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="flex items-center gap-2"
-                      onClick={() => {
-                        const currentIds = new Set(Object.keys(details || {}));
-                        const newDetails = { ...details };
-
-                        for (const item of template) {
-                          if (!currentIds.has(item.id)) {
-                            newDetails[item.id] = { ...item };
-                          }
-                        }
-
-                        form.setValue('details', newDetails);
-                      }}
-                    >
-                      {key === 'general' && <Briefcase className="h-4 w-4" />}
-                      {key === 'academic' && <GraduationCap className="h-4 w-4" />}
-                      {key === 'professional' && <Building2 className="h-4 w-4" />}
-                      {t(`add${key.charAt(0).toUpperCase() + key.slice(1)}Info`)}
-                    </Button>
-                  ))}
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">{t('additionalDetails')}</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:bg-destructive/10"
+                    onClick={() => {
+                      form.setValue('details', {});
+                    }}
+                  >
+                    {t('clearAll')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newDetails = { ...details };
+                      const id = `detail-${Date.now()}`;
+                      newDetails[id] = {
+                        id,
+                        label: t('newDetail'),
+                        icon: '',
+                        text: '',
+                      };
+                      form.setValue('details', newDetails);
+                    }}
+                  >
+                    {t('addDetail')}
+                  </Button>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {Object.entries(details || {}).map(([id, detail]) => (
-                  <DetailCard
-                    key={id}
-                    id={id}
-                    detail={detail}
-                    onUpdate={(id, field, value) => {
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(DETAIL_TEMPLATES).map(([key, template]) => (
+                  <Button
+                    key={key}
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center gap-2"
+                    onClick={() => {
+                      const currentIds = new Set(Object.keys(details || {}));
                       const newDetails = { ...details };
-                      const existingDetail = newDetails[id];
-                      newDetails[id] = {
-                        id: existingDetail?.id || id,
-                        label: existingDetail?.label || '',
-                        icon: existingDetail?.icon || '',
-                        text: existingDetail?.text || '',
-                        ...existingDetail,
-                        [field]: value,
-                      };
+
+                      for (const item of template) {
+                        if (!currentIds.has(item.id)) {
+                          newDetails[item.id] = { ...item };
+                        }
+                      }
+
                       form.setValue('details', newDetails);
                     }}
-                    onRemove={(id) => {
-                      const newDetails = { ...details };
-                      const { [id]: removed, ...nextDetails } = newDetails;
-                      form.setValue('details', nextDetails);
-                    }}
-                    onLabelChange={(id, newLabel) => {
-                      const newDetails = { ...details };
-                      const existingDetail = newDetails[id];
-                      newDetails[id] = {
-                        id: existingDetail?.id || id,
-                        label: newLabel,
-                        icon: existingDetail?.icon || '',
-                        text: existingDetail?.text || '',
-                        ...existingDetail,
-                      };
-                      form.setValue('details', newDetails);
-                    }}
-                    availableIcons={AVAILABLE_ICONS}
-                  />
+                  >
+                    {key === 'general' && <Briefcase className="h-4 w-4" />}
+                    {key === 'academic' && <GraduationCap className="h-4 w-4" />}
+                    {key === 'professional' && <Building2 className="h-4 w-4" />}
+                    {t(`add${key.charAt(0).toUpperCase() + key.slice(1)}Info`)}
+                  </Button>
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* Profile Picture Section */}
-          <div className="w-full lg:w-80">
-            <div className="soft-shadow h-full rounded-lg bg-gray-50/50 p-6">
-              <div className="flex flex-col items-center space-y-6">
-                <Label className="font-bold">{t('profilePicture')}</Label>
-                {profilePicture.error ? (
-                  <div className="flex items-center rounded-md bg-red-200 px-4 py-2 text-sm text-red-950">
-                    <FileWarning
-                      size={16}
-                      className="mr-2"
-                    />
-                    <span className="font-semibold first-letter:uppercase">
-                      {t('avatarError', { error: profilePicture.error })}
-                    </span>
-                  </div>
-                ) : null}
-                {profilePicture.success ? (
-                  <div className="flex items-center rounded-md bg-green-200 px-4 py-2 text-sm text-green-950">
-                    <Check
-                      size={16}
-                      className="mr-2"
-                    />
-                    <span className="font-semibold first-letter:uppercase">{t('avatarSuccess')}</span>
-                  </div>
-                ) : null}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {Object.entries(details || {}).map(([id, detail]) => (
+                <DetailCard
+                  key={id}
+                  id={id}
+                  detail={detail}
+                  onUpdate={(id, field, value) => {
+                    const newDetails = { ...details };
+                    const existingDetail = newDetails[id];
+                    newDetails[id] = {
+                      id: existingDetail?.id || id,
+                      label: existingDetail?.label || '',
+                      icon: existingDetail?.icon || '',
+                      text: existingDetail?.text || '',
+                      ...existingDetail,
+                      [field]: value,
+                    };
+                    form.setValue('details', newDetails);
+                  }}
+                  onRemove={(id) => {
+                    const newDetails = { ...details };
+                    const { [id]: removed, ...nextDetails } = newDetails;
+                    form.setValue('details', nextDetails);
+                  }}
+                  onLabelChange={(id, newLabel) => {
+                    const newDetails = { ...details };
+                    const existingDetail = newDetails[id];
+                    newDetails[id] = {
+                      id: existingDetail?.id || id,
+                      label: newLabel,
+                      icon: existingDetail?.icon || '',
+                      text: existingDetail?.text || '',
+                      ...existingDetail,
+                    };
+                    form.setValue('details', newDetails);
+                  }}
+                  availableIcons={AVAILABLE_ICONS}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Picture Section */}
+        <div className="w-full lg:w-80">
+          <Card className="h-full bg-muted/30">
+            <CardContent className="flex flex-col items-center space-y-6 pt-6">
+              <Label className="text-base font-semibold">{t('profilePicture')}</Label>
+
+              {profilePicture.error && (
+                <Alert variant="destructive">
+                  <FileWarning className="h-4 w-4" />
+                  <AlertTitle>{t('avatarError', { error: '' })}</AlertTitle>
+                  <AlertDescription className="text-xs">{profilePicture.error}</AlertDescription>
+                </Alert>
+              )}
+
+              {profilePicture.success && (
+                <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-900/50 dark:bg-green-950/20 dark:text-green-200">
+                  <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <AlertDescription>{t('avatarSuccess')}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="relative">
                 {profilePicture.localAvatar ? (
                   <UserAvatar
                     size="3xl"
                     variant="outline"
                     avatar_url={URL.createObjectURL(profilePicture.localAvatar)}
+                    className="ring-4 ring-background shadow-xl"
                   />
                 ) : (
                   <UserAvatar
                     size="3xl"
                     variant="outline"
+                    className="ring-4 ring-background shadow-xl"
                   />
                 )}
-                {profilePicture.isLoading ? (
-                  <div className="text-gray flex animate-pulse items-center rounded-md bg-green-200 px-4 py-2 text-sm font-bold antialiased">
-                    <ArrowBigUpDash
-                      size={16}
-                      className="mr-2"
-                    />
-                    <span>{t('uploadingAvatar')}</span>
+                {profilePicture.isLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/60 backdrop-blur-sm">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                ) : (
-                  <>
-                    <input
-                      type="file"
-                      id="fileInput"
-                      accept={SUPPORTED_FILES}
-                      className="hidden"
-                      onChange={profilePicture.handleFileChange}
-                      aria-label={t('ariaLabel')}
-                      title={t('selectFile')}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('fileInput')?.click()}
-                      className="w-full"
-                    >
-                      <UploadCloud
-                        size={16}
-                        className="mr-2"
-                      />
-                      {t('changeAvatar')}
-                    </Button>
-                  </>
                 )}
-                <div className="flex items-center text-xs text-gray-500">
-                  <Info
-                    size={13}
-                    className="mr-2"
-                  />
+              </div>
+
+              <div className="w-full space-y-3">
+                <input
+                  type="file"
+                  id="fileInput"
+                  accept={SUPPORTED_FILES}
+                  className="hidden"
+                  onChange={profilePicture.handleFileChange}
+                  aria-label={t('ariaLabel')}
+                  title={t('selectFile')}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('fileInput')?.click()}
+                  className="w-full"
+                  disabled={profilePicture.isLoading}
+                >
+                  <UploadCloud className="mr-2 h-4 w-4" />
+                  {t('changeAvatar')}
+                </Button>
+
+                <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <p>{t('recommendedSize')}</p>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
-        <div className="mx-5 mt-0 mb-5 flex flex-row-reverse">
-          <Button
-            type="submit"
-            disabled={form.formState.isSubmitting}
-          >
-            {form.formState.isSubmitting ? t('saving') : t('saveChanges')}
-          </Button>
-        </div>
+      </div>
+
+      <div className="mx-5 mb-5 flex flex-row-reverse border-t pt-5">
+        <Button
+          type="submit"
+          size="lg"
+          disabled={form.formState.isSubmitting}
+          className="px-8"
+        >
+          {form.formState.isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {t('saving')}
+            </>
+          ) : (
+            t('saveChanges')
+          )}
+        </Button>
       </div>
     </div>
   );
@@ -770,16 +776,16 @@ const UserEditGeneral = () => {
 
   if (initialLoading || !userData || !currentLocale) {
     return (
-      <div className="soft-shadow mx-0 rounded-xl bg-white p-8 sm:mx-10">
-        <div className="flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
+      <Card className="mx-0 sm:mx-10">
+        <div className="flex min-h-[400px] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="soft-shadow mx-0 rounded-xl bg-white sm:mx-10">
+    <Card className="mx-0 sm:mx-10">
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <UserEditForm
           form={form}
@@ -792,7 +798,7 @@ const UserEditGeneral = () => {
           }}
         />
       </form>
-    </div>
+    </Card>
   );
 };
 
