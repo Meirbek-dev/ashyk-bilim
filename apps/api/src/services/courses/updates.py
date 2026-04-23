@@ -13,6 +13,7 @@ from src.db.courses.course_updates import (
 from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
+from src.services.courses._auth import require_course_permission
 
 
 async def create_update(
@@ -32,11 +33,7 @@ async def create_update(
 
     # RBAC check
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "course:update",
-        resource_owner_id=course.creator_id,
-    )
+    require_course_permission("course:update", current_user, course, checker)
 
     # Generate UUID
     courseupdate_uuid = f"courseupdate_{ULID()}"
@@ -79,11 +76,11 @@ async def update_update(
     update_course = (
         db_session.get(Course, update.course_id) if update.course_id else None
     )
-    checker.require(
-        current_user.id,
-        "course:update",
-        resource_owner_id=update_course.creator_id if update_course else None,
-    )
+    if not update_course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
+        )
+    require_course_permission("course:update", current_user, update_course, checker)
 
     for key, value in update_object.model_dump(exclude_unset=True).items():
         if value is not None:

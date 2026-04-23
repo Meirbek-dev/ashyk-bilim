@@ -30,6 +30,7 @@ from src.db.usergroup_user import UserGroupUser
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.rbac import PermissionChecker
 from src.services.courses.thumbnails import upload_thumbnail
+from src.services.courses._auth import require_course_permission, require_course_read_access, is_course_owner
 
 
 def _accessible_courses_filter(
@@ -512,11 +513,7 @@ async def get_course(
         )
 
     if not course.public:
-        checker.require(
-            current_user.id,
-            "course:read",
-            resource_owner_id=course.creator_id,
-        )
+        require_course_read_access(current_user, course, checker)
 
     # Get course authors with their roles
     authors_statement = (
@@ -559,11 +556,7 @@ async def get_course_by_id(
         )
 
     if not course.public:
-        checker.require(
-            current_user.id,
-            "course:read",
-            resource_owner_id=course.creator_id,
-        )
+        require_course_read_access(current_user, course, checker)
 
     # Get course authors with their roles
     authors_statement = (
@@ -629,22 +622,21 @@ async def get_course_meta(
 
     # RBAC check — skip for public courses
     if not course.public:
-        checker.require(
-            current_user.id,
-            "course:read",
-            resource_owner_id=course.creator_id,
-        )
+        require_course_read_access(current_user, course, checker)
 
     can_view_unpublished = False
     if with_unpublished_activities:
+        is_owner = is_course_owner(db_session, current_user.id, course.course_uuid)
         can_view_unpublished = checker.check(
             current_user.id,
             "course:update",
             resource_owner_id=course.creator_id,
+            is_owner=is_owner,
         ) or checker.check(
             current_user.id,
             "course:update_content",
             resource_owner_id=course.creator_id,
+            is_owner=is_owner,
         )
 
     # Get course chapters
@@ -1729,10 +1721,12 @@ async def get_course_user_rights(
         rights["roles"]["is_maintainer_role"] = True
 
     # Check instructor role (course-level update permission)
+    is_owner_for_course = is_course_owner(db_session, current_user.id, course.course_uuid)
     user_has_instructor_role = checker.check(
         current_user.id,
         "course:update",
         resource_owner_id=course.creator_id,
+        is_owner=is_owner_for_course,
     )
 
     if user_has_instructor_role:
@@ -1745,7 +1739,7 @@ async def get_course_user_rights(
         rights["roles"]["is_user"] = True
 
     # Determine permissions based on ownership and roles
-    is_course_owner = rights["ownership"]["is_owner"]
+    is_course_owner_flag = rights["ownership"]["is_owner"]
     is_admin = rights["roles"]["is_admin"]
     is_maintainer_role = rights["roles"]["is_maintainer_role"]
     is_instructor = rights["roles"]["is_instructor"]
@@ -1789,7 +1783,7 @@ async def get_course_user_rights(
     # READ permissions
     if (
         course.public
-        or is_course_owner
+        or is_course_owner_flag
         or is_admin
         or is_maintainer_role
         or is_instructor

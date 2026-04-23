@@ -291,7 +291,7 @@ async def get_course_chapters(
 
     checker = PermissionChecker(db_session)
     if not course.public:
-        checker.require(current_user.id, "course:read")
+        require_course_permission("course:read", current_user, course, checker)
 
     chapters = db_session.exec(
         select(Chapter).where(Chapter.course_id == course_id).order_by(Chapter.order)
@@ -367,9 +367,7 @@ async def reorder_chapters_and_activities(
         )
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "chapter:update", resource_owner_id=course.creator_id
-    )
+    require_course_permission("chapter:update", current_user, course, checker)
 
     # Optimistic-concurrency guard.
     if chapters_order.last_known_update_date is not None:

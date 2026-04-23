@@ -21,6 +21,7 @@ from src.db.courses.courses import Course
 from src.db.trail_steps import TrailStep
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
+from src.services.courses._auth import require_course_permission
 from src.services.courses.courses import _ensure_course_is_current
 from src.services.gamification import StreakType, XPSource
 from src.services.gamification import service as gamification_service
@@ -52,11 +53,7 @@ async def create_certification(
 
     # RBAC check
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "certificate:create",
-        resource_owner_id=course.creator_id,
-    )
+    require_course_permission("certificate:create", current_user, course, checker)
 
     _ensure_course_is_current(course, certification_object.last_known_update_date)
 
@@ -113,11 +110,7 @@ async def get_certification(
 
     # RBAC check
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "certificate:read",
-        resource_owner_id=course.creator_id,
-    )
+    require_course_permission("certificate:read", current_user, course, checker)
 
     return CertificationRead(**certification.model_dump())
 
@@ -142,11 +135,7 @@ async def get_certifications_by_course(
 
     # RBAC check
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "certificate:read",
-        resource_owner_id=course.creator_id,
-    )
+    require_course_permission("certificate:read", current_user, course, checker)
 
     # Get certifications for this course
     statement = select(Certifications).where(Certifications.course_id == course.id)
@@ -190,11 +179,7 @@ async def update_certification(
 
     # RBAC check
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "certificate:update",
-        resource_owner_id=course.creator_id,
-    )
+    require_course_permission("certificate:update", current_user, course, checker)
 
     _ensure_course_is_current(course, certification_object.last_known_update_date)
 
@@ -251,11 +236,7 @@ async def delete_certification(
 
     # RBAC check
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "certificate:delete",
-        resource_owner_id=course.creator_id,
-    )
+    require_course_permission("certificate:delete", current_user, course, checker)
 
     _ensure_course_is_current(course, last_known_update_date)
 
@@ -328,11 +309,7 @@ async def create_certificate_user(
 
         # Require course ownership or instructor role for creating certificates
         checker = PermissionChecker(db_session)
-        checker.require(
-            current_user.id,
-            "certificate:create",
-            resource_owner_id=course.creator_id,
-        )
+        require_course_permission("certificate:create", current_user, course, checker)
 
     now = tz_now()
 

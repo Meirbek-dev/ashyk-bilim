@@ -18,6 +18,7 @@ from src.db.courses.courses import Course
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
+from src.services.courses._auth import require_course_permission
 from src.services.courses.activities.uploads.videos import upload_subtitle, upload_video
 
 
@@ -88,9 +89,7 @@ async def create_video_activity(
         raise HTTPException(status_code=404, detail="Course not found")
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "activity:create", resource_owner_id=course.creator_id
-    )
+    require_course_permission("activity:create", current_user, course, checker)
 
     details_dict = json.loads(details) if isinstance(details, str) else details
 
@@ -228,9 +227,7 @@ async def create_external_video_activity(
         raise HTTPException(status_code=404, detail="Course not found")
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "activity:create", resource_owner_id=course.creator_id
-    )
+    require_course_permission("activity:create", current_user, course, checker)
 
     activity_uuid = f"activity_{ULID()}"
     details = json.loads(data.details)

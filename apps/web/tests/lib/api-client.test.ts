@@ -49,8 +49,8 @@ describe('apiFetch timeout', () => {
 
     const promise = apiFetch('test-endpoint');
 
-    // Move forward by 16 seconds (DEFAULT_TIMEOUT_MS is 15s)
-    vi.advanceTimersByTime(16000);
+    // Move forward by 31 seconds (DEFAULT_TIMEOUT_MS is 30s)
+    vi.advanceTimersByTime(31000);
 
     await expect(promise).rejects.toThrow(/aborted/);
 

@@ -90,3 +90,55 @@ def require_course_permission(
         resource_owner_id=course.creator_id,
         is_owner=is_owner,
     )
+
+
+def require_course_action(
+    action: str,
+    current_user: PublicUser | AnonymousUser,
+    course: Course,
+    checker: PermissionChecker,
+    **kwargs,
+) -> None:
+    """Require a course-related permission with course authorship as ownership."""
+    if isinstance(current_user, AnonymousUser):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required.",
+        )
+
+    is_owner = is_course_owner(checker.db, current_user.id, course.course_uuid)
+    kwargs.setdefault("resource_owner_id", course.creator_id)
+    kwargs.setdefault("is_owner", is_owner)
+
+    checker.require(current_user.id, action, **kwargs)
+
+
+def check_course_action(
+    action: str,
+    current_user: PublicUser | AnonymousUser,
+    course: Course,
+    checker: PermissionChecker,
+    **kwargs,
+) -> bool:
+    """Check a course-related permission with course authorship as ownership."""
+    is_owner = is_course_owner(checker.db, current_user.id, course.course_uuid)
+    kwargs.setdefault("resource_owner_id", course.creator_id)
+    kwargs.setdefault("is_owner", is_owner)
+    return checker.check(current_user.id, action, **kwargs)
+
+
+def require_course_read_access(
+    current_user: PublicUser | AnonymousUser,
+    course: Course,
+    checker: PermissionChecker,
+) -> None:
+    """Raise if the current user cannot read the course.
+
+    Public courses are visible to all users, including anonymous guests.
+    Private courses require explicit RBAC access and active authorship is
+    treated as ownership for ``own``-scoped permissions.
+    """
+    if course.public:
+        return
+
+    require_course_permission("course:read", current_user, course, checker)

@@ -6,8 +6,14 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 from src.db.courses.courses import Course
-from src.db.users import AnonymousUser
+from src.db.resource_authors import (
+    ResourceAuthor,
+    ResourceAuthorshipEnum,
+    ResourceAuthorshipStatusEnum,
+)
+from src.db.users import AnonymousUser, PublicUser
 from src.services.courses import chapters as chapter_service
+from src.services.courses._auth import require_course_read_access
 from src.services.courses.courses import get_course, get_course_by_id, get_course_meta
 
 
@@ -67,6 +73,67 @@ def _raw_public_course() -> Course:
         creator_id=88,
         creation_date=datetime(2026, 1, 1, tzinfo=UTC),
         update_date=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+
+
+def _private_course() -> Course:
+    return Course(
+        id=3,
+        name="Private course",
+        description="",
+        about="",
+        learnings="",
+        tags="",
+        thumbnail_image="",
+        public=False,
+        open_to_contributors=False,
+        course_uuid="course_private",
+        creator_id=77,
+        creation_date=datetime(2026, 1, 1, tzinfo=UTC),
+        update_date=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+
+
+@pytest.mark.asyncio
+async def test_require_course_read_access_allows_active_author_on_private_course():
+    course = _private_course()
+    author = ResourceAuthor(
+        id=1,
+        resource_uuid=course.course_uuid,
+        user_id=10,
+        authorship=ResourceAuthorshipEnum.CONTRIBUTOR,
+        authorship_status=ResourceAuthorshipStatusEnum.ACTIVE,
+        creation_date="2026-01-01T00:00:00Z",
+        update_date="2026-01-01T00:00:00Z",
+    )
+    session = _FakeSession([_ExecResult(first_value=author)])
+    checker = Mock()
+    checker.db = session
+    checker.require = Mock()
+
+    current_user = PublicUser(
+        id=10,
+        user_uuid="user_10",
+        username="user10",
+        first_name="Test",
+        middle_name="",
+        last_name="User",
+        email="user10@example.com",
+        avatar_image="",
+        bio="",
+        details={},
+        profile={},
+        theme="default",
+        locale="en-US",
+    )
+
+    require_course_read_access(current_user, course, checker)
+
+    checker.require.assert_called_once_with(
+        current_user.id,
+        "course:read",
+        resource_owner_id=course.creator_id,
+        is_owner=True,
     )
 
 

@@ -17,6 +17,7 @@ from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
 from src.security.file_validation import validate_upload
 from src.security.rbac import PermissionChecker
+from src.services.courses._auth import require_course_permission
 from src.services.courses.activities.uploads.pdfs import upload_pdf
 
 MAX_DOCUMENT_PDF_SIZE = 100 * 1024 * 1024
@@ -110,9 +111,7 @@ async def create_documentpdf_activity(
         raise HTTPException(status_code=404, detail="Course not found")
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "activity:create", resource_owner_id=course.creator_id
-    )
+    require_course_permission("activity:create", current_user, course, checker)
 
     temp_path: Path | None = None
 

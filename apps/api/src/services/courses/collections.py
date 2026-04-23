@@ -15,6 +15,7 @@ from src.db.collections_courses import CollectionCourse
 from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
+from src.services.courses._auth import require_course_permission
 
 ####################################################
 # CRUD
@@ -130,9 +131,13 @@ async def create_collection(
         ).all()
 
         if found_courses:
-            # Permission check — run it once for all courses
+            # Permission check — verify access to each course individually
             try:
-                checker.require(current_user.id, "course:read")
+                for course in found_courses:
+                    if not course.public:
+                        require_course_permission(
+                            "course:read", current_user, course, checker
+                        )
             except HTTPException:
                 raise HTTPException(
                     status_code=403,

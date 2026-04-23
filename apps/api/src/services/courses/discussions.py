@@ -20,6 +20,7 @@ from src.db.courses.discussions import (
 )
 from src.db.users import AnonymousUser, PublicUser, User
 from src.security.rbac import PermissionChecker
+from src.services.courses._auth import require_course_permission
 
 
 async def create_discussion(
@@ -47,7 +48,8 @@ async def create_discussion(
 
     # RBAC check - users need read access to participate in discussions
     checker = PermissionChecker(db_session)
-    checker.require(current_user.id, "course:read")
+    if not course.public:
+        require_course_permission("course:read", current_user, course, checker)
 
     # If it's a reply, check if parent discussion exists
     if discussion_object.parent_discussion_id:
@@ -115,7 +117,8 @@ async def get_discussions_by_course_uuid(
 
     # RBAC check
     checker = PermissionChecker(db_session)
-    checker.require(current_user.id, "course:read")
+    if not course.public:
+        require_course_permission("course:read", current_user, course, checker)
 
     is_authenticated = not isinstance(current_user, AnonymousUser)
     can_moderate = is_authenticated and checker.check(
@@ -644,7 +647,8 @@ async def get_discussion_replies(
 
     if course:
         checker = PermissionChecker(db_session)
-        checker.require(current_user.id, "course:read")
+        if not course.public:
+            require_course_permission("course:read", current_user, course, checker)
 
     # Get replies
     replies_query = (

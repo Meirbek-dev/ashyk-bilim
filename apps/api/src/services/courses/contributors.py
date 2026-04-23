@@ -11,6 +11,7 @@ from src.db.resource_authors import (
 )
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.rbac import PermissionChecker
+from src.services.courses._auth import require_course_permission
 
 
 def _require_contributor_management(
@@ -192,7 +193,8 @@ async def get_course_contributors(
 
     # SECURITY: Require read access to the course
     checker = PermissionChecker(db_session)
-    checker.require(current_user.id, "course:read")
+    if not course.public:
+        require_course_permission("course:read", current_user, course, checker)
 
     # Get all contributors for this course with user information
     statement = (
