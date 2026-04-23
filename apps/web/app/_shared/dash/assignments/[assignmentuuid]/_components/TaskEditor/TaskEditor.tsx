@@ -1,4 +1,6 @@
 'use client';
+import { Card, CardContent } from '@components/ui/card';
+import { Button } from '@components/ui/button';
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useAssignmentsTaskStore } from '@components/Contexts/Assignments/AssignmentsTaskContext';
@@ -68,19 +70,22 @@ const AssignmentTaskEditor = ({ page }: any) => {
     <div className="z-20 flex h-full w-full flex-col overflow-auto text-sm font-bold">
       {assignmentTask && Object.keys(assignmentTask).length > 0 ? (
         <div className="flex h-full flex-col space-y-3">
-          <div className="soft-shadow z-10 mb-3 flex shrink-0 flex-col bg-white pt-5 pr-10 pl-10 text-sm tracking-tight shadow-[0px_4px_16px_rgba(0,0,0,0.06)]">
+          <Card className="ring-foreground/10 z-10 mb-3 flex shrink-0 flex-col pt-5 pr-10 pl-10 text-sm tracking-tight shadow-sm ring-1">
             <div className="flex items-center justify-between py-1">
               <div className="text-lg font-semibold">{assignmentTask.title}</div>
               <div>
-                <button
-                  type="button"
+                <Button
+                  variant="destructive"
+                  size="sm"
                   onClick={deleteTaskUI}
                   aria-label={t('deleteTask')}
-                  className="flex items-center space-x-2 rounded-md border border-rose-600/10 bg-rose-100 bg-linear-to-bl px-2 py-1.5 text-red-800 shadow-lg shadow-rose-900/10"
                 >
-                  <Trash size={18} />
-                  <span className="text-xs font-semibold">{t('deleteTask')}</span>
-                </button>
+                  <Trash
+                    size={18}
+                    className="mr-2"
+                  />
+                  {t('deleteTask')}
+                </Button>
               </div>
             </div>
             <div className="flex space-x-2">
@@ -88,8 +93,10 @@ const AssignmentTaskEditor = ({ page }: any) => {
                 type="button"
                 onClick={() => setSelectedSubPage('general')}
                 aria-pressed={selectedSubPage === 'general'}
-                className={`border-primary flex w-fit space-x-4 py-2 text-center transition-all ease-linear ${
-                  selectedSubPage === 'general' ? 'border-b-4' : 'opacity-50'
+                className={`flex w-fit space-x-4 py-2 text-center transition-all ease-linear ${
+                  selectedSubPage === 'general'
+                    ? 'border-primary text-primary border-b-4'
+                    : 'text-muted-foreground opacity-50 hover:opacity-100'
                 }`}
               >
                 <div className="mx-2 flex items-center space-x-2.5">
@@ -101,8 +108,10 @@ const AssignmentTaskEditor = ({ page }: any) => {
                 type="button"
                 onClick={() => setSelectedSubPage('content')}
                 aria-pressed={selectedSubPage === 'content'}
-                className={`border-primary flex w-fit space-x-4 py-2 text-center transition-all ease-linear ${
-                  selectedSubPage === 'content' ? 'border-b-4' : 'opacity-50'
+                className={`flex w-fit space-x-4 py-2 text-center transition-all ease-linear ${
+                  selectedSubPage === 'content'
+                    ? 'border-primary text-primary border-b-4'
+                    : 'text-muted-foreground opacity-50 hover:opacity-100'
                 }`}
               >
                 <div className="mx-2 flex items-center space-x-2.5">
@@ -111,22 +120,24 @@ const AssignmentTaskEditor = ({ page }: any) => {
                 </div>
               </button>
             </div>
-          </div>
-          <div className="soft-shadow mx-auto mr-10 ml-10 min-h-0 flex-1 overflow-auto rounded-xl bg-white px-6 py-5 shadow-xs">
-            {selectedSubPage === 'general' && <AssignmentTaskGeneralEdit />}
-            {selectedSubPage === 'content' && <AssignmentTaskContentEdit />}
-          </div>
+          </Card>
+          <Card className="ring-foreground/10 mx-auto mr-10 ml-10 min-h-0 flex-1 overflow-auto shadow-sm ring-1">
+            <CardContent className="p-6">
+              {selectedSubPage === 'general' && <AssignmentTaskGeneralEdit />}
+              {selectedSubPage === 'content' && <AssignmentTaskContentEdit />}
+            </CardContent>
+          </Card>
         </div>
       ) : null}
       {Object.keys(assignmentTask).length === 0 && (
-        <div className="z-10 flex flex-1 flex-col bg-white pt-5 pr-10 pl-10 text-sm tracking-tight shadow-[0px_4px_16px_rgba(0,0,0,0.06)]">
-          <div className="flex h-full items-center justify-center text-gray-300 antialiased">
+        <Card className="ring-foreground/10 z-10 flex flex-1 flex-col pt-5 pr-10 pl-10 text-sm tracking-tight shadow-sm ring-1">
+          <div className="text-muted-foreground flex h-full items-center justify-center antialiased opacity-40">
             <div className="flex flex-col items-center space-y-2">
               <TentTree size={60} />
               <div className="py-1 text-2xl font-semibold">{t('noTaskSelected')}</div>
             </div>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

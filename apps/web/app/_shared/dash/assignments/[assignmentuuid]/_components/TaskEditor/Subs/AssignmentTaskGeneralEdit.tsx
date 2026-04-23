@@ -136,7 +136,7 @@ export const AssignmentTaskGeneralEdit = () => {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
-          <p className="text-gray-600">{t('noTaskSelected')}</p>
+          <p className="text-muted-foreground">{t('noTaskSelected')}</p>
         </div>
       </div>
     );
@@ -148,7 +148,7 @@ export const AssignmentTaskGeneralEdit = () => {
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-          <p className="mt-2 text-gray-600">{t('loadingTask')}</p>
+          <p className="mt-2 text-muted-foreground">{t('loadingTask')}</p>
         </div>
       </div>
     );
@@ -233,10 +233,17 @@ export const AssignmentTaskGeneralEdit = () => {
 
       <Button
         type="submit"
-        className="mt-4 w-full bg-green-500 px-4 py-2 font-semibold text-white hover:bg-green-600"
+        className="mt-4 w-full"
         disabled={form.formState.isSubmitting}
       >
-        {form.formState.isSubmitting ? t('saving') : t('save')}
+        {form.formState.isSubmitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {t('saving')}
+          </>
+        ) : (
+          t('save')
+        )}
       </Button>
     </form>
   );

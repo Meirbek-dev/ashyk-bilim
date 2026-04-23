@@ -320,14 +320,14 @@ const makeSectionTypeItems = (t: Function) =>
       { className: 'flex items-center space-x-3 py-1' },
       createElement(
         'div',
-        { className: 'rounded-md bg-gray-50 p-1.5' },
-        createElement(conf.icon as any, { size: 16, className: 'text-gray-600' }),
+        { className: 'rounded-md bg-muted p-1.5' },
+        createElement(conf.icon as any, { size: 16, className: 'text-muted-foreground' }),
       ),
       createElement(
         'div',
         { className: 'flex-1' },
-        createElement('div', { className: 'text-sm font-medium text-gray-700' }, conf.label),
-        createElement('div', { className: 'text-xs text-gray-500' }, conf.description),
+        createElement('div', { className: 'text-sm font-medium text-foreground' }, conf.label),
+        createElement('div', { className: 'text-xs text-muted-foreground' }, conf.description),
       ),
     ) as any,
   }));
@@ -447,13 +447,13 @@ const EditLanding = () => {
   };
 
   return (
-    <div className="soft-shadow mx-0 rounded-xl bg-white sm:mx-10">
+    <div className="shadow-sm mx-0 rounded-xl bg-background sm:mx-10">
       <div className="space-y-6 p-6">
         {/* Enable/Disable Landing Page */}
         <div className="flex items-center justify-between border-b pb-4">
           <div>
             <h2 className="flex items-center text-xl font-semibold">{t('title')}</h2>
-            <p className="text-gray-600">{t('description')}</p>
+            <p className="text-muted-foreground">{t('description')}</p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
@@ -510,11 +510,11 @@ const EditLanding = () => {
                                 }}
                                 role="button"
                                 tabIndex={0}
-                                className={`cursor-pointer rounded-lg border bg-white/80 p-4 backdrop-blur-xs ${
+                                className={`cursor-pointer rounded-lg border bg-background/80 p-4 backdrop-blur-xs ${
                                   selectedSection === index
-                                    ? 'border-blue-500 bg-blue-50 shadow-xs ring-2 ring-blue-500/20'
-                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50 hover:shadow-xs'
-                                } ${snapshot.isDragging ? 'rotate-2 shadow-lg ring-2 ring-blue-500/20' : ''}`}
+                                    ? 'border-primary bg-primary/10 shadow-xs ring-2 ring-primary/20'
+                                    : 'border-border hover:border-border hover:bg-muted/50 hover:shadow-xs'
+                                } ${snapshot.isDragging ? 'rotate-2 shadow-lg ring-2 ring-primary/20' : ''}`}
                               >
                                 <div className="group flex items-center justify-between">
                                   <div className="flex items-center space-x-3">
@@ -522,8 +522,8 @@ const EditLanding = () => {
                                       {...provided.dragHandleProps}
                                       className={`rounded-md p-1.5 transition-colors duration-200 ${
                                         selectedSection === index
-                                          ? 'bg-blue-100/50 text-blue-500'
-                                          : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                                          ? 'bg-primary/20/50 text-primary'
+                                          : 'text-muted-foreground hover:bg-muted hover:text-muted-foreground'
                                       }`}
                                     >
                                       <GripVertical size={16} />
@@ -531,8 +531,8 @@ const EditLanding = () => {
                                     <div
                                       className={`rounded-md p-1.5 ${
                                         selectedSection === index
-                                          ? 'bg-blue-100/50 text-blue-600'
-                                          : 'bg-gray-100/50 text-gray-600'
+                                          ? 'bg-primary/20/50 text-primary'
+                                          : 'bg-muted/50 text-muted-foreground'
                                       }`}
                                     >
                                       {createElement(SECTION_TYPES[section.type].icon, {
@@ -541,7 +541,7 @@ const EditLanding = () => {
                                     </div>
                                     <span
                                       className={`truncate text-sm font-medium capitalize ${
-                                        selectedSection === index ? 'text-blue-700' : 'text-gray-700'
+                                        selectedSection === index ? 'text-primary' : 'text-foreground'
                                       }`}
                                     >
                                       {getSectionDisplayName(t, section)}
@@ -555,8 +555,8 @@ const EditLanding = () => {
                                       }}
                                       className={`rounded-md p-1.5 transition-colors duration-200 ${
                                         selectedSection === index
-                                          ? 'text-blue-500 hover:bg-blue-100'
-                                          : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                                          ? 'text-primary hover:bg-primary/20'
+                                          : 'text-muted-foreground hover:bg-muted hover:text-muted-foreground'
                                       }`}
                                     >
                                       <Edit size={14} />
@@ -630,7 +630,7 @@ const EditLanding = () => {
                     }}
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-gray-500">
+                  <div className="flex h-full items-center justify-center text-muted-foreground">
                     {t('EditorPanel.emptyState')}
                   </div>
                 )}
@@ -725,9 +725,9 @@ const HeroSectionEditor: FC<{
   };
 
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="shadow-sm space-y-6 rounded-lg bg-background p-6">
       <div className="flex items-center space-x-1">
-        <LayoutTemplate className="h-5 w-5 text-gray-500" />
+        <LayoutTemplate className="h-5 w-5 text-muted-foreground" />
         <h3 className="text-lg font-medium">
           {t('SectionTypes.hero.label')} {t('Editor.titleSuffix')}
         </h3>
@@ -751,7 +751,7 @@ const HeroSectionEditor: FC<{
           defaultValue="content"
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-4 rounded-lg bg-gray-100 p-1">
+          <TabsList className="grid w-full grid-cols-4 rounded-lg bg-muted p-1">
             <TabsTrigger
               value="content"
               className="flex items-center space-x-1"
@@ -1277,7 +1277,7 @@ const HeroSectionEditor: FC<{
                   <div className="space-y-2">
                     <Label>{t('HeroEditor.Buttons.linkLabel')}</Label>
                     <div className="flex items-center space-x-1">
-                      <Link className="h-4 w-4 text-gray-500" />
+                      <Link className="h-4 w-4 text-muted-foreground" />
                       <Input
                         value={button.link}
                         onChange={(e) => {
@@ -1587,9 +1587,9 @@ const TextAndImageSectionEditor: FC<{
   onChange: (section: LandingTextAndImageSection) => void;
 }> = ({ t, section, onChange }) => {
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="shadow-sm space-y-6 rounded-lg bg-background p-6">
       <div className="flex items-center space-x-1">
-        <ImageIcon className="h-5 w-5 text-gray-500" />
+        <ImageIcon className="h-5 w-5 text-muted-foreground" />
         <h3 className="text-lg font-medium">
           {t('SectionTypes.textAndImage.label')} {t('Editor.titleSuffix')}
         </h3>
@@ -1714,9 +1714,9 @@ const LogosSectionEditor: FC<{
   onChange: (section: LandingLogos) => void;
 }> = ({ t, section, onChange }) => {
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="shadow-sm space-y-6 rounded-lg bg-background p-6">
       <div className="flex items-center space-x-1">
-        <Award className="h-5 w-5 text-gray-500" />
+        <Award className="h-5 w-5 text-muted-foreground" />
         <h3 className="text-lg font-medium">
           {t('SectionTypes.logos.label')} {t('Editor.titleSuffix')}
         </h3>
@@ -1830,9 +1830,9 @@ const PeopleSectionEditor: FC<{
   onChange: (section: LandingPeople) => void;
 }> = ({ t, section, onChange }) => {
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="shadow-sm space-y-6 rounded-lg bg-background p-6">
       <div className="flex items-center space-x-1">
-        <Users className="h-5 w-5 text-gray-500" />
+        <Users className="h-5 w-5 text-muted-foreground" />
         <h3 className="text-lg font-medium">
           {t('SectionTypes.people.label')} {t('Editor.titleSuffix')}
         </h3>
@@ -2005,9 +2005,9 @@ const FeaturedCoursesEditor: FC<{
   const courses = coursesData?.courses;
 
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="shadow-sm space-y-6 rounded-lg bg-background p-6">
       <div className="flex items-center space-x-1">
-        <BookOpen className="h-5 w-5 text-gray-500" />
+        <BookOpen className="h-5 w-5 text-muted-foreground" />
         <h3 className="text-lg font-medium">
           {t('SectionTypes.featuredCourses.label')} {t('Editor.titleSuffix')}
         </h3>
@@ -2039,7 +2039,7 @@ const FeaturedCoursesEditor: FC<{
                     className="flex items-center justify-between rounded-lg border p-4"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="relative h-12 w-12 overflow-hidden rounded-md bg-gray-100">
+                      <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
                         {course.course_thumbnail ? (
                           <NextImage
                             src={course.course_thumbnail}
@@ -2052,7 +2052,7 @@ const FeaturedCoursesEditor: FC<{
                       </div>
                       <div>
                         <h4 className="font-medium">{course.name}</h4>
-                        <p className="text-sm text-gray-500">{course.description}</p>
+                        <p className="text-sm text-muted-foreground">{course.description}</p>
                       </div>
                     </div>
                     <Button
@@ -2072,7 +2072,7 @@ const FeaturedCoursesEditor: FC<{
                 ))}
               </div>
             ) : (
-              <div className="py-8 text-center text-gray-500">{t('FeaturedCoursesEditor.loadingCourses')}</div>
+              <div className="py-8 text-center text-muted-foreground">{t('FeaturedCoursesEditor.loadingCourses')}</div>
             )}
           </div>
         </div>

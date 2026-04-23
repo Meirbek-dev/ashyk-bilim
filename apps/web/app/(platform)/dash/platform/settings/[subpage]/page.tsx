@@ -8,6 +8,7 @@ import SettingsHeader from '@components/Dashboard/Misc/SettingsHeader';
 import SettingsTabs from '@components/Dashboard/Misc/SettingsTabs';
 import { getAbsoluteUrl } from '@services/config/config';
 import { AnimatePresence, motion } from 'motion/react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -78,8 +79,12 @@ export default function PlatformSettingsPage(props: { params: Promise<{ subpage:
       <Separator />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="container max-w-screen py-6 lg:py-8">
-          <ContentRenderer subpage={params.subpage} />
+        <div className="container mx-auto py-6 lg:py-8">
+          <Card className="shadow-sm ring-1 ring-foreground/10">
+            <CardContent className="p-0">
+              <ContentRenderer subpage={params.subpage} />
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>

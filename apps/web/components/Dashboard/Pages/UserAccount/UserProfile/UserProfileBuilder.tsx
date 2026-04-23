@@ -36,6 +36,7 @@ import type { Locale } from 'date-fns';
 import { format } from 'date-fns';
 import type { FC } from 'react';
 import { toast } from 'sonner';
+import { Card } from '@/components/ui/card';
 
 // Define section type keys
 const SECTION_TYPE_KEYS = {
@@ -436,36 +437,43 @@ const UserProfileBuilder = () => {
 
   if (isLoading) {
     return (
-      <div className="soft-shadow mx-0 rounded-xl bg-white p-6 sm:mx-10">
-        <div className="flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
+      <Card className="mx-0 sm:mx-10">
+        <div className="flex min-h-[400px] items-center justify-center p-6">
+          <Loader2 className="text-primary h-8 w-8 animate-spin" />
         </div>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="soft-shadow mx-0 rounded-xl bg-white sm:mx-10">
+    <Card className="mx-0 sm:mx-10">
       <div className="space-y-6 p-6">
         {/* Header */}
         <div className="flex items-center justify-between border-b pb-4">
           <div>
             <h2 className="flex items-center text-xl font-semibold">{t('title')} </h2>
-            <p className="text-gray-600">{t('description')}</p>
+            <p className="text-muted-foreground">{t('description')}</p>
           </div>
           <Button
             variant="default"
             onClick={handleSave}
             disabled={isSaving}
           >
-            {isSaving ? t('savingButton') : t('saveButton')}
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t('savingButton')}
+              </>
+            ) : (
+              t('saveButton')
+            )}
           </Button>
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
           {/* Sections Panel */}
-          <div className="col-span-1 border-r pr-4">
+          <div className="col-span-1 border-r pr-4 max-lg:border-r-0 max-lg:border-b max-lg:pr-0 max-lg:pb-6">
             <h3 className="mb-4 font-medium">{t('SectionsPanel.title')}</h3>
             <DragDropContext onDragEnd={onDragEnd}>
               <Droppable droppableId="sections">
@@ -488,20 +496,20 @@ const UserProfileBuilder = () => {
                             onClick={() => {
                               setSelectedSection(index);
                             }}
-                            className={`cursor-pointer rounded-lg border bg-white/80 p-4 backdrop-blur-xs ${
+                            className={`group cursor-pointer rounded-lg border p-4 transition-all ${
                               selectedSection === index
-                                ? 'border-blue-500 bg-blue-50 shadow-xs ring-2 ring-blue-500/20'
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50 hover:shadow-xs'
-                            } ${snapshot.isDragging ? 'rotate-2 shadow-lg ring-2 ring-blue-500/20' : ''}`}
+                                ? 'border-primary bg-primary/5 ring-primary/20 shadow-sm ring-1'
+                                : 'bg-card/50 hover:bg-accent border-border hover:border-accent-foreground/20 hover:shadow-xs'
+                            } ${snapshot.isDragging ? 'ring-primary/20 rotate-2 shadow-lg ring-2' : ''}`}
                           >
-                            <div className="group flex items-center justify-between">
+                            <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-3">
                                 <div
                                   {...provided.dragHandleProps}
                                   className={`rounded-md p-1.5 transition-colors duration-200 ${
                                     selectedSection === index
-                                      ? 'bg-blue-100/50 text-blue-500'
-                                      : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                                      ? 'bg-primary/10 text-primary'
+                                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                                   }`}
                                 >
                                   <GripVertical size={16} />
@@ -509,8 +517,8 @@ const UserProfileBuilder = () => {
                                 <div
                                   className={`rounded-md p-1.5 ${
                                     selectedSection === index
-                                      ? 'bg-blue-100/50 text-blue-600'
-                                      : 'bg-gray-100/50 text-gray-600'
+                                      ? 'bg-primary/10 text-primary'
+                                      : 'bg-muted text-muted-foreground'
                                   }`}
                                 >
                                   {createElement(getSectionTypesConfig(t)[section.type].icon, {
@@ -519,7 +527,7 @@ const UserProfileBuilder = () => {
                                 </div>
                                 <span
                                   className={`truncate text-sm font-medium ${
-                                    selectedSection === index ? 'text-blue-700' : 'text-gray-700'
+                                    selectedSection === index ? 'text-primary' : 'text-foreground'
                                   }`}
                                 >
                                   {section.title}
@@ -527,24 +535,26 @@ const UserProfileBuilder = () => {
                               </div>
                               <div className="flex space-x-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                                 <button
+                                  type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedSection(index);
                                   }}
                                   className={`rounded-md p-1.5 transition-colors duration-200 ${
                                     selectedSection === index
-                                      ? 'text-blue-500 hover:bg-blue-100'
-                                      : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                                      ? 'text-primary hover:bg-primary/10'
+                                      : 'text-muted-foreground hover:bg-accent'
                                   }`}
                                 >
                                   <Edit size={14} />
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     deleteSection(index);
                                   }}
-                                  className="rounded-md p-1.5 text-red-400 transition-colors duration-200 hover:bg-red-50 hover:text-red-500"
+                                  className="text-destructive hover:bg-destructive/10 rounded-md p-1.5 transition-colors duration-200"
                                 >
                                   <Trash2 size={14} />
                                 </button>
@@ -573,11 +583,11 @@ const UserProfileBuilder = () => {
                 }))}
               >
                 <SelectTrigger
-                  className="bg-primary w-full border-0 p-0"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground w-full border-0"
                   withChevron={false}
                 >
-                  <div className="text-primary-foreground inline-flex w-full items-center justify-center gap-2 rounded-md text-sm font-medium">
-                    <Plus color="white" />
+                  <div className="inline-flex items-center justify-center gap-2">
+                    <Plus size={16} />
                     {t('SectionsPanel.addSectionButton')}
                   </div>
                 </SelectTrigger>
@@ -589,15 +599,15 @@ const UserProfileBuilder = () => {
                         value={type}
                       >
                         <div className="flex items-center space-x-3 py-1">
-                          <div className="rounded-md bg-gray-50 p-1.5">
+                          <div className="bg-muted rounded-md p-1.5">
                             <Icon
                               size={16}
-                              className="text-gray-600"
+                              className="text-muted-foreground"
                             />
                           </div>
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-700">{label}</div>
-                            <div className="text-xs text-gray-500">{description}</div>
+                            <div className="text-foreground text-sm font-medium">{label}</div>
+                            <div className="text-muted-foreground text-xs">{description}</div>
                           </div>
                         </div>
                       </SelectItem>
@@ -609,7 +619,7 @@ const UserProfileBuilder = () => {
           </div>
 
           {/* Editor Panel */}
-          <div className="col-span-3">
+          <div className="col-span-1 lg:col-span-3">
             {selectedSection !== null && profileData.sections[selectedSection] ? (
               <SectionEditor
                 t={t}
@@ -619,12 +629,14 @@ const UserProfileBuilder = () => {
                 }}
               />
             ) : (
-              <div className="flex h-full items-center justify-center text-gray-500">{t('EmptyEditor.message')}</div>
+              <div className="text-muted-foreground flex h-full items-center justify-center italic">
+                {t('EmptyEditor.message')}
+              </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 
@@ -766,9 +778,9 @@ const ImageGalleryEditor: FC<{
   onChange: (section: ImageGallerySection) => void;
 }> = ({ t, section, onChange }) => {
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="bg-card ring-foreground/10 space-y-6 rounded-lg p-6 ring-1">
       <div className="flex items-center space-x-2">
-        <ImageIcon className="h-5 w-5 text-gray-500" />
+        <ImageIcon className="text-muted-foreground h-5 w-5" />
         <h3 className="text-lg font-medium">{t('ImageGalleryEditor.title')}</h3>
       </div>
 
@@ -874,9 +886,9 @@ const TextEditor: FC<{
   onChange: (section: TextSection) => void;
 }> = ({ t, section, onChange }) => {
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="bg-card ring-foreground/10 space-y-6 rounded-lg p-6 ring-1">
       <div className="flex items-center space-x-2">
-        <TextIcon className="h-5 w-5 text-gray-500" />
+        <TextIcon className="text-muted-foreground h-5 w-5" />
         <h3 className="text-lg font-medium">{t('TextEditor.title')}</h3>
       </div>
 
@@ -918,9 +930,9 @@ const LinksEditor: FC<{
   onChange: (section: LinksSection) => void;
 }> = ({ t, section, onChange }) => {
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="bg-card ring-foreground/10 space-y-6 rounded-lg p-6 ring-1">
       <div className="flex items-center space-x-2">
-        <LinkIcon className="h-5 w-5 text-gray-500" />
+        <LinkIcon className="text-muted-foreground h-5 w-5" />
         <h3 className="text-lg font-medium">{t('LinksEditor.title')}</h3>
       </div>
 
@@ -1008,9 +1020,9 @@ const SkillsEditor: FC<{
   onChange: (section: SkillsSection) => void;
 }> = ({ t, section, onChange }) => {
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="bg-card ring-foreground/10 space-y-6 rounded-lg p-6 ring-1">
       <div className="flex items-center space-x-2">
-        <Award className="h-5 w-5 text-gray-500" />
+        <Award className="text-muted-foreground h-5 w-5" />
         <h3 className="text-lg font-medium">{t('SkillsEditor.title')}</h3>
       </div>
 
@@ -1139,9 +1151,9 @@ const ExperienceEditor: FC<{
   })();
 
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="bg-card ring-foreground/10 space-y-6 rounded-lg p-6 ring-1">
       <div className="flex items-center space-x-2">
-        <Briefcase className="h-5 w-5 text-gray-500" />
+        <Briefcase className="text-muted-foreground h-5 w-5" />
         <h3 className="text-lg font-medium">{t('ExperienceEditor.title')}</h3>
       </div>
 
@@ -1335,9 +1347,9 @@ const EducationEditor: FC<{
   })();
 
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="bg-card ring-foreground/10 space-y-6 rounded-lg p-6 ring-1">
       <div className="flex items-center space-x-2">
-        <GraduationCap className="h-5 w-5 text-gray-500" />
+        <GraduationCap className="text-muted-foreground h-5 w-5" />
         <h3 className="text-lg font-medium">{t('EducationEditor.title')}</h3>
       </div>
 
@@ -1531,9 +1543,9 @@ const AffiliationEditor: FC<{
   onChange: (section: AffiliationSection) => void;
 }> = ({ t, section, onChange }) => {
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="bg-card ring-foreground/10 space-y-6 rounded-lg p-6 ring-1">
       <div className="flex items-center space-x-2">
-        <MapPin className="h-5 w-5 text-gray-500" />
+        <MapPin className="text-muted-foreground h-5 w-5" />
         <h3 className="text-lg font-medium">{t('AffiliationEditor.title')}</h3>
       </div>
 
@@ -1656,9 +1668,9 @@ const CoursesEditor: FC<{
   onChange: (section: CoursesSection) => void;
 }> = ({ t, section, onChange }) => {
   return (
-    <div className="soft-shadow space-y-6 rounded-lg bg-white p-6">
+    <div className="bg-card ring-foreground/10 space-y-6 rounded-lg p-6 ring-1">
       <div className="flex items-center space-x-2">
-        <BookOpen className="h-5 w-5 text-gray-500" />
+        <BookOpen className="text-muted-foreground h-5 w-5" />
         <h3 className="text-lg font-medium">{t('CoursesEditor.title')}</h3>
       </div>
 
@@ -1676,7 +1688,7 @@ const CoursesEditor: FC<{
           />
         </div>
 
-        <div className="text-sm text-gray-500 italic">{t('CoursesEditor.autoDisplayMessage')}</div>
+        <div className="text-muted-foreground text-sm italic">{t('CoursesEditor.autoDisplayMessage')}</div>
       </div>
     </div>
   );
