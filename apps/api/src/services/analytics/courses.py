@@ -462,13 +462,11 @@ def get_teacher_course_detail(
         if enrolled
         else 0.0
     )
-    active_learners_7d = len(
-        {
-            event.user_id
-            for event in events
-            if event.ts >= context.generated_at - timedelta(days=7)
-        }
-    )
+    active_learners_7d = len({
+        event.user_id
+        for event in events
+        if event.ts >= context.generated_at - timedelta(days=7)
+    })
     certificates_issued = sum(
         1
         for certificate, certification in context.certificates
@@ -494,14 +492,12 @@ def get_teacher_course_detail(
         activity = context.activities_by_id.get(chapter_activity.id)
         if activity is None:
             continue
-        ordered_steps.append(
-            (
-                chapter_order.get(chapter_activity.chapter_id, 0),
-                chapter_activity.order,
-                chapter_activity,
-                activity,
-            )
-        )
+        ordered_steps.append((
+            chapter_order.get(chapter_activity.chapter_id, 0),
+            chapter_activity.order,
+            chapter_activity,
+            activity,
+        ))
     ordered_steps.sort(key=lambda item: (item[0], item[1]))
 
     completion_by_activity: dict[int, set[int]] = defaultdict(set)

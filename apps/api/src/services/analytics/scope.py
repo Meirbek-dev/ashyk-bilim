@@ -123,13 +123,11 @@ def resolve_teacher_scope(
             )
         ).all()
 
-    normalized_course_ids = sorted(
-        {
-            normalized_course_id
-            for course_id in course_ids
-            if (normalized_course_id := _coerce_course_id(course_id)) is not None
-        }
-    )
+    normalized_course_ids = sorted({
+        normalized_course_id
+        for course_id in course_ids
+        if (normalized_course_id := _coerce_course_id(course_id)) is not None
+    })
     if filters.course_ids:
         requested = set(filters.course_ids)
         allowed = set(normalized_course_ids)

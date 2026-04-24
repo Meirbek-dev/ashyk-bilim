@@ -167,7 +167,8 @@ class TestAuthTokens:
         decoded_payload = json.loads(base64.urlsafe_b64decode(payload + "=="))
         decoded_payload["sub"] = "admin-uuid"  # Privilege escalation attempt
         tampered_payload = (
-            base64.urlsafe_b64encode(json.dumps(decoded_payload).encode())
+            base64
+            .urlsafe_b64encode(json.dumps(decoded_payload).encode())
             .decode()
             .rstrip("=")
         )

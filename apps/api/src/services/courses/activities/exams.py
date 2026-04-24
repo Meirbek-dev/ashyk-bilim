@@ -883,13 +883,11 @@ async def submit_exam_attempt(
             if elapsed_minutes > (time_limit_minutes + 0.5):
                 status = AttemptStatusEnum.AUTO_SUBMITTED
                 attempt.violations = attempt.violations or []
-                attempt.violations.append(
-                    {
-                        "type": "TIME_EXCEEDED",
-                        "timestamp": now.isoformat(),
-                        "elapsed_minutes": round(elapsed_minutes, 2),
-                    }
-                )
+                attempt.violations.append({
+                    "type": "TIME_EXCEEDED",
+                    "timestamp": now.isoformat(),
+                    "elapsed_minutes": round(elapsed_minutes, 2),
+                })
         except (ValueError, AttributeError) as e:
             logger.warning(
                 f"Failed to validate time limit for attempt {attempt_uuid}: {e}"
@@ -1274,34 +1272,32 @@ async def get_all_exam_attempts(
             except Exception:
                 pass
 
-        result.append(
-            {
-                "attempt_uuid": attempt.attempt_uuid,
-                "user_id": user.id,
-                "user_name": (
-                    f"{getattr(user, 'first_name', '')} {getattr(user, 'middle_name', '')} {getattr(user, 'last_name', '')}".replace(
-                        "  ", " "
-                    ).strip()
-                )
-                or user.username,
-                "user_email": user.email,
-                "started_at": attempt.started_at,
-                "finished_at": attempt.submitted_at,
-                "duration_minutes": duration_minutes,
-                "duration_seconds": duration_seconds,
-                "status": attempt.status,
-                "score": attempt.score,
-                "max_score": attempt.max_score,
-                "percentage": round(
-                    (attempt.score / attempt.max_score * 100)
-                    if attempt.max_score and attempt.max_score > 0
-                    else 0,
-                    1,
-                ),
-                "violations": attempt.violations,
-                "violation_count": len(attempt.violations) if attempt.violations else 0,
-            }
-        )
+        result.append({
+            "attempt_uuid": attempt.attempt_uuid,
+            "user_id": user.id,
+            "user_name": (
+                f"{getattr(user, 'first_name', '')} {getattr(user, 'middle_name', '')} {getattr(user, 'last_name', '')}".replace(
+                    "  ", " "
+                ).strip()
+            )
+            or user.username,
+            "user_email": user.email,
+            "started_at": attempt.started_at,
+            "finished_at": attempt.submitted_at,
+            "duration_minutes": duration_minutes,
+            "duration_seconds": duration_seconds,
+            "status": attempt.status,
+            "score": attempt.score,
+            "max_score": attempt.max_score,
+            "percentage": round(
+                (attempt.score / attempt.max_score * 100)
+                if attempt.max_score and attempt.max_score > 0
+                else 0,
+                1,
+            ),
+            "violations": attempt.violations,
+            "violation_count": len(attempt.violations) if attempt.violations else 0,
+        })
 
     return result
 
@@ -1350,31 +1346,27 @@ async def export_questions_csv(
     writer = csv.writer(output)
 
     # Header
-    writer.writerow(
-        [
-            "Текст вопроса",
-            "Тип",
-            "Баллы",
-            "Варианты ответов (JSON)",
-            "Пояснение",
-            "Порядок",
-        ]
-    )
+    writer.writerow([
+        "Текст вопроса",
+        "Тип",
+        "Баллы",
+        "Варианты ответов (JSON)",
+        "Пояснение",
+        "Порядок",
+    ])
 
     # Data
     import json
 
     for q in questions:
-        writer.writerow(
-            [
-                q.question_text,
-                q.question_type,
-                q.points,
-                json.dumps(q.answer_options),
-                q.explanation or "",
-                q.order_index,
-            ]
-        )
+        writer.writerow([
+            q.question_text,
+            q.question_type,
+            q.points,
+            json.dumps(q.answer_options),
+            q.explanation or "",
+            q.order_index,
+        ])
 
     return output.getvalue()
 

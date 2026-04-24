@@ -91,7 +91,7 @@ export default async function PlatformDashHomePage() {
           alt={t('platformLogo')}
           width={210}
           src={platformLogoFull}
-          className="w-40 sm:w-[210px] theme-logo-dark"
+          className="theme-logo-dark w-40 sm:w-[210px]"
           style={{ height: 'auto' }}
           loading="eager"
         />
@@ -99,7 +99,7 @@ export default async function PlatformDashHomePage() {
           alt={t('platformLogo')}
           width={210}
           src={platformLogoLightFull}
-          className="w-40 sm:w-[210px] theme-logo-light"
+          className="theme-logo-light w-40 sm:w-[210px]"
           style={{ height: 'auto' }}
           loading="eager"
         />

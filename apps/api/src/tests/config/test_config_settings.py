@@ -96,12 +96,10 @@ def test_security_config_requires_key_material() -> None:
     with pytest.raises(
         ValueError, match="At least one of PLATFORM_AUTH_ED25519_PRIVATE_KEY"
     ):
-        SecurityConfig.model_validate(
-            {
-                "PLATFORM_AUTH_ED25519_PRIVATE_KEY": None,
-                "PLATFORM_AUTH_ED25519_PUBLIC_KEY": None,
-            }
-        )
+        SecurityConfig.model_validate({
+            "PLATFORM_AUTH_ED25519_PRIVATE_KEY": None,
+            "PLATFORM_AUTH_ED25519_PUBLIC_KEY": None,
+        })
 
 
 def test_database_config_accepts_sqlite_for_test_engine() -> None:
@@ -112,6 +110,6 @@ def test_database_config_accepts_sqlite_for_test_engine() -> None:
 
 def test_database_config_rejects_unsupported_sql_schemes() -> None:
     with pytest.raises(ValidationError, match="URL scheme should be"):
-        DatabaseConfig.model_validate(
-            {"PLATFORM_SQL_CONNECTION_STRING": "mysql://user:pass@db/app"}
-        )
+        DatabaseConfig.model_validate({
+            "PLATFORM_SQL_CONNECTION_STRING": "mysql://user:pass@db/app"
+        })

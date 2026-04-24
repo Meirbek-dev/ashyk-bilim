@@ -80,9 +80,11 @@ class CourseBase(SQLModelStrictBaseModel):
                 text = item.strip()
                 if not text:
                     continue
-                normalized_items.append(
-                    {"id": uuid4().hex, "text": text, "emoji": "📝"}
-                )
+                normalized_items.append({
+                    "id": uuid4().hex,
+                    "text": text,
+                    "emoji": "📝",
+                })
                 continue
 
             if not isinstance(item, dict):

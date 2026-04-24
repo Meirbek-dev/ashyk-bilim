@@ -143,12 +143,10 @@ async def get_discussions_by_course_uuid(
 
     # Gather all top-level discussion details in parallel
     all_discussion_data = list(
-        await asyncio.gather(
-            *[
-                get_discussion_with_details(d.id, db_session, current_user)
-                for d in discussions
-            ]
-        )
+        await asyncio.gather(*[
+            get_discussion_with_details(d.id, db_session, current_user)
+            for d in discussions
+        ])
     )
 
     if include_replies and discussions:
@@ -173,12 +171,10 @@ async def get_discussions_by_course_uuid(
 
         # Gather all reply details in parallel
         all_reply_details = list(
-            await asyncio.gather(
-                *[
-                    get_discussion_with_details(r.id, db_session, current_user)
-                    for r in all_replies
-                ]
-            )
+            await asyncio.gather(*[
+                get_discussion_with_details(r.id, db_session, current_user)
+                for r in all_replies
+            ])
         )
         reply_details_by_id = {
             r.id: detail
@@ -665,10 +661,8 @@ async def get_discussion_replies(
     replies = db_session.exec(replies_query).all()
 
     return list(
-        await asyncio.gather(
-            *[
-                get_discussion_with_details(reply.id, db_session, current_user)
-                for reply in replies
-            ]
-        )
+        await asyncio.gather(*[
+            get_discussion_with_details(reply.id, db_session, current_user)
+            for reply in replies
+        ])
     )

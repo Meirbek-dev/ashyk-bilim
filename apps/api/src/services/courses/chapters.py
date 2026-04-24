@@ -228,7 +228,8 @@ async def move_activity_to_order(
 
     # Resolve source chapter and its course for permission check.
     source_chapter = _get_chapter_by_uuid(
-        db_session.exec(select(Chapter).where(Chapter.id == activity.chapter_id))
+        db_session
+        .exec(select(Chapter).where(Chapter.id == activity.chapter_id))
         .first()
         .chapter_uuid,
         db_session,

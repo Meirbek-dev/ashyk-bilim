@@ -17,13 +17,11 @@ from src.security.rbac import PermissionChecker
 # Which authorship kinds are considered "owners" for RBAC purposes.
 # CONTRIBUTOR is included so instructors collaborating on a course pass the
 # ``own`` scope when they only have ``:own``-scoped permissions.
-_OWNER_AUTHORSHIPS: frozenset[ResourceAuthorshipEnum] = frozenset(
-    {
-        ResourceAuthorshipEnum.CREATOR,
-        ResourceAuthorshipEnum.MAINTAINER,
-        ResourceAuthorshipEnum.CONTRIBUTOR,
-    }
-)
+_OWNER_AUTHORSHIPS: frozenset[ResourceAuthorshipEnum] = frozenset({
+    ResourceAuthorshipEnum.CREATOR,
+    ResourceAuthorshipEnum.MAINTAINER,
+    ResourceAuthorshipEnum.CONTRIBUTOR,
+})
 
 
 def is_course_owner(

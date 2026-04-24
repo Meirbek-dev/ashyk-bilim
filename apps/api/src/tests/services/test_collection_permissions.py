@@ -46,12 +46,10 @@ async def test_get_collection_sets_owner_true_when_creator_matches_user_id():
         update_date="2026-01-01T00:00:00Z",
     )
 
-    session = _FakeSession(
-        [
-            _ExecResult(first_value=collection),
-            _ExecResult(all_value=[]),
-        ]
-    )
+    session = _FakeSession([
+        _ExecResult(first_value=collection),
+        _ExecResult(all_value=[]),
+    ])
 
     checker = Mock()
     checker.require.return_value = None
@@ -83,12 +81,10 @@ async def test_get_collection_sets_owner_false_when_creator_differs_from_user_id
         update_date="2026-01-01T00:00:00Z",
     )
 
-    session = _FakeSession(
-        [
-            _ExecResult(first_value=collection),
-            _ExecResult(all_value=[]),
-        ]
-    )
+    session = _FakeSession([
+        _ExecResult(first_value=collection),
+        _ExecResult(all_value=[]),
+    ])
 
     checker = Mock()
     checker.require.return_value = None
@@ -120,12 +116,10 @@ async def test_get_public_collection_allows_anonymous_without_rbac_check():
         update_date="2026-01-01T00:00:00Z",
     )
 
-    session = _FakeSession(
-        [
-            _ExecResult(first_value=collection),
-            _ExecResult(all_value=[]),
-        ]
-    )
+    session = _FakeSession([
+        _ExecResult(first_value=collection),
+        _ExecResult(all_value=[]),
+    ])
 
     checker = Mock()
     checker.check.side_effect = [False, False]

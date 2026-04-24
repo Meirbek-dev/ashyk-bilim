@@ -576,13 +576,11 @@ async def get_user_active_sessions(user_id: int) -> list[dict]:
     for sid in active_ids:
         data = await _read_session_from_redis(sid)
         if data:
-            result.append(
-                {
-                    "session_id": data.session_id,
-                    "ip_address": data.ip_address,
-                    "user_agent": data.user_agent,
-                    "created_at": data.created_at,
-                    "last_seen_at": data.last_seen_at,
-                }
-            )
+            result.append({
+                "session_id": data.session_id,
+                "ip_address": data.ip_address,
+                "user_agent": data.user_agent,
+                "created_at": data.created_at,
+                "last_seen_at": data.last_seen_at,
+            })
     return result

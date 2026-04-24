@@ -30,7 +30,7 @@ export function EditorHeader({
 }: EditorHeaderProps) {
   const t = useTranslations('DashPage.Editor.Editor');
   const { theme } = useTheme();
-  console.log(theme.name)
+  console.log(theme.name);
   const logoSrc = theme.name === 'dark' ? platformLogoLight : platformLogoDark;
 
   return (

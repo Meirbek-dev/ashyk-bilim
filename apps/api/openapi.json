@@ -17647,7 +17647,7 @@
     },
     "/api/v1/courses/{course_uuid}/contributors": {
       "get": {
-        "description": "Get all contributors for a course",
+        "description": "Get all contributors for a specific course",
         "operationId": "api_get_course_contributors_api_v1_courses__course_uuid__contributors_get",
         "parameters": [
           {

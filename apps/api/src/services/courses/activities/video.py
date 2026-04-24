@@ -158,30 +158,26 @@ async def create_video_activity(
                 valid_subtitles.append((subtitle_file, language))
 
         if valid_subtitles:
-            upload_results = await asyncio.gather(
-                *[
-                    upload_subtitle(
-                        subtitle_file,
-                        activity.activity_uuid,
-                        course.course_uuid,
-                        language,
-                        None,
-                    )
-                    for subtitle_file, language in valid_subtitles
-                ]
-            )
+            upload_results = await asyncio.gather(*[
+                upload_subtitle(
+                    subtitle_file,
+                    activity.activity_uuid,
+                    course.course_uuid,
+                    language,
+                    None,
+                )
+                for subtitle_file, language in valid_subtitles
+            ])
             for (_, language), upload_result in zip(
                 valid_subtitles, upload_results, strict=False
             ):
                 if upload_result.get("success"):
-                    subtitle_info.append(
-                        {
-                            "language": language,
-                            "filename": upload_result.get("filename"),
-                            "label": _get_language_label(language),
-                            "url": f"/content/platform/courses/{course.course_uuid}/activities/{activity.activity_uuid}/video/{upload_result.get('filename')}",
-                        }
-                    )
+                    subtitle_info.append({
+                        "language": language,
+                        "filename": upload_result.get("filename"),
+                        "label": _get_language_label(language),
+                        "url": f"/content/platform/courses/{course.course_uuid}/activities/{activity.activity_uuid}/video/{upload_result.get('filename')}",
+                    })
 
         if subtitle_info:
             updated_details = (

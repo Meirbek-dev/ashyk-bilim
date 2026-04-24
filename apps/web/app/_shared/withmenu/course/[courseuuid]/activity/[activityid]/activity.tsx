@@ -65,24 +65,28 @@ const Canva = dynamic(
   { loading: () => <LoadingFallback />, ssr: false },
 );
 const VideoActivity = dynamic(() => import('@components/Objects/Activities/Video/Video'), {
-  loading: () => <LoadingFallback />, ssr: false,
+  loading: () => <LoadingFallback />,
+  ssr: false,
 });
 const DocumentPdfActivity = dynamic(() => import('@components/Objects/Activities/DocumentPdf/DocumentPdf'), {
-  loading: () => <LoadingFallback />, ssr: false,
+  loading: () => <LoadingFallback />,
+  ssr: false,
 });
 const AssignmentStudentActivity = dynamic(
   () => import('@components/Objects/Activities/Assignment/AssignmentStudentActivity'),
   { loading: () => <LoadingFallback />, ssr: false },
 );
 const ExamActivity = dynamic(() => import('@components/Activities/ExamActivity/ExamActivity'), {
-  loading: () => <LoadingFallback />, ssr: false,
+  loading: () => <LoadingFallback />,
+  ssr: false,
 });
 const CodeChallengeActivity = dynamic(
   () => import('@components/Objects/Activities/CodeChallenge/CodeChallengeActivity'),
   { loading: () => <LoadingFallback />, ssr: false },
 );
 const AIActivityAsk = dynamic(() => import('@components/Objects/Activities/AI/AIActivityAsk'), {
-  loading: () => <LoadingFallback />, ssr: false,
+  loading: () => <LoadingFallback />,
+  ssr: false,
 });
 
 // Loading fallback component

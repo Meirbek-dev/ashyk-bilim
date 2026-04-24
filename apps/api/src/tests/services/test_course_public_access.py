@@ -139,12 +139,10 @@ async def test_require_course_read_access_allows_active_author_on_private_course
 
 @pytest.mark.asyncio
 async def test_get_public_course_allows_anonymous_without_rbac_check():
-    session = _FakeSession(
-        [
-            _ExecResult(first_value=_public_course()),
-            _ExecResult(all_value=[]),
-        ]
-    )
+    session = _FakeSession([
+        _ExecResult(first_value=_public_course()),
+        _ExecResult(all_value=[]),
+    ])
     checker = Mock()
 
     result = await get_course(
@@ -162,12 +160,10 @@ async def test_get_public_course_allows_anonymous_without_rbac_check():
 
 @pytest.mark.asyncio
 async def test_get_public_course_by_id_allows_anonymous_without_rbac_check():
-    session = _FakeSession(
-        [
-            _ExecResult(first_value=_public_course()),
-            _ExecResult(all_value=[]),
-        ]
-    )
+    session = _FakeSession([
+        _ExecResult(first_value=_public_course()),
+        _ExecResult(all_value=[]),
+    ])
     checker = Mock()
 
     result = await get_course_by_id(
@@ -185,13 +181,11 @@ async def test_get_public_course_by_id_allows_anonymous_without_rbac_check():
 
 @pytest.mark.asyncio
 async def test_get_course_falls_back_to_raw_uuid_when_prefixed_lookup_misses():
-    session = _FakeSession(
-        [
-            _ExecResult(first_value=None),
-            _ExecResult(first_value=_raw_public_course()),
-            _ExecResult(all_value=[]),
-        ]
-    )
+    session = _FakeSession([
+        _ExecResult(first_value=None),
+        _ExecResult(first_value=_raw_public_course()),
+        _ExecResult(all_value=[]),
+    ])
     checker = Mock()
 
     result = await get_course(
@@ -211,13 +205,11 @@ async def test_get_course_falls_back_to_raw_uuid_when_prefixed_lookup_misses():
 async def test_get_course_meta_falls_back_to_raw_uuid_when_prefixed_lookup_misses(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    session = _FakeSession(
-        [
-            _ExecResult(first_value=None),
-            _ExecResult(first_value=_raw_public_course()),
-            _ExecResult(all_value=[(_raw_public_course(), None, None)]),
-        ]
-    )
+    session = _FakeSession([
+        _ExecResult(first_value=None),
+        _ExecResult(first_value=_raw_public_course()),
+        _ExecResult(all_value=[(_raw_public_course(), None, None)]),
+    ])
     monkeypatch.setattr(
         chapter_service, "get_course_chapters", AsyncMock(return_value=[])
     )

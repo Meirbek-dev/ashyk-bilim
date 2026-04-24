@@ -1890,7 +1890,7 @@ export interface paths {
         };
         /**
          * Api Get Course Contributors
-         * @description Get all contributors for a course
+         * @description Get all contributors for a specific course
          */
         get: operations["api_get_course_contributors_api_v1_courses__course_uuid__contributors_get"];
         put?: never;

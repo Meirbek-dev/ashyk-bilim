@@ -311,9 +311,9 @@ class Judge0Service:
             if not pending:
                 break
 
-            batch_results = await self.get_batch_submissions(
-                [tokens[i] for i in pending]
-            )
+            batch_results = await self.get_batch_submissions([
+                tokens[i] for i in pending
+            ])
 
             # Map results back to original indices
             pending_list = list(pending)

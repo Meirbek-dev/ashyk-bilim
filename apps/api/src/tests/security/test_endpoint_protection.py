@@ -153,14 +153,12 @@ def test_all_endpoints_have_rbac() -> None:
 
                 # Check for permission checks
                 if not has_permission_check(source):
-                    unprotected_endpoints.append(
-                        {
-                            "method": method,
-                            "path": path,
-                            "handler": endpoint_func.__name__,
-                            "module": module_name,
-                        }
-                    )
+                    unprotected_endpoints.append({
+                        "method": method,
+                        "path": path,
+                        "handler": endpoint_func.__name__,
+                        "module": module_name,
+                    })
 
     # Assert no unprotected endpoints found
     if unprotected_endpoints:
@@ -231,13 +229,11 @@ def test_permission_checker_usage() -> None:
 
             # Detect old permission patterns that should be migrated
             if "permission_service" in source:
-                issues.append(
-                    {
-                        "endpoint": endpoint_func.__name__,
-                        "issue": "Still uses old permission_service pattern",
-                        "module": module_name,
-                    }
-                )
+                issues.append({
+                    "endpoint": endpoint_func.__name__,
+                    "issue": "Still uses old permission_service pattern",
+                    "module": module_name,
+                })
 
     if issues:
         error_msg = "\\n\\n⚠️  Permission Check Issues:\\n\\n"

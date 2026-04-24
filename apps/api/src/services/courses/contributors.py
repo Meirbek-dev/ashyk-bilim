@@ -282,19 +282,18 @@ async def add_bulk_course_contributors(
             user = user_map.get(username)
 
             if not user or user.id is None:
-                results["failed"].append(
-                    {"username": username, "reason": "User not found or invalid"}
-                )
+                results["failed"].append({
+                    "username": username,
+                    "reason": "User not found or invalid",
+                })
                 continue
 
             # Check if user already has any authorship role for this course
             if user.id in existing_authorship_map:
-                results["failed"].append(
-                    {
-                        "username": username,
-                        "reason": "User already has an authorship role for this course",
-                    }
-                )
+                results["failed"].append({
+                    "username": username,
+                    "reason": "User already has an authorship role for this course",
+                })
                 continue
 
             # Create contributor
@@ -383,28 +382,28 @@ async def remove_bulk_course_contributors(
             user = user_map.get(username)
 
             if not user or user.id is None:
-                results["failed"].append(
-                    {"username": username, "reason": "User not found or invalid"}
-                )
+                results["failed"].append({
+                    "username": username,
+                    "reason": "User not found or invalid",
+                })
                 continue
 
             # Check if user has any authorship role for this course
             existing_authorship = existing_authorship_map.get(user.id)
 
             if not existing_authorship:
-                results["failed"].append(
-                    {
-                        "username": username,
-                        "reason": "User is not a contributor for this course",
-                    }
-                )
+                results["failed"].append({
+                    "username": username,
+                    "reason": "User is not a contributor for this course",
+                })
                 continue
 
             # SECURITY: Don't allow removing the creator
             if existing_authorship.authorship == ResourceAuthorshipEnum.CREATOR:
-                results["failed"].append(
-                    {"username": username, "reason": "Cannot remove the course creator"}
-                )
+                results["failed"].append({
+                    "username": username,
+                    "reason": "Cannot remove the course creator",
+                })
                 continue
 
             # Remove the contributor

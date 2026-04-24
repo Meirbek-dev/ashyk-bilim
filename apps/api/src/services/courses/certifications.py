@@ -775,28 +775,26 @@ async def get_all_user_certificates(
 
         user = users_by_id.get(cert_user.user_id)
 
-        result.append(
-            {
-                "certificate_user": CertificateUserRead(**cert_user.model_dump()),
-                "certification": CertificationRead(**certification.model_dump()),
-                "course": {
-                    "id": course.id,
-                    "course_uuid": course.course_uuid,
-                    "name": course.name,
-                    "description": course.description,
-                    "thumbnail_image": course.thumbnail_image,
-                },
-                "user": {
-                    "id": user.id if user else None,
-                    "user_uuid": user.user_uuid if user else None,
-                    "username": user.username if user else None,
-                    "email": user.email if user else None,
-                    "first_name": user.first_name if user else None,
-                    "last_name": user.last_name if user else None,
-                }
-                if user
-                else None,
+        result.append({
+            "certificate_user": CertificateUserRead(**cert_user.model_dump()),
+            "certification": CertificationRead(**certification.model_dump()),
+            "course": {
+                "id": course.id,
+                "course_uuid": course.course_uuid,
+                "name": course.name,
+                "description": course.description,
+                "thumbnail_image": course.thumbnail_image,
+            },
+            "user": {
+                "id": user.id if user else None,
+                "user_uuid": user.user_uuid if user else None,
+                "username": user.username if user else None,
+                "email": user.email if user else None,
+                "first_name": user.first_name if user else None,
+                "last_name": user.last_name if user else None,
             }
-        )
+            if user
+            else None,
+        })
 
     return result

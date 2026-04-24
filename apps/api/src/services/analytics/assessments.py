@@ -98,13 +98,11 @@ def _build_rollup_assessment_rows(
         for assignment in db_session.exec(
             select(Assignment).where(
                 Assignment.id.in_(
-                    list(
-                        {
-                            row.assessment_id
-                            for row in rollups
-                            if row.assessment_type == "assignment"
-                        }
-                    )
+                    list({
+                        row.assessment_id
+                        for row in rollups
+                        if row.assessment_type == "assignment"
+                    })
                 )
             )
         ).all()
@@ -114,13 +112,11 @@ def _build_rollup_assessment_rows(
         for exam in db_session.exec(
             select(Exam).where(
                 Exam.id.in_(
-                    list(
-                        {
-                            row.assessment_id
-                            for row in rollups
-                            if row.assessment_type == "exam"
-                        }
-                    )
+                    list({
+                        row.assessment_id
+                        for row in rollups
+                        if row.assessment_type == "exam"
+                    })
                 )
             )
         ).all()
@@ -130,13 +126,11 @@ def _build_rollup_assessment_rows(
         for activity in db_session.exec(
             select(Activity).where(
                 Activity.id.in_(
-                    list(
-                        {
-                            row.assessment_id
-                            for row in rollups
-                            if row.assessment_type in {"quiz", "code_challenge"}
-                        }
-                    )
+                    list({
+                        row.assessment_id
+                        for row in rollups
+                        if row.assessment_type in {"quiz", "code_challenge"}
+                    })
                 )
             )
         ).all()
@@ -794,9 +788,9 @@ def get_teacher_assessment_detail(
             pass_threshold_bucket_label=_score_bucket(60),
             summary=TeacherAssessmentDetailSummary(
                 eligible_learners=eligible,
-                submitted_learners=len(
-                    {submission.user_id for submission, _ in records}
-                ),
+                submitted_learners=len({
+                    submission.user_id for submission, _ in records
+                }),
                 submission_rate=safe_pct(
                     len({submission.user_id for submission, _ in records}), eligible
                 ),
@@ -890,9 +884,9 @@ def get_teacher_assessment_detail(
                 grading_latency_hours_p90=None,
             ),
             score_distribution=_score_distribution(scores),
-            attempt_distribution=_attempt_distribution(
-                {user_id: len(items) for user_id, items in attempts_by_user.items()}
-            ),
+            attempt_distribution=_attempt_distribution({
+                user_id: len(items) for user_id, items in attempts_by_user.items()
+            }),
             question_breakdown=None,
             common_failures=[],
             learner_rows=sorted(learner_rows, key=lambda row: row.user_display_name),
@@ -1001,9 +995,9 @@ def get_teacher_assessment_detail(
                 grading_latency_hours_p90=None,
             ),
             score_distribution=_score_distribution(scores),
-            attempt_distribution=_attempt_distribution(
-                {user_id: len(items) for user_id, items in attempts_by_user.items()}
-            ),
+            attempt_distribution=_attempt_distribution({
+                user_id: len(items) for user_id, items in attempts_by_user.items()
+            }),
             question_breakdown=sorted(
                 question_breakdown, key=lambda row: row.accuracy_pct or 100
             ),
@@ -1086,9 +1080,9 @@ def get_teacher_assessment_detail(
                 grading_latency_hours_p90=None,
             ),
             score_distribution=_score_distribution(scores),
-            attempt_distribution=_attempt_distribution(
-                {user_id: len(items) for user_id, items in attempts_by_user.items()}
-            ),
+            attempt_distribution=_attempt_distribution({
+                user_id: len(items) for user_id, items in attempts_by_user.items()
+            }),
             question_breakdown=None,
             common_failures=common_failures,
             learner_rows=sorted(learner_rows, key=lambda row: row.user_display_name),

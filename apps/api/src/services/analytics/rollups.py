@@ -157,21 +157,17 @@ def _merge_teacher_metrics(
             metric_date=target_date,
             teacher_user_id=teacher_user_id,
             managed_course_count=len(teacher_course_ids),
-            active_learners_7d=len(
-                {
-                    event.user_id
-                    for event in teacher_events
-                    if (context.generated_at - event.ts).days <= 7
-                }
-            ),
+            active_learners_7d=len({
+                event.user_id
+                for event in teacher_events
+                if (context.generated_at - event.ts).days <= 7
+            }),
             active_learners_28d=len(current_active),
-            active_learners_90d=len(
-                {
-                    event.user_id
-                    for event in teacher_events
-                    if (context.generated_at - event.ts).days <= 90
-                }
-            ),
+            active_learners_90d=len({
+                event.user_id
+                for event in teacher_events
+                if (context.generated_at - event.ts).days <= 90
+            }),
             returning_learners_28d=len(current_active & previous_active),
             completion_rate=safe_pct(
                 sum(1 for snapshot in teacher_snapshots if snapshot.is_completed),
@@ -332,13 +328,11 @@ def refresh_teacher_analytics_rollups(
                     teacher_user_id=context.courses_by_id[row.course_id].creator_id,
                     enrolled_learners=len(course_snapshots),
                     active_learners_7d=row.active_learners_7d,
-                    active_learners_28d=len(
-                        {
-                            event.user_id
-                            for event in events
-                            if event.course_id == row.course_id
-                        }
-                    ),
+                    active_learners_28d=len({
+                        event.user_id
+                        for event in events
+                        if event.course_id == row.course_id
+                    }),
                     completion_rate=row.completion_rate,
                     avg_progress_pct=round(
                         sum(snapshot.progress_pct for snapshot in course_snapshots)

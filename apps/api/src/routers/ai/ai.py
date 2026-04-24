@@ -212,13 +212,11 @@ async def api_ai_start_activity_chat_session_stream(
                     yield sse_string
             except Exception as e:
                 logger.exception(f"Error in streaming generator: {e}")
-                yield format_sse_message(
-                    {
-                        "type": "error",
-                        "error": "Внутренняя ошибка.",
-                        "error_code": "STREAM_ERROR",
-                    }
-                )
+                yield format_sse_message({
+                    "type": "error",
+                    "error": "Внутренняя ошибка.",
+                    "error_code": "STREAM_ERROR",
+                })
             finally:
                 cancel_event.set()
                 monitor_task.cancel()
@@ -287,13 +285,11 @@ async def api_ai_send_activity_chat_message_stream(
                     yield sse_string
             except Exception as e:
                 logger.exception(f"Error in streaming generator: {e}")
-                yield format_sse_message(
-                    {
-                        "type": "error",
-                        "error": "Внутренняя ошибка.",
-                        "error_code": "STREAM_ERROR",
-                    }
-                )
+                yield format_sse_message({
+                    "type": "error",
+                    "error": "Внутренняя ошибка.",
+                    "error_code": "STREAM_ERROR",
+                })
             finally:
                 cancel_event.set()
                 monitor_task.cancel()

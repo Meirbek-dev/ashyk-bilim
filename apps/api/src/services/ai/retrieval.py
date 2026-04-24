@@ -241,7 +241,9 @@ async def ensure_collection(
     if isinstance(cached_name, str):
         return cached_name
 
-    db_content_hash = await asyncio.to_thread(_sync_collection_content_hash, resolved_name)
+    db_content_hash = await asyncio.to_thread(
+        _sync_collection_content_hash, resolved_name
+    )
     if db_content_hash == content_hash:
         cache_manager.retrieval_cache.set(cache_key, resolved_name)
         if collection_name:

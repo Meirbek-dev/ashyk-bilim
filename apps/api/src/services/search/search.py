@@ -96,12 +96,10 @@ async def search_platform_content(
             courses_by_collection.setdefault(cc.collection_id, []).append(course)
 
         for collection in collections:
-            collection_read = CollectionRead.model_validate(
-                {
-                    **collection.model_dump(),
-                    "courses": courses_by_collection.get(collection.id, []),
-                }
-            )
+            collection_read = CollectionRead.model_validate({
+                **collection.model_dump(),
+                "courses": courses_by_collection.get(collection.id, []),
+            })
             collection_reads.append(collection_read)
 
     # Convert users to UserRead objects

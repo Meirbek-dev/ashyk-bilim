@@ -30,7 +30,11 @@ from src.db.usergroup_user import UserGroupUser
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.rbac import PermissionChecker
 from src.services.courses.thumbnails import upload_thumbnail
-from src.services.courses._auth import require_course_permission, require_course_read_access, is_course_owner
+from src.services.courses._auth import (
+    require_course_permission,
+    require_course_read_access,
+    is_course_owner,
+)
 
 
 def _accessible_courses_filter(
@@ -663,9 +667,11 @@ async def get_course_meta(
     ]
 
     # Create course read model with chapters
-    return FullCourseRead.model_validate(
-        {**course.model_dump(), "authors": authors, "chapters": chapters}
-    )
+    return FullCourseRead.model_validate({
+        **course.model_dump(),
+        "authors": authors,
+        "chapters": chapters,
+    })
 
 
 async def count_courses(
@@ -783,26 +789,24 @@ async def get_courses(
             can_update = has_broad_update or (has_own_update and is_author)
             can_delete = has_broad_delete or (has_own_delete and is_author)
 
-        course_read = CourseReadWithPermissions.model_validate(
-            {
-                "id": course.id or 0,
-                "name": course.name,
-                "description": course.description or "",
-                "about": course.about or "",
-                "learnings": course.learnings or "",
-                "tags": course.tags or "",
-                "thumbnail_image": course.thumbnail_image or "",
-                "public": course.public,
-                "open_to_contributors": course.open_to_contributors,
-                "course_uuid": course.course_uuid,
-                "creation_date": course.creation_date,
-                "update_date": course.update_date,
-                "authors": authors,
-                "can_update": can_update,
-                "can_delete": can_delete,
-                "is_owner": is_owner,
-            }
-        )
+        course_read = CourseReadWithPermissions.model_validate({
+            "id": course.id or 0,
+            "name": course.name,
+            "description": course.description or "",
+            "about": course.about or "",
+            "learnings": course.learnings or "",
+            "tags": course.tags or "",
+            "thumbnail_image": course.thumbnail_image or "",
+            "public": course.public,
+            "open_to_contributors": course.open_to_contributors,
+            "course_uuid": course.course_uuid,
+            "creation_date": course.creation_date,
+            "update_date": course.update_date,
+            "authors": authors,
+            "can_update": can_update,
+            "can_delete": can_delete,
+            "is_owner": is_owner,
+        })
         course_reads.append(course_read)
     try:
         if (
@@ -1406,23 +1410,21 @@ async def get_user_courses(
     result = []
     for course in courses:
         # Create CourseRead object
-        course_read = CourseRead.model_validate(
-            {
-                "id": course.id or 0,  # Ensure id is never None
-                "name": course.name,
-                "description": course.description or "",
-                "about": course.about or "",
-                "learnings": course.learnings or "",
-                "tags": course.tags or "",
-                "thumbnail_image": course.thumbnail_image or "",
-                "public": course.public,
-                "open_to_contributors": course.open_to_contributors,
-                "course_uuid": course.course_uuid,
-                "creation_date": course.creation_date,
-                "update_date": course.update_date,
-                "authors": authors_by_course.get(course.course_uuid, []),
-            }
-        )
+        course_read = CourseRead.model_validate({
+            "id": course.id or 0,  # Ensure id is never None
+            "name": course.name,
+            "description": course.description or "",
+            "about": course.about or "",
+            "learnings": course.learnings or "",
+            "tags": course.tags or "",
+            "thumbnail_image": course.thumbnail_image or "",
+            "public": course.public,
+            "open_to_contributors": course.open_to_contributors,
+            "course_uuid": course.course_uuid,
+            "creation_date": course.creation_date,
+            "update_date": course.update_date,
+            "authors": authors_by_course.get(course.course_uuid, []),
+        })
         result.append(course_read)
 
     return result
@@ -1547,26 +1549,24 @@ async def get_editable_courses(
         is_owner = course.creator_id == current_user.id
         can_delete = has_broad_delete or (has_own_delete and is_author)
 
-        course_read = CourseReadWithPermissions.model_validate(
-            {
-                "id": course.id or 0,
-                "name": course.name,
-                "description": course.description or "",
-                "about": course.about or "",
-                "learnings": course.learnings or "",
-                "tags": course.tags or "",
-                "thumbnail_image": course.thumbnail_image or "",
-                "public": course.public,
-                "open_to_contributors": course.open_to_contributors,
-                "course_uuid": course.course_uuid,
-                "creation_date": course.creation_date,
-                "update_date": course.update_date,
-                "authors": authors,
-                "can_update": True,
-                "can_delete": can_delete,
-                "is_owner": is_owner,
-            }
-        )
+        course_read = CourseReadWithPermissions.model_validate({
+            "id": course.id or 0,
+            "name": course.name,
+            "description": course.description or "",
+            "about": course.about or "",
+            "learnings": course.learnings or "",
+            "tags": course.tags or "",
+            "thumbnail_image": course.thumbnail_image or "",
+            "public": course.public,
+            "open_to_contributors": course.open_to_contributors,
+            "course_uuid": course.course_uuid,
+            "creation_date": course.creation_date,
+            "update_date": course.update_date,
+            "authors": authors,
+            "can_update": True,
+            "can_delete": can_delete,
+            "is_owner": is_owner,
+        })
         course_reads.append(course_read)
 
     return course_reads
@@ -1721,7 +1721,9 @@ async def get_course_user_rights(
         rights["roles"]["is_maintainer_role"] = True
 
     # Check instructor role (course-level update permission)
-    is_owner_for_course = is_course_owner(db_session, current_user.id, course.course_uuid)
+    is_owner_for_course = is_course_owner(
+        db_session, current_user.id, course.course_uuid
+    )
     user_has_instructor_role = checker.check(
         current_user.id,
         "course:update",
