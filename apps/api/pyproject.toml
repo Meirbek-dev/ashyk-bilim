@@ -43,6 +43,7 @@ dev = [
 
 [tool.ruff]
 target-version = "py315"
+preview = true
 # lint.select = ["ALL"]
 lint.fixable = ["ALL"]
 lint.ignore = [

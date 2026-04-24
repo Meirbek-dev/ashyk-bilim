@@ -196,6 +196,28 @@ def delete_expired_chunks(retention_seconds: int) -> int:
             raise
 
 
+def _sync_collection_content_hash(collection_name: str) -> str | None:
+    """Return the content_hash of the existing collection if it exists."""
+    engine = get_bg_engine()
+    stmt = (
+        select(_document_chunks.c.metadata)
+        .where(_document_chunks.c.collection_name == collection_name)
+        .limit(1)
+    )
+    with Session(engine) as session:
+        try:
+            row = session.execute(stmt).first()
+            if row and row.metadata:
+                val = row.metadata.get("content_hash")
+                return str(val) if val is not None else None
+            return None
+        except sqlalchemy.exc.ProgrammingError as exc:
+            session.rollback()
+            if _is_missing_document_chunks_table_error(exc):
+                return None
+            raise
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -219,12 +241,23 @@ async def ensure_collection(
     if isinstance(cached_name, str):
         return cached_name
 
+    db_content_hash = await asyncio.to_thread(_sync_collection_content_hash, resolved_name)
+    if db_content_hash == content_hash:
+        cache_manager.retrieval_cache.set(cache_key, resolved_name)
+        if collection_name:
+            activity_uuid = collection_name.removeprefix("activity_")
+            cache_manager.register_retrieval_cache_key(activity_uuid, cache_key)
+        return resolved_name
+
     chunks = await asyncio.to_thread(chunk_documents, documents, embedding_model_name)
     if not chunks:
         raise RetrievalError(
             "No valid chunks created from documents",
             details={"document_count": len(documents)},
         )
+
+    for chunk in chunks:
+        chunk.metadata["content_hash"] = content_hash
 
     embeddings = await embed_texts(
         [chunk.document for chunk in chunks],
