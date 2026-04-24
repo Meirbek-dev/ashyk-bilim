@@ -35,11 +35,18 @@ export async function GET(request: NextRequest) {
   }
 
   // Server-side POST to FastAPI — never visible to the browser.
-  const response = await apiFetch('auth/refresh', {
-    method: 'POST',
-    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
-    cache: 'no-store',
-  });
+  let response: Response;
+  try {
+    response = await apiFetch('auth/refresh', {
+      method: 'POST',
+      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+      cache: 'no-store',
+    });
+  } catch {
+    // Network error or timeout reaching FastAPI — treat as a failed refresh.
+    const target = isProtectedRoute(returnTo) ? buildLoginRedirect(returnTo) : getPostAuthRedirect(returnTo);
+    return clearAuthCookies(NextResponse.redirect(new URL(target, request.url)));
+  }
 
   if (!response.ok) {
     // Refresh rejected (revoked session, expired hard cap, etc.) — send to login.

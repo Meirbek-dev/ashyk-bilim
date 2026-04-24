@@ -51,13 +51,16 @@ const CourseClient = (props: any) => {
   const { courseuuid } = props;
   const { course } = props;
   const isMobile = useIsMobile();
-  const { user: currentUser } = useSession();
+  const { user: currentUser, isAuthenticated } = useSession();
   const queryClient = useQueryClient();
   const discussionsQueryKey = queryKeys.discussions.list(course?.course_uuid ?? 'disabled', true, 50, 0);
 
-  const { data: discussionPosts = [] } = useCourseDiscussions(course?.course_uuid, { includeReplies: true });
+  const { data: discussionPosts = [] } = useCourseDiscussions(course?.course_uuid, {
+    includeReplies: true,
+    enabled: isAuthenticated,
+  });
 
-  const { data: trailData } = useTrailCurrent();
+  const { data: trailData } = useTrailCurrent({ enabled: isAuthenticated });
 
   const mutateDiscussions = () => {
     if (!course?.course_uuid) return;

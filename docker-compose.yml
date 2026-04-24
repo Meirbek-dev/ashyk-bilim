@@ -52,6 +52,8 @@ services:
     restart: unless-stopped
     expose:
       - "3000"
+    environment:
+      INTERNAL_API_URL: http://api:8000/api/v1/
     env_file: .env
     networks:
       - app-net
