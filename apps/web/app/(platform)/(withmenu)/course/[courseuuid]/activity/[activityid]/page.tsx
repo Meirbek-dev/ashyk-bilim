@@ -14,7 +14,8 @@ interface MetadataProps {
 }
 
 async function fetchCourseMetadata(courseuuid: string) {
-  return await getCourseMetadata(courseuuid, undefined, true);
+  const session = await getSession();
+  return await getCourseMetadata(courseuuid, undefined, !!session);
 }
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {

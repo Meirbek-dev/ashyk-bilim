@@ -6,6 +6,7 @@ import { jetBrainsMono } from '@/lib/fonts';
 import type { Metadata } from 'next';
 
 import ActivityClient from './activity';
+import { getSession } from '@/lib/auth/session';
 
 interface MetadataProps {
   params: Promise<{ courseuuid: string; activityid: string }>;
@@ -14,7 +15,8 @@ interface MetadataProps {
 
 // Add this function at the top level to avoid duplicate fetches
 async function fetchCourseMetadata(courseuuid: string) {
-  return await getCourseMetadata(courseuuid, undefined, true);
+  const session = await getSession();
+  return await getCourseMetadata(courseuuid, undefined, !!session);
 }
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {

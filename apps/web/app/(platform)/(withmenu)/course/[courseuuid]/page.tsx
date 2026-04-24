@@ -1,5 +1,6 @@
 import { getCourseThumbnailMediaDirectory } from '@services/media/media';
 import { getCourseMetadata } from '@services/courses/courses';
+import { getSession } from '@/lib/auth/session';
 import type { Metadata } from 'next';
 
 import CourseClient from '@/app/_shared/withmenu/course/[courseuuid]/course';
@@ -10,7 +11,8 @@ interface MetadataProps {
 }
 
 async function fetchCourseMetadata(courseuuid: string) {
-  return await getCourseMetadata(courseuuid, undefined, true);
+  const session = await getSession();
+  return await getCourseMetadata(courseuuid, undefined, !!session);
 }
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
