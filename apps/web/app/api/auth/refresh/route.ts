@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   if (!cookieHeader.includes(`${REFRESH_TOKEN_COOKIE_NAME}=`)) {
     // No refresh token available — redirect to login so the user can re-authenticate.
     const target = isProtectedRoute(returnTo) ? buildLoginRedirect(returnTo) : getPostAuthRedirect(returnTo);
-    return clearAuthCookies(NextResponse.redirect(target));
+    return clearAuthCookies(NextResponse.redirect(new URL(target, request.url)));
   }
 
   // Server-side POST to FastAPI — never visible to the browser.
@@ -44,13 +44,13 @@ export async function GET(request: NextRequest) {
   if (!response.ok) {
     // Refresh rejected (revoked session, expired hard cap, etc.) — send to login.
     const target = isProtectedRoute(returnTo) ? buildLoginRedirect(returnTo) : getPostAuthRedirect(returnTo);
-    return clearAuthCookies(NextResponse.redirect(target));
+    return clearAuthCookies(NextResponse.redirect(new URL(target, request.url)));
   }
 
   // Apply the new access + refresh cookies to the redirect response so the
   // browser receives them alongside the navigation back to the original page.
   const redirectTarget = getPostAuthRedirect(returnTo);
-  const redirectResponse = NextResponse.redirect(redirectTarget);
+  const redirectResponse = NextResponse.redirect(new URL(redirectTarget, request.url));
   applyResponseCookiesToNextResponse(response.headers, redirectResponse);
   return redirectResponse;
 }
