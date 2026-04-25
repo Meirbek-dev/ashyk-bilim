@@ -147,7 +147,7 @@ def test_all_endpoints_have_rbac() -> None:
                 # Get source code
                 try:
                     source = inspect.getsource(endpoint_func)
-                except TypeError, OSError:
+                except (TypeError, OSError):
                     # Can't get source (compiled/builtin function)
                     continue
 
@@ -224,7 +224,7 @@ def test_permission_checker_usage() -> None:
             endpoint_func = route.endpoint
             try:
                 source = inspect.getsource(endpoint_func)
-            except TypeError, OSError:
+            except (TypeError, OSError):
                 continue
 
             # Detect old permission patterns that should be migrated

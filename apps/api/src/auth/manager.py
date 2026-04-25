@@ -4,18 +4,21 @@ Handles: password hashing, registration hooks, password reset tokens,
 email verification tokens.
 """
 
+import logging
 from typing import Any
 
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, IntegerIDMixin
-from fastapi_users.password import PasswordHelper
-from passlib.context import CryptContext
+from fastapi_users.exceptions import InvalidPasswordException
 
 from src.auth.db import get_user_db
 from src.db.users import User
 from src.security.keys import get_jwt_secret
+from src.security.security import pwd_context, password_helper
 
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+_logger = logging.getLogger(__name__)
+
+MIN_PASSWORD_LENGTH = 8
 
 
 class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
@@ -28,7 +31,13 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         return get_jwt_secret()
 
     def __init__(self, user_db: Any) -> None:
-        super().__init__(user_db, password_helper=PasswordHelper(pwd_context))
+        super().__init__(user_db, password_helper=password_helper)
+
+    async def validate_password(self, password: str, user: Any) -> None:
+        if len(password) < MIN_PASSWORD_LENGTH:
+            raise InvalidPasswordException(
+                reason=f"Password must be at least {MIN_PASSWORD_LENGTH} characters"
+            )
 
     async def on_after_register(
         self, user: User, request: Request | None = None
@@ -46,7 +55,20 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     async def on_after_forgot_password(
         self, user: User, token: str, request: Request | None = None
     ) -> None:
-        pass
+        from src.db.users import UserRead
+        from src.services.users.emails import send_password_reset_email
+
+        try:
+            user_read = UserRead.model_validate(user)
+            send_password_reset_email(
+                generated_reset_code=token,
+                user=user_read,
+                email=str(user.email),
+            )
+        except Exception:
+            _logger.exception(
+                "Failed to send password reset email for user %s", user.id
+            )
 
     async def on_after_reset_password(
         self, user: User, request: Request | None = None

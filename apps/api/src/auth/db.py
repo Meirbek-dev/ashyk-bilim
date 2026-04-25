@@ -1,12 +1,13 @@
 """SQLModel → fastapi-users user database adapter.
 
-fastapi-users requires an async UserDatabase interface.  Our app uses
-synchronous SQLModel sessions throughout.  This adapter bridges the two by
-calling synchronous session methods directly from async methods — the same
-pattern already used elsewhere in the codebase (e.g. asyncio.to_thread in
-get_public_user_from_token).  Each DB call is fast and non-blocking in practice.
+fastapi-users requires an async UserDatabase interface. Our app uses
+synchronous SQLModel sessions throughout. Each method wraps its DB call in
+asyncio.to_thread so the event loop is never blocked by slow queries.
+The session is created per-request and never shared across threads concurrently,
+so this is thread-safe.
 """
 
+import asyncio
 from typing import Any
 
 from fastapi import Depends
@@ -22,31 +23,44 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
         self.session = session
 
     async def get(self, id: int) -> User | None:
-        return self.session.exec(select(User).where(User.id == id)).first()
+        return await asyncio.to_thread(
+            lambda: self.session.exec(select(User).where(User.id == id)).first()
+        )
 
     async def get_by_email(self, email: str) -> User | None:
-        return self.session.exec(
-            select(User).where(User.email == email.lower())
-        ).first()
+        return await asyncio.to_thread(
+            lambda: self.session.exec(
+                select(User).where(User.email == email.lower())
+            ).first()
+        )
 
     async def create(self, create_dict: dict[str, Any]) -> User:
-        user = User(**create_dict)
-        self.session.add(user)
-        self.session.commit()
-        self.session.refresh(user)
-        return user
+        def _create() -> User:
+            user = User(**create_dict)
+            self.session.add(user)
+            self.session.commit()
+            self.session.refresh(user)
+            return user
+
+        return await asyncio.to_thread(_create)
 
     async def update(self, user: User, update_dict: dict[str, Any]) -> User:
-        for key, value in update_dict.items():
-            setattr(user, key, value)
-        self.session.add(user)
-        self.session.commit()
-        self.session.refresh(user)
-        return user
+        def _update() -> User:
+            for key, value in update_dict.items():
+                setattr(user, key, value)
+            self.session.add(user)
+            self.session.commit()
+            self.session.refresh(user)
+            return user
+
+        return await asyncio.to_thread(_update)
 
     async def delete(self, user: User) -> None:
-        self.session.delete(user)
-        self.session.commit()
+        def _delete() -> None:
+            self.session.delete(user)
+            self.session.commit()
+
+        await asyncio.to_thread(_delete)
 
 
 def get_user_db(session: Session = Depends(get_db_session)) -> SQLModelUserDatabase:

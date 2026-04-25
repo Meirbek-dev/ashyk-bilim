@@ -1,5 +1,5 @@
 from fastapi import Response
-from src.auth.users_lifetimes import ACCESS_TOKEN_EXPIRE, REFRESH_TOKEN_EXPIRE
+from src.security.auth_lifetimes import ACCESS_TOKEN_EXPIRE, REFRESH_TOKEN_EXPIRE
 
 from config.config import get_settings
 

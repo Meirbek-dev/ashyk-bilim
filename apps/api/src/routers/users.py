@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response, UploadFile
-from pydantic import EmailStr
 from sqlmodel import Session
 
 from src.auth.users import get_optional_public_user, get_public_user
@@ -21,10 +20,6 @@ from src.security.rbac import (
     ResourceAccessDenied,
 )
 from src.services.courses.courses import get_user_courses
-from src.services.users.password_reset import (
-    change_password_with_reset_code,
-    send_reset_password_code,
-)
 from src.services.users.users import (
     create_user_without_platform,
     delete_user_by_id,
@@ -229,48 +224,6 @@ def api_update_user_locale(
     """
     user_update = UserUpdate(locale=locale)
     return update_user(request, db_session, user_id, current_user, user_update)
-
-
-@router.post("/reset_password/change_password/{email}", tags=["users"])
-async def api_change_password_with_reset_code(
-    *,
-    request: Request,
-    db_session: Annotated[Session, Depends(get_db_session)],
-    current_user: Annotated[PublicUser, Depends(get_public_user)],
-    new_password: str,
-    email: EmailStr,
-    reset_code: str,
-):
-    """
-    Change password with reset code
-    """
-    return await change_password_with_reset_code(
-        request,
-        db_session,
-        current_user,
-        new_password,
-        email,
-        reset_code,
-    )
-
-
-@router.post("/reset_password/send_reset_code/{email}", tags=["users"])
-async def api_send_password_reset_email(
-    *,
-    request: Request,
-    db_session: Annotated[Session, Depends(get_db_session)],
-    current_user: Annotated[PublicUser, Depends(get_public_user)],
-    email: EmailStr,
-):
-    """
-    Send password reset email
-    """
-    return await send_reset_password_code(
-        request,
-        db_session,
-        current_user,
-        email,
-    )
 
 
 @router.delete("/user_id/{user_id}", tags=["users"])

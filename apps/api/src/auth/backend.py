@@ -1,18 +1,21 @@
 """Authentication backend — JWT transport + strategy."""
 
+from functools import lru_cache
+
 from fastapi_users.authentication import (
     AuthenticationBackend,
     CookieTransport,
     JWTStrategy,
 )
-from src.auth.users_lifetimes import ACCESS_TOKEN_EXPIRE
 
 from config.config import get_settings
+from src.security.auth_lifetimes import ACCESS_TOKEN_EXPIRE
 from src.security.keys import get_jwt_secret
 
 ACCESS_COOKIE_KEY = "access_token_cookie"
 
 
+@lru_cache(maxsize=1)
 def get_cookie_transport() -> CookieTransport:
     settings = get_settings()
     cookie_domain = settings.hosting_config.cookie_config.domain

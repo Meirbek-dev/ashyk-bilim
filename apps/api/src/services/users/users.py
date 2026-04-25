@@ -31,6 +31,7 @@ from src.services.users.usergroups import add_users_to_usergroup
 
 _logger = logging.getLogger(__name__)
 
+MIN_PASSWORD_LENGTH = 8
 # Cache TTL for user lookups (seconds)
 USER_CACHE_TTL = 300  # 5 minutes
 
@@ -284,6 +285,8 @@ def get_user_session(
 ) -> UserSession:
     from datetime import UTC, datetime
 
+    from src.security.auth_lifetimes import ACCESS_TOKEN_EXPIRE
+
     user = _get_user_by_field(db_session, "user_uuid", current_user.user_uuid)
     user_read = UserRead.model_validate(user)
 
@@ -294,23 +297,26 @@ def get_user_session(
         for role_dict in checker.get_user_roles(user_id=user.id)
     ]
 
-    # Resolve permissions
+    now = datetime.now(UTC)
     permissions: list[str] = []
     permissions_timestamp: int | None = None
     try:
         effective = checker.get_expanded_permissions(current_user.id)
         permissions = sorted(effective)
-        permissions_timestamp = int(datetime.now(UTC).timestamp())
+        permissions_timestamp = int(now.timestamp())
     except Exception as e:
         _logger.exception(f"Error loading permissions for user {current_user.id}: {e}")
+
+    expires_at = int((now + ACCESS_TOKEN_EXPIRE).timestamp())
+    session_version = int(now.timestamp())
 
     return UserSession(
         user=user_read,
         roles=roles,
         permissions=permissions,
         permissions_timestamp=permissions_timestamp,
-        expires_at=None,
-        session_version=None,
+        expires_at=expires_at,
+        session_version=session_version,
     )
 
 
@@ -399,8 +405,6 @@ async def _create_and_validate_user(
 
     # Password strength validation
     if user_object.password:
-        from src.routers.auth import MIN_PASSWORD_LENGTH
-
         if len(user_object.password) < MIN_PASSWORD_LENGTH:
             raise HTTPException(
                 status_code=400,

@@ -1,4 +1,4 @@
-import random
+import secrets
 from typing import Any
 
 from fastapi import HTTPException, Request
@@ -48,7 +48,7 @@ async def find_or_create_google_user(
         if not username_parts:
             username_parts.append("user")
 
-        username = "".join(username_parts) + str(random.randint(10, 999))
+        username = "".join(username_parts) + str(1000 + secrets.randbelow(9000))
 
         user_object = UserCreate(
             email=user_email,

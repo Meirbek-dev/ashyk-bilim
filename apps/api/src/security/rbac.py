@@ -489,7 +489,7 @@ async def mark_user_roles_updated(user_uuid: str) -> None:
     MUST be called (awaited) by any endpoint that assigns or revokes roles after
     the DB transaction has been committed.
     """
-    from src.auth.users_lifetimes import ACCESS_TOKEN_EXPIRE
+    from src.security.auth_lifetimes import ACCESS_TOKEN_EXPIRE
 
     from src.services.cache.redis_client import get_async_redis_client
 
@@ -513,31 +513,3 @@ def get_permission_checker(
 PermissionCheckerDep = Annotated[PermissionChecker, Depends(get_permission_checker)]
 
 
-class RequirePermission:
-    """Declarative permission dependency for FastAPI routes."""
-
-    def __init__(self, permission: str) -> None:
-        self.permission = permission
-
-    async def __call__(
-        self,
-        checker: PermissionCheckerDep,
-        request: Request,
-    ) -> None:
-        from fastapi import HTTPException
-
-        from src.auth.users import fastapi_users
-        from src.db.users import AnonymousUser
-
-        try:
-            # Manually invoke the dependency (which returns a user or None depending on optionality)
-            # Since we just need the user ID, we can do this safely.
-            dep = fastapi_users.current_user(active=True, optional=True)
-            user = await dep(request=request)
-
-            if not user:
-                user = AnonymousUser()
-        except HTTPException:
-            user = AnonymousUser()
-
-        checker.require(user.id, self.permission)

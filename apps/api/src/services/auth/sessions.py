@@ -24,7 +24,7 @@ from typing import Literal
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
-from src.auth.users_lifetimes import (
+from src.security.auth_lifetimes import (
     REFRESH_TOKEN_EXPIRE,
     REFRESH_TOKEN_HARD_CAP_EXPIRE,
 )
