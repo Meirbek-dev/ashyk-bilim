@@ -81,11 +81,7 @@ function getSignupCode(payload: unknown): string | undefined {
   return typeof detail.code === 'string' ? detail.code : undefined;
 }
 
-async function performLoginFetch(
-  email: string,
-  password: string,
-  requestHeaders: HeaderSource,
-): Promise<Response> {
+async function performLoginFetch(email: string, password: string, requestHeaders: HeaderSource): Promise<Response> {
   const formData = new URLSearchParams();
   formData.append('username', email.trim().toLowerCase());
   formData.append('password', password);

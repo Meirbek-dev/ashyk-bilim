@@ -15,7 +15,7 @@
   "style": "base-nova",
   "tailwind": {
     "config": "",
-    "css": "app/globals.css",
+    "css": "styles/globals.css",
     "baseColor": "neutral",
     "cssVariables": true
   },

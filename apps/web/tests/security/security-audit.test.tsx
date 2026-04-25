@@ -51,7 +51,7 @@ const mockSession: Session = {
   ],
   permissions: ['course:read:own', 'course:update:own'],
   permissions_timestamp: Date.now(),
-  expiresAt: Date.now() + 86400000,
+  expiresAt: Date.now() + 86_400_000,
   sessionVersion: 1,
 };
 

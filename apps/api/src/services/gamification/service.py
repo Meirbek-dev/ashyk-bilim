@@ -45,6 +45,43 @@ class DailyLimitExceededError(GamificationError):
     """Daily XP limit exceeded"""
 
 
+def _find_existing_transaction(
+    db: Session,
+    user_id: int,
+    *,
+    source: str,
+    source_id: str | None,
+    idempotency_key: str | None,
+) -> XPTransaction | None:
+    if idempotency_key:
+        stmt = select(XPTransaction).where(
+            and_(
+                XPTransaction.user_id == user_id,
+                XPTransaction.idempotency_key == idempotency_key,
+            )
+        )
+        existing_tx = db.exec(stmt).first()
+        if existing_tx is not None:
+            return existing_tx
+
+    if source_id is None:
+        return None
+
+    try:
+        xp_source = XPSource(source)
+    except ValueError:
+        return None
+
+    stmt = select(XPTransaction).where(
+        and_(
+            XPTransaction.user_id == user_id,
+            XPTransaction.source == xp_source,
+            XPTransaction.source_id == source_id,
+        )
+    )
+    return db.exec(stmt).first()
+
+
 def _exceeds_daily_limit(
     profile: GamificationProfile, amount: int, daily_limit: int
 ) -> bool:
@@ -163,6 +200,16 @@ def award_xp(
             raise GamificationError(msg)
 
         pre_profile = get_profile(db, user_id)
+        existing_tx = _find_existing_transaction(
+            db,
+            user_id,
+            source=source,
+            source_id=source_id,
+            idempotency_key=idempotency_key,
+        )
+        if existing_tx is not None:
+            return pre_profile, existing_tx, existing_tx.triggered_level_up, False
+
         old_level = pre_profile.level
         tx = XPTransaction(
             user_id=user_id,
@@ -200,28 +247,13 @@ def award_xp(
             for s in ["uq_xp_tx_user_source_once", "idempotency_key", "unique"]
         ):
             profile = get_profile(db, user_id)
-            stmt = None
-            if idempotency_key:
-                stmt = select(XPTransaction).where(
-                    and_(
-                        XPTransaction.user_id == user_id,
-                        XPTransaction.idempotency_key == idempotency_key,
-                    )
-                )
-            elif source_id is not None:
-                try:
-                    xp_source = XPSource(source)
-                except ValueError:
-                    xp_source = None
-                if xp_source is not None:
-                    stmt = select(XPTransaction).where(
-                        and_(
-                            XPTransaction.user_id == user_id,
-                            XPTransaction.source == xp_source,
-                            XPTransaction.source_id == source_id,
-                        )
-                    )
-            existing_tx = db.exec(stmt).first() if stmt is not None else None
+            existing_tx = _find_existing_transaction(
+                db,
+                user_id,
+                source=source,
+                source_id=source_id,
+                idempotency_key=idempotency_key,
+            )
             if existing_tx is None:
                 existing_tx = db.exec(
                     select(XPTransaction)
@@ -231,7 +263,7 @@ def award_xp(
             if existing_tx is None:
                 msg = "Transaction not found after idempotent insert"
                 raise GamificationError(msg)
-            return profile, existing_tx, False, False
+            return profile, existing_tx, existing_tx.triggered_level_up, False
         msg = f"Database error: {e}"
         raise GamificationError(msg)
     except SQLAlchemyError, ValueError, TypeError:

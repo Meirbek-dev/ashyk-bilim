@@ -28,13 +28,7 @@ interface PermissionGuardProps {
  * </PermissionGuard>
  * ```
  */
-export function PermissionGuard({
-  action,
-  resource,
-  scope,
-  children,
-  fallback = null,
-}: PermissionGuardProps) {
+export function PermissionGuard({ action, resource, scope, children, fallback = null }: PermissionGuardProps) {
   const { can } = useSession();
 
   if (!can(resource, action, scope)) return <>{fallback}</>;

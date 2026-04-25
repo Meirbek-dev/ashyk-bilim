@@ -19,21 +19,58 @@ logger = logging.getLogger(__name__)
 GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
 PKCE_TTL = 600  # 10 minutes
 _METADATA_CACHE_TTL = 3600
+_REQUIRED_METADATA_KEYS = (
+    "authorization_endpoint",
+    "token_endpoint",
+    "userinfo_endpoint",
+)
+_GOOGLE_METADATA_FALLBACK: dict[str, str] = {
+    "authorization_endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+    "token_endpoint": "https://oauth2.googleapis.com/token",
+    "userinfo_endpoint": "https://openidconnect.googleapis.com/v1/userinfo",
+}
 
 _metadata_cache: dict[str, Any] = {}
 _metadata_cached_at: float = 0.0
+
+
+def _validate_google_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
+    missing = [
+        key for key in _REQUIRED_METADATA_KEYS if not isinstance(metadata.get(key), str)
+    ]
+    if missing:
+        raise ValueError(
+            f"Google discovery metadata missing required keys: {', '.join(missing)}"
+        )
+    return metadata
 
 
 async def _get_google_metadata() -> dict[str, Any]:
     global _metadata_cache, _metadata_cached_at
     if _metadata_cache and time.monotonic() - _metadata_cached_at < _METADATA_CACHE_TTL:
         return _metadata_cache
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.get(GOOGLE_DISCOVERY_URL)
-        response.raise_for_status()
-        _metadata_cache = response.json()
-        _metadata_cached_at = time.monotonic()
-        return _metadata_cache
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(GOOGLE_DISCOVERY_URL)
+            response.raise_for_status()
+            metadata = _validate_google_metadata(response.json())
+    except (httpx.HTTPError, ValueError) as exc:
+        if _metadata_cache:
+            logger.warning(
+                "Google discovery fetch failed; using stale cached metadata",
+                exc_info=exc,
+            )
+            return _metadata_cache
+        logger.warning(
+            "Google discovery fetch failed; using built-in Google OAuth endpoints",
+            exc_info=exc,
+        )
+        return dict(_GOOGLE_METADATA_FALLBACK)
+
+    _metadata_cache = metadata
+    _metadata_cached_at = time.monotonic()
+    return _metadata_cache
 
 
 # ── State JWT (carries frontend callback URL through OAuth round-trip) ────────
@@ -169,7 +206,7 @@ async def exchange_google_code(
             # Log Google's actual error body so we can diagnose the root cause.
             try:
                 google_error = exc.response.json()
-            except Exception:
+            except ValueError:
                 google_error = exc.response.text
             logger.error(
                 "Google token exchange failed: HTTP %s | redirect_uri=%s | pkce=%s | error=%s",

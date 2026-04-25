@@ -96,6 +96,14 @@
       height: 0;
     }
   }
+
+  --font-heading: var(--font-sans);
+
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  --radius-3xl: calc(var(--radius) * 2.2);
+
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root,
@@ -184,12 +192,6 @@
     @apply bg-background text-foreground antialiased;
   }
 
-  /* Reset button constraints */
-  button {
-    @apply cursor-pointer;
-    font-synthesis: none;
-  }
-
   /* Webkit fallback scrollbar logic */
   @supports selector(::-webkit-scrollbar) {
     ::-webkit-scrollbar {
@@ -210,6 +212,15 @@
     ::-webkit-scrollbar-thumb:hover {
       background: var(--color-foreground);
     }
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html {
+    @apply font-sans;
   }
 }
 

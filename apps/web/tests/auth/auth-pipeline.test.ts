@@ -185,7 +185,7 @@ describe('Frontend Auth Actions', () => {
         await logoutAction('/login');
         expect.fail('Should have redirected');
       } catch (e: any) {
-        expect(e.message).toBe('REDIRECTED_TO:/'); 
+        expect(e.message).toBe('REDIRECTED_TO:/');
       }
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
