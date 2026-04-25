@@ -5,6 +5,7 @@ from pydantic import ConfigDict, EmailStr
 from sqlalchemy import JSON, Column, DateTime, UniqueConstraint, func
 from sqlmodel import Field
 
+from fastapi_users import schemas
 from src.db.permissions import RoleRead
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
 
@@ -23,14 +24,14 @@ class UserBase(SQLModelStrictBaseModel):
     locale: str | None = "ru-RU"
 
 
-class UserCreate(UserBase):
+class UserCreate(schemas.CreateUpdateDictModel, UserBase):
     first_name: str = ""
     middle_name: str | None = ""
     last_name: str = ""
     password: str
 
 
-class UserUpdate(SQLModelStrictBaseModel):
+class UserUpdate(schemas.CreateUpdateDictModel, SQLModelStrictBaseModel):
     username: str | None = None
     first_name: str | None = None
     middle_name: str | None = None
@@ -49,10 +50,13 @@ class UserUpdatePassword(SQLModelStrictBaseModel):
     new_password: str
 
 
-class UserRead(UserBase):
+class UserRead(schemas.CreateUpdateDictModel, UserBase):
     id: int
     user_uuid: str
     auth_provider: str = "local"
+    is_active: bool = True
+    is_superuser: bool = False
+    is_verified: bool = False
 
 
 class PublicUser(UserRead):
