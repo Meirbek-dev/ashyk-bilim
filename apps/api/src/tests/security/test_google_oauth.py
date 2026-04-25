@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Self
 
 import httpx
+import jwt as pyjwt
 import pytest
 
 from src.services.auth import google_oauth
@@ -164,3 +165,126 @@ async def test_exchange_google_code_rejects_missing_pkce_verifier(monkeypatch) -
 
     assert exc_info.value.status_code == 400
     assert exc_info.value.detail == "Google OAuth session expired. Please try again."
+
+
+@pytest.mark.asyncio
+async def test_exchange_google_code_prefers_id_token_claims_when_present(
+    monkeypatch,
+) -> None:
+    google_oauth._metadata_cache = {
+        "authorization_endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+        "token_endpoint": "https://oauth2.googleapis.com/token",
+        "userinfo_endpoint": "https://openidconnect.googleapis.com/v1/userinfo",
+    }
+    google_oauth._metadata_cached_at = google_oauth.time.monotonic()
+
+    id_token = pyjwt.encode(
+        {
+            "iss": "https://accounts.google.com",
+            "aud": "client",
+            "sub": "google-sub-123",
+            "email": "user@example.com",
+            "given_name": "Test",
+            "family_name": "User",
+            "picture": "https://example.test/avatar.png",
+        },
+        "unused",
+        algorithm="HS256",
+    )
+
+    class _IdTokenClient:
+        def __init__(self, *_args, **_kwargs) -> None:
+            self.get_called = False
+
+        async def __aenter__(self) -> Self:
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        async def post(self, _url: str, data: dict[str, str]) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={"access_token": "token", "id_token": id_token},
+                request=httpx.Request("POST", _url),
+            )
+
+        async def get(
+            self, _url: str, headers: dict[str, str] | None = None
+        ) -> httpx.Response:
+            self.get_called = True
+            return httpx.Response(
+                200,
+                json={"email": "should-not-be-used@example.com"},
+                request=httpx.Request("GET", _url),
+            )
+
+    client = _IdTokenClient()
+    monkeypatch.setattr(google_oauth, "_build_google_client", lambda timeout: client)
+
+    userinfo = await google_oauth.exchange_google_code(
+        client_id="client",
+        client_secret="secret",
+        code="code",
+        redirect_uri="https://example.test/api/v1/auth/google/callback",
+        state=None,
+    )
+
+    assert client.get_called is False
+    assert userinfo["email"] == "user@example.com"
+    assert userinfo["sub"] == "google-sub-123"
+    assert userinfo["given_name"] == "Test"
+    assert userinfo["frontend_callback"] == "/"
+
+
+@pytest.mark.asyncio
+async def test_exchange_google_code_falls_back_to_userinfo_without_id_token(
+    monkeypatch,
+) -> None:
+    google_oauth._metadata_cache = {
+        "authorization_endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+        "token_endpoint": "https://oauth2.googleapis.com/token",
+        "userinfo_endpoint": "https://openidconnect.googleapis.com/v1/userinfo",
+    }
+    google_oauth._metadata_cached_at = google_oauth.time.monotonic()
+
+    class _FallbackClient:
+        def __init__(self, *_args, **_kwargs) -> None:
+            return None
+
+        async def __aenter__(self) -> Self:
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        async def post(self, _url: str, data: dict[str, str]) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={"access_token": "token"},
+                request=httpx.Request("POST", _url),
+            )
+
+        async def get(
+            self, _url: str, headers: dict[str, str] | None = None
+        ) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={"email": "user@example.com", "sub": "fallback-sub"},
+                request=httpx.Request("GET", _url),
+            )
+
+    monkeypatch.setattr(
+        google_oauth, "_build_google_client", lambda timeout: _FallbackClient()
+    )
+
+    userinfo = await google_oauth.exchange_google_code(
+        client_id="client",
+        client_secret="secret",
+        code="code",
+        redirect_uri="https://example.test/api/v1/auth/google/callback",
+        state=None,
+    )
+
+    assert userinfo["email"] == "user@example.com"
+    assert userinfo["sub"] == "fallback-sub"

@@ -34,6 +34,7 @@ _RETRYABLE_HTTP_ERRORS = (
     httpx.WriteTimeout,
 )
 _TOKEN_REQUEST_ATTEMPTS = 3
+_GOOGLE_ISSUERS = {"https://accounts.google.com", "accounts.google.com"}
 _REQUIRED_METADATA_KEYS = (
     "authorization_endpoint",
     "token_endpoint",
@@ -62,6 +63,51 @@ def _validate_google_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
             f"Google discovery metadata missing required keys: {', '.join(missing)}"
         )
     return metadata
+
+
+def _claims_from_google_id_token(
+    id_token: str | None,
+    *,
+    client_id: str,
+) -> dict[str, Any] | None:
+    if not id_token:
+        return None
+
+    try:
+        claims = pyjwt.decode(
+            id_token,
+            options={
+                "verify_signature": False,
+                "verify_aud": False,
+                "verify_exp": False,
+                "verify_iat": False,
+                "verify_nbf": False,
+            },
+            algorithms=["RS256", "HS256", "ES256"],
+        )
+    except pyjwt.PyJWTError as exc:
+        logger.warning("Failed to decode Google id_token", exc_info=exc)
+        return None
+
+    issuer = claims.get("iss")
+    audience = claims.get("aud")
+    subject = claims.get("sub")
+    email = claims.get("email")
+
+    if issuer not in _GOOGLE_ISSUERS:
+        logger.warning("Ignoring Google id_token with unexpected issuer: %s", issuer)
+        return None
+    if audience != client_id:
+        logger.warning("Ignoring Google id_token with unexpected audience")
+        return None
+    if not isinstance(subject, str) or not subject:
+        logger.warning("Ignoring Google id_token without subject")
+        return None
+    if not isinstance(email, str) or not email:
+        logger.warning("Ignoring Google id_token without email")
+        return None
+
+    return claims
 
 
 async def _get_google_metadata() -> dict[str, Any]:
@@ -342,6 +388,14 @@ async def exchange_google_code(
                 status_code=400,
                 detail="Google token response missing access_token",
             )
+        id_token_claims = _claims_from_google_id_token(
+            token.get("id_token"),
+            client_id=client_id,
+        )
+
+    if id_token_claims is not None:
+        id_token_claims["frontend_callback"] = frontend_callback
+        return id_token_claims
 
     async with _build_google_client(_USERINFO_TIMEOUT) as userinfo_client:
         userinfo = await _get_google_userinfo(
