@@ -1,18 +1,18 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { applyTheme, getStoredTheme, getTheme } from '@/lib/themes';
-import { loadTheme } from '@/lib/theme-lazy-loader';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { applyTheme, DEFAULT_THEME_NAME, getStoredTheme, getTheme, themes, type Theme, type ThemeMode } from '@/lib/themes';
 import { useSession } from '@/hooks/useSession';
 import { useThemeSync } from '@/hooks/useThemeSync';
-import type { Theme } from '@/lib/themes';
 import type { ReactNode } from 'react';
 
 interface ThemeContextValue {
   theme: Theme;
   themeName: string;
-  setTheme: (themeName: string, syncToServer?: boolean) => Promise<void>;
-  isLoading: boolean;
+  themes: readonly Theme[];
+  resolvedTheme: ThemeMode;
+  isDark: boolean;
+  setTheme: (themeName: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -22,50 +22,43 @@ interface ThemeProviderProps {
   defaultThemeName?: string;
 }
 
-export function ThemeProvider({ children, defaultThemeName = 'default' }: ThemeProviderProps) {
+export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME }: ThemeProviderProps) {
   const { user } = useSession();
   const userTheme = user?.theme ?? null;
-  const initialThemeName = userTheme || defaultThemeName;
+  const initialThemeName = getTheme(userTheme || defaultThemeName).name;
   const [themeName, setThemeName] = useState(initialThemeName);
-  const [isLoading, setIsLoading] = useState(false);
-
   const theme = getTheme(themeName);
 
   useEffect(() => {
-    const effectiveTheme = getStoredTheme() || userTheme || defaultThemeName;
+    const effectiveThemeName = getStoredTheme() || userTheme || defaultThemeName || DEFAULT_THEME_NAME;
+    const effectiveTheme = getTheme(effectiveThemeName);
 
-    if (effectiveTheme !== themeName) {
-      setThemeName(effectiveTheme);
+    if (effectiveTheme.name !== themeName) {
+      setThemeName(effectiveTheme.name);
     }
 
-    applyTheme(getTheme(effectiveTheme));
+    applyTheme(effectiveTheme);
   }, [defaultThemeName, themeName, userTheme]);
 
-  const setTheme = async (newThemeName: string, syncToServer = true) => {
-    void syncToServer; // sync is handled by useThemeSync inside this provider
-    setIsLoading(true);
-    const newTheme = await loadTheme(newThemeName);
-    setIsLoading(false);
-
-    if (newTheme) {
-      setThemeName(newThemeName);
-      applyTheme(newTheme);
-    } else {
-      console.warn(`Failed to load theme: ${newThemeName}, falling back to default`);
-      const fallbackTheme = getTheme('default');
-      setThemeName('default');
-      applyTheme(fallbackTheme);
-    }
+  const setTheme = (nextThemeName: string) => {
+    const nextTheme = getTheme(nextThemeName);
+    setThemeName(nextTheme.name);
+    applyTheme(nextTheme);
   };
 
   useThemeSync(themeName);
 
-  const contextValue: ThemeContextValue = {
-    theme,
-    themeName,
-    setTheme,
-    isLoading,
-  };
+  const contextValue: ThemeContextValue = useMemo(
+    () => ({
+      theme,
+      themeName,
+      themes,
+      resolvedTheme: theme.resolvedTheme,
+      isDark: theme.resolvedTheme === 'dark',
+      setTheme,
+    }),
+    [theme, themeName],
+  );
 
   return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 }

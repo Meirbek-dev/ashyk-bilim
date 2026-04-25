@@ -414,8 +414,8 @@ function UserFeedbackModal({
   sendMessageAndGetResponse,
 }: FeedbackModalProps) {
   const t = useTranslations('Activities.AIEditorToolkit');
-  const { theme } = useTheme();
-  const logoSrc = theme.name === 'dark' ? platformLogoLight : platformLogo;
+  const { resolvedTheme } = useTheme();
+  const logoSrc = resolvedTheme === 'dark' ? platformLogoLight : platformLogo;
 
   const { getSelectedText, getSelectedBlockText, getEntireText, typeText } = useEditorOperations(editor);
 
@@ -635,8 +635,8 @@ function UserFeedbackModal({
 
 export default function AIEditorToolkit({ editor, activity, isOpen, onClose }: AIEditorToolkitProps) {
   const t = useTranslations('Activities.AIEditorToolkit');
-  const { theme } = useTheme();
-  const logoSrc = theme.name === 'dark' ? platformLogoLight : platformLogo;
+  const { resolvedTheme } = useTheme();
+  const logoSrc = resolvedTheme === 'dark' ? platformLogoLight : platformLogo;
   const { messages, sendMessageAndGetResponse, isLoading, error, clear, stop, abort, resetConversation } =
     useActivityAIChat();
 

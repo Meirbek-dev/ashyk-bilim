@@ -26,8 +26,8 @@ interface AICanvaToolkitProps {
 
 const AICanvaToolkit = (props: AICanvaToolkitProps) => {
   const t = useTranslations('Activities.AICanvaToolkit');
-  const { theme } = useTheme();
-  const logoSrc = theme.name === 'dark' ? platformLogoLight : platformLogo;
+  const { resolvedTheme } = useTheme();
+  const logoSrc = resolvedTheme === 'dark' ? platformLogoLight : platformLogo;
 
   if (!props.editor) {
     return null;

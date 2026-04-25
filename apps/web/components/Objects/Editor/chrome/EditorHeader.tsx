@@ -29,9 +29,8 @@ export function EditorHeader({
   onSave,
 }: EditorHeaderProps) {
   const t = useTranslations('DashPage.Editor.Editor');
-  const { theme } = useTheme();
-  console.log(theme.name);
-  const logoSrc = theme.name === 'dark' ? platformLogoLight : platformLogoDark;
+  const { resolvedTheme } = useTheme();
+  const logoSrc = resolvedTheme === 'dark' ? platformLogoLight : platformLogoDark;
 
   return (
     <div className="border-border bg-background flex h-12 items-center justify-between border-b px-3">

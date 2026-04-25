@@ -212,8 +212,8 @@ const NavItem = ({ item, isCollapsed }: { item: NavigationItem; isCollapsed: boo
 const DashSidebar = ({ className }: SidebarProps) => {
   const { user } = useSession();
   const { state, toggleSidebar } = useSidebar();
-  const { theme } = useTheme();
-  const logoSrc = theme.name === 'dark' ? platformLogo : platformLogoLight;
+  const { resolvedTheme } = useTheme();
+  const logoSrc = resolvedTheme === 'dark' ? platformLogo : platformLogoLight;
   const t = useTranslations('SidebarMenu');
   const navigationItems = useNavigationItems();
 

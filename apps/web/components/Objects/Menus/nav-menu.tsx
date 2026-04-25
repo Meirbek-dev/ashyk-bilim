@@ -29,10 +29,6 @@ import { cn } from '@/lib/utils';
 import platformLogoFull from '@public/platform_logo_full.svg';
 import platformLogoLightFull from '@public/platform_logo_light_full.svg';
 
-function isDarkTheme(themeName: string) {
-  return themeName === 'dark';
-}
-
 // ----------------------------------------------------------------------
 // Types & Config
 // ----------------------------------------------------------------------
@@ -223,8 +219,8 @@ export default function NavBar() {
   const t = useTranslations('Components.NavMenu');
   const tLinks = useTranslations('Components.NavMenuLinks');
   const { isAuthenticated } = useSession();
-  const { theme } = useTheme();
-  const logoSrc = isDarkTheme(theme.name) ? platformLogoLightFull : platformLogoFull;
+  const { resolvedTheme } = useTheme();
+  const logoSrc = resolvedTheme === 'dark' ? platformLogoLightFull : platformLogoFull;
 
   const isOnActivityPage = pathname?.includes('/activity/') ?? false;
   const isFocusMode = useFocusMode(isOnActivityPage);

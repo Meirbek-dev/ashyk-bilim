@@ -10,16 +10,21 @@ export { ThemeSelector } from '@components/ui/custom/theme-selector';
 export { ThemeProvider, useTheme } from '@/components/providers/theme-provider';
 
 // Core theme utilities
-export { applyTheme, defaultTheme, getStoredTheme, getTheme, themes, type Theme, type ThemeColors } from '@/lib/themes';
-
-// Lazy loading utilities (optimized for performance)
 export {
-  loadTheme,
-  preloadThemes,
-  getAvailableThemeNames,
-  clearThemeCache,
-  getThemeCacheStats,
-} from '@/lib/theme-lazy-loader';
+  DEFAULT_THEME_NAME,
+  THEME_STORAGE_KEY,
+  applyTheme,
+  darkThemeNames,
+  getStoredTheme,
+  getTheme,
+  isDarkThemeName,
+  themeNames,
+  themes,
+  type Theme,
+  type ThemeColors,
+  type ThemeMode,
+  type ThemeTokenMap,
+} from '@/lib/themes';
 
 // Color utilities for UI components
 export { getDisplayColor, getThemePreviewColors } from '@/lib/theme-color-utils';

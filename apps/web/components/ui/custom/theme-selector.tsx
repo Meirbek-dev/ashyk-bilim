@@ -5,23 +5,18 @@ import { useTheme } from '@/components/providers/theme-provider';
 import { getThemePreviewColors } from '@/lib/theme-color-utils';
 import { Label } from '@/components/ui/label';
 import { useTranslations } from 'next-intl';
-import { themes } from '@/lib/themes';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
 
 interface ThemeSelectorProps {
   className?: string;
 }
 
 export function ThemeSelector({ className }: ThemeSelectorProps) {
-  const { theme: currentTheme, setTheme } = useTheme();
-  const [isLoading, setIsLoading] = useState(false);
+  const { theme: currentTheme, themes, setTheme } = useTheme();
   const t = useTranslations('DashPage.UserAccountSettings.generalSection.themeSelector');
   const tThemes = useTranslations('Themes');
 
-  // Theme list (plain constant) and current theme colors
-  const themeList = themes;
-  const themeItems = themeList.map((theme) => {
+  const themeItems = themes.map((theme) => {
     const colors = getThemePreviewColors(theme);
     return {
       value: theme.name,
@@ -52,15 +47,8 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   });
   const currentColors = getThemePreviewColors(currentTheme);
 
-  async function handleValueChange(value: string) {
-    setIsLoading(true);
-    try {
-      await setTheme(value);
-    } catch (error) {
-      console.error('Failed to change theme:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  function handleValueChange(value: string) {
+    setTheme(value);
   }
 
   return (
@@ -73,10 +61,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
           onValueChange={(value) => value && handleValueChange(value)}
           items={themeItems}
         >
-          <SelectTrigger
-            className="w-full sm:w-[300px]"
-            disabled={isLoading}
-          >
+          <SelectTrigger className="w-full sm:w-[300px]">
             <SelectValue>
               <div className="flex items-center gap-3">
                 {/* Theme color preview - using OKLCH colors */}

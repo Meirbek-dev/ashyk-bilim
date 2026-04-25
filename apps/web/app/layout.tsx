@@ -4,12 +4,14 @@ import { IntlProvider } from '@/components/providers/IntlProvider';
 import DevScriptLoader from '@/components/DevScriptLoader';
 import { getSession } from '@/lib/auth/session';
 import { inter, jetBrainsMono } from '@/lib/fonts';
+import { DEFAULT_THEME_NAME, getTheme } from '@/lib/themes';
 import { Suspense } from 'react';
 import RootProviders from './root-providers';
 
 import '@styles/globals.css';
 
 const isDevEnv = process.env.NODE_ENV !== 'production';
+const defaultTheme = getTheme(DEFAULT_THEME_NAME);
 
 async function LocalizedApp({ children }: { children: React.ReactNode }) {
   await connection();
@@ -32,7 +34,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       className={`${inter.variable} ${jetBrainsMono.variable}`}
+      data-mode={defaultTheme.resolvedTheme}
+      data-theme={defaultTheme.name}
       lang="ru-RU"
+      style={{ colorScheme: defaultTheme.resolvedTheme }}
+      suppressHydrationWarning
     >
       <head>
         <meta

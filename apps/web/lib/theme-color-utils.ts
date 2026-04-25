@@ -3,6 +3,8 @@
  * Handles OKLCH color conversion for proper display
  */
 
+import type { Theme } from './themes';
+
 /**
  * Convert OKLCH color to a displayable format
  * OKLCH is natively supported by modern browsers, so we just return it
@@ -24,7 +26,7 @@ export function getDisplayColor(oklchColor: string): string {
  * @param theme - Theme object with colors
  * @returns Object with display-ready color values
  */
-export function getThemePreviewColors(theme: { colors: { primary: string; secondary: string; accent: string } }) {
+export function getThemePreviewColors(theme: Pick<Theme, 'colors'>) {
   return {
     primary: getDisplayColor(theme.colors.primary),
     secondary: getDisplayColor(theme.colors.secondary),

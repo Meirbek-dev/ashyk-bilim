@@ -32,8 +32,8 @@ interface EditorToolbarProps {
 
 export function EditorToolbar({ editor, onAIToggle }: EditorToolbarProps) {
   const t = useTranslations('DashPage.Editor.Toolbar');
-  const { theme } = useTheme();
-  const logoSrc = theme.name === 'dark' ? platformLogoDark : platformLogoLight;
+  const { resolvedTheme } = useTheme();
+  const logoSrc = resolvedTheme === 'dark' ? platformLogoDark : platformLogoLight;
 
   const editorState = useEditorState({
     editor,

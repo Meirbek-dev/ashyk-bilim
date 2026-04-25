@@ -12,8 +12,8 @@ import Image from 'next/image';
 const HomeClient = () => {
   const t = useTranslations('HomeClient');
   const { user: viewer } = useSession();
-  const { theme } = useTheme();
-  const logoSrc = theme.name === 'dark' ? platformLogoLightFull : platformLogoFull;
+  const { resolvedTheme } = useTheme();
+  const logoSrc = resolvedTheme === 'dark' ? platformLogoLightFull : platformLogoFull;
 
   return (
     <div className="flex flex-col">

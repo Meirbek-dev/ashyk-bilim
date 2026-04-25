@@ -41,7 +41,7 @@ export default function RootProviders({ children, initialSession }: RootProvider
   return (
     <ReactQueryProvider>
       <SessionProvider initialSession={initialSession}>
-        <ThemeProvider>
+        <ThemeProvider defaultThemeName={initialSession?.user.theme ?? 'default'}>
           <ThemedRootChrome>{children}</ThemedRootChrome>
         </ThemeProvider>
       </SessionProvider>

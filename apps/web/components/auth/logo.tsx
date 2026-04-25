@@ -5,13 +5,9 @@ interface AuthLogoProps {
   width?: number;
 }
 
-function isDarkTheme(themeName: string): boolean {
-  return themeName === 'dark';
-}
-
 const AuthLogo = ({ width = 240 }: AuthLogoProps) => {
-  const { theme } = useTheme();
-  const src = isDarkTheme(theme.name) ? '/platform_logo_light_full.svg' : '/platform_logo_full.svg';
+  const { resolvedTheme } = useTheme();
+  const src = resolvedTheme === 'dark' ? '/platform_logo_light_full.svg' : '/platform_logo_full.svg';
 
   return (
     <div className="m-4">
