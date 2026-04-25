@@ -1,9 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
-import React from 'react';
 import { loginAction, signupAction, logoutAction } from '@/app/actions/auth';
-import * as config from '@services/config/config';
 
 // Mock headers and cookies from Next.js
 const mockCookies = {

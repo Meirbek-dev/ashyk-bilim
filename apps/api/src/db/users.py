@@ -1,8 +1,8 @@
-import uuid as uuid_lib
 from datetime import UTC, datetime
 
 from fastapi_users import schemas
 from pydantic import ConfigDict, EmailStr
+from ulid import ULID
 from sqlalchemy import JSON, Column, DateTime, UniqueConstraint, func
 from sqlmodel import Field
 
@@ -110,7 +110,7 @@ class User(UserBase, table=True):
     is_verified: bool = Field(default=False)
 
     user_uuid: str = Field(
-        default_factory=lambda: f"user_{uuid_lib.uuid4().hex[:26]}",
+        default_factory=lambda: f"user_{ULID()}",
     )
     auth_provider: str = Field(default="local")
     google_sub: str | None = Field(default=None)

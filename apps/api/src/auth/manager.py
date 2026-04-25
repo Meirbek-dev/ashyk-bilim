@@ -1,8 +1,4 @@
-"""UserManager — business logic layer (fastapi-users).
-
-Handles: password hashing, registration hooks, password reset tokens,
-email verification tokens.
-"""
+"""UserManager — business logic layer (fastapi-users)."""
 
 import logging
 from typing import Any
@@ -26,10 +22,6 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     def reset_password_token_secret(self) -> str:  # type: ignore[override]
         return get_jwt_secret()
 
-    @property
-    def verification_token_secret(self) -> str:  # type: ignore[override]
-        return get_jwt_secret()
-
     def __init__(self, user_db: Any) -> None:
         super().__init__(user_db, password_helper=password_helper)
 
@@ -38,19 +30,6 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
             raise InvalidPasswordException(
                 reason=f"Password must be at least {MIN_PASSWORD_LENGTH} characters"
             )
-
-    async def on_after_register(
-        self, user: User, request: Request | None = None
-    ) -> None:
-        pass
-
-    async def on_after_login(
-        self,
-        user: User,
-        request: Request | None = None,
-        response: Any | None = None,
-    ) -> None:
-        pass
 
     async def on_after_forgot_password(
         self, user: User, token: str, request: Request | None = None

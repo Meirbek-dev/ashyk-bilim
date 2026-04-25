@@ -872,6 +872,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/google/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Google Authorize
+         * @description Redirect to Google OAuth consent screen.
+         */
+        get: operations["google_authorize_api_v1_auth_google_authorize_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/google/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Google Callback
+         * @description Handle Google OAuth callback.
+         */
+        get: operations["google_callback_api_v1_auth_google_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -881,8 +921,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Auth:Jwt.Login */
-        post: operations["auth_jwt_login_api_v1_auth_login_post"];
+        /** Login */
+        post: operations["login_api_v1_auth_login_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -898,8 +938,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Auth:Jwt.Logout */
-        post: operations["auth_jwt_logout_api_v1_auth_logout_post"];
+        /** Logout */
+        post: operations["logout_api_v1_auth_logout_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -913,13 +953,30 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Me
-         * @description Return full session data including roles, permissions, and user profile.
-         */
+        /** Get Me */
         get: operations["get_me_api_v1_auth_me_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Token
+         * @description Exchange a valid refresh token cookie for a new access token + rotated refresh token.
+         */
+        post: operations["refresh_token_api_v1_auth_refresh_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3895,52 +3952,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Get Current User
+         * Api Get Public User
          * @description Get current user
          */
         get: operations["api_get_public_user_api_v1_users_profile_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/users/reset_password/change_password/{email}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Api Change Password With Reset Code
-         * @description Change password with reset code
-         */
-        post: operations["api_change_password_with_reset_code_api_v1_users_reset_password_change_password__email__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/users/reset_password/send_reset_code/{email}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Api Send Password Reset Email
-         * @description Send password reset email
-         */
-        post: operations["api_send_password_reset_email_api_v1_users_reset_password_send_reset_code__email__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3955,7 +3972,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Get Current User Session
+         * Api Get Public User Session
          * @description Get current user session.
          */
         get: operations["api_get_public_user_session_api_v1_users_session_get"];
@@ -4977,8 +4994,28 @@ export interface components {
             /** Content File */
             content_file: string;
         };
-        /** Body_auth_jwt_login_api_v1_auth_login_post */
-        Body_auth_jwt_login_api_v1_auth_login_post: {
+        /** Body_complete_chunked_upload_api_v1_uploads_complete_post */
+        Body_complete_chunked_upload_api_v1_uploads_complete_post: {
+            /** Upload Id */
+            upload_id: string;
+        };
+        /** Body_initiate_chunked_upload_api_v1_uploads_initiate_post */
+        Body_initiate_chunked_upload_api_v1_uploads_initiate_post: {
+            /** Directory */
+            directory: string;
+            /** File Size */
+            file_size: number;
+            /** Filename */
+            filename: string;
+            /** Total Chunks */
+            total_chunks: number;
+            /** Type Of Dir */
+            type_of_dir: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** Body_login_api_v1_auth_login_post */
+        Body_login_api_v1_auth_login_post: {
             /** Client Id */
             client_id?: string | null;
             /**
@@ -5000,26 +5037,6 @@ export interface components {
             scope: string;
             /** Username */
             username: string;
-        };
-        /** Body_complete_chunked_upload_api_v1_uploads_complete_post */
-        Body_complete_chunked_upload_api_v1_uploads_complete_post: {
-            /** Upload Id */
-            upload_id: string;
-        };
-        /** Body_initiate_chunked_upload_api_v1_uploads_initiate_post */
-        Body_initiate_chunked_upload_api_v1_uploads_initiate_post: {
-            /** Directory */
-            directory: string;
-            /** File Size */
-            file_size: number;
-            /** Filename */
-            filename: string;
-            /** Total Chunks */
-            total_chunks: number;
-            /** Type Of Dir */
-            type_of_dir: string;
-            /** Uuid */
-            uuid: string;
         };
         /** Body_reset_forgot_password_api_v1_auth_forgot_password_post */
         Body_reset_forgot_password_api_v1_auth_forgot_password_post: {
@@ -6095,7 +6112,7 @@ export interface components {
             name: string;
             /**
              * Type
-             * @enum {string}
+             * @constant
              */
             type: "youtube";
             /** Uri */
@@ -9743,18 +9760,16 @@ export interface operations {
             };
         };
     };
-    auth_jwt_login_api_v1_auth_login_post: {
+    google_authorize_api_v1_auth_google_authorize_get: {
         parameters: {
-            query?: never;
+            query: {
+                callback: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_auth_jwt_login_api_v1_auth_login_post"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -9763,22 +9778,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorModel"];
                 };
             };
             /** @description Validation Error */
@@ -9792,7 +9791,73 @@ export interface operations {
             };
         };
     };
-    auth_jwt_logout_api_v1_auth_logout_post: {
+    google_callback_api_v1_auth_google_callback_get: {
+        parameters: {
+            query?: {
+                code?: string | null;
+                state?: string | null;
+                error?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_api_v1_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_login_api_v1_auth_login_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_api_v1_auth_logout_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -9809,20 +9874,6 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
-            };
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Missing token or inactive user. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
@@ -9842,6 +9893,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserSession"];
+                };
+            };
+        };
+    };
+    refresh_token_api_v1_auth_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -15228,71 +15299,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserRead"];
-                };
-            };
-        };
-    };
-    api_change_password_with_reset_code_api_v1_users_reset_password_change_password__email__post: {
-        parameters: {
-            query: {
-                new_password: string;
-                reset_code: string;
-            };
-            header?: never;
-            path: {
-                email: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_send_password_reset_email_api_v1_users_reset_password_send_reset_code__email__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                email: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

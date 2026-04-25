@@ -1,7 +1,6 @@
 'use client';
 import {
   AlertTriangle,
-  ArrowBigUpDash,
   Award,
   BookOpen,
   Briefcase,

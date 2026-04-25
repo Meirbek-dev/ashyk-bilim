@@ -4,13 +4,14 @@ import secrets
 import time
 import uuid
 from typing import Any
+from urllib.parse import urlencode
 
 import httpx
 import jwt as pyjwt
 from fastapi import HTTPException
 
 from src.security.keys import get_jwt_secret
-from src.services.cache.redis_client import get_redis_client
+from src.services.cache.redis_client import get_async_redis_client
 
 GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
 PKCE_TTL = 600  # 10 minutes
@@ -35,7 +36,8 @@ async def _get_google_metadata() -> dict[str, Any]:
 # ── State JWT (carries frontend callback URL through OAuth round-trip) ────────
 
 
-def _encode_state(callback: str) -> str:
+def _encode_state(callback: str) -> tuple[str, str]:
+    """Return (state_token, jti)."""
     jti = str(uuid.uuid4())
     payload = {
         "callback": callback,
@@ -44,7 +46,8 @@ def _encode_state(callback: str) -> str:
         "exp": int(time.time()) + 600,
         "iat": int(time.time()),
     }
-    return pyjwt.encode(payload, get_jwt_secret(), algorithm="HS256")
+    token = pyjwt.encode(payload, get_jwt_secret(), algorithm="HS256")
+    return token, jti
 
 
 def _decode_state(state: str) -> tuple[str, str]:
@@ -81,19 +84,19 @@ def _generate_pkce() -> tuple[str, str]:
     return code_verifier, code_challenge
 
 
-def _store_pkce_verifier(state_jti: str, code_verifier: str) -> None:
-    r = get_redis_client()
+async def _store_pkce_verifier(state_jti: str, code_verifier: str) -> None:
+    r = get_async_redis_client()
     if r:
-        r.set(f"pkce:{state_jti}", code_verifier, ex=PKCE_TTL)
+        await r.set(f"pkce:{state_jti}", code_verifier, ex=PKCE_TTL)
 
 
-def _consume_pkce_verifier(state_jti: str) -> str | None:
-    r = get_redis_client()
+async def _consume_pkce_verifier(state_jti: str) -> str | None:
+    r = get_async_redis_client()
     if not r:
         return None
     key = f"pkce:{state_jti}"
-    verifier = r.get(key)
-    r.delete(key)
+    verifier = await r.get(key)
+    await r.delete(key)
     if isinstance(verifier, bytes):
         return verifier.decode()
     return verifier
@@ -107,10 +110,9 @@ async def get_google_authorize_url(
     redirect_uri: str,
     callback: str,
 ) -> str:
-    state = _encode_state(callback)
-    _, state_jti = _decode_state(state)
+    state, state_jti = _encode_state(callback)
     code_verifier, code_challenge = _generate_pkce()
-    _store_pkce_verifier(state_jti, code_verifier)
+    await _store_pkce_verifier(state_jti, code_verifier)
 
     metadata = await _get_google_metadata()
 
@@ -125,8 +127,6 @@ async def get_google_authorize_url(
         "access_type": "online",
         "prompt": "select_account",
     }
-    from urllib.parse import urlencode
-
     return metadata["authorization_endpoint"] + "?" + urlencode(params)
 
 
@@ -143,7 +143,7 @@ async def exchange_google_code(
 
     if state:
         frontend_callback, state_jti = _decode_state(state)
-        code_verifier = _consume_pkce_verifier(state_jti)
+        code_verifier = await _consume_pkce_verifier(state_jti)
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         token_data: dict[str, Any] = {

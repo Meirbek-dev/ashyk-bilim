@@ -21,10 +21,6 @@ interface SignupActionInput {
   password: string;
 }
 
-interface SignupFailurePayload {
-  detail?: string | { code?: string };
-}
-
 interface AuthActionResult {
   ok: boolean;
   reason?: 'login_failed' | 'login_after_signup_failed' | 'signup_failed' | 'service_unavailable';
@@ -85,6 +81,26 @@ function getSignupCode(payload: unknown): string | undefined {
   return typeof detail.code === 'string' ? detail.code : undefined;
 }
 
+async function performLoginFetch(
+  email: string,
+  password: string,
+  requestHeaders: HeaderSource,
+): Promise<Response> {
+  const formData = new URLSearchParams();
+  formData.append('username', email.trim().toLowerCase());
+  formData.append('password', password);
+
+  const forwardedHeaders = buildForwardedHeaders(requestHeaders, false);
+  forwardedHeaders.set('content-type', 'application/x-www-form-urlencoded');
+
+  return fetch(`${getServerAPIUrl()}auth/login`, {
+    method: 'POST',
+    headers: forwardedHeaders,
+    body: formData,
+    cache: 'no-store',
+  });
+}
+
 async function postAuthenticated(path: string): Promise<Response> {
   const [requestHeaders, cookieStore] = await Promise.all([headers(), cookies()]);
   const cookieHeader = buildCookieHeaderFromPairs([
@@ -108,19 +124,7 @@ export async function loginAction(input: LoginActionInput): Promise<AuthActionRe
   const requestHeaders = await headers();
   let response: Response;
   try {
-    const formData = new URLSearchParams();
-    formData.append('username', input.email.trim().toLowerCase());
-    formData.append('password', input.password);
-
-    const forwardedHeaders = buildForwardedHeaders(requestHeaders, false);
-    forwardedHeaders.set('content-type', 'application/x-www-form-urlencoded');
-
-    response = await fetch(`${getServerAPIUrl()}auth/login`, {
-      method: 'POST',
-      headers: forwardedHeaders,
-      body: formData,
-      cache: 'no-store',
-    });
+    response = await performLoginFetch(input.email, input.password, requestHeaders);
   } catch {
     return { ok: false, reason: 'service_unavailable' };
   }
@@ -169,19 +173,7 @@ export async function signupAction(input: SignupActionInput): Promise<AuthAction
 
   let loginResponse: Response;
   try {
-    const formData = new URLSearchParams();
-    formData.append('username', input.email.trim().toLowerCase());
-    formData.append('password', input.password);
-
-    const forwardedHeaders = buildForwardedHeaders(requestHeaders, false);
-    forwardedHeaders.set('content-type', 'application/x-www-form-urlencoded');
-
-    loginResponse = await fetch(`${getServerAPIUrl()}auth/login`, {
-      method: 'POST',
-      headers: forwardedHeaders,
-      body: formData,
-      cache: 'no-store',
-    });
+    loginResponse = await performLoginFetch(input.email, input.password, requestHeaders);
   } catch {
     return { ok: false, reason: 'login_after_signup_failed' };
   }

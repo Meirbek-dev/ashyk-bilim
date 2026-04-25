@@ -2394,7 +2394,58 @@
         "title": "Body_api_upload_platform_landing_content_api_v1_landing_content_post",
         "type": "object"
       },
-      "Body_auth_jwt_login_api_v1_auth_login_post": {
+      "Body_complete_chunked_upload_api_v1_uploads_complete_post": {
+        "properties": {
+          "upload_id": {
+            "title": "Upload Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id"
+        ],
+        "title": "Body_complete_chunked_upload_api_v1_uploads_complete_post",
+        "type": "object"
+      },
+      "Body_initiate_chunked_upload_api_v1_uploads_initiate_post": {
+        "properties": {
+          "directory": {
+            "title": "Directory",
+            "type": "string"
+          },
+          "file_size": {
+            "title": "File Size",
+            "type": "integer"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "total_chunks": {
+            "title": "Total Chunks",
+            "type": "integer"
+          },
+          "type_of_dir": {
+            "title": "Type Of Dir",
+            "type": "string"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "directory",
+          "type_of_dir",
+          "uuid",
+          "filename",
+          "total_chunks",
+          "file_size"
+        ],
+        "title": "Body_initiate_chunked_upload_api_v1_uploads_initiate_post",
+        "type": "object"
+      },
+      "Body_login_api_v1_auth_login_post": {
         "properties": {
           "client_id": {
             "anyOf": [
@@ -2450,58 +2501,7 @@
           "username",
           "password"
         ],
-        "title": "Body_auth_jwt_login_api_v1_auth_login_post",
-        "type": "object"
-      },
-      "Body_complete_chunked_upload_api_v1_uploads_complete_post": {
-        "properties": {
-          "upload_id": {
-            "title": "Upload Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "upload_id"
-        ],
-        "title": "Body_complete_chunked_upload_api_v1_uploads_complete_post",
-        "type": "object"
-      },
-      "Body_initiate_chunked_upload_api_v1_uploads_initiate_post": {
-        "properties": {
-          "directory": {
-            "title": "Directory",
-            "type": "string"
-          },
-          "file_size": {
-            "title": "File Size",
-            "type": "integer"
-          },
-          "filename": {
-            "title": "Filename",
-            "type": "string"
-          },
-          "total_chunks": {
-            "title": "Total Chunks",
-            "type": "integer"
-          },
-          "type_of_dir": {
-            "title": "Type Of Dir",
-            "type": "string"
-          },
-          "uuid": {
-            "title": "Uuid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "directory",
-          "type_of_dir",
-          "uuid",
-          "filename",
-          "total_chunks",
-          "file_size"
-        ],
-        "title": "Body_initiate_chunked_upload_api_v1_uploads_initiate_post",
+        "title": "Body_login_api_v1_auth_login_post",
         "type": "object"
       },
       "Body_reset_forgot_password_api_v1_auth_forgot_password_post": {
@@ -5266,9 +5266,7 @@
             "type": "string"
           },
           "type": {
-            "enum": [
-              "youtube"
-            ],
+            "const": "youtube",
             "title": "Type",
             "type": "string"
           },
@@ -14603,14 +14601,135 @@
         ]
       }
     },
+    "/api/v1/auth/google/authorize": {
+      "get": {
+        "description": "Redirect to Google OAuth consent screen.",
+        "operationId": "google_authorize_api_v1_auth_google_authorize_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "callback",
+            "required": true,
+            "schema": {
+              "title": "Callback",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Google Authorize",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/google/callback": {
+      "get": {
+        "description": "Handle Google OAuth callback.",
+        "operationId": "google_callback_api_v1_auth_google_callback_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "in": "query",
+            "name": "error",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Google Callback",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
-        "operationId": "auth_jwt_login_api_v1_auth_login_post",
+        "operationId": "login_api_v1_auth_login_post",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/Body_auth_jwt_login_api_v1_auth_login_post"
+                "$ref": "#/components/schemas/Body_login_api_v1_auth_login_post"
               }
             }
           },
@@ -14625,33 +14744,6 @@
             },
             "description": "Successful Response"
           },
-          "204": {
-            "description": "No Content"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "LOGIN_BAD_CREDENTIALS": {
-                    "summary": "Bad credentials or the user is inactive.",
-                    "value": {
-                      "detail": "LOGIN_BAD_CREDENTIALS"
-                    }
-                  },
-                  "LOGIN_USER_NOT_VERIFIED": {
-                    "summary": "The user is not verified.",
-                    "value": {
-                      "detail": "LOGIN_USER_NOT_VERIFIED"
-                    }
-                  }
-                },
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                }
-              }
-            },
-            "description": "Bad Request"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -14663,7 +14755,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Auth:Jwt.Login",
+        "summary": "Login",
         "tags": [
           "auth"
         ]
@@ -14671,7 +14763,7 @@
     },
     "/api/v1/auth/logout": {
       "post": {
-        "operationId": "auth_jwt_logout_api_v1_auth_logout_post",
+        "operationId": "logout_api_v1_auth_logout_post",
         "responses": {
           "200": {
             "content": {
@@ -14680,20 +14772,9 @@
               }
             },
             "description": "Successful Response"
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "401": {
-            "description": "Missing token or inactive user."
           }
         },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Auth:Jwt.Logout",
+        "summary": "Logout",
         "tags": [
           "auth"
         ]
@@ -14701,7 +14782,6 @@
     },
     "/api/v1/auth/me": {
       "get": {
-        "description": "Return full session data including roles, permissions, and user profile.",
         "operationId": "get_me_api_v1_auth_me_get",
         "responses": {
           "200": {
@@ -14721,6 +14801,26 @@
           }
         ],
         "summary": "Get Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "description": "Exchange a valid refresh token cookie for a new access token + rotated refresh token.",
+        "operationId": "refresh_token_api_v1_auth_refresh_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Refresh Token",
         "tags": [
           "auth"
         ]
@@ -23411,122 +23511,8 @@
             "APIKeyCookie": []
           }
         ],
-        "summary": "Api Get Current User",
+        "summary": "Api Get Public User",
         "tags": [
-          "users"
-        ]
-      }
-    },
-    "/api/v1/users/reset_password/change_password/{email}": {
-      "post": {
-        "description": "Change password with reset code",
-        "operationId": "api_change_password_with_reset_code_api_v1_users_reset_password_change_password__email__post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "email",
-            "required": true,
-            "schema": {
-              "format": "email",
-              "title": "Email",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "new_password",
-            "required": true,
-            "schema": {
-              "title": "New Password",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "reset_code",
-            "required": true,
-            "schema": {
-              "title": "Reset Code",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Change Password With Reset Code",
-        "tags": [
-          "users",
-          "users"
-        ]
-      }
-    },
-    "/api/v1/users/reset_password/send_reset_code/{email}": {
-      "post": {
-        "description": "Send password reset email",
-        "operationId": "api_send_password_reset_email_api_v1_users_reset_password_send_reset_code__email__post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "email",
-            "required": true,
-            "schema": {
-              "format": "email",
-              "title": "Email",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Send Password Reset Email",
-        "tags": [
-          "users",
           "users"
         ]
       }
@@ -23552,7 +23538,7 @@
             "APIKeyCookie": []
           }
         ],
-        "summary": "Api Get Current User Session",
+        "summary": "Api Get Public User Session",
         "tags": [
           "users"
         ]

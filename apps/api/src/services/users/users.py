@@ -6,7 +6,6 @@ from types import SimpleNamespace
 from fastapi import HTTPException, Request, UploadFile, status
 from pydantic import ValidationError
 from sqlmodel import Session, select
-from ulid import ULID
 
 from src.db.permission_enums import RoleSlug
 from src.db.permissions import Role, RoleRead, UserRole
@@ -413,7 +412,6 @@ async def _create_and_validate_user(
 
     # Create user with completed fields
     user = User.model_validate(user_object)
-    user.user_uuid = f"user_{ULID()}"
     user.hashed_password = (
         security_hash_password(user_object.password) if user_object.password else None
     )

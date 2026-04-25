@@ -191,7 +191,7 @@ async def refresh_token(
             detail="User not found or inactive",
         )
 
-    ip = request.client.host if request.client else None
+    ip = _client_ip(request)
     ua = request.headers.get("user-agent")
     _, new_refresh_token = await rotate_session(
         old_session=inspection.session,
@@ -266,21 +266,12 @@ async def google_callback(
 
         frontend_callback = userinfo.get("frontend_callback", "/")
 
-        user_read = await find_or_create_google_user(
+        user = await find_or_create_google_user(
             request=request,
             google_user_data=userinfo,
             current_user=AnonymousUser(),
             db_session=db_session,
         )
-
-        user = db_session.exec(
-            select(User).where(User.user_uuid == user_read.user_uuid)
-        ).first()
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to retrieve user after creation",
-            )
 
         response = await _build_login_response(request, user, user_manager)
         response.status_code = status.HTTP_307_TEMPORARY_REDIRECT
