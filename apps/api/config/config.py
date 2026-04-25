@@ -98,30 +98,17 @@ class GeneralConfig(PlatformSectionSettings):
 
 
 class SecurityConfig(PlatformSectionSettings):
-    auth_ed25519_private_key: str | None = Field(
-        default=None,
-        validation_alias="PLATFORM_AUTH_ED25519_PRIVATE_KEY",
-    )
-    auth_ed25519_public_key: str | None = Field(
-        default=None,
-        validation_alias="PLATFORM_AUTH_ED25519_PUBLIC_KEY",
+    jwt_secret: str = Field(
+        validation_alias="PLATFORM_JWT_SECRET",
     )
 
-    @field_validator(
-        "auth_ed25519_private_key", "auth_ed25519_public_key", mode="before"
-    )
+    @field_validator("jwt_secret", mode="before")
     @classmethod
-    def normalize_key_fields(cls, value: str | None) -> str | None:
-        return _strip_optional_string(value)
-
-    @model_validator(mode="after")
-    def validate_key_presence(self) -> "SecurityConfig":
-        if not self.auth_ed25519_private_key and not self.auth_ed25519_public_key:
-            raise ValueError(
-                "At least one of PLATFORM_AUTH_ED25519_PRIVATE_KEY or "
-                "PLATFORM_AUTH_ED25519_PUBLIC_KEY must be set."
-            )
-        return self
+    def normalize_jwt_secret(cls, value: str | None) -> str:
+        stripped = _strip_optional_string(value)
+        if not stripped:
+            raise ValueError("PLATFORM_JWT_SECRET must be set")
+        return stripped
 
 
 class AIConfig(PlatformSectionSettings):
@@ -231,13 +218,6 @@ class HostingConfig(PlatformSectionSettings):
         validation_alias="PLATFORM_COOKIE_SECURE",
     )
     port: int = Field(default=8000, validation_alias="PLATFORM_PORT")
-    # Number of trusted reverse proxies in front of the app.
-    # Set to 1 when running behind a single nginx/load-balancer.
-    # Used to correctly resolve the real client IP from X-Forwarded-For.
-    trusted_proxy_count: int = Field(
-        default=0,
-        validation_alias="PLATFORM_TRUSTED_PROXY_COUNT",
-    )
     allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=list,
         validation_alias="PLATFORM_ALLOWED_ORIGINS",

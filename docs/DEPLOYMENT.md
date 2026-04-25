@@ -52,18 +52,11 @@ Required secrets to generate:
 openssl rand -hex 32    # POSTGRES_PASSWORD
 ```
 
-Generate the Ed25519 JWT signing key pair (run once; store both values in `.env`):
+Generate the JWT signing key (run once; store value in `.env`):
 
 ```bash
-python -c "
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from cryptography.hazmat.primitives import serialization; import base64
-priv = Ed25519PrivateKey.generate(); pub = priv.public_key()
-print('PLATFORM_AUTH_ED25519_PRIVATE_KEY:', base64.b64encode(priv.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())).decode())
-print('PLATFORM_AUTH_ED25519_PUBLIC_KEY: ', base64.b64encode(pub.public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)).decode())"
+python -c "import secrets; print('PLATFORM_JWT_SECRET:', secrets.token_hex(64))"
 ```
-
-Set `PLATFORM_TRUSTED_PROXY_COUNT=1` when the API sits behind nginx (the default deployment).
 
 Also set the domain variables (`NGINX_SERVER_NAME`, `NEXT_PUBLIC_SITE_URL`, `PLATFORM_DOMAIN`, etc.) to your actual hostname.
 

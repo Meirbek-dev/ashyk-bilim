@@ -42,9 +42,7 @@ def install_create_platform_user(user_object: UserCreate, db_session: Session):
 
     # Complete the user object
     user.user_uuid = f"user_{ULID()}"
-    user.password = security_hash_password(user_object.password)
-    user.creation_date = str(datetime.now())
-    user.update_date = str(datetime.now())
+    user.hashed_password = security_hash_password(user_object.password)
 
     # Username
     statement = select(User).where(User.username == user.username)

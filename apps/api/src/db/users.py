@@ -99,7 +99,12 @@ class User(UserBase, table=True):
     )
 
     id: int | None = Field(default=None, primary_key=True)
-    password: str | None = Field(default=None)
+    # fastapi-users required fields
+    hashed_password: str | None = Field(default=None)
+    is_active: bool = Field(default=True)
+    is_superuser: bool = Field(default=False)
+    is_verified: bool = Field(default=False)
+
     user_uuid: str = Field(
         default_factory=lambda: f"user_{uuid_lib.uuid4().hex[:26]}",
     )

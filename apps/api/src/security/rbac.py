@@ -513,47 +513,30 @@ PermissionCheckerDep = Annotated[PermissionChecker, Depends(get_permission_check
 
 
 class RequirePermission:
-    """Declarative permission dependency for FastAPI routes.
-
-    Usage::
-
-        @router.post("/", dependencies=[Depends(RequirePermission("role:create"))])
-        async def create_role(...):
-            ...
-
-    Note: ``get_current_user`` is imported lazily inside ``__call__`` to
-    avoid a circular import with ``src.security.auth``.
-    """
+    """Declarative permission dependency for FastAPI routes."""
 
     def __init__(self, permission: str) -> None:
         self.permission = permission
 
     async def __call__(
         self,
-        request: Request,
         checker: PermissionCheckerDep,
+        request: Request,
     ) -> None:
+        from src.auth.users import fastapi_users
         from src.db.users import AnonymousUser
-        from src.security.auth import (
-            get_access_token_from_request,
-            get_current_user_from_token,
-        )
+        from fastapi import HTTPException
+        
+        try:
+            # Manually invoke the dependency (which returns a user or None depending on optionality)
+            # Since we just need the user ID, we can do this safely.
+            dep = fastapi_users.current_user(active=True, optional=True)
+            user = await dep(request=request)
+            
+            if not user:
+                user = AnonymousUser()
+        except HTTPException:
+            user = AnonymousUser()
+            
+        checker.require(user.id, self.permission)
 
-        header_value = request.headers.get("Authorization", "")
-        header_token = None
-        if header_value.startswith("Bearer "):
-            header_token = header_value.removeprefix("Bearer ").strip()
-
-        token = get_access_token_from_request(request, header_token)
-        if not token:
-            raise AuthenticationRequired
-
-        current_user = await get_current_user_from_token(
-            request=request,
-            token=token,
-            db_session=checker.db,
-        )
-        if isinstance(current_user, AnonymousUser):
-            raise AuthenticationRequired
-
-        checker.require(current_user.id, self.permission)

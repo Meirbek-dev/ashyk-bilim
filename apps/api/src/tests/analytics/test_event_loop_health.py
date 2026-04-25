@@ -30,6 +30,7 @@ async def test_analytics_does_not_block_event_loop():
     request is still 'running' in its thread.
     """
     app = create_app()
+    app.state.session_factory = lambda: MagicMock(spec=Session)
 
     # Mock the database session dependency
     app.dependency_overrides[get_db_session] = lambda: MagicMock(spec=Session)

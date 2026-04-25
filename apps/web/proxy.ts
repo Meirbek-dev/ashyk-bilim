@@ -1,33 +1,11 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { createRemoteJWKSet, errors as joseErrors, jwtVerify } from 'jose';
-import { AUTH_REFRESH_BRIDGE_PATH, ACCESS_TOKEN_COOKIE_NAME } from './lib/auth/types';
+import { ACCESS_TOKEN_COOKIE_NAME } from './lib/auth/types';
 import { isAccessTokenExpired } from './lib/auth/cookie-bridge';
 import { generateUUID } from './lib/utils';
 
-// ── JWKS (in-process cache via jose, re-fetched only on key rotation) ─────────
-
-/**
- * The internal API URL is used for JWKS lookup — only available server-side.
- * Falls back to the public API URL (NEXT_PUBLIC_API_URL) in environments that
- * do not set INTERNAL_API_URL.
- *
- * If neither env var is set, JWKS_URL is null and the proxy falls back to
- * expiry-only checking (no signature verification).
- */
-const _rawApiUrl: string = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? '';
-
-const JWKS_URL: URL | null = _rawApiUrl
-  ? new URL('auth/.well-known/jwks.json', _rawApiUrl.endsWith('/') ? _rawApiUrl : `${_rawApiUrl}/`)
-  : null;
-
-/**
- * JWKS function created once at module load.  jose caches the fetched key in
- * memory and re-fetches only when it encounters an unknown KID.  Subsequent
- * requests have zero network overhead.
- */
-const JWKS = JWKS_URL ? createRemoteJWKSet(JWKS_URL) : null;
-
+// ── JWKS (Removed) ─────────
+// We no longer verify the signature on the Edge using JWKS.
 // ── Route tables ──────────────────────────────────────────────────────────────
 
 const AUTH_REWRITE: Record<string, string> = {
@@ -96,51 +74,13 @@ function rewriteWithHeaders(req: NextRequest, requestId: string, pathname: strin
 }
 
 function redirectToRefresh(req: NextRequest, requestId: string, pathname: string, search: string) {
-  const refreshUrl = `${AUTH_REFRESH_BRIDGE_PATH}?returnTo=${encodeURIComponent(pathname + search)}`;
-  return withRequestId(NextResponse.redirect(new URL(refreshUrl, req.url)), requestId);
+  const returnTo = encodeURIComponent(pathname + search);
+  return withRequestId(NextResponse.redirect(new URL(`/login?returnTo=${returnTo}`, req.url)), requestId);
 }
 
 const VERIFY_TIMEOUT_MS = 5000;
 
-/**
- * Verify the access token signature using the backend's JWKS.
- *
- * Returns true  → token is cryptographically valid (not necessarily fresh).
- * Returns false → token is invalid, expired, or JWKS is unavailable.
- *
- * The proxy performs signature verification as a lightweight first gate.
- * Full session validation (JTI blocklist, Redis session check) still happens
- * server-side in FastAPI on every authenticated API call.
- */
-export async function verifyTokenSignature(token: string, jwksOverride?: any): Promise<boolean> {
-  const jwks = jwksOverride ?? JWKS;
-  if (!jwks) {
-    // JWKS not configured — fall back to expiry-only check
-    return !isAccessTokenExpired(token);
-  }
-  try {
-    const verifyPromise = jwtVerify(token, jwks, {
-      issuer: 'ashyq-bilim-auth',
-      audience: 'ashyq-bilim-api',
-      algorithms: ['EdDSA'],
-    });
 
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Verification timed out')), VERIFY_TIMEOUT_MS),
-    );
-
-    await Promise.race([verifyPromise, timeoutPromise]);
-    return true;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (error instanceof joseErrors.JWTExpired) {
-      // Normal expiry case
-    } else {
-      console.warn('[proxy] JWT verification failed or timed out:', message);
-    }
-    return false;
-  }
-}
 
 // ── Proxy ─────────────────────────────────────────────────────────────────────
 
@@ -181,15 +121,13 @@ export default async function proxy(req: NextRequest) {
     if (!accessToken) {
       return redirectToRefresh(req, requestId, pathname, search);
     }
-    // Quick expiry check (no network) before full signature verification
+    // Quick expiry check (no network)
     if (isAccessTokenExpired(accessToken)) {
       return redirectToRefresh(req, requestId, pathname, search);
     }
-    // Full signature verification via JWKS
-    const valid = await verifyTokenSignature(accessToken);
-    if (!valid) {
-      return redirectToRefresh(req, requestId, pathname, search);
-    }
+    // Since we are using standard HS256 tokens and do not expose the secret
+    // to the Edge middleware, we rely on the backend to validate the signature
+    // during the API call. The middleware only checks expiration here.
   }
 
   // Dynamic Pages Editor

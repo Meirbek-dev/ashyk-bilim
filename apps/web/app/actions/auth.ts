@@ -108,14 +108,19 @@ export async function loginAction(input: LoginActionInput): Promise<AuthActionRe
   const requestHeaders = await headers();
   let response: Response;
   try {
-    response = await postAuthJson(
-      'auth/login',
-      {
-        email: input.email.trim().toLowerCase(),
-        password: input.password,
-      },
-      requestHeaders,
-    );
+    const formData = new URLSearchParams();
+    formData.append('username', input.email.trim().toLowerCase());
+    formData.append('password', input.password);
+
+    const forwardedHeaders = buildForwardedHeaders(requestHeaders, false);
+    forwardedHeaders.set('content-type', 'application/x-www-form-urlencoded');
+
+    response = await fetch(`${getServerAPIUrl()}auth/login`, {
+      method: 'POST',
+      headers: forwardedHeaders,
+      body: formData,
+      cache: 'no-store',
+    });
   } catch {
     return { ok: false, reason: 'service_unavailable' };
   }
@@ -142,7 +147,7 @@ export async function signupAction(input: SignupActionInput): Promise<AuthAction
   let signupResponse: Response;
   try {
     signupResponse = await postAuthJson(
-      'users',
+      'auth/register',
       {
         email: input.email,
         first_name: input.firstName,
@@ -164,14 +169,19 @@ export async function signupAction(input: SignupActionInput): Promise<AuthAction
 
   let loginResponse: Response;
   try {
-    loginResponse = await postAuthJson(
-      'auth/login',
-      {
-        email: input.email.trim().toLowerCase(),
-        password: input.password,
-      },
-      requestHeaders,
-    );
+    const formData = new URLSearchParams();
+    formData.append('username', input.email.trim().toLowerCase());
+    formData.append('password', input.password);
+
+    const forwardedHeaders = buildForwardedHeaders(requestHeaders, false);
+    forwardedHeaders.set('content-type', 'application/x-www-form-urlencoded');
+
+    loginResponse = await fetch(`${getServerAPIUrl()}auth/login`, {
+      method: 'POST',
+      headers: forwardedHeaders,
+      body: formData,
+      cache: 'no-store',
+    });
   } catch {
     return { ok: false, reason: 'login_after_signup_failed' };
   }
@@ -196,11 +206,7 @@ export async function logoutAction(redirectTo?: string | null): Promise<void> {
 }
 
 export async function logoutAllAction(redirectTo?: string | null): Promise<void> {
-  const response = await postAuthenticated('auth/logout-all');
-  await applyResponseCookies(response.headers);
-  revalidatePath('/', 'layout');
-
-  if (redirectTo) {
-    redirect(normalizeReturnTo(redirectTo));
-  }
+  // fastapi-users JWT strategy does not natively support logout-all.
+  // Fall back to standard logout.
+  return logoutAction(redirectTo);
 }

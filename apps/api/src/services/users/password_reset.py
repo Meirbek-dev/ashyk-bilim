@@ -5,15 +5,13 @@ import time
 import uuid
 from typing import Any
 
+import jwt as pyjwt
 from fastapi import HTTPException
-from joserfc import jwt
-from joserfc._rfc7519.claims import JWTClaimsRegistry
-from joserfc.errors import JoseError
 from pydantic import EmailStr
 from sqlmodel import Session, select
 
 from src.db.users import User
-from src.security.keys import get_private_key, get_public_key
+from src.security.keys import get_jwt_secret
 from src.security.security import security_hash_password
 from src.services.auth.sessions import revoke_all_user_sessions
 from src.services.cache.redis_client import get_async_redis_client
@@ -35,22 +33,21 @@ def _create_reset_token(user_uuid: str) -> tuple[str, str]:
         "iat": now,
         "exp": now + RESET_TOKEN_TTL,
     }
-    token = jwt.encode(
-        {"alg": "EdDSA"},
-        payload,
-        get_private_key(),
-        algorithms=["EdDSA"],
-    )
-    token_str = token.decode("utf-8") if isinstance(token, bytes) else token
+    token_str = pyjwt.encode(payload, get_jwt_secret(), algorithm="HS256")
     return token_str, jti
 
 
 def _verify_reset_token(token: str) -> dict[str, Any]:
     try:
-        token_obj = jwt.decode(token, get_public_key(), algorithms=["EdDSA"])
-        payload = dict(token_obj.claims)
-        JWTClaimsRegistry().validate(payload)
-    except JoseError as exc:
+        payload = pyjwt.decode(
+            token,
+            get_jwt_secret(),
+            algorithms=["HS256"],
+            options={"verify_aud": False},
+        )
+    except pyjwt.ExpiredSignatureError as exc:
+        raise HTTPException(status_code=400, detail="Reset token has expired") from exc
+    except pyjwt.PyJWTError as exc:
         raise HTTPException(
             status_code=400, detail="Invalid or expired reset token"
         ) from exc
@@ -77,7 +74,6 @@ async def send_reset_password_code(
 
     token_str, jti = _create_reset_token(str(user.user_uuid))
 
-    # Store JTI as "pending" to enforce single-use
     await r.set(f"{RESET_JTI_PREFIX}{jti}", "pending", ex=RESET_TOKEN_TTL)
 
     try:
@@ -108,7 +104,6 @@ async def change_password_with_reset_code(
     jti = payload.get("jti", "")
     user_uuid = payload.get("sub", "")
 
-    # Single-use check
     jti_key = f"{RESET_JTI_PREFIX}{jti}"
     if not await r.exists(jti_key):
         raise HTTPException(
@@ -119,14 +114,12 @@ async def change_password_with_reset_code(
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
 
-    # Consume the JTI atomically before changing the password
     await r.delete(jti_key)
 
-    user.password = security_hash_password(new_password)
+    user.hashed_password = security_hash_password(new_password)
     db_session.add(user)
     db_session.commit()
 
-    # Revoke all sessions — force re-login on all devices after password change
     await revoke_all_user_sessions(user.id)
 
     return "Password changed successfully"

@@ -361,11 +361,12 @@ Once stable:
 
 Your coding agent should produce:
 
-* [ ] New `User` model
-* [ ] `UserManager`
-* [ ] Auth backend(s)
-* [ ] Router setup
-* [ ] Dependency replacements
-* [ ] Migration scripts
-* [ ] Test suite
-* [ ] Removal PR for authlib
+* [x] New `User` model — `hashed_password`, `is_active`, `is_superuser`, `is_verified` added; `IntegerIDMixin` (int PK preserved)
+* [x] `UserManager` — `src/auth/manager.py`, argon2 PasswordHelper, `on_after_reset_password` revokes Redis sessions
+* [x] Auth backend(s) — `src/auth/backend.py`, `RichJWTStrategy` (JTI blocklist + Redis session check), `CookieBearerTransport`
+* [x] Router setup — `src/auth/users.py`, `FastAPIUsers[User, int]` instance, `CurrentActiveUser` / `CurrentOptionalUser` / `CurrentSuperuser` deps
+* [x] Dependency replacements — `authlib` + `joserfc` removed; `fastapi-users>=15`, `passlib[argon2]`, `PyJWT>=2.9` added
+* [x] Migration scripts — `migrations/versions/f1a2b3c4d5e6_auth_rewrite_user_fields.py`: renames `password→hashed_password`, adds `is_active/is_superuser/is_verified`
+* [x] Test suite — `test_auth.py`, `test_auth_advanced.py`, `test_security_audit.py`, `test_config_settings.py` all updated to PyJWT/HMAC
+* [x] Removal of authlib / joserfc — zero references remain in `src/`
+* [x] Simplified auth code — PyJWT HS256 replaces EdDSA key pair; JWKS endpoint removed; `SecurityConfig` reduced to single `jwt_secret` field

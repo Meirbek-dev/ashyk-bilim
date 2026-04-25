@@ -2,21 +2,19 @@ import base64
 import hashlib
 import secrets
 import time
+import uuid
 from typing import Any
 
 import httpx
-from authlib.integrations.httpx_client import AsyncOAuth2Client
+import jwt as pyjwt
 from fastapi import HTTPException
-from joserfc import jwt
-from joserfc._rfc7519.claims import JWTClaimsRegistry
-from joserfc.errors import JoseError
 
-from src.security.keys import get_private_key, get_public_key
+from src.security.keys import get_jwt_secret
 from src.services.cache.redis_client import get_redis_client
 
 GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
 PKCE_TTL = 600  # 10 minutes
-_METADATA_CACHE_TTL = 3600  # 1 hour — discovery doc rarely changes
+_METADATA_CACHE_TTL = 3600
 
 _metadata_cache: dict[str, Any] = {}
 _metadata_cached_at: float = 0.0
@@ -38,40 +36,38 @@ async def _get_google_metadata() -> dict[str, Any]:
 
 
 def _encode_state(callback: str) -> str:
-    import uuid
-
+    jti = str(uuid.uuid4())
     payload = {
         "callback": callback,
         "type": "google_state",
-        "jti": str(uuid.uuid4()),
-        "exp": int(__import__("time").time()) + 600,
+        "jti": jti,
+        "exp": int(time.time()) + 600,
+        "iat": int(time.time()),
     }
-    token = jwt.encode(
-        {"alg": "EdDSA"},
-        payload,
-        get_private_key(),
-        algorithms=["EdDSA"],
-    )
-    return token.decode("utf-8") if isinstance(token, bytes) else token
+    return pyjwt.encode(payload, get_jwt_secret(), algorithm="HS256")
 
 
 def _decode_state(state: str) -> tuple[str, str]:
     """Return (callback_url, state_jti)."""
     try:
-        token_obj = jwt.decode(state, get_public_key(), algorithms=["EdDSA"])
-        payload = dict(token_obj.claims)
-        JWTClaimsRegistry().validate(payload)
-        callback = payload.get("callback")
-        jti = payload.get("jti")
-        if (
-            payload.get("type") != "google_state"
-            or not isinstance(callback, str)
-            or not callback
-        ):
-            raise HTTPException(status_code=400, detail="Invalid OAuth state")
-        return callback, jti or ""
-    except JoseError as exc:
+        payload = pyjwt.decode(
+            state,
+            get_jwt_secret(),
+            algorithms=["HS256"],
+            options={"verify_aud": False},
+        )
+    except pyjwt.ExpiredSignatureError as exc:
+        raise HTTPException(status_code=400, detail="OAuth state expired") from exc
+    except pyjwt.PyJWTError as exc:
         raise HTTPException(status_code=400, detail="Invalid OAuth state") from exc
+
+    if payload.get("type") != "google_state":
+        raise HTTPException(status_code=400, detail="Invalid OAuth state type")
+    callback = payload.get("callback")
+    jti = payload.get("jti")
+    if not isinstance(callback, str) or not callback:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+    return callback, jti or ""
 
 
 # ── PKCE helpers ──────────────────────────────────────────────────────────────
@@ -112,25 +108,26 @@ async def get_google_authorize_url(
     callback: str,
 ) -> str:
     state = _encode_state(callback)
-    _, state_jti = _decode_state(state)  # extract jti to store pkce
+    _, state_jti = _decode_state(state)
     code_verifier, code_challenge = _generate_pkce()
     _store_pkce_verifier(state_jti, code_verifier)
 
     metadata = await _get_google_metadata()
-    client = AsyncOAuth2Client(
-        client_id=client_id,
-        redirect_uri=redirect_uri,
-        scope="openid email profile",
-    )
-    url, _ = client.create_authorization_url(
-        metadata["authorization_endpoint"],
-        state=state,
-        code_challenge=code_challenge,
-        code_challenge_method="S256",
-        access_type="online",
-        prompt="select_account",
-    )
-    return url
+
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
+        "access_type": "online",
+        "prompt": "select_account",
+    }
+    from urllib.parse import urlencode
+
+    return metadata["authorization_endpoint"] + "?" + urlencode(params)
 
 
 async def exchange_google_code(
@@ -148,27 +145,30 @@ async def exchange_google_code(
         frontend_callback, state_jti = _decode_state(state)
         code_verifier = _consume_pkce_verifier(state_jti)
 
-    async with AsyncOAuth2Client(
-        client_id=client_id,
-        client_secret=client_secret,
-        redirect_uri=redirect_uri,
-        scope="openid email profile",
-    ) as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        token_data: dict[str, Any] = {
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "code": code,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+        }
+        if code_verifier:
+            token_data["code_verifier"] = code_verifier
+
         try:
-            fetch_kwargs: dict[str, Any] = {
-                "url": metadata["token_endpoint"],
-                "code": code,
-                "grant_type": "authorization_code",
-            }
-            if code_verifier:
-                fetch_kwargs["code_verifier"] = code_verifier
-            token = await client.fetch_token(**fetch_kwargs)
-        except Exception as exc:
+            token_resp = await client.post(
+                metadata["token_endpoint"],
+                data=token_data,
+            )
+            token_resp.raise_for_status()
+        except httpx.HTTPError as exc:
             raise HTTPException(
                 status_code=400,
                 detail="Failed to exchange Google authorization code",
             ) from exc
 
+        token = token_resp.json()
         access_token = token.get("access_token")
         if not isinstance(access_token, str) or not access_token:
             raise HTTPException(
@@ -176,7 +176,10 @@ async def exchange_google_code(
                 detail="Google token response missing access_token",
             )
 
-        userinfo_resp = await client.get(metadata["userinfo_endpoint"])
+        userinfo_resp = await client.get(
+            metadata["userinfo_endpoint"],
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
         if userinfo_resp.status_code != 200:
             raise HTTPException(
                 status_code=400,

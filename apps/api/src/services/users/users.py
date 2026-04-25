@@ -226,13 +226,13 @@ def update_user_password(
         checker = PermissionChecker(db_session)
     checker.require(current_user.id, "user:update", resource_owner_id=user_id)
 
-    if not security_verify_password(form.old_password, user.password):
+    if not security_verify_password(form.old_password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong password"
         )
 
     # Update user
-    user.password = security_hash_password(form.new_password)
+    user.hashed_password = security_hash_password(form.new_password)
 
     # Add password_changed_at field for session invalidation tracking
     if user.profile is None:
@@ -278,13 +278,11 @@ def read_user_by_username(
 
 
 def get_user_session(
-    request: Request,
+    request: Request | None,
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
 ) -> UserSession:
     from datetime import UTC, datetime
-
-    from src.security.auth import decode_access_token, get_access_token_from_request
 
     user = _get_user_by_field(db_session, "user_uuid", current_user.user_uuid)
     user_read = UserRead.model_validate(user)
@@ -299,8 +297,6 @@ def get_user_session(
     # Resolve permissions
     permissions: list[str] = []
     permissions_timestamp: int | None = None
-    expires_at: int | None = None
-    session_version: int | None = None
     try:
         effective = checker.get_expanded_permissions(current_user.id)
         permissions = sorted(effective)
@@ -308,26 +304,13 @@ def get_user_session(
     except Exception as e:
         _logger.exception(f"Error loading permissions for user {current_user.id}: {e}")
 
-    try:
-        resolved_token = get_access_token_from_request(request, None)
-        if resolved_token:
-            token_data = decode_access_token(resolved_token)
-            if token_data.expires_at is not None:
-                expires_at = token_data.expires_at * 1000
-            if token_data.issued_at is not None:
-                session_version = token_data.issued_at
-    except Exception as e:
-        _logger.exception(
-            f"Error resolving session expiry for user {current_user.id}: {e}"
-        )
-
     return UserSession(
         user=user_read,
         roles=roles,
         permissions=permissions,
         permissions_timestamp=permissions_timestamp,
-        expires_at=expires_at,
-        session_version=session_version,
+        expires_at=None,
+        session_version=None,
     )
 
 
@@ -427,7 +410,7 @@ async def _create_and_validate_user(
     # Create user with completed fields
     user = User.model_validate(user_object)
     user.user_uuid = f"user_{ULID()}"
-    user.password = (
+    user.hashed_password = (
         security_hash_password(user_object.password) if user_object.password else None
     )
     user.auth_provider = "local"
