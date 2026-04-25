@@ -75,12 +75,8 @@ function rewriteWithHeaders(req: NextRequest, requestId: string, pathname: strin
 
 function redirectToRefresh(req: NextRequest, requestId: string, pathname: string, search: string) {
   const returnTo = encodeURIComponent(pathname + search);
-  return withRequestId(NextResponse.redirect(new URL(`/login?returnTo=${returnTo}`, req.url)), requestId);
+  return withRequestId(NextResponse.redirect(new URL(`/api/auth/refresh?returnTo=${returnTo}`, req.url)), requestId);
 }
-
-const VERIFY_TIMEOUT_MS = 5000;
-
-
 
 // ── Proxy ─────────────────────────────────────────────────────────────────────
 
@@ -117,17 +113,13 @@ export default async function proxy(req: NextRequest) {
 
   const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix)) || EDITOR_PATH_RE.test(pathname);
   if (isProtected) {
-    // No token at all → go to refresh bridge
+    // Missing or expired access cookies should pass through the refresh bridge first.
     if (!accessToken) {
       return redirectToRefresh(req, requestId, pathname, search);
     }
-    // Quick expiry check (no network)
     if (isAccessTokenExpired(accessToken)) {
       return redirectToRefresh(req, requestId, pathname, search);
     }
-    // Since we are using standard HS256 tokens and do not expose the secret
-    // to the Edge middleware, we rely on the backend to validate the signature
-    // during the API call. The middleware only checks expiration here.
   }
 
   // Dynamic Pages Editor

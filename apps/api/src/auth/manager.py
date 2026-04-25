@@ -14,7 +14,7 @@ from fastapi_users.exceptions import InvalidPasswordException
 from src.auth.db import get_user_db
 from src.db.users import User
 from src.security.keys import get_jwt_secret
-from src.security.security import pwd_context, password_helper
+from src.security.security import password_helper
 
 _logger = logging.getLogger(__name__)
 

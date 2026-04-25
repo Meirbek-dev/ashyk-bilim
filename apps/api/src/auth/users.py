@@ -21,15 +21,18 @@ fastapi_users = FastAPIUsers[User, int](
     [auth_backend],
 )
 
+current_active_user = fastapi_users.current_user(active=True)
+current_optional_user = fastapi_users.current_user(active=True, optional=True)
+
 
 def get_public_user(
-    user: User = Depends(fastapi_users.current_user(active=True)),
+    user: User = Depends(current_active_user),
 ) -> PublicUser:
     return PublicUser.model_validate(user)
 
 
 def get_optional_public_user(
-    user: User | None = Depends(fastapi_users.current_user(active=True, optional=True)),
+    user: User | None = Depends(current_optional_user),
 ) -> PublicUser | AnonymousUser:
     if user is None:
         return AnonymousUser()

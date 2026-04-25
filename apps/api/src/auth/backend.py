@@ -9,10 +9,9 @@ from fastapi_users.authentication import (
 )
 
 from config.config import get_settings
+from src.security.auth_cookies import ACCESS_COOKIE_KEY
 from src.security.auth_lifetimes import ACCESS_TOKEN_EXPIRE
 from src.security.keys import get_jwt_secret
-
-ACCESS_COOKIE_KEY = "access_token_cookie"
 
 
 @lru_cache(maxsize=1)

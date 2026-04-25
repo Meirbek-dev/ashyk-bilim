@@ -15,10 +15,6 @@ import type { SessionContextValue, SessionStatus } from '@/components/providers/
  * if (can('course', 'create', 'platform')) {
  *   // render create button
  * }
- *
- * if (status === 'loading') {
- *   // show skeleton
- * }
  * ```
  */
 export function useSession(): SessionContextValue {

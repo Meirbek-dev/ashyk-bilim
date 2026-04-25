@@ -4,30 +4,71 @@ from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 
+from src.auth.manager import UserManager, get_user_manager
 from src.auth.users import CurrentActiveUser, auth_backend
-from src.db.users import AnonymousUser, User
+from src.db.users import AnonymousUser, User, UserSession
 from src.infra.db.session import get_db_session
 from src.infra.settings import get_settings
 from src.security.auth_cookies import (
     REFRESH_COOKIE_KEY,
+    clear_auth_cookies,
     set_access_cookie,
     set_refresh_cookie,
 )
-from src.services.auth.google_oauth import (
-    exchange_google_code,
-    get_google_authorize_url,
-)
+from src.services.auth.google_oauth import exchange_google_code, get_google_authorize_url
 from src.services.auth.sessions import (
+    create_auth_session,
+    get_user_active_sessions,
     inspect_refresh_session,
+    revoke_session,
     revoke_token_family,
     rotate_session,
 )
 from src.services.auth.utils import find_or_create_google_user
+from src.services.users.users import get_user_session
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _client_ip(request: Request) -> str | None:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        return forwarded_for.split(",", 1)[0].strip() or None
+    return request.client.host if request.client else None
+
+
+def _resolve_google_redirect_uri() -> str:
+    settings = get_settings()
+    if settings.google_oauth.redirect_uri:
+        return settings.google_oauth.redirect_uri
+
+    proto = "https" if settings.hosting_config.ssl else "http"
+    domain = settings.hosting_config.domain
+    port = settings.hosting_config.port
+    port_suffix = f":{port}" if port not in (80, 443) else ""
+    return f"{proto}://{domain}{port_suffix}/api/v1/auth/google/callback"
+
+
+async def _build_login_response(
+    request: Request,
+    user: User,
+    user_manager: UserManager,
+) -> Response:
+    access_token = await auth_backend.get_strategy().write_token(user)
+    response = await auth_backend.transport.get_login_response(access_token)
+
+    _, refresh_token = await create_auth_session(
+        user=user,
+        ip_address=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    set_refresh_cookie(response, refresh_token)
+    await user_manager.on_after_login(user, request, response)
+    return response
 
 
 def _validate_callback_url(callback: str) -> None:
@@ -53,19 +94,58 @@ def _validate_callback_url(callback: str) -> None:
     )
 
 
+@router.post("/login")
+async def login(
+    request: Request,
+    credentials: Annotated[OAuth2PasswordRequestForm, Depends()],
+    user_manager: Annotated[UserManager, Depends(get_user_manager)],
+) -> Response:
+    user = await user_manager.authenticate(credentials)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="LOGIN_BAD_CREDENTIALS",
+        )
+
+    return await _build_login_response(request, user, user_manager)
+
+
+@router.post("/logout")
+async def logout(
+    request: Request,
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> Response:
+    refresh_token = request.cookies.get(REFRESH_COOKIE_KEY)
+    if refresh_token:
+        inspection = await inspect_refresh_session(db_session, refresh_token)
+        if inspection.status == "active" and inspection.session and inspection.user_id:
+            await revoke_session(inspection.session.session_id, inspection.user_id)
+        elif (
+            inspection.status == "reused"
+            and inspection.token_family_id
+            and inspection.user_id
+        ):
+            await revoke_token_family(inspection.token_family_id, inspection.user_id)
+
+    response = await auth_backend.transport.get_logout_response()
+    clear_auth_cookies(response)
+    return response
+
+
+@router.get("/me", response_model=UserSession)
+def get_me(
+    request: Request,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: CurrentActiveUser,
+) -> UserSession:
+    return get_user_session(request, db_session, current_user)
+
+
 @router.get("/sessions")
 async def list_sessions(
     current_user: CurrentActiveUser,
-    db_session: Annotated[Session, Depends(get_db_session)],
 ):
-    user = db_session.exec(
-        select(User).where(User.user_uuid == current_user.user_uuid)
-    ).first()
-    if not user:
-        return []
-    from src.services.auth.sessions import get_user_active_sessions
-
-    return await get_user_active_sessions(user.id)
+    return await get_user_active_sessions(current_user.id)
 
 
 @router.post("/refresh")
@@ -141,17 +221,9 @@ async def google_authorize(
             detail="Google OAuth is not configured",
         )
 
-    redirect_uri = settings.google_oauth.redirect_uri
-    if not redirect_uri:
-        proto = "https" if settings.hosting_config.ssl else "http"
-        domain = settings.hosting_config.domain
-        port = settings.hosting_config.port
-        port_suffix = f":{port}" if port not in (80, 443) else ""
-        redirect_uri = f"{proto}://{domain}{port_suffix}/api/v1/auth/google/callback"
-
     auth_url = await get_google_authorize_url(
         client_id=settings.google_oauth.client_id,
-        redirect_uri=redirect_uri,
+        redirect_uri=_resolve_google_redirect_uri(),
         callback=callback,
     )
     return RedirectResponse(url=auth_url)
@@ -161,6 +233,7 @@ async def google_authorize(
 async def google_callback(
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
+    user_manager: Annotated[UserManager, Depends(get_user_manager)],
     code: str | None = None,
     state: str | None = None,
     error: str | None = None,
@@ -180,13 +253,7 @@ async def google_callback(
         )
 
     settings = get_settings()
-    redirect_uri = settings.google_oauth.redirect_uri
-    if not redirect_uri:
-        proto = "https" if settings.hosting_config.ssl else "http"
-        domain = settings.hosting_config.domain
-        port = settings.hosting_config.port
-        port_suffix = f":{port}" if port not in (80, 443) else ""
-        redirect_uri = f"{proto}://{domain}{port_suffix}/api/v1/auth/google/callback"
+    redirect_uri = _resolve_google_redirect_uri()
 
     try:
         userinfo = await exchange_google_code(
@@ -215,8 +282,7 @@ async def google_callback(
                 detail="Failed to retrieve user after creation",
             )
 
-        token = await auth_backend.get_strategy().write_token(user)
-        response = await auth_backend.transport.get_login_response(token)
+        response = await _build_login_response(request, user, user_manager)
         response.status_code = status.HTTP_307_TEMPORARY_REDIRECT
         response.headers["Location"] = frontend_callback
 

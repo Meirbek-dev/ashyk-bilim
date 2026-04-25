@@ -1,5 +1,5 @@
 import { getAPIUrl } from '@services/config/config';
-import { logoutAction, logoutAllAction } from '@/app/actions/auth';
+import { logoutAction } from '@/app/actions/auth';
 import { apiFetch } from '@/lib/api-client';
 import { broadcastLogout } from '@/components/providers/session-provider';
 import type { components } from '@/lib/api/generated';
@@ -19,11 +19,6 @@ export async function getGoogleAuthorizeUrl(frontendCallback: string): Promise<s
 export async function logout(options?: LogoutOptions): Promise<void> {
   broadcastLogout();
   await logoutAction(options?.redirectTo ?? '/login');
-}
-
-export async function logoutAll(options?: LogoutOptions): Promise<void> {
-  broadcastLogout();
-  await logoutAllAction(options?.redirectTo ?? '/login');
 }
 
 export async function sendResetLink(email: string): Promise<Response> {

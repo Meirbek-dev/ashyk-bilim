@@ -5,11 +5,11 @@
  * backend receives auth cookies automatically.
  *
  * Client-side: uses credentials:"include" so cookies are sent automatically.
- * A 401 is treated as a hard logout condition and redirects the user to login.
+ * A 401 is treated as an auth refresh opportunity first; the refresh bridge
+ * will redirect to login if the refresh cookie is also invalid or missing.
  */
 
 import { getAPIUrl, getServerAPIUrl } from '@services/config/config';
-import { buildLoginRedirect } from '@/lib/auth/redirect';
 import { isAuthRoute } from '@/lib/auth/redirect';
 import { AUTH_COOKIE_NAMES } from '@/lib/auth/types';
 
@@ -89,17 +89,9 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
     });
 
     if (!isServer && response.status === 401) {
-      const wwwAuth = response.headers.get('WWW-Authenticate');
-      if (wwwAuth?.includes('error="roles_stale"')) {
-        const { pathname, search } = globalThis.location;
-        const refreshUrl = `/api/auth/refresh?returnTo=${encodeURIComponent(pathname + search)}`;
-        globalThis.location.assign(refreshUrl);
-        return response;
-      }
-
-      const { pathname } = globalThis.location;
+      const { pathname, search } = globalThis.location;
       if (!isAuthRoute(pathname)) {
-        globalThis.location.assign(buildLoginRedirect());
+        globalThis.location.assign(`/api/auth/refresh?returnTo=${encodeURIComponent(pathname + search)}`);
       }
     }
 

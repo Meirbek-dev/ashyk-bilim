@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
-from src.auth.users import auth_backend, fastapi_users
+from src.auth.users import fastapi_users
+from src.db.users import UserCreate, UserRead
 from src.routers import (
     analytics,
     auth,
@@ -37,16 +38,10 @@ v1_router = APIRouter(prefix="/api/v1")
 
 # Auth domains
 v1_router.include_router(
-    fastapi_users.get_auth_router(auth_backend),
-    prefix="/auth",
-    tags=["auth"],
-)
-v1_router.include_router(
     fastapi_users.get_reset_password_router(),
     prefix="/auth",
     tags=["auth"],
 )
-from src.db.users import UserCreate, UserRead
 
 v1_router.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),

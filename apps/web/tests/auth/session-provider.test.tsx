@@ -13,22 +13,11 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-// Mock useQuery
+// Mock react-query client access
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: () => ({
-    data: null,
-    isError: false,
-    isLoading: false,
-  }),
   useQueryClient: () => ({
     clear: vi.fn(),
   }),
-  queryOptions: (opts: any) => opts,
-}));
-
-// Mock apiFetch
-vi.mock('@/lib/api-client', () => ({
-  apiFetch: vi.fn(),
 }));
 
 const mockSession: Session = {

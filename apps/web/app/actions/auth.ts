@@ -204,9 +204,3 @@ export async function logoutAction(redirectTo?: string | null): Promise<void> {
     redirect(normalizeReturnTo(redirectTo));
   }
 }
-
-export async function logoutAllAction(redirectTo?: string | null): Promise<void> {
-  // fastapi-users JWT strategy does not natively support logout-all.
-  // Fall back to standard logout.
-  return logoutAction(redirectTo);
-}

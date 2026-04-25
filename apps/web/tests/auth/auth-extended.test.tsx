@@ -10,7 +10,7 @@ import {
 } from '@/components/providers/session-provider';
 import type { Session } from '@/lib/auth/types';
 
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock useRouter
 const mockRefresh = vi.fn();
@@ -22,23 +22,16 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-// Mock useQuery
+// Mock react-query client access
 vi.mock('@tanstack/react-query', async (importOriginal) => {
   const actual = await importOriginal<any>();
   return {
     ...actual,
-    useQuery: vi.fn(),
     useQueryClient: vi.fn(() => ({
       clear: vi.fn(),
     })),
-    queryOptions: (opts: any) => opts,
   };
 });
-
-// Mock apiFetch
-vi.mock('@/lib/api-client', () => ({
-  apiFetch: vi.fn(),
-}));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,11 +61,6 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => (
 describe('Auth Extended Scenarios', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useQuery).mockReturnValue({
-      data: null,
-      isError: false,
-      isLoading: false,
-    } as any);
   });
 
   it('should trigger router.refresh() when refresh() is called', () => {
@@ -131,13 +119,7 @@ describe('Auth Extended Scenarios', () => {
     });
   });
 
-  it('should handle auth/me failure by setting status to error', async () => {
-    vi.mocked(useQuery).mockReturnValue({
-      data: null,
-      isError: true,
-      isLoading: false,
-    } as any);
-
+  it('should keep the server-provided session without a follow-up profile fetch', async () => {
     const TestComponent = () => {
       const { status } = useSessionContext();
       return <div data-testid="status">{status}</div>;
@@ -150,7 +132,7 @@ describe('Auth Extended Scenarios', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('status').textContent).toBe('error');
+      expect(screen.getByTestId('status').textContent).toBe('authenticated');
     });
   });
 });

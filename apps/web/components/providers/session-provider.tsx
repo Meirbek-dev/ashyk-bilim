@@ -2,17 +2,16 @@
 
 import { createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '@/lib/api-client';
+import { useQueryClient } from '@tanstack/react-query';
 import { AUTH_PERMISSION_WILDCARD } from '@/lib/auth/types';
 import type { ReactNode } from 'react';
 import type { Action, Resource, Scope } from '@/types/permissions';
 import { perm } from '@/types/permissions';
-import type { Session, UserSessionResponse } from '@/lib/auth/types';
+import type { Session } from '@/lib/auth/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type SessionStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error';
+export type SessionStatus = 'authenticated' | 'unauthenticated';
 
 // ── Broadcast channel name for cross-tab session sync ─────────────────────────
 
@@ -23,7 +22,7 @@ type AuthBroadcastMessage = { type: 'logout' } | { type: 'session_refresh' };
 // ── Context value ─────────────────────────────────────────────────────────────
 
 export interface SessionContextValue {
-  /** Discriminated session status — distinguishes loading from unauthenticated. */
+  /** Current session status derived from the latest server render. */
   status: SessionStatus;
   /** Convenience boolean — equivalent to `status === 'authenticated'`. */
   isAuthenticated: boolean;
@@ -45,35 +44,13 @@ export interface SessionContextValue {
    * Re-fetch the session by triggering a full RSC refresh via router.refresh().
    *
    * Use this after operations that change authentication state on the client
-   * (e.g. post-OAuth redirect, receiving a roles-updated WebSocket event)
+   * (e.g. post-OAuth redirect)
    * without requiring a full page navigation.
    */
   refresh: () => void;
 }
 
 const SessionContext = createContext<SessionContextValue | undefined>(undefined);
-
-// ── Full profile hook ─────────────────────────────────────────────────────────
-
-function useFullProfile(userId: number | null) {
-  const normalizedUserId = userId ?? 0;
-
-  return useQuery(
-    queryOptions({
-      queryKey: ['auth', 'me', normalizedUserId],
-      queryFn: async (): Promise<UserSessionResponse> => {
-        const response = await apiFetch('auth/me');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch profile: ${String(response.status)}`);
-        }
-        return response.json() as Promise<UserSessionResponse>;
-      },
-      enabled: userId !== null,
-      staleTime: 5 * 60 * 1000,
-      refetchOnWindowFocus: false,
-    }),
-  );
-}
 
 // ── Cross-tab broadcast listener ──────────────────────────────────────────────
 
@@ -121,29 +98,7 @@ export function SessionProvider({ children, initialSession = null }: SessionProv
     }
   }, [initialSession]);
 
-  // ── Full profile fetch via TanStack Query ─────────────────────────────────
-  const userId = session?.user.id ?? null;
-  const { data: fullProfile, isError: profileError } = useFullProfile(userId);
-
-  // Merge full profile data into session when available
-  const mergedSession = useMemo<Session | null>(() => {
-    if (!session) return null;
-    if (!fullProfile) return session;
-    return {
-      ...session,
-      user: fullProfile.user,
-      roles: fullProfile.roles,
-      permissions: fullProfile.permissions,
-      permissions_timestamp: fullProfile.permissions_timestamp ?? session.permissions_timestamp,
-    };
-  }, [session, fullProfile]);
-
-  // ── Session status ────────────────────────────────────────────────────────
-  const status = useMemo<SessionStatus>(() => {
-    if (profileError) return 'error';
-    if (mergedSession !== null) return 'authenticated';
-    return 'unauthenticated';
-  }, [mergedSession, profileError]);
+  const status: SessionStatus = session ? 'authenticated' : 'unauthenticated';
 
   // ── Cross-tab session sync via BroadcastChannel ───────────────────────────
   const handleBroadcastLogout = useCallback(() => {
@@ -166,26 +121,26 @@ export function SessionProvider({ children, initialSession = null }: SessionProv
 
   // Lazily build a permission Set so lookup is O(1).  Recomputed only when
   // session.permissions reference changes.
-  const permissionsSet = useMemo(() => new Set<string>(mergedSession?.permissions), [mergedSession?.permissions]);
+  const permissionsSet = useMemo(() => new Set<string>(session?.permissions), [session?.permissions]);
 
   const can = useCallback(
     (resource: Resource, action: Action, scope: Scope): boolean => {
-      if (!mergedSession) return false;
+      if (!session) return false;
       return permissionsSet.has(AUTH_PERMISSION_WILDCARD) || permissionsSet.has(perm(resource, action, scope));
     },
-    [mergedSession, permissionsSet],
+    [session, permissionsSet],
   );
 
   const value = useMemo<SessionContextValue>(
     () => ({
       status,
       isAuthenticated: status === 'authenticated',
-      session: mergedSession,
-      user: mergedSession?.user ?? null,
+      session,
+      user: session?.user ?? null,
       can,
       refresh,
     }),
-    [status, mergedSession, can, refresh],
+    [status, session, can, refresh],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

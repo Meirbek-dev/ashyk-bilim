@@ -1,43 +1,29 @@
 import 'server-only';
 import { cache } from 'react';
-import { cookies, headers } from 'next/headers';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getServerAPIUrl } from '@services/config/config';
-import { ACCESS_TOKEN_COOKIE_NAME } from './types';
+import { apiFetch } from '@/lib/api-client';
 import type { Session, UserSessionResponse } from './types';
 
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 /**
- * Get the session by calling the backend /auth/me endpoint with the access token cookie.
+ * Get the current session from the backend.
  *
  * The result is deduplicated within a single RSC render tree via React.cache().
- * A new verification is performed for every incoming request.
+ * A fresh auth check still happens on every incoming request.
  */
 export const getSession = cache(async (): Promise<Session | null> => {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ACCESS_TOKEN_COOKIE_NAME)?.value;
-  if (!token) return null;
-
   try {
-    const res = await fetch(new URL('auth/me', getServerAPIUrl()), {
-      headers: {
-        Cookie: `${ACCESS_TOKEN_COOKIE_NAME}=${token}`,
-      },
-      // Ensure we don't aggressively cache the auth state
-      cache: 'no-store', 
-    });
-
+    const res = await apiFetch('auth/me');
     if (!res.ok) {
       return null;
     }
 
     const sessionData = (await res.json()) as UserSessionResponse;
-    
-    // Map backend response to frontend Session shape
     return {
       ...sessionData,
-      expiresAt: sessionData.expires_at ? sessionData.expires_at : 0,
+      expiresAt: sessionData.expires_at ?? 0,
       sessionVersion: sessionData.session_version ?? null,
     };
   } catch (error) {
