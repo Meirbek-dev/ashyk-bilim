@@ -9,11 +9,12 @@ get_current_user_from_token).  Each DB call is fast and non-blocking in practice
 
 from typing import Any
 
-from fastapi import Request
+from fastapi import Depends
 from fastapi_users.db import BaseUserDatabase
 from sqlmodel import Session, select
 
 from src.db.users import User
+from src.infra.db.session import get_db_session
 
 
 class SQLModelUserDatabase(BaseUserDatabase[User, int]):
@@ -48,5 +49,5 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
         self.session.commit()
 
 
-def get_user_db(request: Request) -> SQLModelUserDatabase:
-    return SQLModelUserDatabase(request.app.state.session_factory())
+def get_user_db(session: Session = Depends(get_db_session)) -> SQLModelUserDatabase:
+    return SQLModelUserDatabase(session)
