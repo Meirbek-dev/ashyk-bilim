@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import logging
 import secrets
 import time
 import uuid
@@ -12,6 +13,8 @@ from fastapi import HTTPException
 
 from src.security.keys import get_jwt_secret
 from src.services.cache.redis_client import get_async_redis_client
+
+logger = logging.getLogger(__name__)
 
 GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
 PKCE_TTL = 600  # 10 minutes
@@ -162,7 +165,25 @@ async def exchange_google_code(
                 data=token_data,
             )
             token_resp.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            # Log Google's actual error body so we can diagnose the root cause.
+            try:
+                google_error = exc.response.json()
+            except Exception:
+                google_error = exc.response.text
+            logger.error(
+                "Google token exchange failed: HTTP %s | redirect_uri=%s | pkce=%s | error=%s",
+                exc.response.status_code,
+                redirect_uri,
+                "yes" if code_verifier else "no",
+                google_error,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to exchange Google authorization code",
+            ) from exc
         except httpx.HTTPError as exc:
+            logger.error("Google token exchange network error: %s | redirect_uri=%s", exc, redirect_uri)
             raise HTTPException(
                 status_code=400,
                 detail="Failed to exchange Google authorization code",

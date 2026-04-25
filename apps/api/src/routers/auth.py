@@ -50,7 +50,13 @@ def _resolve_google_redirect_uri() -> str:
     domain = settings.hosting_config.domain
     port = settings.hosting_config.port
     port_suffix = f":{port}" if port not in (80, 443) else ""
-    return f"{proto}://{domain}{port_suffix}/api/v1/auth/google/callback"
+    uri = f"{proto}://{domain}{port_suffix}/api/v1/auth/google/callback"
+    logger.warning(
+        "PLATFORM_GOOGLE_REDIRECT_URI is not set — using auto-constructed '%s'. "
+        "Set PLATFORM_GOOGLE_REDIRECT_URI explicitly to avoid redirect_uri_mismatch errors.",
+        uri,
+    )
+    return uri
 
 
 async def _build_login_response(
