@@ -2394,6 +2394,65 @@
         "title": "Body_api_upload_platform_landing_content_api_v1_landing_content_post",
         "type": "object"
       },
+      "Body_auth_jwt_login_api_v1_auth_login_post": {
+        "properties": {
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "format": "password",
+            "title": "Client Secret"
+          },
+          "grant_type": {
+            "anyOf": [
+              {
+                "pattern": "^password$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Type"
+          },
+          "password": {
+            "format": "password",
+            "title": "Password",
+            "type": "string"
+          },
+          "scope": {
+            "default": "",
+            "title": "Scope",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Body_auth_jwt_login_api_v1_auth_login_post",
+        "type": "object"
+      },
       "Body_complete_chunked_upload_api_v1_uploads_complete_post": {
         "properties": {
           "upload_id": {
@@ -2443,6 +2502,38 @@
           "file_size"
         ],
         "title": "Body_initiate_chunked_upload_api_v1_uploads_initiate_post",
+        "type": "object"
+      },
+      "Body_reset_forgot_password_api_v1_auth_forgot_password_post": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "Body_reset_forgot_password_api_v1_auth_forgot_password_post",
+        "type": "object"
+      },
+      "Body_reset_reset_password_api_v1_auth_reset_password_post": {
+        "properties": {
+          "password": {
+            "title": "Password",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "password"
+        ],
+        "title": "Body_reset_reset_password_api_v1_auth_reset_password_post",
         "type": "object"
       },
       "Body_upload_chunk_api_v1_uploads_chunk_post": {
@@ -4786,6 +4877,29 @@
         "title": "DiscussionType",
         "type": "string"
       },
+      "ErrorModel": {
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorModel",
+        "type": "object"
+      },
       "ExamAttemptRead": {
         "description": "Model for reading an exam attempt",
         "properties": {
@@ -5171,19 +5285,6 @@
           "chapter_id"
         ],
         "title": "ExternalVideo",
-        "type": "object"
-      },
-      "ForgotPasswordRequest": {
-        "properties": {
-          "email": {
-            "title": "Email",
-            "type": "string"
-          }
-        },
-        "required": [
-          "email"
-        ],
-        "title": "ForgotPasswordRequest",
         "type": "object"
       },
       "FullCourseRead": {
@@ -5782,37 +5883,6 @@
           "total_participants"
         ],
         "title": "LeaderboardRead",
-        "type": "object"
-      },
-      "LoginRequest": {
-        "properties": {
-          "email": {
-            "title": "Email",
-            "type": "string"
-          },
-          "password": {
-            "title": "Password",
-            "type": "string"
-          }
-        },
-        "required": [
-          "email",
-          "password"
-        ],
-        "title": "LoginRequest",
-        "type": "object"
-      },
-      "LogoutResponse": {
-        "properties": {
-          "msg": {
-            "title": "Msg",
-            "type": "string"
-          }
-        },
-        "required": [
-          "msg"
-        ],
-        "title": "LogoutResponse",
         "type": "object"
       },
       "MetricCard": {
@@ -7071,24 +7141,6 @@
           "grading_result"
         ],
         "title": "QuizSubmissionResponse",
-        "type": "object"
-      },
-      "ResetPasswordRequest": {
-        "properties": {
-          "new_password": {
-            "title": "New Password",
-            "type": "string"
-          },
-          "token": {
-            "title": "Token",
-            "type": "string"
-          }
-        },
-        "required": [
-          "token",
-          "new_password"
-        ],
-        "title": "ResetPasswordRequest",
         "type": "object"
       },
       "ResourceAuthorshipEnum": {
@@ -8996,19 +9048,6 @@
         "title": "TimeSeriesPoint",
         "type": "object"
       },
-      "TokensResponse": {
-        "properties": {
-          "expires_at": {
-            "title": "Expires At",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "expires_at"
-        ],
-        "title": "TokensResponse",
-        "type": "object"
-      },
       "Trail": {
         "properties": {
           "creation_date": {
@@ -9673,6 +9712,21 @@
             "title": "Id",
             "type": "integer"
           },
+          "is_active": {
+            "default": true,
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "is_superuser": {
+            "default": false,
+            "title": "Is Superuser",
+            "type": "boolean"
+          },
+          "is_verified": {
+            "default": false,
+            "title": "Is Verified",
+            "type": "boolean"
+          },
           "last_name": {
             "title": "Last Name",
             "type": "string"
@@ -10287,14 +10341,10 @@
       }
     },
     "securitySchemes": {
-      "OAuth2PasswordBearer": {
-        "flows": {
-          "password": {
-            "scopes": {},
-            "tokenUrl": "/api/auth/login"
-          }
-        },
-        "type": "oauth2"
+      "APIKeyCookie": {
+        "in": "cookie",
+        "name": "access_token_cookie",
+        "type": "apiKey"
       }
     }
   },
@@ -10364,7 +10414,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Activity",
@@ -10410,7 +10460,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Documentpdf Activity",
@@ -10456,7 +10506,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create External Video Activity",
@@ -10502,7 +10552,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Video Activity",
@@ -10549,7 +10599,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Activity",
@@ -10594,7 +10644,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Activity",
@@ -10649,7 +10699,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Activity",
@@ -10696,7 +10746,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Ai Send Activity Chat Message",
@@ -10741,7 +10791,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Ai Send Activity Chat Message Stream",
@@ -10788,7 +10838,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Ai Start Activity Chat Session",
@@ -10833,7 +10883,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Ai Start Activity Chat Session Stream",
@@ -11039,7 +11089,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Teacher Assessments Platform",
@@ -11263,7 +11313,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Teacher Assessment Detail Platform",
@@ -11469,7 +11519,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Teacher Courses Platform",
@@ -11684,7 +11734,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Teacher Course Detail By Uuid Platform",
@@ -11899,7 +11949,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Teacher Course Detail Platform",
@@ -12103,7 +12153,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Teacher Assessment Outcomes Export Platform",
@@ -12307,7 +12357,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Teacher At Risk Export Platform",
@@ -12511,7 +12561,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Teacher Course Progress Export Platform",
@@ -12715,7 +12765,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Teacher Grading Backlog Export Platform",
@@ -12921,7 +12971,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Teacher At Risk Learners Platform",
@@ -13127,7 +13177,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Teacher Overview Platform",
@@ -13174,7 +13224,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Assignments",
@@ -13220,7 +13270,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Assignment From Activity",
@@ -13266,7 +13316,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Read Assignment From Activity",
@@ -13312,7 +13362,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Assignments",
@@ -13359,7 +13409,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Assignments For Courses",
@@ -13406,7 +13456,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Editable Assignments For Courses",
@@ -13464,7 +13514,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Assignment Task Submission",
@@ -13510,7 +13560,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Read Assignment Task",
@@ -13575,7 +13625,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Assignment With Activity",
@@ -13621,7 +13671,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Assignment",
@@ -13667,7 +13717,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Read Assignment",
@@ -13723,7 +13773,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Assignment",
@@ -13775,7 +13825,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Assignment Submissions",
@@ -13823,7 +13873,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Assignment Submission Me",
@@ -13880,7 +13930,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Assignment Submission User",
@@ -13926,7 +13976,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Read Assignment Tasks",
@@ -13980,7 +14030,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Assignment Tasks",
@@ -14026,7 +14076,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Assignment Tasks",
@@ -14080,7 +14130,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Assignment Tasks",
@@ -14135,7 +14185,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Put Assignment Task Ref File",
@@ -14199,7 +14249,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Put Assignment Task Sub File",
@@ -14260,7 +14310,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Assignment Task Submissions",
@@ -14323,7 +14373,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Handle Assignment Task Submission",
@@ -14378,7 +14428,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Assignment Task Submission Me",
@@ -14442,7 +14492,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Assignment Task Submission User",
@@ -14506,7 +14556,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Assignment Task Submission",
@@ -14517,19 +14567,19 @@
     },
     "/api/v1/auth/forgot-password": {
       "post": {
-        "operationId": "forgot_password_api_v1_auth_forgot_password_post",
+        "operationId": "reset_forgot_password_api_v1_auth_forgot_password_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ForgotPasswordRequest"
+                "$ref": "#/components/schemas/Body_reset_forgot_password_api_v1_auth_forgot_password_post"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "200": {
+          "202": {
             "content": {
               "application/json": {
                 "schema": {}
@@ -14548,131 +14598,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Forgot Password",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/api/v1/auth/google/authorize": {
-      "get": {
-        "operationId": "google_authorize_api_v1_auth_google_authorize_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "callback",
-            "required": true,
-            "schema": {
-              "title": "Callback",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Google Authorize",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/api/v1/auth/google/callback": {
-      "get": {
-        "operationId": "google_callback_api_v1_auth_google_callback_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "code",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code"
-            }
-          },
-          {
-            "in": "query",
-            "name": "state",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "State"
-            }
-          },
-          {
-            "in": "query",
-            "name": "error",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Error"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Google Callback",
+        "summary": "Reset:Forgot Password",
         "tags": [
           "auth"
         ]
@@ -14680,12 +14606,12 @@
     },
     "/api/v1/auth/login": {
       "post": {
-        "operationId": "login_api_v1_auth_login_post",
+        "operationId": "auth_jwt_login_api_v1_auth_login_post",
         "requestBody": {
           "content": {
-            "application/json": {
+            "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
+                "$ref": "#/components/schemas/Body_auth_jwt_login_api_v1_auth_login_post"
               }
             }
           },
@@ -14695,12 +14621,37 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserSession"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "LOGIN_BAD_CREDENTIALS": {
+                    "summary": "Bad credentials or the user is inactive.",
+                    "value": {
+                      "detail": "LOGIN_BAD_CREDENTIALS"
+                    }
+                  },
+                  "LOGIN_USER_NOT_VERIFIED": {
+                    "summary": "The user is not verified.",
+                    "value": {
+                      "detail": "LOGIN_USER_NOT_VERIFIED"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Bad Request"
           },
           "422": {
             "content": {
@@ -14713,7 +14664,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Login",
+        "summary": "Auth:Jwt.Login",
         "tags": [
           "auth"
         ]
@@ -14721,51 +14672,29 @@
     },
     "/api/v1/auth/logout": {
       "post": {
-        "operationId": "logout_api_v1_auth_logout_post",
+        "operationId": "auth_jwt_logout_api_v1_auth_logout_post",
         "responses": {
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LogoutResponse"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Missing token or inactive user."
           }
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
-        "summary": "Logout",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/api/v1/auth/logout-all": {
-      "post": {
-        "operationId": "logout_all_api_v1_auth_logout_all_post",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LogoutResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Logout All",
+        "summary": "Auth:Jwt.Logout",
         "tags": [
           "auth"
         ]
@@ -14773,7 +14702,7 @@
     },
     "/api/v1/auth/me": {
       "get": {
-        "description": "Return full session data including roles, permissions, and user profile.\n\nThe JWT carries only a slim ``u`` claim (id, name, email, avatar).\nThis endpoint provides the complete ``UserSession`` payload for features\nthat need the full user profile (bio, details, theme, role objects, etc.).\nThe frontend calls this once on app load and caches the result.",
+        "description": "Return full session data including roles, permissions, and user profile.",
         "operationId": "get_me_api_v1_auth_me_get",
         "responses": {
           "200": {
@@ -14789,7 +14718,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Me",
@@ -14798,22 +14727,69 @@
         ]
       }
     },
-    "/api/v1/auth/refresh": {
+    "/api/v1/auth/register": {
       "post": {
-        "operationId": "refresh_api_v1_auth_refresh_post",
+        "operationId": "register_register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TokensResponse"
+                  "$ref": "#/components/schemas/UserRead"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "REGISTER_INVALID_PASSWORD": {
+                    "summary": "Password validation failed.",
+                    "value": {
+                      "detail": {
+                        "code": "REGISTER_INVALID_PASSWORD",
+                        "reason": "Password should beat least 3 characters"
+                      }
+                    }
+                  },
+                  "REGISTER_USER_ALREADY_EXISTS": {
+                    "summary": "A user with this email already exists.",
+                    "value": {
+                      "detail": "REGISTER_USER_ALREADY_EXISTS"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
-        "summary": "Refresh",
+        "summary": "Register:Register",
         "tags": [
           "auth"
         ]
@@ -14821,12 +14797,12 @@
     },
     "/api/v1/auth/reset-password": {
       "post": {
-        "operationId": "reset_password_api_v1_auth_reset_password_post",
+        "operationId": "reset_reset_password_api_v1_auth_reset_password_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ResetPasswordRequest"
+                "$ref": "#/components/schemas/Body_reset_reset_password_api_v1_auth_reset_password_post"
               }
             }
           },
@@ -14841,6 +14817,33 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "RESET_PASSWORD_BAD_TOKEN": {
+                    "summary": "Bad or expired token.",
+                    "value": {
+                      "detail": "RESET_PASSWORD_BAD_TOKEN"
+                    }
+                  },
+                  "RESET_PASSWORD_INVALID_PASSWORD": {
+                    "summary": "Password validation failed.",
+                    "value": {
+                      "detail": {
+                        "code": "RESET_PASSWORD_INVALID_PASSWORD",
+                        "reason": "Password should be at least 3 characters"
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -14852,7 +14855,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Reset Password",
+        "summary": "Reset:Reset Password",
         "tags": [
           "auth"
         ]
@@ -14873,7 +14876,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "List Sessions",
@@ -14921,7 +14924,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Image File Block",
@@ -14966,7 +14969,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Image File Block",
@@ -15014,7 +15017,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Pdf File Block",
@@ -15059,7 +15062,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Pdf File Block",
@@ -15117,7 +15120,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Submit Quiz",
@@ -15185,7 +15188,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Quiz Attempts",
@@ -15237,7 +15240,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Quiz Stats",
@@ -15285,7 +15288,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Video File Block",
@@ -15330,7 +15333,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Video File Block",
@@ -15377,7 +15380,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Certification",
@@ -15474,7 +15477,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Certifications By Course",
@@ -15506,7 +15509,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get All User Certificates",
@@ -15559,7 +15562,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get User Certificates For Course",
@@ -15622,7 +15625,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Certification",
@@ -15668,7 +15671,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Certification",
@@ -15724,7 +15727,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Certification",
@@ -15770,7 +15773,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Coursechapter",
@@ -15830,7 +15833,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Reorder Chapters And Activities",
@@ -15879,7 +15882,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Coursechapter",
@@ -15924,7 +15927,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Coursechapter",
@@ -15979,7 +15982,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Coursechapter",
@@ -16048,7 +16051,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Move Activity To Order",
@@ -16106,7 +16109,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Move Chapter To Order",
@@ -16200,7 +16203,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Submission Detail",
@@ -16248,7 +16251,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Code Challenge",
@@ -16296,7 +16299,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Challenge Analytics",
@@ -16353,7 +16356,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Student Analytics",
@@ -16411,7 +16414,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Run Custom Test",
@@ -16485,7 +16488,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Leaderboard",
@@ -16531,7 +16534,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Challenge Settings Endpoint",
@@ -16585,7 +16588,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Update Challenge Settings",
@@ -16659,7 +16662,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Submission History",
@@ -16717,7 +16720,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Submit Code Challenge",
@@ -16775,7 +16778,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Run Visible Tests",
@@ -16822,7 +16825,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Collection",
@@ -16883,7 +16886,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Platform Collections",
@@ -16929,7 +16932,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Collection",
@@ -16975,7 +16978,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Collection",
@@ -17031,7 +17034,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Collection",
@@ -17078,7 +17081,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Course",
@@ -17188,7 +17191,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Platform Editable Courses",
@@ -17248,7 +17251,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Platform Courses",
@@ -17319,7 +17322,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Search Platform Courses",
@@ -17367,7 +17370,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Course",
@@ -17413,7 +17416,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Course",
@@ -17470,7 +17473,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Course Access",
@@ -17516,7 +17519,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Apply Course Contributor",
@@ -17576,7 +17579,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Add Bulk Course Contributors",
@@ -17636,7 +17639,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Remove Bulk Course Contributors",
@@ -17682,7 +17685,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Course Contributors",
@@ -17753,7 +17756,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Course Contributor",
@@ -17842,7 +17845,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Course Discussions",
@@ -17898,7 +17901,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Course Discussion",
@@ -17953,7 +17956,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Course Discussion",
@@ -18018,7 +18021,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Course Discussion",
@@ -18073,7 +18076,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Toggle Course Discussion Dislike",
@@ -18128,7 +18131,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Unlike Course Discussion",
@@ -18183,7 +18186,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Like Course Discussion",
@@ -18236,7 +18239,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Toggle Course Discussion Like",
@@ -18322,7 +18325,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Discussion Replies",
@@ -18380,7 +18383,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Course Meta",
@@ -18437,7 +18440,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Course Metadata",
@@ -18485,7 +18488,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Course User Rights",
@@ -18542,7 +18545,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Course Thumbnail",
@@ -18597,7 +18600,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Course Update",
@@ -18662,7 +18665,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Course Update",
@@ -18714,7 +18717,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Course Updates",
@@ -18770,7 +18773,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Course Update",
@@ -18835,7 +18838,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Exam",
@@ -18882,7 +18885,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Exam From Activity",
@@ -18930,7 +18933,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Attempt By Uuid",
@@ -19000,7 +19003,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Question",
@@ -19055,7 +19058,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Question",
@@ -19103,7 +19106,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Exam With Activity",
@@ -19154,7 +19157,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Exam",
@@ -19199,7 +19202,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Exam",
@@ -19254,7 +19257,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Exam",
@@ -19307,7 +19310,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get All Attempts",
@@ -19358,7 +19361,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get My Attempts",
@@ -19405,7 +19408,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Start Exam Attempt",
@@ -19461,7 +19464,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Submit Exam Attempt",
@@ -19529,7 +19532,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Record Violation",
@@ -19580,7 +19583,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Questions",
@@ -19635,7 +19638,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Question",
@@ -19681,7 +19684,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Export Questions Csv",
@@ -19741,7 +19744,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Import Questions Csv",
@@ -19806,7 +19809,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Reorder Questions",
@@ -19833,7 +19836,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Unified Dashboard",
@@ -19894,7 +19897,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Leaderboard",
@@ -19941,7 +19944,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Update Preferences",
@@ -19968,7 +19971,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get User Rank",
@@ -20014,7 +20017,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Update Streak",
@@ -20061,7 +20064,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Award Xp",
@@ -20117,7 +20120,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Start Submission",
@@ -20250,7 +20253,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api List Submissions",
@@ -20297,7 +20300,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Batch Grade Submissions",
@@ -20343,7 +20346,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Export Submissions Csv",
@@ -20395,7 +20398,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get My Submissions",
@@ -20443,7 +20446,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get My Submission",
@@ -20491,7 +20494,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Submission Stats",
@@ -20539,7 +20542,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Submission",
@@ -20595,7 +20598,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Save Grade",
@@ -20674,7 +20677,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Submit Assessment",
@@ -20784,7 +20787,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Platform Landing",
@@ -20831,7 +20834,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Upload Platform Landing Content",
@@ -20878,7 +20881,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Platform Logo",
@@ -20936,7 +20939,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Platform Users",
@@ -20984,7 +20987,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Remove User From Platform",
@@ -21041,7 +21044,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Platform User Role",
@@ -21108,7 +21111,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Platform",
@@ -21155,7 +21158,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Platform Preview",
@@ -21201,7 +21204,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Check Permission",
@@ -21247,7 +21250,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Check Permissions Batch",
@@ -21273,7 +21276,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get My Permissions",
@@ -21318,7 +21321,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Assign Role",
@@ -21363,7 +21366,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Revoke Role",
@@ -21394,7 +21397,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "List User Roles",
@@ -21425,7 +21428,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "List Roles",
@@ -21470,7 +21473,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Create Role",
@@ -21531,7 +21534,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Role Audit Log",
@@ -21562,7 +21565,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "List All Permissions",
@@ -21608,7 +21611,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Delete Role",
@@ -21654,7 +21657,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Role",
@@ -21710,7 +21713,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Update Role",
@@ -21762,7 +21765,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Role Permissions",
@@ -21816,7 +21819,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Add Permission To Role",
@@ -21871,7 +21874,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Remove Permission From Role",
@@ -21916,7 +21919,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Role Users Count",
@@ -21983,7 +21986,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Search Platform Content",
@@ -22030,7 +22033,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Platform Thumbnail",
@@ -22057,7 +22060,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get User Trail",
@@ -22105,7 +22108,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Add Activity To Trail",
@@ -22153,7 +22156,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Add Course To Trail",
@@ -22201,7 +22204,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Remove Activity From Trail",
@@ -22249,7 +22252,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Remove Course To Trail",
@@ -22296,7 +22299,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Start Trail",
@@ -22343,7 +22346,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Upload Chunk",
@@ -22390,7 +22393,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Complete Chunked Upload",
@@ -22437,7 +22440,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Initiate Chunked Upload",
@@ -22485,7 +22488,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Get Upload Status",
@@ -22533,7 +22536,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Cancel Upload",
@@ -22564,7 +22567,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Usergroups",
@@ -22610,7 +22613,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create Usergroup",
@@ -22663,7 +22666,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Usergroupsby Resource",
@@ -22713,7 +22716,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Usergroup",
@@ -22760,7 +22763,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Usergroup",
@@ -22817,7 +22820,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Usergroup",
@@ -22876,7 +22879,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Add Resources To Usergroup",
@@ -22935,7 +22938,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Add Users To Usergroup",
@@ -22994,7 +22997,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Resources From Usergroup",
@@ -23053,7 +23056,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete Users From Usergroup",
@@ -23106,7 +23109,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Users Linked To Usergroup",
@@ -23154,7 +23157,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Create User Without Platform",
@@ -23213,7 +23216,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update User Password",
@@ -23262,7 +23265,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get User By Id",
@@ -23320,7 +23323,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update User Locale",
@@ -23378,7 +23381,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update User Theme",
@@ -23406,7 +23409,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Current User",
@@ -23471,7 +23474,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Change Password With Reset Code",
@@ -23519,7 +23522,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Send Password Reset Email",
@@ -23547,7 +23550,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get Current User Session",
@@ -23604,7 +23607,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update Avatar User",
@@ -23651,7 +23654,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Delete User",
@@ -23700,7 +23703,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get User By Username",
@@ -23749,7 +23752,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get User By Uuid",
@@ -23808,7 +23811,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Update User",
@@ -23881,7 +23884,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "APIKeyCookie": []
           }
         ],
         "summary": "Api Get User Courses",

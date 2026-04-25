@@ -864,42 +864,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Forgot Password */
-        post: operations["forgot_password_api_v1_auth_forgot_password_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/google/authorize": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Google Authorize */
-        get: operations["google_authorize_api_v1_auth_google_authorize_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/google/callback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Google Callback */
-        get: operations["google_callback_api_v1_auth_google_callback_get"];
-        put?: never;
-        post?: never;
+        /** Reset:Forgot Password */
+        post: operations["reset_forgot_password_api_v1_auth_forgot_password_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -915,8 +881,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Login */
-        post: operations["login_api_v1_auth_login_post"];
+        /** Auth:Jwt.Login */
+        post: operations["auth_jwt_login_api_v1_auth_login_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -932,25 +898,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Logout */
-        post: operations["logout_api_v1_auth_logout_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/logout-all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Logout All */
-        post: operations["logout_all_api_v1_auth_logout_all_post"];
+        /** Auth:Jwt.Logout */
+        post: operations["auth_jwt_logout_api_v1_auth_logout_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -967,11 +916,6 @@ export interface paths {
         /**
          * Get Me
          * @description Return full session data including roles, permissions, and user profile.
-         *
-         *     The JWT carries only a slim ``u`` claim (id, name, email, avatar).
-         *     This endpoint provides the complete ``UserSession`` payload for features
-         *     that need the full user profile (bio, details, theme, role objects, etc.).
-         *     The frontend calls this once on app load and caches the result.
          */
         get: operations["get_me_api_v1_auth_me_get"];
         put?: never;
@@ -982,7 +926,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/refresh": {
+    "/api/v1/auth/register": {
         parameters: {
             query?: never;
             header?: never;
@@ -991,8 +935,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Refresh */
-        post: operations["refresh_api_v1_auth_refresh_post"];
+        /** Register:Register */
+        post: operations["register_register_api_v1_auth_register_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1008,8 +952,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reset Password */
-        post: operations["reset_password_api_v1_auth_reset_password_post"];
+        /** Reset:Reset Password */
+        post: operations["reset_reset_password_api_v1_auth_reset_password_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5033,6 +4977,30 @@ export interface components {
             /** Content File */
             content_file: string;
         };
+        /** Body_auth_jwt_login_api_v1_auth_login_post */
+        Body_auth_jwt_login_api_v1_auth_login_post: {
+            /** Client Id */
+            client_id?: string | null;
+            /**
+             * Client Secret
+             * Format: password
+             */
+            client_secret?: string | null;
+            /** Grant Type */
+            grant_type?: string | null;
+            /**
+             * Password
+             * Format: password
+             */
+            password: string;
+            /**
+             * Scope
+             * @default
+             */
+            scope: string;
+            /** Username */
+            username: string;
+        };
         /** Body_complete_chunked_upload_api_v1_uploads_complete_post */
         Body_complete_chunked_upload_api_v1_uploads_complete_post: {
             /** Upload Id */
@@ -5052,6 +5020,21 @@ export interface components {
             type_of_dir: string;
             /** Uuid */
             uuid: string;
+        };
+        /** Body_reset_forgot_password_api_v1_auth_forgot_password_post */
+        Body_reset_forgot_password_api_v1_auth_forgot_password_post: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+        };
+        /** Body_reset_reset_password_api_v1_auth_reset_password_post */
+        Body_reset_reset_password_api_v1_auth_reset_password_post: {
+            /** Password */
+            password: string;
+            /** Token */
+            token: string;
         };
         /** Body_upload_chunk_api_v1_uploads_chunk_post */
         Body_upload_chunk_api_v1_uploads_chunk_post: {
@@ -5949,6 +5932,13 @@ export interface components {
          * @enum {string}
          */
         DiscussionType: "post" | "reply";
+        /** ErrorModel */
+        ErrorModel: {
+            /** Detail */
+            detail: string | {
+                [key: string]: string;
+            };
+        };
         /**
          * ExamAttemptRead
          * @description Model for reading an exam attempt
@@ -6110,11 +6100,6 @@ export interface components {
             type: "youtube" | "vimeo";
             /** Uri */
             uri: string;
-        };
-        /** ForgotPasswordRequest */
-        ForgotPasswordRequest: {
-            /** Email */
-            email: string;
         };
         /** FullCourseRead */
         FullCourseRead: {
@@ -6363,18 +6348,6 @@ export interface components {
             entries: components["schemas"]["LeaderboardEntryRead"][];
             /** Total Participants */
             total_participants: number;
-        };
-        /** LoginRequest */
-        LoginRequest: {
-            /** Email */
-            email: string;
-            /** Password */
-            password: string;
-        };
-        /** LogoutResponse */
-        LogoutResponse: {
-            /** Msg */
-            msg: string;
         };
         /** MetricCard */
         MetricCard: {
@@ -6838,13 +6811,6 @@ export interface components {
              * @default false
              */
             violations_exceeded: boolean;
-        };
-        /** ResetPasswordRequest */
-        ResetPasswordRequest: {
-            /** New Password */
-            new_password: string;
-            /** Token */
-            token: string;
         };
         /**
          * ResourceAuthorshipEnum
@@ -7563,11 +7529,6 @@ export interface components {
             /** Value */
             value: number;
         };
-        /** TokensResponse */
-        TokensResponse: {
-            /** Expires At */
-            expires_at: number;
-        };
         /** Trail */
         Trail: {
             /**
@@ -7829,6 +7790,21 @@ export interface components {
             first_name: string;
             /** Id */
             id: number;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Is Superuser
+             * @default false
+             */
+            is_superuser: boolean;
+            /**
+             * Is Verified
+             * @default false
+             */
+            is_verified: boolean;
             /** Last Name */
             last_name: string;
             /**
@@ -9734,7 +9710,7 @@ export interface operations {
             };
         };
     };
-    forgot_password_api_v1_auth_forgot_password_post: {
+    reset_forgot_password_api_v1_auth_forgot_password_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -9743,12 +9719,12 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ForgotPasswordRequest"];
+                "application/json": components["schemas"]["Body_reset_forgot_password_api_v1_auth_forgot_password_post"];
             };
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9767,71 +9743,7 @@ export interface operations {
             };
         };
     };
-    google_authorize_api_v1_auth_google_authorize_get: {
-        parameters: {
-            query: {
-                callback: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    google_callback_api_v1_auth_google_callback_get: {
-        parameters: {
-            query?: {
-                code?: string | null;
-                state?: string | null;
-                error?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    login_api_v1_auth_login_post: {
+    auth_jwt_login_api_v1_auth_login_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -9840,7 +9752,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LoginRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["Body_auth_jwt_login_api_v1_auth_login_post"];
             };
         };
         responses: {
@@ -9850,7 +9762,23 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserSession"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorModel"];
                 };
             };
             /** @description Validation Error */
@@ -9864,7 +9792,7 @@ export interface operations {
             };
         };
     };
-    logout_api_v1_auth_logout_post: {
+    auth_jwt_logout_api_v1_auth_logout_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -9879,28 +9807,22 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LogoutResponse"];
+                    "application/json": unknown;
                 };
             };
-        };
-    };
-    logout_all_api_v1_auth_logout_all_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["LogoutResponse"];
+                content?: never;
+            };
+            /** @description Missing token or inactive user. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content?: never;
             };
         };
     };
@@ -9924,27 +9846,7 @@ export interface operations {
             };
         };
     };
-    refresh_api_v1_auth_refresh_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokensResponse"];
-                };
-            };
-        };
-    };
-    reset_password_api_v1_auth_reset_password_post: {
+    register_register_api_v1_auth_register_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -9953,7 +9855,49 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ResetPasswordRequest"];
+                "application/json": components["schemas"]["UserCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_reset_password_api_v1_auth_reset_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Body_reset_reset_password_api_v1_auth_reset_password_post"];
             };
         };
         responses: {
@@ -9964,6 +9908,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorModel"];
                 };
             };
             /** @description Validation Error */
