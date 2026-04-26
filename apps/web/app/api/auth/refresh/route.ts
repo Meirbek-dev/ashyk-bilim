@@ -29,8 +29,14 @@ function buildForwardedHeaders(request: NextRequest): Headers {
   return headers;
 }
 
+function getPublicOrigin(request: NextRequest): string {
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.host;
+  const proto = (request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol).replace(':', '');
+  return `${proto}://${host}`;
+}
+
 function redirectToLogin(request: NextRequest, returnTo: string): NextResponse {
-  const response = NextResponse.redirect(new URL(buildLoginRedirect(returnTo), request.url));
+  const response = NextResponse.redirect(new URL(buildLoginRedirect(returnTo), getPublicOrigin(request)));
   clearAuthCookies(response);
   return response;
 }
@@ -54,7 +60,7 @@ export async function GET(request: NextRequest) {
     return redirectToLogin(request, returnTo);
   }
 
-  const response = NextResponse.redirect(new URL(returnTo, request.url));
+  const response = NextResponse.redirect(new URL(returnTo, getPublicOrigin(request)));
   applyResponseCookiesToNextResponse(backendResponse.headers, response);
   return response;
 }

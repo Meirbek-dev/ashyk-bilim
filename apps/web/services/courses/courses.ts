@@ -475,13 +475,19 @@ export async function deleteCourseFromBackend(
 ) {
   const result = await apiFetch(`courses/${course_uuid}`, { method: 'DELETE' });
   const data = (await errorHandling(result)) as CourseDetailResponse;
+  const deletionSucceeded =
+    result.ok &&
+    (!('success' in (data as Record<string, unknown>)) ||
+      Boolean((data as { success?: unknown }).success));
 
-  const { revalidateTag } = await import('next/cache');
-  revalidateTag(tags.courses, 'max');
-  revalidateTag(tags.editableCourses, 'max');
-  revalidateTag(courseTag.detail(course_uuid), 'max');
-  revalidateTag(courseTag.editableList(), 'max');
-  revalidateTag(courseTag.publicList(), 'max');
+  if (deletionSucceeded) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.courses, 'max');
+    revalidateTag(tags.editableCourses, 'max');
+    revalidateTag(courseTag.detail(course_uuid), 'max');
+    revalidateTag(courseTag.editableList(), 'max');
+    revalidateTag(courseTag.publicList(), 'max');
+  }
 
   return data;
 }

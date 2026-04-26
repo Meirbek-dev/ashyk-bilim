@@ -73,9 +73,18 @@ function rewriteWithHeaders(req: NextRequest, requestId: string, pathname: strin
   );
 }
 
+function getPublicOrigin(req: NextRequest): string {
+  const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? req.nextUrl.host;
+  const proto = (req.headers.get('x-forwarded-proto') ?? req.nextUrl.protocol).replace(':', '');
+  return `${proto}://${host}`;
+}
+
 function redirectToRefresh(req: NextRequest, requestId: string, pathname: string, search: string) {
   const returnTo = encodeURIComponent(pathname + search);
-  return withRequestId(NextResponse.redirect(new URL(`/api/auth/refresh?returnTo=${returnTo}`, req.url)), requestId);
+  return withRequestId(
+    NextResponse.redirect(new URL(`/api/auth/refresh?returnTo=${returnTo}`, getPublicOrigin(req))),
+    requestId,
+  );
 }
 
 // ── Proxy ─────────────────────────────────────────────────────────────────────
