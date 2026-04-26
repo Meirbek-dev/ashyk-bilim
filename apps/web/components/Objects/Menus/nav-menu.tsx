@@ -299,9 +299,7 @@ export default function NavBar() {
             <LocaleSwitcher />
           </div>
 
-          <ThemeModeToggle
-            className="mx-1"
-          />
+          <ThemeModeToggle className="mx-1" />
 
           <div className="hidden md:flex">
             <HeaderProfileBox />
@@ -382,9 +380,7 @@ export default function NavBar() {
                       className="flex-1"
                       isMobile
                     />
-                    <ThemeModeToggle
-                      className="shrink-0"
-                    />
+                    <ThemeModeToggle className="shrink-0" />
                   </div>
                 </section>
               </div>

@@ -119,7 +119,9 @@ async def test_create_exam_with_activity_uses_datetime_fields_and_sets_creator(
         db_session=session,  # type: ignore[arg-type]
     )
 
-    created_activity = next(model for model in session.added if isinstance(model, Activity))
+    created_activity = next(
+        model for model in session.added if isinstance(model, Activity)
+    )
     created_exam = next(model for model in session.added if isinstance(model, Exam))
 
     assert created_activity.creator_id == current_user.id

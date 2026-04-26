@@ -108,15 +108,13 @@ def _build_google_error_redirect(callback: str, error_code: str) -> str:
     parts = urlsplit(callback)
     query = dict(parse_qsl(parts.query, keep_blank_values=True))
     query["error"] = error_code
-    return urlunsplit(
-        (
-            parts.scheme,
-            parts.netloc,
-            parts.path,
-            urlencode(query),
-            parts.fragment,
-        )
-    )
+    return urlunsplit((
+        parts.scheme,
+        parts.netloc,
+        parts.path,
+        urlencode(query),
+        parts.fragment,
+    ))
 
 
 @router.post("/login")
@@ -207,9 +205,7 @@ async def refresh_token(
             detail="Invalid or expired refresh token",
         )
 
-    user = db_session.exec(
-        select(User).where(User.id == inspection.user_id)
-    ).first()
+    user = db_session.exec(select(User).where(User.id == inspection.user_id)).first()
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

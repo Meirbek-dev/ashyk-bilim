@@ -11,24 +11,26 @@ from src.services.auth import google_oauth
 
 
 def _build_request() -> Request:
-    return Request(
-        {
-            "type": "http",
-            "method": "GET",
-            "path": "/api/v1/auth/google/callback",
-            "headers": [],
-            "query_string": b"",
-        }
-    )
+    return Request({
+        "type": "http",
+        "method": "GET",
+        "path": "/api/v1/auth/google/callback",
+        "headers": [],
+        "query_string": b"",
+    })
 
 
 @pytest.mark.asyncio
-async def test_google_callback_redirects_to_frontend_on_exchange_error(monkeypatch) -> None:
+async def test_google_callback_redirects_to_frontend_on_exchange_error(
+    monkeypatch,
+) -> None:
     frontend_callback = "https://example.test/redirect_from_auth"
     state, _jti = google_oauth._encode_state(frontend_callback)
 
     async def _fail_exchange(**_kwargs):
-        raise HTTPException(status_code=503, detail="Google OAuth service temporarily unavailable")
+        raise HTTPException(
+            status_code=503, detail="Google OAuth service temporarily unavailable"
+        )
 
     monkeypatch.setattr(auth_router, "exchange_google_code", _fail_exchange)
 

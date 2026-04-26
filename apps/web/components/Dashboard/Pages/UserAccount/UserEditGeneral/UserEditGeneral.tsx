@@ -437,7 +437,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                 <Label className="text-base font-medium">{t('themeSelector.modeTitle')}</Label>
                 <p className="text-muted-foreground text-xs">{t('themeSelector.modeDescription')}</p>
               </div>
-              <ThemeModeToggle className="ml-4"/>
+              <ThemeModeToggle className="ml-4" />
             </div>
           </div>
 

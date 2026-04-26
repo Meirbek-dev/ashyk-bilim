@@ -26,18 +26,12 @@ export function extractFontFamily(fontFamilyValue: string | undefined): string |
   return cleanFont;
 }
 
-export function buildFontCssUrl(
-  family: string,
-  weights: readonly string[] = DEFAULT_FONT_WEIGHTS,
-): string {
+export function buildFontCssUrl(family: string, weights: readonly string[] = DEFAULT_FONT_WEIGHTS): string {
   const encodedFamily = encodeURIComponent(family);
   return `https://fonts.googleapis.com/css2?family=${encodedFamily}:wght@${weights.join(',')}&display=swap`;
 }
 
-export function loadGoogleFont(
-  family: string,
-  weights: readonly string[] = DEFAULT_FONT_WEIGHTS,
-): void {
+export function loadGoogleFont(family: string, weights: readonly string[] = DEFAULT_FONT_WEIGHTS): void {
   if (typeof document === 'undefined') return;
 
   const href = buildFontCssUrl(family, weights);

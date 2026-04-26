@@ -133,4 +133,6 @@ def test_update_user_preferences_rejects_other_users():
     from src.services.users.users import update_user_preferences
 
     with pytest.raises(ResourceAccessDenied):
-        update_user_preferences(Mock(), Mock(), 4, SimpleNamespace(id=3), theme="default")
+        update_user_preferences(
+            Mock(), Mock(), 4, SimpleNamespace(id=3), theme="default"
+        )

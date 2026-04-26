@@ -4,13 +4,7 @@ import DevScriptLoader from '@/components/DevScriptLoader';
 import { ThemeScript } from '@/components/providers/theme-script';
 import { getSession } from '@/lib/auth/session';
 import { cookies } from 'next/headers';
-import {
-  DEFAULT_THEME_MODE,
-  DEFAULT_THEME_NAME,
-  getTheme,
-  THEME_MODE_STORAGE_KEY,
-  type ThemeMode,
-} from '@/lib/themes';
+import { DEFAULT_THEME_MODE, DEFAULT_THEME_NAME, getTheme, THEME_MODE_STORAGE_KEY, type ThemeMode } from '@/lib/themes';
 import type { CSSProperties } from 'react';
 import { Suspense } from 'react';
 import RootProviders from './root-providers';

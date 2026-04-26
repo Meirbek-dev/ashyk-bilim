@@ -511,5 +511,3 @@ def get_permission_checker(
 
 
 PermissionCheckerDep = Annotated[PermissionChecker, Depends(get_permission_checker)]
-
-

@@ -56,7 +56,9 @@ async def test_google_metadata_uses_builtin_fallback_when_discovery_times_out(
     }
 
 
-async def test_google_metadata_prefers_stale_cache_when_refresh_fails(monkeypatch) -> None:
+async def test_google_metadata_prefers_stale_cache_when_refresh_fails(
+    monkeypatch,
+) -> None:
     stale_metadata = {
         "authorization_endpoint": "https://cached.example/auth",
         "token_endpoint": "https://cached.example/token",
@@ -88,7 +90,9 @@ async def test_google_metadata_prefers_stale_cache_when_refresh_fails(monkeypatc
 
 
 @pytest.mark.asyncio
-async def test_exchange_google_code_retries_transient_token_timeout(monkeypatch) -> None:
+async def test_exchange_google_code_retries_transient_token_timeout(
+    monkeypatch,
+) -> None:
     attempts = {"post": 0}
     google_oauth._metadata_cache = {
         "authorization_endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
@@ -117,7 +121,9 @@ async def test_exchange_google_code_retries_transient_token_timeout(monkeypatch)
                 request=httpx.Request("POST", _url),
             )
 
-        async def get(self, _url: str, headers: dict[str, str] | None = None) -> httpx.Response:
+        async def get(
+            self, _url: str, headers: dict[str, str] | None = None
+        ) -> httpx.Response:
             assert headers == {"Authorization": "Bearer token"}
             return httpx.Response(
                 200,
@@ -125,7 +131,9 @@ async def test_exchange_google_code_retries_transient_token_timeout(monkeypatch)
                 request=httpx.Request("GET", _url),
             )
 
-    monkeypatch.setattr(google_oauth, "_build_google_client", lambda timeout: _RetryClient())
+    monkeypatch.setattr(
+        google_oauth, "_build_google_client", lambda timeout: _RetryClient()
+    )
 
     userinfo = await google_oauth.exchange_google_code(
         client_id="client",
@@ -149,6 +157,7 @@ async def test_exchange_google_code_rejects_missing_pkce_verifier(monkeypatch) -
         "userinfo_endpoint": "https://openidconnect.googleapis.com/v1/userinfo",
     }
     google_oauth._metadata_cached_at = google_oauth.time.monotonic()
+
     async def _missing_verifier(_state_jti: str) -> None:
         return None
 

@@ -41,7 +41,9 @@ class _FakeSession:
         return None
 
 
-def test_award_xp_short_circuits_when_idempotency_key_already_exists(monkeypatch) -> None:
+def test_award_xp_short_circuits_when_idempotency_key_already_exists(
+    monkeypatch,
+) -> None:
     profile = SimpleNamespace(
         user_id=1,
         total_xp=100,

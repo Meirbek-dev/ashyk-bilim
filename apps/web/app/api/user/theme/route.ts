@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ updated: true }, { status: 200 });
   } catch (error) {
-    const status = typeof (error as { status?: unknown }).status === 'number' ? (error as { status: number }).status : 500;
+    const status =
+      typeof (error as { status?: unknown }).status === 'number' ? (error as { status: number }).status : 500;
 
     return NextResponse.json(
       {
