@@ -143,7 +143,7 @@ export default function EditSocials() {
   ];
 
   return (
-    <div className="soft-shadow border-border bg-card text-card-foreground mx-0 rounded-xl border shadow-sm sm:mx-10">
+    <div className="bg-background mx-0 rounded-3xl sm:mx-10">
       <form
         onSubmit={form.handleSubmit((values) =>
           startTransition(() => {
@@ -152,7 +152,7 @@ export default function EditSocials() {
         )}
       >
         <div className="flex flex-col gap-0">
-          <div className="bg-muted mx-3 my-3 flex flex-col gap-1 rounded-md px-5 py-3">
+          <div className="bg-muted/30 mx-3 my-3 flex flex-col gap-1 rounded-3xl px-5 py-5">
             <h1 className="text-foreground text-xl font-bold">{t('title')}</h1>
             <h2 className="text-muted-foreground text-base">{t('description')}</h2>
           </div>
@@ -161,7 +161,7 @@ export default function EditSocials() {
             <div className="w-full space-y-6">
               <div>
                 <FieldLabel className="text-lg font-semibold">{t('socialLinksTitle')}</FieldLabel>
-                <div className="soft-shadow border-border bg-muted/50 mt-2 space-y-3 rounded-lg border p-4">
+                <div className="border-border bg-muted/20 mt-2 space-y-3 rounded-3xl border p-4">
                   <div className="grid gap-3">
                     {socialFields.map((field) => (
                       <Controller
@@ -192,7 +192,7 @@ export default function EditSocials() {
             <div className="w-full space-y-6">
               <div>
                 <FieldLabel className="text-lg font-semibold">{t('customLinksTitle')}</FieldLabel>
-                <div className="soft-shadow border-border bg-muted/50 mt-2 space-y-3 rounded-lg border p-4">
+                <div className="border-border bg-muted/20 mt-2 space-y-3 rounded-3xl border p-4">
                   {linksEntries.map(([linkKey, linkValue], index) => (
                     <div
                       key={index}

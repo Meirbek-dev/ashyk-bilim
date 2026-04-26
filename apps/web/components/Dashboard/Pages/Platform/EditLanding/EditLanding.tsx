@@ -447,7 +447,7 @@ const EditLanding = () => {
   };
 
   return (
-    <div className="bg-background mx-0 rounded-xl shadow-sm sm:mx-10">
+    <div className="bg-background mx-0 rounded-3xl sm:mx-10">
       <div className="space-y-6 p-6">
         {/* Enable/Disable Landing Page */}
         <div className="flex items-center justify-between border-b pb-4">

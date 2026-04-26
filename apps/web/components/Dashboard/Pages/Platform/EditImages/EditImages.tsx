@@ -378,8 +378,8 @@ export default function EditImages() {
   };
 
   return (
-    <div className="soft-shadow border-border bg-card text-card-foreground mx-0 mb-16 rounded-xl border px-3 py-3 shadow-sm sm:mx-10 sm:mb-0">
-      <div className="bg-muted mb-2 flex flex-col gap-1 rounded-md px-5 py-3">
+    <div className="bg-background mx-0 mb-16 rounded-3xl sm:mx-10 sm:mb-0">
+      <div className="bg-muted/30 mb-2 flex flex-col gap-1 rounded-3xl px-5 py-5">
         <h1 className="text-foreground text-xl font-bold">{t('title')}</h1>
         <h2 className="text-muted-foreground text-base">{t('description')}</h2>
       </div>
@@ -416,7 +416,7 @@ export default function EditImages() {
           className="mt-2"
         >
           <div className="flex w-full flex-col space-y-5">
-            <div className="bg-muted/30 w-full rounded-xl py-8 transition-all duration-300">
+            <div className="bg-muted/20 w-full rounded-3xl py-8 transition-all duration-300">
               <div className="flex flex-col items-center justify-center gap-8">
                 <div className="group relative h-[125px] w-[250px]">
                   <NextImage
@@ -484,7 +484,7 @@ export default function EditImages() {
           className="mt-2"
         >
           <div className="flex w-full flex-col space-y-5">
-            <div className="bg-muted/30 w-full rounded-xl py-8 transition-all duration-300">
+            <div className="bg-muted/20 w-full rounded-3xl py-8 transition-all duration-300">
               <div className="flex flex-col items-center justify-center space-y-8">
                 <div className="group relative h-[125px] w-[250px]">
                   <NextImage
@@ -553,7 +553,7 @@ export default function EditImages() {
           className="mt-4"
         >
           <div className="flex w-full flex-col space-y-5">
-            <div className="bg-muted/30 w-full rounded-xl py-6 transition-all duration-300">
+            <div className="bg-muted/20 w-full rounded-3xl py-6 transition-all duration-300">
               <div className="flex flex-col items-center justify-center space-y-6">
                 <DragDropContext onDragEnd={handleDragEnd}>
                   <Droppable
