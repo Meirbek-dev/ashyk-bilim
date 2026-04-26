@@ -10,12 +10,15 @@ from src.db.analytics import (
     DailyTeacherMetrics,
     LearnerRiskSnapshot,
 )
+from src.services.analytics.anomalies import build_anomalies
 from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.bottlenecks import build_content_bottlenecks
 from src.services.analytics.courses import build_course_rows
 from src.services.analytics.filters import AnalyticsFilters
+from src.services.analytics.forecasting import build_forecasts
 from src.services.analytics.insights import build_insight_feed
 from src.services.analytics.interventions import summarize_interventions
+from src.services.analytics.quality import build_data_quality
 from src.services.analytics.queries import (
     ActivityEvent,
     build_activity_events,
@@ -291,6 +294,30 @@ def get_teacher_overview(
     assessment_rows = build_assessment_rows(context, filters)
     workload = build_teacher_workload(context, filters)
     content_bottlenecks = build_content_bottlenecks(context, filters)
+    rollup_freshness_seconds = freshness_seconds_from_rollup(
+        teacher_rollup.generated_at if teacher_rollup is not None else None
+    )
+    data_quality = build_data_quality(
+        db_session,
+        scope,
+        filters,
+        context,
+        freshness_seconds=rollup_freshness_seconds,
+    )
+    forecasts = build_forecasts(
+        context,
+        filters,
+        risk_rows=risk_rows,
+        course_rows=course_rows,
+        assessment_rows=assessment_rows,
+        workload=workload,
+    )
+    anomalies = build_anomalies(
+        context,
+        filters,
+        course_rows=course_rows,
+        assessment_rows=assessment_rows,
+    )
     negative_engagement_courses = sum(
         1
         for row in course_rows
@@ -435,9 +462,7 @@ def get_teacher_overview(
         generated_at=to_iso(generated_at) or generated_rows_timestamp,
         # For live queries, freshness is how long data is "stale" within the window (always live = 0).
         # Report the age of the rollup if one exists; otherwise report 0 indicating real-time live data.
-        freshness_seconds=freshness_seconds_from_rollup(
-            teacher_rollup.generated_at if teacher_rollup is not None else None
-        ),
+        freshness_seconds=rollup_freshness_seconds,
         window=filters.window,
         compare=filters.compare,
         scope=TeacherOverviewScope(
@@ -547,6 +572,9 @@ def get_teacher_overview(
             bottlenecks=content_bottlenecks,
             workload=workload,
         ),
+        data_quality=data_quality,
+        forecasts=forecasts,
+        anomalies=anomalies,
         risk_distribution=risk_distribution,
         intervention_summary=summarize_interventions(db_session, scope),
         workload=workload,

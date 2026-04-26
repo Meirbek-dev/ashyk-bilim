@@ -1,3 +1,4 @@
+from src.services.analytics.admin import get_admin_analytics
 from src.services.analytics.assessments import (
     get_teacher_assessment_detail,
     get_teacher_assessment_list,
@@ -32,6 +33,7 @@ __all__ = [
     "export_at_risk_csv",
     "export_course_progress_csv",
     "export_grading_backlog_csv",
+    "get_admin_analytics",
     "get_at_risk_learners",
     "get_drillthrough_rows",
     "get_teacher_assessment_detail",

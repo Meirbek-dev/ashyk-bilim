@@ -4,6 +4,7 @@ import { apiFetch } from '@/lib/api-client';
 import { getAPIUrl } from '@services/config/config';
 
 type TeacherOverviewResponse = components['schemas']['TeacherOverviewResponse'];
+type AdminAnalyticsResponse = components['schemas']['AdminAnalyticsResponse'];
 type TeacherCourseListResponse = components['schemas']['TeacherCourseListResponse'];
 type TeacherCourseDetailResponse = components['schemas']['TeacherCourseDetailResponse'];
 type TeacherAssessmentListResponse = components['schemas']['TeacherAssessmentListResponse'];
@@ -109,6 +110,10 @@ export function normalizeAnalyticsQuery(searchParams: Record<string, string | st
 
 export function getTeacherOverview(query?: AnalyticsQuery) {
   return analyticsRequest<TeacherOverviewResponse>('teacher/overview', query);
+}
+
+export function getAdminAnalyticsOverview(query?: AnalyticsQuery) {
+  return analyticsRequest<AdminAnalyticsResponse>('admin/overview', query);
 }
 
 export function getTeacherCourseList(query?: AnalyticsQuery) {

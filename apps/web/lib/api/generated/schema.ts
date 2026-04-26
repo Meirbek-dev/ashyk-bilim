@@ -239,6 +239,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analytics/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Analytics Overview Platform */
+        get: operations["admin_analytics_overview_platform_api_v1_analytics_admin_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/analytics/teacher/assessments": {
         parameters: {
             query?: never;
@@ -4412,6 +4429,87 @@ export interface components {
             /** Permission Id */
             permission_id: number;
         };
+        /** AdminAnalyticsCohortRow */
+        AdminAnalyticsCohortRow: {
+            /** Avg Progress Pct */
+            avg_progress_pct?: number | null;
+            /** Cohort Id */
+            cohort_id: number;
+            /** Cohort Name */
+            cohort_name: string;
+            /** Learners */
+            learners: number;
+            /** Retained Learners */
+            retained_learners: number;
+            /** Retention Rate */
+            retention_rate?: number | null;
+        };
+        /** AdminAnalyticsCourseRow */
+        AdminAnalyticsCourseRow: {
+            /** Active Learners 7D */
+            active_learners_7d: number;
+            /** At Risk Learners */
+            at_risk_learners: number;
+            /** Completion Rate */
+            completion_rate: number;
+            /** Content Roi Score */
+            content_roi_score?: number | null;
+            /** Course Id */
+            course_id: number;
+            /** Course Name */
+            course_name: string;
+            /** Course Uuid */
+            course_uuid: string;
+            /** Health Score */
+            health_score: number;
+        };
+        /** AdminAnalyticsProgramRow */
+        AdminAnalyticsProgramRow: {
+            /** Completion Rate */
+            completion_rate?: number | null;
+            /** Course Count */
+            course_count: number;
+            /** Health Score */
+            health_score?: number | null;
+            /** Learner Count */
+            learner_count: number;
+            /** Program Id */
+            program_id?: number | null;
+            /** Program Name */
+            program_name: string;
+        };
+        /** AdminAnalyticsResponse */
+        AdminAnalyticsResponse: {
+            /** Cohort Retention */
+            cohort_retention: components["schemas"]["AdminAnalyticsCohortRow"][];
+            /** Content Roi */
+            content_roi: components["schemas"]["AdminAnalyticsCourseRow"][];
+            /** Course Health Ranking */
+            course_health_ranking: components["schemas"]["AdminAnalyticsCourseRow"][];
+            /** Department Program Performance */
+            department_program_performance: components["schemas"]["AdminAnalyticsProgramRow"][];
+            /** Generated At */
+            generated_at: string;
+            /** Teacher Workload Comparison */
+            teacher_workload_comparison: components["schemas"]["AdminAnalyticsTeacherRow"][];
+        };
+        /** AdminAnalyticsTeacherRow */
+        AdminAnalyticsTeacherRow: {
+            /** At Risk Learners */
+            at_risk_learners: number;
+            /** Managed Course Count */
+            managed_course_count: number;
+            /** Median Feedback Latency Hours */
+            median_feedback_latency_hours?: number | null;
+            /** Sla Breaches */
+            sla_breaches: number;
+            /** Teacher Display Name */
+            teacher_display_name: string;
+            /** Teacher User Id */
+            teacher_user_id: number;
+            /** Workload Backlog */
+            workload_backlog: number;
+        };
         /** AlertItem */
         AlertItem: {
             /** Activity Id */
@@ -4439,12 +4537,83 @@ export interface components {
              */
             type: "risk_spike" | "engagement_drop" | "grading_backlog" | "assessment_outlier" | "content_stale";
         };
+        /** AnalyticsDataQuality */
+        AnalyticsDataQuality: {
+            /**
+             * Confidence Level
+             * @enum {string}
+             */
+            confidence_level: "low" | "medium" | "high";
+            /** Courses Without Enough Data */
+            courses_without_enough_data: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Excluded Preview Attempts
+             * @default 0
+             */
+            excluded_preview_attempts: number;
+            /**
+             * Excluded Teacher Attempts
+             * @default 0
+             */
+            excluded_teacher_attempts: number;
+            /**
+             * Freshness Seconds
+             * @default 0
+             */
+            freshness_seconds: number;
+            /** Issues */
+            issues: components["schemas"]["DataQualityIssue"][];
+            /** Last Rollup Time */
+            last_rollup_time?: string | null;
+            /** Missing Event Sources */
+            missing_event_sources: string[];
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "live" | "rollup";
+        };
         /** AnalyticsFilterOption */
         AnalyticsFilterOption: {
             /** Label */
             label: string;
             /** Value */
             value: string;
+        };
+        /** AnomalyItem */
+        AnomalyItem: {
+            /** Activity Id */
+            activity_id?: number | null;
+            /** Assessment Id */
+            assessment_id?: number | null;
+            /** Assessment Type */
+            assessment_type?: string | null;
+            /** Baseline Value */
+            baseline_value?: number | null;
+            /** Course Id */
+            course_id?: number | null;
+            /** Course Name */
+            course_name?: string | null;
+            /** Detail */
+            detail: string;
+            /** Id */
+            id: string;
+            /** Observed Value */
+            observed_value?: number | null;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "info" | "warning" | "critical";
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "engagement_drop" | "submission_spike" | "fast_quiz_completion" | "score_distribution_shift";
         };
         /** AssessmentLearnerRow */
         AssessmentLearnerRow: {
@@ -6105,6 +6274,24 @@ export interface components {
             /** User Rank */
             user_rank?: number | null;
         };
+        /** DataQualityIssue */
+        DataQualityIssue: {
+            /** Course Id */
+            course_id?: number | null;
+            /** Detail */
+            detail: string;
+            /** Id */
+            id: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "info" | "warning" | "critical";
+            /** Source */
+            source?: string | null;
+            /** Title */
+            title: string;
+        };
         /** DiscussionLikeRead */
         DiscussionLikeRead: {
             /** Creation Date */
@@ -6316,6 +6503,46 @@ export interface components {
             type: "youtube";
             /** Uri */
             uri: string;
+        };
+        /** ForecastItem */
+        ForecastItem: {
+            /** Assessment Id */
+            assessment_id?: number | null;
+            /** Assessment Type */
+            assessment_type?: string | null;
+            /**
+             * Confidence Level
+             * @enum {string}
+             */
+            confidence_level: "low" | "medium" | "high";
+            /** Course Id */
+            course_id?: number | null;
+            /** Course Name */
+            course_name?: string | null;
+            /** Deadline At */
+            deadline_at?: string | null;
+            /** Expected Value */
+            expected_value?: number | null;
+            /** Id */
+            id: string;
+            /** Learner Count */
+            learner_count?: number | null;
+            /** Prediction */
+            prediction: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "info" | "warning" | "critical";
+            /** Target Value */
+            target_value?: number | null;
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "completion_target_miss" | "grading_backlog_7d" | "course_completion_deadline" | "assessment_failure_risk";
         };
         /** FullCourseRead */
         FullCourseRead: {
@@ -7838,6 +8065,8 @@ export interface components {
         TeacherOverviewResponse: {
             /** Alerts */
             alerts: components["schemas"]["AlertItem"][];
+            /** Anomalies */
+            anomalies: components["schemas"]["AnomalyItem"][];
             /** Assessment Preview */
             assessment_preview: components["schemas"]["AssessmentOutlierRow"][];
             /**
@@ -7876,6 +8105,9 @@ export interface components {
              * @default 0
              */
             course_total: number;
+            data_quality: components["schemas"]["AnalyticsDataQuality"];
+            /** Forecasts */
+            forecasts: components["schemas"]["ForecastItem"][];
             /** Freshness Seconds */
             freshness_seconds: number;
             /** Generated At */
@@ -8862,6 +9094,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_analytics_overview_platform_api_v1_analytics_admin_overview_get: {
+        parameters: {
+            query?: {
+                window?: "7d" | "28d" | "90d";
+                compare?: "previous_period" | "none";
+                bucket?: "day" | "week";
+                bucket_start?: string | null;
+                course_ids?: string | null;
+                cohort_ids?: string | null;
+                teacher_user_id?: number | null;
+                timezone?: string;
+                page?: number;
+                page_size?: number;
+                sort_by?: string | null;
+                sort_order?: "asc" | "desc";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAnalyticsResponse"];
                 };
             };
             /** @description Validation Error */

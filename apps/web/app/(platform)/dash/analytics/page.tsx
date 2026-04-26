@@ -1,4 +1,4 @@
-import { getTeacherOverview, normalizeAnalyticsQuery } from '@services/analytics/teacher';
+import { getAdminAnalyticsOverview, getTeacherOverview, normalizeAnalyticsQuery } from '@services/analytics/teacher';
 import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState';
 import TeacherOverview from '@components/Dashboard/Analytics/TeacherOverview';
 import { getTranslations } from 'next-intl/server';
@@ -16,12 +16,16 @@ async function PlatformAnalyticsPageInner(props: {
   const t = await getTranslations('TeacherAnalytics');
 
   try {
-    const overview = await getTeacherOverview(query);
+    const [overview, adminData] = await Promise.all([
+      getTeacherOverview(query),
+      getAdminAnalyticsOverview(query).catch(() => null),
+    ]);
 
     return (
       <TeacherOverview
         query={query}
         data={overview}
+        adminData={adminData}
       />
     );
   } catch (error) {

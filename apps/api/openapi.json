@@ -453,6 +453,268 @@
         "title": "AddPermissionBody",
         "type": "object"
       },
+      "AdminAnalyticsCohortRow": {
+        "properties": {
+          "avg_progress_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Progress Pct"
+          },
+          "cohort_id": {
+            "title": "Cohort Id",
+            "type": "integer"
+          },
+          "cohort_name": {
+            "title": "Cohort Name",
+            "type": "string"
+          },
+          "learners": {
+            "title": "Learners",
+            "type": "integer"
+          },
+          "retained_learners": {
+            "title": "Retained Learners",
+            "type": "integer"
+          },
+          "retention_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retention Rate"
+          }
+        },
+        "required": [
+          "cohort_id",
+          "cohort_name",
+          "learners",
+          "retained_learners"
+        ],
+        "title": "AdminAnalyticsCohortRow",
+        "type": "object"
+      },
+      "AdminAnalyticsCourseRow": {
+        "properties": {
+          "active_learners_7d": {
+            "title": "Active Learners 7D",
+            "type": "integer"
+          },
+          "at_risk_learners": {
+            "title": "At Risk Learners",
+            "type": "integer"
+          },
+          "completion_rate": {
+            "title": "Completion Rate",
+            "type": "number"
+          },
+          "content_roi_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Roi Score"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "course_name": {
+            "title": "Course Name",
+            "type": "string"
+          },
+          "course_uuid": {
+            "title": "Course Uuid",
+            "type": "string"
+          },
+          "health_score": {
+            "title": "Health Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "course_id",
+          "course_uuid",
+          "course_name",
+          "health_score",
+          "completion_rate",
+          "active_learners_7d",
+          "at_risk_learners"
+        ],
+        "title": "AdminAnalyticsCourseRow",
+        "type": "object"
+      },
+      "AdminAnalyticsProgramRow": {
+        "properties": {
+          "completion_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Rate"
+          },
+          "course_count": {
+            "title": "Course Count",
+            "type": "integer"
+          },
+          "health_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Score"
+          },
+          "learner_count": {
+            "title": "Learner Count",
+            "type": "integer"
+          },
+          "program_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program Id"
+          },
+          "program_name": {
+            "title": "Program Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "program_name",
+          "course_count",
+          "learner_count"
+        ],
+        "title": "AdminAnalyticsProgramRow",
+        "type": "object"
+      },
+      "AdminAnalyticsResponse": {
+        "properties": {
+          "cohort_retention": {
+            "items": {
+              "$ref": "#/components/schemas/AdminAnalyticsCohortRow"
+            },
+            "title": "Cohort Retention",
+            "type": "array"
+          },
+          "content_roi": {
+            "items": {
+              "$ref": "#/components/schemas/AdminAnalyticsCourseRow"
+            },
+            "title": "Content Roi",
+            "type": "array"
+          },
+          "course_health_ranking": {
+            "items": {
+              "$ref": "#/components/schemas/AdminAnalyticsCourseRow"
+            },
+            "title": "Course Health Ranking",
+            "type": "array"
+          },
+          "department_program_performance": {
+            "items": {
+              "$ref": "#/components/schemas/AdminAnalyticsProgramRow"
+            },
+            "title": "Department Program Performance",
+            "type": "array"
+          },
+          "generated_at": {
+            "title": "Generated At",
+            "type": "string"
+          },
+          "teacher_workload_comparison": {
+            "items": {
+              "$ref": "#/components/schemas/AdminAnalyticsTeacherRow"
+            },
+            "title": "Teacher Workload Comparison",
+            "type": "array"
+          }
+        },
+        "required": [
+          "generated_at",
+          "teacher_workload_comparison",
+          "course_health_ranking",
+          "cohort_retention",
+          "department_program_performance",
+          "content_roi"
+        ],
+        "title": "AdminAnalyticsResponse",
+        "type": "object"
+      },
+      "AdminAnalyticsTeacherRow": {
+        "properties": {
+          "at_risk_learners": {
+            "title": "At Risk Learners",
+            "type": "integer"
+          },
+          "managed_course_count": {
+            "title": "Managed Course Count",
+            "type": "integer"
+          },
+          "median_feedback_latency_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Feedback Latency Hours"
+          },
+          "sla_breaches": {
+            "title": "Sla Breaches",
+            "type": "integer"
+          },
+          "teacher_display_name": {
+            "title": "Teacher Display Name",
+            "type": "string"
+          },
+          "teacher_user_id": {
+            "title": "Teacher User Id",
+            "type": "integer"
+          },
+          "workload_backlog": {
+            "title": "Workload Backlog",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "teacher_user_id",
+          "teacher_display_name",
+          "managed_course_count",
+          "workload_backlog",
+          "sla_breaches",
+          "at_risk_learners"
+        ],
+        "title": "AdminAnalyticsTeacherRow",
+        "type": "object"
+      },
       "AlertItem": {
         "properties": {
           "activity_id": {
@@ -542,6 +804,84 @@
         "title": "AlertItem",
         "type": "object"
       },
+      "AnalyticsDataQuality": {
+        "properties": {
+          "confidence_level": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Confidence Level",
+            "type": "string"
+          },
+          "courses_without_enough_data": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Courses Without Enough Data",
+            "type": "array"
+          },
+          "excluded_preview_attempts": {
+            "default": 0,
+            "title": "Excluded Preview Attempts",
+            "type": "integer"
+          },
+          "excluded_teacher_attempts": {
+            "default": 0,
+            "title": "Excluded Teacher Attempts",
+            "type": "integer"
+          },
+          "freshness_seconds": {
+            "default": 0,
+            "title": "Freshness Seconds",
+            "type": "integer"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/DataQualityIssue"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "last_rollup_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Rollup Time"
+          },
+          "missing_event_sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Event Sources",
+            "type": "array"
+          },
+          "mode": {
+            "enum": [
+              "live",
+              "rollup"
+            ],
+            "title": "Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "confidence_level",
+          "missing_event_sources",
+          "courses_without_enough_data",
+          "issues"
+        ],
+        "title": "AnalyticsDataQuality",
+        "type": "object"
+      },
       "AnalyticsFilterOption": {
         "properties": {
           "label": {
@@ -558,6 +898,127 @@
           "value"
         ],
         "title": "AnalyticsFilterOption",
+        "type": "object"
+      },
+      "AnomalyItem": {
+        "properties": {
+          "activity_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Id"
+          },
+          "assessment_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Id"
+          },
+          "assessment_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Type"
+          },
+          "baseline_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Value"
+          },
+          "course_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Id"
+          },
+          "course_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Name"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "observed_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Value"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "engagement_drop",
+              "submission_spike",
+              "fast_quiz_completion",
+              "score_distribution_shift"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "severity",
+          "title",
+          "detail"
+        ],
+        "title": "AnomalyItem",
         "type": "object"
       },
       "AssessmentLearnerRow": {
@@ -5092,6 +5553,61 @@
         "title": "DashboardRead",
         "type": "object"
       },
+      "DataQualityIssue": {
+        "properties": {
+          "course_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Id"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "severity",
+          "title",
+          "detail"
+        ],
+        "title": "DataQualityIssue",
+        "type": "object"
+      },
       "DiscussionLikeRead": {
         "properties": {
           "creation_date": {
@@ -5580,6 +6096,148 @@
           "chapter_id"
         ],
         "title": "ExternalVideo",
+        "type": "object"
+      },
+      "ForecastItem": {
+        "properties": {
+          "assessment_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Id"
+          },
+          "assessment_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Type"
+          },
+          "confidence_level": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Confidence Level",
+            "type": "string"
+          },
+          "course_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Id"
+          },
+          "course_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Name"
+          },
+          "deadline_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline At"
+          },
+          "expected_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Value"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "learner_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Learner Count"
+          },
+          "prediction": {
+            "title": "Prediction",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "target_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Value"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "completion_target_miss",
+              "grading_backlog_7d",
+              "course_completion_deadline",
+              "assessment_failure_risk"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "severity",
+          "title",
+          "prediction",
+          "confidence_level"
+        ],
+        "title": "ForecastItem",
         "type": "object"
       },
       "FullCourseRead": {
@@ -9576,6 +10234,13 @@
             "title": "Alerts",
             "type": "array"
           },
+          "anomalies": {
+            "items": {
+              "$ref": "#/components/schemas/AnomalyItem"
+            },
+            "title": "Anomalies",
+            "type": "array"
+          },
           "assessment_preview": {
             "items": {
               "$ref": "#/components/schemas/AssessmentOutlierRow"
@@ -9643,6 +10308,16 @@
             "title": "Course Total",
             "type": "integer"
           },
+          "data_quality": {
+            "$ref": "#/components/schemas/AnalyticsDataQuality"
+          },
+          "forecasts": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastItem"
+            },
+            "title": "Forecasts",
+            "type": "array"
+          },
           "freshness_seconds": {
             "title": "Freshness Seconds",
             "type": "integer"
@@ -9696,6 +10371,9 @@
           "trends",
           "alerts",
           "insights",
+          "data_quality",
+          "forecasts",
+          "anomalies",
           "risk_distribution",
           "intervention_summary",
           "workload",
@@ -11881,6 +12559,212 @@
         "summary": "Api Ai Start Activity Chat Session Stream",
         "tags": [
           "ai"
+        ]
+      }
+    },
+    "/api/v1/analytics/admin/overview": {
+      "get": {
+        "operationId": "admin_analytics_overview_platform_api_v1_analytics_admin_overview_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "window",
+            "required": false,
+            "schema": {
+              "default": "28d",
+              "enum": [
+                "7d",
+                "28d",
+                "90d"
+              ],
+              "title": "Window",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "compare",
+            "required": false,
+            "schema": {
+              "default": "previous_period",
+              "enum": [
+                "previous_period",
+                "none"
+              ],
+              "title": "Compare",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "bucket",
+            "required": false,
+            "schema": {
+              "default": "day",
+              "enum": [
+                "day",
+                "week"
+              ],
+              "title": "Bucket",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "bucket_start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Bucket Start"
+            }
+          },
+          {
+            "in": "query",
+            "name": "course_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Course Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cohort_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cohort Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "teacher_user_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Teacher User Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "timezone",
+            "required": false,
+            "schema": {
+              "default": "UTC",
+              "title": "Timezone",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sort By"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_order",
+            "required": false,
+            "schema": {
+              "default": "desc",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "title": "Sort Order",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAnalyticsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Admin Analytics Overview Platform",
+        "tags": [
+          "analytics"
         ]
       }
     },

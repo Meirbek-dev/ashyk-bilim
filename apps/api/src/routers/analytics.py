@@ -20,6 +20,7 @@ from src.services.analytics import (
     export_at_risk_csv,
     export_course_progress_csv,
     export_grading_backlog_csv,
+    get_admin_analytics,
     get_at_risk_learners,
     get_drillthrough_rows,
     get_teacher_assessment_detail,
@@ -33,6 +34,7 @@ from src.services.analytics import (
 )
 from src.services.analytics.filters import AnalyticsFilters, get_analytics_filters
 from src.services.analytics.schemas import (
+    AdminAnalyticsResponse,
     AtRiskLearnersResponse,
     DrillThroughResponse,
     SavedAnalyticsViewCreate,
@@ -110,6 +112,18 @@ async def teacher_overview_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
     return await asyncio.to_thread(get_teacher_overview, db_session, scope, filters)
+
+
+@router.get("/admin/overview", response_model=AdminAnalyticsResponse)
+async def admin_analytics_overview_platform(
+    filters: Annotated[AnalyticsFilters, Depends(get_analytics_filters)],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+):
+    scope = await _scope_for(db_session, current_user, filters, action="read")
+    if not scope.has_platform_scope:
+        raise HTTPException(status_code=403, detail="Platform analytics scope required")
+    return await asyncio.to_thread(get_admin_analytics, db_session, scope, filters)
 
 
 @router.get("/teacher/courses", response_model=TeacherCourseListResponse)

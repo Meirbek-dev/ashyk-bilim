@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getAnalyticsAlertTypeLabel, getAnalyticsSeverityLabel } from '@/lib/analytics/labels';
-import type { AnalyticsQuery, TeacherOverviewResponse } from '@/types/analytics';
+import type { AdminAnalyticsResponse, AnalyticsQuery, TeacherOverviewResponse } from '@/types/analytics';
 import { getAnalyticsExportUrl } from '@services/analytics/teacher';
 import type { AnalyticsFilterOption } from '@/types/analytics';
 import AnalyticsExportButton from './AnalyticsExportButton';
@@ -15,9 +15,13 @@ import Link from 'next/link';
 
 const AnalyticsRiskDistributionChart = lazy(() => import('./AnalyticsRiskDistributionChart'));
 const AnalyticsMultiSeriesTrendChart = lazy(() => import('./AnalyticsMultiSeriesTrendChart'));
+const AdminAnalyticsPanel = lazy(() => import('./AdminAnalyticsPanel'));
+const AnomalyPanel = lazy(() => import('./AnomalyPanel'));
 const AssessmentOutliersTable = lazy(() => import('./AssessmentOutliersTable'));
 const ContentBottlenecksTable = lazy(() => import('./ContentBottlenecksTable'));
+const DataQualityPanel = lazy(() => import('./DataQualityPanel'));
 const DrillThroughAuditPanel = lazy(() => import('./DrillThroughAuditPanel'));
+const ForecastingPanel = lazy(() => import('./ForecastingPanel'));
 const GradingBacklogPanel = lazy(() => import('./GradingBacklogPanel'));
 const InsightFeedPanel = lazy(() => import('./InsightFeedPanel'));
 const SavedViewsBar = lazy(() => import('./SavedViewsBar'));
@@ -30,11 +34,12 @@ const TeacherKpiCards = lazy(() => import('./TeacherKpiCards'));
 interface TeacherOverviewProps {
   query: AnalyticsQuery;
   data: TeacherOverviewResponse;
+  adminData?: AdminAnalyticsResponse | null;
   courseOptions?: AnalyticsFilterOption[];
   cohortOptions?: AnalyticsFilterOption[];
 }
 
-export default function TeacherOverview({ query, data, courseOptions = [], cohortOptions = [] }: TeacherOverviewProps) {
+export default function TeacherOverview({ query, data, adminData, courseOptions = [], cohortOptions = [] }: TeacherOverviewProps) {
   const t = useTranslations('TeacherAnalytics');
   const locale = useLocale();
   const router = useRouter();
@@ -241,6 +246,25 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
           <TeacherWorkloadPanel workload={data.workload} />
         </Suspense>
       </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <Suspense fallback={<SectionFallback height="h-[420px]" />}>
+          <DataQualityPanel quality={data.data_quality} />
+        </Suspense>
+        <Suspense fallback={<SectionFallback height="h-[420px]" />}>
+          <ForecastingPanel forecasts={data.forecasts} />
+        </Suspense>
+      </div>
+
+      <Suspense fallback={<SectionFallback height="h-[360px]" />}>
+        <AnomalyPanel anomalies={data.anomalies} />
+      </Suspense>
+
+      {adminData ? (
+        <Suspense fallback={<SectionFallback height="h-[520px]" />}>
+          <AdminAnalyticsPanel data={adminData} />
+        </Suspense>
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
         <Suspense fallback={<SectionFallback height="h-[420px]" />}>
