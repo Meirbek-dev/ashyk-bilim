@@ -32,7 +32,7 @@ import { deleteCourseFromBackend, updateCourseAccess } from '@services/courses/c
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail';
 import { Actions, Resources, Scopes } from '@/components/Security';
 import { useSession } from '@/hooks/useSession';
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useOptimistic, useState, useTransition } from 'react';
 import type { Course } from '@components/Objects/Thumbnails/CourseThumbnail';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs';
@@ -90,6 +90,11 @@ const CoursesHome = ({
   const [selectedCourseUuids, setSelectedCourseUuids] = useState<string[]>([]);
   const [isBulkPending, startBulkTransition] = useTransition();
   const [pendingBulkAction, setPendingBulkAction] = useState<BulkActionKind | null>(null);
+  const [optimisticCourses, removeOptimisticCourses] = useOptimistic(
+    courses,
+    (state: ManageableCourse[], deletedUuids: string[]) =>
+      state.filter((c) => !deletedUuids.includes(c.course_uuid)),
+  );
   const { data: trailData, isLoading: trailQueryLoading } = useTrailCurrent({ enabled: isAuthenticated });
 
   const isTrailLoading = isAuthenticated && trailQueryLoading;
@@ -114,11 +119,11 @@ const CoursesHome = ({
 
   const courseReadinessMap = useMemo(() => {
     const map = new Map<string, boolean>();
-    for (const course of courses) {
+    for (const course of optimisticCourses) {
       map.set(course.course_uuid, getCourseReadinessSummary(course, null).readyToPublish);
     }
     return map;
-  }, [courses]);
+  }, [optimisticCourses]);
 
   const summaryCards = useMemo(() => {
     return [
@@ -159,7 +164,7 @@ const CoursesHome = ({
     [can],
   );
 
-  const visibleCourseUuids = useMemo(() => courses.map((course) => course.course_uuid), [courses]);
+  const visibleCourseUuids = useMemo(() => optimisticCourses.map((course) => course.course_uuid), [optimisticCourses]);
   const visibleCourseUuidSet = useMemo(() => new Set(visibleCourseUuids), [visibleCourseUuids]);
   const selectedCourseUuidSet = useMemo(() => new Set(selectedCourseUuids), [selectedCourseUuids]);
 
@@ -168,13 +173,13 @@ const CoursesHome = ({
   }, [visibleCourseUuidSet]);
 
   const selectedCourses = useMemo(
-    () => courses.filter((course) => selectedCourseUuidSet.has(course.course_uuid)),
-    [courses, selectedCourseUuidSet],
+    () => optimisticCourses.filter((course) => selectedCourseUuidSet.has(course.course_uuid)),
+    [optimisticCourses, selectedCourseUuidSet],
   );
 
   const selectableVisibleCourses = useMemo(
-    () => courses.filter((course) => canManageCourse(course) || canDeleteCourse(course)),
-    [canDeleteCourse, canManageCourse, courses],
+    () => optimisticCourses.filter((course) => canManageCourse(course) || canDeleteCourse(course)),
+    [canDeleteCourse, canManageCourse, optimisticCourses],
   );
 
   const allVisibleSelected =
@@ -272,25 +277,24 @@ const CoursesHome = ({
       return;
     }
 
-    startBulkTransition(() => {
-      void (async () => {
-        const results = await Promise.allSettled(
-          targetCourses.map((course) => deleteCourseFromBackend(course.course_uuid)),
-        );
+    startBulkTransition(async () => {
+      removeOptimisticCourses(targetCourses.map((c) => c.course_uuid));
+      const results = await Promise.allSettled(
+        targetCourses.map((course) => deleteCourseFromBackend(course.course_uuid)),
+      );
 
-        const successCount = results.filter((result) => result.status === 'fulfilled').length;
-        const failedCount = targetCourses.length - successCount;
+      const successCount = results.filter((result) => result.status === 'fulfilled').length;
+      const failedCount = targetCourses.length - successCount;
 
-        if (successCount > 0) {
-          toast.success(t('toasts.deleted', { count: successCount }));
-          setSelectedCourseUuids([]);
-          router.refresh();
-        }
+      if (successCount > 0) {
+        toast.success(t('toasts.deleted', { count: successCount }));
+        setSelectedCourseUuids([]);
+        router.refresh();
+      }
 
-        if (failedCount > 0) {
-          toast.error(t('toasts.deleteFailed', { count: failedCount }));
-        }
-      })();
+      if (failedCount > 0) {
+        toast.error(t('toasts.deleteFailed', { count: failedCount }));
+      }
     });
   };
 
@@ -475,7 +479,7 @@ const CoursesHome = ({
         header: '',
         enableSorting: false,
         meta: { label: t('table.actions'), exportable: false },
-        cell: ({ row }) => <CourseRowActions course={row.original} />,
+        cell: ({ row }) => <CourseRowActions course={row.original} onOptimisticDelete={removeOptimisticCourses} />,
       },
     ],
     [
@@ -483,6 +487,7 @@ const CoursesHome = ({
       canDeleteCourse,
       canManageCourse,
       courseReadinessMap,
+      removeOptimisticCourses,
       selectedCourseUuidSet,
       t,
       toggleAllVisibleCourses,
@@ -608,11 +613,11 @@ const CoursesHome = ({
         </div>
 
         <div className="text-muted-foreground mt-3 text-sm">
-          {t('resultsSummary', { visible: courses.length, total: totalCourses })}
+          {t('resultsSummary', { visible: optimisticCourses.length, total: totalCourses })}
         </div>
       </div>
 
-      {courses.length === 0 ? (
+      {optimisticCourses.length === 0 ? (
         <div className="bg-card rounded-xl border border-dashed py-12 shadow-sm">
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
@@ -636,7 +641,7 @@ const CoursesHome = ({
         </div>
       ) : viewMode === 'cards' ? (
         <div className="grid w-full grid-cols-1 gap-6 pb-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
-          {courses.map((course) => (
+          {optimisticCourses.map((course) => (
             <div
               key={course.course_uuid}
               className="w-full"
@@ -655,7 +660,7 @@ const CoursesHome = ({
         <div className="bg-card rounded-xl border p-4 shadow-sm">
           <DataTable
             columns={columns}
-            data={courses}
+            data={optimisticCourses}
             enableColumnVisibility={false}
             enableCsvExport
             csvFileName={`courses-${new Date().toISOString().slice(0, 10)}.csv`}
@@ -726,7 +731,13 @@ const CoursesHome = ({
   );
 };
 
-function CourseRowActions({ course }: { course: ManageableCourse }) {
+function CourseRowActions({
+  course,
+  onOptimisticDelete,
+}: {
+  course: ManageableCourse;
+  onOptimisticDelete: (uuids: string[]) => void;
+}) {
   const t = useTranslations('DashPage.CourseManagement.Dashboard');
   const router = useRouter();
   const { can } = useSession();
@@ -742,16 +753,15 @@ function CourseRowActions({ course }: { course: ManageableCourse }) {
   const handleDelete = () => {
     if (!canDeleteCourse) return;
 
-    startTransition(() => {
-      void (async () => {
-        try {
-          await deleteCourseFromBackend(course.course_uuid);
-          toast.success(t('rowActions.deleteSuccess'));
-          router.refresh();
-        } catch {
-          toast.error(t('rowActions.deleteError'));
-        }
-      })();
+    startTransition(async () => {
+      onOptimisticDelete([course.course_uuid]);
+      try {
+        await deleteCourseFromBackend(course.course_uuid);
+        toast.success(t('rowActions.deleteSuccess'));
+        router.refresh();
+      } catch {
+        toast.error(t('rowActions.deleteError'));
+      }
     });
   };
 

@@ -39,6 +39,13 @@ interface ActivityInvalidationOptions {
   courseUuid?: string;
 }
 
+async function invalidateActivityCache(courseUuid?: string) {
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag(tags.activities, 'max');
+  revalidateTag(tags.courses, 'max');
+  if (courseUuid) revalidateTag(courseTag.detail(courseUuid), 'max');
+}
+
 export async function createActivity(data: any, chapter_id: number, options?: ActivityInvalidationOptions) {
   if (!data || typeof data !== 'object') {
     throw new Error('Activity payload is required');
@@ -57,10 +64,7 @@ export async function createActivity(data: any, chapter_id: number, options?: Ac
   const metadata = await getTypedResponseMetadata<ActivityRead>(result);
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.activities, 'max');
-    revalidateTag(tags.courses, 'max');
-    if (options?.courseUuid) revalidateTag(courseTag.detail(options.courseUuid), 'max');
+    await invalidateActivityCache(options?.courseUuid);
   }
 
   return metadata;
@@ -276,10 +280,7 @@ export async function createFileActivity(
     throw new Error(`Unsupported file activity type: ${type}`);
   }
 
-  const { revalidateTag } = await import('next/cache');
-  revalidateTag(tags.activities, 'max');
-  revalidateTag(tags.courses, 'max');
-  if (options?.courseUuid) revalidateTag(courseTag.detail(options.courseUuid), 'max');
+  await invalidateActivityCache(options?.courseUuid);
 
   return result;
 }
@@ -316,10 +317,7 @@ export async function createExternalVideoActivity(
   const metadata = await getTypedResponseMetadata<ActivityRead>(result);
 
   if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.activities, 'max');
-    revalidateTag(tags.courses, 'max');
-    if (options?.courseUuid) revalidateTag(courseTag.detail(options.courseUuid), 'max');
+    await invalidateActivityCache(options?.courseUuid);
   }
 
   return metadata;
