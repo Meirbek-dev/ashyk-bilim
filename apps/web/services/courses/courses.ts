@@ -5,6 +5,7 @@ import { apiFetch } from '@/lib/api-client';
 import type { CustomResponseTyping } from '@/lib/api-client';
 import type { components } from '@/lib/api/generated';
 import { getAPIUrl } from '@services/config/config';
+import { tags, courseTag } from '@/lib/cacheTags';
 
 /*
  This file includes POST, PUT, DELETE requests and cached GET requests
@@ -341,7 +342,17 @@ export async function updateCourseMetadata(course_uuid: string, data: any, optio
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toCourseMetadataPayload(data, options)),
   });
-  return getTypedResponseMetadata<NormalizedCourse>(result);
+  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.courses, 'max');
+    revalidateTag(courseTag.detail(course_uuid), 'max');
+    revalidateTag(courseTag.editableList(), 'max');
+    revalidateTag(courseTag.publicList(), 'max');
+  }
+
+  return metadata;
 }
 
 export async function updateCourseAccess(course_uuid: string, data: any, options?: CourseWriteOptions) {
@@ -353,7 +364,18 @@ export async function updateCourseAccess(course_uuid: string, data: any, options
       last_known_update_date: options?.lastKnownUpdateDate ?? data.update_date ?? undefined,
     }),
   });
-  return getTypedResponseMetadata<NormalizedCourse>(result);
+  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.courses, 'max');
+    revalidateTag(courseTag.detail(course_uuid), 'max');
+    revalidateTag(courseTag.access(course_uuid), 'max');
+    revalidateTag(courseTag.editableList(), 'max');
+    revalidateTag(courseTag.publicList(), 'max');
+  }
+
+  return metadata;
 }
 
 /**
@@ -382,7 +404,17 @@ export async function updateCourseThumbnail(course_uuid: string, formData: FormD
     method: 'PUT',
     body: formData,
   });
-  return getTypedResponseMetadata<NormalizedCourse>(result);
+  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.courses, 'max');
+    revalidateTag(courseTag.detail(course_uuid), 'max');
+    revalidateTag(courseTag.editableList(), 'max');
+    revalidateTag(courseTag.publicList(), 'max');
+  }
+
+  return metadata;
 }
 
 export async function createNewCourse(
@@ -409,7 +441,17 @@ export async function createNewCourse(
   }
 
   const result = await apiFetch(`courses`, { method: 'POST', body: formData });
-  return getTypedResponseMetadata<NormalizedCourse>(result);
+  const metadata = await getTypedResponseMetadata<NormalizedCourse>(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.courses, 'max');
+    revalidateTag(tags.editableCourses, 'max');
+    revalidateTag(courseTag.editableList(), 'max');
+    revalidateTag(courseTag.publicList(), 'max');
+  }
+
+  return metadata;
 }
 
 /**
@@ -432,7 +474,16 @@ export async function deleteCourseFromBackend(
   options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(`courses/${course_uuid}`, { method: 'DELETE' });
-  return (await errorHandling(result)) as CourseDetailResponse;
+  const data = (await errorHandling(result)) as CourseDetailResponse;
+
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag(tags.courses, 'max');
+  revalidateTag(tags.editableCourses, 'max');
+  revalidateTag(courseTag.detail(course_uuid), 'max');
+  revalidateTag(courseTag.editableList(), 'max');
+  revalidateTag(courseTag.publicList(), 'max');
+
+  return data;
 }
 
 export async function getCourseContributors(course_uuid: string) {
@@ -451,7 +502,15 @@ export async function editContributor(
     `courses/${course_uuid}/contributors/${contributor_id}?authorship=${authorship}&authorship_status=${authorship_status}`,
     { method: 'PUT' },
   );
-  return getResponseMetadata(result);
+  const metadata = await getResponseMetadata(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(courseTag.contributors(course_uuid), 'max');
+    revalidateTag(courseTag.detail(course_uuid), 'max');
+  }
+
+  return metadata;
 }
 
 export async function applyForContributor(course_uuid: string, data: any) {
@@ -460,7 +519,15 @@ export async function applyForContributor(course_uuid: string, data: any) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  return getResponseMetadata(result);
+  const metadata = await getResponseMetadata(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(courseTag.contributors(course_uuid), 'max');
+    revalidateTag(courseTag.detail(course_uuid), 'max');
+  }
+
+  return metadata;
 }
 
 export async function bulkAddContributors(
@@ -473,7 +540,15 @@ export async function bulkAddContributors(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  return getResponseMetadata(result);
+  const metadata = await getResponseMetadata(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(courseTag.contributors(course_uuid), 'max');
+    revalidateTag(courseTag.detail(course_uuid), 'max');
+  }
+
+  return metadata;
 }
 
 export async function bulkRemoveContributors(
@@ -486,7 +561,15 @@ export async function bulkRemoveContributors(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  return getResponseMetadata(result);
+  const metadata = await getResponseMetadata(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(courseTag.contributors(course_uuid), 'max');
+    revalidateTag(courseTag.detail(course_uuid), 'max');
+  }
+
+  return metadata;
 }
 
 export async function getCourseRights(course_uuid: string) {

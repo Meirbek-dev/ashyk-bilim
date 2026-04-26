@@ -6,6 +6,7 @@ import { shouldUseChunkedUpload, uploadFileChunked } from '@services/utils/chunk
 import type { CustomResponseTyping } from '@/lib/api-client';
 import type { components } from '@/lib/api/generated';
 import { getAPIUrl } from '@services/config/config';
+import { tags, courseTag } from '@/lib/cacheTags';
 
 type ActivityRead = components['schemas']['ActivityRead'];
 type ActivityReadWithPermissions = components['schemas']['ActivityReadWithPermissions'];
@@ -53,7 +54,16 @@ export async function createActivity(data: any, chapter_id: number, options?: Ac
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  return getTypedResponseMetadata<ActivityRead>(result);
+  const metadata = await getTypedResponseMetadata<ActivityRead>(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.activities, 'max');
+    revalidateTag(tags.courses, 'max');
+    if (options?.courseUuid) revalidateTag(courseTag.detail(options.courseUuid), 'max');
+  }
+
+  return metadata;
 }
 
 /**
@@ -251,19 +261,27 @@ export async function createFileActivity(
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
+  let result: ActivityRead;
+
   if (type === 'video') {
     if (shouldUseChunkedUpload(file.size)) {
       console.log('Using chunked upload for video activity');
-      return createVideoActivityChunked(file, data, chapterId, options, onProgress);
+      result = await createVideoActivityChunked(file, data, chapterId, options, onProgress);
+    } else {
+      result = await createVideoActivityStandard(file, data, chapterId, options, onProgress);
     }
-    return createVideoActivityStandard(file, data, chapterId, options, onProgress);
+  } else if (type === 'documentpdf') {
+    result = await createPdfActivity(file, data, chapterId, options, onProgress);
+  } else {
+    throw new Error(`Unsupported file activity type: ${type}`);
   }
 
-  if (type === 'documentpdf') {
-    return createPdfActivity(file, data, chapterId, options, onProgress);
-  }
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag(tags.activities, 'max');
+  revalidateTag(tags.courses, 'max');
+  if (options?.courseUuid) revalidateTag(courseTag.detail(options.courseUuid), 'max');
 
-  throw new Error(`Unsupported file activity type: ${type}`);
+  return result;
 }
 
 export async function createExternalVideoActivity(
@@ -295,7 +313,16 @@ export async function createExternalVideoActivity(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  return getTypedResponseMetadata<ActivityRead>(result);
+  const metadata = await getTypedResponseMetadata<ActivityRead>(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.activities, 'max');
+    revalidateTag(tags.courses, 'max');
+    if (options?.courseUuid) revalidateTag(courseTag.detail(options.courseUuid), 'max');
+  }
+
+  return metadata;
 }
 
 /**
@@ -321,7 +348,15 @@ export async function getActivity(activity_uuid: string, _next?: any) {
 
 export async function deleteActivity(activity_uuid: string) {
   const result = await apiFetch(`activities/${activity_uuid}`, { method: 'DELETE' });
-  return getTypedResponseMetadata<ActivityDetailResponse>(result);
+  const metadata = await getTypedResponseMetadata<ActivityDetailResponse>(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.activities, 'max');
+    revalidateTag(tags.courses, 'max');
+  }
+
+  return metadata;
 }
 
 export async function updateActivity(data: any, activity_uuid: string) {
@@ -330,7 +365,14 @@ export async function updateActivity(data: any, activity_uuid: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  return getTypedResponseMetadata<ActivityRead>(result);
+  const metadata = await getTypedResponseMetadata<ActivityRead>(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.activities, 'max');
+  }
+
+  return metadata;
 }
 
 export async function getUrlPreview(url: string): Promise<UrlPreviewResponse> {

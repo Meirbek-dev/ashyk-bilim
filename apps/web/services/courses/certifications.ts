@@ -2,6 +2,7 @@
 
 import { errorHandling, getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
+import { tags, courseTag } from '@/lib/cacheTags';
 
 export async function getCourseCertifications(course_uuid: string, next?: any) {
   const result = await apiFetch(`certifications/course/${course_uuid}`, next ? { next } : {});
@@ -30,7 +31,13 @@ export async function createCertification({ course_id, config, options }: Create
       last_known_update_date: options?.lastKnownUpdateDate ?? undefined,
     }),
   });
-  return errorHandling(result);
+  const response = await errorHandling(result);
+
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag(tags.courses, 'max');
+  if (options?.courseUuid) revalidateTag(courseTag.certifications(options.courseUuid), 'max');
+
+  return response;
 }
 
 export interface UpdateCertificationParams {
@@ -45,7 +52,13 @@ export async function updateCertification({ certification_uuid, config, options 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ config, last_known_update_date: options?.lastKnownUpdateDate ?? undefined }),
   });
-  return errorHandling(result);
+  const response = await errorHandling(result);
+
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag(tags.courses, 'max');
+  if (options?.courseUuid) revalidateTag(courseTag.certifications(options.courseUuid), 'max');
+
+  return response;
 }
 
 export async function deleteCertification(certification_uuid: string, options?: CertificationInvalidationOptions) {
@@ -55,7 +68,13 @@ export async function deleteCertification(certification_uuid: string, options?: 
   const result = await apiFetch(`certifications/${certification_uuid}${query.size > 0 ? `?${query.toString()}` : ''}`, {
     method: 'DELETE',
   });
-  return errorHandling(result);
+  const response = await errorHandling(result);
+
+  const { revalidateTag } = await import('next/cache');
+  revalidateTag(tags.courses, 'max');
+  if (options?.courseUuid) revalidateTag(courseTag.certifications(options.courseUuid), 'max');
+
+  return response;
 }
 
 export async function getUserCertificates(course_uuid: string) {
