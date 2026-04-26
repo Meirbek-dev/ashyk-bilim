@@ -40,7 +40,7 @@ export default function QuestionDifficultyRadar({ title, description, data }: Qu
               valueFormatter: (value) => `${Math.round(Number(value ?? 0))}%`,
             },
             discrimination: {
-              label: 'Discrimination',
+              label: t('radar.discrimination'),
               color: 'var(--chart-4)',
               valueFormatter: (value) => Number(value ?? 0).toFixed(2),
             },
@@ -83,8 +83,14 @@ export default function QuestionDifficultyRadar({ title, description, data }: Qu
               >
                 <div className="font-medium">{row.question_label}</div>
                 <div className="text-muted-foreground mt-1">
-                  Strong miss {quality.strong_miss_pct ?? 0}% · Weak correct {quality.weak_correct_pct ?? 0}% · Distractor
-                  issues {quality.distractor_issue_count ?? 0}
+                  {t('radar.qualitySummary', {
+                    strongMiss: t('radar.strongMiss'),
+                    strongMissPct: quality.strong_miss_pct ?? 0,
+                    weakCorrect: t('radar.weakCorrect'),
+                    weakCorrectPct: quality.weak_correct_pct ?? 0,
+                    distractorIssues: t('radar.distractorIssues'),
+                    distractorIssueCount: quality.distractor_issue_count ?? 0,
+                  })}
                 </div>
               </div>
             );

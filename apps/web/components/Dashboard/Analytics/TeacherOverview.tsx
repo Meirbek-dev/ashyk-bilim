@@ -272,15 +272,15 @@ export default function TeacherOverview({ query, data, courseOptions = [], cohor
       {interventionSummary && (
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle>Intervention outcomes</CardTitle>
-            <CardDescription>Logged teacher actions and observed recovery signals for this analytics scope.</CardDescription>
+            <CardTitle>{t('overview.interventionTitle')}</CardTitle>
+            <CardDescription>{t('overview.interventionDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-4">
             {[
-              ['Logged', interventionSummary.total],
-              ['Open', interventionSummary.open],
-              ['Resolved', interventionSummary.resolved],
-              ['Recovered', interventionSummary.recovered_learners],
+              [t('overview.interventionSummary.logged'), interventionSummary.total],
+              [t('overview.interventionSummary.open'), interventionSummary.open],
+              [t('overview.interventionSummary.resolved'), interventionSummary.resolved],
+              [t('overview.interventionSummary.recovered'), interventionSummary.recovered_learners],
             ].map(([label, value]) => (
               <div
                 key={label}

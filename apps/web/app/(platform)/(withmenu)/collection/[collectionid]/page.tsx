@@ -105,8 +105,8 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
       {col.courses.length === 0 && (
         <div className="border-border bg-muted/30 mt-8 flex flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center">
           <Layers className="text-muted-foreground/30 mb-4 h-12 w-12" />
-          <h3 className="text-xl font-semibold">No courses found</h3>
-          <p className="text-muted-foreground mt-2">This collection doesn't have any courses yet.</p>
+          <h3 className="text-xl font-semibold">{t('collectionEmptyTitle')}</h3>
+          <p className="text-muted-foreground mt-2">{t('collectionEmptyDescription')}</p>
         </div>
       )}
     </GeneralWrapper>

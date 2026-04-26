@@ -5938,6 +5938,8 @@
     "cancel": "Отмена",
     "close": "Закрыть",
     "collection": "Коллекция",
+    "collectionEmptyTitle": "Курсы не найдены",
+    "collectionEmptyDescription": "В этой коллекции пока нет курсов.",
     "collections": "Коллекции",
     "content": "Контент",
     "course": "Курс",
@@ -6434,6 +6436,14 @@
       "watchlistTitle": "Срочный список наблюдения",
       "watchlistDescription": "Учащиеся с наибольшим риском, которым, вероятно, нужна помощь на этой неделе.",
       "previewLabel": "Предпросмотр",
+      "interventionTitle": "Результаты вмешательства",
+      "interventionDescription": "Зарегистрированные действия преподавателя и наблюдаемые сигналы восстановления для этого аналитического вида.",
+      "interventionSummary": {
+        "logged": "Зарегистрировано",
+        "open": "Открыто",
+        "resolved": "Решено",
+        "recovered": "Восстановлено"
+      },
       "viewAllAtRisk": "Полный список учащихся в зоне риска →"
     },
     "filters": {
@@ -6688,7 +6698,12 @@
     },
     "radar": {
       "showing": "Показано {shown} из {total} вопросов по сложности.",
-      "accuracy": "Точность"
+      "accuracy": "Точность",
+      "discrimination": "Дискриминация",
+      "strongMiss": "Сильный промах",
+      "weakCorrect": "Слабый правильный",
+      "distractorIssues": "Проблемы с отвлекающим вариантом",
+      "qualitySummary": "{strongMiss} {strongMissPct}% · {weakCorrect} {weakCorrectPct}% · {distractorIssues} {distractorIssueCount}"
     },
     "funnel": {
       "learners": "Учащиеся"

@@ -5938,6 +5938,8 @@
     "cancel": "Бас тарту",
     "close": "Жабу",
     "collection": "Жинақ",
+    "collectionEmptyTitle": "Курстар табылмады",
+    "collectionEmptyDescription": "Бұл топтамада әлі курстар жоқ.",
     "collections": "Жинақтар",
     "content": "Мазмұн",
     "course": "Курс",
@@ -6432,6 +6434,14 @@
       "watchlistTitle": "Шұғыл бақылау тізімі",
       "watchlistDescription": "Осы аптада хабарласуды қажет ететін ең жоғары тәуекелдегі оқушылар.",
       "previewLabel": "Алдын ала қарау",
+      "interventionTitle": "Араласу нәтижелері",
+      "interventionDescription": "Бұл аналитикалық ауқым үшін мұғалім әрекеттері мен қалпына келтіру сигналдары тіркеледі.",
+      "interventionSummary": {
+        "logged": "Жазылды",
+        "open": "Ашық",
+        "resolved": "Шешілді",
+        "recovered": "Қалпына келтірілді"
+      },
       "viewAllAtRisk": "Тәуекелдегі оқушылардың толық тізімі →"
     },
     "filters": {
@@ -6686,7 +6696,12 @@
     },
     "radar": {
       "showing": "Қиындық бойынша {total} сұрақтың {shown}-і көрсетілуде.",
-      "accuracy": "Дәлдік"
+      "accuracy": "Дәлдік",
+      "discrimination": "Дискриминация",
+      "strongMiss": "Күшті қате",
+      "weakCorrect": "Әлсіз дұрыс",
+      "distractorIssues": "Тартымдардың мәселелері",
+      "qualitySummary": "{strongMiss} {strongMissPct}% · {weakCorrect} {weakCorrectPct}% · {distractorIssues} {distractorIssueCount}"
     },
     "funnel": {
       "learners": "Оқушылар"

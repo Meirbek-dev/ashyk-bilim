@@ -5912,6 +5912,8 @@
     "cancel": "Cancel",
     "close": "Close",
     "collection": "Collection",
+    "collectionEmptyTitle": "No courses found",
+    "collectionEmptyDescription": "This collection doesn't have any courses yet.",
     "collections": "collections",
     "content": "Content",
     "course": "Course",
@@ -6402,6 +6404,14 @@
       "watchlistTitle": "Urgent learner watchlist",
       "watchlistDescription": "Top-ranked learners who likely need outreach this week.",
       "previewLabel": "Preview",
+      "interventionTitle": "Intervention outcomes",
+      "interventionDescription": "Logged teacher actions and observed recovery signals for this analytics scope.",
+      "interventionSummary": {
+        "logged": "Logged",
+        "open": "Open",
+        "resolved": "Resolved",
+        "recovered": "Recovered"
+      },
       "viewAllAtRisk": "View full at-risk list →"
     },
     "filters": {
@@ -6646,7 +6656,12 @@
     },
     "radar": {
       "showing": "Showing {shown} of {total} questions by difficulty.",
-      "accuracy": "Accuracy"
+      "accuracy": "Accuracy",
+      "discrimination": "Discrimination",
+      "strongMiss": "Strong miss",
+      "weakCorrect": "Weak correct",
+      "distractorIssues": "Distractor issues",
+      "qualitySummary": "{strongMiss} {strongMissPct}% · {weakCorrect} {weakCorrectPct}% · {distractorIssues} {distractorIssueCount}"
     },
     "funnel": {
       "learners": "Learners"
