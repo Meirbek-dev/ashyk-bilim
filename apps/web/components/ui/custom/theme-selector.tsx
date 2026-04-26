@@ -93,10 +93,12 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
             open={open}
             onOpenChange={setOpen}
           >
-            <PopoverTrigger className="border-border bg-background hover:bg-muted focus-visible:ring-ring inline-flex min-w-0 flex-1 items-center justify-between gap-3 rounded-lg rounded-e-none border px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none sm:w-[260px] sm:flex-none">
-              <div className="flex min-w-0 items-center gap-2">
+            <PopoverTrigger className="border-border bg-background hover:bg-muted focus-visible:ring-ring inline-flex min-w-0 flex-1 items-center justify-between gap-3 rounded-lg rounded-e-none border px-4 py-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none sm:w-[420px]">
+              <div className="flex min-w-0 items-center gap-3">
                 <ThemeColors colors={currentTheme.colors} />
-                <span className="truncate">{tThemes(`${currentTheme.name}.name`)}</span>
+                <span className="text-left leading-tight whitespace-normal">
+                  {tThemes(`${currentTheme.name}.name`)}
+                </span>
               </div>
               <ChevronDown className="text-muted-foreground size-4 shrink-0" />
             </PopoverTrigger>
@@ -118,7 +120,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
                   <span className="text-muted-foreground text-sm">
                     {t('themeCount', { count: filteredThemes.length })}
                   </span>
-                  <div className="flex items-center gap-0.5">
+                  <span className="text-sm leading-tight font-medium">
                     <Tooltip>
                       <TooltipTrigger
                         onClick={handleModeToggle}
@@ -137,12 +139,12 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
                       </TooltipTrigger>
                       <TooltipContent>{t('randomButtonTitle')}</TooltipContent>
                     </Tooltip>
-                  </div>
+                  </span>
                 </div>
 
                 <Separator />
 
-                <CommandList className="max-h-[320px]">
+                <CommandList className="max-h-[480px]">
                   <CommandEmpty>{t('noThemesFound')}</CommandEmpty>
                   <CommandGroup>
                     {filteredThemes.map((theme) => (
@@ -154,12 +156,12 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
                           setSearch('');
                           setOpen(false);
                         }}
-                        className="data-selected:!bg-primary/10 flex cursor-pointer items-center gap-2 py-2 transition-colors"
+                        className="data-[selected=true]:bg-primary/10 flex cursor-pointer items-center gap-3 py-2 transition-colors data-[selected=false]:bg-transparent"
                       >
                         <ThemeColors colors={theme.colors} />
                         <div className="flex min-w-0 flex-1 flex-col">
                           <span className="text-sm font-medium">{tThemes(`${theme.name}.name`)}</span>
-                          <span className="text-muted-foreground line-clamp-1 text-xs">
+                          <span className="text-muted-foreground text-xs leading-snug whitespace-normal">
                             {tThemes(`${theme.name}.description`)}
                           </span>
                         </div>
