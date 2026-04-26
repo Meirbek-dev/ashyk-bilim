@@ -6713,6 +6713,10 @@
       "description": "Soft purple haze theme with amethyst accents",
       "name": "Amethyst Haze"
     },
+    "amethyst-haze": {
+      "description": "Soft purple haze theme with amethyst accents",
+      "name": "Amethyst Haze"
+    },
     "artDeco": {
       "description": "Elegant Art Deco style with luxurious gold and geometric patterns",
       "name": "Art Deco"
@@ -6873,6 +6877,10 @@
       "description": "Bright, bubbly theme with pastel accents and clean contrasts for a playful yet modern look",
       "name": "Soft Pop"
     },
+    "soft-pop": {
+      "description": "Bright, bubbly theme with pastel accents and clean contrasts for a playful yet modern look",
+      "name": "Soft Pop"
+    },
     "solar-dusk": {
       "description": "Warm, golden tones fading into deep shadows-captures the calm glow of dusk before nightfall",
       "name": "Solar Dusk"
@@ -6922,6 +6930,10 @@
       "name": "Vintage Paper"
     },
     "violetBloom": {
+      "description": "Radiant purples with soft highlights, capturing the elegance and freshness of blooming violets",
+      "name": "Violet Bloom"
+    },
+    "violet-bloom": {
       "description": "Radiant purples with soft highlights, capturing the elegance and freshness of blooming violets",
       "name": "Violet Bloom"
     },
