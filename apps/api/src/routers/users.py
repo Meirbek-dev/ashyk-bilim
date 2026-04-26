@@ -30,6 +30,7 @@ from src.services.users.users import (
     update_user,
     update_user_avatar,
     update_user_password,
+    update_user_preferences,
 )
 
 router = APIRouter()
@@ -206,8 +207,13 @@ def api_update_user_theme(
     """
     Update User Theme Preference
     """
-    user_update = UserUpdate(theme=theme)
-    return update_user(request, db_session, user_id, current_user, user_update)
+    return update_user_preferences(
+        request,
+        db_session,
+        user_id,
+        current_user,
+        theme=theme,
+    )
 
 
 @router.put("/preferences/locale/{user_id}", tags=["users"])
@@ -222,8 +228,13 @@ def api_update_user_locale(
     """
     Update User Locale Preference
     """
-    user_update = UserUpdate(locale=locale)
-    return update_user(request, db_session, user_id, current_user, user_update)
+    return update_user_preferences(
+        request,
+        db_session,
+        user_id,
+        current_user,
+        locale=locale,
+    )
 
 
 @router.delete("/user_id/{user_id}", tags=["users"])

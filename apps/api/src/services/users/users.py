@@ -21,7 +21,7 @@ from src.db.users import (
     UserUpdate,
     UserUpdatePassword,
 )
-from src.security.rbac import PermissionChecker
+from src.security.rbac import PermissionChecker, ResourceAccessDenied
 from src.security.security import security_hash_password, security_verify_password
 from src.services.cache import redis_client
 from src.services.users.avatars import upload_avatar
@@ -156,6 +156,47 @@ def update_user(
     db_session.refresh(user)
 
     # Invalidate Redis cache for this user (best-effort)
+    try:
+        keys = [f"user:id:{user.id}"]
+        if getattr(user, "username", None):
+            keys.append(f"user:username:{user.username.lower()}")
+        redis_client.delete_keys(*keys)
+    except Exception:
+        pass
+
+    return UserRead.model_validate(user)
+
+
+def update_user_preferences(
+    request: Request,
+    db_session: Session,
+    user_id: int,
+    current_user: PublicUser | AnonymousUser,
+    *,
+    theme: str | None = None,
+    locale: str | None = None,
+):
+    if user_id != current_user.id:
+        raise ResourceAccessDenied(reason="You can only update your own preferences")
+
+    user = _get_user_by_field(db_session, "id", user_id, use_cache=False)
+    user_data = {
+        key: value
+        for key, value in {
+            "theme": theme,
+            "locale": locale,
+        }.items()
+        if value is not None
+    }
+
+    if user_data:
+        for key, value in user_data.items():
+            setattr(user, key, value)
+
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+
     try:
         keys = [f"user:id:{user.id}"]
         if getattr(user, "username", None):
