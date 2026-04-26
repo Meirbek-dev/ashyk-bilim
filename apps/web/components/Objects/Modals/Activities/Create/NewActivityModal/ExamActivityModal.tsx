@@ -42,7 +42,7 @@ type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>;
 const getDefaultTimeLimit = (limits?: any) =>
   Math.min(Math.max(50, limits?.time_limit?.min ?? 1), limits?.time_limit?.max ?? 180);
 
-const NewExam = ({ submitActivity, chapterId, course, closeModal }: any) => {
+const NewExam = ({ chapterId, course, closeModal }: any) => {
   const validationT = useTranslations('Validation');
   const t = useTranslations('Components.NewExamModal');
 
@@ -111,10 +111,6 @@ const NewExam = ({ submitActivity, chapterId, course, closeModal }: any) => {
 
       toast.dismiss(toastLoading);
       toast.success(t('examCreatedSuccessfully'));
-
-      if (submitActivity) {
-        submitActivity();
-      }
 
       if (data.activity_uuid) {
         const activity_uuid_clean = data.activity_uuid.replace('activity_', '');

@@ -39,6 +39,10 @@ interface ActivityInvalidationOptions {
 }
 
 export async function createActivity(data: any, chapter_id: number, options?: ActivityInvalidationOptions) {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Activity payload is required');
+  }
+
   if (!data.content) {
     data.content = {};
   }
