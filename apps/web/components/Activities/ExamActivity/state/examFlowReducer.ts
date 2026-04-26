@@ -32,7 +32,7 @@ export interface AttemptData {
   max_score: number;
   started_at: string;
   finished_at?: string | null;
-  question_order: number[];
+  question_order: Array<number | string>;
   violations: { type: string; timestamp: string }[];
   answers?: Record<number, any>;
   [key: string]: any;
@@ -45,7 +45,7 @@ export interface QuestionData {
   question_type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MATCHING';
   points: number;
   explanation?: string;
-  answer_options: { text: string; is_correct?: boolean; left?: string; right?: string }[];
+  answer_options: { text: string; is_correct?: boolean; left?: string; right?: string; option_id?: number }[];
 }
 
 export interface ErrorInfo {

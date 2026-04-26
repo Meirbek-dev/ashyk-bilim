@@ -1,11 +1,13 @@
 'use client';
 
+import { apiFetch } from '@/lib/api-client';
 import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Repeat, XCircle } from 'lucide-react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 import type { AttemptData, ExamData, QuestionData } from './state/examFlowReducer';
+import { getOrderedExamQuestions } from './utils/questionOrder';
 import { Progress } from '@components/ui/progress';
 import { Button } from '@components/ui/button';
 import { Badge } from '@components/ui/badge';
@@ -20,6 +22,15 @@ interface ExamResultsProps {
   onBackToPreScreen?: () => void;
   remainingAttempts?: number | null;
   isTeacher?: boolean;
+}
+
+function getAnswerOptionId(option: QuestionData['answer_options'][number], visualIndex: number): number {
+  return typeof option.option_id === 'number' ? option.option_id : visualIndex;
+}
+
+function findAnswerOption(question: QuestionData, answerId: unknown) {
+  if (typeof answerId !== 'number') return undefined;
+  return question.answer_options.find((option, index) => getAnswerOptionId(option, index) === answerId);
 }
 
 export default function ExamResults({
@@ -38,16 +49,45 @@ export default function ExamResults({
   const settings = exam.settings || {};
   const showCorrectAnswers = settings.allow_result_review && settings.show_correct_answers;
   const allowReview = settings.allow_result_review;
+  const [attemptReviewQuestions, setAttemptReviewQuestions] = useState<QuestionData[] | null>(null);
+  const canLoadCorrectAnswerReview = Boolean(attempt.attempt_uuid && (isTeacher || showCorrectAnswers));
+
+  useEffect(() => {
+    if (!canLoadCorrectAnswerReview) {
+      setAttemptReviewQuestions(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadAttemptReviewQuestions = async () => {
+      try {
+        const response = await apiFetch(`exams/attempts/${attempt.attempt_uuid}/questions`);
+        if (!response.ok) return;
+        const data = (await response.json()) as QuestionData[];
+        if (!cancelled) {
+          setAttemptReviewQuestions(data);
+        }
+      } catch (error) {
+        console.error('Failed to load exam attempt review questions:', error);
+      }
+    };
+
+    void loadAttemptReviewQuestions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canLoadCorrectAnswerReview, attempt.attempt_uuid]);
 
   const percentage = useMemo(() => {
     return attempt.max_score > 0 ? Math.round((attempt.score / attempt.max_score) * 100) : 0;
   }, [attempt.score, attempt.max_score]);
 
   const orderedQuestions = useMemo(() => {
-    return (attempt.question_order || [])
-      .map((id: number) => questions.find((q) => q.id === id))
-      .filter(Boolean) as QuestionData[];
-  }, [attempt.question_order, questions]);
+    return getOrderedExamQuestions(attemptReviewQuestions ?? questions, attempt.question_order);
+  }, [attempt.question_order, attemptReviewQuestions, questions]);
+  const canEvaluateAnswers = isTeacher || Boolean(attemptReviewQuestions);
 
   const getPerformance = (percentage: number) => {
     if (percentage < 50) {
@@ -110,19 +150,22 @@ export default function ExamResults({
     (question: QuestionData) => {
       const userAnswer = attempt.answers ? attempt.answers[question.id] : undefined;
       if (userAnswer === undefined || userAnswer === null) return 'unanswered';
+      if (!canEvaluateAnswers) return 'answered';
 
       switch (question.question_type) {
         case 'SINGLE_CHOICE':
         case 'TRUE_FALSE': {
           const correctIndices = question.answer_options
-            .map((opt, idx) => (opt.is_correct ? idx : -1))
+            .map((opt, idx) => (opt.is_correct ? getAnswerOptionId(opt, idx) : -1))
             .filter((idx) => idx !== -1);
           return correctIndices.includes(userAnswer) ? 'correct' : 'incorrect';
         }
 
         case 'MULTIPLE_CHOICE': {
           const correctIndices = new Set(
-            question.answer_options.map((opt, idx) => (opt.is_correct ? idx : -1)).filter((idx) => idx !== -1),
+            question.answer_options
+              .map((opt, idx) => (opt.is_correct ? getAnswerOptionId(opt, idx) : -1))
+              .filter((idx) => idx !== -1),
           );
           const userIndices = new Set(Array.isArray(userAnswer) ? userAnswer : []);
           const isCorrect =
@@ -140,7 +183,7 @@ export default function ExamResults({
         }
       }
     },
-    [attempt.answers],
+    [attempt.answers, canEvaluateAnswers],
   );
 
   const correctCount = useMemo(
@@ -166,7 +209,7 @@ export default function ExamResults({
     switch (question.question_type) {
       case 'SINGLE_CHOICE':
       case 'TRUE_FALSE': {
-        return <span className="font-medium">{question.answer_options[userAnswer]?.text || t('invalidAnswer')}</span>;
+        return <span className="font-medium">{findAnswerOption(question, userAnswer)?.text || t('invalidAnswer')}</span>;
       }
 
       case 'MULTIPLE_CHOICE': {
@@ -174,7 +217,7 @@ export default function ExamResults({
           <div className="space-y-1">
             {Array.isArray(userAnswer) && userAnswer.length > 0 ? (
               userAnswer.map((idx: number) => (
-                <div key={idx}>{question.answer_options[idx]?.text ?? t('invalidAnswer')}</div>
+                <div key={idx}>{findAnswerOption(question, idx)?.text ?? t('invalidAnswer')}</div>
               ))
             ) : (
               <span className="text-muted-foreground">{t('notAnswered')}</span>
@@ -367,6 +410,7 @@ export default function ExamResults({
                       {status === 'correct' && <CheckCircle2 className="mr-1 h-3 w-3" />}
                       {status === 'incorrect' && <XCircle className="mr-1 h-3 w-3" />}
                       {status === 'unanswered' && <AlertCircle className="mr-1 h-3 w-3" />}
+                      {status === 'answered' && <CheckCircle2 className="mr-1 h-3 w-3" />}
                       {t(status)}
                     </Badge>
                   </div>

@@ -4,7 +4,7 @@ import { apiFetch } from '@/lib/api-client';
 
 import { createInitialTakingState, examTakingReducer } from './state/examTakingReducer';
 import ExamQuestionNavigation, { ExamQuestionNavigationMobile } from './ExamQuestionNavigation';
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useExamPersistence } from '@/hooks/useExamPersistence';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -30,8 +30,11 @@ import { Alert, AlertDescription } from '@components/ui/alert';
 import { useTestGuard } from '@/hooks/useTestGuard';
 import { Progress } from '@components/ui/progress';
 import { Checkbox } from '@components/ui/checkbox';
+import { getOrderedExamQuestions } from './utils/questionOrder';
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
+
+type TakingState = ReturnType<typeof createInitialTakingState>;
 
 interface ExamTakingInterfaceProps {
   exam: ExamData;
@@ -40,13 +43,21 @@ interface ExamTakingInterfaceProps {
   onComplete: () => void;
 }
 
+function getStateAnswers(state: TakingState): Record<number, any> {
+  return state.mode === 'recovery-prompt' ? state.recoveredAnswers : 'answers' in state ? state.answers : {};
+}
+
+function getAnswerOptionId(option: QuestionData['answer_options'][number], visualIndex: number): number {
+  return typeof option.option_id === 'number' ? option.option_id : visualIndex;
+}
+
 export default function ExamTakingInterface({ exam, questions, attempt, onComplete }: ExamTakingInterfaceProps) {
   const t = useTranslations('Activities.ExamActivity');
 
   // Centralized state management with reducer,
   const [state, dispatch] = useReducer(
     examTakingReducer,
-    createInitialTakingState(0, {}, attempt.violations?.length || 0),
+    createInitialTakingState(0, (attempt.answers ?? {}) as Record<number, any>, attempt.violations?.length || 0),
   );
 
   // Fullscreen state (separate from main state machine)
@@ -74,13 +85,14 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
   });
 
   const settings = exam.settings || {};
-  const orderedQuestions = attempt.question_order
-    .map((id) => questions.find((q) => q.id === id))
-    .filter(Boolean) as QuestionData[];
+  const orderedQuestions = useMemo(
+    () => getOrderedExamQuestions(questions, attempt.question_order),
+    [questions, attempt.question_order],
+  );
 
   // Extract current state,
-  const currentIndex = state.mode === 'submitting' ? 0 : state.currentIndex;
-  const answers = state.mode === 'submitting' ? state.answers : state.mode === 'recovery-prompt' ? {} : state.answers;
+  const currentIndex = state.currentIndex;
+  const answers = getStateAnswers(state);
   const isSubmitting = state.mode === 'submitting';
   const showConfirmation = state.mode === 'confirming-submit';
   const { violationCount } = state;
@@ -89,16 +101,16 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
   const showRecoveryDialog = state.mode === 'recovery-prompt';
 
   const currentQuestion = orderedQuestions[currentIndex];
-  const progress = ((currentIndex + 1) / orderedQuestions.length) * 100;
+  const progress = orderedQuestions.length > 0 ? ((currentIndex + 1) / orderedQuestions.length) * 100 : 0;
 
   const handleSubmit = useCallback(
     async (isAutoSubmit = false) => {
       if (state.mode === 'submitting') return;
 
+      const submitAnswers = getStateAnswers(state);
       dispatch({ type: 'START_SUBMIT' });
 
       try {
-        const submitAnswers = state.mode === 'confirming-submit' ? state.answers : {};
         const response = await apiFetch(`exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -126,15 +138,24 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
   // Anti-cheating with useTestGuard,
   const handleViolation = useCallback(
     async (type: string, count: number) => {
+      const currentAnswers = getStateAnswers(state);
       dispatch({ type: 'RECORD_VIOLATION', violation: { type, count } });
 
       // Record violation on server,
       try {
-        await apiFetch(`exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/violations`, {
+        const response = await apiFetch(`exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/violations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type }),
+          body: JSON.stringify({ type, answers: currentAnswers }),
         });
+        const updatedAttempt = response.ok ? await response.json().catch(() => null) : null;
+
+        if (updatedAttempt?.status === 'AUTO_SUBMITTED') {
+          persistence.clearSavedAnswers();
+          toast.error(t('autoSubmitting', { reason: t('autoSubmittingReason.violationThresholdExceeded') }));
+          onComplete();
+          return;
+        }
 
         // Check if threshold reached,
         const threshold = settings.violation_threshold;
@@ -147,7 +168,7 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
         console.error('Failed to record violation:', error);
       }
     },
-    [exam.exam_uuid, attempt.attempt_uuid, settings.violation_threshold, handleSubmit, t],
+    [state, exam.exam_uuid, attempt.attempt_uuid, settings.violation_threshold, handleSubmit, t, persistence, onComplete],
   );
 
   useTestGuard({
@@ -291,7 +312,7 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
                 className="border-border hover:bg-muted flex items-center space-x-3 rounded-lg border p-4 transition-colors hover:border-gray-300"
               >
                 <RadioGroupItem
-                  value={index.toString()}
+                  value={getAnswerOptionId(option, index).toString()}
                   id={`q${questionId}-${index}`}
                 />
                 <Label
@@ -314,29 +335,33 @@ export default function ExamTakingInterface({ exam, questions, attempt, onComple
             role="group"
             aria-labelledby={`question-title-${questionId}`}
           >
-            {question.answer_options.map((option, index) => (
-              <div
-                key={index}
-                className="border-border hover:bg-muted flex items-center space-x-3 rounded-lg border p-4 transition-colors hover:border-gray-300"
-              >
-                <Checkbox
-                  id={`q${questionId}-${index}`}
-                  checked={selectedAnswers.includes(index)}
-                  onCheckedChange={(checked) => {
-                    const newAnswers = checked
-                      ? [...selectedAnswers, index]
-                      : selectedAnswers.filter((i: number) => i !== index);
-                    handleAnswerChange(questionId, newAnswers);
-                  }}
-                />
-                <Label
-                  htmlFor={`q${questionId}-${index}`}
-                  className="flex-1 cursor-pointer text-base leading-relaxed"
+            {question.answer_options.map((option, index) => {
+              const optionId = getAnswerOptionId(option, index);
+
+              return (
+                <div
+                  key={index}
+                  className="border-border hover:bg-muted flex items-center space-x-3 rounded-lg border p-4 transition-colors hover:border-gray-300"
                 >
-                  {option.text}
-                </Label>
-              </div>
-            ))}
+                  <Checkbox
+                    id={`q${questionId}-${index}`}
+                    checked={selectedAnswers.includes(optionId)}
+                    onCheckedChange={(checked) => {
+                      const newAnswers = checked
+                        ? [...selectedAnswers, optionId]
+                        : selectedAnswers.filter((i: number) => i !== optionId);
+                      handleAnswerChange(questionId, newAnswers);
+                    }}
+                  />
+                  <Label
+                    htmlFor={`q${questionId}-${index}`}
+                    className="flex-1 cursor-pointer text-base leading-relaxed"
+                  >
+                    {option.text}
+                  </Label>
+                </div>
+              );
+            })}
           </div>
         );
       }

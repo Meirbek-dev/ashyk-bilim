@@ -841,6 +841,17 @@ async def _grade_and_finalize_attempt(
                     )
 
 
+def _validate_attempt_answers(attempt: ExamAttempt, answers: dict) -> None:
+    """Ensure submitted answer keys belong to this attempt."""
+    valid_question_ids = {str(qid) for qid in attempt.question_order}
+    for answer_key in answers:
+        if str(answer_key) not in valid_question_ids:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Недопустимый идентификатор вопроса в ответах: {answer_key}",
+            )
+
+
 async def submit_exam_attempt(
     request: Request,
     attempt_uuid: str,
@@ -895,14 +906,7 @@ async def submit_exam_attempt(
                 f"Failed to validate time limit for attempt {attempt_uuid}: {e}"
             )
 
-    # VALIDATION: Ensure answers only reference questions in this attempt
-    valid_question_ids = {str(qid) for qid in attempt.question_order}
-    for answer_key in answers:
-        if str(answer_key) not in valid_question_ids:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Недопустимый идентификатор вопроса в ответах: {answer_key}",
-            )
+    _validate_attempt_answers(attempt, answers)
 
     try:
         await _grade_and_finalize_attempt(
@@ -929,6 +933,7 @@ async def record_violation(
     violation_type: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
+    answers: dict | None = None,
 ) -> ExamAttemptRead:
     """Record a violation during an exam attempt"""
     if isinstance(current_user, AnonymousUser):
@@ -944,6 +949,15 @@ async def record_violation(
 
     if attempt.user_id != current_user.id:
         raise ResourceAccessDenied(reason="Not your exam attempt")
+
+    if attempt.status != AttemptStatusEnum.IN_PROGRESS:
+        raise HTTPException(status_code=400, detail="Попытка уже отправлена")
+
+    if answers is not None:
+        if not isinstance(answers, dict):
+            raise HTTPException(status_code=400, detail="Неверный формат ответов")
+        _validate_attempt_answers(attempt, answers)
+        attempt.answers = answers
 
     now = _utc_now_iso()
 
@@ -1116,6 +1130,64 @@ async def get_attempt_by_uuid(
     raise HTTPException(
         status_code=403, detail="Доступ к просмотру этой попытки запрещён"
     )
+
+
+async def get_attempt_review_questions(
+    request: Request,
+    attempt_uuid: str,
+    current_user: PublicUser | AnonymousUser,
+    db_session: Session,
+) -> list[QuestionRead]:
+    """Return full question data for a submitted attempt review."""
+    if isinstance(current_user, AnonymousUser):
+        raise AuthenticationRequired(reason="Authentication required to view attempt")
+
+    statement = select(ExamAttempt).where(ExamAttempt.attempt_uuid == attempt_uuid)
+    attempt = db_session.exec(statement).first()
+    if not attempt:
+        raise HTTPException(status_code=404, detail="Попытка не найдена")
+
+    exam = db_session.get(Exam, attempt.exam_id)
+    if not exam:
+        raise HTTPException(status_code=404, detail="Тест не найден")
+
+    course = db_session.get(Course, exam.course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Курс не найден")
+
+    is_owner = attempt.user_id == current_user.id
+    is_teacher = await is_course_contributor_or_admin(
+        current_user.id, course, db_session
+    ) or bool(course.creator_id and course.creator_id == current_user.id)
+
+    if not is_owner and not is_teacher:
+        raise HTTPException(
+            status_code=403, detail="Доступ к просмотру этой попытки запрещён"
+        )
+
+    if not is_teacher:
+        settings = exam.settings or {}
+        if attempt.status == AttemptStatusEnum.IN_PROGRESS:
+            raise HTTPException(status_code=400, detail="Попытка ещё не отправлена")
+        if not settings.get("allow_result_review", False):
+            raise ResourceAccessDenied(reason="Result review is disabled")
+        if not settings.get("show_correct_answers", False):
+            raise ResourceAccessDenied(reason="Correct answer review is disabled")
+
+    question_ids = attempt.question_order or []
+    if not question_ids:
+        return []
+
+    questions = db_session.exec(
+        select(Question).where(Question.id.in_(question_ids))
+    ).all()
+    questions_by_id = {question.id: question for question in questions}
+
+    return [
+        QuestionRead.model_validate(questions_by_id[question_id])
+        for question_id in question_ids
+        if question_id in questions_by_id
+    ]
 
 
 ## > Helper Functions

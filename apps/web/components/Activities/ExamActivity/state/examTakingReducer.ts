@@ -41,6 +41,7 @@ export type ExamTakingState =
     }
   | {
       mode: 'submitting';
+      currentIndex: number;
       answers: Record<number, any>;
       violationCount: number;
     }
@@ -144,11 +145,15 @@ export function examTakingReducer(state: ExamTakingState, action: ExamTakingActi
     }
 
     case 'START_SUBMIT': {
-      if (state.mode !== 'confirming-submit') return state;
+      if (state.mode === 'submitting') return state;
+
+      const answers = state.mode === 'recovery-prompt' ? state.recoveredAnswers : 'answers' in state ? state.answers : {};
+      const currentIndex = 'currentIndex' in state ? state.currentIndex : 0;
 
       return {
         mode: 'submitting',
-        answers: state.answers,
+        currentIndex,
+        answers,
         violationCount: state.violationCount,
       };
     }
@@ -163,7 +168,7 @@ export function examTakingReducer(state: ExamTakingState, action: ExamTakingActi
       return {
         mode: 'violation-warning',
         violation: action.violation,
-        currentIndex: state.mode === 'answering' ? state.currentIndex : 0,
+        currentIndex: 'currentIndex' in state ? state.currentIndex : 0,
         answers: baseAnswersForViolation,
         violationCount: action.violation.count,
       };
@@ -242,7 +247,7 @@ export function examTakingReducer(state: ExamTakingState, action: ExamTakingActi
         state.mode === 'recovery-prompt' ? state.recoveredAnswers : 'answers' in state ? state.answers : {};
       return {
         mode: 'answering',
-        currentIndex: state.mode === 'answering' ? state.currentIndex : 0,
+        currentIndex: 'currentIndex' in state ? state.currentIndex : 0,
         answers: safeAnswers,
         violationCount: state.violationCount,
       };

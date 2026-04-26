@@ -239,17 +239,36 @@ class QuestionReadStudent(SQLModelStrictBaseModel):
 
     @classmethod
     def from_question(
-        cls, q: "Question | QuestionRead", shuffle_answers: bool = False
-    ) -> "QuestionReadStudent":
+        cls, q: Question | QuestionRead, shuffle_answers: bool = False
+    ) -> QuestionReadStudent:
         """Create a student-facing question, stripping is_correct from answer_options."""
         import random as _random
 
+        if q.question_type == QuestionTypeEnum.MATCHING:
+            left_values = [opt.get("left") for opt in q.answer_options or []]
+            right_values = [opt.get("right") for opt in q.answer_options or []]
+            if shuffle_answers:
+                _random.shuffle(right_values)
+            return cls(
+                id=q.id,
+                question_uuid=q.question_uuid,
+                question_text=q.question_text,
+                question_type=q.question_type,
+                points=q.points,
+                order_index=q.order_index,
+                answer_options=[
+                    {"left": left, "right": right_values[index]}
+                    for index, left in enumerate(left_values)
+                ],
+            )
+
         stripped = []
-        for opt in q.answer_options or []:
+        for index, opt in enumerate(q.answer_options or []):
             clean = {k: v for k, v in opt.items() if k != "is_correct"}
+            clean["option_id"] = index
             stripped.append(clean)
 
-        if shuffle_answers and q.question_type != QuestionTypeEnum.MATCHING:
+        if shuffle_answers:
             _random.shuffle(stripped)
 
         return cls(

@@ -4,6 +4,7 @@ import { valibotResolver } from '@hookform/resolvers/valibot';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useCreateExamWithActivity, useExamConfig } from '@/features/exams/hooks/useExam';
 import { useTranslations } from 'next-intl';
+import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import * as v from 'valibot';
@@ -42,6 +43,12 @@ type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>;
 const getDefaultTimeLimit = (limits?: any) =>
   Math.min(Math.max(50, limits?.time_limit?.min ?? 1), limits?.time_limit?.max ?? 180);
 
+const getCourseUuid = (course: any): string | null =>
+  course?.courseStructure?.course_uuid ?? course?.course_uuid ?? course?.course?.course_uuid ?? null;
+
+const getCreatedActivityUuid = (data: any): string | null =>
+  data?.activity_uuid ?? data?.activity?.activity_uuid ?? data?.data?.activity_uuid ?? data?.data?.activity?.activity_uuid ?? null;
+
 const NewExam = ({ chapterId, course, closeModal }: any) => {
   const validationT = useTranslations('Validation');
   const t = useTranslations('Components.NewExamModal');
@@ -49,7 +56,8 @@ const NewExam = ({ chapterId, course, closeModal }: any) => {
   const { data: limits } = useExamConfig();
   const validationSchema = createValidationSchema(validationT, limits);
   const withUnpublishedActivities = course ? course.withUnpublishedActivities : false;
-  const createExamMutation = useCreateExamWithActivity(course?.course_uuid, {
+  const courseUuid = getCourseUuid(course);
+  const createExamMutation = useCreateExamWithActivity(courseUuid, {
     withUnpublishedActivities,
   });
 
@@ -112,23 +120,29 @@ const NewExam = ({ chapterId, course, closeModal }: any) => {
       toast.dismiss(toastLoading);
       toast.success(t('examCreatedSuccessfully'));
 
-      if (data.activity_uuid) {
-        const activity_uuid_clean = data.activity_uuid.replace('activity_', '');
-
-        let courseUuidClean: string | null = null;
-        if (course?.course_uuid) {
-          courseUuidClean = course.course_uuid.replace('course_', '');
-        } else {
+      const createdActivityUuid = getCreatedActivityUuid(data);
+      if (createdActivityUuid) {
+        let courseUuidClean = courseUuid ? cleanCourseUuid(courseUuid) : null;
+        if (!courseUuidClean) {
           const parts = globalThis.location.pathname.split('/').filter(Boolean);
           const courseIndex = parts.indexOf('course');
           if (courseIndex !== -1 && parts.length > courseIndex + 1) {
             courseUuidClean = String(parts[courseIndex + 1]);
           }
+          const dashCourseIndex = parts.indexOf('courses');
+          if (dashCourseIndex !== -1 && parts.length > dashCourseIndex + 1) {
+            courseUuidClean = String(parts[dashCourseIndex + 1]);
+          }
         }
 
-        globalThis.location.href = courseUuidClean
-          ? `/course/${courseUuidClean}/activity/${activity_uuid_clean}${withUnpublishedActivities ? '?withUnpublishedActivities=true' : ''}`
-          : '/courses';
+        if (courseUuidClean) {
+          const activityUuidClean = cleanActivityUuid(createdActivityUuid);
+          globalThis.location.href = `/course/${courseUuidClean}/activity/${activityUuidClean}${
+            withUnpublishedActivities ? '?withUnpublishedActivities=true' : ''
+          }`;
+        } else {
+          globalThis.location.href = '/courses';
+        }
       }
 
       closeModal();

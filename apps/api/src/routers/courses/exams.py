@@ -24,6 +24,7 @@ from src.services.courses.activities.exams import (
     delete_question,
     export_questions_csv,
     get_all_exam_attempts,
+    get_attempt_review_questions,
     get_user_attempts,
     import_questions_csv,
     read_exam,
@@ -223,8 +224,9 @@ async def api_record_violation(
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> ExamAttemptRead:
     violation_type = violation_data.get("type", "UNKNOWN")
+    answers = violation_data.get("answers", {})
     return await record_violation(
-        request, attempt_uuid, violation_type, current_user, db_session
+        request, attempt_uuid, violation_type, current_user, db_session, answers
     )
 
 
@@ -254,6 +256,18 @@ async def api_get_attempt_by_uuid(
     from src.services.courses.activities.exams import get_attempt_by_uuid
 
     return await get_attempt_by_uuid(request, attempt_uuid, current_user, db_session)
+
+
+@router.get("/attempts/{attempt_uuid}/questions")
+async def api_get_attempt_review_questions(
+    request: Request,
+    attempt_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> list[QuestionRead]:
+    return await get_attempt_review_questions(
+        request, attempt_uuid, current_user, db_session
+    )
 
 
 @router.get("/{exam_uuid}/attempts/all")

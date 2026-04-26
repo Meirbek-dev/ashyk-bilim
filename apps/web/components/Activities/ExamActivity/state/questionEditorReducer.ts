@@ -19,7 +19,7 @@ export interface Question {
   question_type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MATCHING';
   points: number;
   explanation?: string;
-  answer_options: { text?: string; is_correct?: boolean; left?: string; right?: string }[];
+  answer_options: { text?: string; is_correct?: boolean; left?: string; right?: string; option_id?: number }[];
   order_index: number;
 }
 
