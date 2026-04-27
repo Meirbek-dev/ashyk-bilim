@@ -9,6 +9,7 @@ import { apiFetch } from '@/lib/api-client';
 
 // Default chunk size: 2MB (small enough to bypass most nginx configs)
 const DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024;
+const CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS = 5 * 60_000;
 
 export interface ChunkedUploadOptions {
   file: File;
@@ -91,6 +92,7 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
     const initiateResponse = await apiFetch('uploads/initiate', {
       method: 'POST',
       body: initiateFormData,
+      timeoutMs: CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS,
     });
 
     if (!initiateResponse.ok) {
@@ -122,6 +124,7 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
       const chunkResponse = await apiFetch('uploads/chunk', {
         method: 'POST',
         body: chunkFormData,
+        timeoutMs: CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS,
       });
 
       if (!chunkResponse.ok) {
@@ -158,6 +161,7 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
     const completeResponse = await apiFetch('uploads/complete', {
       method: 'POST',
       body: completeFormData,
+      timeoutMs: CHUNKED_UPLOAD_REQUEST_TIMEOUT_MS,
     });
 
     if (!completeResponse.ok) {

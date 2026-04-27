@@ -25,6 +25,8 @@ type ResponseMetadata<T> = Omit<CustomResponseTyping, 'data'> & {
   data: T | null;
 };
 
+const FILE_ACTIVITY_UPLOAD_TIMEOUT_MS = 5 * 60_000;
+
 async function getTypedResponseMetadata<T>(response: Response): Promise<ResponseMetadata<T>> {
   return await getResponseMetadata(response);
 }
@@ -111,7 +113,11 @@ async function uploadFormData(
   formData: FormData,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
-  const result = await apiFetch(path, { method: 'POST', body: formData });
+  const result = await apiFetch(path, {
+    method: 'POST',
+    body: formData,
+    timeoutMs: FILE_ACTIVITY_UPLOAD_TIMEOUT_MS,
+  });
 
   if (!result.ok) {
     let detail = `Upload failed with status ${result.status}`;
@@ -189,7 +195,11 @@ async function createVideoActivityChunked(
     formData.append('details', buildVideoDetails(data.details));
   }
 
-  const result = await apiFetch('activities/video', { method: 'POST', body: formData });
+  const result = await apiFetch('activities/video', {
+    method: 'POST',
+    body: formData,
+    timeoutMs: FILE_ACTIVITY_UPLOAD_TIMEOUT_MS,
+  });
 
   if (!result.ok) {
     let detail = `Failed to create activity: ${result.status}`;

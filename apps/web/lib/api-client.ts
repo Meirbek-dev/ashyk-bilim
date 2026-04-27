@@ -16,6 +16,8 @@ import { AUTH_COOKIE_NAMES } from '@/lib/auth/types';
 type ApiFetchInit = Omit<RequestInit, 'credentials'> & {
   /** Override which base URL to use (defaults to environment-aware selection). */
   baseUrl?: string;
+  /** Override the default request timeout. Use false for no client-side timeout. */
+  timeoutMs?: number | false;
 };
 
 function apiBase(isServer: boolean, baseUrl?: string): string {
@@ -60,9 +62,52 @@ async function getServerCookieHeader(): Promise<string> {
 
 const DEFAULT_TIMEOUT_MS = 30_000; // 30 seconds
 
+function createTimeoutReason(timeoutMs: number): Error {
+  const error = new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds`);
+  error.name = 'TimeoutError';
+  return error;
+}
+
+function combineAbortSignals(signals: AbortSignal[]): { signal: AbortSignal; cleanup: () => void } {
+  const activeSignals = signals.filter(Boolean);
+
+  if (activeSignals.length === 1) {
+    return { signal: activeSignals[0]!, cleanup: () => undefined };
+  }
+
+  const controller = new AbortController();
+  const listeners: Array<{ signal: AbortSignal; listener: () => void }> = [];
+
+  const abortFrom = (signal: AbortSignal) => {
+    if (!controller.signal.aborted) {
+      controller.abort(signal.reason ?? new Error('Request aborted'));
+    }
+  };
+
+  for (const signal of activeSignals) {
+    if (signal.aborted) {
+      abortFrom(signal);
+      continue;
+    }
+
+    const listener = () => abortFrom(signal);
+    signal.addEventListener('abort', listener, { once: true });
+    listeners.push({ signal, listener });
+  }
+
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      for (const { signal, listener } of listeners) {
+        signal.removeEventListener('abort', listener);
+      }
+    },
+  };
+}
+
 export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<Response> {
   const isServer = typeof globalThis.window === 'undefined';
-  const { baseUrl, ...fetchInit } = init;
+  const { baseUrl, timeoutMs = DEFAULT_TIMEOUT_MS, signal: callerSignal, ...fetchInit } = init;
   const base = apiBase(isServer, baseUrl);
   const url = resolveRequestUrl(path, base);
 
@@ -79,13 +124,26 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
     }
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  const effectiveTimeoutMs = typeof timeoutMs === 'number' ? timeoutMs : null;
+  const timeoutController = effectiveTimeoutMs === null ? null : new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  if (timeoutController && effectiveTimeoutMs !== null && effectiveTimeoutMs > 0) {
+    timeoutId = setTimeout(
+      () => timeoutController.abort(createTimeoutReason(effectiveTimeoutMs)),
+      effectiveTimeoutMs,
+    );
+  }
+
+  const abortSignals = [callerSignal, timeoutController?.signal].filter(
+    (signal): signal is AbortSignal => Boolean(signal),
+  );
+  const combinedSignal = abortSignals.length > 0 ? combineAbortSignals(abortSignals) : null;
 
   try {
     const response = await fetch(url, {
       ...options,
-      signal: controller.signal,
+      signal: combinedSignal?.signal,
     });
 
     if (!isServer && response.status === 401) {
@@ -97,7 +155,8 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
 
     return response;
   } finally {
-    clearTimeout(timeoutId);
+    if (timeoutId) clearTimeout(timeoutId);
+    combinedSignal?.cleanup();
   }
 }
 

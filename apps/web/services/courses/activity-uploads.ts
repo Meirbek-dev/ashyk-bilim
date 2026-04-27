@@ -4,6 +4,8 @@ import { shouldUseChunkedUpload, uploadFileChunked } from '@services/utils/chunk
 
 type ActivityRead = components['schemas']['ActivityRead'];
 
+const FILE_ACTIVITY_UPLOAD_TIMEOUT_MS = 5 * 60_000;
+
 export interface UploadProgress {
   percentage: number;
   currentChunk?: number;
@@ -46,7 +48,11 @@ async function uploadFormData(
   formData: FormData,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
-  const result = await apiFetch(path, { method: 'POST', body: formData });
+  const result = await apiFetch(path, {
+    method: 'POST',
+    body: formData,
+    timeoutMs: FILE_ACTIVITY_UPLOAD_TIMEOUT_MS,
+  });
 
   if (!result.ok) {
     let detail = `Upload failed with status ${result.status}`;
@@ -150,7 +156,11 @@ async function createVideoActivityChunked(
     formData.append('details', buildVideoDetails(data.details));
   }
 
-  const result = await apiFetch('activities/video', { method: 'POST', body: formData });
+  const result = await apiFetch('activities/video', {
+    method: 'POST',
+    body: formData,
+    timeoutMs: FILE_ACTIVITY_UPLOAD_TIMEOUT_MS,
+  });
 
   if (!result.ok) {
     let detail = `Failed to create activity: ${result.status}`;
