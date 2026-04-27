@@ -20,15 +20,8 @@ from src.db.courses.assignments import (
     AssignmentTask,
     AssignmentTaskCreate,
     AssignmentTaskRead,
-    AssignmentTaskSubmission,
-    AssignmentTaskSubmissionRead,
-    AssignmentTaskSubmissionUpdate,
     AssignmentTaskUpdate,
     AssignmentUpdate,
-    AssignmentUserSubmission,
-    AssignmentUserSubmissionRead,
-    AssignmentUserSubmissionStatus,
-    AssignmentUserSubmissionWithUserRead,
 )
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
@@ -42,7 +35,7 @@ from src.db.grading.submissions import (
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
-from src.db.users import AnonymousUser, PublicUser, User, UserRead
+from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.courses.activities.uploads.sub_file import upload_submission_file
 from src.services.courses.activities.uploads.tasks_ref_files import (
@@ -58,23 +51,17 @@ def _build_assignment_read(
     *,
     course_uuid: str | None = None,
     activity_uuid: str | None = None,
+    activity_published: bool | None = None,
 ) -> AssignmentRead:
+    update_data: dict[str, object] = {
+        "course_uuid": course_uuid,
+        "activity_uuid": activity_uuid,
+    }
+    if activity_published is not None:
+        update_data["published"] = activity_published
     return AssignmentRead.model_validate(
         assignment,
-        update={
-            "course_uuid": course_uuid,
-            "activity_uuid": activity_uuid,
-        },
-    )
-
-
-def _build_assignment_user_submission_with_user_read(
-    submission: AssignmentUserSubmission | AssignmentUserSubmissionRead,
-    user: User,
-) -> AssignmentUserSubmissionWithUserRead:
-    return AssignmentUserSubmissionWithUserRead.model_validate(
-        submission,
-        update={"user": UserRead.model_validate(user)},
+        update=update_data,
     )
 
 
@@ -193,6 +180,27 @@ def _get_assignment_context(
         raise HTTPException(status_code=404, detail="Course not found")
 
     return assignment, activity, course
+
+
+def _get_assignment_task_context(
+    assignment_uuid: str,
+    assignment_task_uuid: str,
+    db_session: Session,
+) -> tuple[AssignmentTask, Assignment, Activity, Course]:
+    assignment, activity, course = _get_assignment_context(assignment_uuid, db_session)
+    assignment_task = db_session.exec(
+        select(AssignmentTask).where(
+            AssignmentTask.assignment_task_uuid == assignment_task_uuid
+        )
+    ).first()
+    if not assignment_task:
+        raise HTTPException(status_code=404, detail="Assignment Task not found")
+    if assignment_task.assignment_id != assignment.id:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment task does not belong to this assignment",
+        )
+    return assignment_task, assignment, activity, course
 
 
 def _require_assignment_submit_access(
@@ -334,256 +342,6 @@ def _user_has_course_access(user_id: int, course: Course, db_session: Session) -
         )
     )
     return db_session.exec(member_stmt).first() is not None
-
-
-async def create_or_update_assignment_user_submission(
-    assignment_id: int,
-    user_id: int,
-    db_session: Session,
-) -> AssignmentUserSubmissionRead:
-    assignment = db_session.exec(
-        select(Assignment).where(Assignment.id == assignment_id)
-    ).first()
-    if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
-
-    tasks = db_session.exec(
-        select(AssignmentTask).where(AssignmentTask.assignment_id == assignment_id)
-    ).all()
-    task_ids = [task.id for task in tasks if task.id is not None]
-
-    submissions: list[AssignmentTaskSubmission] = []
-    if task_ids:
-        submissions = db_session.exec(
-            select(AssignmentTaskSubmission).where(
-                AssignmentTaskSubmission.assignment_task_id.in_(task_ids),
-                AssignmentTaskSubmission.user_id == user_id,
-            )
-        ).all()
-
-    submission_by_task_id = {
-        submission.assignment_task_id: submission for submission in submissions
-    }
-
-    total_points_earned = sum(int(submission.grade or 0) for submission in submissions)
-    total_points_possible = sum(int(task.max_grade_value or 0) for task in tasks)
-    if total_points_possible > 0:
-        aggregate_grade = round((total_points_earned / total_points_possible) * 100)
-    elif task_ids:
-        aggregate_grade = round(total_points_earned / len(task_ids))
-    else:
-        aggregate_grade = 0
-
-    has_any_submission = any(
-        bool(submission.task_submission) for submission in submissions
-    )
-    all_tasks_graded = bool(task_ids) and all(
-        task_id in submission_by_task_id
-        and (submission_by_task_id[task_id].grade or 0) > 0
-        for task_id in task_ids
-    )
-
-    submitted_times = [
-        candidate
-        for candidate in (
-            _coerce_datetime(submission.creation_date)
-            for submission in submissions
-            if submission.task_submission
-        )
-        if candidate is not None
-    ]
-    first_submitted_at = min(submitted_times) if submitted_times else None
-    graded_times = [
-        candidate
-        for candidate in (
-            _coerce_datetime(submission.update_date) for submission in submissions
-        )
-        if candidate is not None
-    ]
-
-    submission_status = AssignmentUserSubmissionStatus.PENDING
-    due_deadline = _coerce_datetime(assignment.due_date, end_of_day=True)
-    if all_tasks_graded:
-        submission_status = AssignmentUserSubmissionStatus.GRADED
-    elif has_any_submission:
-        submitted_reference = first_submitted_at or datetime.now(tz=UTC)
-        if due_deadline is not None and submitted_reference > due_deadline:
-            submission_status = AssignmentUserSubmissionStatus.LATE
-        else:
-            submission_status = AssignmentUserSubmissionStatus.SUBMITTED
-
-    assignment_user_submission = db_session.exec(
-        select(AssignmentUserSubmission).where(
-            AssignmentUserSubmission.assignment_id == assignment_id,
-            AssignmentUserSubmission.user_id == user_id,
-        )
-    ).first()
-
-    if assignment_user_submission:
-        assignment_user_submission.submission_status = submission_status
-        assignment_user_submission.grade = aggregate_grade
-        assignment_user_submission.submitted_at = (
-            assignment_user_submission.submitted_at or first_submitted_at
-        )
-        assignment_user_submission.graded_at = (
-            max(graded_times) if all_tasks_graded and graded_times else None
-        )
-        assignment_user_submission.update_date = datetime.now(tz=UTC).isoformat()
-    else:
-        current_time = datetime.now(tz=UTC).isoformat()
-        assignment_user_submission = AssignmentUserSubmission(
-            assignmentusersubmission_uuid=f"assignmentusersubmission_{ULID()}",
-            submission_status=submission_status,
-            grade=aggregate_grade,
-            user_id=user_id,
-            assignment_id=assignment_id,
-            creation_date=current_time,
-            update_date=current_time,
-            submitted_at=first_submitted_at,
-            graded_at=max(graded_times) if all_tasks_graded and graded_times else None,
-        )
-
-    db_session.add(assignment_user_submission)
-    db_session.commit()
-    db_session.refresh(assignment_user_submission)
-
-    return AssignmentUserSubmissionRead.model_validate(assignment_user_submission)
-
-
-async def get_assignment_user_submission(
-    request: Request,
-    assignment_uuid: str,
-    user_id: int,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
-) -> AssignmentUserSubmissionRead:
-    assignment = db_session.exec(
-        select(Assignment).where(Assignment.assignment_uuid == assignment_uuid)
-    ).first()
-    if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
-
-    course = db_session.exec(
-        select(Course).where(Course.id == assignment.course_id)
-    ).first()
-    if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
-
-    checker = PermissionChecker(db_session)
-    if current_user.id == user_id:
-        if not _user_has_course_access(current_user.id, course, db_session):
-            raise HTTPException(
-                status_code=403,
-                detail="You must be enrolled in this course to view submissions",
-            )
-        checker.require(
-            current_user.id,
-            "assignment:read",
-            is_assigned=True,
-            resource_owner_id=course.creator_id,
-        )
-    else:
-        checker.require(
-            current_user.id,
-            "assignment:update",
-            resource_owner_id=course.creator_id,
-        )
-        target_user = db_session.exec(select(User).where(User.id == user_id)).first()
-        if not target_user or not _user_has_course_access(user_id, course, db_session):
-            raise HTTPException(status_code=404, detail="User not found in course")
-
-    return await create_or_update_assignment_user_submission(
-        assignment.id,
-        user_id,
-        db_session,
-    )
-
-
-async def get_all_assignment_user_submissions(
-    request: Request,
-    assignment_uuid: str,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
-) -> list[AssignmentUserSubmissionWithUserRead]:
-    assignment = db_session.exec(
-        select(Assignment).where(Assignment.assignment_uuid == assignment_uuid)
-    ).first()
-    if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
-
-    course = db_session.exec(
-        select(Course).where(Course.id == assignment.course_id)
-    ).first()
-    if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
-
-    checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "assignment:update",
-        resource_owner_id=course.creator_id,
-    )
-
-    author_user_ids = _get_active_course_author_user_ids(course, db_session)
-    candidate_user_ids = (
-        _get_course_member_user_ids(course, db_session) - author_user_ids
-    )
-
-    task_ids = [
-        task_id
-        for task_id in db_session.exec(
-            select(AssignmentTask.id).where(
-                AssignmentTask.assignment_id == assignment.id
-            )
-        ).all()
-        if task_id is not None
-    ]
-    if task_ids:
-        submission_user_ids = db_session.exec(
-            select(AssignmentTaskSubmission.user_id).where(
-                AssignmentTaskSubmission.assignment_task_id.in_(task_ids)
-            )
-        ).all()
-        candidate_user_ids.update(
-            user_id
-            for user_id in submission_user_ids
-            if user_id is not None and user_id not in author_user_ids
-        )
-
-    existing_user_ids = db_session.exec(
-        select(AssignmentUserSubmission.user_id).where(
-            AssignmentUserSubmission.assignment_id == assignment.id
-        )
-    ).all()
-    candidate_user_ids.update(
-        user_id
-        for user_id in existing_user_ids
-        if user_id is not None and user_id not in author_user_ids
-    )
-
-    if not candidate_user_ids:
-        return []
-
-    submissions = [
-        await create_or_update_assignment_user_submission(
-            assignment.id, user_id, db_session
-        )
-        for user_id in sorted(candidate_user_ids)
-    ]
-
-    users = db_session.exec(select(User).where(User.id.in_(candidate_user_ids))).all()
-    users_by_id = {user.id: user for user in users if user.id is not None}
-
-    results: list[AssignmentUserSubmissionWithUserRead] = []
-    for submission in submissions:
-        user = users_by_id.get(submission.user_id)
-        if user is None:
-            continue
-        results.append(
-            _build_assignment_user_submission_with_user_read(submission, user)
-        )
-
-    return results
 
 
 async def get_assignment_draft_submission(
@@ -739,40 +497,14 @@ async def create_assignment(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> AssignmentRead:
-    # Check if platform exists
-    statement = select(Course).where(Course.id == assignment_object.course_id)
-    course = db_session.exec(statement).first()
-
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
-
-    # RBAC check
-    checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "assignment:create",
-        resource_owner_id=course.creator_id,
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "Standalone assignment creation is disabled. "
+            "Create assignments through /assignments/with-activity so the "
+            "assignment and activity are created transactionally."
+        ),
     )
-
-    # Create Assignment
-    assignment_data = assignment_object.model_dump(exclude_unset=True)
-    assignment = Assignment(**assignment_data)
-
-    assignment.assignment_uuid = f"assignment_{ULID()}"
-    assignment.creation_date = datetime.now().isoformat()
-    assignment.update_date = datetime.now().isoformat()
-    assignment.due_at = _derive_due_at(assignment_object)
-
-    # Insert Assignment in DB
-    db_session.add(assignment)
-    db_session.commit()
-    db_session.refresh(assignment)
-
-    # return assignment read
-    return _build_assignment_read(assignment)
 
 
 async def read_assignment(
@@ -818,6 +550,7 @@ async def read_assignment(
         assignment,
         course_uuid=course.course_uuid,
         activity_uuid=activity.activity_uuid if activity else None,
+        activity_published=activity.published if activity else None,
     )
 
 
@@ -871,6 +604,7 @@ async def read_assignment_from_activity_uuid(
         assignment,
         course_uuid=course.course_uuid,
         activity_uuid=activity.activity_uuid,
+        activity_published=activity.published,
     )
 
 
@@ -911,6 +645,11 @@ async def update_assignment(
 
     # Update only the fields that were passed in using model_dump with exclude_unset
     update_data = assignment_object.model_dump(exclude_unset=True)
+    if "published" in update_data:
+        raise HTTPException(
+            status_code=400,
+            detail="Assignment visibility is controlled by activity.published",
+        )
     forbidden_fields = {"course_id", "chapter_id", "activity_id"}
     attempted_forbidden_updates = forbidden_fields.intersection(update_data.keys())
     if attempted_forbidden_updates:
@@ -940,6 +679,7 @@ async def update_assignment(
         assignment,
         course_uuid=course.course_uuid,
         activity_uuid=activity.activity_uuid if activity else None,
+        activity_published=activity.published if activity else None,
     )
 
 
@@ -977,11 +717,13 @@ async def delete_assignment(
         resource_owner_id=course.creator_id,
     )
 
-    # Delete Assignment
-    db_session.delete(assignment)
-    db_session.commit()
-
-    return {"message": "Assignment deleted"}
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "Assignments are owned by their activity. Delete the assignment "
+            "activity to remove the assignment and its tasks transactionally."
+        ),
+    )
 
 
 async def delete_assignment_from_activity_uuid(
@@ -1029,12 +771,11 @@ async def delete_assignment_from_activity_uuid(
         resource_owner_id=course.creator_id,
     )
 
-    # Delete Assignment
-    db_session.delete(assignment)
-
+    # Delete the activity; assignment and tasks cascade from the activity/assignment FKs.
+    db_session.delete(activity)
     db_session.commit()
 
-    return {"message": "Assignment deleted"}
+    return {"message": "Assignment activity deleted"}
 
 
 ## > Assignments Tasks CRUD
@@ -1208,51 +949,14 @@ async def read_assignment_task(
 async def put_assignment_task_reference_file(
     request: Request,
     db_session: Session,
+    assignment_uuid: str,
     assignment_task_uuid: str,
     current_user: PublicUser | AnonymousUser,
     reference_file: UploadFile | None = None,
 ) -> AssignmentTaskRead:
-    # Check if assignment task exists
-    statement = select(AssignmentTask).where(
-        AssignmentTask.assignment_task_uuid == assignment_task_uuid
+    assignment_task, assignment, activity, course = _get_assignment_task_context(
+        assignment_uuid, assignment_task_uuid, db_session
     )
-    assignment_task = db_session.exec(statement).first()
-
-    if not assignment_task:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task not found",
-        )
-
-    # Check if assignment exists
-    statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
-    assignment = db_session.exec(statement).first()
-
-    if not assignment:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment not found",
-        )
-
-    # Check for activity
-    statement = select(Activity).where(Activity.id == assignment.activity_id)
-    activity = db_session.exec(statement).first()
-
-    if not activity:
-        raise HTTPException(
-            status_code=404,
-            detail="Activity not found",
-        )
-
-    # Check if course exists
-    statement = select(Course).where(Course.id == assignment.course_id)
-    course = db_session.exec(statement).first()
-
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
 
     # RBAC check
     checker = PermissionChecker(db_session)
@@ -1292,51 +996,14 @@ async def put_assignment_task_reference_file(
 async def put_assignment_task_submission_file(
     request: Request,
     db_session: Session,
+    assignment_uuid: str,
     assignment_task_uuid: str,
     current_user: PublicUser | AnonymousUser,
     sub_file: UploadFile | None = None,
 ) -> dict[str, str]:
-    # Check if assignment task exists
-    statement = select(AssignmentTask).where(
-        AssignmentTask.assignment_task_uuid == assignment_task_uuid
+    assignment_task, assignment, activity, course = _get_assignment_task_context(
+        assignment_uuid, assignment_task_uuid, db_session
     )
-    assignment_task = db_session.exec(statement).first()
-
-    if not assignment_task:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task not found",
-        )
-
-    # Check if assignment exists
-    statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
-    assignment = db_session.exec(statement).first()
-
-    if not assignment:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment not found",
-        )
-
-    # Check for activity
-    statement = select(Activity).where(Activity.id == assignment.activity_id)
-    activity = db_session.exec(statement).first()
-
-    if not activity:
-        raise HTTPException(
-            status_code=404,
-            detail="Activity not found",
-        )
-
-    # Check if course exists
-    statement = select(Course).where(Course.id == assignment.course_id)
-    course = db_session.exec(statement).first()
-
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
 
     # RBAC check - only need read permission to submit files
     checker = PermissionChecker(db_session)
@@ -1373,42 +1040,15 @@ async def put_assignment_task_submission_file(
 
 async def update_assignment_task(
     request: Request,
+    assignment_uuid: str,
     assignment_task_uuid: str,
     assignment_task_object: AssignmentTaskUpdate,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> AssignmentTaskRead:
-    # Check if assignment task exists
-    statement = select(AssignmentTask).where(
-        AssignmentTask.assignment_task_uuid == assignment_task_uuid
+    assignment_task, assignment, activity, course = _get_assignment_task_context(
+        assignment_uuid, assignment_task_uuid, db_session
     )
-    assignment_task = db_session.exec(statement).first()
-
-    if not assignment_task:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task not found",
-        )
-
-    # Check if assignment exists
-    statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
-    assignment = db_session.exec(statement).first()
-
-    if not assignment:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment not found",
-        )
-
-    # Check if course exists
-    statement = select(Course).where(Course.id == assignment.course_id)
-    course = db_session.exec(statement).first()
-
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
 
     # RBAC check
     checker = PermissionChecker(db_session)
@@ -1436,41 +1076,14 @@ async def update_assignment_task(
 
 async def delete_assignment_task(
     request: Request,
+    assignment_uuid: str,
     assignment_task_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> dict[str, str]:
-    # Check if assignment task exists
-    statement = select(AssignmentTask).where(
-        AssignmentTask.assignment_task_uuid == assignment_task_uuid
+    assignment_task, assignment, activity, course = _get_assignment_task_context(
+        assignment_uuid, assignment_task_uuid, db_session
     )
-    assignment_task = db_session.exec(statement).first()
-
-    if not assignment_task:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task not found",
-        )
-
-    # Check if assignment exists
-    statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
-    assignment = db_session.exec(statement).first()
-
-    if not assignment:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment not found",
-        )
-
-    # Check if course exists
-    statement = select(Course).where(Course.id == assignment.course_id)
-    course = db_session.exec(statement).first()
-
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
 
     # RBAC check
     checker = PermissionChecker(db_session)
@@ -1485,528 +1098,6 @@ async def delete_assignment_task(
     db_session.commit()
 
     return {"message": "Assignment Task deleted"}
-
-
-## > Assignments Tasks Submissions CRUD
-
-
-async def handle_assignment_task_submission(
-    request: Request,
-    assignment_task_uuid: str,
-    assignment_task_submission_object: AssignmentTaskSubmissionUpdate,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
-) -> AssignmentTaskSubmissionRead:
-    assignment_task_submission_uuid = (
-        assignment_task_submission_object.assignment_task_submission_uuid
-    )
-    # Check if assignment task exists
-    statement = select(AssignmentTask).where(
-        AssignmentTask.assignment_task_uuid == assignment_task_uuid
-    )
-    assignment_task = db_session.exec(statement).first()
-
-    if not assignment_task:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task not found",
-        )
-
-    # Check if assignment exists
-    statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
-    assignment = db_session.exec(statement).first()
-
-    if not assignment:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment not found",
-        )
-
-    # Check if course exists
-    statement = select(Course).where(Course.id == assignment.course_id)
-    course = db_session.exec(statement).first()
-
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
-
-    # SECURITY: Check if user has instructor/admin permissions for grading
-    checker = PermissionChecker(db_session)
-    is_instructor = checker.check(
-        current_user.id,
-        "course:update",
-        resource_owner_id=course.creator_id,
-    )
-
-    # For regular users, ensure they can only submit their own work
-    if not is_instructor:
-        # Check if user is enrolled in the course
-        if not _user_has_course_access(current_user.id, course, db_session):
-            raise HTTPException(
-                status_code=403,
-                detail="You must be enrolled in this course to submit assignments",
-            )
-
-        # SECURITY: Regular users cannot update grades - only check if actual values are being set
-        if (assignment_task_submission_object.grade is not None) or (
-            assignment_task_submission_object.task_submission_grade_feedback is not None
-        ):
-            raise HTTPException(
-                status_code=403, detail="You do not have permission to update grades"
-            )
-
-        # Only need read permission for submissions
-        checker.require(
-            current_user.id,
-            "assignment:read",
-            is_assigned=True,
-        )
-    else:
-        # SECURITY: Instructors/admins need update permission to grade
-        checker.require(
-            current_user.id,
-            "assignment:update",
-            resource_owner_id=course.creator_id,
-        )
-
-    # Try to find existing submission by user_id and assignment_task_id first (for save progress functionality)
-    statement = select(AssignmentTaskSubmission).where(
-        AssignmentTaskSubmission.assignment_task_id == assignment_task.id,
-        AssignmentTaskSubmission.user_id == current_user.id,
-    )
-    assignment_task_submission = db_session.exec(statement).first()
-
-    # If no submission found by user+task, try to find by UUID if provided (for specific submission updates)
-    if not assignment_task_submission and assignment_task_submission_uuid:
-        statement = select(AssignmentTaskSubmission).where(
-            AssignmentTaskSubmission.assignment_task_submission_uuid
-            == assignment_task_submission_uuid
-        )
-        assignment_task_submission = db_session.exec(statement).first()
-
-    # If submission exists, update it
-    if assignment_task_submission:
-        # SECURITY: For regular users, ensure they can only update their own submissions
-        if not is_instructor and assignment_task_submission.user_id != current_user.id:
-            raise HTTPException(
-                status_code=403, detail="You can only update your own submissions"
-            )
-
-        # Update only the fields that were passed in using model_dump with exclude_unset
-        update_data = assignment_task_submission_object.model_dump(exclude_unset=True)
-
-        # Exclude immutable fields that shouldn't be updated
-        immutable_fields = {"assignment_task_submission_uuid"}
-
-        for field, value in update_data.items():
-            if field not in immutable_fields and value is not None:
-                setattr(assignment_task_submission, field, value)
-
-        assignment_task_submission.update_date = datetime.now().isoformat()
-
-        # Insert Assignment Task Submission in DB
-        db_session.add(assignment_task_submission)
-        db_session.commit()
-        db_session.refresh(assignment_task_submission)
-
-    else:
-        # Create new Task submission
-        current_time = datetime.now().isoformat()
-
-        model_data = assignment_task_submission_object.model_dump(exclude_unset=True)
-
-        assignment_task_submission = AssignmentTaskSubmission(
-            assignment_task_submission_uuid=assignment_task_submission_uuid
-            or f"assignmenttasksubmission_{ULID()}",
-            task_submission=model_data.get("task_submission", {}),
-            grade=0,  # Always start with 0 for new submissions
-            task_submission_grade_feedback="",  # Start with empty feedback
-            assignment_task_id=int(assignment_task.id),
-            assignment_type=assignment_task.assignment_type,
-            activity_id=assignment.activity_id,
-            course_id=assignment.course_id,
-            chapter_id=assignment.chapter_id,
-            user_id=current_user.id,
-            creation_date=current_time,
-            update_date=current_time,
-        )
-
-        # Insert Assignment Task Submission in DB
-        db_session.add(assignment_task_submission)
-        db_session.commit()
-        db_session.refresh(assignment_task_submission)
-
-    await create_or_update_assignment_user_submission(
-        assignment.id,
-        assignment_task_submission.user_id,
-        db_session,
-    )
-
-    # return assignment task submission read
-    return AssignmentTaskSubmissionRead.model_validate(assignment_task_submission)
-
-
-async def read_user_assignment_task_submissions(
-    request: Request,
-    assignment_task_uuid: str,
-    user_id: int,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
-) -> AssignmentTaskSubmissionRead | None:
-    # Check if assignment task exists
-    statement = select(AssignmentTask).where(
-        AssignmentTask.assignment_task_uuid == assignment_task_uuid
-    )
-    assignment_task = db_session.exec(statement).first()
-
-    if not assignment_task:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task not found",
-        )
-
-    # Check if assignment exists
-    statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
-    assignment = db_session.exec(statement).first()
-
-    if not assignment:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment not found",
-        )
-
-    # Check if course exists
-    statement = select(Course).where(Course.id == assignment.course_id)
-    course = db_session.exec(statement).first()
-
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
-
-    # RBAC check
-    checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "assignment:update",
-        resource_owner_id=course.creator_id,
-    )
-
-    target_user = db_session.exec(select(User).where(User.id == user_id)).first()
-    if not target_user or not _user_has_course_access(user_id, course, db_session):
-        raise HTTPException(status_code=404, detail="User not found in course")
-
-    # Check if assignment task submission exists
-    statement = select(AssignmentTaskSubmission).where(
-        AssignmentTaskSubmission.assignment_task_id == assignment_task.id,
-        AssignmentTaskSubmission.user_id == user_id,
-    )
-    assignment_task_submission = db_session.exec(statement).first()
-
-    if not assignment_task_submission:
-        return None
-
-    # return assignment task submission read
-    return AssignmentTaskSubmissionRead.model_validate(assignment_task_submission)
-
-
-async def read_user_assignment_task_submissions_me(
-    request: Request,
-    assignment_task_uuid: str,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
-) -> AssignmentTaskSubmissionRead | None:
-    # Check if assignment task exists
-    statement = select(AssignmentTask).where(
-        AssignmentTask.assignment_task_uuid == assignment_task_uuid
-    )
-    assignment_task = db_session.exec(statement).first()
-
-    if not assignment_task:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task not found",
-        )
-
-    # Check if assignment exists
-    statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
-    assignment = db_session.exec(statement).first()
-
-    if not assignment:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment not found",
-        )
-
-    # Check if course exists
-    statement = select(Course).where(Course.id == assignment.course_id)
-    course = db_session.exec(statement).first()
-
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
-
-    # RBAC check
-    checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "assignment:read",
-        is_assigned=True,
-        resource_owner_id=course.creator_id,
-    )
-
-    # Check if assignment task submission exists
-    statement = select(AssignmentTaskSubmission).where(
-        AssignmentTaskSubmission.assignment_task_id == assignment_task.id,
-        AssignmentTaskSubmission.user_id == current_user.id,
-    )
-    assignment_task_submission = db_session.exec(statement).first()
-
-    if not assignment_task_submission:
-        # Return None instead of raising an error for cases where no submission exists yet
-        return None
-
-    # return assignment task submission read
-    return AssignmentTaskSubmissionRead.model_validate(assignment_task_submission)
-
-
-async def read_assignment_task_submissions(
-    request: Request,
-    assignment_task_uuid: str,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
-) -> list[AssignmentTaskSubmissionRead]:
-    # Check if assignment task exists
-    statement = select(AssignmentTask).where(
-        AssignmentTask.assignment_task_uuid == assignment_task_uuid
-    )
-    assignment_task = db_session.exec(statement).first()
-
-    if not assignment_task:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task not found",
-        )
-
-    # Check if assignment exists
-    statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
-    assignment = db_session.exec(statement).first()
-
-    if not assignment:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment not found",
-        )
-
-    # Check if course exists
-    statement = select(Course).where(Course.id == assignment.course_id)
-    course = db_session.exec(statement).first()
-
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
-
-    # RBAC check
-    checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "assignment:update",
-        resource_owner_id=course.creator_id,
-    )
-
-    # return assignment task submissions list
-    statement = select(AssignmentTaskSubmission).where(
-        AssignmentTaskSubmission.assignment_task_id == assignment_task.id
-    )
-    submissions = db_session.exec(statement).all()
-
-    return [AssignmentTaskSubmissionRead.model_validate(item) for item in submissions]
-
-
-async def update_assignment_task_submission(
-    request: Request,
-    assignment_task_submission_uuid: str,
-    assignment_task_submission_object: AssignmentTaskSubmissionUpdate,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
-) -> AssignmentTaskSubmissionRead:
-    # Check if assignment task submission exists
-    statement = select(AssignmentTaskSubmission).where(
-        AssignmentTaskSubmission.assignment_task_submission_uuid
-        == assignment_task_submission_uuid
-    )
-    assignment_task_submission = db_session.exec(statement).first()
-
-    if not assignment_task_submission:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task Submission not found",
-        )
-
-    # Check if assignment task exists
-    statement = select(AssignmentTask).where(
-        AssignmentTask.id == assignment_task_submission.assignment_task_id
-    )
-    assignment_task = db_session.exec(statement).first()
-
-    if not assignment_task:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task not found",
-        )
-
-    # Check if assignment exists
-    statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
-    assignment = db_session.exec(statement).first()
-
-    if not assignment:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment not found",
-        )
-
-    # Check if course exists
-    statement = select(Course).where(Course.id == assignment.course_id)
-    course = db_session.exec(statement).first()
-
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
-
-    # RBAC check
-    checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "assignment:update",
-        resource_owner_id=course.creator_id,
-    )
-
-    # Update only the fields that were passed in using model_dump with exclude_unset
-    update_data = assignment_task_submission_object.model_dump(exclude_unset=True)
-    immutable_fields = {
-        "assignment_task_id",
-        "assignment_task_submission_uuid",
-        "assignment_type",
-    }
-    for field, value in update_data.items():
-        if field in immutable_fields:
-            continue
-
-        # Validate grade range strictly (0-100)
-        if field == "grade" and value is not None:
-            try:
-                val = int(value)
-            except Exception:
-                raise HTTPException(
-                    status_code=400, detail="Grade must be an integer between 0 and 100"
-                )
-            if val < 0 or val > 100:
-                raise HTTPException(
-                    status_code=400, detail=f"Grade {val} is out of range (0-100)"
-                )
-            setattr(assignment_task_submission, field, val)
-            continue
-
-        setattr(assignment_task_submission, field, value)
-
-    assignment_task_submission.update_date = datetime.now().isoformat()
-
-    # Insert Assignment Task Submission in DB
-    db_session.add(assignment_task_submission)
-    db_session.commit()
-    db_session.refresh(assignment_task_submission)
-
-    await create_or_update_assignment_user_submission(
-        assignment.id,
-        assignment_task_submission.user_id,
-        db_session,
-    )
-
-    # return assignment task submission read
-    return AssignmentTaskSubmissionRead.model_validate(assignment_task_submission)
-
-
-async def delete_assignment_task_submission(
-    request: Request,
-    assignment_task_submission_uuid: str,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
-) -> dict[str, str]:
-    # Check if assignment task submission exists
-    statement = select(AssignmentTaskSubmission).where(
-        AssignmentTaskSubmission.assignment_task_submission_uuid
-        == assignment_task_submission_uuid
-    )
-    assignment_task_submission = db_session.exec(statement).first()
-
-    if not assignment_task_submission:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task Submission not found",
-        )
-
-    # Check if assignment task exists
-    statement = select(AssignmentTask).where(
-        AssignmentTask.id == assignment_task_submission.assignment_task_id
-    )
-    assignment_task = db_session.exec(statement).first()
-
-    if not assignment_task:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment Task not found",
-        )
-
-    # Check if assignment exists
-    statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
-    assignment = db_session.exec(statement).first()
-
-    if not assignment:
-        raise HTTPException(
-            status_code=404,
-            detail="Assignment not found",
-        )
-
-    # Check if course exists
-    statement = select(Course).where(Course.id == assignment.course_id)
-    course = db_session.exec(statement).first()
-
-    if not course:
-        raise HTTPException(
-            status_code=404,
-            detail="Course not found",
-        )
-
-    # RBAC check
-    checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id,
-        "assignment:delete",
-        resource_owner_id=course.creator_id,
-    )
-
-    # Delete Assignment Task Submission
-    submission_user_id = assignment_task_submission.user_id
-    assignment_id = assignment.id
-    db_session.delete(assignment_task_submission)
-    db_session.commit()
-
-    await create_or_update_assignment_user_submission(
-        assignment_id,
-        submission_user_id,
-        db_session,
-    )
-
-    return {"message": "Assignment Task Submission deleted"}
 
 
 async def create_assignment_with_activity(
@@ -2095,6 +1186,7 @@ async def create_assignment_with_activity(
         assignment,
         course_uuid=course.course_uuid,
         activity_uuid=activity.activity_uuid,
+        activity_published=activity.published,
     )
 
 
@@ -2145,6 +1237,9 @@ async def get_assignments_from_course(
             assignment,
             course_uuid=course.course_uuid,
             activity_uuid=activities_by_id.get(assignment.activity_id).activity_uuid
+            if activities_by_id.get(assignment.activity_id)
+            else None,
+            activity_published=activities_by_id.get(assignment.activity_id).published
             if activities_by_id.get(assignment.activity_id)
             else None,
         )
@@ -2201,21 +1296,19 @@ async def get_assignments_from_courses(
 
     # Build result mapping (preserve input course order/keys)
     result: dict[str, list[AssignmentRead]] = {uuid: [] for uuid in course_uuids}
+    activities_by_id = {
+        activity.id: activity for activity in activities if activity.id is not None
+    }
     for assignment in assignments:
         course_uuid = activity_id_to_course_uuid.get(assignment.activity_id)
+        activity = activities_by_id.get(assignment.activity_id)
         if course_uuid:
             result.setdefault(course_uuid, []).append(
                 _build_assignment_read(
                     assignment,
                     course_uuid=course_uuid,
-                    activity_uuid=next(
-                        (
-                            activity.activity_uuid
-                            for activity in activities
-                            if activity.id == assignment.activity_id
-                        ),
-                        None,
-                    ),
+                    activity_uuid=activity.activity_uuid if activity else None,
+                    activity_published=activity.published if activity else None,
                 )
             )
 
@@ -2273,6 +1366,9 @@ async def get_editable_assignments_from_courses(
     activity_id_to_uuid = {
         a.id: a.activity_uuid for a in activities if a.id is not None
     }
+    activity_id_to_published = {
+        a.id: a.published for a in activities if a.id is not None
+    }
     activity_ids = list(activity_id_to_course_uuid.keys())
 
     if not activity_ids:
@@ -2292,6 +1388,9 @@ async def get_editable_assignments_from_courses(
                     assignment,
                     course_uuid=course_uuid,
                     activity_uuid=activity_id_to_uuid.get(assignment.activity_id),
+                    activity_published=activity_id_to_published.get(
+                        assignment.activity_id
+                    ),
                 )
             )
 

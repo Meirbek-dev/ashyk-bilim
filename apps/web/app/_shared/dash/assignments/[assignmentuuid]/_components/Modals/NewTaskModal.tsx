@@ -1,12 +1,17 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useAssignmentsTaskStore } from '@components/Contexts/Assignments/AssignmentsTaskContext';
-import { createAssignmentTask } from '@services/courses/assignments';
+import { createAssignmentTask, type AssignmentType } from '@services/courses/assignments';
 import { AArrowUp, FileUp, ListTodo } from 'lucide-react';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-const NewTaskModal = ({ closeModal, assignment_uuid }: any) => {
+interface NewTaskModalProps {
+  closeModal: (open: boolean) => void;
+  assignment_uuid: string;
+}
+
+const NewTaskModal = ({ closeModal, assignment_uuid }: NewTaskModalProps) => {
   const t = useTranslations('DashPage.Assignments.NewTaskModal');
   const setSelectedTaskUUID = useAssignmentsTaskStore((s) => s.setSelectedTaskUUID);
   const queryClient = useQueryClient();
@@ -26,7 +31,7 @@ const NewTaskModal = ({ closeModal, assignment_uuid }: any) => {
     }
   }
 
-  async function createTask(type: string) {
+  async function createTask(type: AssignmentType) {
     const task_object = {
       title: t('untitledTaskTitle'),
       description: '',

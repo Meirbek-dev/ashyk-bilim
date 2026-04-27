@@ -75,7 +75,7 @@ export const AssignmentTaskGeneralEdit = () => {
     Object.keys(assignmentTask).length > 0 &&
     selectedAssignmentTaskUUID === assignmentTask.assignment_task_uuid;
 
-  const form = useForm<TaskFormInput, any, TaskFormData>({
+  const form = useForm<TaskFormInput, unknown, TaskFormData>({
     resolver: valibotResolver(validationSchema),
     defaultValues: {
       title: '',

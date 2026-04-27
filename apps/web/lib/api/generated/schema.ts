@@ -750,6 +750,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assignments/{assignment_uuid}/submissions/me/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get Assignment Draft Submission
+         * @description Get the current user's Submission-backed assignment draft, if any.
+         */
+        get: operations["api_get_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Api Save Assignment Draft Submission
+         * @description Create or update the current user's assignment draft in Submission.
+         */
+        patch: operations["api_save_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_patch"];
+        trace?: never;
+    };
     "/api/v1/assignments/{assignment_uuid}/submissions/{user_id}": {
         parameters: {
             query?: never;
@@ -764,6 +788,26 @@ export interface paths {
         get: operations["api_get_assignment_submission_user_api_v1_assignments__assignment_uuid__submissions__user_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Submit Assignment Draft Submission
+         * @description Submit the current user's assignment draft through the unified Submission model.
+         */
+        post: operations["api_submit_assignment_draft_submission_api_v1_assignments__assignment_uuid__submit_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4696,6 +4740,8 @@ export interface components {
             course_id: number;
             /** Description */
             description: string;
+            /** Due At */
+            due_at?: string | null;
             /** Due Date */
             due_date: string;
             grading_type: components["schemas"]["GradingTypeEnum"];
@@ -4718,6 +4764,8 @@ export interface components {
             course_id: number;
             /** Description */
             description: string;
+            /** Due At */
+            due_at?: string | null;
             /** Due Date */
             due_date: string;
             grading_type: components["schemas"]["GradingTypeEnum"];
@@ -4728,6 +4776,20 @@ export interface components {
             published: boolean;
             /** Title */
             title: string;
+        };
+        /**
+         * AssignmentDraftPatch
+         * @description Patch/upsert payload for the current user's assignment draft.
+         */
+        AssignmentDraftPatch: {
+            /** Tasks */
+            tasks?: components["schemas"]["AssignmentTaskAnswer"][];
+        };
+        /** AssignmentDraftRead */
+        AssignmentDraftRead: {
+            /** Assignment Uuid */
+            assignment_uuid: string;
+            submission?: components["schemas"]["SubmissionRead"] | null;
         };
         /**
          * AssignmentRead
@@ -4750,6 +4812,8 @@ export interface components {
             creation_date?: string | null;
             /** Description */
             description: string;
+            /** Due At */
+            due_at?: string | null;
             /** Due Date */
             due_date: string;
             grading_type: components["schemas"]["GradingTypeEnum"];
@@ -4764,6 +4828,35 @@ export interface components {
             title: string;
             /** Update Date */
             update_date?: string | null;
+        };
+        /**
+         * AssignmentTaskAnswer
+         * @description Canonical assignment answer shape stored in Submission.answers_json.
+         */
+        AssignmentTaskAnswer: {
+            /** Answer Metadata */
+            answer_metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Content Type
+             * @enum {string}
+             */
+            content_type: "file" | "text" | "form" | "quiz" | "other";
+            /** File Key */
+            file_key?: string | null;
+            /** Form Data */
+            form_data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Quiz Answers */
+            quiz_answers?: {
+                [key: string]: unknown;
+            } | null;
+            /** Task Uuid */
+            task_uuid: string;
+            /** Text Content */
+            text_content?: string | null;
         };
         /**
          * AssignmentTaskCreate
@@ -4790,61 +4883,6 @@ export interface components {
             title: string;
         };
         /**
-         * AssignmentTaskSubmissionRead
-         * @description Model for reading an assignment task submission.
-         */
-        AssignmentTaskSubmissionRead: {
-            /** Activity Id */
-            activity_id: number;
-            /** Assignment Task Id */
-            assignment_task_id: number;
-            /** Assignment Task Submission Uuid */
-            assignment_task_submission_uuid: string;
-            assignment_type: components["schemas"]["AssignmentTaskTypeEnum"];
-            /** Chapter Id */
-            chapter_id: number;
-            /** Course Id */
-            course_id: number;
-            /** Creation Date */
-            creation_date: string;
-            /**
-             * Grade
-             * @default 0
-             */
-            grade: number;
-            /** Id */
-            id: number;
-            /** Task Submission */
-            task_submission?: {
-                [key: string]: unknown;
-            };
-            /** Task Submission Grade Feedback */
-            task_submission_grade_feedback: string;
-            /** Update Date */
-            update_date: string;
-            /** User Id */
-            user_id: number;
-        };
-        /**
-         * AssignmentTaskSubmissionUpdate
-         * @description Model for updating an assignment task submission.
-         */
-        AssignmentTaskSubmissionUpdate: {
-            /** Assignment Task Id */
-            assignment_task_id?: number | null;
-            /** Assignment Task Submission Uuid */
-            assignment_task_submission_uuid?: string | null;
-            assignment_type?: components["schemas"]["AssignmentTaskTypeEnum"] | null;
-            /** Grade */
-            grade?: number | null;
-            /** Task Submission */
-            task_submission?: {
-                [key: string]: unknown;
-            } | null;
-            /** Task Submission Grade Feedback */
-            task_submission_grade_feedback?: string | null;
-        };
-        /**
          * AssignmentTaskTypeEnum
          * @enum {string}
          */
@@ -4865,6 +4903,8 @@ export interface components {
             hint?: string | null;
             /** Max Grade Value */
             max_grade_value?: number | null;
+            /** Order */
+            order?: number | null;
             /** Reference File */
             reference_file?: string | null;
             /** Title */
@@ -4883,6 +4923,8 @@ export interface components {
             course_id?: number | null;
             /** Description */
             description?: string | null;
+            /** Due At */
+            due_at?: string | null;
             /** Due Date */
             due_date?: string | null;
             grading_type?: components["schemas"]["GradingTypeEnum"] | null;
@@ -4892,64 +4934,6 @@ export interface components {
             title?: string | null;
             /** Update Date */
             update_date?: string | null;
-        };
-        /**
-         * AssignmentUserSubmissionRead
-         * @description Model for reading an assignment user submission.
-         */
-        AssignmentUserSubmissionRead: {
-            /** Assignment Id */
-            assignment_id: number;
-            /** Assignmentusersubmission Uuid */
-            assignmentusersubmission_uuid: string;
-            /** Creation Date */
-            creation_date: string;
-            /** Grade */
-            grade: number;
-            /** Graded At */
-            graded_at?: string | null;
-            /** Id */
-            id: number;
-            /** @default SUBMITTED */
-            submission_status: components["schemas"]["AssignmentUserSubmissionStatus"];
-            /** Submitted At */
-            submitted_at?: string | null;
-            /** Update Date */
-            update_date: string;
-            /** User Id */
-            user_id: number;
-        };
-        /**
-         * AssignmentUserSubmissionStatus
-         * @enum {string}
-         */
-        AssignmentUserSubmissionStatus: "PENDING" | "SUBMITTED" | "GRADED" | "LATE" | "NOT_SUBMITTED";
-        /**
-         * AssignmentUserSubmissionWithUserRead
-         * @description Assignment-level submission status enriched with user information.
-         */
-        AssignmentUserSubmissionWithUserRead: {
-            /** Assignment Id */
-            assignment_id: number;
-            /** Assignmentusersubmission Uuid */
-            assignmentusersubmission_uuid: string;
-            /** Creation Date */
-            creation_date: string;
-            /** Grade */
-            grade: number;
-            /** Graded At */
-            graded_at?: string | null;
-            /** Id */
-            id: number;
-            /** @default SUBMITTED */
-            submission_status: components["schemas"]["AssignmentUserSubmissionStatus"];
-            /** Submitted At */
-            submitted_at?: string | null;
-            /** Update Date */
-            update_date: string;
-            user: components["schemas"]["UserRead"];
-            /** User Id */
-            user_id: number;
         };
         /** AtRiskLearnerRow */
         AtRiskLearnerRow: {
@@ -10090,9 +10074,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["AssignmentTaskSubmissionUpdate"];
+                "application/json": {
+                    [key: string]: unknown;
+                } | null;
             };
         };
         responses: {
@@ -10102,7 +10088,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AssignmentTaskSubmissionRead"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -10297,7 +10283,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AssignmentUserSubmissionWithUserRead"][];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -10328,7 +10314,73 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AssignmentUserSubmissionRead"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentDraftRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_save_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentDraftPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRead"];
                 };
             };
             /** @description Validation Error */
@@ -10360,7 +10412,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AssignmentUserSubmissionRead"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_submit_assignment_draft_submission_api_v1_assignments__assignment_uuid__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AssignmentDraftPatch"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRead"];
                 };
             };
             /** @description Validation Error */
@@ -10445,6 +10532,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                assignment_uuid: string;
                 assignment_task_uuid: string;
             };
             cookie?: never;
@@ -10480,6 +10568,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                assignment_uuid: string;
                 assignment_task_uuid: string;
             };
             cookie?: never;
@@ -10511,6 +10600,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                assignment_uuid: string;
                 assignment_task_uuid: string;
             };
             cookie?: never;
@@ -10595,7 +10685,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AssignmentTaskSubmissionRead"][];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -10619,9 +10709,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["AssignmentTaskSubmissionUpdate"];
+                "application/json": {
+                    [key: string]: unknown;
+                } | null;
             };
         };
         responses: {

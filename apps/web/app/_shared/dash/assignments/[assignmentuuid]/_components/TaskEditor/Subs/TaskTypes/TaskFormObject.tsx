@@ -387,7 +387,8 @@ function TaskFormObject({ assignmentTaskUUID }: TaskFormObjectProps) {
   };
 
   const saveFC = async () => {
-    if (!assignmentTask.assignment_task_uuid || !assignment.assignment_object.assignment_uuid) {
+    const assignmentUUID = assignment.assignment_object?.assignment_uuid;
+    if (!assignmentTask.assignment_task_uuid || !assignmentUUID) {
       toast.error(t('saveError'));
       return;
     }
@@ -396,7 +397,7 @@ function TaskFormObject({ assignmentTaskUUID }: TaskFormObjectProps) {
       const res = await updateAssignmentTask({
         body: { contents: { questions } },
         assignmentTaskUUID: assignmentTask.assignment_task_uuid,
-        assignmentUUID: assignment.assignment_object.assignment_uuid,
+        assignmentUUID,
       });
       if (res) {
         reload();

@@ -473,7 +473,7 @@ const TaskQuizObject = ({ assignmentTaskUUID }: TaskQuizObjectProps) => {
     setIsSaving(true);
     try {
       const taskUUID = assignmentTask.assignment_task_uuid;
-      const assignmentUUID = assignment.assignment_object.assignment_uuid;
+      const assignmentUUID = assignment.assignment_object?.assignment_uuid;
       if (!taskUUID || !assignmentUUID) {
         toast.error(t('saveError')); // fallback when required ids aren't available
         return;
@@ -498,7 +498,7 @@ const TaskQuizObject = ({ assignmentTaskUUID }: TaskQuizObjectProps) => {
     questions,
     quizSettings,
     assignmentTask.assignment_task_uuid,
-    assignment.assignment_object.assignment_uuid,
+    assignment.assignment_object?.assignment_uuid,
     reload,
     t,
   ]);

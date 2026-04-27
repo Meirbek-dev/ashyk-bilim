@@ -35,7 +35,7 @@ interface AssignmentsTaskStore {
    */
   reloadKey: number;
 
-  setAssignmentTask: (task: Record<string, unknown>) => void;
+  setAssignmentTask: (task: AssignmentTaskData) => void;
   setSelectedTaskUUID: (uuid: string | null) => void;
   reload: () => void;
 }

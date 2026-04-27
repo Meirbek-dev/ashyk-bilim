@@ -5,7 +5,6 @@ import EditAssignmentModal from '@components/Objects/Modals/Activities/Assignmen
 import { AssignmentProvider, useAssignments } from '@components/Contexts/Assignments/AssignmentContext';
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip';
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs';
-import { updateAssignment } from '@services/courses/assignments';
 import { updateActivity } from '@services/courses/activities';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -121,16 +120,17 @@ const PublishingState = () => {
   const t = useTranslations('DashPage.Assignments.AssignmentPage');
   const assignment = useAssignments();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const isPublished = Boolean(assignment?.activity_object?.published);
 
   async function updateAssignmentPublishState(assignmentUUID: string) {
-    const res = await updateAssignment({ published: !assignment?.assignment_object?.published }, assignmentUUID);
-    const res2 = await updateActivity(
-      { published: !assignment?.assignment_object?.published },
-      assignment?.activity_object?.activity_uuid,
-    );
+    const activityUUID = assignment?.activity_object?.activity_uuid;
+    if (!activityUUID) return;
+
     const toast_loading = toast.loading(t('updateLoading'));
-    if (res.success && res2) {
+    const res = await updateActivity({ published: !isPublished }, activityUUID);
+    if (res.success) {
       await queryClient.invalidateQueries({ queryKey: queryKeys.assignments.detail(assignmentUUID) });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.activities.detail(activityUUID) });
       toast.success(t('updateSuccess'));
       toast.dismiss(toast_loading);
     } else {
@@ -142,9 +142,9 @@ const PublishingState = () => {
     <>
       <div className="mx-auto mt-5 flex items-center space-x-4">
         <div
-          className={`mx-auto flex rounded-full px-3.5 py-2 text-xs font-bold text-nowrap outline-1 ${!assignment?.assignment_object?.published ? 'bg-gray-200/60 outline-gray-300' : 'bg-green-200/60 outline-green-300'}`}
+          className={`mx-auto flex rounded-full px-3.5 py-2 text-xs font-bold text-nowrap outline-1 ${!isPublished ? 'bg-gray-200/60 outline-gray-300' : 'bg-green-200/60 outline-green-300'}`}
         >
-          {assignment?.assignment_object?.published ? t('published') : t('unpublished')}
+          {isPublished ? t('published') : t('unpublished')}
         </div>
         <div>
           <EllipsisVertical
@@ -185,7 +185,7 @@ const PublishingState = () => {
             <p className="text-sm font-bold">{t('preview')}</p>
           </Link>
         </ToolTip>
-        {assignment?.assignment_object?.published ? (
+        {isPublished ? (
           <ToolTip
             side="left"
             slateBlack
@@ -193,7 +193,11 @@ const PublishingState = () => {
             content={t('unpublishTooltip')}
           >
             <div
-              onClick={() => updateAssignmentPublishState(assignment?.assignment_object?.assignment_uuid)}
+              onClick={() => {
+                if (assignment?.assignment_object?.assignment_uuid) {
+                  updateAssignmentPublishState(assignment.assignment_object.assignment_uuid);
+                }
+              }}
               className="bg-background text-foreground hover:bg-accent flex cursor-pointer items-center space-x-2 rounded-md border px-3 py-2 font-medium shadow-sm"
             >
               <BookX size={18} />
@@ -201,7 +205,7 @@ const PublishingState = () => {
             </div>
           </ToolTip>
         ) : null}
-        {!assignment?.assignment_object?.published && (
+        {!isPublished && (
           <ToolTip
             side="left"
             slateBlack
@@ -209,7 +213,11 @@ const PublishingState = () => {
             content={t('publishTooltip')}
           >
             <div
-              onClick={() => updateAssignmentPublishState(assignment?.assignment_object?.assignment_uuid)}
+              onClick={() => {
+                if (assignment?.assignment_object?.assignment_uuid) {
+                  updateAssignmentPublishState(assignment.assignment_object.assignment_uuid);
+                }
+              }}
               className="bg-primary text-primary-foreground hover:bg-primary/90 flex cursor-pointer items-center space-x-2 rounded-md px-3 py-2 font-medium shadow-sm"
             >
               <BookOpen size={18} />
@@ -218,7 +226,7 @@ const PublishingState = () => {
           </ToolTip>
         )}
       </div>
-      {isEditModalOpen ? (
+      {isEditModalOpen && assignment?.assignment_object ? (
         <EditAssignmentModal
           isOpen={isEditModalOpen}
           onClose={() => {

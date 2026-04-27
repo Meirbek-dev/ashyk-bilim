@@ -196,6 +196,7 @@ async def api_read_assignment_task(
 @router.put("/{assignment_uuid}/tasks/{assignment_task_uuid}")
 async def api_update_assignment_tasks(
     request: Request,
+    assignment_uuid: str,
     assignment_task_uuid: str,
     assignment_task_object: AssignmentTaskUpdate,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
@@ -205,13 +206,19 @@ async def api_update_assignment_tasks(
     Update tasks for an assignment
     """
     return await update_assignment_task(
-        request, assignment_task_uuid, assignment_task_object, current_user, db_session
+        request,
+        assignment_uuid,
+        assignment_task_uuid,
+        assignment_task_object,
+        current_user,
+        db_session,
     )
 
 
 @router.post("/{assignment_uuid}/tasks/{assignment_task_uuid}/ref_file")
 async def api_put_assignment_task_ref_file(
     request: Request,
+    assignment_uuid: str,
     assignment_task_uuid: str,
     reference_file: UploadFile | None = None,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
@@ -219,7 +226,7 @@ async def api_put_assignment_task_ref_file(
 ):
     """Upload a reference file for an assignment task."""
     return await put_assignment_task_reference_file(
-        request, db_session, assignment_task_uuid, current_user, reference_file
+        request, db_session, assignment_uuid, assignment_task_uuid, current_user, reference_file
     )
 
 
@@ -234,7 +241,7 @@ async def api_put_assignment_task_sub_file(
 ):
     """Upload a submission file for an assignment task."""
     return await put_assignment_task_submission_file(
-        request, db_session, assignment_task_uuid, current_user, sub_file
+        request, db_session, assignment_uuid, assignment_task_uuid, current_user, sub_file
     )
 
 
@@ -320,6 +327,7 @@ async def api_delete_assignment_task_submission(
 @router.delete("/{assignment_uuid}/tasks/{assignment_task_uuid}")
 async def api_delete_assignment_tasks(
     request: Request,
+    assignment_uuid: str,
     assignment_task_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session=Depends(get_db_session),
@@ -328,7 +336,7 @@ async def api_delete_assignment_tasks(
     Delete tasks for an assignment
     """
     return await delete_assignment_task(
-        request, assignment_task_uuid, current_user, db_session
+        request, assignment_uuid, assignment_task_uuid, current_user, db_session
     )
 
 

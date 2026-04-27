@@ -5,6 +5,30 @@ import { apiFetch } from '@/lib/api-client';
 import { tags } from '@/lib/cacheTags';
 import type { Submission } from '@/types/grading';
 
+export type AssignmentType = 'QUIZ' | 'FILE_SUBMISSION' | 'FORM' | 'OTHER';
+
+export interface AssignmentMutationPayload {
+  title?: string;
+  description?: string;
+  due_date?: string;
+  due_at?: string | null;
+  grading_type?: string;
+  course_id?: number;
+  chapter_id?: number;
+  activity_id?: number;
+}
+
+export interface AssignmentTaskMutationPayload {
+  title?: string;
+  description?: string;
+  hint?: string | null;
+  reference_file?: string | null;
+  assignment_type?: AssignmentType;
+  contents?: Record<string, unknown>;
+  max_grade_value?: number;
+  order?: number;
+}
+
 export interface AssignmentTaskAnswer {
   task_uuid: string;
   content_type: 'file' | 'text' | 'form' | 'quiz' | 'other';
@@ -28,24 +52,7 @@ function normalizeAssignmentUuid(assignmentUUID: string) {
   return assignmentUUID.startsWith('assignment_') ? assignmentUUID : `assignment_${assignmentUUID}`;
 }
 
-export async function createAssignment(body: any) {
-  const result = await apiFetch('assignments/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const metadata = await getResponseMetadata(result);
-
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.activities, 'max');
-    revalidateTag(tags.courses, 'max');
-  }
-
-  return metadata;
-}
-
-export async function updateAssignment(body: any, assignmentUUID: string) {
+export async function updateAssignment(body: AssignmentMutationPayload, assignmentUUID: string) {
   const result = await apiFetch(`assignments/${assignmentUUID}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -133,7 +140,7 @@ export async function submitAssignmentDraftSubmission(assignmentUUID: string, bo
 
 // tasks
 
-export async function createAssignmentTask(body: any, assignmentUUID: string) {
+export async function createAssignmentTask(body: AssignmentTaskMutationPayload, assignmentUUID: string) {
   const result = await apiFetch(`assignments/${assignmentUUID}/tasks`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -155,7 +162,7 @@ export async function getAssignmentTask(assignmentTaskUUID: string) {
 }
 
 export interface UpdateAssignmentTaskParams {
-  body: any;
+  body: AssignmentTaskMutationPayload;
   assignmentTaskUUID: string;
   assignmentUUID: string;
 }
@@ -189,7 +196,7 @@ export async function deleteAssignmentTask(assignmentTaskUUID: string, assignmen
 }
 
 export interface UpdateReferenceFileParams {
-  file: any;
+  file: Blob | File;
   assignmentTaskUUID: string;
   assignmentUUID: string;
 }
@@ -214,7 +221,7 @@ export async function updateReferenceFile({ file, assignmentTaskUUID, assignment
 }
 
 export interface UpdateSubFileParams {
-  file: any;
+  file: Blob | File;
   assignmentTaskUUID: string;
   assignmentUUID: string;
 }
@@ -253,7 +260,7 @@ export async function getAssignmentsFromCourses(courseUUIDs: string[]) {
 }
 
 export interface CreateAssignmentWithActivityParams {
-  body: any;
+  body: AssignmentMutationPayload;
   chapterId: number;
   activityName: string;
 }

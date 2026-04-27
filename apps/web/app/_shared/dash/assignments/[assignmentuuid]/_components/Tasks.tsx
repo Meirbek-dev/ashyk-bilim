@@ -1,4 +1,5 @@
 import { useAssignmentsTaskStore } from '@components/Contexts/Assignments/AssignmentsTaskContext';
+import type { AssignmentTaskData } from '@components/Contexts/Assignments/AssignmentsTaskContext';
 import { useAssignments } from '@components/Contexts/Assignments/AssignmentContext';
 import { FileUp, ListTodo, PanelLeftOpen, Plus, Type } from 'lucide-react';
 import Modal from '@/components/Objects/Elements/Modal/Modal';
@@ -9,7 +10,18 @@ import { useState } from 'react';
 
 import NewTaskModal from './Modals/NewTaskModal';
 
-const AssignmentTasks = ({ assignment_uuid }: any) => {
+interface AssignmentTasksProps {
+  assignment_uuid: string;
+}
+
+interface AssignmentTaskRow extends AssignmentTaskData {
+  id: number;
+  assignment_task_uuid: string;
+  assignment_type?: string;
+  title?: string;
+}
+
+const AssignmentTasks = ({ assignment_uuid }: AssignmentTasksProps) => {
   const t = useTranslations('DashPage.Assignments.Tasks');
   const assignments = useAssignments();
   const selectedAssignmentTaskUUID = useAssignmentsTaskStore((s) => s.selectedAssignmentTaskUUID);
@@ -46,7 +58,7 @@ const AssignmentTasks = ({ assignment_uuid }: any) => {
             }
           />
         ) : null}
-        {assignments?.assignment_tasks?.map((task: any) => {
+        {assignments?.assignment_tasks?.map((task: AssignmentTaskRow) => {
           return (
             <Card
               key={task.id}

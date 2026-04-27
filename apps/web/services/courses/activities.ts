@@ -357,7 +357,7 @@ export async function deleteActivity(activity_uuid: string) {
   return metadata;
 }
 
-export async function updateActivity(data: any, activity_uuid: string) {
+export async function updateActivity(data: Record<string, unknown>, activity_uuid: string) {
   const result = await apiFetch(`activities/${activity_uuid}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },

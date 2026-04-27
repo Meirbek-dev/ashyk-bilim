@@ -1318,6 +1318,18 @@
             "title": "Description",
             "type": "string"
           },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
           "due_date": {
             "title": "Due Date",
             "type": "string"
@@ -1369,6 +1381,18 @@
             "title": "Description",
             "type": "string"
           },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
           "due_date": {
             "title": "Due Date",
             "type": "string"
@@ -1395,6 +1419,43 @@
           "chapter_id"
         ],
         "title": "AssignmentCreateWithActivity",
+        "type": "object"
+      },
+      "AssignmentDraftPatch": {
+        "description": "Patch/upsert payload for the current user's assignment draft.",
+        "properties": {
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentTaskAnswer"
+            },
+            "title": "Tasks",
+            "type": "array"
+          }
+        },
+        "title": "AssignmentDraftPatch",
+        "type": "object"
+      },
+      "AssignmentDraftRead": {
+        "properties": {
+          "assignment_uuid": {
+            "title": "Assignment Uuid",
+            "type": "string"
+          },
+          "submission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubmissionRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "assignment_uuid"
+        ],
+        "title": "AssignmentDraftRead",
         "type": "object"
       },
       "AssignmentRead": {
@@ -1453,6 +1514,18 @@
             "title": "Description",
             "type": "string"
           },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
           "due_date": {
             "title": "Due Date",
             "type": "string"
@@ -1506,6 +1579,83 @@
         "title": "AssignmentRead",
         "type": "object"
       },
+      "AssignmentTaskAnswer": {
+        "description": "Canonical assignment answer shape stored in Submission.answers_json.",
+        "properties": {
+          "answer_metadata": {
+            "additionalProperties": true,
+            "title": "Answer Metadata",
+            "type": "object"
+          },
+          "content_type": {
+            "enum": [
+              "file",
+              "text",
+              "form",
+              "quiz",
+              "other"
+            ],
+            "title": "Content Type",
+            "type": "string"
+          },
+          "file_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Key"
+          },
+          "form_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Form Data"
+          },
+          "quiz_answers": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiz Answers"
+          },
+          "task_uuid": {
+            "title": "Task Uuid",
+            "type": "string"
+          },
+          "text_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Content"
+          }
+        },
+        "required": [
+          "task_uuid",
+          "content_type"
+        ],
+        "title": "AssignmentTaskAnswer",
+        "type": "object"
+      },
       "AssignmentTaskCreate": {
         "description": "Model for creating a new assignment task.",
         "properties": {
@@ -1553,152 +1703,6 @@
           "assignment_type"
         ],
         "title": "AssignmentTaskCreate",
-        "type": "object"
-      },
-      "AssignmentTaskSubmissionRead": {
-        "description": "Model for reading an assignment task submission.",
-        "properties": {
-          "activity_id": {
-            "title": "Activity Id",
-            "type": "integer"
-          },
-          "assignment_task_id": {
-            "title": "Assignment Task Id",
-            "type": "integer"
-          },
-          "assignment_task_submission_uuid": {
-            "title": "Assignment Task Submission Uuid",
-            "type": "string"
-          },
-          "assignment_type": {
-            "$ref": "#/components/schemas/AssignmentTaskTypeEnum"
-          },
-          "chapter_id": {
-            "title": "Chapter Id",
-            "type": "integer"
-          },
-          "course_id": {
-            "title": "Course Id",
-            "type": "integer"
-          },
-          "creation_date": {
-            "title": "Creation Date",
-            "type": "string"
-          },
-          "grade": {
-            "default": 0,
-            "title": "Grade",
-            "type": "integer"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "task_submission": {
-            "additionalProperties": true,
-            "title": "Task Submission",
-            "type": "object"
-          },
-          "task_submission_grade_feedback": {
-            "title": "Task Submission Grade Feedback",
-            "type": "string"
-          },
-          "update_date": {
-            "title": "Update Date",
-            "type": "string"
-          },
-          "user_id": {
-            "title": "User Id",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "assignment_task_submission_uuid",
-          "task_submission_grade_feedback",
-          "assignment_type",
-          "user_id",
-          "activity_id",
-          "course_id",
-          "chapter_id",
-          "assignment_task_id",
-          "id",
-          "creation_date",
-          "update_date"
-        ],
-        "title": "AssignmentTaskSubmissionRead",
-        "type": "object"
-      },
-      "AssignmentTaskSubmissionUpdate": {
-        "description": "Model for updating an assignment task submission.",
-        "properties": {
-          "assignment_task_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assignment Task Id"
-          },
-          "assignment_task_submission_uuid": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assignment Task Submission Uuid"
-          },
-          "assignment_type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AssignmentTaskTypeEnum"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "grade": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Grade"
-          },
-          "task_submission": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Submission"
-          },
-          "task_submission_grade_feedback": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Submission Grade Feedback"
-          }
-        },
-        "title": "AssignmentTaskSubmissionUpdate",
         "type": "object"
       },
       "AssignmentTaskTypeEnum": {
@@ -1768,6 +1772,17 @@
               }
             ],
             "title": "Max Grade Value"
+          },
+          "order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order"
           },
           "reference_file": {
             "anyOf": [
@@ -1842,6 +1857,18 @@
             ],
             "title": "Description"
           },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
           "due_date": {
             "anyOf": [
               {
@@ -1898,165 +1925,6 @@
           }
         },
         "title": "AssignmentUpdate",
-        "type": "object"
-      },
-      "AssignmentUserSubmissionRead": {
-        "description": "Model for reading an assignment user submission.",
-        "properties": {
-          "assignment_id": {
-            "title": "Assignment Id",
-            "type": "integer"
-          },
-          "assignmentusersubmission_uuid": {
-            "title": "Assignmentusersubmission Uuid",
-            "type": "string"
-          },
-          "creation_date": {
-            "title": "Creation Date",
-            "type": "string"
-          },
-          "grade": {
-            "title": "Grade",
-            "type": "integer"
-          },
-          "graded_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Graded At"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "submission_status": {
-            "$ref": "#/components/schemas/AssignmentUserSubmissionStatus",
-            "default": "SUBMITTED"
-          },
-          "submitted_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Submitted At"
-          },
-          "update_date": {
-            "title": "Update Date",
-            "type": "string"
-          },
-          "user_id": {
-            "title": "User Id",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "grade",
-          "user_id",
-          "assignment_id",
-          "id",
-          "assignmentusersubmission_uuid",
-          "creation_date",
-          "update_date"
-        ],
-        "title": "AssignmentUserSubmissionRead",
-        "type": "object"
-      },
-      "AssignmentUserSubmissionStatus": {
-        "enum": [
-          "PENDING",
-          "SUBMITTED",
-          "GRADED",
-          "LATE",
-          "NOT_SUBMITTED"
-        ],
-        "title": "AssignmentUserSubmissionStatus",
-        "type": "string"
-      },
-      "AssignmentUserSubmissionWithUserRead": {
-        "description": "Assignment-level submission status enriched with user information.",
-        "properties": {
-          "assignment_id": {
-            "title": "Assignment Id",
-            "type": "integer"
-          },
-          "assignmentusersubmission_uuid": {
-            "title": "Assignmentusersubmission Uuid",
-            "type": "string"
-          },
-          "creation_date": {
-            "title": "Creation Date",
-            "type": "string"
-          },
-          "grade": {
-            "title": "Grade",
-            "type": "integer"
-          },
-          "graded_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Graded At"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "submission_status": {
-            "$ref": "#/components/schemas/AssignmentUserSubmissionStatus",
-            "default": "SUBMITTED"
-          },
-          "submitted_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Submitted At"
-          },
-          "update_date": {
-            "title": "Update Date",
-            "type": "string"
-          },
-          "user": {
-            "$ref": "#/components/schemas/UserRead"
-          },
-          "user_id": {
-            "title": "User Id",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "grade",
-          "user_id",
-          "assignment_id",
-          "id",
-          "assignmentusersubmission_uuid",
-          "creation_date",
-          "update_date",
-          "user"
-        ],
-        "title": "AssignmentUserSubmissionWithUserRead",
         "type": "object"
       },
       "AtRiskLearnerRow": {
@@ -16709,19 +16577,25 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AssignmentTaskSubmissionUpdate"
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Assignment Task Submission Object"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssignmentTaskSubmissionRead"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
@@ -17026,13 +16900,7 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AssignmentUserSubmissionWithUserRead"
-                  },
-                  "title": "Response Api Get Assignment Submissions Api V1 Assignments  Assignment Uuid  Submissions Get",
-                  "type": "array"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
@@ -17078,9 +16946,7 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssignmentUserSubmissionRead"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
@@ -17102,6 +16968,110 @@
           }
         ],
         "summary": "Api Get Assignment Submission Me",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/submissions/me/draft": {
+      "get": {
+        "description": "Get the current user's Submission-backed assignment draft, if any.",
+        "operationId": "api_get_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentDraftRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Assignment Draft Submission",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "patch": {
+        "description": "Create or update the current user's assignment draft in Submission.",
+        "operationId": "api_save_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentDraftPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Save Assignment Draft Submission",
         "tags": [
           "assignments"
         ]
@@ -17135,9 +17105,7 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssignmentUserSubmissionRead"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
@@ -17159,6 +17127,71 @@
           }
         ],
         "summary": "Api Get Assignment Submission User",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/submit": {
+      "post": {
+        "description": "Submit the current user's assignment draft through the unified Submission model.",
+        "operationId": "api_submit_assignment_draft_submission_api_v1_assignments__assignment_uuid__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AssignmentDraftPatch"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Draft Patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Submit Assignment Draft Submission",
         "tags": [
           "assignments"
         ]
@@ -17271,6 +17304,15 @@
         "parameters": [
           {
             "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
             "name": "assignment_task_uuid",
             "required": true,
             "schema": {
@@ -17313,6 +17355,15 @@
         "description": "Update tasks for an assignment",
         "operationId": "api_update_assignment_tasks_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__put",
         "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          },
           {
             "in": "path",
             "name": "assignment_task_uuid",
@@ -17369,6 +17420,15 @@
         "description": "Upload a reference file for an assignment task.",
         "operationId": "api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post",
         "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          },
           {
             "in": "path",
             "name": "assignment_task_uuid",
@@ -17511,13 +17571,7 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AssignmentTaskSubmissionRead"
-                  },
-                  "title": "Response Api Get Assignment Task Submissions Api V1 Assignments  Assignment Uuid  Tasks  Assignment Task Uuid  Submissions Get",
-                  "type": "array"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
@@ -17570,11 +17624,19 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AssignmentTaskSubmissionUpdate"
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Assignment Task Submission Object"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {

@@ -12,11 +12,43 @@ import {
 } from '@/features/assignments/hooks/useAssignments';
 import { useCourseMetadata } from '@/features/courses/hooks/useCourseQueries';
 
+interface AssignmentObject {
+  id: number;
+  assignment_uuid: string;
+  title: string;
+  description: string;
+  due_date?: string;
+  due_at?: string | null;
+  published?: boolean;
+  course_uuid?: string;
+  activity_uuid?: string;
+}
+
+interface AssignmentTaskObject {
+  id: number;
+  assignment_task_uuid: string;
+  title?: string;
+  description?: string;
+  assignment_type?: string;
+  [key: string]: unknown;
+}
+
+interface CourseObject {
+  id?: number;
+  course_uuid: string;
+}
+
+interface ActivityObject {
+  id?: number;
+  activity_uuid: string;
+  published?: boolean;
+}
+
 interface AssignmentContextType {
-  assignment_object: any | null;
-  assignment_tasks: any[] | null;
-  course_object: any | null;
-  activity_object: any | null;
+  assignment_object: AssignmentObject | null;
+  assignment_tasks: AssignmentTaskObject[] | null;
+  course_object: CourseObject | null;
+  activity_object: ActivityObject | null;
 }
 
 export const AssignmentContext = createContext<AssignmentContextType>({
@@ -27,12 +59,12 @@ export const AssignmentContext = createContext<AssignmentContextType>({
 });
 
 interface GetAssignmentsFullParams {
-  assignment: any;
-  assignment_tasks: any[] | null;
+  assignment: AssignmentObject | null | undefined;
+  assignment_tasks: AssignmentTaskObject[] | null | undefined;
   course_uuid: string | undefined;
-  course_object: any | null;
+  course_object: CourseObject | null | undefined;
   activity_uuid: string | undefined;
-  activity_object: any | null;
+  activity_object: ActivityObject | null | undefined;
 }
 
 const getAssignmentsFull = ({
@@ -47,8 +79,8 @@ const getAssignmentsFull = ({
     return {
       assignment_object: assignment,
       assignment_tasks,
-      course_object,
-      activity_object,
+      course_object: course_object ?? null,
+      activity_object: activity_object ?? null,
     };
   }
 
@@ -85,12 +117,12 @@ export const AssignmentProvider = ({
   const assignmentsFull: AssignmentContextType = useMemo(
     () =>
       getAssignmentsFull({
-        assignment,
-        assignment_tasks,
+        assignment: (assignment as AssignmentObject | null | undefined) ?? null,
+        assignment_tasks: (assignment_tasks as AssignmentTaskObject[] | null | undefined) ?? null,
         course_uuid,
-        course_object,
+        course_object: (course_object as CourseObject | null | undefined) ?? null,
         activity_uuid,
-        activity_object,
+        activity_object: (activity_object as ActivityObject | null | undefined) ?? null,
       }),
     [assignment, assignment_tasks, course_uuid, course_object, activity_uuid, activity_object],
   );

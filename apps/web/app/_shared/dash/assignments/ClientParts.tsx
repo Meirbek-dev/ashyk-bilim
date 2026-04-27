@@ -26,7 +26,26 @@ interface Assignment {
   description: string;
 }
 
-export const CourseCard = ({ course, assignments, platform }: any) => {
+type PlatformLike = Record<string, unknown>;
+
+interface CourseCardProps {
+  course: Course;
+  assignments: Assignment[];
+  platform?: PlatformLike | null;
+}
+
+interface AssignmentRowProps {
+  assignment: Assignment;
+  platform?: PlatformLike | null;
+}
+
+interface CourseThumbnailProps {
+  course: Course;
+  platform?: PlatformLike | null;
+  courseId: string;
+}
+
+export const CourseCard = ({ course, assignments, platform }: CourseCardProps) => {
   const t = useTranslations('DashPage.Assignments.HomePage');
   const courseId = course.course_uuid.replace('course_', '');
 
@@ -90,7 +109,8 @@ export const CourseCard = ({ course, assignments, platform }: any) => {
   );
 };
 
-export const AssignmentRow = ({ assignment, platform }: any) => {
+export const AssignmentRow = ({ assignment, platform: _platform }: AssignmentRowProps) => {
+  void _platform;
   const t = useTranslations('DashPage.Assignments.HomePage');
   const assignmentId = assignment.assignment_uuid.replace('assignment_', '');
 
@@ -141,7 +161,8 @@ export const AssignmentRow = ({ assignment, platform }: any) => {
   );
 };
 
-export const CourseThumbnail = ({ course, platform, courseId }: any) => {
+export const CourseThumbnail = ({ course, platform: _platform, courseId }: CourseThumbnailProps) => {
+  void _platform;
   const t = useTranslations('DashPage.Assignments.HomePage');
   const thumbnailUrl = course.thumbnail_image
     ? getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)

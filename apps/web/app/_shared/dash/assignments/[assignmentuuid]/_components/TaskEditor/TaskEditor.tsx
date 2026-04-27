@@ -17,7 +17,11 @@ import { AssignmentTaskGeneralEdit } from './Subs/AssignmentTaskGeneralEdit';
 
 const AssignmentTaskContentEdit = dynamic(() => import('./Subs/AssignmentTaskContentEdit'));
 
-const AssignmentTaskEditor = ({ page }: any) => {
+interface AssignmentTaskEditorProps {
+  page: string;
+}
+
+const AssignmentTaskEditor = ({ page }: AssignmentTaskEditorProps) => {
   const t = useTranslations('DashPage.Assignments.TaskEditor');
   const assignment = useAssignments();
   const assignmentTask = useAssignmentsTaskStore((s) => s.assignmentTask);

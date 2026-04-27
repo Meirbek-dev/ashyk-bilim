@@ -1038,10 +1038,10 @@ const PreviousActivityButton = ({
 };
 
 const AssignmentTools = (props: {
-  activity: any;
+  activity: Activity;
   activityid: string;
-  course: any;
-  assignment: any;
+  course: CourseStructure;
+  assignment: { assignment_uuid: string };
   t: ReturnType<typeof useTranslations<'ActivityPage'>>;
 }) => {
   const { t } = props;
