@@ -1,8 +1,8 @@
-from datetime import date, datetime
+from datetime import datetime
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict, field_validator, model_validator
 from sqlalchemy import (
     JSON,
     Column,
@@ -10,32 +10,13 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    String,
     UniqueConstraint,
 )
 from sqlmodel import Field
 
 from src.db.grading.submissions import SubmissionRead
 from src.db.strict_base_model import SQLModelStrictBaseModel
-
-
-def _normalize_due_date_value(value: str | None) -> str | None:
-    if value is None:
-        return None
-    normalized = value.strip()
-    if normalized == "":
-        return ""
-
-    try:
-        if "T" in normalized:
-            datetime.fromisoformat(normalized)
-        else:
-            date.fromisoformat(normalized)
-    except ValueError as exc:
-        raise ValueError(
-            "due_date must be a valid ISO 8601 date or datetime string"
-        ) from exc
-
-    return normalized
 
 
 def _validate_max_grade_value(value: int | None) -> int | None:
@@ -46,125 +27,22 @@ def _validate_max_grade_value(value: int | None) -> int | None:
     return value
 
 
-## Assignment ##
+# ── Enums ──────────────────────────────────────────────────────────────────────
+
+
 class GradingTypeEnum(StrEnum):
     NUMERIC = "NUMERIC"
     PERCENTAGE = "PERCENTAGE"
 
 
-class AssignmentBase(SQLModelStrictBaseModel):
-    """Represents the common fields for an assignment."""
-
-    model_config = ConfigDict(use_enum_values=True)
-
-    title: str
-    description: str
-    due_date: str
-    due_at: datetime | None = None
-    published: bool | None = False
-    grading_type: GradingTypeEnum
-
-    course_id: int
-    chapter_id: int
-    activity_id: int
-
-    @field_validator("grading_type", mode="before")
-    @classmethod
-    def validate_grading_type(cls, v):
-        if isinstance(v, str):
-            return GradingTypeEnum(v)
-        return v
-
-    @field_validator("due_date", mode="before")
-    @classmethod
-    def validate_due_date(cls, v):
-        return _normalize_due_date_value(v)
-
-
-class AssignmentCreate(AssignmentBase):
-    """Model for creating a new assignment."""
-
-    # Inherits all fields from AssignmentBase
-
-
-class AssignmentRead(AssignmentBase):
-    """Model for reading an assignment."""
-
-    id: int
-    assignment_uuid: str
-    course_uuid: str | None = None
-    activity_uuid: str | None = None
-    creation_date: str | None = None
-    update_date: str | None = None
-
-
-class AssignmentUpdate(SQLModelStrictBaseModel):
-    """Model for updating an assignment."""
-
-    model_config = ConfigDict(use_enum_values=True)
-
-    title: str | None = None
-    description: str | None = None
-    due_date: str | None = None
-    due_at: datetime | None = None
-    published: bool | None = None
-    grading_type: GradingTypeEnum | None = None
-    course_id: int | None = None
-    chapter_id: int | None = None
-    activity_id: int | None = None
-    update_date: str | None = None
-
-    @field_validator("grading_type", mode="before")
-    @classmethod
-    def validate_grading_type(cls, v):
-        if v is not None and isinstance(v, str):
-            return GradingTypeEnum(v)
-        return v
-
-    @field_validator("due_date", mode="before")
-    @classmethod
-    def validate_due_date(cls, v):
-        return _normalize_due_date_value(v)
-
-
-class Assignment(AssignmentBase, table=True):
-    """Represents an assignment with relevant details and foreign keys."""
-
-    __table_args__ = (
-        UniqueConstraint("activity_id", name="uq_assignment_activity_id"),
-        Index("idx_assignment_activity_id", "activity_id"),
-    )
-
-    id: int | None = Field(default=None, primary_key=True)
-    creation_date: str | None = None
-    update_date: str | None = None
-    assignment_uuid: str
-    due_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True),
-    )
-
-    course_id: int = Field(
-        sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE"))
-    )
-    chapter_id: int = Field(
-        sa_column=Column("chapter_id", ForeignKey("chapter.id", ondelete="CASCADE"))
-    )
-    activity_id: int = Field(
-        sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE"))
-    )
-
-
-## Assignment ##
-
-## AssignmentTask ##
-
-
 class AssignmentTaskTypeEnum(StrEnum):
     FILE_SUBMISSION = "FILE_SUBMISSION"
     QUIZ = "QUIZ"
-    FORM = "FORM"  # soon to be implemented
+    FORM = "FORM"
     OTHER = "OTHER"
+
+
+# ── Task config types ──────────────────────────────────────────────────────────
 
 
 class AssignmentFileTaskConfig(SQLModelStrictBaseModel):
@@ -236,9 +114,121 @@ AssignmentTaskConfig = (
     | AssignmentOtherTaskConfig
 )
 
+_TASK_TYPE_TO_CONFIG: dict[str, type[SQLModelStrictBaseModel]] = {
+    "FILE_SUBMISSION": AssignmentFileTaskConfig,
+    "QUIZ": AssignmentQuizTaskConfig,
+    "FORM": AssignmentFormTaskConfig,
+    "OTHER": AssignmentOtherTaskConfig,
+}
+
+
+# ── Assignment DB model ────────────────────────────────────────────────────────
+
+
+class Assignment(SQLModelStrictBaseModel, table=True):
+    """Assignment DB row — FK columns stay internal, not exposed via the API."""
+
+    __tablename__ = "assignment"
+    __table_args__ = (
+        UniqueConstraint("activity_id", name="uq_assignment_activity_id"),
+        Index("idx_assignment_activity_id", "activity_id"),
+    )
+
+    model_config = ConfigDict(use_enum_values=True)
+
+    id: int | None = Field(default=None, primary_key=True)
+    assignment_uuid: str
+    title: str
+    description: str
+    due_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True),
+    )
+    published: bool = Field(default=False)
+    grading_type: GradingTypeEnum = Field(
+        sa_column=Column("grading_type", String, nullable=False)
+    )
+    course_id: int = Field(
+        sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE"))
+    )
+    chapter_id: int = Field(
+        sa_column=Column("chapter_id", ForeignKey("chapter.id", ondelete="CASCADE"))
+    )
+    activity_id: int = Field(
+        sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE"))
+    )
+    created_at: datetime = Field(
+        sa_column=Column("created_at", DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        sa_column=Column("updated_at", DateTime(timezone=True), nullable=False)
+    )
+
+
+# ── Assignment API schemas ─────────────────────────────────────────────────────
+
+
+class AssignmentRead(SQLModelStrictBaseModel):
+    """Projection returned by the API — never exposes internal FK integer IDs."""
+
+    model_config = ConfigDict(use_enum_values=True)
+
+    assignment_uuid: str
+    title: str
+    description: str
+    due_at: datetime | None = None
+    published: bool
+    grading_type: GradingTypeEnum
+    course_uuid: str | None = None
+    activity_uuid: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class AssignmentCreateWithActivity(SQLModelStrictBaseModel):
+    """Input for POST /assignments/with-activity."""
+
+    model_config = ConfigDict(use_enum_values=True)
+
+    title: str
+    description: str
+    due_at: datetime | None = None
+    published: bool = False
+    grading_type: GradingTypeEnum
+    course_id: int
+    chapter_id: int
+
+    @field_validator("grading_type", mode="before")
+    @classmethod
+    def validate_grading_type(cls, v: object) -> object:
+        if isinstance(v, str):
+            return GradingTypeEnum(v)
+        return v
+
+
+class AssignmentUpdate(SQLModelStrictBaseModel):
+    """Partial update — only the fields a teacher can change after creation."""
+
+    model_config = ConfigDict(use_enum_values=True)
+
+    title: str | None = None
+    description: str | None = None
+    due_at: datetime | None = None
+    grading_type: GradingTypeEnum | None = None
+
+    @field_validator("grading_type", mode="before")
+    @classmethod
+    def validate_grading_type(cls, v: object) -> object:
+        if v is not None and isinstance(v, str):
+            return GradingTypeEnum(v)
+        return v
+
+
+# ── AssignmentTask ─────────────────────────────────────────────────────────────
+
 
 class AssignmentTaskBase(SQLModelStrictBaseModel):
-    """Represents the common fields for an assignment task."""
+    """Fields shared between the DB model and read schema."""
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -247,12 +237,11 @@ class AssignmentTaskBase(SQLModelStrictBaseModel):
     hint: str
     reference_file: str | None = None
     assignment_type: AssignmentTaskTypeEnum
-    contents: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
-    max_grade_value: int = 0  # Value is always between 0-100
+    max_grade_value: int = 0
 
     @field_validator("assignment_type", mode="before")
     @classmethod
-    def validate_assignment_type(cls, v):
+    def validate_assignment_type(cls, v: object) -> object:
         if isinstance(v, str):
             return AssignmentTaskTypeEnum(v)
         return v
@@ -265,21 +254,40 @@ class AssignmentTaskBase(SQLModelStrictBaseModel):
 
 
 class AssignmentTaskCreate(AssignmentTaskBase):
-    """Model for creating a new assignment task."""
+    """Input for creating a new task — contents validated against task type."""
 
-    # Inherits all fields from AssignmentTaskBase
+    contents: dict[str, object] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_contents_shape(cls, data: object) -> object:
+        if not isinstance(data, dict):
+            return data
+        task_type = str(data.get("assignment_type", "OTHER"))
+        raw = data.get("contents")
+        if isinstance(raw, dict) and raw:
+            config_cls = _TASK_TYPE_TO_CONFIG.get(task_type, AssignmentOtherTaskConfig)
+            config_cls.model_validate(raw)
+        return data
 
 
 class AssignmentTaskRead(AssignmentTaskBase):
-    """Model for reading an assignment task."""
+    """Output model for reading an assignment task."""
 
     id: int
     assignment_task_uuid: str
     order: int = 0
+    contents: dict[str, object] = Field(default_factory=dict)
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class AssignmentTaskUpdate(SQLModelStrictBaseModel):
-    """Model for updating an assignment task."""
+    """Partial update for an existing task.
+
+    ``order`` is intentionally absent — use the dedicated reorder endpoint.
+    ``contents`` is validated against ``assignment_type`` when both are present.
+    """
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -288,13 +296,12 @@ class AssignmentTaskUpdate(SQLModelStrictBaseModel):
     hint: str | None = None
     reference_file: str | None = None
     assignment_type: AssignmentTaskTypeEnum | None = None
-    contents: dict[str, object] | None = Field(default=None, sa_column=Column(JSON))
+    contents: dict[str, object] | None = None
     max_grade_value: int | None = None
-    order: int | None = None
 
     @field_validator("assignment_type", mode="before")
     @classmethod
-    def validate_assignment_type(cls, v):
+    def validate_assignment_type(cls, v: object) -> object:
         if v is not None and isinstance(v, str):
             return AssignmentTaskTypeEnum(v)
         return v
@@ -304,9 +311,21 @@ class AssignmentTaskUpdate(SQLModelStrictBaseModel):
     def validate_max_grade_value(cls, v: int | None) -> int | None:
         return _validate_max_grade_value(v)
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_contents_shape(cls, data: object) -> object:
+        if not isinstance(data, dict):
+            return data
+        task_type = data.get("assignment_type")
+        raw = data.get("contents")
+        if task_type is not None and isinstance(raw, dict) and raw:
+            config_cls = _TASK_TYPE_TO_CONFIG.get(str(task_type), AssignmentOtherTaskConfig)
+            config_cls.model_validate(raw)
+        return data
+
 
 class AssignmentTask(AssignmentTaskBase, table=True):
-    """Represents a task within an assignment with various attributes and foreign keys."""
+    """Assignment task DB row."""
 
     __table_args__ = (
         UniqueConstraint("assignment_id", "order", name="uq_assignmenttask_order"),
@@ -320,15 +339,21 @@ class AssignmentTask(AssignmentTaskBase, table=True):
     )
 
     id: int | None = Field(default=None, primary_key=True)
-
     assignment_task_uuid: str
-    creation_date: str
-    update_date: str
     order: int = Field(
         default=0,
         sa_column=Column(Integer, nullable=False, server_default="0"),
     )
-
+    contents: dict[str, object] = Field(
+        default_factory=dict,
+        sa_column=Column(JSON),
+    )
+    created_at: datetime = Field(
+        sa_column=Column("created_at", DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        sa_column=Column("updated_at", DateTime(timezone=True), nullable=False)
+    )
     assignment_id: int = Field(
         sa_column=Column(
             "assignment_id", ForeignKey("assignment.id", ondelete="CASCADE")
@@ -345,34 +370,7 @@ class AssignmentTask(AssignmentTaskBase, table=True):
     )
 
 
-## AssignmentTask ##
-
-
-class AssignmentCreateWithActivity(SQLModelStrictBaseModel):
-    """Model for creating an assignment along with its activity."""
-
-    model_config = ConfigDict(use_enum_values=True)
-
-    title: str
-    description: str
-    due_date: str
-    due_at: datetime | None = None
-    published: bool = False
-    grading_type: GradingTypeEnum
-    course_id: int
-    chapter_id: int
-
-    @field_validator("grading_type", mode="before")
-    @classmethod
-    def validate_grading_type(cls, v):
-        if isinstance(v, str):
-            return GradingTypeEnum(v)
-        return v
-
-    @field_validator("due_date", mode="before")
-    @classmethod
-    def validate_due_date(cls, v):
-        return _normalize_due_date_value(v)
+# ── Draft / submission schemas ─────────────────────────────────────────────────
 
 
 class AssignmentTaskAnswer(SQLModelStrictBaseModel):

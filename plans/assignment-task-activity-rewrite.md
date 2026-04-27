@@ -1,586 +1,323 @@
-# Assignment, Task, Activity Rewrite Plan
+I have a thorough picture of the system. Here is the full critical analysis and rewrite plan.
 
-## Executive Summary
+---
 
-The current assignment system should be treated as two partially-overlapping systems rather than one coherent feature:
+## Critical Analysis
 
-1. Legacy assignment/task storage:
-   - `Assignment`
-   - `AssignmentTask`
-   - `AssignmentTaskSubmission`
-   - `AssignmentUserSubmission`
-2. New generic grading storage:
-   - `Submission`
-   - `GradingBreakdown`
-   - teacher grading routes under `/grading`
+### What the system is doing well
 
-The worst problem is not code style. It is that student work, assignment status, teacher grading, analytics, and UI state do not share a single source of truth. Student task answers are saved through legacy task-submission endpoints, while the teacher grading table reads the generic `submission` table. The activity page can then submit an assignment to the generic grading system with an empty answer payload. That makes the two systems diverge by design.
+The unified `Submission` model (`db/grading/submissions.py`) is clean, well-structured, and correctly separates concerns. The grading service decomposition (`grader.py` → `quiz_grader.py`, `exam_grader.py`, `code_grader.py`, `assignment_breakdown.py`) is reasonable. The typed `AssignmentTaskConfig` discriminated union already exists in `assignments.py:232` — it just isn't enforced anywhere.
 
-The rewrite should keep `Activity` as the course-content container, keep the generic `Submission` system as the only source of truth for student attempts and teacher grading, and reduce `Assignment`/`AssignmentTask` to authoring and assessment-definition data.
+---
 
-## Current System Map
+### Issue Inventory (confirmed from source, not inferred)
 
-### Backend Domain
+#### Dead code — remove without replacement
 
-`Activity` is the course-visible item. It owns placement and visibility:
+| Location                          | Problem                                                                                                                                                        |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `routers/assignments.py:58-68`    | `POST /assignments` → `create_assignment()` which unconditionally raises HTTP 410. Both endpoint and service function are dead.                                |
+| `routers/assignments.py:119-129`  | `DELETE /{assignment_uuid}` → `delete_assignment()` which unconditionally raises HTTP 409 telling callers to use the activity endpoint instead. Both are dead. |
+| `routers/assignments.py:248-324`  | 6 endpoints all call `_legacy_assignment_submission_endpoint_disabled()` → HTTP 410. Dead code cluttering the router contract.                                 |
+| `routers/assignments.py:395-414`  | 2 more legacy submission endpoints returning 410: `/{uuid}/submissions/me`, `/{uuid}/submissions/{user_id}`.                                                   |
+| `services/assignments.py:494-507` | `create_assignment()` body is `raise HTTPException(status_code=410, ...)`.                                                                                     |
+| `services/assignments.py:686-726` | `delete_assignment()` body is `raise HTTPException(status_code=409, ...)`.                                                                                     |
 
-- `chapter_id`
-- denormalized `course_id`
-- `order`
-- `creator_id`
-- `published`
-- `activity_type`
-- `activity_sub_type`
-- `content`
-- `details`
+**Total dead code: 2 service functions + 8 router functions + helper `_legacy_assignment_submission_endpoint_disabled`.**
 
-`Assignment` duplicates much of that context:
+#### Monolith — the 1397-line service file
 
-- `course_id`
-- `chapter_id`
-- `activity_id`
-- `published`
-- `due_date`
-- `grading_type`
+`services/courses/activities/assignments.py` mixes six unrelated concerns:
 
-`AssignmentTask` duplicates context again:
+1. Date/time coercion utilities (`_coerce_datetime`, `_derive_due_at`, `_assignment_due_deadline`)
+2. Answer normalization & validation (`_normalize_assignment_answers`, `_validate_assignment_answer_tasks`)
+3. DB query helpers (`_get_assignment_context`, `_get_assignment_task_context`, `_get_assignment_tasks`, `_get_open_assignment_draft`, `_get_blocking_assignment_submission`, `_count_previous_assignment_attempts`)
+4. Course access/permission logic (`_require_assignment_submit_access`, `_user_has_course_access`, `_get_active_course_author_user_ids`, `_get_course_member_user_ids`)
+5. Assignment CRUD (`read_assignment`, `read_assignment_from_activity_uuid`, `update_assignment`, `delete_assignment_from_activity_uuid`, `create_assignment_with_activity`, `get_assignments_from_course`, `get_assignments_from_courses`, `get_editable_assignments_from_courses`)
+6. Task CRUD + file uploads (`create_assignment_task`, `read_assignment_tasks`, `read_assignment_task`, `update_assignment_task`, `delete_assignment_task`, `put_assignment_task_reference_file`, `put_assignment_task_submission_file`)
+7. Submission lifecycle (`get_assignment_draft_submission`, `save_assignment_draft_submission`, `submit_assignment_draft_submission`)
 
-- `assignment_id`
-- `course_id`
-- `chapter_id`
-- `activity_id`
-- `assignment_type`
-- untyped `contents`
+#### Duplicate Submission creation block (lines 391–408 vs 448–465)
 
-`AssignmentTaskSubmission` duplicates it a fourth time:
+Both `save_assignment_draft_submission` and `submit_assignment_draft_submission` contain an identical `if not draft:` block that builds a new `Submission(...)`. Any change to Submission initialization must be made twice. The only difference after creation is that `submit` sets `status`, `is_late`, `submitted_at`, `grading_json`.
 
-- `user_id`
-- `activity_id`
-- `course_id`
-- `chapter_id`
-- `assignment_task_id`
-- untyped `task_submission`
-- per-task `grade`
+#### Schema design problems in `db/courses/assignments.py`
 
-`AssignmentUserSubmission` is an aggregate status row synthesized from task submissions.
+**`AssignmentBase` leaks internal DB IDs into API responses:**
+```python
+# AssignmentBase fields exposed in AssignmentRead:
+course_id: int      # internal DB integer FK
+chapter_id: int     # internal DB integer FK
+activity_id: int    # internal DB integer FK
+```
+Clients receive raw database row IDs. `AssignmentRead` extends `AssignmentBase`, so these are serialized into every API response. The existing `course_uuid` and `activity_uuid` fields in `AssignmentRead` are what clients should use.
 
-Separately, the generic grading system has a much better abstraction:
+**Dual `due_date` / `due_at` fields:**
+`AssignmentBase` has `due_date: str` (ISO string, validated by `_normalize_due_date_value`) AND `due_at: datetime | None` (the parsed, UTC-normalized version). Both stored in the DB. `_derive_due_at` recomputes `due_at` from `due_date` on every write. The two can drift. Clients can pass either or both. Pick one source of truth.
 
-- `Submission`
-- `assessment_type`
-- `activity_id`
-- `user_id`
-- `answers_json`
-- `grading_json`
-- `status`
-- `attempt_number`
-- `submitted_at`
-- `graded_at`
-- `is_late`
+**`creation_date` / `update_date` as raw strings:**
+```python
+# Assignment model:
+creation_date: str | None = None
+update_date: str | None = None
+# AssignmentTask model:
+creation_date: str     # no None, no default
+update_date: str
+```
+These are set as `datetime.now().isoformat()` (naive, no timezone). Inconsistent with `Submission.created_at`/`updated_at` (proper `DateTime(timezone=True)`). The task model doesn't even allow None, which means it must be set before every insert.
 
-### Frontend Domain
+**`AssignmentTaskRead` exposes `max_grade_value` from `AssignmentTaskBase`:**
+`contents: dict[str, object]` is stored as an untyped JSON blob. The `AssignmentTaskConfig` discriminated union exists in the same file at line 232 but is never used for validation before DB write or API response.
 
-The dashboard assignment editor uses:
+#### Router design problems in `routers/courses/assignments.py`
 
-- `AssignmentProvider`
-- global Zustand `AssignmentsTaskStore`
-- legacy assignment services in `services/courses/assignments.ts`
-- task-specific editor components that write JSON into `AssignmentTask.contents`
+**POST-as-GET pattern:**
+```python
+@router.post("/courses")     # body: {"course_uuids": [...]}
+@router.post("/courses/editable")  # body: {"course_uuids": [...]}
+```
+These are read-only queries using POST to pass a list. Should be `GET /courses?course_uuids=a,b,c` or a properly-named batch endpoint.
 
-The student assignment UI saves per-task progress through legacy task-submission endpoints.
+**Inconsistent URL for single task:**
+```python
+GET /task/{assignment_task_uuid}       # no assignment_uuid in path
+GET /{assignment_uuid}/tasks/{uuid}    # only for update/delete
+```
+`/task/{uuid}` is a different URL pattern from everything else. Cross-assignment task reads without the assignment context is also a permission-checking gap.
 
-The dashboard submissions page renders both:
+**`request: Request` parameter threaded through everything:**
+Every service function takes `request: Request` as its first argument but nothing in the service layer uses it — the `request` is only relevant at the HTTP boundary. This is a FastAPI anti-pattern; the router should extract anything it needs from the request and pass typed values to services.
 
-- generic `SubmissionsTable`, backed by `/grading/submissions`
-- legacy assignment-level status table, backed by `/assignments/{uuid}/submissions`
+#### Frontend type drift
 
-The activity page has a separate assignment submit action that calls `submitAssessment(activity.id, 'ASSIGNMENT', {}, 0)`, so the generic grading row can be created without the task answers that were saved through legacy endpoints.
+`apps/web/types/grading.ts` (232 lines) is a hand-maintained mirror of `db/grading/submissions.py` Pydantic models. No codegen. Already missing some fields added in recent backend changes.
 
-## Critical Problems
+---
 
-### 1. Two Sources Of Truth For Submissions
+## Rewrite Plan
 
-Legacy task submissions hold actual assignment work. Generic `Submission` rows drive the modern teacher grading UI. These are not reliably synchronized.
+### Phase 0 — Delete dead code (no risk, do first)
 
-Consequences:
+**`apps/api/src/routers/courses/assignments.py`** — remove the following endpoints entirely (no redirect, no comment, no tombstone):
 
-- A student can save task work but the generic grading table may not show it.
-- A teacher can grade generic submissions that do not contain the task answers.
-- Legacy assignment status and generic grading status can disagree.
-- Analytics and gamification can count different realities.
-- Any bug fix must guess which system is authoritative.
+- `POST /` (`api_create_assignments`) — dead, raises 410
+- `DELETE /{assignment_uuid}` (`api_delete_assignment`) — dead, raises 409
+- `GET /{uuid}/tasks/{task_uuid}/submissions/me`
+- `GET /{uuid}/tasks/{task_uuid}/submissions/user/{user_id}`
+- `GET /{uuid}/tasks/{task_uuid}/submissions`
+- `PUT /{uuid}/tasks/{task_uuid}/submissions`
+- `PUT /submissions/{task_submission_uuid}`
+- `DELETE /{uuid}/tasks/{task_uuid}/submissions/{submission_uuid}`
+- `GET /{uuid}/submissions/me`
+- `GET /{uuid}/submissions/{user_id}`
+- The `_legacy_assignment_submission_endpoint_disabled` helper
 
-This is the central architectural failure.
+Also remove the now-unused imports from the router (`AssignmentCreate`, `AssignmentRead` from the explicit create path).
 
-### 2. Final Assignment Submit Does Not Submit Assignment Answers
+**`apps/api/src/services/courses/activities/assignments.py`** — remove:
 
-The activity page submits assignments through the generic grading API with an empty payload:
+- `create_assignment()` function (raises 410)
+- `delete_assignment()` function (raises 409)
 
-```ts
-await submitAssessment(props.activity.id, 'ASSIGNMENT', {}, 0);
+Update the router imports accordingly.
+
+---
+
+### Phase 1 — Fix the data model
+
+**`apps/api/src/db/courses/assignments.py`**
+
+**1a. Collapse `due_date`/`due_at` into a single field.**
+
+Keep only `due_at: datetime` (UTC-aware, required). Remove `due_date: str`. Clients that currently pass `due_date` as a string ISO date should pass `due_at` instead. The `_coerce_datetime` / `_derive_due_at` / `_assignment_due_deadline` utilities in the service go away.
+
+Migration: `ALTER TABLE assignment DROP COLUMN due_date`. `due_at` already exists and is populated; existing rows are not affected.
+
+**1b. Remove internal FK integer IDs from `AssignmentRead`.**
+
+`AssignmentBase` currently is the shared base for both the DB table model and the API read model, which forces internal IDs into the API contract. Split them:
+
+```
+AssignmentDB (table=True)  — has id, course_id, chapter_id, activity_id as FK columns
+AssignmentRead             — has assignment_uuid, course_uuid, activity_uuid, due_at, title, description, grading_type, published
+AssignmentCreate           — input model, takes course_id/chapter_id (internal, for the service layer only, not returned)
+AssignmentUpdate           — partial patch, only title/description/due_at/grading_type
 ```
 
-That means the generic submission pipeline receives no task answers unless another path has separately copied them. The assignment breakdown helper expects assignment answers under `answers_json.tasks`, but the student UI stores answers in `AssignmentTaskSubmission.task_submission`.
+`AssignmentRead` must not inherit from `AssignmentBase`. It is a projection model.
 
-### 3. Reads Mutate State
+**1c. Replace `creation_date`/`update_date` strings with proper datetime fields.**
 
-`get_all_assignment_user_submissions()` computes assignment-level statuses by calling `create_or_update_assignment_user_submission()` for each candidate user. A read endpoint should not create or rewrite status rows.
+```python
+# Before:
+creation_date: str | None = None
+update_date: str | None = None
 
-Consequences:
-
-- Viewing a page mutates production data.
-- Performance gets worse with class size.
-- Debugging status changes becomes hard because reads can cause writes.
-- Race conditions become likely when teachers and students view the same assignment.
-
-### 4. Invalid Grading Semantics
-
-Legacy assignment aggregation treats a task as graded only when `grade > 0`. A legitimately graded zero is therefore indistinguishable from ungraded.
-
-The aggregate grade mixes two models:
-
-- weighted percent when task max points exist
-- average raw task grades when they do not
-
-This creates inconsistent grading behavior across assignments.
-
-### 5. Activity And Assignment Ownership Are Duplicated
-
-`Assignment`, `AssignmentTask`, and `AssignmentTaskSubmission` store `course_id`, `chapter_id`, and `activity_id`, even though those relationships can be derived from the activity and assignment.
-
-Consequences:
-
-- Moving an activity can leave assignment rows stale.
-- Query filters can return different results depending on which duplicated FK is used.
-- The schema requires defensive sync logic everywhere.
-- Bugs survive because no single relation is obviously canonical.
-
-### 6. Delete And Publish Can Desynchronize Activity And Assignment
-
-Deleting an assignment deletes only the assignment row, not necessarily the activity. Publishing requires separate updates to assignment and activity from the frontend.
-
-Consequences:
-
-- Orphan assignment activities can exist.
-- Published state can diverge between `activity.published` and `assignment.published`.
-- The frontend owns transactional consistency it cannot guarantee.
-
-### 7. Untyped JSON Defines Core Behavior
-
-Task content, task answers, file references, form schemas, quiz schemas, and settings are stored as broad JSON dictionaries. The real schema lives across React components, not in a shared contract.
-
-Consequences:
-
-- Backend cannot validate task definitions deeply.
-- Backward compatibility is accidental.
-- Teacher grading cannot safely interpret answers.
-- Frontend `any` spreads through the feature.
-
-### 8. Route Contracts Are Leaky
-
-Many endpoints include both assignment UUID and task UUID, but service functions frequently use only the task UUID. This allows path mismatches to go undetected unless each service manually rechecks parent ownership.
-
-The routes also mix authoring, draft saving, file upload, final submission, status aggregation, and grading in one assignment router.
-
-### 9. Permission Names Do Not Match Actions
-
-Student submission uses `assignment:read` in legacy paths. Teacher grading sometimes checks `course:update` to decide instructor-ness, then `assignment:update` to grade. The generic grading service uses `assignment:grade`.
-
-The rewrite should use action-specific permissions:
-
-- `assignment:read`
-- `assignment:create`
-- `assignment:update`
-- `assignment:delete`
-- `assignment:submit`
-- `assignment:grade`
-
-### 10. Frontend State Is Fragile
-
-The editor nests assignment providers, keeps selected task in a global store, uses many `any` types, and invalidates cache keys manually. The student view imports dashboard task components. These choices make assignment behavior hard to reason about and easy to break.
-
-## Target Architecture
-
-### Ownership Rules
-
-Use these as hard invariants:
-
-1. `Activity` owns course placement, visibility, ordering, and creator ownership.
-2. `Assignment` owns assignment-specific metadata only.
-3. `AssignmentTask` owns authoring-time task definition only.
-4. `Submission` owns student attempt state, answers, grading, status, timestamps, and publication.
-5. No read endpoint creates or rewrites submission/status rows.
-
-### Data Model
-
-Keep:
-
-- `activity`
-- `assignment`
-- `assignment_task`
-- `submission`
-
-Retire after migration:
-
-- `assignmenttasksubmission`
-- `assignmentusersubmission`
-
-Recommended model:
-
-```text
-Activity
-  id
-  activity_uuid
-  chapter_id
-  course_id
-  order
-  creator_id
-  published
-  activity_type = TYPE_ASSIGNMENT
-
-Assignment
-  id
-  assignment_uuid
-  activity_id unique not null
-  title
-  description
-  due_at timestamptz null
-  grading_policy json/schema
-  created_at timestamptz
-  updated_at timestamptz
-
-AssignmentTask
-  id
-  assignment_task_uuid
-  assignment_id not null
-  order
-  type
-  title
-  description
-  hint
-  reference_file_id null
-  max_score numeric
-  config_json
-  config_version
-  created_at timestamptz
-  updated_at timestamptz
-
-Submission
-  assessment_type = ASSIGNMENT
-  activity_id
-  user_id
-  attempt_number
-  status
-  answers_json
-  grading_json
-  auto_score
-  final_score
-  is_late
-  submitted_at
-  graded_at
+# After:
+created_at: datetime = Field(sa_column=Column(DateTime(timezone=True)))
+updated_at: datetime = Field(sa_column=Column(DateTime(timezone=True)))
 ```
 
-`Submission.answers_json` for assignments should be:
+Migration: `ALTER TABLE assignment RENAME COLUMN creation_date TO created_at; ALTER TABLE assignmenttask ...` — then cast to `TIMESTAMPTZ`. Same for `AssignmentTask`. The values are already valid ISO strings so `USING creation_date::timestamptz` works.
+
+**1d. Enforce `AssignmentTaskConfig` on write.**
+
+In `AssignmentTaskBase.contents`, replace the untyped `dict[str, object]` with:
+
+```python
+contents: AssignmentTaskConfig = Field(
+    default_factory=AssignmentOtherTaskConfig,
+    sa_column=Column(JSON),
+)
+```
+
+The discriminated union `AssignmentTaskConfig` already exists in `assignments.py:232`. This just plugs it in. Pydantic will reject malformed configs before they reach the DB.
+
+**1e. Make `order` append-only via the API.**
+
+Remove `order: int | None = None` from `AssignmentTaskUpdate`. The order of an existing task cannot be changed via a plain PATCH; a dedicated `POST /{assignment_uuid}/tasks/reorder` endpoint (body: `[{task_uuid, order}]`) should do the reorder atomically.
+
+---
+
+### Phase 2 — Break up the service monolith
+
+Split `apps/api/src/services/courses/activities/assignments.py` into:
+
+```
+apps/api/src/services/courses/activities/assignments/
+├── __init__.py          — re-exports the public functions (no logic)
+├── crud.py              — read, update, delete_from_activity, create_with_activity, get_from_course(s)
+├── tasks.py             — create_task, read_task(s), update_task, delete_task, reorder_tasks
+├── uploads.py           — put_task_reference_file, put_task_submission_file
+├── submissions.py       — get_draft, save_draft, submit_draft
+└── _queries.py          — internal DB helpers (prefixed _, not exported):
+                             _get_assignment_context
+                             _get_assignment_task_context
+                             _get_assignment_tasks
+                             _get_open_assignment_draft
+                             _get_blocking_assignment_submission
+                             _count_previous_assignment_attempts
+```
+
+The `_user_has_course_access`, `_get_active_course_author_user_ids`, `_get_course_member_user_ids` functions are not assignment-specific — move them to `services/courses/access.py` (or wherever course-membership checks live) and import from there.
+
+Drop `request: Request` from all service function signatures. The request object is never used inside services; it was only threaded in by convention. Remove it from service functions and update the router call sites.
+
+---
+
+### Phase 3 — Deduplicate submission creation
+
+In the new `submissions.py`, extract the shared draft-construction logic:
+
+```python
+def _get_or_create_draft(
+    activity_id: int,
+    user_id: int,
+    db_session: Session,
+    *,
+    now: datetime,
+) -> Submission:
+    draft = _get_open_assignment_draft(activity_id, user_id, db_session)
+    if draft:
+        return draft
+    return Submission(
+        submission_uuid=f"submission_{ULID()}",
+        assessment_type=AssessmentType.ASSIGNMENT,
+        activity_id=activity_id,
+        user_id=user_id,
+        status=SubmissionStatus.DRAFT,
+        attempt_number=_count_previous_assignment_attempts(activity_id, user_id, db_session) + 1,
+        answers_json={},
+        grading_json={},
+        started_at=now,
+        created_at=now,
+        updated_at=now,
+    )
+```
+
+`save_draft` calls `_get_or_create_draft`, patches `answers_json`, commits.
+`submit_draft` calls `_get_or_create_draft`, patches `answers_json`, then additionally sets `status`, `is_late`, `submitted_at`, `grading_json`.
+
+---
+
+### Phase 4 — Fix the router
+
+**4a. Replace POST-as-GET with proper GET endpoints.**
+
+```python
+# Before:
+@router.post("/courses")         # body: {"course_uuids": [...]}
+@router.post("/courses/editable")
+
+# After:
+@router.get("/courses")          # query: ?course_uuids=a&course_uuids=b
+@router.get("/courses/editable")
+```
+
+Update the frontend query hooks (`assignments.query.ts`) to pass `course_uuids` as repeated query params.
+
+**4b. Fix inconsistent single-task URL.**
+
+```python
+# Before:
+GET /task/{assignment_task_uuid}
+
+# After:
+GET /{assignment_uuid}/tasks/{assignment_task_uuid}
+```
+
+Update frontend `useAssignments` hooks and query options. The old URL can be removed (no backwards compat shim needed since this is an internal API).
+
+**4c. Drop `request: Request` from all route handlers** where it is not used (it's passed to services which don't use it either). Keep it only where middleware/logging actually reads it.
+
+---
+
+### Phase 5 — Frontend type generation
+
+Add `openapi-typescript` to the frontend build:
 
 ```json
-{
-  "tasks": [
-    {
-      "task_uuid": "assignmenttask_...",
-      "content_type": "file",
-      "file_key": "..."
-    },
-    {
-      "task_uuid": "assignmenttask_...",
-      "content_type": "form",
-      "form_data": {}
-    },
-    {
-      "task_uuid": "assignmenttask_...",
-      "content_type": "quiz",
-      "answers": {}
-    }
-  ]
+// apps/web/package.json
+"scripts": {
+  "generate:types": "openapi-typescript http://localhost:8000/openapi.json -o src/types/api.generated.ts"
 }
 ```
 
-### Status Model
+Replace hand-maintained `apps/web/types/grading.ts` with imports from the generated file. The generated types become the single source of truth for all API shapes. Run `generate:types` as part of CI.
 
-Use the generic submission state machine:
+---
 
-- `DRAFT`: student has saved work but has not submitted
-- `PENDING`: submitted and needs teacher review
-- `GRADED`: teacher saved grade, not published
-- `PUBLISHED`: grade visible to student
-- `RETURNED`: teacher returned work for revision
+### Phase 6 — `AssignmentTask.contents` type validation on the frontend
 
-Use `is_late` as a boolean, not as a separate status.
+`TaskEditor` components (`TaskFileObject.tsx`, `TaskQuizObject.tsx`, `TaskFormObject.tsx`) currently build `contents` as plain objects. Add Zod schemas mirroring the backend `AssignmentTaskConfig` discriminated union so validation happens at form submission, not silently on the server.
 
-Do not recreate `SUBMITTED`, `LATE`, or `NOT_SUBMITTED` as assignment-specific statuses. `NOT_SUBMITTED` should be a report/query result derived from enrolled users minus submissions, not a stored row.
+---
 
-## API Design
+### What NOT to change
 
-### Authoring
+- `db/grading/submissions.py` — clean, do not touch
+- `services/grading/` modules (`grader.py`, `quiz_grader.py`, `exam_grader.py`, `code_grader.py`, `assignment_breakdown.py`, `teacher.py`, `submit.py`) — well-structured, leave alone
+- `db/courses/activities.py` — fine as-is
+- The migration files already run — do not alter them
+- `AssignmentTaskConfig` discriminated union — already correct, just wire it in (Phase 1d)
+- Submission state machine logic in `teacher.py` — correct, just needs an optimistic-lock column added later (not in this rewrite)
 
-```text
-GET    /assignments/{assignment_uuid}
-PATCH  /assignments/{assignment_uuid}
-DELETE /assignments/{assignment_uuid}
+---
 
-GET    /assignments/{assignment_uuid}/tasks
-POST   /assignments/{assignment_uuid}/tasks
-PATCH  /assignments/{assignment_uuid}/tasks/{task_uuid}
-DELETE /assignments/{assignment_uuid}/tasks/{task_uuid}
-PATCH  /assignments/{assignment_uuid}/tasks/reorder
+### Execution order
+
+```
+Phase 0  (delete dead code)          — 1-2 hours, zero risk
+Phase 1a (collapse due fields)       — requires 1 migration
+Phase 1b (split AssignmentRead)      — schema-only, no migration
+Phase 1c (fix date string fields)    — requires 1 migration (can batch with 1a)
+Phase 1d (enforce TaskConfig)        — schema-only
+Phase 1e (append-only order)         — schema + new reorder endpoint
+Phase 2  (split service module)      — mechanical refactor, no logic change
+Phase 3  (dedup draft creation)      — logic change, needs tests
+Phase 4  (fix router)                — requires frontend call-site updates
+Phase 5  (type codegen)              — tooling only
+Phase 6  (frontend Zod validation)   — frontend only, low risk
 ```
 
-The backend must validate that `task_uuid` belongs to `assignment_uuid`.
-
-Creation should be one transaction:
-
-```text
-POST /activities/assignment
-```
-
-This creates the activity and assignment together. Remove the standalone assignment creation path unless there is a real admin repair use case.
-
-### Student Work
-
-```text
-GET   /assignments/{assignment_uuid}/submissions/me/draft
-PATCH /assignments/{assignment_uuid}/submissions/me/draft
-POST  /assignments/{assignment_uuid}/submit
-GET   /assignments/{assignment_uuid}/submissions/me
-```
-
-Internally these should read/write `Submission`.
-
-Draft save should upsert one `Submission(status=DRAFT)` for the user/activity/attempt and update `answers_json.tasks`.
-
-Final submit should:
-
-1. validate enrollment and `assignment:submit`
-2. validate task answers against current task definitions
-3. compute `is_late`
-4. move the draft to `PENDING`
-5. synthesize `grading_json.items` from assignment tasks
-
-### Teacher Grading
-
-Keep generic grading endpoints:
-
-```text
-GET   /grading/submissions?activity_id=...
-GET   /grading/submissions/stats?activity_id=...
-GET   /grading/submissions/{submission_uuid}
-PATCH /grading/submissions/{submission_uuid}
-PATCH /grading/submissions/batch
-```
-
-Add assignment-oriented report endpoints only when they are derived from `Submission`, not from stored legacy rows:
-
-```text
-GET /assignments/{assignment_uuid}/submission-summary
-```
-
-This can return enrolled users with derived status, including students with no submission.
-
-## Frontend Rewrite
-
-### Replace Current Assignment Context
-
-Create a typed feature module:
-
-```text
-features/assignments/
-  api/
-  queries/
-  mutations/
-  schemas/
-  components/
-```
-
-Use typed query options and mutations. Avoid `any` in assignment boundaries.
-
-Replace the current provider shape with a single bundle query:
-
-```ts
-interface AssignmentBundle {
-  assignment: Assignment;
-  activity: ActivitySummary;
-  course: CourseSummary;
-  tasks: AssignmentTask[];
-  permissions: AssignmentPermissions;
-}
-```
-
-The editor should receive this bundle once. Do not nest `AssignmentProvider` inside an already-mounted `AssignmentProvider`.
-
-### Editor
-
-Replace global selected-task Zustand with URL or local component state:
-
-```text
-/dash/assignments/{assignment_uuid}?task={task_uuid}&tab=content
-```
-
-Benefits:
-
-- refresh-safe
-- shareable
-- testable
-- no stale global task object
-
-Task editors should edit typed task config:
-
-- `FileTaskConfig`
-- `FormTaskConfig`
-- `QuizTaskConfig`
-- `TextTaskConfig`
-
-The backend should validate the same shape.
-
-### Student View
-
-Stop importing dashboard task editor components into the student activity UI.
-
-Build separate student task renderers:
-
-- `StudentFileTask`
-- `StudentFormTask`
-- `StudentQuizTask`
-- `StudentTextTask`
-
-Each writes into one assignment draft via a mutation like:
-
-```ts
-updateAssignmentDraft(assignmentUuid, {
-  task_uuid,
-  answer
-});
-```
-
-The final submit button should submit the current draft, not an empty payload.
-
-### Teacher View
-
-Use only `SubmissionsTable` backed by generic grading. Remove the legacy assignment-status table once the derived summary endpoint exists.
-
-The grading panel should render assignment task items from `submission.grading_json.items`.
-
-## Migration Plan
-
-### Phase 0: Freeze Behavior With Tests
-
-Before rewriting, add tests that document current behavior and current bugs:
-
-- assignment creation creates exactly one activity and one assignment
-- deleting an assignment currently leaves or does not leave an activity, depending on chosen intended behavior
-- saving file/form/quiz task work creates legacy task submission
-- assignment final submit currently creates generic submission
-- generic submission created by assignment submit currently lacks task answers
-- zero grade behavior is currently broken in legacy aggregation
-- teacher cannot grade another student accidentally through a mismatched task path
-
-These tests are not all expected to pass forever. They make migration risk visible.
-
-### Phase 1: Add New Contracts Without Removing Legacy
-
-Add:
-
-- typed assignment task schemas
-- `due_at timestamptz`
-- `assignment.activity_id` unique constraint
-- `assignment_task.order`
-- unique `(assignment_id, order)`
-- unique `(assignment_id, assignment_task_uuid)`
-- indexes for submission queries
-- draft save endpoint backed by `Submission`
-- final submit endpoint backed by `Submission`
-
-Keep old endpoints read-only or dual-write during this phase.
-
-### Phase 2: Backfill Existing Data
-
-For every assignment:
-
-1. ensure exactly one assignment activity exists
-2. copy string `due_date` into `due_at`
-3. sort tasks by `id` and assign stable `order`
-4. for each legacy `AssignmentUserSubmission` or task-submission user:
-   - create or update one `Submission(assessment_type=ASSIGNMENT)`
-   - build `answers_json.tasks` from `AssignmentTaskSubmission.task_submission`
-   - build `grading_json.items` from task metadata and task grades
-   - map legacy statuses:
-     - `PENDING` with no submitted work -> no row or `DRAFT`
-     - `SUBMITTED` -> `PENDING`
-     - `LATE` -> `PENDING` with `is_late=true`
-     - `GRADED` -> `GRADED`
-   - set `submitted_at` from the best available task submission creation timestamp
-   - set `graded_at` only when actually graded
-
-Do not use `grade > 0` to decide whether an item was graded. Add an explicit graded marker in the migrated grading JSON if needed.
-
-### Phase 3: Switch Reads To New Source
-
-Change frontend and backend reads:
-
-- student assignment page reads draft/submission from `Submission`
-- teacher submissions page reads only generic grading
-- analytics reads only generic submissions for assignments
-- gamification awards assignment XP only from published generic submissions
-
-Legacy tables may still exist but should not be used by product code.
-
-### Phase 4: Switch Writes To New Source
-
-Change all task save and final submit paths to write only `Submission`.
-
-File upload should be a media operation that returns a file key. Saving that file key into the assignment answer should be a separate draft mutation.
-
-### Phase 5: Remove Legacy Paths
-
-Remove or hard-deprecate:
-
-- `AssignmentTaskSubmission`
-- `AssignmentUserSubmission`
-- legacy task-submission routes
-- legacy assignment status table
-- read endpoints that mutate status rows
-- duplicated assignment creation path
-
-Keep compatibility redirects or clear 410 responses for old API clients if external clients exist.
-
-## Acceptance Criteria
-
-The rewrite is done only when these are true:
-
-1. A student can save file/form/quiz/text task answers, refresh, and see the same draft.
-2. Final submit moves the draft to `PENDING` and includes all task answers in `Submission.answers_json`.
-3. Teacher grading panel sees the exact submitted answers.
-4. A zero score can be saved and is treated as graded.
-5. Assignment stats, analytics, grading table, and student status all read from `Submission`.
-6. Reads do not create or update submission rows.
-7. `activity.published` is the only publication flag for course visibility.
-8. Assignment activity creation is transactional.
-9. Deleting an assignment activity removes the assignment and tasks.
-10. Deleting an assignment through assignment API has one clearly documented behavior: either delete the activity transactionally or refuse and require activity deletion.
-11. Parent-child UUID mismatches return 404 or 400.
-12. No assignment feature boundary uses `any` in TypeScript service/query/component props.
-
-## Suggested Implementation Order
-
-1. Add backend assignment bundle read model and typed task schemas.
-2. Add `Submission`-backed assignment draft save and submit endpoints.
-3. Add tests for draft save, final submit, teacher grading, zero grade, and returned-for-revision.
-4. Build new student assignment renderers against the draft API.
-5. Build new dashboard editor state around URL-selected task and typed mutations.
-6. Backfill legacy task submissions into generic submissions.
-7. Switch teacher submissions page to generic-only plus derived no-submission summary.
-8. Remove legacy status writes from read endpoints.
-9. Delete legacy frontend services and components.
-10. Drop legacy tables after production data validation.
-
-## Main Rewrite Decision
-
-Do not try to "clean up" the existing assignment submission path incrementally. Keep assignment/task authoring, but move all student work and grading into the generic `Submission` model. Any plan that keeps `AssignmentTaskSubmission`, `AssignmentUserSubmission`, and `Submission` active as peers will preserve the current chaos under cleaner names.
+Phases 0–1 are independent of each other and can be done in any order. Phase 2 is a prerequisite for Phase 3 (easier to see the duplication once isolated). Phase 4 requires Phase 2 to be done (no more `request` threading). Phases 5–6 are purely additive and can be done any time.

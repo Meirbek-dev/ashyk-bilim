@@ -24,7 +24,7 @@ from src.db.courses.courses import Course
 from src.db.grading.submissions import Submission, SubmissionStatus
 from src.db.model_registry import import_orm_models
 from src.db.users import PublicUser
-from src.services.courses.activities import assignments as assignment_service
+import src.services.courses.activities.assignments.submissions as submissions_module
 
 
 @pytest.fixture()
@@ -103,15 +103,14 @@ def seed_assignment(
         assignment_uuid="assignment_test",
         title="Assignment",
         description="",
-        due_date=(now + timedelta(days=1)).date().isoformat(),
         due_at=now + timedelta(days=1),
         published=True,
         grading_type=GradingTypeEnum.PERCENTAGE,
         course_id=course.id,
         chapter_id=chapter.id,
         activity_id=activity.id,
-        creation_date=now.isoformat(),
-        update_date=now.isoformat(),
+        created_at=now,
+        updated_at=now,
     )
     file_task = AssignmentTask(
         id=1,
@@ -128,8 +127,8 @@ def seed_assignment(
         course_id=course.id,
         chapter_id=chapter.id,
         activity_id=activity.id,
-        creation_date=now.isoformat(),
-        update_date=now.isoformat(),
+        created_at=now,
+        updated_at=now,
     )
     form_task = AssignmentTask(
         id=2,
@@ -146,8 +145,8 @@ def seed_assignment(
         course_id=course.id,
         chapter_id=chapter.id,
         activity_id=activity.id,
-        creation_date=now.isoformat(),
-        update_date=now.isoformat(),
+        created_at=now,
+        updated_at=now,
     )
 
     db_session.add(course)
@@ -169,13 +168,12 @@ async def test_save_assignment_draft_upserts_single_submission(
 ) -> None:
     assignment, file_task, form_task = seed_assignment(db_session)
     monkeypatch.setattr(
-        assignment_service,
+        submissions_module,
         "_require_assignment_submit_access",
         lambda *_args, **_kwargs: None,
     )
 
-    first = await assignment_service.save_assignment_draft_submission(
-        request=None,  # type: ignore[arg-type]
+    first = await submissions_module.save_assignment_draft_submission(
         assignment_uuid=assignment.assignment_uuid,
         draft_patch=AssignmentDraftPatch(
             tasks=[
@@ -189,8 +187,7 @@ async def test_save_assignment_draft_upserts_single_submission(
         current_user=current_user,
         db_session=db_session,
     )
-    second = await assignment_service.save_assignment_draft_submission(
-        request=None,  # type: ignore[arg-type]
+    second = await submissions_module.save_assignment_draft_submission(
         assignment_uuid=assignment.assignment_uuid,
         draft_patch=AssignmentDraftPatch(
             tasks=[
@@ -233,13 +230,12 @@ async def test_submit_assignment_draft_moves_to_pending_with_breakdown(
 ) -> None:
     assignment, file_task, _form_task = seed_assignment(db_session)
     monkeypatch.setattr(
-        assignment_service,
+        submissions_module,
         "_require_assignment_submit_access",
         lambda *_args, **_kwargs: None,
     )
 
-    submitted = await assignment_service.submit_assignment_draft_submission(
-        request=None,  # type: ignore[arg-type]
+    submitted = await submissions_module.submit_assignment_draft_submission(
         assignment_uuid=assignment.assignment_uuid,
         draft_patch=AssignmentDraftPatch(
             tasks=[
