@@ -215,13 +215,11 @@ async def test_save_assignment_draft_upserts_single_submission(
                 "task_uuid": file_task.assignment_task_uuid,
                 "content_type": "file",
                 "file_key": "file_1.pdf",
-                "answer_metadata": {},
             },
             {
                 "task_uuid": form_task.assignment_task_uuid,
                 "content_type": "form",
                 "form_data": {"blank_1": "answer"},
-                "answer_metadata": {},
             },
         ]
     }

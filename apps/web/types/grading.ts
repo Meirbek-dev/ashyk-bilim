@@ -54,10 +54,12 @@ export interface QuizAnswers {
 
 export interface AssignmentTaskAnswer {
   task_uuid: string;
-  content_type: 'file' | 'text' | 'form';
+  content_type: 'file' | 'text' | 'form' | 'quiz' | 'other';
   file_key?: string | null;
   text_content?: string | null;
   form_data?: Record<string, unknown> | null;
+  quiz_answers?: Record<string, unknown> | null;
+  answer_metadata?: Record<string, unknown>;
 }
 
 export interface AssignmentAnswers {

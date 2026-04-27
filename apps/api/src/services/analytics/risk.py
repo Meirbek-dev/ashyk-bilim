@@ -10,6 +10,9 @@ from src.db.analytics import LearnerRiskSnapshot, TeacherIntervention
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     AnalyticsContext,
+    assignment_is_graded,
+    assignment_is_reviewable,
+    assignment_score,
     assessment_pass_threshold,
     build_activity_events,
     cohort_names_for_user,
@@ -213,9 +216,10 @@ def build_risk_rows(
             continue
         key = (assignment.course_id, submission.user_id)
         assignment_seen[key].add(assignment.id)
-        if submission.submission_status.value in {"SUBMITTED", "LATE"}:
+        if assignment_is_reviewable(submission):
             open_grading_blocks[key] += 1
-        if submission.submission_status.value == "GRADED" and submission.grade < 60:
+        score = assignment_score(submission)
+        if assignment_is_graded(submission) and score is not None and score < 60:
             failed_assessments[key] += 1
 
     exam_seen: dict[tuple[int, int], set[int]] = defaultdict(set)

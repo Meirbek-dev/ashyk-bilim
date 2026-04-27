@@ -7,22 +7,26 @@ from datetime import UTC, datetime, timedelta
 from statistics import median
 from typing import Any, TypeVar
 
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlmodel import Session
 from zoneinfo import ZoneInfo
 
-from src.db.courses.activities import Activity, ActivityTypeEnum
-from src.db.courses.assignments import (
-    Assignment,
-    AssignmentUserSubmission,
-    AssignmentUserSubmissionStatus,
-)
+from src.db.courses.activities import Activity
+from src.db.courses.assignments import Assignment
 from src.db.courses.certifications import CertificateUser, Certifications
 from src.db.courses.chapters import Chapter
-from src.db.courses.code_challenges import CodeSubmission, SubmissionStatus
+from src.db.courses.code_challenges import (
+    CodeSubmission,
+    SubmissionStatus as CodeSubmissionStatus,
+)
 from src.db.courses.courses import Course
 from src.db.courses.exams import Exam, ExamAttempt
 from src.db.courses.quiz import QuizAttempt, QuizQuestionStat
+from src.db.grading.submissions import (
+    AssessmentType,
+    Submission,
+    SubmissionStatus,
+)
 from src.db.trail_runs import TrailRun
 from src.db.trail_steps import TrailStep
 from src.db.usergroup_user import UserGroupUser
@@ -71,7 +75,7 @@ class AnalyticsContext:
     trail_steps: list[TrailStep]
     certificates: list[tuple[CertificateUser, Certifications]]
     assignments: list[Assignment]
-    assignment_submissions: list[tuple[AssignmentUserSubmission, Assignment]]
+    assignment_submissions: list[tuple[Submission, Assignment]]
     exams: list[Exam]
     exam_attempts: list[tuple[ExamAttempt, Exam]]
     quiz_attempts: list[tuple[QuizAttempt, Activity]]
@@ -206,6 +210,42 @@ def direction_for_delta(delta_value: float | None) -> str:
     if delta_value < 0:
         return "down"
     return "flat"
+
+
+def enum_value(value: object) -> str:
+    return str(getattr(value, "value", value))
+
+
+def assignment_submission_status(submission: Submission) -> str:
+    return enum_value(submission.status)
+
+
+def assignment_is_reviewable(submission: Submission) -> bool:
+    return assignment_submission_status(submission) == SubmissionStatus.PENDING.value
+
+
+def assignment_is_graded(submission: Submission) -> bool:
+    return assignment_submission_status(submission) in {
+        SubmissionStatus.GRADED.value,
+        SubmissionStatus.PUBLISHED.value,
+    }
+
+
+def assignment_score(submission: Submission) -> float | None:
+    score = submission.final_score
+    if score is None and assignment_is_graded(submission):
+        score = submission.auto_score
+    return float(score) if score is not None else None
+
+
+def assignment_submitted_at(submission: Submission) -> object:
+    return submission.submitted_at or submission.updated_at or submission.created_at
+
+
+def assignment_graded_at(submission: Submission) -> object | None:
+    if not assignment_is_graded(submission):
+        return None
+    return submission.graded_at or submission.updated_at
 
 
 def display_name(user: User | None) -> str:
@@ -403,20 +443,22 @@ def load_analytics_context(
     assignment_ids = [
         assignment.id for assignment in assignments if assignment.id is not None
     ]
-    assignment_submissions: list[tuple[AssignmentUserSubmission, Assignment]] = []
+    assignment_submissions: list[tuple[Submission, Assignment]] = []
     if assignment_ids:
         submission_stmt = (
-            select(AssignmentUserSubmission, Assignment)
-            .join(Assignment, Assignment.id == AssignmentUserSubmission.assignment_id)
+            select(Submission, Assignment)
+            .join(Assignment, Assignment.activity_id == Submission.activity_id)
             .where(Assignment.id.in_(assignment_ids))
+            .where(Submission.assessment_type == AssessmentType.ASSIGNMENT)
+            .where(Submission.status != SubmissionStatus.DRAFT)
         )
         if activity_start is not None:
-            # filter by `update_date` which is reliably set when a submission is created or graded
+            # Generic submissions reliably update this timestamp on submit or grading.
             submission_stmt = submission_stmt.where(
-                AssignmentUserSubmission.update_date >= activity_start
+                Submission.updated_at >= activity_start
             )
         assignment_submissions = [
-            _unwrap_pair(row, AssignmentUserSubmission, Assignment)
+            _unwrap_pair(row, Submission, Assignment)
             for row in db_session.exec(submission_stmt).all()
         ]
 
@@ -647,8 +689,8 @@ def build_activity_events(
             continue
         ts = (
             parse_timestamp(getattr(submission, "submitted_at", None))
-            or parse_timestamp(submission.update_date)
-            or parse_timestamp(submission.creation_date)
+            or parse_timestamp(submission.updated_at)
+            or parse_timestamp(submission.created_at)
         )
         if ts is None:
             continue
@@ -668,7 +710,7 @@ def build_activity_events(
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
         if (
-            submission.status != SubmissionStatus.COMPLETED
+            submission.status != CodeSubmissionStatus.COMPLETED
             or activity.course_id is None
         ):
             continue

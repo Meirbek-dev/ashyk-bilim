@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from src.db.courses.assignments import AssignmentUserSubmissionStatus
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     AnalyticsContext,
+    assignment_graded_at,
+    assignment_is_graded,
+    assignment_is_reviewable,
+    assignment_submission_status,
+    assignment_submitted_at,
     cohort_user_ids,
     display_name,
     hours_between,
@@ -17,15 +21,7 @@ from src.services.analytics.schemas import (
     WorkloadAgingBuckets,
 )
 
-REVIEWABLE_STATUSES = {
-    AssignmentUserSubmissionStatus.SUBMITTED.value,
-    AssignmentUserSubmissionStatus.LATE.value,
-}
 GRADING_SLA_HOURS = 72
-
-
-def _status_value(value: object) -> str:
-    return getattr(value, "value", str(value))
 
 
 def build_teacher_workload(
@@ -47,26 +43,20 @@ def build_teacher_workload(
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
 
-        submitted_at = (
-            parse_timestamp(getattr(submission, "submitted_at", None))
-            or parse_timestamp(submission.update_date)
-            or parse_timestamp(submission.creation_date)
-        )
-        graded_at = parse_timestamp(getattr(submission, "graded_at", None))
-        status = _status_value(submission.submission_status)
-
+        submitted_at = parse_timestamp(assignment_submitted_at(submission))
+        graded_at = parse_timestamp(assignment_graded_at(submission))
         if submitted_at is not None and current_start <= submitted_at <= current_end:
             submitted_in_window += 1
         if graded_at is not None and current_start <= graded_at <= current_end:
             graded_in_window += 1
 
-        if status == AssignmentUserSubmissionStatus.GRADED.value:
-            latency = hours_between(submitted_at, graded_at or submission.update_date)
+        if assignment_is_graded(submission):
+            latency = hours_between(submitted_at, graded_at)
             if latency is not None:
                 latency_hours.append(latency)
             continue
 
-        if status not in REVIEWABLE_STATUSES:
+        if not assignment_is_reviewable(submission):
             continue
 
         backlog_total += 1
@@ -157,13 +147,9 @@ def backlog_items_for_drillthrough(
     for submission, assignment in context.assignment_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
-        if _status_value(submission.submission_status) not in REVIEWABLE_STATUSES:
+        if not assignment_is_reviewable(submission):
             continue
-        submitted_at = (
-            parse_timestamp(getattr(submission, "submitted_at", None))
-            or parse_timestamp(submission.update_date)
-            or parse_timestamp(submission.creation_date)
-        )
+        submitted_at = parse_timestamp(assignment_submitted_at(submission))
         age_hours = (
             round((generated_at - submitted_at).total_seconds() / 3600, 2)
             if submitted_at is not None
@@ -179,7 +165,7 @@ def backlog_items_for_drillthrough(
             "course_name": course.name if course is not None else "Unknown course",
             "user_id": submission.user_id,
             "user_display_name": display_name(user),
-            "status": _status_value(submission.submission_status),
+            "status": assignment_submission_status(submission),
             "submitted_at": to_iso(submitted_at),
             "age_hours": age_hours,
             "sla_breached": age_hours is not None and age_hours > GRADING_SLA_HOURS,

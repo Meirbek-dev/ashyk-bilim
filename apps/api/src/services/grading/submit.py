@@ -167,7 +167,12 @@ async def submit_assessment(
     )
 
     passed = (draft.auto_score or 0) >= 50.0
-    if passed and not violation_exceeded and not is_late:
+    if (
+        assessment_type != AssessmentType.ASSIGNMENT
+        and passed
+        and not violation_exceeded
+        and not is_late
+    ):
         _award_xp_safe(
             current_user.id, assessment_type, draft.submission_uuid, db_session
         )

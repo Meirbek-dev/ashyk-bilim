@@ -123,7 +123,13 @@
       "taskTypeOther": "Басқа",
       "taskTypeQuiz": "Тест",
       "untitledQuestion": "Мәтінсіз сұрақ",
-      "unsavedChanges": "Сақталмаған өзгерістер бар"
+      "unsavedChanges": "Сақталмаған өзгерістер бар",
+      "allowedFormats": "Рұқсат етілген форматтар: pdf, docx, mp4, mkv, jpg, jpeg, png, pptx, zip",
+      "ariaLabel": "Тапсырма үшін жүктеу файлын таңдаңыз",
+      "missingAssignmentInfo": "Тапсырма туралы қажетті ақпарат жоқ",
+      "selectFile": "Файл таңдаңыз",
+      "submitFile": "Файлды жіберу",
+      "uploadFailed": "Файлды жүктеу мүмкін болмады"
     },
     "CodeChallenges": {
       "actualOutput": "Сіздің шығаруыңыз",

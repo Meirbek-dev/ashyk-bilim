@@ -135,4 +135,12 @@ def _normalize_assignment_answer(
     if isinstance(form_data, dict):
         normalized["form_data"] = form_data
 
+    quiz_answers = raw_task_answer.get("quiz_answers")
+    if isinstance(quiz_answers, dict):
+        normalized["quiz_answers"] = quiz_answers
+
+    answer_metadata = raw_task_answer.get("answer_metadata")
+    if isinstance(answer_metadata, dict):
+        normalized["answer_metadata"] = answer_metadata
+
     return normalized or raw_task_answer

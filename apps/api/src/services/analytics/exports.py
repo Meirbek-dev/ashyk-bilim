@@ -9,6 +9,9 @@ from sqlmodel import Session
 from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
+    assignment_is_reviewable,
+    assignment_submission_status,
+    assignment_submitted_at,
     cohort_user_ids,
     load_analytics_context,
     progress_snapshots,
@@ -140,7 +143,7 @@ def export_grading_backlog_csv(
 
     def row_iter() -> Iterator[list[object]]:
         for submission, assignment in context.assignment_submissions:
-            if submission.submission_status.value not in {"SUBMITTED", "LATE"}:
+            if not assignment_is_reviewable(submission):
                 continue
             if (
                 allowed_user_ids is not None
@@ -158,8 +161,8 @@ def export_grading_backlog_csv(
                 else f"Удаленный курс #{assignment.course_id}",
                 assignment.id,
                 assignment.title,
-                _status_ru(submission.submission_status.value),
-                getattr(submission, "submitted_at", None) or submission.update_date,
+                _status_ru(assignment_submission_status(submission)),
+                assignment_submitted_at(submission),
             ]
 
     return _csv_stream(

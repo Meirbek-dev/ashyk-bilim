@@ -21,6 +21,9 @@ from src.services.analytics.interventions import summarize_interventions
 from src.services.analytics.quality import build_data_quality
 from src.services.analytics.queries import (
     ActivityEvent,
+    assignment_graded_at,
+    assignment_is_graded,
+    assignment_is_reviewable,
     build_activity_events,
     build_series,
     cohort_user_ids,
@@ -283,7 +286,7 @@ def get_teacher_overview(
     ungraded_submissions = sum(
         1
         for submission, _assignment in context.assignment_submissions
-        if submission.submission_status.value in {"SUBMITTED", "LATE"}
+        if assignment_is_reviewable(submission)
         and (allowed_user_ids is None or submission.user_id in allowed_user_ids)
     )
 
@@ -364,10 +367,9 @@ def get_teacher_overview(
     for submission, assignment in context.assignment_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
-        if submission.submission_status.value != "GRADED":
+        if not assignment_is_graded(submission):
             continue
-        graded_at = getattr(submission, "graded_at", None) or submission.update_date
-        ts = parse_timestamp(graded_at)
+        ts = parse_timestamp(assignment_graded_at(submission))
         if ts is None:
             continue
         grading_events.append(

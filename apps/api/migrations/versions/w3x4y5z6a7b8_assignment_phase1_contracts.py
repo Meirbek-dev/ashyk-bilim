@@ -64,11 +64,6 @@ def upgrade() -> None:
         server_default="0",
     )
 
-    op.create_unique_constraint(
-        "uq_assignment_activity_id",
-        "assignment",
-        ["activity_id"],
-    )
     op.create_index(
         "idx_assignment_activity_id",
         "assignment",
@@ -126,7 +121,6 @@ def downgrade() -> None:
     )
     op.drop_constraint("uq_assignmenttask_order", "assignmenttask", type_="unique")
     op.drop_index("idx_assignment_activity_id", table_name="assignment")
-    op.drop_constraint("uq_assignment_activity_id", "assignment", type_="unique")
 
     op.drop_column("assignmenttask", "order")
     op.drop_column("assignment", "due_at")

@@ -14,6 +14,12 @@ from src.db.usergroups import UserGroup
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     AnalyticsContext,
+    assignment_graded_at,
+    assignment_is_graded,
+    assignment_is_reviewable,
+    assignment_score,
+    assignment_submission_status,
+    assignment_submitted_at,
     assessment_pass_threshold,
     cohort_user_ids,
     display_name,
@@ -376,9 +382,7 @@ def _build_assignment_rows(
     for submission, assignment in context.assignment_submissions:
         if not _is_allowed(submission.user_id, allowed_user_ids):
             continue
-        if not _in_bucket_window(
-            getattr(submission, "submitted_at", None), bucket_window
-        ):
+        if not _in_bucket_window(assignment_submitted_at(submission), bucket_window):
             continue
         if assignment.id is not None:
             submissions_by_assignment[assignment.id].append((submission, assignment))
@@ -394,12 +398,13 @@ def _build_assignment_rows(
         graded = [
             submission
             for submission, _ in submissions
-            if submission.submission_status.value == "GRADED"
+            if assignment_is_graded(submission) and assignment_score(submission) is not None
         ]
-        grades = [float(submission.grade) for submission in graded]
-        scores_by_user = {submission.user_id: float(submission.grade) for submission in graded}
+        grades = [assignment_score(submission) or 0.0 for submission in graded]
+        scores_by_user = {submission.user_id: assignment_score(submission) or 0.0 for submission in graded}
         pass_rate = safe_pct(
-            sum(1 for submission in graded if submission.grade >= 60), len(graded)
+            sum(1 for submission in graded if (assignment_score(submission) or 0.0) >= 60),
+            len(graded),
         )
         variance = _score_variance(grades)
         discrimination = _discrimination_index(scores_by_user)
@@ -407,8 +412,8 @@ def _build_assignment_rows(
             value
             for value in (
                 hours_between(
-                    getattr(submission, "submitted_at", None),
-                    getattr(submission, "graded_at", None),
+                    assignment_submitted_at(submission),
+                    assignment_graded_at(submission),
                 )
                 for submission in graded
             )
@@ -881,16 +886,18 @@ def get_teacher_assessment_detail(
         ]
         eligible = len(eligible_by_course.get(assignment.course_id, set()))
         scores = [
-            float(submission.grade)
+            score
             for submission, _ in records
-            if submission.submission_status.value == "GRADED"
+            if assignment_is_graded(submission)
+            for score in [assignment_score(submission)]
+            if score is not None
         ]
         latencies = [
             value
             for value in (
                 hours_between(
-                    getattr(submission, "submitted_at", None),
-                    getattr(submission, "graded_at", None),
+                    assignment_submitted_at(submission),
+                    assignment_graded_at(submission),
                 )
                 for submission, _ in records
             )
@@ -904,11 +911,11 @@ def get_teacher_assessment_detail(
                     context.users_by_id.get(submission.user_id)
                 ),
                 attempts=1,
-                best_score=float(submission.grade),
-                last_score=float(submission.grade),
-                submitted_at=to_iso(getattr(submission, "submitted_at", None)),
-                graded_at=to_iso(getattr(submission, "graded_at", None)),
-                status=submission.submission_status.value,
+                best_score=assignment_score(submission),
+                last_score=assignment_score(submission),
+                submitted_at=to_iso(assignment_submitted_at(submission)),
+                graded_at=to_iso(assignment_graded_at(submission)),
+                status=assignment_submission_status(submission),
             )
             for submission, _ in records
         ]
@@ -919,7 +926,7 @@ def get_teacher_assessment_detail(
                 count=sum(
                     1
                     for submission, _ in records
-                    if submission.submission_status.value == "LATE"
+                    if submission.is_late
                 ),
             ),
             CommonFailureRow(
@@ -928,7 +935,7 @@ def get_teacher_assessment_detail(
                 count=sum(
                     1
                     for submission, _ in records
-                    if submission.submission_status.value in {"SUBMITTED", "LATE"}
+                    if assignment_is_reviewable(submission)
                 ),
             ),
         ]

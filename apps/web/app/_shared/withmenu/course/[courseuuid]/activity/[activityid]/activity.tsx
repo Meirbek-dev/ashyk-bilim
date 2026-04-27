@@ -44,7 +44,7 @@ import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip';
 import { CourseProvider } from '@components/Contexts/CourseContext';
 import { useActivityAssignmentUuid } from '@/features/courses/hooks/useCourseQueries';
 import { useContributorStatus } from '@/hooks/useContributorStatus';
-import { submitAssessment } from '@services/grading/grading';
+import { submitAssignmentDraftSubmission } from '@services/courses/assignments';
 import { useGamificationStore } from '@/stores/gamification';
 import { useMySubmission } from '@/hooks/useMySubmission';
 import { queryKeys } from '@/lib/react-query/queryKeys';
@@ -1050,9 +1050,9 @@ const AssignmentTools = (props: {
   const { submission, mutate: mutateSubmission } = useMySubmission(props.activity?.id ?? null);
 
   async function submitForGradingUI() {
-    if (!props.activity?.id) return;
+    if (!props.assignment?.assignment_uuid) return;
     try {
-      await submitAssessment(props.activity.id, 'ASSIGNMENT', {}, 0);
+      await submitAssignmentDraftSubmission(props.assignment.assignment_uuid);
       toast.success(t('submitSuccessToast'));
       await mutateSubmission();
     } catch {

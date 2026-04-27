@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, Request, UploadFile
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, UploadFile, status
 
 from src.auth.users import get_optional_public_user, get_public_user
 from src.db.courses.assignments import (
@@ -10,12 +10,8 @@ from src.db.courses.assignments import (
     AssignmentDraftRead,
     AssignmentRead,
     AssignmentTaskCreate,
-    AssignmentTaskSubmissionRead,
-    AssignmentTaskSubmissionUpdate,
     AssignmentTaskUpdate,
     AssignmentUpdate,
-    AssignmentUserSubmissionRead,
-    AssignmentUserSubmissionWithUserRead,
 )
 from src.db.grading.submissions import SubmissionRead
 from src.db.users import AnonymousUser, PublicUser
@@ -27,31 +23,34 @@ from src.services.courses.activities.assignments import (
     delete_assignment,
     delete_assignment_from_activity_uuid,
     delete_assignment_task,
-    delete_assignment_task_submission,
-    get_all_assignment_user_submissions,
     get_assignment_draft_submission,
-    get_assignment_user_submission,
     get_assignments_from_course,
     get_assignments_from_courses,
     get_editable_assignments_from_courses,
-    handle_assignment_task_submission,
     put_assignment_task_reference_file,
     put_assignment_task_submission_file,
     read_assignment,
     read_assignment_from_activity_uuid,
     read_assignment_task,
-    read_assignment_task_submissions,
     read_assignment_tasks,
-    read_user_assignment_task_submissions,
-    read_user_assignment_task_submissions_me,
     save_assignment_draft_submission,
     submit_assignment_draft_submission,
     update_assignment,
     update_assignment_task,
-    update_assignment_task_submission,
 )
 
 router = APIRouter()
+
+
+def _legacy_assignment_submission_endpoint_disabled() -> None:
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail=(
+            "Legacy assignment task submission endpoints are disabled. "
+            "Use /assignments/{assignment_uuid}/submissions/me/draft and "
+            "/assignments/{assignment_uuid}/submit."
+        ),
+    )
 
 ## ASSIGNMENTS ##
 
@@ -248,9 +247,7 @@ async def api_get_assignment_task_submission_me(
     db_session=Depends(get_db_session),
 ):
     """Get the current user's submission for an assignment task."""
-    return await read_user_assignment_task_submissions_me(
-        request, assignment_task_uuid, current_user, db_session
-    )
+    _legacy_assignment_submission_endpoint_disabled()
 
 
 @router.get(
@@ -265,9 +262,7 @@ async def api_get_assignment_task_submission_user(
     db_session=Depends(get_db_session),
 ):
     """Get a specific user's submission for an assignment task."""
-    return await read_user_assignment_task_submissions(
-        request, assignment_task_uuid, user_id, current_user, db_session
-    )
+    _legacy_assignment_submission_endpoint_disabled()
 
 
 @router.get("/{assignment_uuid}/tasks/{assignment_task_uuid}/submissions")
@@ -277,11 +272,9 @@ async def api_get_assignment_task_submissions(
     assignment_task_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db_session=Depends(get_db_session),
-) -> list[AssignmentTaskSubmissionRead]:
+) -> None:
     """List all submissions for an assignment task."""
-    return await read_assignment_task_submissions(
-        request, assignment_task_uuid, current_user, db_session
-    )
+    _legacy_assignment_submission_endpoint_disabled()
 
 
 @router.put("/{assignment_uuid}/tasks/{assignment_task_uuid}/submissions")
@@ -289,36 +282,24 @@ async def api_handle_assignment_task_submission(
     request: Request,
     assignment_uuid: str,
     assignment_task_uuid: str,
-    assignment_task_submission_object: AssignmentTaskSubmissionUpdate,
+    assignment_task_submission_object: dict | None = Body(default=None),
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db_session=Depends(get_db_session),
 ):
     """Create or update a submission for an assignment task."""
-    return await handle_assignment_task_submission(
-        request,
-        assignment_task_uuid,
-        assignment_task_submission_object,
-        current_user,
-        db_session,
-    )
+    _legacy_assignment_submission_endpoint_disabled()
 
 
 @router.put("/submissions/{assignment_task_submission_uuid}")
 async def api_update_assignment_task_submission(
     request: Request,
     assignment_task_submission_uuid: str,
-    assignment_task_submission_object: AssignmentTaskSubmissionUpdate,
+    assignment_task_submission_object: dict | None = Body(default=None),
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db_session=Depends(get_db_session),
-) -> AssignmentTaskSubmissionRead:
+) -> None:
     """Update an assignment task submission."""
-    return await update_assignment_task_submission(
-        request,
-        assignment_task_submission_uuid,
-        assignment_task_submission_object,
-        current_user,
-        db_session,
-    )
+    _legacy_assignment_submission_endpoint_disabled()
 
 
 @router.delete(
@@ -333,12 +314,7 @@ async def api_delete_assignment_task_submission(
     db_session=Depends(get_db_session),
 ):
     """Delete an assignment task submission."""
-    return await delete_assignment_task_submission(
-        request,
-        assignment_task_submission_uuid,
-        current_user,
-        db_session,
-    )
+    _legacy_assignment_submission_endpoint_disabled()
 
 
 @router.delete("/{assignment_uuid}/tasks/{assignment_task_uuid}")
@@ -414,15 +390,9 @@ async def api_get_assignment_submission_me(
     assignment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db_session=Depends(get_db_session),
-) -> AssignmentUserSubmissionRead:
+) -> None:
     """Get the current user's assignment-level submission status."""
-    return await get_assignment_user_submission(
-        request,
-        assignment_uuid,
-        current_user.id,
-        current_user,
-        db_session,
-    )
+    _legacy_assignment_submission_endpoint_disabled()
 
 
 @router.get("/{assignment_uuid}/submissions")
@@ -431,14 +401,9 @@ async def api_get_assignment_submissions(
     assignment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db_session=Depends(get_db_session),
-) -> list[AssignmentUserSubmissionWithUserRead]:
+) -> None:
     """Get assignment-level submission statuses for all course learners."""
-    return await get_all_assignment_user_submissions(
-        request,
-        assignment_uuid,
-        current_user,
-        db_session,
-    )
+    _legacy_assignment_submission_endpoint_disabled()
 
 
 @router.get("/{assignment_uuid}/submissions/{user_id}")
@@ -448,15 +413,9 @@ async def api_get_assignment_submission_user(
     user_id: int,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db_session=Depends(get_db_session),
-) -> AssignmentUserSubmissionRead:
+) -> None:
     """Get a specific user's assignment-level submission status."""
-    return await get_assignment_user_submission(
-        request,
-        assignment_uuid,
-        user_id,
-        current_user,
-        db_session,
-    )
+    _legacy_assignment_submission_endpoint_disabled()
 
 
 @router.get("/course/{course_uuid}")

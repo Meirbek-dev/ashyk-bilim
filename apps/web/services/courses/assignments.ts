@@ -24,6 +24,10 @@ export interface AssignmentDraftRead {
   submission: Submission | null;
 }
 
+function normalizeAssignmentUuid(assignmentUUID: string) {
+  return assignmentUUID.startsWith('assignment_') ? assignmentUUID : `assignment_${assignmentUUID}`;
+}
+
 export async function createAssignment(body: any) {
   const result = await apiFetch('assignments/', {
     method: 'POST',
@@ -89,12 +93,12 @@ export async function deleteAssignmentUsingActivityUUID(activityUUID: string) {
 }
 
 export async function getAssignmentDraftSubmission(assignmentUUID: string) {
-  const result = await apiFetch(`assignments/${assignmentUUID}/submissions/me/draft`);
+  const result = await apiFetch(`assignments/${normalizeAssignmentUuid(assignmentUUID)}/submissions/me/draft`);
   return await getResponseMetadata(result);
 }
 
 export async function saveAssignmentDraftSubmission(assignmentUUID: string, body: AssignmentDraftPatch) {
-  const result = await apiFetch(`assignments/${assignmentUUID}/submissions/me/draft`, {
+  const result = await apiFetch(`assignments/${normalizeAssignmentUuid(assignmentUUID)}/submissions/me/draft`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -104,13 +108,14 @@ export async function saveAssignmentDraftSubmission(assignmentUUID: string, body
   if (metadata.success) {
     const { revalidateTag } = await import('next/cache');
     revalidateTag(tags.activities, 'max');
+    revalidateTag('submissions', 'max');
   }
 
   return metadata;
 }
 
 export async function submitAssignmentDraftSubmission(assignmentUUID: string, body?: AssignmentDraftPatch) {
-  const result = await apiFetch(`assignments/${assignmentUUID}/submit`, {
+  const result = await apiFetch(`assignments/${normalizeAssignmentUuid(assignmentUUID)}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body ?? { tasks: [] }),
@@ -120,6 +125,7 @@ export async function submitAssignmentDraftSubmission(assignmentUUID: string, bo
   if (metadata.success) {
     const { revalidateTag } = await import('next/cache');
     revalidateTag(tags.activities, 'max');
+    revalidateTag('submissions', 'max');
   }
 
   return metadata;
@@ -146,54 +152,6 @@ export async function createAssignmentTask(body: any, assignmentUUID: string) {
 export async function getAssignmentTask(assignmentTaskUUID: string) {
   const result = await apiFetch(`assignments/task/${assignmentTaskUUID}`);
   return await getResponseMetadata(result);
-}
-
-export async function getAssignmentTaskSubmissionsMe(assignmentTaskUUID: string, assignmentUUID: string) {
-  const result = await apiFetch(`assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/submissions/me`);
-  return await getResponseMetadata(result);
-}
-
-export interface GetAssignmentTaskSubmissionsUserParams {
-  assignmentTaskUUID: string;
-  user_id: number;
-  assignmentUUID: string;
-}
-
-export async function getAssignmentTaskSubmissionsUser({
-  assignmentTaskUUID,
-  user_id,
-  assignmentUUID,
-}: GetAssignmentTaskSubmissionsUserParams) {
-  const result = await apiFetch(
-    `assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/submissions/user/${user_id}`,
-  );
-  return await getResponseMetadata(result);
-}
-
-export interface HandleAssignmentTaskSubmissionParams {
-  body: any;
-  assignmentTaskUUID: string;
-  assignmentUUID: string;
-}
-
-export async function handleAssignmentTaskSubmission({
-  body,
-  assignmentTaskUUID,
-  assignmentUUID,
-}: HandleAssignmentTaskSubmissionParams) {
-  const result = await apiFetch(`assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/submissions`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const metadata = await getResponseMetadata(result);
-
-  if (metadata.success) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.activities, 'max');
-  }
-
-  return metadata;
 }
 
 export interface UpdateAssignmentTaskParams {

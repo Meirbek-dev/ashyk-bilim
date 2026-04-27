@@ -138,7 +138,8 @@ def _normalize_assignment_answers(
     if patch is not None:
         for task_answer in patch.tasks:
             tasks_by_uuid[task_answer.task_uuid] = task_answer.model_dump(
-                exclude_none=True
+                exclude_defaults=True,
+                exclude_none=True,
             )
 
     return {

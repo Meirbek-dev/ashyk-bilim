@@ -123,7 +123,13 @@
       "taskTypeOther": "Другое",
       "taskTypeQuiz": "Тест",
       "untitledQuestion": "Вопрос без текста",
-      "unsavedChanges": "Есть несохранённые изменения"
+      "unsavedChanges": "Есть несохранённые изменения",
+      "allowedFormats": "Разрешенные форматы: pdf, docx, mp4, mkv, jpg, jpeg, png, pptx, zip",
+      "ariaLabel": "Выберите файл для загрузки для задания",
+      "missingAssignmentInfo": "Отсутствует необходимая информация о задании",
+      "selectFile": "Выберите файл",
+      "submitFile": "Отправить файл",
+      "uploadFailed": "Не удалось загрузить файл"
     },
     "CodeChallenges": {
       "actualOutput": "Ваш вывод",

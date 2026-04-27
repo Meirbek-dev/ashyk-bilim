@@ -107,3 +107,26 @@ def test_build_assignment_breakdown_preserves_existing_teacher_grading() -> None
     }
     assert breakdown.feedback == "Overall feedback"
     assert breakdown.needs_manual_review is False
+
+
+def test_build_assignment_breakdown_preserves_quiz_answers_and_metadata() -> None:
+    breakdown = build_assignment_breakdown(
+        GradingBreakdown(),
+        {
+            "tasks": [
+                {
+                    "task_uuid": "task-quiz",
+                    "content_type": "quiz",
+                    "quiz_answers": {"question_1": ["option_1"]},
+                    "answer_metadata": {"legacy_graded": True},
+                }
+            ]
+        },
+        [make_task("task-quiz", "Quiz task", 100)],
+    )
+
+    assert breakdown.items[0].user_answer == {
+        "content_type": "quiz",
+        "quiz_answers": {"question_1": ["option_1"]},
+        "answer_metadata": {"legacy_graded": True},
+    }
