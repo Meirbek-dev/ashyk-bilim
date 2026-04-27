@@ -1,18 +1,18 @@
 {
   "Activities": {
     "AIActivityAsk": {
-      "AI": "ЖИ",
-      "aiSender": "ЖИ",
-      "askAI": "ЖИ-дан сұрау",
-      "closePanel": "ЖИ панелін жабу",
+      "AI": "Ashyq Ai",
+      "aiSender": "Ashyq Ai",
+      "askAI": "Ashyq Ai-дан сұрау",
+      "closePanel": "Ashyq Ai панелін жабу",
       "copy": "Көшіру",
       "copied": "Көшірілді!",
       "errorTitle": "Бірдеңе дұрыс болмады",
       "examplesAbbr": "мысал.",
       "hello": "Сәлеметсіз бе",
       "howCanWeHelp": "қалай көмектесе аламын?",
-      "logoAlt": "Ashyq Bilim AI логотипі",
-      "placeholder": "Осы дәріс туралы ЖИ-дан сұраңыз",
+      "logoAlt": "Ashyq Ai логотипі",
+      "placeholder": "Осы дәріс туралы Ashyq Ai-дан сұраңыз",
       "defaultUser": "Пайдаланушы",
       "dismiss": "Жабу",
       "questionAbout": "Бұл белсенділік не туралы?",
@@ -30,8 +30,8 @@
       "working": "Сұрағыңызды өңдеп жатырмыз."
     },
     "AICanvaToolkit": {
-      "aiIconAlt": "ЖИ белгішесі",
-      "aiTitle": "ЖИ",
+      "aiIconAlt": "Ashyq Ai белгішесі",
+      "aiTitle": "Ashyq Ai",
       "examplesAbbr": "Мыс.",
       "examplesLabel": "Мысалдар",
       "examplesPrompt": "Егер мүмкін болса, \\\"{selection}\\\" жақсырақ түсіну үшін мысалдар келтіріңіз, курс контексін ескере отырып.",
@@ -53,12 +53,12 @@
       "MakeLongerLabel": "Ұзарту",
       "TranslateLabel": "Аудару",
       "WriterLabel": "Жазушы",
-      "aiEditorTitle": "ЖИ Редактор",
-      "aiIconAlt": "Ashyq Bilim AI белгішесі",
+      "aiEditorTitle": "Ashyq Ai Редактор",
+      "aiIconAlt": "Ashyq Ai белгішесі",
       "applicationPending": "Қатысушы өтініші қаралуда",
       "applyToContribute": "Қатысуға өтініш беру",
-      "askAI": "ЖИ-дан сұрау",
-      "closeToolkit": "ЖИ құралдарын жабу",
+      "askAI": "Ashyq Ai-дан сұрау",
+      "closeToolkit": "Ashyq Ai құралдарын жабу",
       "continuePlaceholder": "Жазуды жалғастыру үшін курсорды сөйлемнің соңына қойыңыз",
       "critisizeLectureMissing": "Лекция бос, алдымен мәтін қосыңыз",
       "critisizePlaceholder": "Мәтінді таңдаңыз немесе лекцияны толық сынаңыз",
@@ -83,7 +83,7 @@
       "translatePlaceholder": "Таңдалған мәтінді мынаған аудару",
       "translateToLanguageMissing": "Аудару үшін тілді енгізіңіз",
       "typePromptBelow": "Сұрауыңызды төменде теріңіз",
-      "userInputPlaceholder": "ЖИ-дан сұрау",
+      "userInputPlaceholder": "Ashyq Ai-дан сұрау",
       "stop": "Тоқтату",
       "writerPlaceholder": "Мынау туралы жазу..."
     },
@@ -1515,7 +1515,7 @@
       "step4Button": "Динамикалық беттер мен Редактор туралы көбірек білу",
       "step4Desc": "Динамикалық беттер - Notion беттері сияқты динамикалық мазмұны бар беттер, олар Тесттер, Суреттер, Бейнелер, Құжаттар және т.б. сияқты әртүрлі компоненттерді қамтуы мүмкін.",
       "step4Title": "Динамикалық беттер мен Редактор",
-      "step5Button": "Ashyq Bilim AI туралы көбірек білу",
+      "step5Button": "Ashyq Ai туралы көбірек білу",
       "step5Desc": "Мұғалімдер мен студенттер үшін жасалған, контекстті ескеретін құралдар, олар сіздің курстарыңызға және Ashyq Bilim-те жасайтын бірегей мазмұныңызға негізделген жауап бере алады",
       "step5Title": "Жасанды интеллект",
       "step6Button": "Пайдаланушы топтарын жасау",
@@ -4036,7 +4036,7 @@
         "searchEmojis": "Эмодзи іздеу..."
       },
       "Editor": {
-        "aiEditor": "ЖИ-Редактор",
+        "aiEditor": "Ashyq Ai Редактор",
         "mobileMessage1": "Редактор тек жұмыс үстелі құрылғысында қол жетімді.",
         "mobileMessage2": "Көру үшін жұмыс үстелі құрылғысына ауысыңыз.",
         "mobileTitle": "Тек жұмыс үстеліне арналған",
@@ -4277,7 +4277,7 @@
       "Toolbar": {
         "addColumnRight": "Оң жаққа баған қосу",
         "addRowBelow": "Төменге жол қосу",
-        "aiEditor": "ЖИ редакторы",
+        "aiEditor": "Ashyq Ai редакторы",
         "aria": {
           "insertInteractiveScenarios": "Интерактивті сценарийлерді енгізу"
         },
@@ -7400,7 +7400,7 @@
   },
   "activity": "Белсенділік",
   "additionalSettings": "Қосымша параметрлер",
-  "aiEditor": "ЖИ редакторы",
+  "aiEditor": "Ashyq Ai редакторы",
   "calendar": {
     "monthDropdown": "Ай",
     "next": "Келесі",

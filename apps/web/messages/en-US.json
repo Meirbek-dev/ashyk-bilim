@@ -1,18 +1,18 @@
 {
   "Activities": {
     "AIActivityAsk": {
-      "AI": "AI",
-      "aiSender": "AI",
-      "askAI": "Ask AI",
-      "closePanel": "Close AI panel",
+      "AI": "Ashyq Ai",
+      "aiSender": "Ashyq Ai",
+      "askAI": "Ask Ashyq Ai",
+      "closePanel": "Close Ashyq Ai panel",
       "copy": "Copy",
       "copied": "Copied!",
       "errorTitle": "Something wrong happened",
       "examplesAbbr": "ex. ",
       "hello": "Hello",
       "howCanWeHelp": "how can I help?",
-      "logoAlt": "Ashyq Bilim AI Logo",
-      "placeholder": "Ask AI About this Lecture",
+      "logoAlt": "Ashyq Ai Logo",
+      "placeholder": "Ask Ashyq Ai About this Lecture",
       "defaultUser": "User",
       "dismiss": "Dismiss",
       "questionAbout": "What is this Activity about?",
@@ -30,8 +30,8 @@
       "working": "Working on your request."
     },
     "AICanvaToolkit": {
-      "aiIconAlt": "AI Icon",
-      "aiTitle": "AI",
+      "aiIconAlt": "Ashyq Ai Icon",
+      "aiTitle": "Ashyq Ai",
       "examplesAbbr": "Ex",
       "examplesLabel": "Examples",
       "examplesPrompt": "Give examples to understand \\\"{selection}\\\" better, if possible give context in the course.",
@@ -53,12 +53,12 @@
       "MakeLongerLabel": "Make Longer",
       "TranslateLabel": "Translate",
       "WriterLabel": "Writer",
-      "aiEditorTitle": "AI Editor",
-      "aiIconAlt": "Ashyq Bilim AI Icon",
+      "aiEditorTitle": "Ashyq Ai Editor",
+      "aiIconAlt": "Ashyq Ai Icon",
       "applicationPending": "Contributor application pending",
       "applyToContribute": "Apply to contribute",
-      "askAI": "Ask AI",
-      "closeToolkit": "Close AI toolkit",
+      "askAI": "Ask Ashyq Ai",
+      "closeToolkit": "Close Ashyq Ai toolkit",
       "continuePlaceholder": "Place your cursor at the end of a sentence to continue writing",
       "critisizeLectureMissing": "Lecture is empty, add some content first",
       "critisizePlaceholder": "Select a passage or critique the entire lecture",
@@ -83,7 +83,7 @@
       "translatePlaceholder": "Translate selected text to",
       "translateToLanguageMissing": "Please enter a language to translate to",
       "typePromptBelow": "Type your prompt below",
-      "userInputPlaceholder": "Ask AI",
+      "userInputPlaceholder": "Ask Ashyq Ai",
       "stop": "Stop",
       "writerPlaceholder": "Write about..."
     },
@@ -1530,7 +1530,7 @@
       "step4Button": "Learn more about Dynamic Pages and the Editor",
       "step4Desc": "Dynamic pages are pages with dynamic content like Notion pages, they can include different components like Quizzes, Images, Videos, Documents, etc.",
       "step4Title": "Dynamic Pages and the Editor",
-      "step5Button": "Learn more about Ashyq Bilim AI",
+      "step5Button": "Learn more about Ashyq Ai",
       "step5Desc": "Thought tools made for both teachers and students, context aware, they can answer based on your courses and the unique content you create within Ashyq Bilim",
       "step5Title": "Artificial Intelligence",
       "step6Button": "Create User Groups",
@@ -4025,7 +4025,7 @@
         "searchEmojis": "Search emojis..."
       },
       "Editor": {
-        "aiEditor": "AI Editor",
+        "aiEditor": "Ashyq Ai Editor",
         "mobileMessage1": "The editor is only accessible from a desktop device.",
         "mobileMessage2": "Please switch to a desktop to view.",
         "mobileTitle": "Desktop Only",
@@ -4266,7 +4266,7 @@
       "Toolbar": {
         "addColumnRight": "Add column right",
         "addRowBelow": "Add row below",
-        "aiEditor": "AI Editor",
+        "aiEditor": "Ashyq Ai Editor",
         "aria": {
           "insertInteractiveScenarios": "Insert interactive scenarios"
         },
@@ -7375,7 +7375,7 @@
   },
   "activity": "Activity",
   "additionalSettings": "Additional Settings",
-  "aiEditor": "AI Editor",
+  "aiEditor": "Ashyq Ai Editor",
   "calendar": {
     "monthDropdown": "Month",
     "next": "Next",

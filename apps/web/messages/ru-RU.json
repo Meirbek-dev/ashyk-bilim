@@ -1,18 +1,18 @@
 {
   "Activities": {
     "AIActivityAsk": {
-      "AI": "ИИ",
-      "aiSender": "ИИ",
-      "askAI": "Спросить ИИ",
-      "closePanel": "Закрыть панель ИИ",
+      "AI": "Ashyq Ai",
+      "aiSender": "Ashyq Ai",
+      "askAI": "Спросить Ashyq Ai",
+      "closePanel": "Закрыть панель Ashyq Ai",
       "copy": "Копировать",
       "copied": "Скопировано!",
       "errorTitle": "Что-то пошло не так",
       "examplesAbbr": "пр. ",
       "hello": "Здравствуйте",
       "howCanWeHelp": "чем могу помочь?",
-      "logoAlt": "Логотип Ashyq Bilim AI",
-      "placeholder": "Спросите ИИ об этой лекции",
+      "logoAlt": "Логотип Ashyq Ai",
+      "placeholder": "Спросите Ashyq Ai об этой лекции",
       "defaultUser": "Пользователь",
       "dismiss": "Закрыть",
       "questionAbout": "О чём эта активность?",
@@ -30,8 +30,8 @@
       "working": "Обрабатываем ваш запрос."
     },
     "AICanvaToolkit": {
-      "aiIconAlt": "Иконка ИИ",
-      "aiTitle": "ИИ",
+      "aiIconAlt": "Иконка Ashyq Ai",
+      "aiTitle": "Ashyq Ai",
       "examplesAbbr": "Пр. ",
       "examplesLabel": "Примеры",
       "examplesPrompt": "Приведите примеры, чтобы лучше понять \\\"{selection}\\\", если возможно, приведите контекст курса.",
@@ -53,12 +53,12 @@
       "MakeLongerLabel": "Удлинить",
       "TranslateLabel": "Перевести",
       "WriterLabel": "Писатель",
-      "aiEditorTitle": "ИИ Редактор",
-      "aiIconAlt": "Иконка Ashyq Bilim AI",
+      "aiEditorTitle": "Редактор Ashyq Ai",
+      "aiIconAlt": "Иконка Ashyq Ai",
       "applicationPending": "Заявка участника на рассмотрении",
       "applyToContribute": "Подать заявку на участие",
-      "askAI": "Спросить ИИ",
-      "closeToolkit": "Закрыть инструменты ИИ",
+      "askAI": "Спросить Ashyq Ai",
+      "closeToolkit": "Закрыть инструменты Ashyq Ai",
       "continuePlaceholder": "Поместите курсор в конец предложения, чтобы продолжить писать",
       "critisizeLectureMissing": "Лекция пустая, добавьте контент",
       "critisizePlaceholder": "Выберите часть лекции или критикуйте всю лекцию",
@@ -83,7 +83,7 @@
       "translatePlaceholder": "Перевести выделенный текст",
       "translateToLanguageMissing": "Пожалуйста, введите язык для перевода",
       "typePromptBelow": "Введите ваш запрос ниже",
-      "userInputPlaceholder": "Спросить ИИ",
+      "userInputPlaceholder": "Спросить Ashyq Ai",
       "stop": "Остановить",
       "writerPlaceholder": "Написать о..."
     },
@@ -1516,7 +1516,7 @@
       "step4Button": "Узнать больше о Динамических страницах и Редакторе",
       "step4Desc": "Динамические страницы - это страницы с динамическим контентом, подобным страницам Notion, они могут включать различные компоненты, такие как Тесты, Изображения, Видео, Документы и т. д.",
       "step4Title": "Динамические страницы и Редактор",
-      "step5Button": "Узнать больше об Ashyq Bilim AI",
+      "step5Button": "Узнать больше об Ashyq Ai",
       "step5Desc": "Инструменты, созданные как для учителей, так и для студентов, учитывающие контекст, они могут отвечать на основе ваших курсов и уникального контента, который вы создаете в Ashyq Bilim",
       "step5Title": "Искусственный интеллект",
       "step6Button": "Создать группы пользователей",
@@ -4036,7 +4036,7 @@
         "searchEmojis": "Искать эмодзи..."
       },
       "Editor": {
-        "aiEditor": "ИИ-Редактор",
+        "aiEditor": "Редактор Ashyq Ai",
         "mobileMessage1": "Редактор доступен только с настольного устройства.",
         "mobileMessage2": "Пожалуйста, переключитесь на настольное устройство для просмотра.",
         "mobileTitle": "Только для настольных ПК",
@@ -4277,7 +4277,7 @@
       "Toolbar": {
         "addColumnRight": "Добавить столбец справа",
         "addRowBelow": "Добавить строку ниже",
-        "aiEditor": "ИИ-редактор",
+        "aiEditor": "редактор Ashyq Ai",
         "aria": {
           "insertInteractiveScenarios": "Вставить интерактивные сценарии"
         },
@@ -7399,7 +7399,7 @@
   },
   "activity": "Активность",
   "additionalSettings": "Дополнительные настройки",
-  "aiEditor": "ИИ-редактор",
+  "aiEditor": "редактор Ashyq Ai",
   "calendar": {
     "monthDropdown": "Месяц",
     "next": "Далее",
