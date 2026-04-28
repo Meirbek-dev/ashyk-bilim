@@ -31,8 +31,8 @@ grading_entry table  (new append-only ledger)
         published_at    TIMESTAMPTZ
     )
 
-Revision ID: a1b2c3d4e5f6
-Revises: z6a7b8c9d0e1
+Revision ID: a2b3c4d5e6f7
+Revises: a1b2c3d4e5f6
 Create Date: 2026-04-28
 """
 
@@ -41,8 +41,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "a1b2c3d4e5f6"
-down_revision: str | None = "z6a7b8c9d0e1"
+revision: str = "a2b3c4d5e6f7"
+down_revision: str | None = "a1b2c3d4e5f6"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
