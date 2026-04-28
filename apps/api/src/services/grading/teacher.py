@@ -11,13 +11,16 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy import asc, desc, func, or_
 from sqlmodel import Session, select
+from ulid import ULID
 
 from src.db.courses.activities import Activity
 from src.db.gamification import XPSource
+from src.db.grading.entries import GradingEntry
 from src.db.grading.schemas import (
     BatchGradeRequest,
     BatchGradeResponse,
     BatchGradeResultItem,
+    BulkPublishGradesResponse,
 )
 from src.db.grading.submissions import (
     AssessmentType,
@@ -657,6 +660,95 @@ def _save_teacher_grade(
         )
 
     return SubmissionRead.model_validate(submission)
+
+
+async def bulk_publish_grades(
+    activity_id: int,
+    current_user: PublicUser,
+    db_session: Session,
+) -> BulkPublishGradesResponse:
+    """Publish all graded submissions for an activity at once (BATCH release mode).
+
+    For each PUBLISHED submission that does not yet have a GradingEntry row with
+    published_at set, a new immutable GradingEntry is inserted with published_at
+    stamped to now.  This makes the grade visible on the student-facing endpoint.
+
+    Returns counts of how many grades were published vs already visible.
+    """
+    activity = db_session.exec(
+        select(Activity).where(Activity.id == activity_id)
+    ).first()
+    if not activity:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
+        )
+
+    checker = PermissionChecker(db_session)
+    checker.require(
+        current_user.id, "assignment:grade", resource_owner_id=activity.creator_id
+    )
+
+    # All PUBLISHED submissions for this activity
+    submissions = db_session.exec(
+        select(Submission).where(
+            Submission.activity_id == activity_id,
+            Submission.status == SubmissionStatus.PUBLISHED,
+            Submission.id.is_not(None),
+        )
+    ).all()
+
+    if not submissions:
+        return BulkPublishGradesResponse(
+            activity_id=activity_id,
+            published_count=0,
+            already_published_count=0,
+        )
+
+    # Which submission IDs already have a published GradingEntry?
+    submission_ids = [s.id for s in submissions if s.id is not None]
+    already_published_ids: set[int] = set(
+        db_session.exec(
+            select(GradingEntry.submission_id).where(
+                GradingEntry.submission_id.in_(submission_ids),
+                GradingEntry.published_at.is_not(None),
+            )
+        ).all()
+    )
+
+    now = datetime.now(UTC)
+    published_count = 0
+    for submission in submissions:
+        if submission.id in already_published_ids:
+            continue
+
+        entry = GradingEntry(
+            entry_uuid=f"entry_{ULID()}",
+            submission_id=submission.id,
+            graded_by=current_user.id,
+            raw_score=float(submission.final_score or submission.auto_score or 0),
+            penalty_pct=float(submission.late_penalty_pct or 0),
+            final_score=float(submission.final_score or submission.auto_score or 0),
+            breakdown=submission.grading_json if isinstance(submission.grading_json, dict) else {},
+            overall_feedback=(
+                submission.grading_json.get("feedback", "")
+                if isinstance(submission.grading_json, dict)
+                else ""
+            ),
+            grading_version=submission.grading_version,
+            created_at=now,
+            published_at=now,
+        )
+        db_session.add(entry)
+        published_count += 1
+
+    if published_count:
+        db_session.commit()
+
+    return BulkPublishGradesResponse(
+        activity_id=activity_id,
+        published_count=published_count,
+        already_published_count=len(already_published_ids),
+    )
 
 
 def _get_submission_with_activity(

@@ -136,3 +136,11 @@ class BatchGradeResponse(PydanticStrictBaseModel):
     results: list[BatchGradeResultItem] = Field(default_factory=list)
     succeeded: int = 0
     failed: int = 0
+
+
+class BulkPublishGradesResponse(PydanticStrictBaseModel):
+    """Response for POST /grading/activities/{activity_id}/publish-grades."""
+
+    activity_id: int
+    published_count: int  # submissions that had their grade published now
+    already_published_count: int  # submissions already visible to students

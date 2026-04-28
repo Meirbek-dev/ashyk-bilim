@@ -8,6 +8,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -178,6 +179,15 @@ class Assignment(SQLModelStrictBaseModel, table=True):
         default=None,
         sa_column=Column("archived_at", DateTime(timezone=True), nullable=True),
     )
+    # Relative weight of this assignment in the course grade calculation.
+    # Default 1.0 = equal weight.  Values above 1.0 make this assignment count
+    # more; 0.0 makes it optional (not included in weighted_grade_average).
+    weight: float = Field(
+        default=1.0,
+        sa_column=Column(
+            "weight", Float, nullable=False, server_default="1.0"
+        ),
+    )
     grading_type: GradingTypeEnum = Field(
         sa_column=Column("grading_type", String, nullable=False)
     )
@@ -216,6 +226,7 @@ class AssignmentRead(SQLModelStrictBaseModel):
     scheduled_publish_at: datetime | None = None
     published_at: datetime | None = None
     archived_at: datetime | None = None
+    weight: float = 1.0
     grading_type: GradingTypeEnum
     course_uuid: str | None = None
     activity_uuid: str | None = None

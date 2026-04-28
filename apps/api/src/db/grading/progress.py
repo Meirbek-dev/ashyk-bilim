@@ -29,6 +29,18 @@ class AssessmentGradingMode(StrEnum):
     AUTO_THEN_MANUAL = "AUTO_THEN_MANUAL"
 
 
+class GradeReleaseMode(StrEnum):
+    """Controls when a published grade becomes visible to the student.
+
+    IMMEDIATE — grade is visible as soon as the teacher marks it PUBLISHED.
+    BATCH     — grade is hidden until a teacher explicitly runs
+                POST /grading/activities/{uuid}/publish-grades, which stamps
+                GradingEntry.published_at for all PUBLISHED submissions at once.
+    """
+    IMMEDIATE = "IMMEDIATE"
+    BATCH = "BATCH"
+
+
 class AssessmentCompletionRule(StrEnum):
     VIEWED = "VIEWED"
     SUBMITTED = "SUBMITTED"
@@ -77,6 +89,15 @@ class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
     grading_mode: AssessmentGradingMode = Field(
         default=AssessmentGradingMode.MANUAL,
         sa_column=Column("grading_mode", String, nullable=False),
+    )
+    grade_release_mode: GradeReleaseMode = Field(
+        default=GradeReleaseMode.IMMEDIATE,
+        sa_column=Column(
+            "grade_release_mode",
+            String,
+            nullable=False,
+            server_default=GradeReleaseMode.IMMEDIATE,
+        ),
     )
     completion_rule: AssessmentCompletionRule = Field(
         default=AssessmentCompletionRule.GRADED,
@@ -131,6 +152,13 @@ class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
     def validate_grading_mode(cls, value: object) -> object:
         if isinstance(value, str):
             return AssessmentGradingMode(value)
+        return value
+
+    @field_validator("grade_release_mode", mode="before")
+    @classmethod
+    def validate_grade_release_mode(cls, value: object) -> object:
+        if isinstance(value, str):
+            return GradeReleaseMode(value)
         return value
 
     @field_validator("completion_rule", mode="before")
@@ -306,6 +334,11 @@ class CourseProgress(SQLModelStrictBaseModel, table=True):
         sa_column=Column(Float, nullable=False, server_default="0"),
     )
     grade_average: float | None = None
+    # Weighted average using Assignment.weight.  NULL when no graded scores exist.
+    weighted_grade_average: float | None = Field(
+        default=None,
+        sa_column=Column("weighted_grade_average", Float, nullable=True),
+    )
     missing_required_count: int = Field(
         default=0,
         sa_column=Column(Integer, nullable=False, server_default="0"),

@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 from ulid import ULID
 
 from src.db.courses.activities import Activity, ActivityTypeEnum
+from src.db.courses.assignments import Assignment
 from src.db.courses.blocks import Block, BlockTypeEnum
 from src.db.courses.code_challenges import (
     CodeSubmission,
@@ -154,6 +155,37 @@ def recalculate_course_progress(
         else None
     )
 
+    # ── Weighted grade average ────────────────────────────────────────────────
+    # Fetch assignment weights for all activities that have scores.
+    # Activities without an Assignment row get weight = 1.0.
+    scored_activity_ids = [
+        row.activity_id for row in rows if row.score is not None
+    ]
+    weight_by_activity: dict[int, float] = {}
+    if scored_activity_ids:
+        assignment_rows = db_session.exec(
+            select(Assignment.activity_id, Assignment.weight).where(
+                Assignment.activity_id.in_(scored_activity_ids)
+            )
+        ).all()
+        weight_by_activity = {row.activity_id: float(row.weight) for row in assignment_rows}
+
+    weighted_numerator = 0.0
+    weighted_denominator = 0.0
+    for row in rows:
+        if row.score is None:
+            continue
+        w = weight_by_activity.get(row.activity_id, 1.0)
+        if w == 0.0:
+            continue  # zero-weight activities are excluded from the average
+        weighted_numerator += row.score * w
+        weighted_denominator += w
+    weighted_grade_average = (
+        round(weighted_numerator / weighted_denominator, 2)
+        if weighted_denominator
+        else None
+    )
+
     progress = db_session.exec(
         select(CourseProgress).where(
             CourseProgress.course_id == course_id,
@@ -167,6 +199,7 @@ def recalculate_course_progress(
     progress.total_required_count = total
     progress.progress_pct = round((len(completed) / total) * 100, 2) if total else 0
     progress.grade_average = round(sum(scored) / len(scored), 2) if scored else None
+    progress.weighted_grade_average = weighted_grade_average
     progress.missing_required_count = max(0, total - len(completed))
     progress.needs_grading_count = needs_grading
     progress.last_activity_at = last_activity_at

@@ -16,7 +16,11 @@ from sqlmodel import Session
 
 from src.auth.users import get_public_user
 from src.db.grading.gradebook import CourseGradebookResponse
-from src.db.grading.schemas import BatchGradeRequest, BatchGradeResponse
+from src.db.grading.schemas import (
+    BatchGradeRequest,
+    BatchGradeResponse,
+    BulkPublishGradesResponse,
+)
 from src.db.grading.submissions import (
     SubmissionListResponse,
     SubmissionRead,
@@ -28,6 +32,7 @@ from src.infra.db.session import get_db_session
 from src.services.grading.gradebook import get_course_gradebook
 from src.services.grading.teacher import (
     batch_grade_submissions,
+    bulk_publish_grades,
     export_grades_csv,
     get_submission_for_teacher,
     get_submission_stats,
@@ -47,6 +52,32 @@ async def api_get_course_gradebook(
     """Return the teacher's course-level gradebook matrix."""
     return await get_course_gradebook(
         course_uuid=course_uuid,
+        current_user=current_user,
+        db_session=db_session,
+    )
+
+
+@router.post(
+    "/activities/{activity_id}/publish-grades",
+    response_model=BulkPublishGradesResponse,
+)
+async def api_bulk_publish_grades(
+    activity_id: int,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+) -> BulkPublishGradesResponse:
+    """
+    Publish all graded submissions for an activity at once (BATCH release mode).
+
+    For each PUBLISHED submission without an existing published GradingEntry,
+    a new immutable GradingEntry is inserted with published_at stamped to now.
+    After this call, students can see their grades for this activity.
+
+    Use when AssessmentPolicy.grade_release_mode == BATCH to control when
+    students can first see their grades (e.g., after the deadline has passed).
+    """
+    return await bulk_publish_grades(
+        activity_id=activity_id,
         current_user=current_user,
         db_session=db_session,
     )
