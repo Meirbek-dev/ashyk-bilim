@@ -22,6 +22,7 @@ from src.db.courses.quiz import (
     QuizSubmissionResponse,
 )
 from src.db.gamification import XPSource
+from src.db.grading.submissions import AssessmentType, Submission, SubmissionStatus
 from src.db.users import PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.blocks.block_types.quizBlock.grading import (
@@ -29,6 +30,7 @@ from src.services.blocks.block_types.quizBlock.grading import (
     grade_quiz,
 )
 from src.services.gamification.service import award_xp
+from src.services.progress import submissions as progress_submissions
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +96,7 @@ async def submit_quiz(
         existing = db_session.exec(statement).first()
 
         if existing:
+            progress_submissions.sync_quiz_attempt(existing, db_session)
             # Return existing result
             return QuizSubmissionResponse(
                 attempt_uuid=existing.attempt_uuid,
@@ -159,8 +162,31 @@ async def submit_quiz(
         final_score = 0.0
         grading_result["passed"] = False
 
-    # Create attempt record
+    # Legacy adapter: write the canonical Submission before the QuizAttempt
+    # compatibility row. New features should not write QuizAttempt directly.
     attempt_uuid = f"quiz_attempt_{ULID()}"
+    manual_review = any(
+        isinstance(item, dict) and item.get("needs_grading")
+        for item in grading_result.get("per_question", [])
+    )
+    canonical_submission = Submission(
+        submission_uuid=f"submission_{attempt_uuid}",
+        assessment_type=AssessmentType.QUIZ,
+        activity_id=activity_id,
+        user_id=current_user.id,
+        status=SubmissionStatus.PENDING if manual_review else SubmissionStatus.GRADED,
+        attempt_number=attempt_number,
+        answers_json={"answers": submission.answers},
+        grading_json={},
+        auto_score=final_score,
+        final_score=None if manual_review else final_score,
+        is_late=False,
+        started_at=start_ts,
+        submitted_at=end_ts,
+        graded_at=None if manual_review else end_ts,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
 
     quiz_attempt = QuizAttempt(
         user_id=current_user.id,
@@ -184,9 +210,11 @@ async def submit_quiz(
         update_date=str(datetime.now(UTC)),
     )
 
+    db_session.add(canonical_submission)
     db_session.add(quiz_attempt)
     db_session.commit()
     db_session.refresh(quiz_attempt)
+    progress_submissions.sync_quiz_attempt(quiz_attempt, db_session)
 
     # Update question statistics
     await _update_question_stats(
@@ -212,7 +240,7 @@ async def submit_quiz(
             )
             xp_awarded = xp_result.get("amount", 0)
             triggered_level_up = xp_result.get("level_up", False)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # Log but don't fail the submission
             logger.warning(f"Failed to award XP: {e}")
 

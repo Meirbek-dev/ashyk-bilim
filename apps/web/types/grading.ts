@@ -37,6 +37,73 @@ export type BatchGradeRequest = components['schemas']['BatchGradeRequest'];
 export type BatchGradeResultItem = components['schemas']['BatchGradeResultItem'];
 export type BatchGradeResponse = components['schemas']['BatchGradeResponse'];
 
+export type ActivityProgressState =
+  | 'NOT_STARTED'
+  | 'IN_PROGRESS'
+  | 'SUBMITTED'
+  | 'NEEDS_GRADING'
+  | 'RETURNED'
+  | 'GRADED'
+  | 'PASSED'
+  | 'FAILED'
+  | 'COMPLETED';
+
+export interface GradebookActivity {
+  id: number;
+  activity_uuid: string;
+  name: string;
+  activity_type: string;
+  assessment_type?: AssessmentType | null;
+  order: number;
+  due_at?: string | null;
+}
+
+export interface GradebookStudent {
+  id: number;
+  user_uuid: string;
+  username: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email: string;
+}
+
+export interface GradebookCell {
+  user_id: number;
+  activity_id: number;
+  state: ActivityProgressState;
+  score?: number | null;
+  passed?: boolean | null;
+  is_late: boolean;
+  teacher_action_required: boolean;
+  attempt_count: number;
+  latest_submission_uuid?: string | null;
+  latest_submission_status?: string | null;
+  submitted_at?: string | null;
+  graded_at?: string | null;
+  completed_at?: string | null;
+  due_at?: string | null;
+  status_reason?: string | null;
+}
+
+export interface GradebookSummary {
+  student_count: number;
+  activity_count: number;
+  needs_grading_count: number;
+  overdue_count: number;
+  not_started_count: number;
+  completed_count: number;
+}
+
+export interface GradebookResponse {
+  course_uuid: string;
+  course_id: number;
+  course_name: string;
+  students: GradebookStudent[];
+  activities: GradebookActivity[];
+  cells: GradebookCell[];
+  summary: GradebookSummary;
+}
+
 // ── Answer payload shapes (frontend-only, not in OpenAPI schema) ──────────────
 
 export interface QuizAnswer {

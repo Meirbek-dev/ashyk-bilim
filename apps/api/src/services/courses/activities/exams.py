@@ -48,6 +48,7 @@ from src.security.rbac import (
     PermissionDenied,
     ResourceAccessDenied,
 )
+from src.services.progress import submissions as progress_submissions
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +125,7 @@ async def create_exam(
     try:
         validated_settings = ExamSettingsBase.model_validate(exam_object.settings or {})
         settings_dict = validated_settings.model_dump()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"Неверные настройки: {e}")
 
     # Create exam
@@ -249,7 +250,7 @@ async def update_exam(
                 update_data.get("settings") or {}
             )
             update_data["settings"] = validated_settings.model_dump()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             raise HTTPException(status_code=400, detail=f"Неверные настройки: {e}")
 
     for key, value in update_data.items():
@@ -326,7 +327,7 @@ async def create_exam_with_activity(
     try:
         validated_settings = ExamSettingsBase.model_validate(exam_object.settings or {})
         settings_dict = validated_settings.model_dump()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"Неверные настройки: {e}")
 
     # Create activity
@@ -740,6 +741,7 @@ async def start_exam_attempt(
     db_session.add(attempt)
     db_session.commit()
     db_session.refresh(attempt)
+    progress_submissions.sync_exam_attempt(attempt, db_session)
 
     return ExamAttemptRead.model_validate(attempt)
 
@@ -786,8 +788,8 @@ async def _grade_and_finalize_attempt(
         try:
             if check_answer_correctness(question, user_answer):
                 total_score += question.points
-        except Exception as e:
-            logger.exception(f"Error validating answer for question {question_id}: {e}")
+        except Exception:
+            logger.exception("Error validating answer for question %s", question_id)
             continue
 
     now = _utc_now_iso()
@@ -824,8 +826,8 @@ async def _grade_and_finalize_attempt(
                     source_id=f"exam_perfect_{attempt.attempt_uuid}",
                     idempotency_key=f"exam_perfect_{attempt.attempt_uuid}",
                 )
-        except Exception as e:
-            logger.exception(f"Failed to award XP for exam {attempt.attempt_uuid}: {e}")
+        except Exception:
+            logger.exception("Failed to award XP for exam %s", attempt.attempt_uuid)
 
         # Mark activity as complete only if score percentage exceeds 50%
         if percentage > 50:
@@ -835,9 +837,10 @@ async def _grade_and_finalize_attempt(
                     await mark_exam_complete(
                         request, exam.activity_id, user_id, db_session
                     )
-                except Exception as e:
+                except Exception:
                     logger.exception(
-                        f"Failed to mark exam complete for attempt {attempt.attempt_uuid}: {e}"
+                        "Failed to mark exam complete for attempt %s",
+                        attempt.attempt_uuid,
                     )
 
 
@@ -914,13 +917,12 @@ async def submit_exam_attempt(
         )
         db_session.commit()
         db_session.refresh(attempt)
+        progress_submissions.sync_exam_attempt(attempt, db_session)
         return ExamAttemptRead.model_validate(attempt)
 
-    except Exception as e:
+    except Exception:
         db_session.rollback()
-        logger.error(
-            f"Failed to submit exam attempt {attempt_uuid}: {e}", exc_info=True
-        )
+        logger.exception("Failed to submit exam attempt %s", attempt_uuid)
         raise HTTPException(
             status_code=500,
             detail="Не удалось отправить экзамен. Пожалуйста, попробуйте ещё раз.",
@@ -1014,11 +1016,13 @@ async def record_violation(
             )
             db_session.commit()
             db_session.refresh(attempt)
+            progress_submissions.sync_exam_attempt(attempt, db_session)
             return ExamAttemptRead.model_validate(attempt)
 
     db_session.add(attempt)
     db_session.commit()
     db_session.refresh(attempt)
+    progress_submissions.sync_exam_attempt(attempt, db_session)
 
     return ExamAttemptRead.model_validate(attempt)
 
@@ -1343,7 +1347,7 @@ async def get_all_exam_attempts(
                 total_seconds = int((end - start).total_seconds())
                 duration_seconds = total_seconds
                 duration_minutes = int(total_seconds / 60)
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
 
         result.append({
@@ -1551,7 +1555,7 @@ async def import_questions_csv(
             imported_count += 1
             next_order_index += 1
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors.append(f"Строка {row_num}: {e!s}")
 
     db_session.commit()

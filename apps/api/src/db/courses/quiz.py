@@ -16,6 +16,10 @@ class QuizAttempt(SQLModelStrictBaseModel, table=True):
     QuizAttempt model representing a student's quiz attempt.
 
     Tracks completion status, score, timing, violations, and idempotency.
+
+    Legacy compatibility table: new features must write canonical
+    src.db.grading.submissions.Submission rows and ActivityProgress first.
+    QuizAttempt writes are allowed only inside legacy route adapters.
     """
 
     __tablename__ = "quiz_attempt"

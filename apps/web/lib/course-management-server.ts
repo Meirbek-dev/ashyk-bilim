@@ -84,6 +84,7 @@ export async function requireCourseWorkspaceStageAccess(
     overview: capabilities.canViewWorkspace,
     details: capabilities.canEditDetails,
     curriculum: capabilities.canEditCurriculum,
+    gradebook: capabilities.canReviewCourse,
     access: capabilities.canManageSettings,
     collaboration: capabilities.canManageCollaboration,
     certificate: capabilities.canManageCertificate,

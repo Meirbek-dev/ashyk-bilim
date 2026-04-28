@@ -36,6 +36,7 @@ from src.db.users import PublicUser, User
 from src.security.rbac import PermissionChecker
 from src.services.gamification.service import award_xp as _gamification_award_xp
 from src.services.grading.assignment_breakdown import build_effective_grading_breakdown
+from src.services.progress import submissions as progress_submissions
 
 logger = logging.getLogger(__name__)
 
@@ -599,6 +600,13 @@ def _save_teacher_grade(
     db_session.commit()
     db_session.refresh(submission)
 
+    if requested_status == SubmissionStatus.PUBLISHED:
+        progress_submissions.publish_grade(submission, db_session)
+    elif requested_status == SubmissionStatus.RETURNED:
+        progress_submissions.return_submission(submission, db_session)
+    else:
+        progress_submissions.grade_submission(submission, db_session)
+
     # Award XP when a grade is published and the student passed.
     # The idempotency key ensures this is safe to call multiple times
     # (e.g., re-publishing after a recall) without double-awarding.
@@ -700,6 +708,6 @@ def _award_xp_on_publish(
             idempotency_key=f"submission_{submission_uuid}",
         )
         db_session.commit()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning("Failed to award XP for submission %s: %s", submission_uuid, e)
         db_session.rollback()

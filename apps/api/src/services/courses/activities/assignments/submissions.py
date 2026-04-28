@@ -31,7 +31,7 @@ from src.services.courses.activities.assignments._queries import (
     _get_open_assignment_draft,
 )
 from src.services.grading.assignment_breakdown import build_assignment_breakdown
-
+from src.services.progress import submissions as progress_submissions
 
 # ── Access guard ───────────────────────────────────────────────────────────────
 
@@ -140,6 +140,10 @@ def _get_or_create_draft(
 
 
 def _assignment_due_deadline(assignment: Assignment) -> datetime | None:
+    if assignment.due_at is None:
+        return None
+    if assignment.due_at.tzinfo is None:
+        return assignment.due_at.replace(tzinfo=UTC)
     return assignment.due_at
 
 
@@ -189,6 +193,7 @@ async def save_assignment_draft_submission(
     db_session.add(draft)
     db_session.commit()
     db_session.refresh(draft)
+    progress_submissions.save_activity_draft(draft, db_session)
     return SubmissionRead.model_validate(draft)
 
 
@@ -198,6 +203,8 @@ async def submit_assignment_draft_submission(
     current_user: PublicUser,
     db_session: Session,
 ) -> SubmissionRead:
+    # Legacy URL adapter: keep the assignment-specific route, but project every
+    # write through the canonical submission/progress service below.
     assignment, activity, course = _get_assignment_context(assignment_uuid, db_session)
     _require_assignment_submit_access(current_user, course, db_session)
 
@@ -229,4 +236,5 @@ async def submit_assignment_draft_submission(
     db_session.add(draft)
     db_session.commit()
     db_session.refresh(draft)
+    progress_submissions.submit_activity(draft, db_session)
     return SubmissionRead.model_validate(draft)

@@ -28,6 +28,7 @@ from src.services.gamification.service import award_xp as _gamification_award_xp
 from src.services.grading.assignment_breakdown import build_effective_grading_breakdown
 from src.services.grading.grader import grade_submission
 from src.services.grading.settings_loader import AssessmentSettings
+from src.services.progress import submissions as progress_submissions
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ async def start_submission(
     ).first()
 
     if existing_draft:
+        progress_submissions.start_activity_submission(existing_draft, db_session)
         return SubmissionRead.model_validate(existing_draft)
 
     attempt_number = (
@@ -96,6 +98,7 @@ async def start_submission(
     db_session.add(submission)
     db_session.commit()
     db_session.refresh(submission)
+    progress_submissions.start_activity_submission(submission, db_session)
     return SubmissionRead.model_validate(submission)
 
 
@@ -165,6 +168,7 @@ async def submit_assessment(
         now=now,
         db_session=db_session,
     )
+    progress_submissions.submit_activity(draft, db_session)
 
     passed = (draft.auto_score or 0) >= 50.0
     if (
@@ -399,7 +403,7 @@ def _award_xp_safe(
             idempotency_key=f"submission_{submission_uuid}",
         )
         db_session.commit()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning("Failed to award XP for submission %s: %s", submission_uuid, e)
         db_session.rollback()
 

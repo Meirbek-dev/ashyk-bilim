@@ -20,6 +20,7 @@ import {
   FileCog,
   FileStack,
   Globe,
+  LayoutDashboard,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
@@ -65,6 +66,12 @@ function CourseWorkspaceChrome({
       label: t('tabs.content'),
       icon: FileStack,
       capability: 'canEditCurriculum',
+    },
+    {
+      key: 'gradebook',
+      label: t('tabs.gradebook'),
+      icon: LayoutDashboard,
+      capability: 'canReviewCourse',
     },
     { key: 'access', label: t('tabs.settings'), icon: Globe, capability: 'canManageSettings' },
     {

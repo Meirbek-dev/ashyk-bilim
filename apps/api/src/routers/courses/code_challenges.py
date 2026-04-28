@@ -44,6 +44,13 @@ from src.db.courses.code_challenges import (
     TestRunResponse,
 )
 from src.db.courses.courses import Course
+from src.db.grading.submissions import (
+    AssessmentType,
+    Submission,
+)
+from src.db.grading.submissions import (
+    SubmissionStatus as GradingSubmissionStatus,
+)
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import AnonymousUser, PublicUser, User
 from src.infra.db.session import get_db_session
@@ -68,6 +75,7 @@ from src.services.code_challenges.sanitize import (
     sanitize_stderr,
     sanitize_stdout,
 )
+from src.services.progress import submissions as progress_submissions
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -353,13 +361,32 @@ async def submit_code_challenge(
     except Judge0Error, Judge0UnavailableError:
         language_name = f"Language {submission.language_id}"
 
-    # Create submission record
+    # Legacy adapter: create canonical Submission first, then the CodeSubmission
+    # row required by the Judge0 processing path. New features should not write
+    # CodeSubmission directly.
     now = datetime.now().isoformat()
     submission_uuid = f"submission_{ULID()}"
 
     # Combine all test cases
     all_tests = settings.visible_tests + settings.hidden_tests
 
+    canonical_submission = Submission(
+        submission_uuid=submission_uuid,
+        assessment_type=AssessmentType.CODE_CHALLENGE,
+        activity_id=activity.id,
+        user_id=current_user.id,
+        status=GradingSubmissionStatus.PENDING,
+        attempt_number=1,
+        answers_json={
+            "language_id": submission.language_id,
+            "language_name": language_name,
+            "code_submission_uuid": submission_uuid,
+        },
+        grading_json={},
+        submitted_at=datetime.now(),
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
+    )
     code_submission = CodeSubmission(
         submission_uuid=submission_uuid,
         activity_id=activity.id,
@@ -373,9 +400,11 @@ async def submit_code_challenge(
         updated_at=now,
     )
 
+    db_session.add(canonical_submission)
     db_session.add(code_submission)
     db_session.commit()
     db_session.refresh(code_submission)
+    progress_submissions.sync_code_challenge_submission(code_submission, db_session)
 
     # Process submission in background
     background_tasks.add_task(
@@ -416,12 +445,14 @@ async def process_submission(
         submission.status = SubmissionStatus.PROCESSING
         submission.updated_at = datetime.now().isoformat()
         db_session.commit()
+        progress_submissions.sync_code_challenge_submission(submission, db_session)
 
         # Check Judge0 health
         if not await judge0_service.health_check():
             submission.status = SubmissionStatus.PENDING_JUDGE0
             submission.updated_at = datetime.now().isoformat()
             db_session.commit()
+            progress_submissions.sync_code_challenge_submission(submission, db_session)
             logger.warning(
                 f"Judge0 unavailable, submission {submission_id} marked as pending"
             )
@@ -458,6 +489,7 @@ async def process_submission(
         submission.updated_at = datetime.now().isoformat()
 
         db_session.commit()
+        progress_submissions.sync_code_challenge_submission(submission, db_session)
 
         # Award XP if challenge completed
         if passed_tests == len(test_cases) and len(test_cases) > 0:
@@ -471,17 +503,19 @@ async def process_submission(
             submission.status = SubmissionStatus.PENDING_JUDGE0
             submission.updated_at = datetime.now().isoformat()
             db_session.commit()
+            progress_submissions.sync_code_challenge_submission(submission, db_session)
         logger.warning(
             f"Judge0 unavailable during processing of submission {submission_id}"
         )
 
-    except Exception as e:
-        logger.exception(f"Error processing submission {submission_id}: {e}")
+    except Exception:
+        logger.exception("Error processing submission %s", submission_id)
         submission = db_session.get(CodeSubmission, submission_id)
         if submission:
             submission.status = SubmissionStatus.FAILED
             submission.updated_at = datetime.now().isoformat()
             db_session.commit()
+            progress_submissions.sync_code_challenge_submission(submission, db_session)
 
     finally:
         db_session.close()
@@ -518,8 +552,8 @@ def award_challenge_xp(submission: CodeSubmission, db_session: Session):
             f"Awarding {xp_amount} XP to user {submission.user_id} for challenge completion"
         )
 
-    except Exception as e:
-        logger.exception(f"Error awarding XP: {e}")
+    except Exception:
+        logger.exception("Error awarding XP")
 
 
 @router.post("/{activity_uuid}/test", response_model=TestRunResponse)

@@ -226,6 +226,12 @@ class Submission(SubmissionBase, table=True):
             "user_id",
             "status",
         ),
+        Index(
+            "idx_submission_policy_user_attempt",
+            "assessment_policy_id",
+            "user_id",
+            "attempt_number",
+        ),
     )
 
     id: int | None = SQLField(default=None, primary_key=True)
@@ -242,6 +248,14 @@ class Submission(SubmissionBase, table=True):
 
     activity_id: int = SQLField(
         sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE"))
+    )
+    assessment_policy_id: int | None = SQLField(
+        default=None,
+        sa_column=Column(
+            "assessment_policy_id",
+            ForeignKey("assessment_policy.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
     )
     user_id: int = SQLField(
         sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE"))

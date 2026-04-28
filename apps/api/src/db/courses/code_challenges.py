@@ -70,7 +70,7 @@ class Judge0Status(int, Enum):
     EXEC_FORMAT_ERROR = 14
 
     @classmethod
-    def from_code(cls, code: int) -> "Judge0Status":
+    def from_code(cls, code: int) -> Judge0Status:
         """Get status from code, defaulting to INTERNAL_ERROR for unknown codes"""
         try:
             return cls(code)
@@ -184,7 +184,7 @@ class CodeChallengeSettings(PydanticStrictBaseModel):
             return v
         try:
             val = int(v)
-        except Exception:
+        except TypeError, ValueError:
             msg = "memory_limit must be an integer number of MB"
             raise ValueError(msg)
         # Clamp to [64, 2048] MB to prevent too-low values that break V8 and too-high values
@@ -222,7 +222,12 @@ class CodeSubmissionBase(SQLModelStrictBaseModel):
 
 
 class CodeSubmission(CodeSubmissionBase, table=True):
-    """Database table model for code submissions"""
+    """Legacy database table model for code submissions.
+
+    New features must write canonical src.db.grading.submissions.Submission
+    rows and ActivityProgress first. This table remains as the Judge0 adapter
+    record while old code-challenge URLs are supported.
+    """
 
     __tablename__ = "code_submission"
 

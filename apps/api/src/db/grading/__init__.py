@@ -1,3 +1,11 @@
+from src.db.grading.progress import (
+    ActivityProgress,
+    ActivityProgressState,
+    AssessmentCompletionRule,
+    AssessmentGradingMode,
+    AssessmentPolicy,
+    CourseProgress,
+)
 from src.db.grading.schemas import (
     AssignmentAnswers,
     AssignmentTaskAnswer,
@@ -24,6 +32,11 @@ from src.db.grading.submissions import (
 )
 
 __all__ = [
+    "ActivityProgress",
+    "ActivityProgressState",
+    "AssessmentCompletionRule",
+    "AssessmentGradingMode",
+    "AssessmentPolicy",
     "AssessmentType",
     "AssignmentAnswers",
     "AssignmentTaskAnswer",
@@ -31,6 +44,7 @@ __all__ = [
     "BatchGradeRequest",
     "BatchGradeResponse",
     "BatchGradeResultItem",
+    "CourseProgress",
     "GradedItem",
     "GradingBreakdown",
     "ItemFeedback",
