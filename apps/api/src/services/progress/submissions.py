@@ -77,6 +77,7 @@ def recalculate_activity_progress(
     db_session: Session,
     *,
     commit: bool = True,
+    update_course_progress: bool = True,
 ) -> ActivityProgress | None:
     activity = db_session.get(Activity, activity_id)
     if activity is None or activity.course_id is None:
@@ -107,12 +108,13 @@ def recalculate_activity_progress(
     _apply_progress_from_submissions(progress, policy, submissions)
     db_session.add(progress)
 
-    recalculate_course_progress(
-        activity.course_id,
-        user_id,
-        db_session,
-        commit=False,
-    )
+    if update_course_progress:
+        recalculate_course_progress(
+            activity.course_id,
+            user_id,
+            db_session,
+            commit=False,
+        )
 
     if commit:
         db_session.commit()
@@ -286,8 +288,19 @@ def backfill_activity_progress(
                 user_id,
                 db_session,
                 commit=False,
+                update_course_progress=False,
             )
             rows += 1
+
+    db_session.flush()
+    for repaired_course_id, user_ids in user_ids_by_course.items():
+        for user_id in user_ids:
+            recalculate_course_progress(
+                repaired_course_id,
+                user_id,
+                db_session,
+                commit=False,
+            )
 
     if commit:
         db_session.commit()

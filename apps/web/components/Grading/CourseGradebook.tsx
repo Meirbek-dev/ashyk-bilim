@@ -82,7 +82,7 @@ function exportGradebookCsv(data: CourseGradebookResponse) {
 }
 
 export default function CourseGradebook({ courseUuid }: CourseGradebookProps) {
-  const { data, isLoading, refetch } = useQuery(courseGradebookQueryOptions(courseUuid));
+  const { data, error, isError, isLoading, refetch } = useQuery(courseGradebookQueryOptions(courseUuid));
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ActivityProgressState | 'all'>('all');
   const [activityTypeFilter, setActivityTypeFilter] = useState('all');
@@ -166,6 +166,17 @@ export default function CourseGradebook({ courseUuid }: CourseGradebookProps) {
 
   if (isLoading) {
     return <div className="text-muted-foreground text-sm">Loading gradebook...</div>;
+  }
+
+  if (isError) {
+    return (
+      <div
+        role="alert"
+        className="text-destructive text-sm"
+      >
+        {error instanceof Error ? error.message : 'Failed to load gradebook.'}
+      </div>
+    );
   }
 
   if (!data) {

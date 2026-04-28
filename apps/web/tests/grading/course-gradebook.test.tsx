@@ -6,12 +6,16 @@ import CourseGradebook from '@/components/Grading/CourseGradebook';
 import type { CourseGradebookResponse } from '@/types/grading';
 
 let gradebook: CourseGradebookResponse;
+let queryState: {
+  data?: CourseGradebookResponse;
+  error?: Error;
+  isError: boolean;
+  isLoading: boolean;
+  refetch: () => void;
+};
 
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: () => ({
-    data: gradebook,
-    isLoading: false,
-  }),
+  useQuery: () => queryState,
 }));
 
 vi.mock('@/features/grading/queries/grading.query', () => ({
@@ -137,6 +141,12 @@ function baseGradebook(): CourseGradebookResponse {
 describe('CourseGradebook', () => {
   beforeEach(() => {
     gradebook = baseGradebook();
+    queryState = {
+      data: gradebook,
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    };
   });
 
   it('renders matrix statuses from canonical activity progress cells', () => {
@@ -184,6 +194,20 @@ describe('CourseGradebook', () => {
     expect(screen.getAllByText('Assignment').length).toBeGreaterThan(0);
   });
 
+  it('shows the API error instead of staying in a loading state', () => {
+    queryState = {
+      error: new Error('Internal Server Error'),
+      isError: true,
+      isLoading: false,
+      refetch: vi.fn(),
+    };
+
+    render(<CourseGradebook courseUuid="course_gradebook" />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Internal Server Error');
+    expect(screen.queryByText('Loading gradebook...')).not.toBeInTheDocument();
+  });
+
   it('reflects returned cells becoming resubmitted and ready for grading', () => {
     const { rerender } = render(<CourseGradebook courseUuid="course_gradebook" />);
 
@@ -220,6 +244,7 @@ describe('CourseGradebook', () => {
         needs_grading_count: 2,
       },
     };
+    queryState.data = gradebook;
 
     rerender(<CourseGradebook courseUuid="course_gradebook" />);
 

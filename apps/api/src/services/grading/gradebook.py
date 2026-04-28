@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from src.db.courses.activities import Activity
@@ -39,7 +40,10 @@ async def get_course_gradebook(
     course = _get_course_or_404(course_uuid, db_session)
     _require_gradebook_access(course, current_user, db_session)
 
-    backfill_activity_progress(db_session, course_id=course.id, commit=True)
+    try:
+        backfill_activity_progress(db_session, course_id=course.id, commit=True)
+    except IntegrityError:
+        db_session.rollback()
 
     activities = _course_activities(course.id, db_session)
     students = _course_students(course, activities, db_session)
