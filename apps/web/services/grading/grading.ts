@@ -4,6 +4,8 @@ import type {
   AssessmentType,
   BatchGradeItem,
   BatchGradeResponse,
+  InlineItemFeedback,
+  InlineItemFeedbackInput,
   Submission,
   SubmissionsPage,
   SubmissionStats,
@@ -132,6 +134,51 @@ export async function batchGradeSubmissions(grades: BatchGradeItem[]): Promise<B
 
   revalidateTag('submissions', 'max');
   return meta.data as BatchGradeResponse;
+}
+
+export async function getInlineFeedback(submissionUuid: string): Promise<InlineItemFeedback[]> {
+  const res = await apiFetch(`grading/submissions/${submissionUuid}/feedback`, {
+    next: { tags: ['submissions'] },
+  });
+  const meta = await getResponseMetadata(res);
+  if (!meta.success) return [];
+  return meta.data as InlineItemFeedback[];
+}
+
+export async function createInlineFeedback(
+  submissionUuid: string,
+  feedback: InlineItemFeedbackInput,
+): Promise<InlineItemFeedback> {
+  const res = await apiFetch(`grading/submissions/${submissionUuid}/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(feedback),
+  });
+  const meta = await getResponseMetadata(res);
+  if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to create feedback');
+  revalidateTag('submissions', 'max');
+  return meta.data as InlineItemFeedback;
+}
+
+export async function updateInlineFeedback(
+  feedbackId: number,
+  feedback: Partial<InlineItemFeedbackInput>,
+): Promise<InlineItemFeedback> {
+  const res = await apiFetch(`grading/feedback/${feedbackId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(feedback),
+  });
+  const meta = await getResponseMetadata(res);
+  if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to update feedback');
+  revalidateTag('submissions', 'max');
+  return meta.data as InlineItemFeedback;
+}
+
+export async function deleteInlineFeedback(feedbackId: number): Promise<void> {
+  const res = await apiFetch(`grading/feedback/${feedbackId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete feedback');
+  revalidateTag('submissions', 'max');
 }
 
 export async function exportGradesCSV(activityId: number): Promise<string> {

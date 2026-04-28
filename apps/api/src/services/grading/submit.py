@@ -9,6 +9,7 @@ Each concern is isolated in a private helper so it can be tested independently:
 
 import logging
 from datetime import UTC, datetime
+from math import ceil
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select
@@ -16,6 +17,9 @@ from ulid import ULID
 
 from src.db.courses.activities import Activity
 from src.db.gamification import XPSource
+from src.db.grading.entries import GradingEntry
+from src.db.grading.overrides import StudentPolicyOverride
+from src.db.grading.progress import AssessmentPolicy, GradeReleaseMode
 from src.db.grading.submissions import (
     AssessmentType,
     Submission,
@@ -65,6 +69,17 @@ async def start_submission(
     activity = _get_activity_or_404(activity_id, db_session)
     _require_permission(current_user, activity, assessment_type, db_session)
 
+    policy = _get_assessment_policy(activity_id, db_session)
+    override = _active_policy_override(policy, current_user.id, db_session)
+    _enforce_attempt_limit(
+        activity_id,
+        current_user.id,
+        None,
+        db_session,
+        policy=policy,
+        override=override,
+    )
+
     existing_draft = db_session.exec(
         select(Submission).where(
             Submission.activity_id == activity_id,
@@ -112,6 +127,7 @@ async def submit_assessment(
     db_session: Session,
     *,
     violation_count: int = 0,
+    submission_uuid: str | None = None,
 ) -> SubmissionRead:
     """
     Submit an assessment attempt and auto-grade where possible.
@@ -130,9 +146,25 @@ async def submit_assessment(
     activity = _get_activity_or_404(activity_id, db_session)
     _require_permission(current_user, activity, assessment_type, db_session)
 
-    draft = _get_or_create_draft(activity_id, assessment_type, current_user, db_session)
+    policy = _get_assessment_policy(activity_id, db_session)
+    override = _active_policy_override(policy, current_user.id, db_session)
 
-    _enforce_attempt_limit(activity_id, current_user.id, settings, db_session)
+    draft = _get_or_create_draft(
+        activity_id,
+        assessment_type,
+        current_user,
+        db_session,
+        submission_uuid=submission_uuid,
+    )
+
+    _enforce_attempt_limit(
+        activity_id,
+        current_user.id,
+        settings,
+        db_session,
+        policy=policy,
+        override=override,
+    )
     _enforce_time_limit(draft, settings)
 
     violation_exceeded = _check_violations(settings, violation_count)
@@ -154,7 +186,18 @@ async def submit_assessment(
     )
 
     now = datetime.now(UTC)
-    is_late = _detect_late(settings.due_date_iso, now)
+    due_at = _effective_due_at(settings, policy, override)
+    is_late = due_at is not None and now > due_at
+    if is_late and policy is not None and not policy.allow_late:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Late submissions are not allowed for this activity",
+        )
+    late_penalty_pct = (
+        0.0
+        if override is not None and override.waive_late_penalty
+        else _calculate_late_penalty(now, due_at, policy)
+    )
     final_auto_score = 0.0 if violation_exceeded else result.auto_score
     new_status = _resolve_status(assessment_type, result)
 
@@ -165,8 +208,10 @@ async def submit_assessment(
         status=new_status,
         auto_score=final_auto_score,
         is_late=is_late,
+        late_penalty_pct=late_penalty_pct,
         now=now,
         db_session=db_session,
+        policy=policy,
     )
     progress_submissions.submit_activity(draft, db_session)
 
@@ -192,6 +237,8 @@ def _get_or_create_draft(
     assessment_type: AssessmentType,
     current_user: PublicUser,
     db_session: Session,
+    *,
+    submission_uuid: str | None = None,
 ) -> Submission:
     """
     Return the open DRAFT for this user/activity, or create one.
@@ -200,6 +247,27 @@ def _get_or_create_draft(
     calling start_submission first. All other types require the DRAFT to
     already exist (created by start_submission).
     """
+    if submission_uuid is not None:
+        draft = db_session.exec(
+            select(Submission).where(
+                Submission.submission_uuid == submission_uuid,
+                Submission.activity_id == activity_id,
+                Submission.user_id == current_user.id,
+                Submission.assessment_type == assessment_type,
+            )
+        ).first()
+        if draft is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Submission not found",
+            )
+        if draft.status != SubmissionStatus.DRAFT:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Submission is not a DRAFT (current status: {draft.status})",
+            )
+        return draft
+
     draft = db_session.exec(
         select(Submission).where(
             Submission.activity_id == activity_id,
@@ -258,10 +326,19 @@ def _count_previous_attempts(
 def _enforce_attempt_limit(
     activity_id: int,
     user_id: int,
-    settings: AssessmentSettings,
+    settings: AssessmentSettings | None,
     db_session: Session,
+    *,
+    policy: AssessmentPolicy | None = None,
+    override: StudentPolicyOverride | None = None,
 ) -> None:
-    if not settings.max_attempts:
+    max_attempts = settings.max_attempts if settings is not None else None
+    if policy is not None:
+        max_attempts = policy.max_attempts
+    if override is not None and override.max_attempts_override is not None:
+        max_attempts = override.max_attempts_override
+
+    if not max_attempts:
         return
     # Count all non-DRAFT submissions — PUBLISHED and RETURNED must count too,
     # otherwise students bypass the limit by repeatedly getting submissions returned.
@@ -272,10 +349,10 @@ def _enforce_attempt_limit(
             Submission.status != SubmissionStatus.DRAFT,
         )
     ).all()
-    if len(completed) >= settings.max_attempts:
+    if len(completed) >= max_attempts:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Maximum attempts ({settings.max_attempts}) reached",
+            detail=f"Maximum attempts ({max_attempts}) reached",
         )
 
 
@@ -342,6 +419,68 @@ def _detect_late(due_date_iso: str | None, now: datetime) -> bool:
         return False
 
 
+def _effective_due_at(
+    settings: AssessmentSettings,
+    policy: AssessmentPolicy | None,
+    override: StudentPolicyOverride | None,
+) -> datetime | None:
+    due_at = policy.due_at if policy is not None else None
+    if override is not None and override.due_at_override is not None:
+        due_at = override.due_at_override
+    if due_at is None and settings.due_date_iso:
+        try:
+            due_at = datetime.fromisoformat(settings.due_date_iso)
+        except ValueError:
+            return None
+    if due_at is None:
+        return None
+    return due_at if due_at.tzinfo else due_at.replace(tzinfo=UTC)
+
+
+def _calculate_late_penalty(
+    submitted_at: datetime,
+    due_at: datetime | None,
+    policy: AssessmentPolicy | None,
+) -> float:
+    """Return late penalty percentage for all supported LatePolicy types."""
+    if due_at is None or submitted_at <= due_at:
+        return 0.0
+    if policy is None or not policy.allow_late:
+        return 0.0
+
+    late_policy = policy.late_policy_json or {}
+    policy_type = str(late_policy.get("type", "NO_PENALTY")).upper()
+
+    if policy_type == "NO_PENALTY":
+        return 0.0
+    if policy_type == "FLAT_PERCENT":
+        return _clamp_pct(late_policy.get("percent", 0.0))
+    if policy_type == "PER_DAY":
+        seconds_late = max(0.0, (submitted_at - due_at).total_seconds())
+        days_late = max(1, ceil(seconds_late / 86400))
+        pct_per_day = _float_or_zero(late_policy.get("percent_per_day", 0.0))
+        max_pct = _clamp_pct(late_policy.get("max_pct", 100.0))
+        return min(max_pct, _clamp_pct(days_late * pct_per_day))
+    if policy_type == "ZERO_GRADE":
+        return 100.0
+    return 0.0
+
+
+def _float_or_zero(value: object) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _clamp_pct(value: object) -> float:
+    return max(0.0, min(100.0, _float_or_zero(value)))
+
+
+def _apply_late_penalty(score: float, penalty_pct: float) -> float:
+    return round(score * (1 - _clamp_pct(penalty_pct) / 100), 2)
+
+
 def _resolve_status(
     assessment_type: AssessmentType,
     result: object,
@@ -365,8 +504,10 @@ def _persist_submission(
     status: SubmissionStatus,
     auto_score: float,
     is_late: bool,
+    late_penalty_pct: float,
     now: datetime,
     db_session: Session,
+    policy: AssessmentPolicy | None,
 ) -> None:
     draft.answers_json = answers_payload
     draft.grading_json = result.breakdown.model_dump()
@@ -374,15 +515,81 @@ def _persist_submission(
         draft, db_session
     ).model_dump()
     draft.auto_score = auto_score
-    draft.final_score = auto_score if not result.needs_manual_review else None
+    draft.late_penalty_pct = late_penalty_pct
+    draft.final_score = (
+        _apply_late_penalty(auto_score, late_penalty_pct)
+        if not result.needs_manual_review
+        else None
+    )
     draft.status = status
     draft.is_late = is_late
     draft.submitted_at = now
     draft.graded_at = now if status == SubmissionStatus.GRADED else None
     draft.updated_at = now
     db_session.add(draft)
+    if not result.needs_manual_review and draft.id is not None:
+        db_session.add(
+            GradingEntry(
+                entry_uuid=f"entry_{ULID()}",
+                submission_id=draft.id,
+                graded_by=draft.user_id,
+                raw_score=float(auto_score),
+                penalty_pct=float(late_penalty_pct),
+                final_score=float(draft.final_score or 0),
+                breakdown=draft.grading_json,
+                overall_feedback=(
+                    draft.grading_json.get("feedback", "")
+                    if isinstance(draft.grading_json, dict)
+                    else ""
+                ),
+                grading_version=draft.grading_version,
+                created_at=now,
+                published_at=(
+                    now
+                    if policy is None
+                    or policy.grade_release_mode == GradeReleaseMode.IMMEDIATE
+                    else None
+                ),
+            )
+        )
     db_session.commit()
     db_session.refresh(draft)
+
+
+def _get_assessment_policy(
+    activity_id: int,
+    db_session: Session,
+) -> AssessmentPolicy | None:
+    return db_session.exec(
+        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)
+    ).first()
+
+
+def _active_policy_override(
+    policy: AssessmentPolicy | None,
+    user_id: int,
+    db_session: Session,
+) -> StudentPolicyOverride | None:
+    if policy is None or policy.id is None:
+        return None
+    now = datetime.now(UTC)
+    override = db_session.exec(
+        select(StudentPolicyOverride).where(
+            StudentPolicyOverride.policy_id == policy.id,
+            StudentPolicyOverride.user_id == user_id,
+        )
+    ).first()
+    if override is None:
+        return None
+    if override.expires_at is not None:
+        expires_at = (
+            override.expires_at
+            if override.expires_at.tzinfo
+            else override.expires_at.replace(tzinfo=UTC)
+        )
+        if expires_at <= now:
+            return None
+    return override
 
 
 def _award_xp_safe(

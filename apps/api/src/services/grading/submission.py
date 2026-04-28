@@ -20,6 +20,7 @@ from sqlmodel import Session, select
 from ulid import ULID
 
 from src.db.courses.activities import Activity
+from src.db.grading.overrides import StudentPolicyOverride
 from src.db.grading.progress import AssessmentPolicy
 from src.db.grading.submissions import (
     AssessmentType,
@@ -33,6 +34,11 @@ from src.services.progress import submissions as progress_submissions
 
 # ── Valid student-facing transitions ─────────────────────────────────────────
 # Kept narrow on purpose: the teacher-side transitions live in teacher.py.
+
+_STUDENT_TRANSITIONS: dict[SubmissionStatus, frozenset[SubmissionStatus]] = {
+    SubmissionStatus.DRAFT: frozenset({SubmissionStatus.PENDING}),
+    SubmissionStatus.RETURNED: frozenset({SubmissionStatus.DRAFT}),
+}
 
 _SUBMIT_PERMISSION: dict[AssessmentType, str] = {
     AssessmentType.QUIZ: "quiz:submit",
@@ -120,14 +126,7 @@ def create_resubmission_draft(
     """
     original = _get_own_submission_or_404(submission_uuid, current_user.id, db_session)
 
-    if original.status != SubmissionStatus.RETURNED:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                f"Only RETURNED submissions can be resubmitted "
-                f"(current status: {original.status})"
-            ),
-        )
+    _validate_transition(original.status, SubmissionStatus.DRAFT)
 
     activity = _get_activity_or_404(original.activity_id, db_session)
     _require_permission(
@@ -225,6 +224,48 @@ def _count_previous_attempts(
     )
 
 
+def _validate_transition(
+    current: SubmissionStatus,
+    requested: SubmissionStatus,
+) -> None:
+    current_status = SubmissionStatus(current)
+    requested_status = SubmissionStatus(requested)
+    allowed = _STUDENT_TRANSITIONS.get(current_status, frozenset())
+    if requested_status not in allowed:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Cannot transition from {current_status} to {requested_status}. "
+                f"Allowed transitions: {[s.value for s in allowed]}"
+            ),
+        )
+
+
+def _active_policy_override(
+    policy: AssessmentPolicy,
+    user_id: int,
+    db_session: Session,
+) -> StudentPolicyOverride | None:
+    now = datetime.now(UTC)
+    override = db_session.exec(
+        select(StudentPolicyOverride).where(
+            StudentPolicyOverride.policy_id == policy.id,
+            StudentPolicyOverride.user_id == user_id,
+        )
+    ).first()
+    if override is None:
+        return None
+    if override.expires_at is not None:
+        expires_at = (
+            override.expires_at
+            if override.expires_at.tzinfo
+            else override.expires_at.replace(tzinfo=UTC)
+        )
+        if expires_at <= now:
+            return None
+    return override
+
+
 def _enforce_attempt_limit_from_policy(
     activity_id: int,
     user_id: int,
@@ -241,12 +282,20 @@ def _enforce_attempt_limit_from_policy(
         select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)
     ).first()
 
-    if policy is None or policy.max_attempts is None:
+    if policy is None:
+        return
+
+    max_attempts = policy.max_attempts
+    override = _active_policy_override(policy, user_id, db_session)
+    if override is not None and override.max_attempts_override is not None:
+        max_attempts = override.max_attempts_override
+
+    if max_attempts is None:
         return  # no policy or unlimited attempts
 
     completed_count = _count_previous_attempts(activity_id, user_id, db_session)
-    if completed_count >= policy.max_attempts:
+    if completed_count >= max_attempts:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Maximum attempts ({policy.max_attempts}) reached",
+            detail=f"Maximum attempts ({max_attempts}) reached",
         )

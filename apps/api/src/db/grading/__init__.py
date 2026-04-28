@@ -1,3 +1,12 @@
+from src.db.grading.entries import GradingEntry, GradingEntryRead
+from src.db.grading.item_feedback import (
+    ItemFeedbackAnnotationType,
+    ItemFeedbackCreate,
+    ItemFeedbackEntry,
+    ItemFeedbackRead,
+    ItemFeedbackUpdate,
+)
+from src.db.grading.overrides import StudentPolicyOverride, StudentPolicyOverrideRead
 from src.db.grading.progress import (
     ActivityProgress,
     ActivityProgressState,
@@ -5,6 +14,7 @@ from src.db.grading.progress import (
     AssessmentGradingMode,
     AssessmentPolicy,
     CourseProgress,
+    GradeReleaseMode,
 )
 from src.db.grading.schemas import (
     AssignmentAnswers,
@@ -13,6 +23,7 @@ from src.db.grading.schemas import (
     BatchGradeRequest,
     BatchGradeResponse,
     BatchGradeResultItem,
+    BulkPublishGradesResponse,
     QuizAnswer,
     QuizAnswers,
 )
@@ -44,12 +55,23 @@ __all__ = [
     "BatchGradeRequest",
     "BatchGradeResponse",
     "BatchGradeResultItem",
+    "BulkPublishGradesResponse",
     "CourseProgress",
+    "GradeReleaseMode",
     "GradedItem",
     "GradingBreakdown",
+    "GradingEntry",
+    "GradingEntryRead",
     "ItemFeedback",
+    "ItemFeedbackAnnotationType",
+    "ItemFeedbackCreate",
+    "ItemFeedbackEntry",
+    "ItemFeedbackRead",
+    "ItemFeedbackUpdate",
     "QuizAnswer",
     "QuizAnswers",
+    "StudentPolicyOverride",
+    "StudentPolicyOverrideRead",
     "Submission",
     "SubmissionCreate",
     "SubmissionListResponse",

@@ -6188,6 +6188,7 @@
       "statusDraft": "Жоба",
       "statusPending": "Күтуде",
       "statusGraded": "Бағаланды",
+      "statusAwaitingPublication": "Жариялануды күтуде",
       "statusPublished": "Жарияланған",
       "statusReturned": "Қайтарылған",
       "score": "Баға",
@@ -6296,7 +6297,8 @@
       "correctAnswer": "Дұрыс жауап",
       "breakdown": "Жауаптар бойынша тіркелу",
       "pendingReview": "Тексеруді күтеді",
-      "waitingForGrade": "Баға күтілуде..."
+      "waitingForGrade": "Баға күтілуде...",
+      "gradePublishedToast": "Баға мен пікір жарияланды"
     },
     "SubmissionShell": {
       "bannerSubmittedTitle": "Жұмыс жіберілді",

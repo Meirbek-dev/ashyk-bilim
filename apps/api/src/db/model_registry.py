@@ -26,6 +26,7 @@ def import_orm_models() -> None:
     import src.db.courses.quiz
     import src.db.gamification
     import src.db.grading.entries
+    import src.db.grading.item_feedback
     import src.db.grading.overrides
     import src.db.grading.progress
     import src.db.grading.schemas

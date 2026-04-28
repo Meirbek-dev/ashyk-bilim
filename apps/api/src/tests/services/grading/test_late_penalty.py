@@ -10,9 +10,13 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from src.db.grading.progress import AssessmentPolicy, AssessmentGradingMode, AssessmentCompletionRule
+from src.db.grading.progress import (
+    AssessmentCompletionRule,
+    AssessmentGradingMode,
+    AssessmentPolicy,
+)
 from src.db.grading.submissions import AssessmentType
-from src.services.courses.activities.assignments.submissions import _calculate_late_penalty
+from src.services.grading.submit import _calculate_late_penalty
 
 # Fixed reference timestamps for deterministic testing
 DUE_AT = datetime(2026, 1, 10, 12, 0, 0, tzinfo=UTC)  # noon UTC on 2026-01-10
@@ -73,6 +77,11 @@ def test_no_penalty_returns_zero() -> None:
     assert _calculate_late_penalty(submitted_at, DUE_AT, p) == 0.0
 
 
+def test_submitted_exactly_on_due_at_returns_zero() -> None:
+    p = _policy(late_policy_json={"type": "ZERO_GRADE"})
+    assert _calculate_late_penalty(DUE_AT, DUE_AT, p) == 0.0
+
+
 # ── FLAT_PERCENT ──────────────────────────────────────────────────────────────
 
 
@@ -120,6 +129,16 @@ def test_per_day_one_minute_late_counts_as_one_day() -> None:
     assert _calculate_late_penalty(submitted_at, DUE_AT, p) == 10.0
 
 
+def test_per_day_one_second_late_counts_as_one_day() -> None:
+    p = _policy(late_policy_json={
+        "type": "PER_DAY",
+        "percent_per_day": 10.0,
+        "max_pct": 100.0,
+    })
+    submitted_at = DUE_AT + timedelta(seconds=1)
+    assert _calculate_late_penalty(submitted_at, DUE_AT, p) == 10.0
+
+
 def test_per_day_exactly_one_day_late() -> None:
     p = _policy(late_policy_json={
         "type": "PER_DAY",
@@ -128,9 +147,7 @@ def test_per_day_exactly_one_day_late() -> None:
     })
     submitted_at = DUE_AT + timedelta(hours=24)
     result = _calculate_late_penalty(submitted_at, DUE_AT, p)
-    # 24 h = 1 day → 10 %; +1 day rounding so may be 20 % depending on impl
-    # The implementation uses floor(seconds/86400)+1, so 24h → floor(1)+1 = 2 days
-    assert result == 20.0
+    assert result == 10.0
 
 
 def test_per_day_three_days_late() -> None:
@@ -140,8 +157,7 @@ def test_per_day_three_days_late() -> None:
         "max_pct": 100.0,
     })
     submitted_at = DUE_AT + timedelta(days=3)
-    # floor(259200/86400)+1 = 3+1 = 4 days → 40%
-    assert _calculate_late_penalty(submitted_at, DUE_AT, p) == 40.0
+    assert _calculate_late_penalty(submitted_at, DUE_AT, p) == 30.0
 
 
 def test_per_day_capped_by_max_pct() -> None:
@@ -151,7 +167,6 @@ def test_per_day_capped_by_max_pct() -> None:
         "max_pct": 50.0,
     })
     submitted_at = DUE_AT + timedelta(days=10)
-    # 11 days * 20% = 220% → capped at 50%
     assert _calculate_late_penalty(submitted_at, DUE_AT, p) == 50.0
 
 

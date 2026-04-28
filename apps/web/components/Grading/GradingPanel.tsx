@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 
 import type { GradedItem, ItemFeedback, Submission, TeacherGradeInput } from '@/types/grading';
 import SubmissionStatusBadge from './SubmissionStatusBadge';
+import InlineFeedback from './InlineFeedback';
 import { useGradingPanel } from '@/hooks/useGradingPanel';
 import { saveGrade } from '@services/grading/grading';
 import { canTeacherEditGrade } from '@/types/grading';
@@ -670,36 +671,19 @@ function AnswerItem({ item, index, itemFeedback, isEditable, onFeedbackChange, t
       ) : null}
 
       {isEditable ? (
-        <div className="space-y-2 border-t pt-3">
-          <div className="flex items-center gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs font-medium">{t('itemScore')}</Label>
-              <div className="flex items-center gap-1">
-                <Input
-                  type="number"
-                  min={0}
-                  max={item.max_score}
-                  step={0.5}
-                  placeholder="0"
-                  value={itemFeedback.score}
-                  onChange={(event) => onFeedbackChange('score', event.target.value)}
-                  className={cn('w-20 text-center text-xs', itemScoreInvalid && 'border-destructive')}
-                />
-                <span className="text-muted-foreground text-xs">/ {item.max_score}</span>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs font-medium">{t('itemFeedback')}</Label>
-            <Textarea
-              rows={1}
-              placeholder={t('itemFeedbackPlaceholder')}
-              value={itemFeedback.feedback}
-              onChange={(event) => onFeedbackChange('feedback', event.target.value)}
-              className="resize-none text-xs"
-            />
-          </div>
-        </div>
+        <InlineFeedback
+          score={itemFeedback.score}
+          maxScore={item.max_score}
+          feedback={itemFeedback.feedback}
+          scoreInvalid={itemScoreInvalid}
+          labels={{
+            score: t('itemScore'),
+            feedback: t('itemFeedback'),
+            feedbackPlaceholder: t('itemFeedbackPlaceholder'),
+          }}
+          onScoreChange={(value) => onFeedbackChange('score', value)}
+          onFeedbackChange={(value) => onFeedbackChange('feedback', value)}
+        />
       ) : null}
     </div>
   );

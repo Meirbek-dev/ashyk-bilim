@@ -96,7 +96,7 @@ export default function SubmissionShell({
   };
 
   // Show result breakdown when grade is visible to the student
-  const showResult = (status === 'PUBLISHED' || status === 'RETURNED') && submission;
+  const showResult = (status === 'GRADED' || status === 'PUBLISHED' || status === 'RETURNED') && submission;
 
   // Student can submit when there's no prior submission or it's a DRAFT
   const canSubmit = status === 'DRAFT' || status === null;
@@ -135,7 +135,10 @@ export default function SubmissionShell({
       {showResult && (
         <>
           <Separator />
-          <SubmissionResult submission={submission} />
+          <SubmissionResult
+            submission={submission}
+            onRefresh={() => void mutate()}
+          />
         </>
       )}
 

@@ -11,21 +11,59 @@
 
 import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 
 import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert';
 import type { Submission, GradedItem } from '@/types/grading';
 import { Card, CardContent } from '@components/ui/card';
 import { Badge } from '@components/ui/badge';
 import { cn } from '@/lib/utils';
+import { getAPIUrl } from '@services/config/config';
 
 interface SubmissionResultProps {
   submission: Submission;
+  onRefresh?: () => void | Promise<void>;
 }
 
-export default function SubmissionResult({ submission }: SubmissionResultProps) {
+export default function SubmissionResult({ submission, onRefresh }: SubmissionResultProps) {
   const t = useTranslations('Grading.Result');
   const breakdown = submission.grading_json;
   const score = submission.final_score;
+  const lastEventRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!submission.submission_uuid || typeof EventSource === 'undefined') return;
+
+    const source = new EventSource(
+      `${getAPIUrl()}grading/submissions/${submission.submission_uuid}/feedback-stream`,
+      { withCredentials: true },
+    );
+
+    const handleRefreshEvent = (event: MessageEvent<string>) => {
+      try {
+        const data = JSON.parse(event.data) as { event?: string; sent_at?: string };
+        const dedupeKey = `${data.event ?? event.type}:${data.sent_at ?? event.lastEventId}`;
+        if (lastEventRef.current === dedupeKey) return;
+        lastEventRef.current = dedupeKey;
+
+        if (event.type === 'grade.published') {
+          toast.success(t('gradePublishedToast'));
+        }
+        void onRefresh?.();
+      } catch {
+        void onRefresh?.();
+      }
+    };
+
+    source.addEventListener('grade.published', handleRefreshEvent);
+    source.addEventListener('submission.returned', handleRefreshEvent);
+    source.addEventListener('feedback.created', handleRefreshEvent);
+    source.addEventListener('feedback.updated', handleRefreshEvent);
+    source.addEventListener('feedback.deleted', handleRefreshEvent);
+
+    return () => source.close();
+  }, [onRefresh, submission.submission_uuid, t]);
 
   const passed = score != null && score >= 50;
   const scoreColor = score === null ? 'text-muted-foreground' : passed ? 'text-success' : 'text-destructive';

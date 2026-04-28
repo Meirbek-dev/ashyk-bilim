@@ -16,12 +16,12 @@ from sqlmodel import Session, select
 
 from src.auth.users import get_public_user
 from src.db.grading.entries import GradingEntry
-from src.db.grading.progress import AssessmentPolicy, GradeReleaseMode
 from src.db.grading.submissions import (
     AssessmentType,
     GradingBreakdown,
     Submission,
     SubmissionRead,
+    SubmissionStatus,
 )
 from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
@@ -30,7 +30,7 @@ from src.services.grading.submission import (
     create_resubmission_draft,
     start_submission_v2,
 )
-from src.services.grading.submit import start_submission, submit_assessment
+from src.services.grading.submit import submit_assessment
 
 router = APIRouter()
 
@@ -50,8 +50,7 @@ async def api_start_submission_legacy(
     endpoint enforces max_attempts from AssessmentPolicy rather than block
     content so attempt counting is consistent across all submit paths.
     """
-    return await start_submission(
-        request=request,
+    return start_submission_v2(
         activity_id=activity_id,
         assessment_type=assessment_type,
         current_user=current_user,
@@ -141,6 +140,18 @@ async def api_submit_by_uuid(
             detail="Submission not found",
         )
 
+    if submission.status != SubmissionStatus.DRAFT:
+        if submission.status in {
+            SubmissionStatus.PENDING,
+            SubmissionStatus.GRADED,
+            SubmissionStatus.PUBLISHED,
+        }:
+            return _apply_grade_visibility(submission, db_session)
+        raise HTTPException(
+            status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Submission is not submittable (current status: {submission.status})",
+        )
+
     settings = load_activity_settings(
         submission.activity_id, submission.assessment_type, db_session
     )
@@ -153,6 +164,7 @@ async def api_submit_by_uuid(
         current_user=current_user,
         db_session=db_session,
         violation_count=violation_count,
+        submission_uuid=submission_uuid,
     )
 
 
@@ -233,26 +245,15 @@ async def api_get_my_submission(
 
 
 def _apply_grade_visibility(submission: Submission, db_session: Session) -> SubmissionRead:
-    """Return a SubmissionRead, masking grade fields when BATCH mode is active.
+    """Return a SubmissionRead, masking grade fields until a grade is published.
 
-    For BATCH release mode: grades are only shown if a GradingEntry exists with
-    published_at IS NOT NULL for this submission.  Until the teacher runs
-    POST /grading/activities/{uuid}/publish-grades, the student sees only the
-    submission status, not the actual score or feedback.
+    Grades are only shown if a GradingEntry exists with published_at IS NOT NULL.
+    Legacy PUBLISHED submissions without ledger rows remain visible for backward
+    compatibility; draft GRADED rows are masked.
     """
     result = SubmissionRead.model_validate(submission)
 
-    policy = db_session.exec(
-        select(AssessmentPolicy).where(
-            AssessmentPolicy.activity_id == submission.activity_id
-        )
-    ).first()
-
-    # IMMEDIATE mode (or no policy) — return everything
-    if policy is None or policy.grade_release_mode != GradeReleaseMode.BATCH:
-        return result
-
-    # BATCH mode: check for a published GradingEntry
+    # Current mode: check for a published GradingEntry
     published_entry = db_session.exec(
         select(GradingEntry).where(
             GradingEntry.submission_id == submission.id,
@@ -261,7 +262,14 @@ def _apply_grade_visibility(submission: Submission, db_session: Session) -> Subm
     ).first()
 
     if published_entry is not None:
+        result.final_score = published_entry.final_score
+        result.late_penalty_pct = published_entry.penalty_pct
+        if isinstance(published_entry.breakdown, dict):
+            result.grading_json = GradingBreakdown(**published_entry.breakdown)
         return result  # grade is published — show it
+
+    if submission.status == SubmissionStatus.PUBLISHED:
+        return result
 
     # No published entry — mask scores and grading breakdown
     result.final_score = None

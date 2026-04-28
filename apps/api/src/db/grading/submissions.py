@@ -4,9 +4,9 @@ Unified Submission model for all assessment types.
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Self
 
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -170,6 +170,7 @@ class SubmissionRead(SubmissionBase):
     answers_json: dict = SQLField(default_factory=dict)
     grading_json: GradingBreakdown = SQLField(default_factory=GradingBreakdown)
     late_penalty_pct: float = 0.0
+    late_penalty_reason: str | None = None
     started_at: datetime | None = None
     submitted_at: datetime | None = None
     graded_at: datetime | None = None
@@ -180,6 +181,14 @@ class SubmissionRead(SubmissionBase):
 
     # Populated by the teacher list endpoint; None for student-facing endpoints
     user: SubmissionUser | None = None
+
+    @model_validator(mode="after")
+    def populate_late_penalty_reason(self) -> Self:
+        if self.is_late and self.late_penalty_pct > 0 and not self.late_penalty_reason:
+            self.late_penalty_reason = (
+                f"Late submission penalty applied: {self.late_penalty_pct:g}%"
+            )
+        return self
 
     @field_validator("grading_json", mode="before")
     @classmethod

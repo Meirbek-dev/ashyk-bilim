@@ -6173,6 +6173,7 @@
       "statusDraft": "Draft",
       "statusPending": "Pending",
       "statusGraded": "Graded",
+      "statusAwaitingPublication": "Awaiting publication",
       "statusPublished": "Published",
       "statusReturned": "Returned",
       "score": "Score",
@@ -6282,7 +6283,8 @@
       "correctAnswer": "Correct answer",
       "breakdown": "Answer breakdown",
       "pendingReview": "Pending review",
-      "waitingForGrade": "Waiting for teacher review"
+      "waitingForGrade": "Waiting for teacher review",
+      "gradePublishedToast": "Grade and feedback published"
     },
     "SubmissionShell": {
       "bannerSubmittedTitle": "Submitted",

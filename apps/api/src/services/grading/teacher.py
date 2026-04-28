@@ -39,6 +39,7 @@ from src.db.users import PublicUser, User
 from src.security.rbac import PermissionChecker
 from src.services.gamification.service import award_xp as _gamification_award_xp
 from src.services.grading.assignment_breakdown import build_effective_grading_breakdown
+from src.services.grading.events import publish_grading_event
 from src.services.progress import submissions as progress_submissions
 from src.services.progress.submissions import (
     _attach_policy,
@@ -425,6 +426,7 @@ async def save_grade(
         submission=submission,
         grade_input=grade_input,
         submission_uuid=submission_uuid,
+        current_user=current_user,
         db_session=db_session,
         expected_version=expected_version,
     )
@@ -501,6 +503,7 @@ async def batch_grade_submissions(
                 submission=submission,
                 grade_input=grade_input,
                 submission_uuid=grade.submission_uuid,
+                current_user=current_user,
                 db_session=db_session,
             )
             results.append(
@@ -541,6 +544,7 @@ def _save_teacher_grade(
     submission: Submission,
     grade_input: TeacherGradeInput,
     submission_uuid: str,
+    current_user: PublicUser,
     db_session: Session,
     expected_version: int | None = None,
 ) -> SubmissionRead:
@@ -622,7 +626,11 @@ def _save_teacher_grade(
 
     # ── Apply all writes and commit atomically ────────────────────────────────
     now = datetime.now(UTC)
-    submission.final_score = grade_input.final_score
+    raw_score = float(grade_input.final_score)
+    penalty_pct = float(submission.late_penalty_pct or 0)
+    final_score = round(raw_score * (1 - min(100.0, max(0.0, penalty_pct)) / 100), 2)
+
+    submission.final_score = final_score
     submission.status = requested_status
     submission.grading_json = updated_grading.model_dump()
     submission.graded_at = now
@@ -632,6 +640,26 @@ def _save_teacher_grade(
     # Ensure the assessment policy is attached before progress recalculation.
     _attach_policy(submission, db_session)
     db_session.add(submission)
+    if submission.id is not None:
+        db_session.add(
+            GradingEntry(
+                entry_uuid=f"entry_{ULID()}",
+                submission_id=submission.id,
+                graded_by=current_user.id,
+                raw_score=raw_score,
+                penalty_pct=penalty_pct,
+                final_score=final_score,
+                breakdown=updated_grading.model_dump(),
+                overall_feedback=grade_input.feedback,
+                grading_version=submission.grading_version,
+                created_at=now,
+                published_at=(
+                    now
+                    if requested_status == SubmissionStatus.PUBLISHED
+                    else None
+                ),
+            )
+        )
 
     # Recalculate ActivityProgress + CourseProgress in the same transaction.
     recalculate_activity_progress(
@@ -650,13 +678,34 @@ def _save_teacher_grade(
     if (
         current_status != SubmissionStatus.PUBLISHED
         and requested_status == SubmissionStatus.PUBLISHED
-        and grade_input.final_score >= 50.0
+        and final_score >= 50.0
     ):
         _award_xp_on_publish(
             user_id=submission.user_id,
             assessment_type=submission.assessment_type,
             submission_uuid=submission_uuid,
             db_session=db_session,
+        )
+
+    if requested_status == SubmissionStatus.PUBLISHED:
+        publish_grading_event(
+            "grade.published",
+            submission_uuid,
+            {
+                "submission_uuid": submission_uuid,
+                "final_score": final_score,
+                "published_at": now.isoformat(),
+            },
+        )
+    elif requested_status == SubmissionStatus.RETURNED:
+        publish_grading_event(
+            "submission.returned",
+            submission_uuid,
+            {
+                "submission_uuid": submission_uuid,
+                "feedback": grade_input.feedback,
+                "returned_at": now.isoformat(),
+            },
         )
 
     return SubmissionRead.model_validate(submission)
@@ -688,11 +737,14 @@ async def bulk_publish_grades(
         current_user.id, "assignment:grade", resource_owner_id=activity.creator_id
     )
 
-    # All PUBLISHED submissions for this activity
+    # All graded submissions for this activity
     submissions = db_session.exec(
         select(Submission).where(
             Submission.activity_id == activity_id,
-            Submission.status == SubmissionStatus.PUBLISHED,
+            Submission.status.in_([
+                SubmissionStatus.GRADED,
+                SubmissionStatus.PUBLISHED,
+            ]),
             Submission.id.is_not(None),
         )
     ).all()
@@ -721,16 +773,42 @@ async def bulk_publish_grades(
         if submission.id in already_published_ids:
             continue
 
+        latest_entry = db_session.exec(
+            select(GradingEntry)
+            .where(GradingEntry.submission_id == submission.id)
+            .order_by(desc(GradingEntry.created_at), desc(GradingEntry.id))
+        ).first()
+
         entry = GradingEntry(
             entry_uuid=f"entry_{ULID()}",
             submission_id=submission.id,
             graded_by=current_user.id,
-            raw_score=float(submission.final_score or submission.auto_score or 0),
-            penalty_pct=float(submission.late_penalty_pct or 0),
-            final_score=float(submission.final_score or submission.auto_score or 0),
-            breakdown=submission.grading_json if isinstance(submission.grading_json, dict) else {},
+            raw_score=float(
+                latest_entry.raw_score
+                if latest_entry is not None
+                else submission.final_score or submission.auto_score or 0
+            ),
+            penalty_pct=float(
+                latest_entry.penalty_pct
+                if latest_entry is not None
+                else submission.late_penalty_pct or 0
+            ),
+            final_score=float(
+                latest_entry.final_score
+                if latest_entry is not None
+                else submission.final_score or submission.auto_score or 0
+            ),
+            breakdown=(
+                latest_entry.breakdown
+                if latest_entry is not None
+                else submission.grading_json
+                if isinstance(submission.grading_json, dict)
+                else {}
+            ),
             overall_feedback=(
-                submission.grading_json.get("feedback", "")
+                latest_entry.overall_feedback
+                if latest_entry is not None
+                else submission.grading_json.get("feedback", "")
                 if isinstance(submission.grading_json, dict)
                 else ""
             ),
@@ -739,10 +817,32 @@ async def bulk_publish_grades(
             published_at=now,
         )
         db_session.add(entry)
+        submission.status = SubmissionStatus.PUBLISHED
+        submission.final_score = entry.final_score
+        submission.updated_at = now
+        db_session.add(submission)
+        recalculate_activity_progress(
+            submission.activity_id,
+            submission.user_id,
+            db_session,
+            commit=False,
+        )
         published_count += 1
 
     if published_count:
         db_session.commit()
+        for submission in submissions:
+            if submission.id in already_published_ids:
+                continue
+            publish_grading_event(
+                "grade.published",
+                submission.submission_uuid,
+                {
+                    "submission_uuid": submission.submission_uuid,
+                    "final_score": submission.final_score,
+                    "published_at": now.isoformat(),
+                },
+            )
 
     return BulkPublishGradesResponse(
         activity_id=activity_id,

@@ -1,6 +1,6 @@
 """Assignment draft-save and submit lifecycle."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from sqlmodel import Session, select
@@ -13,6 +13,7 @@ from src.db.courses.assignments import (
     AssignmentTask,
     AssignmentTaskAnswer,
 )
+from src.db.grading.overrides import StudentPolicyOverride
 from src.db.grading.progress import AssessmentPolicy
 from src.db.grading.submissions import (
     AssessmentType,
@@ -32,6 +33,7 @@ from src.services.courses.activities.assignments._queries import (
     _get_open_assignment_draft,
 )
 from src.services.grading.assignment_breakdown import build_assignment_breakdown
+from src.services.grading.submit import _calculate_late_penalty
 from src.services.progress import submissions as progress_submissions
 
 # ── Access guard ───────────────────────────────────────────────────────────────
@@ -148,52 +150,6 @@ def _assignment_due_deadline(assignment: Assignment) -> datetime | None:
     return assignment.due_at
 
 
-def _calculate_late_penalty(
-    submitted_at: datetime,
-    due_at: datetime,
-    policy: AssessmentPolicy | None,
-) -> float:
-    """Return the late penalty percentage (0–100) to apply to the raw score.
-
-    Reads ``AssessmentPolicy.late_policy_json`` which must match one of:
-      - ``{"type": "NO_PENALTY"}``
-      - ``{"type": "FLAT_PERCENT", "percent": <float>}``
-      - ``{"type": "PER_DAY", "percent_per_day": <float>, "max_pct": <float>}``
-      - ``{"type": "ZERO_GRADE"}``
-
-    Returns 0.0 if no policy is configured or the policy type is unrecognised.
-    """
-    if policy is None:
-        return 0.0
-    if not policy.allow_late:
-        # Submissions are blocked upstream; penalty here is irrelevant.
-        return 0.0
-
-    late_policy: dict = policy.late_policy_json or {}
-    policy_type: str = str(late_policy.get("type", "NO_PENALTY"))
-
-    if policy_type == "NO_PENALTY":
-        return 0.0
-
-    if policy_type == "FLAT_PERCENT":
-        pct = float(late_policy.get("percent", 0))
-        return max(0.0, min(100.0, pct))
-
-    if policy_type == "PER_DAY":
-        pct_per_day = float(late_policy.get("percent_per_day", 0))
-        max_pct = float(late_policy.get("max_pct", 100.0))
-        # Days late — ceil so any partial day counts as a full day.
-        delta: timedelta = submitted_at - due_at
-        days_late = max(1, int(delta.total_seconds() / 86400) + 1)
-        penalty = days_late * pct_per_day
-        return max(0.0, min(max_pct, penalty))
-
-    if policy_type == "ZERO_GRADE":
-        return 100.0
-
-    return 0.0
-
-
 def _get_assessment_policy(
     activity_id: int,
     db_session: Session,
@@ -203,6 +159,33 @@ def _get_assessment_policy(
             AssessmentPolicy.activity_id == activity_id
         )
     ).first()
+
+
+def _active_policy_override(
+    policy: AssessmentPolicy | None,
+    user_id: int,
+    db_session: Session,
+) -> StudentPolicyOverride | None:
+    if policy is None or policy.id is None:
+        return None
+    now = datetime.now(UTC)
+    override = db_session.exec(
+        select(StudentPolicyOverride).where(
+            StudentPolicyOverride.policy_id == policy.id,
+            StudentPolicyOverride.user_id == user_id,
+        )
+    ).first()
+    if override is None:
+        return None
+    if override.expires_at is not None:
+        expires_at = (
+            override.expires_at
+            if override.expires_at.tzinfo
+            else override.expires_at.replace(tzinfo=UTC)
+        )
+        if expires_at <= now:
+            return None
+    return override
 
 
 # ── Public service functions ───────────────────────────────────────────────────
@@ -285,13 +268,29 @@ async def submit_assignment_draft_submission(
     ).model_dump()
     draft.status = SubmissionStatus.PENDING
 
-    deadline = _assignment_due_deadline(assignment)
+    policy = _get_assessment_policy(activity.id, db_session)
+    override = _active_policy_override(policy, current_user.id, db_session)
+    deadline = (
+        override.due_at_override
+        if override is not None and override.due_at_override is not None
+        else _assignment_due_deadline(assignment)
+    )
+    if deadline is not None and deadline.tzinfo is None:
+        deadline = deadline.replace(tzinfo=UTC)
     draft.is_late = deadline is not None and now > deadline
+    if draft.is_late and policy is not None and not policy.allow_late:
+        raise HTTPException(
+            status_code=403,
+            detail="Late submissions are not allowed for this assignment",
+        )
 
     # Snapshot the late penalty at submit time so it can't change retroactively.
     if draft.is_late and deadline is not None:
-        policy = _get_assessment_policy(activity.id, db_session)
-        draft.late_penalty_pct = _calculate_late_penalty(now, deadline, policy)
+        draft.late_penalty_pct = (
+            0.0
+            if override is not None and override.waive_late_penalty
+            else _calculate_late_penalty(now, deadline, policy)
+        )
     else:
         draft.late_penalty_pct = 0.0
 

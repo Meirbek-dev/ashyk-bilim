@@ -6189,6 +6189,7 @@
       "statusDraft": "Черновик",
       "statusPending": "На проверке",
       "statusGraded": "Проверено",
+      "statusAwaitingPublication": "Ожидает публикации",
       "statusPublished": "Выставлено",
       "statusReturned": "Возвращено",
       "score": "Оценка",
@@ -6298,7 +6299,8 @@
       "correctAnswer": "Правильный ответ",
       "breakdown": "Детализация по вопросам",
       "pendingReview": "Ожидает проверки",
-      "waitingForGrade": "Ожидание оценки..."
+      "waitingForGrade": "Ожидание оценки...",
+      "gradePublishedToast": "Оценка и комментарий опубликованы"
     },
     "SubmissionShell": {
       "bannerSubmittedTitle": "Работа сдана",

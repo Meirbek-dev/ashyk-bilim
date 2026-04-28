@@ -45,6 +45,33 @@ export type GradebookStudent = components['schemas']['GradebookStudent'];
 export type GradebookSummary = components['schemas']['GradebookSummary'];
 export type TeacherAction = components['schemas']['TeacherAction'];
 
+export interface InlineItemFeedback {
+  id: number;
+  grading_entry_id: number;
+  submission_id: number;
+  task_id?: number | null;
+  item_ref: string;
+  comment: string;
+  score?: number | null;
+  max_score?: number | null;
+  annotation_type: 'TEXT' | 'HIGHLIGHT' | 'AUDIO';
+  annotation_data_key?: string | null;
+  graded_by?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InlineItemFeedbackInput {
+  grading_entry_id?: number | null;
+  task_id?: number | null;
+  item_ref: string;
+  comment?: string;
+  score?: number | null;
+  max_score?: number | null;
+  annotation_type?: 'TEXT' | 'HIGHLIGHT' | 'AUDIO';
+  annotation_data_key?: string | null;
+}
+
 /** Backward-compatible aliases for older imports while callers migrate. */
 export type GradebookCell = ActivityProgressCell;
 export type GradebookResponse = CourseGradebookResponse;
@@ -108,7 +135,7 @@ export interface CodeChallengeAnswers {
 export const STATUS_LABELS: Record<SubmissionStatus, string> = {
   DRAFT: 'Draft',
   PENDING: 'Pending',
-  GRADED: 'Graded',
+  GRADED: 'Awaiting publication',
   PUBLISHED: 'Published',
   RETURNED: 'Returned',
 };
