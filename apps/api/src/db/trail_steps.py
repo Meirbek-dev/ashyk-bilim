@@ -21,6 +21,10 @@ class TrailStep(SQLModelStrictBaseModel, table=True):
 
     This model tracks completion status, verification, grading, and metadata
     for individual steps within a learning trail.
+
+    Personal trail UX table: do not use TrailStep.complete for required course
+    progress, certificate eligibility, teacher analytics, or gradebook state.
+    Those reads must come from ActivityProgress/CourseProgress.
     """
 
     id: int | None = Field(default=None, primary_key=True)
@@ -88,7 +92,7 @@ class TrailStepRead(PydanticStrictBaseModel):
                 return 0
         try:
             return int(v)
-        except Exception:
+        except (TypeError, ValueError):
             return 0
 
 

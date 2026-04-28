@@ -2568,6 +2568,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/grading/courses/{course_uuid}/gradebook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get Course Gradebook
+         * @description Return the teacher's course-level gradebook matrix.
+         */
+        get: operations["api_get_course_gradebook_api_v1_grading_courses__course_uuid__gradebook_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/grading/start/{activity_id}": {
         parameters: {
             query?: never;
@@ -4099,6 +4119,11 @@ export interface components {
             /** Position */
             position: number;
         };
+        /**
+         * ActivityProgressState
+         * @enum {string}
+         */
+        ActivityProgressState: "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED" | "NEEDS_GRADING" | "RETURNED" | "GRADED" | "PASSED" | "FAILED" | "COMPLETED";
         /** ActivityRead */
         ActivityRead: {
             activity_sub_type: components["schemas"]["ActivitySubTypeEnum"];
@@ -6280,6 +6305,109 @@ export interface components {
             label: string;
             /** Pct Of Previous */
             pct_of_previous?: number | null;
+        };
+        /** GradebookActivity */
+        GradebookActivity: {
+            /** Activity Type */
+            activity_type: string;
+            /** Activity Uuid */
+            activity_uuid: string;
+            assessment_type?: components["schemas"]["AssessmentType"] | null;
+            /** Due At */
+            due_at?: string | null;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Order */
+            order: number;
+        };
+        /** GradebookCell */
+        GradebookCell: {
+            /** Activity Id */
+            activity_id: number;
+            /**
+             * Attempt Count
+             * @default 0
+             */
+            attempt_count: number;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Due At */
+            due_at?: string | null;
+            /** Graded At */
+            graded_at?: string | null;
+            /**
+             * Is Late
+             * @default false
+             */
+            is_late: boolean;
+            /** Latest Submission Status */
+            latest_submission_status?: string | null;
+            /** Latest Submission Uuid */
+            latest_submission_uuid?: string | null;
+            /** Passed */
+            passed?: boolean | null;
+            /** Score */
+            score?: number | null;
+            state: components["schemas"]["ActivityProgressState"];
+            /** Status Reason */
+            status_reason?: string | null;
+            /** Submitted At */
+            submitted_at?: string | null;
+            /**
+             * Teacher Action Required
+             * @default false
+             */
+            teacher_action_required: boolean;
+            /** User Id */
+            user_id: number;
+        };
+        /** GradebookResponse */
+        GradebookResponse: {
+            /** Activities */
+            activities: components["schemas"]["GradebookActivity"][];
+            /** Cells */
+            cells: components["schemas"]["GradebookCell"][];
+            /** Course Id */
+            course_id: number;
+            /** Course Name */
+            course_name: string;
+            /** Course Uuid */
+            course_uuid: string;
+            /** Students */
+            students: components["schemas"]["GradebookStudent"][];
+            summary: components["schemas"]["GradebookSummary"];
+        };
+        /** GradebookStudent */
+        GradebookStudent: {
+            /** Email */
+            email: string;
+            /** First Name */
+            first_name?: string | null;
+            /** Id */
+            id: number;
+            /** Last Name */
+            last_name?: string | null;
+            /** User Uuid */
+            user_uuid: string;
+            /** Username */
+            username: string;
+        };
+        /** GradebookSummary */
+        GradebookSummary: {
+            /** Activity Count */
+            activity_count: number;
+            /** Completed Count */
+            completed_count: number;
+            /** Needs Grading Count */
+            needs_grading_count: number;
+            /** Not Started Count */
+            not_started_count: number;
+            /** Overdue Count */
+            overdue_count: number;
+            /** Student Count */
+            student_count: number;
         };
         /**
          * GradedItem
@@ -13648,6 +13776,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["XPAwardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_course_gradebook_api_v1_grading_courses__course_uuid__gradebook_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradebookResponse"];
                 };
             };
             /** @description Validation Error */

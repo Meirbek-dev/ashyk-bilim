@@ -8,11 +8,12 @@ from sqlmodel import Session, select
 from src.db.courses.activities import Activity
 from src.db.courses.courses import Course
 from src.db.grading.gradebook import (
+    ActivityProgressCell,
+    CourseGradebookResponse,
     GradebookActivity,
-    GradebookCell,
-    GradebookResponse,
     GradebookStudent,
     GradebookSummary,
+    TeacherAction,
 )
 from src.db.grading.progress import (
     ActivityProgress,
@@ -34,7 +35,7 @@ async def get_course_gradebook(
     course_uuid: str,
     current_user: PublicUser,
     db_session: Session,
-) -> GradebookResponse:
+) -> CourseGradebookResponse:
     course = _get_course_or_404(course_uuid, db_session)
     _require_gradebook_access(course, current_user, db_session)
 
@@ -49,7 +50,7 @@ async def get_course_gradebook(
     )
     policies_by_activity = _policies_by_activity(db_session)
 
-    cells: list[GradebookCell] = []
+    cells: list[ActivityProgressCell] = []
     for student in students:
         for activity in activities:
             progress = progress_by_pair.get((student.id, activity.id))
@@ -60,16 +61,24 @@ async def get_course_gradebook(
             )
             cells.append(_build_cell(student.id, activity.id, progress, latest))
 
-    return GradebookResponse(
+    activities_payload = [
+        _build_activity(activity, policies_by_activity.get(activity.id))
+        for activity in activities
+    ]
+    students_payload = [_build_student(user) for user in students]
+
+    return CourseGradebookResponse(
         course_uuid=course.course_uuid,
         course_id=course.id,
         course_name=course.name,
-        students=[_build_student(user) for user in students],
-        activities=[
-            _build_activity(activity, policies_by_activity.get(activity.id))
-            for activity in activities
-        ],
+        students=students_payload,
+        activities=activities_payload,
         cells=cells,
+        teacher_actions=_build_teacher_actions(
+            cells,
+            students_payload,
+            activities_payload,
+        ),
         summary=_build_summary(cells),
     )
 
@@ -230,15 +239,15 @@ def _build_cell(
     activity_id: int,
     progress: ActivityProgress | None,
     latest: Submission | None,
-) -> GradebookCell:
+) -> ActivityProgressCell:
     if progress is None:
-        return GradebookCell(
+        return ActivityProgressCell(
             user_id=user_id,
             activity_id=activity_id,
             state=ActivityProgressState.NOT_STARTED,
         )
 
-    return GradebookCell(
+    return ActivityProgressCell(
         user_id=user_id,
         activity_id=activity_id,
         state=progress.state,
@@ -257,7 +266,41 @@ def _build_cell(
     )
 
 
-def _build_summary(cells: list[GradebookCell]) -> GradebookSummary:
+def _build_teacher_actions(
+    cells: list[ActivityProgressCell],
+    students: list[GradebookStudent],
+    activities: list[GradebookActivity],
+) -> list[TeacherAction]:
+    students_by_id = {student.id: student for student in students}
+    activities_by_id = {activity.id: activity for activity in activities}
+    actions: list[TeacherAction] = []
+    for cell in cells:
+        if not cell.teacher_action_required or not cell.latest_submission_uuid:
+            continue
+        student = students_by_id.get(cell.user_id)
+        activity = activities_by_id.get(cell.activity_id)
+        if student is None or activity is None:
+            continue
+        student_name = (
+            f"{student.first_name or ''} {student.last_name or ''}".strip()
+            or student.username
+        )
+        actions.append(
+            TeacherAction(
+                action_type="GRADE_SUBMISSION",
+                user_id=cell.user_id,
+                activity_id=cell.activity_id,
+                submission_uuid=cell.latest_submission_uuid,
+                student_name=student_name,
+                activity_name=activity.name,
+                submitted_at=cell.submitted_at,
+                is_late=cell.is_late,
+            )
+        )
+    return actions
+
+
+def _build_summary(cells: list[ActivityProgressCell]) -> GradebookSummary:
     now = datetime.now(UTC)
     overdue_count = sum(
         1

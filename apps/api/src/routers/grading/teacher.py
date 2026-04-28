@@ -15,7 +15,7 @@ from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
 from src.auth.users import get_public_user
-from src.db.grading.gradebook import GradebookResponse
+from src.db.grading.gradebook import CourseGradebookResponse
 from src.db.grading.schemas import BatchGradeRequest, BatchGradeResponse
 from src.db.grading.submissions import (
     SubmissionListResponse,
@@ -38,12 +38,12 @@ from src.services.grading.teacher import (
 router = APIRouter()
 
 
-@router.get("/courses/{course_uuid}/gradebook", response_model=GradebookResponse)
+@router.get("/courses/{course_uuid}/gradebook", response_model=CourseGradebookResponse)
 async def api_get_course_gradebook(
     course_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-) -> GradebookResponse:
+) -> CourseGradebookResponse:
     """Return the teacher's course-level gradebook matrix."""
     return await get_course_gradebook(
         course_uuid=course_uuid,

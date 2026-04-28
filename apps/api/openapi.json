@@ -146,6 +146,161 @@
         "title": "ActivityOrderPayload",
         "type": "object"
       },
+      "ActivityProgressCell": {
+        "properties": {
+          "activity_id": {
+            "title": "Activity Id",
+            "type": "integer"
+          },
+          "attempt_count": {
+            "default": 0,
+            "title": "Attempt Count",
+            "type": "integer"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "graded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graded At"
+          },
+          "is_late": {
+            "default": false,
+            "title": "Is Late",
+            "type": "boolean"
+          },
+          "latest_submission_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Submission Status"
+          },
+          "latest_submission_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Submission Uuid"
+          },
+          "passed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passed"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ActivityProgressState"
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Reason"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "teacher_action_required": {
+            "default": false,
+            "title": "Teacher Action Required",
+            "type": "boolean"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "activity_id",
+          "state"
+        ],
+        "title": "ActivityProgressCell",
+        "type": "object"
+      },
+      "ActivityProgressState": {
+        "enum": [
+          "NOT_STARTED",
+          "IN_PROGRESS",
+          "SUBMITTED",
+          "NEEDS_GRADING",
+          "RETURNED",
+          "GRADED",
+          "PASSED",
+          "FAILED",
+          "COMPLETED"
+        ],
+        "title": "ActivityProgressState",
+        "type": "string"
+      },
       "ActivityRead": {
         "properties": {
           "activity_sub_type": {
@@ -4441,6 +4596,65 @@
         "title": "CourseDiscussionUpdate",
         "type": "object"
       },
+      "CourseGradebookResponse": {
+        "properties": {
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/GradebookActivity"
+            },
+            "title": "Activities",
+            "type": "array"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityProgressCell"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "course_name": {
+            "title": "Course Name",
+            "type": "string"
+          },
+          "course_uuid": {
+            "title": "Course Uuid",
+            "type": "string"
+          },
+          "students": {
+            "items": {
+              "$ref": "#/components/schemas/GradebookStudent"
+            },
+            "title": "Students",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/GradebookSummary"
+          },
+          "teacher_actions": {
+            "items": {
+              "$ref": "#/components/schemas/TeacherAction"
+            },
+            "title": "Teacher Actions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "course_uuid",
+          "course_id",
+          "course_name",
+          "students",
+          "activities",
+          "cells",
+          "teacher_actions",
+          "summary"
+        ],
+        "title": "CourseGradebookResponse",
+        "type": "object"
+      },
       "CourseMetadataUpdate": {
         "properties": {
           "about": {
@@ -6112,6 +6326,149 @@
           "count"
         ],
         "title": "FunnelStep",
+        "type": "object"
+      },
+      "GradebookActivity": {
+        "properties": {
+          "activity_type": {
+            "title": "Activity Type",
+            "type": "string"
+          },
+          "activity_uuid": {
+            "title": "Activity Uuid",
+            "type": "string"
+          },
+          "assessment_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssessmentType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "order": {
+            "title": "Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "activity_uuid",
+          "name",
+          "activity_type",
+          "order"
+        ],
+        "title": "GradebookActivity",
+        "type": "object"
+      },
+      "GradebookStudent": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "user_uuid": {
+            "title": "User Uuid",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "user_uuid",
+          "username",
+          "email"
+        ],
+        "title": "GradebookStudent",
+        "type": "object"
+      },
+      "GradebookSummary": {
+        "properties": {
+          "activity_count": {
+            "title": "Activity Count",
+            "type": "integer"
+          },
+          "completed_count": {
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "needs_grading_count": {
+            "title": "Needs Grading Count",
+            "type": "integer"
+          },
+          "not_started_count": {
+            "title": "Not Started Count",
+            "type": "integer"
+          },
+          "overdue_count": {
+            "title": "Overdue Count",
+            "type": "integer"
+          },
+          "student_count": {
+            "title": "Student Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "student_count",
+          "activity_count",
+          "needs_grading_count",
+          "overdue_count",
+          "not_started_count",
+          "completed_count"
+        ],
+        "title": "GradebookSummary",
         "type": "object"
       },
       "GradedItem": {
@@ -9112,6 +9469,62 @@
           "email"
         ],
         "title": "SubmissionUser",
+        "type": "object"
+      },
+      "TeacherAction": {
+        "properties": {
+          "action_type": {
+            "const": "GRADE_SUBMISSION",
+            "title": "Action Type",
+            "type": "string"
+          },
+          "activity_id": {
+            "title": "Activity Id",
+            "type": "integer"
+          },
+          "activity_name": {
+            "title": "Activity Name",
+            "type": "string"
+          },
+          "is_late": {
+            "default": false,
+            "title": "Is Late",
+            "type": "boolean"
+          },
+          "student_name": {
+            "title": "Student Name",
+            "type": "string"
+          },
+          "submission_uuid": {
+            "title": "Submission Uuid",
+            "type": "string"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "action_type",
+          "user_id",
+          "activity_id",
+          "submission_uuid",
+          "student_name",
+          "activity_name"
+        ],
+        "title": "TeacherAction",
         "type": "object"
       },
       "TeacherAssessmentDetailResponse": {
@@ -22721,6 +23134,54 @@
         "summary": "Award Xp",
         "tags": [
           "gamification"
+        ]
+      }
+    },
+    "/api/v1/grading/courses/{course_uuid}/gradebook": {
+      "get": {
+        "description": "Return the teacher's course-level gradebook matrix.",
+        "operationId": "api_get_course_gradebook_api_v1_grading_courses__course_uuid__gradebook_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseGradebookResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Course Gradebook",
+        "tags": [
+          "grading"
         ]
       }
     },

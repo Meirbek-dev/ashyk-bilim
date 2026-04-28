@@ -17,6 +17,7 @@ from src.db.analytics import (
     LearnerRiskSnapshot,
 )
 from src.db.courses.courses import Course
+from src.db.grading.progress import ActivityProgressState
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
@@ -454,10 +455,15 @@ def refresh_teacher_analytics_rollups(
                     key=lambda item: (item.chapter_id, item.order),
                 )
             ]
-            for step in context.trail_steps:
-                if step.course_id == course_id and step.complete:
-                    completed_users.setdefault(step.activity_id, set()).add(
-                        step.user_id
+            for progress in context.activity_progress:
+                if progress.course_id != course_id:
+                    continue
+                if progress.completed_at is not None or str(progress.state) in {
+                    ActivityProgressState.COMPLETED.value,
+                    ActivityProgressState.PASSED.value,
+                }:
+                    completed_users.setdefault(progress.activity_id, set()).add(
+                        progress.user_id
                     )
             previous_completed_count: int | None = None
             for activity_id in ordered_activity_ids:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+from src.db.grading.progress import ActivityProgressState
 from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
@@ -53,14 +54,24 @@ def build_content_bottlenecks(
     completed_by_activity: dict[int, set[int]] = defaultdict(set)
     time_by_activity: dict[int, list[float]] = defaultdict(list)
 
+    for progress in context.activity_progress:
+        if progress.course_id not in target_course_ids:
+            continue
+        if allowed_user_ids is not None and progress.user_id not in allowed_user_ids:
+            continue
+        if str(progress.state) != ActivityProgressState.NOT_STARTED.value:
+            started_by_activity[progress.activity_id].add(progress.user_id)
+        if progress.completed_at is not None or str(progress.state) in {
+            ActivityProgressState.COMPLETED.value,
+            ActivityProgressState.PASSED.value,
+        }:
+            completed_by_activity[progress.activity_id].add(progress.user_id)
+
     for step in context.trail_steps:
         if step.course_id not in target_course_ids:
             continue
         if allowed_user_ids is not None and step.user_id not in allowed_user_ids:
             continue
-        started_by_activity[step.activity_id].add(step.user_id)
-        if step.complete:
-            completed_by_activity[step.activity_id].add(step.user_id)
         time_spent = _time_spent_seconds(
             step.data, step.creation_date, step.update_date
         )

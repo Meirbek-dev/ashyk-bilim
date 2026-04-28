@@ -18,13 +18,13 @@ from src.db.courses.certifications import (
     CertificationUpdate,
 )
 from src.db.courses.courses import Course
-from src.db.trail_steps import TrailStep
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
 from src.services.courses.courses import _ensure_course_is_current
 from src.services.gamification import StreakType, XPSource
 from src.services.gamification import service as gamification_service
+from src.services.progress.submissions import recalculate_course_progress
 
 logger = logging.getLogger(__name__)
 
@@ -411,9 +411,10 @@ async def create_certificate_user(
 
     except Exception as exc:
         db_session.rollback()
-        logger.error(
-            f"Failed to create certificate for user {user_id} and certification {certification_id}: {exc}",
-            exc_info=True,
+        logger.exception(
+            "Failed to create certificate for user %s and certification %s",
+            user_id,
+            certification_id,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -467,11 +468,10 @@ async def get_user_certificates_for_course(
         logger.debug(
             f"Certificate check/creation result for user {current_user.id} in course {course_uuid}: {completion_result}"
         )
-    except Exception as err:
+    except Exception:
         # Don't fail the request on certificate creation errors; just log and proceed to list.
-        logger.error(
-            f"check_course_completion_and_create_certificate failed during get_user_certificates_for_course: {err}",
-            exc_info=True,
+        logger.exception(
+            "check_course_completion_and_create_certificate failed during get_user_certificates_for_course",
         )
 
     # Get all certifications for this course
@@ -573,27 +573,25 @@ async def check_course_completion_and_create_certificate(
     if not course:
         return False
 
-    # Get all activities in the course
-    course_activities = db_session.exec(
-        select(Activity).where(Activity.course_id == course_id)
-    ).all()
+    # Required course completion is canonicalized in CourseProgress. TrailStep
+    # remains available for personal trail UX, but certificates must not count
+    # TrailStep.complete as required-course progress.
+    course_progress = recalculate_course_progress(
+        course_id,
+        user_id,
+        db_session,
+        commit=True,
+    )
+    total_count = course_progress.total_required_count
+    completed_count = course_progress.completed_required_count
 
-    if not course_activities:
+    if total_count == 0:
         return False  # No activities in course
 
-    # Get all completed activities for this user in this course
-    statement = select(TrailStep).where(
-        TrailStep.user_id == user_id,
-        TrailStep.course_id == course_id,
-        TrailStep.complete,
-    )
-    completed_activities = db_session.exec(statement).all()
-
-    # Check if all activities are completed
-    if len(completed_activities) >= len(course_activities):
+    if course_progress.certificate_eligible:
         logger.info(
             f"Course {course_id} ({course.course_uuid}) completed by user {user_id}: "
-            f"{len(completed_activities)}/{len(course_activities)} activities"
+            f"{completed_count}/{total_count} required activities"
         )
 
         # Always award XP for course completion (idempotent), regardless of certificate availability
@@ -605,10 +603,12 @@ async def check_course_completion_and_create_certificate(
                 source_id=str(course_id),
                 idempotency_key=f"course_{course_id}_{user_id}",
             )
-        except Exception as xp_error:
+        except Exception:
             # Log the error but don't fail subsequent certificate logic
             logger.exception(
-                f"Failed to award XP for course completion (user_id: {user_id}, course_id: {course_id}): {xp_error}"
+                "Failed to award XP for course completion (user_id: %s, course_id: %s)",
+                user_id,
+                course_id,
             )
 
         # Then attempt to create a certificate if the course has certification configured
@@ -647,10 +647,12 @@ async def check_course_completion_and_create_certificate(
                 # Re-raise unexpected errors
                 raise
 
-            except Exception as general_error:
+            except Exception:
                 # Log unexpected errors but don't fail silently
                 logger.exception(
-                    f"Unexpected error during course completion (user_id: {user_id}, course_id: {course_id}): {general_error}"
+                    "Unexpected error during course completion (user_id: %s, course_id: %s)",
+                    user_id,
+                    course_id,
                 )
                 raise
         else:
@@ -662,8 +664,6 @@ async def check_course_completion_and_create_certificate(
             return True
     else:
         # Course not yet completed
-        completed_count = len(completed_activities)
-        total_count = len(course_activities)
         logger.debug(
             f"Course {course_id} not completed by user {user_id}: {completed_count}/{total_count} activities finished"
         )

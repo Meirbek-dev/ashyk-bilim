@@ -8,6 +8,7 @@ from sqlmodel import Session
 
 from src.db.analytics import DailyCourseMetrics
 from src.db.courses.courses import Course
+from src.db.grading.progress import ActivityProgress, ActivityProgressState
 from src.db.usergroups import UserGroup
 from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.bottlenecks import build_content_bottlenecks
@@ -43,6 +44,13 @@ from src.services.analytics.schemas import (
     TimeSeriesPoint,
 )
 from src.services.analytics.scope import TeacherAnalyticsScope, ensure_course_in_scope
+
+
+def _activity_progress_completed(progress: ActivityProgress) -> bool:
+    return progress.completed_at is not None or str(progress.state) in {
+        ActivityProgressState.COMPLETED.value,
+        ActivityProgressState.PASSED.value,
+    }
 
 
 def _previous_completion_by_course(
@@ -611,11 +619,11 @@ def get_teacher_course_detail(
     ordered_steps.sort(key=lambda item: (item[0], item[1]))
 
     completion_by_activity: dict[int, set[int]] = defaultdict(set)
-    for step in context.trail_steps:
-        if allowed_user_ids is not None and step.user_id not in allowed_user_ids:
+    for progress in context.activity_progress:
+        if allowed_user_ids is not None and progress.user_id not in allowed_user_ids:
             continue
-        if step.course_id == course_id and step.complete:
-            completion_by_activity[step.activity_id].add(step.user_id)
+        if progress.course_id == course_id and _activity_progress_completed(progress):
+            completion_by_activity[progress.activity_id].add(progress.user_id)
 
     activity_dropoff: list[ActivityDropoffRow] = []
     previous_count: int | None = None
@@ -661,21 +669,21 @@ def get_teacher_course_detail(
     chapter_funnel = []
     previous_chapter_count = None
     chapter_counts: dict[int, set[int]] = defaultdict(set)
-    for step in context.trail_steps:
-        if allowed_user_ids is not None and step.user_id not in allowed_user_ids:
+    activity_chapter = {
+        item.id: item.chapter_id
+        for item in context.chapter_activities
+        if item.course_id == course_id
+    }
+    for progress in context.activity_progress:
+        if allowed_user_ids is not None and progress.user_id not in allowed_user_ids:
             continue
-        if step.course_id != course_id or not step.complete:
+        if progress.course_id != course_id or not _activity_progress_completed(
+            progress
+        ):
             continue
-        chapter_activity = next(
-            (
-                item
-                for item in context.chapter_activities
-                if item.id == step.activity_id and item.course_id == course_id
-            ),
-            None,
-        )
-        if chapter_activity is not None:
-            chapter_counts[chapter_activity.chapter_id].add(step.user_id)
+        chapter_id = activity_chapter.get(progress.activity_id)
+        if chapter_id is not None:
+            chapter_counts[chapter_id].add(progress.user_id)
     for chapter_id, _order in sorted(chapter_order.items(), key=lambda item: item[1]):
         chapter = context.chapters_by_id.get(chapter_id)
         count = len(chapter_counts.get(chapter_id, set()))

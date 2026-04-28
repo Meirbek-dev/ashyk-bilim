@@ -1,6 +1,7 @@
 """Teacher-facing course gradebook response schemas."""
 
 from datetime import datetime
+from typing import Literal
 
 from src.db.grading.progress import ActivityProgressState
 from src.db.grading.submissions import AssessmentType
@@ -26,7 +27,7 @@ class GradebookStudent(PydanticStrictBaseModel):
     email: str
 
 
-class GradebookCell(PydanticStrictBaseModel):
+class ActivityProgressCell(PydanticStrictBaseModel):
     user_id: int
     activity_id: int
     state: ActivityProgressState
@@ -44,6 +45,17 @@ class GradebookCell(PydanticStrictBaseModel):
     status_reason: str | None = None
 
 
+class TeacherAction(PydanticStrictBaseModel):
+    action_type: Literal["GRADE_SUBMISSION"]
+    user_id: int
+    activity_id: int
+    submission_uuid: str
+    student_name: str
+    activity_name: str
+    submitted_at: datetime | None = None
+    is_late: bool = False
+
+
 class GradebookSummary(PydanticStrictBaseModel):
     student_count: int
     activity_count: int
@@ -53,11 +65,12 @@ class GradebookSummary(PydanticStrictBaseModel):
     completed_count: int
 
 
-class GradebookResponse(PydanticStrictBaseModel):
+class CourseGradebookResponse(PydanticStrictBaseModel):
     course_uuid: str
     course_id: int
     course_name: str
     students: list[GradebookStudent]
     activities: list[GradebookActivity]
-    cells: list[GradebookCell]
+    cells: list[ActivityProgressCell]
+    teacher_actions: list[TeacherAction]
     summary: GradebookSummary
