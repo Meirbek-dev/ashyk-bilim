@@ -1,10 +1,20 @@
+/**
+ * Canonical SubmissionStatusBadge for the unified submission workflow.
+ *
+ * Covers the five states from `features/assessments/domain/submission-status.ts`:
+ *   DRAFT | PENDING | GRADED | PUBLISHED | RETURNED
+ *
+ * For Judge0 code-execution feedback use `Judge0StatusBadge` from
+ * `components/features/courses/code-challenges/SubmissionStatusBadge`.
+ */
+
 import type { SubmissionStatus } from '@/types/grading';
-import { STATUS_LABELS } from '@/types/grading';
-import { Badge } from '@components/ui/badge';
+import { SUBMISSION_STATUS_LABELS } from '@/features/grading/domain';
+import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
-interface SubmissionStatusBadgeProps {
+export interface SubmissionStatusBadgeProps {
   status: SubmissionStatus;
   className?: string;
 }
@@ -17,6 +27,7 @@ const STATUS_VARIANTS: Record<SubmissionStatus, 'secondary' | 'warning' | 'succe
   RETURNED: 'destructive',
 };
 
+// Maps to next-intl keys under Grading.Table
 const STATUS_LABEL_KEYS: Record<SubmissionStatus, string> = {
   DRAFT: 'statusDraft',
   PENDING: 'statusPending',
@@ -33,7 +44,7 @@ export default function SubmissionStatusBadge({ status, className }: SubmissionS
       variant={STATUS_VARIANTS[status] ?? 'default'}
       className={cn('inline-flex items-center text-xs font-semibold', className)}
     >
-      {t(STATUS_LABEL_KEYS[status] ?? STATUS_LABELS[status] ?? status)}
+      {t(STATUS_LABEL_KEYS[status] ?? SUBMISSION_STATUS_LABELS[status] ?? status)}
     </Badge>
   );
 }

@@ -1,3 +1,15 @@
+/**
+ * CodeRunStatusBadge and Judge0StatusBadge for code-challenge execution feedback.
+ *
+ * These components show Judge0 code-execution status (pending/processing/
+ * accepted/failed/error). They are NOT the same as the unified workflow
+ * SubmissionStatusBadge from features/assessments/shared/components.
+ *
+ * Use CodeRunStatusBadge/Judge0StatusBadge here; use SubmissionStatusBadge from
+ * @/features/assessments/shared/components for DRAFT/PENDING/GRADED/PUBLISHED/RETURNED
+ * workflow states.
+ */
+
 'use client';
 
 import { AlertCircle, CheckCircle2, Clock, Loader2, XCircle } from 'lucide-react';
@@ -34,17 +46,17 @@ const submissionBadgeVariants = cva(
   },
 );
 
-type SubmissionStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'error';
+type CodeRunStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'error';
 
-interface SubmissionStatusBadgeProps extends VariantProps<typeof submissionBadgeVariants> {
-  status: SubmissionStatus;
+interface CodeRunStatusBadgeProps extends VariantProps<typeof submissionBadgeVariants> {
+  status: CodeRunStatus;
   score?: number;
   maxScore?: number;
   className?: string;
   showIcon?: boolean;
 }
 
-export function SubmissionStatusBadge({
+export function CodeRunStatusBadge({
   status,
   score,
   maxScore = 100,
@@ -254,4 +266,7 @@ export function Judge0StatusBadge({
   );
 }
 
-export default SubmissionStatusBadge;
+/** @deprecated Use `CodeRunStatusBadge`. Kept for backward-compat during migration. */
+export { CodeRunStatusBadge as SubmissionStatusBadge };
+
+export default CodeRunStatusBadge;

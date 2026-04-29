@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
-import { SubmissionStatusBadge } from './SubmissionStatusBadge';
+import { CodeRunStatusBadge as SubmissionStatusBadge } from './SubmissionStatusBadge';
 import { LanguageSelector } from './LanguageSelector';
 import type { TestCaseResult } from './TestCaseCard';
 import { TestResultsList } from './TestCaseCard';

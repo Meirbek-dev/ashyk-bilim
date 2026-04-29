@@ -36,13 +36,18 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
-import SubmissionStatusBadge from '@/components/Grading/SubmissionStatusBadge';
+import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
 import GradingStats from '@/components/Grading/GradingStats';
+import type { KindModule, KindReviewDetailProps } from '@/features/assessments/registry';
 
 interface GradingReviewWorkspaceProps {
   activityId: number;
+  /** Activity UUID — forwarded to kind-specific ReviewDetail components (e.g. exam question loading). */
+  activityUuid?: string;
   title?: string;
   initialSubmissionUuid?: string | null;
+  /** Kind module loaded by the caller; provides ReviewDetail for kind-aware center-pane rendering. */
+  kindModule?: KindModule;
 }
 
 type StatusFilter = SubmissionStatus | 'ALL' | 'NEEDS_GRADING';
@@ -52,7 +57,7 @@ interface GradeDraft {
   feedback: string;
 }
 
-export default function GradingReviewWorkspace({ activityId, title, initialSubmissionUuid }: GradingReviewWorkspaceProps) {
+export default function GradingReviewWorkspace({ activityId, activityUuid, title, initialSubmissionUuid, kindModule }: GradingReviewWorkspaceProps) {
   const [activeFilter, setActiveFilter] = useState<StatusFilter>('NEEDS_GRADING');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('submitted_at');
@@ -174,6 +179,8 @@ export default function GradingReviewWorkspace({ activityId, title, initialSubmi
         <ReviewCenterPane
           selectedUuid={selectedUuid}
           fallbackSubmission={selectedSubmission}
+          activityUuid={activityUuid}
+          ReviewDetail={kindModule?.ReviewDetail}
         />
 
         <ReviewGradePane
