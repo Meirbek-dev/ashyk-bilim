@@ -1,29 +1,9 @@
 'use client';
 
-/**
- * AssignmentSubmissionsSubPage
- *
- * Teacher view for all student submissions on an assignment.
- *
- * Replaced the previous 3-column Kanban board that:
- * - Loaded ALL submissions at once (no pagination)
- * - Had no filtering, searching, or sorting
- * - Used a modal with 3 nested Context Providers and no grade input
- * - Logged all submission data to the console (console.log on line 24)
- *
- * Now renders <SubmissionsTable> which provides:
- * - Server-paginated, filtered results
- * - Status filter tabs (All / Needs Grading / Graded / Late)
- * - "Grade ▸" side panel with a real numeric score input
- * - Grading backlog count in the header
- */
-
 import { useTranslations } from 'next-intl';
 
 import { useAssignments } from '@components/Contexts/Assignments/AssignmentContext';
 import GradingReviewWorkspace from '@/features/grading/review/GradingReviewWorkspace';
-import { isAssignmentsV2Enabled } from '@/features/assignments/flags';
-import SubmissionsTable from '@/components/Grading/SubmissionsTable';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
 
 interface AssignmentSubmissionsSubPageProps {
@@ -42,17 +22,6 @@ export default function AssignmentSubmissionsSubPage({
 
   if (!activityId) {
     return <PageLoading />;
-  }
-
-  if (!isAssignmentsV2Enabled()) {
-    return (
-      <div className="w-full px-10 py-6">
-        <SubmissionsTable
-          activityId={activityId}
-          title={t('submissionsTitle')}
-        />
-      </div>
-    );
   }
 
   return (
