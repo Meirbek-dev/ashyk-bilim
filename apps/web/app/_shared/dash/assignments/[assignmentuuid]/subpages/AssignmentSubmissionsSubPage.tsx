@@ -21,7 +21,7 @@
 import { useTranslations } from 'next-intl';
 
 import { useAssignments } from '@components/Contexts/Assignments/AssignmentContext';
-import SubmissionsTable from '@/components/Grading/SubmissionsTable';
+import GradingReviewWorkspace from '@/features/grading/review/GradingReviewWorkspace';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
 
 interface AssignmentSubmissionsSubPageProps {
@@ -44,7 +44,7 @@ export default function AssignmentSubmissionsSubPage({
 
   return (
     <div className="w-full px-10 py-6">
-      <SubmissionsTable
+      <GradingReviewWorkspace
         activityId={activityId}
         title={t('submissionsTitle')}
       />
