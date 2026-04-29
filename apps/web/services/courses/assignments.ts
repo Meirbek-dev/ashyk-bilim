@@ -6,6 +6,7 @@ import { tags } from '@/lib/cacheTags';
 import type {
   AssignmentDraftPatch,
   AssignmentDraftRead,
+  AssignmentRead,
   AssignmentTaskAnswer,
 } from '@/features/assignments/domain';
 
@@ -28,8 +29,6 @@ export interface AssignmentTaskMutationPayload {
   max_grade_value?: number;
 }
 
-export type { AssignmentDraftPatch, AssignmentDraftRead, AssignmentTaskAnswer };
-
 function normalizeAssignmentUuid(assignmentUUID: string) {
   return assignmentUUID.startsWith('assignment_') ? assignmentUUID : `assignment_${assignmentUUID}`;
 }
@@ -48,6 +47,51 @@ export async function updateAssignment(body: AssignmentMutationPayload, assignme
   }
 
   return metadata;
+}
+
+export async function publishAssignment(assignmentUUID: string, scheduledAt?: string | null) {
+  const result = await apiFetch(`assignments/${normalizeAssignmentUuid(assignmentUUID)}/publish`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scheduled_at: scheduledAt ?? null }),
+  });
+  const metadata = await getResponseMetadata(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.activities, 'max');
+    revalidateTag(tags.courses, 'max');
+  }
+
+  return metadata as typeof metadata & { data: AssignmentRead };
+}
+
+export async function archiveAssignment(assignmentUUID: string) {
+  const result = await apiFetch(`assignments/${normalizeAssignmentUuid(assignmentUUID)}/archive`, { method: 'POST' });
+  const metadata = await getResponseMetadata(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.activities, 'max');
+    revalidateTag(tags.courses, 'max');
+  }
+
+  return metadata as typeof metadata & { data: AssignmentRead };
+}
+
+export async function cancelAssignmentSchedule(assignmentUUID: string) {
+  const result = await apiFetch(`assignments/${normalizeAssignmentUuid(assignmentUUID)}/cancel-schedule`, {
+    method: 'POST',
+  });
+  const metadata = await getResponseMetadata(result);
+
+  if (metadata.success) {
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag(tags.activities, 'max');
+    revalidateTag(tags.courses, 'max');
+  }
+
+  return metadata as typeof metadata & { data: AssignmentRead };
 }
 
 export async function getAssignmentFromActivityUUID(activityUUID: string) {
