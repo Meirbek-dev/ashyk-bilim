@@ -17,7 +17,7 @@ import {
   type GradebookActivity,
   type GradebookStudent,
   type TeacherAction,
-} from '@/types/grading';
+} from '@/features/grading/domain';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';

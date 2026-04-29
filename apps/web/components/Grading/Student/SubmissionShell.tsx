@@ -22,6 +22,7 @@ import { Card, CardContent } from '@components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
 import type { AssessmentType, Submission, SubmissionStatus } from '@/types/grading';
+import { isPublishedToStudent } from '@/features/grading/domain';
 import SubmissionStatusBadge from '../SubmissionStatusBadge';
 import { useMySubmission } from '@/hooks/useMySubmission';
 import SubmissionResult from './SubmissionResult';
@@ -95,8 +96,8 @@ export default function SubmissionShell({
     void mutate();
   };
 
-  // Show result breakdown when grade is visible to the student
-  const showResult = (status === 'GRADED' || status === 'PUBLISHED' || status === 'RETURNED') && submission;
+  // Show result breakdown only when grade or return feedback is visible to the student.
+  const showResult = Boolean(submission && status && isPublishedToStudent(status));
 
   // Student can submit when there's no prior submission or it's a DRAFT
   const canSubmit = status === 'DRAFT' || status === null;
@@ -132,7 +133,7 @@ export default function SubmissionShell({
       {children}
 
       {/* Full grading result breakdown — only when published to student */}
-      {showResult && (
+      {showResult && submission && (
         <>
           <Separator />
           <SubmissionResult

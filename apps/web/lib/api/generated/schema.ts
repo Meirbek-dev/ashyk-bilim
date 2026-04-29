@@ -620,6 +620,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assignments/{assignment_uuid}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Archive Assignment
+         * @description Archive an assignment.  Read-only for everyone afterwards; not deletable.
+         */
+        post: operations["api_archive_assignment_api_v1_assignments__assignment_uuid__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/cancel-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Cancel Assignment Schedule
+         * @description Revert a SCHEDULED assignment back to DRAFT.
+         */
+        post: operations["api_cancel_assignment_schedule_api_v1_assignments__assignment_uuid__cancel_schedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Publish Assignment
+         * @description Publish immediately or schedule for a future date.
+         *
+         *     Body ``scheduled_at`` is optional:
+         *     - Omit or set to null → publish now (status becomes PUBLISHED).
+         *     - Set to a future datetime → schedule (status becomes SCHEDULED).
+         */
+        post: operations["api_publish_assignment_api_v1_assignments__assignment_uuid__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/assignments/{assignment_uuid}/submissions/me/draft": {
         parameters: {
             query?: never;
@@ -2568,6 +2632,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/grading/activities/{activity_id}/extend-deadline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Extend Deadline
+         * @description Grant selected students a deadline extension via StudentPolicyOverride.
+         */
+        post: operations["api_extend_deadline_api_v1_grading_activities__activity_id__extend_deadline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/grading/activities/{activity_id}/publish-grades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Bulk Publish Grades
+         * @description Publish all graded submissions for an activity at once (BATCH release mode).
+         *
+         *     For each PUBLISHED submission without an existing published GradingEntry,
+         *     a new immutable GradingEntry is inserted with published_at stamped to now.
+         *     After this call, students can see their grades for this activity.
+         *
+         *     Use when AssessmentPolicy.grade_release_mode == BATCH to control when
+         *     students can first see their grades (e.g., after the deadline has passed).
+         */
+        post: operations["api_bulk_publish_grades_api_v1_grading_activities__activity_id__publish_grades_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/grading/bulk-actions/{action_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get Bulk Action
+         * @description Poll a bulk action created by an async teacher operation.
+         */
+        get: operations["api_get_bulk_action_api_v1_grading_bulk_actions__action_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/grading/courses/{course_uuid}/gradebook": {
         parameters: {
             query?: never;
@@ -2588,7 +2719,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/grading/start/{activity_id}": {
+    "/api/v1/grading/feedback/{feedback_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Api Delete Item Feedback */
+        delete: operations["api_delete_item_feedback_api_v1_grading_feedback__feedback_id__delete"];
+        options?: never;
+        head?: never;
+        /** Api Update Item Feedback */
+        patch: operations["api_update_item_feedback_api_v1_grading_feedback__feedback_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/grading/start/v2/{activity_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2601,10 +2750,35 @@ export interface paths {
          * Api Start Submission
          * @description Create a DRAFT Submission and record the server-stamped start time.
          *
+         *     Enforces max_attempts from AssessmentPolicy (canonical DB source).
          *     Must be called before submitting a quiz or exam so the server controls
          *     the start timestamp (prevents client falsification).
          */
-        post: operations["api_start_submission_api_v1_grading_start__activity_id__post"];
+        post: operations["api_start_submission_api_v1_grading_start_v2__activity_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/grading/start/{activity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Start Submission Legacy
+         * @description (Legacy) Create a DRAFT Submission and record the server-stamped start time.
+         *
+         *     Prefer POST /grading/start/v2/{activity_id} for new integrations — that
+         *     endpoint enforces max_attempts from AssessmentPolicy rather than block
+         *     content so attempt counting is consistent across all submit paths.
+         */
+        post: operations["api_start_submission_legacy_api_v1_grading_start__activity_id__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2693,6 +2867,9 @@ export interface paths {
         /**
          * Api Get My Submissions
          * @description Get the current user's submissions for an activity (most-recent first).
+         *
+         *     Grade details are hidden when the activity uses BATCH release mode and the
+         *     teacher has not yet published grades for this submission.
          */
         get: operations["api_get_my_submissions_api_v1_grading_submissions_me_get"];
         put?: never;
@@ -2715,6 +2892,8 @@ export interface paths {
          * @description Student fetches one of their own submissions to see grade/feedback.
          *
          *     Ownership is enforced: only the submitting student can access this endpoint.
+         *     Grade details are hidden when the activity uses BATCH release mode and the
+         *     teacher has not yet published grades for this submission.
          */
         get: operations["api_get_my_submission_api_v1_grading_submissions_me__submission_uuid__get"];
         put?: never;
@@ -2767,8 +2946,99 @@ export interface paths {
          * @description Save a teacher-entered final score and optional per-item feedback.
          *
          *     Permission is checked in save_grade via the activity's creator_id.
+         *
+         *     Supply `If-Match: <version>` to enable optimistic concurrency control and
+         *     prevent silent overwrites when two teachers grade the same submission.
          */
         patch: operations["api_save_grade_api_v1_grading_submissions__submission_uuid__patch"];
+        trace?: never;
+    };
+    "/api/v1/grading/submissions/{submission_uuid}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api List Item Feedback */
+        get: operations["api_list_item_feedback_api_v1_grading_submissions__submission_uuid__feedback_get"];
+        put?: never;
+        /** Api Create Item Feedback */
+        post: operations["api_create_item_feedback_api_v1_grading_submissions__submission_uuid__feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/grading/submissions/{submission_uuid}/feedback-stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Feedback Stream
+         * @description Stream grading events for one submission via Redis pub/sub.
+         */
+        get: operations["api_feedback_stream_api_v1_grading_submissions__submission_uuid__feedback_stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/grading/submissions/{submission_uuid}/resubmit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Resubmit
+         * @description Create a new DRAFT from a RETURNED submission (resubmission flow).
+         *
+         *     The original RETURNED submission is preserved as the submission history.
+         *     The new DRAFT gets attempt_number = previous + 1 and a fresh started_at.
+         *
+         *     Returns 422 if the submission is not in RETURNED state.
+         *     Returns 403 if the student has exhausted max_attempts.
+         */
+        post: operations["api_resubmit_api_v1_grading_submissions__submission_uuid__resubmit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/grading/submissions/{submission_uuid}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Submit By Uuid
+         * @description Submit a specific DRAFT submission identified by UUID.
+         *
+         *     Functionally equivalent to POST /grading/submit/{activity_id} but uses the
+         *     submission UUID as the primary key, making it safe for multi-attempt flows
+         *     where a student may have more than one submission row for an activity.
+         */
+        post: operations["api_submit_by_uuid_api_v1_grading_submissions__submission_uuid__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/grading/submit/{activity_id}": {
@@ -4562,11 +4832,8 @@ export interface components {
             /** Due At */
             due_at?: string | null;
             grading_type: components["schemas"]["GradingTypeEnum"];
-            /**
-             * Published
-             * @default false
-             */
-            published: boolean;
+            /** @default DRAFT */
+            status: components["schemas"]["AssignmentStatus"];
             /** Title */
             title: string;
         };
@@ -4585,12 +4852,22 @@ export interface components {
             submission?: components["schemas"]["SubmissionRead"] | null;
         };
         /**
+         * AssignmentPublishInput
+         * @description Input for POST /assignments/{uuid}/publish.
+         */
+        AssignmentPublishInput: {
+            /** Scheduled At */
+            scheduled_at?: string | null;
+        };
+        /**
          * AssignmentRead
          * @description Projection returned by the API — never exposes internal FK integer IDs.
          */
         AssignmentRead: {
             /** Activity Uuid */
             activity_uuid?: string | null;
+            /** Archived At */
+            archived_at?: string | null;
             /** Assignment Uuid */
             assignment_uuid: string;
             /** Course Uuid */
@@ -4604,11 +4881,26 @@ export interface components {
             grading_type: components["schemas"]["GradingTypeEnum"];
             /** Published */
             published: boolean;
+            /** Published At */
+            published_at?: string | null;
+            /** Scheduled Publish At */
+            scheduled_publish_at?: string | null;
+            status: components["schemas"]["AssignmentStatus"];
             /** Title */
             title: string;
             /** Updated At */
             updated_at?: string | null;
+            /**
+             * Weight
+             * @default 1
+             */
+            weight: number;
         };
+        /**
+         * AssignmentStatus
+         * @enum {string}
+         */
+        AssignmentStatus: "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
         /**
          * AssignmentTaskAnswer
          * @description Canonical assignment answer shape stored in Submission.answers_json.
@@ -4694,6 +4986,9 @@ export interface components {
         /**
          * AssignmentUpdate
          * @description Partial update — only the fields a teacher can change after creation.
+         *
+         *     Lifecycle transitions (publish, archive) use dedicated endpoints;
+         *     ``status`` is intentionally absent from this schema.
          */
         AssignmentUpdate: {
             /** Description */
@@ -5109,6 +5404,58 @@ export interface components {
             chunk_index: number;
             /** Upload Id */
             upload_id: string;
+        };
+        /** BulkActionRead */
+        BulkActionRead: {
+            action_type: components["schemas"]["BulkActionType"];
+            /** Action Uuid */
+            action_uuid: string;
+            /** Activity Id */
+            activity_id: number;
+            /** Affected Count */
+            affected_count: number;
+            /** Completed At */
+            completed_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error Log */
+            error_log: string;
+            /** Id */
+            id: number;
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            };
+            /** Performed By */
+            performed_by: number;
+            status: components["schemas"]["BulkActionStatus"];
+            /** Target User Ids */
+            target_user_ids?: number[];
+        };
+        /**
+         * BulkActionStatus
+         * @enum {string}
+         */
+        BulkActionStatus: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
+        /**
+         * BulkActionType
+         * @enum {string}
+         */
+        BulkActionType: "EXTEND_DEADLINE" | "RELEASE_GRADES" | "RETURN_ALL" | "OVERRIDE_SCORE" | "BATCH_GRADE";
+        /**
+         * BulkPublishGradesResponse
+         * @description Response for POST /grading/activities/{activity_id}/publish-grades.
+         */
+        BulkPublishGradesResponse: {
+            /** Activity Id */
+            activity_id: number;
+            /** Already Published Count */
+            already_published_count: number;
+            /** Published Count */
+            published_count: number;
         };
         /** CertificationCreate */
         CertificationCreate: {
@@ -6063,6 +6410,24 @@ export interface components {
             /** Title */
             title: string;
         };
+        /**
+         * DeadlineExtensionRequest
+         * @description Request for extending an activity deadline for selected students.
+         */
+        DeadlineExtensionRequest: {
+            /**
+             * New Due At
+             * Format: date-time
+             */
+            new_due_at: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /** User Uuids */
+            user_uuids: string[];
+        };
         /** DiscussionLikeRead */
         DiscussionLikeRead: {
             /** Creation Date */
@@ -6625,6 +6990,83 @@ export interface components {
             item_id: string;
             /** Score */
             score?: number | null;
+        };
+        /**
+         * ItemFeedbackAnnotationType
+         * @enum {string}
+         */
+        ItemFeedbackAnnotationType: "TEXT" | "HIGHLIGHT" | "AUDIO";
+        /** ItemFeedbackCreate */
+        ItemFeedbackCreate: {
+            /** Annotation Data Key */
+            annotation_data_key?: string | null;
+            /** @default TEXT */
+            annotation_type: components["schemas"]["ItemFeedbackAnnotationType"];
+            /**
+             * Comment
+             * @default
+             */
+            comment: string;
+            /** Grading Entry Id */
+            grading_entry_id?: number | null;
+            /** Item Ref */
+            item_ref: string;
+            /** Max Score */
+            max_score?: number | null;
+            /** Score */
+            score?: number | null;
+            /** Task Id */
+            task_id?: number | null;
+        };
+        /** ItemFeedbackRead */
+        ItemFeedbackRead: {
+            /** Annotation Data Key */
+            annotation_data_key?: string | null;
+            annotation_type: components["schemas"]["ItemFeedbackAnnotationType"];
+            /** Comment */
+            comment: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Graded By */
+            graded_by?: number | null;
+            /** Grading Entry Id */
+            grading_entry_id: number;
+            /** Id */
+            id: number;
+            /** Item Ref */
+            item_ref: string;
+            /** Max Score */
+            max_score?: number | null;
+            /** Score */
+            score?: number | null;
+            /** Submission Id */
+            submission_id: number;
+            /** Task Id */
+            task_id?: number | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ItemFeedbackUpdate */
+        ItemFeedbackUpdate: {
+            /** Annotation Data Key */
+            annotation_data_key?: string | null;
+            annotation_type?: components["schemas"]["ItemFeedbackAnnotationType"] | null;
+            /** Comment */
+            comment?: string | null;
+            /** Item Ref */
+            item_ref?: string | null;
+            /** Max Score */
+            max_score?: number | null;
+            /** Score */
+            score?: number | null;
+            /** Task Id */
+            task_id?: number | null;
         };
         /**
          * Judge0Language
@@ -7520,6 +7962,13 @@ export interface components {
              * @default false
              */
             is_late: boolean;
+            /**
+             * Late Penalty Pct
+             * @default 0
+             */
+            late_penalty_pct: number;
+            /** Late Penalty Reason */
+            late_penalty_reason?: string | null;
             /** Started At */
             started_at?: string | null;
             /** @default DRAFT */
@@ -7536,6 +7985,11 @@ export interface components {
             user?: components["schemas"]["SubmissionUser"] | null;
             /** User Id */
             user_id: number;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
         };
         /**
          * SubmissionResponse
@@ -9961,6 +10415,103 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AssignmentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_archive_assignment_api_v1_assignments__assignment_uuid__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_cancel_assignment_schedule_api_v1_assignments__assignment_uuid__cancel_schedule_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_publish_assignment_api_v1_assignments__assignment_uuid__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentPublishInput"];
             };
         };
         responses: {
@@ -13816,6 +14367,103 @@ export interface operations {
             };
         };
     };
+    api_extend_deadline_api_v1_grading_activities__activity_id__extend_deadline_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeadlineExtensionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkActionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_bulk_publish_grades_api_v1_grading_activities__activity_id__publish_grades_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkPublishGradesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_bulk_action_api_v1_grading_bulk_actions__action_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                action_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkActionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     api_get_course_gradebook_api_v1_grading_courses__course_uuid__gradebook_get: {
         parameters: {
             query?: never;
@@ -13847,7 +14495,104 @@ export interface operations {
             };
         };
     };
-    api_start_submission_api_v1_grading_start__activity_id__post: {
+    api_delete_item_feedback_api_v1_grading_feedback__feedback_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedback_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_update_item_feedback_api_v1_grading_feedback__feedback_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedback_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemFeedbackUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemFeedbackRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_start_submission_api_v1_grading_start_v2__activity_id__post: {
+        parameters: {
+            query: {
+                assessment_type: components["schemas"]["AssessmentType"];
+            };
+            header?: never;
+            path: {
+                activity_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_start_submission_legacy_api_v1_grading_start__activity_id__post: {
         parameters: {
             query: {
                 assessment_type: components["schemas"]["AssessmentType"];
@@ -14109,7 +14854,10 @@ export interface operations {
     api_save_grade_api_v1_grading_submissions__submission_uuid__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optimistic concurrency token. Supply the `version` value from the submission you loaded. If the submission has been modified concurrently, 412 Precondition Failed is returned. */
+                "If-Match"?: string | null;
+            };
             path: {
                 submission_uuid: string;
             };
@@ -14118,6 +14866,173 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["TeacherGradeInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_list_item_feedback_api_v1_grading_submissions__submission_uuid__feedback_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemFeedbackRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_create_item_feedback_api_v1_grading_submissions__submission_uuid__feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemFeedbackCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemFeedbackRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_feedback_stream_api_v1_grading_submissions__submission_uuid__feedback_stream_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_resubmit_api_v1_grading_submissions__submission_uuid__resubmit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_submit_by_uuid_api_v1_grading_submissions__submission_uuid__submit_post: {
+        parameters: {
+            query?: {
+                violation_count?: number;
+            };
+            header?: never;
+            path: {
+                submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
             };
         };
         responses: {

@@ -3,7 +3,11 @@
 import { getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { tags } from '@/lib/cacheTags';
-import type { Submission } from '@/types/grading';
+import type {
+  AssignmentDraftPatch,
+  AssignmentDraftRead,
+  AssignmentTaskAnswer,
+} from '@/features/assignments/domain';
 
 export type AssignmentType = 'QUIZ' | 'FILE_SUBMISSION' | 'FORM' | 'OTHER';
 
@@ -24,24 +28,7 @@ export interface AssignmentTaskMutationPayload {
   max_grade_value?: number;
 }
 
-export interface AssignmentTaskAnswer {
-  task_uuid: string;
-  content_type: 'file' | 'text' | 'form' | 'quiz' | 'other';
-  file_key?: string | null;
-  text_content?: string | null;
-  form_data?: Record<string, unknown> | null;
-  quiz_answers?: Record<string, unknown> | null;
-  answer_metadata?: Record<string, unknown>;
-}
-
-export interface AssignmentDraftPatch {
-  tasks: AssignmentTaskAnswer[];
-}
-
-export interface AssignmentDraftRead {
-  assignment_uuid: string;
-  submission: Submission | null;
-}
+export type { AssignmentDraftPatch, AssignmentDraftRead, AssignmentTaskAnswer };
 
 function normalizeAssignmentUuid(assignmentUUID: string) {
   return assignmentUUID.startsWith('assignment_') ? assignmentUUID : `assignment_${assignmentUUID}`;

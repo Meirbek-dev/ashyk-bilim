@@ -1,7 +1,6 @@
 'use client';
 
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AssignmentDraftRead, AssignmentTaskAnswer } from '@services/courses/assignments';
 import {
   getAssignmentDraftSubmission,
   saveAssignmentDraftSubmission,
@@ -31,6 +30,13 @@ import { Badge } from '@components/ui/badge';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
 import { toast } from 'sonner';
+import type { AssignmentDraftRead, AssignmentTaskAnswer } from '@/features/assignments/domain';
+import {
+  findDraftTaskAnswer,
+  getLegacyTaskSubmission,
+  normalizeFormSubmission,
+  normalizeQuizSubmission,
+} from '@/features/assignments/domain';
 
 // Type definitions
 type AssignmentType = 'QUIZ' | 'FILE_SUBMISSION' | 'FORM' | 'OTHER' | string;
@@ -59,14 +65,6 @@ interface FormQuestion {
 
 interface AssignmentTaskContents {
   questions?: QuizQuestion[] | FormQuestion[];
-}
-
-interface QuizSubmissionState {
-  answers: Record<string, string[]>;
-}
-
-interface FormSubmissionState {
-  answers: Record<string, string>;
 }
 
 interface AssignmentTask {
@@ -102,8 +100,6 @@ interface AssignmentsData {
   activity_object?: ActivityObject | null;
 }
 
-const EMPTY_QUIZ_SUBMISSION: QuizSubmissionState = { answers: {} };
-const EMPTY_FORM_SUBMISSION: FormSubmissionState = { answers: {} };
 const assignmentDraftQueryKey = (assignmentUUID: string | undefined) =>
   ['assignments', 'draft-submission', assignmentUUID ?? 'missing'] as const;
 
@@ -124,55 +120,9 @@ function useAssignmentDraft(assignmentUUID: string | undefined) {
   );
 }
 
-function draftTasks(draft: AssignmentDraftRead | null | undefined): AssignmentTaskAnswer[] {
-  const answersJson = draft?.submission?.answers_json;
-  const tasks = answersJson && typeof answersJson === 'object' ? (answersJson as { tasks?: unknown }).tasks : null;
-  return Array.isArray(tasks) ? (tasks as AssignmentTaskAnswer[]) : [];
-}
-
-function findDraftTaskAnswer(
-  draft: AssignmentDraftRead | null | undefined,
-  assignmentTaskUUID: string,
-): AssignmentTaskAnswer | null {
-  return draftTasks(draft).find((task) => task.task_uuid === assignmentTaskUUID) ?? null;
-}
-
-function legacyTaskSubmission(answer: AssignmentTaskAnswer | null): unknown {
-  const metadata = answer?.answer_metadata;
-  return metadata && typeof metadata === 'object' && 'task_submission' in metadata ? metadata.task_submission : null;
-}
-
 function formatFileKey(fileKey: string): string {
   if (fileKey.length <= 20) return fileKey;
   return `${fileKey.slice(0, 8)}...${fileKey.slice(-4)}`;
-}
-
-function normalizeQuizSubmission(value: unknown): QuizSubmissionState {
-  const answers =
-    value && typeof value === 'object' && 'answers' in value && value.answers && typeof value.answers === 'object'
-      ? Object.fromEntries(
-          Object.entries(value.answers as Record<string, unknown>).map(([questionId, selected]) => [
-            questionId,
-            Array.isArray(selected) ? selected.filter((item): item is string => typeof item === 'string') : [],
-          ]),
-        )
-      : {};
-
-  return { answers };
-}
-
-function normalizeFormSubmission(value: unknown): FormSubmissionState {
-  const answers =
-    value && typeof value === 'object' && 'answers' in value && value.answers && typeof value.answers === 'object'
-      ? Object.fromEntries(
-          Object.entries(value.answers as Record<string, unknown>).map(([blankId, answer]) => [
-            blankId,
-            typeof answer === 'string' ? answer : '',
-          ]),
-        )
-      : {};
-
-  return { answers };
 }
 
 const AssignmentStudentActivity = () => {
@@ -493,7 +443,7 @@ const InteractiveQuizTask = ({ task, questions, t }: InteractiveQuizTaskProps) =
 
     const taskAnswer = findDraftTaskAnswer(draftQuery.data, task.assignment_task_uuid);
     const normalized = normalizeQuizSubmission(
-      taskAnswer?.quiz_answers ?? legacyTaskSubmission(taskAnswer) ?? taskAnswer,
+      taskAnswer?.quiz_answers ?? getLegacyTaskSubmission(taskAnswer) ?? taskAnswer,
     );
     setAnswers(normalized.answers);
     setInitialAnswers(normalized.answers);
@@ -658,7 +608,9 @@ const InteractiveFormTask = ({ task, questions, t }: InteractiveFormTaskProps) =
     }
 
     const taskAnswer = findDraftTaskAnswer(draftQuery.data, task.assignment_task_uuid);
-    const normalized = normalizeFormSubmission(taskAnswer?.form_data ?? legacyTaskSubmission(taskAnswer) ?? taskAnswer);
+    const normalized = normalizeFormSubmission(
+      taskAnswer?.form_data ?? getLegacyTaskSubmission(taskAnswer) ?? taskAnswer,
+    );
     setAnswers(normalized.answers);
     setInitialAnswers(normalized.answers);
   }, [assignmentUUID, draftQuery.data, task.assignment_task_uuid]);
@@ -818,7 +770,7 @@ const InteractiveFileTask = ({ task, t }: InteractiveFileTaskProps) => {
     }
 
     const taskAnswer = findDraftTaskAnswer(draftQuery.data, task.assignment_task_uuid);
-    const legacySubmission = legacyTaskSubmission(taskAnswer);
+    const legacySubmission = getLegacyTaskSubmission(taskAnswer);
     const legacyFileKey =
       legacySubmission && typeof legacySubmission === 'object' && 'fileUUID' in legacySubmission
         ? legacySubmission.fileUUID

@@ -1484,10 +1484,9 @@
           "grading_type": {
             "$ref": "#/components/schemas/GradingTypeEnum"
           },
-          "published": {
-            "default": false,
-            "title": "Published",
-            "type": "boolean"
+          "status": {
+            "$ref": "#/components/schemas/AssignmentStatus",
+            "default": "DRAFT"
           },
           "title": {
             "title": "Title",
@@ -1541,6 +1540,25 @@
         "title": "AssignmentDraftRead",
         "type": "object"
       },
+      "AssignmentPublishInput": {
+        "description": "Input for POST /assignments/{uuid}/publish.",
+        "properties": {
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At"
+          }
+        },
+        "title": "AssignmentPublishInput",
+        "type": "object"
+      },
       "AssignmentRead": {
         "description": "Projection returned by the API — never exposes internal FK integer IDs.",
         "properties": {
@@ -1554,6 +1572,18 @@
               }
             ],
             "title": "Activity Uuid"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
           },
           "assignment_uuid": {
             "title": "Assignment Uuid",
@@ -1605,6 +1635,33 @@
             "title": "Published",
             "type": "boolean"
           },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "scheduled_publish_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled Publish At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssignmentStatus"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -1620,6 +1677,11 @@
               }
             ],
             "title": "Updated At"
+          },
+          "weight": {
+            "default": 1.0,
+            "title": "Weight",
+            "type": "number"
           }
         },
         "required": [
@@ -1627,10 +1689,21 @@
           "title",
           "description",
           "published",
+          "status",
           "grading_type"
         ],
         "title": "AssignmentRead",
         "type": "object"
+      },
+      "AssignmentStatus": {
+        "enum": [
+          "DRAFT",
+          "SCHEDULED",
+          "PUBLISHED",
+          "ARCHIVED"
+        ],
+        "title": "AssignmentStatus",
+        "type": "string"
       },
       "AssignmentTaskAnswer": {
         "description": "Canonical assignment answer shape stored in Submission.answers_json.",
@@ -1853,7 +1926,7 @@
         "type": "object"
       },
       "AssignmentUpdate": {
-        "description": "Partial update — only the fields a teacher can change after creation.",
+        "description": "Partial update — only the fields a teacher can change after creation.\n\nLifecycle transitions (publish, archive) use dedicated endpoints;\n``status`` is intentionally absent from this schema.",
         "properties": {
           "description": {
             "anyOf": [
@@ -3011,6 +3084,127 @@
           "chunk"
         ],
         "title": "Body_upload_chunk_api_v1_uploads_chunk_post",
+        "type": "object"
+      },
+      "BulkActionRead": {
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/BulkActionType"
+          },
+          "action_uuid": {
+            "title": "Action Uuid",
+            "type": "string"
+          },
+          "activity_id": {
+            "title": "Activity Id",
+            "type": "integer"
+          },
+          "affected_count": {
+            "title": "Affected Count",
+            "type": "integer"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_log": {
+            "title": "Error Log",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "params": {
+            "additionalProperties": true,
+            "title": "Params",
+            "type": "object"
+          },
+          "performed_by": {
+            "title": "Performed By",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BulkActionStatus"
+          },
+          "target_user_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Target User Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "action_uuid",
+          "performed_by",
+          "action_type",
+          "activity_id",
+          "status",
+          "affected_count",
+          "error_log",
+          "created_at"
+        ],
+        "title": "BulkActionRead",
+        "type": "object"
+      },
+      "BulkActionStatus": {
+        "enum": [
+          "PENDING",
+          "RUNNING",
+          "COMPLETED",
+          "FAILED"
+        ],
+        "title": "BulkActionStatus",
+        "type": "string"
+      },
+      "BulkActionType": {
+        "enum": [
+          "EXTEND_DEADLINE",
+          "RELEASE_GRADES",
+          "RETURN_ALL",
+          "OVERRIDE_SCORE",
+          "BATCH_GRADE"
+        ],
+        "title": "BulkActionType",
+        "type": "string"
+      },
+      "BulkPublishGradesResponse": {
+        "description": "Response for POST /grading/activities/{activity_id}/publish-grades.",
+        "properties": {
+          "activity_id": {
+            "title": "Activity Id",
+            "type": "integer"
+          },
+          "already_published_count": {
+            "title": "Already Published Count",
+            "type": "integer"
+          },
+          "published_count": {
+            "title": "Published Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "activity_id",
+          "published_count",
+          "already_published_count"
+        ],
+        "title": "BulkPublishGradesResponse",
         "type": "object"
       },
       "CertificationCreate": {
@@ -5511,6 +5705,36 @@
         "title": "DataQualityIssue",
         "type": "object"
       },
+      "DeadlineExtensionRequest": {
+        "description": "Request for extending an activity deadline for selected students.",
+        "properties": {
+          "new_due_at": {
+            "format": "date-time",
+            "title": "New Due At",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          },
+          "user_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "User Uuids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "user_uuids",
+          "new_due_at"
+        ],
+        "title": "DeadlineExtensionRequest",
+        "type": "object"
+      },
       "DiscussionLikeRead": {
         "properties": {
           "creation_date": {
@@ -6916,6 +7140,286 @@
           "item_id"
         ],
         "title": "ItemFeedback",
+        "type": "object"
+      },
+      "ItemFeedbackAnnotationType": {
+        "enum": [
+          "TEXT",
+          "HIGHLIGHT",
+          "AUDIO"
+        ],
+        "title": "ItemFeedbackAnnotationType",
+        "type": "string"
+      },
+      "ItemFeedbackCreate": {
+        "properties": {
+          "annotation_data_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annotation Data Key"
+          },
+          "annotation_type": {
+            "$ref": "#/components/schemas/ItemFeedbackAnnotationType",
+            "default": "TEXT"
+          },
+          "comment": {
+            "default": "",
+            "title": "Comment",
+            "type": "string"
+          },
+          "grading_entry_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grading Entry Id"
+          },
+          "item_ref": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Item Ref",
+            "type": "string"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          }
+        },
+        "required": [
+          "item_ref"
+        ],
+        "title": "ItemFeedbackCreate",
+        "type": "object"
+      },
+      "ItemFeedbackRead": {
+        "properties": {
+          "annotation_data_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annotation Data Key"
+          },
+          "annotation_type": {
+            "$ref": "#/components/schemas/ItemFeedbackAnnotationType"
+          },
+          "comment": {
+            "title": "Comment",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "graded_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graded By"
+          },
+          "grading_entry_id": {
+            "title": "Grading Entry Id",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "item_ref": {
+            "title": "Item Ref",
+            "type": "string"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "submission_id": {
+            "title": "Submission Id",
+            "type": "integer"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "grading_entry_id",
+          "submission_id",
+          "item_ref",
+          "comment",
+          "annotation_type",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ItemFeedbackRead",
+        "type": "object"
+      },
+      "ItemFeedbackUpdate": {
+        "properties": {
+          "annotation_data_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annotation Data Key"
+          },
+          "annotation_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ItemFeedbackAnnotationType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "item_ref": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Ref"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          }
+        },
+        "title": "ItemFeedbackUpdate",
         "type": "object"
       },
       "Judge0Language": {
@@ -9252,6 +9756,22 @@
             "title": "Is Late",
             "type": "boolean"
           },
+          "late_penalty_pct": {
+            "default": 0.0,
+            "title": "Late Penalty Pct",
+            "type": "number"
+          },
+          "late_penalty_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Late Penalty Reason"
+          },
           "started_at": {
             "anyOf": [
               {
@@ -9301,6 +9821,11 @@
           },
           "user_id": {
             "title": "User Id",
+            "type": "integer"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
             "type": "integer"
           }
         },
@@ -16913,6 +17438,160 @@
         ]
       }
     },
+    "/api/v1/assignments/{assignment_uuid}/archive": {
+      "post": {
+        "description": "Archive an assignment.  Read-only for everyone afterwards; not deletable.",
+        "operationId": "api_archive_assignment_api_v1_assignments__assignment_uuid__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Archive Assignment",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/cancel-schedule": {
+      "post": {
+        "description": "Revert a SCHEDULED assignment back to DRAFT.",
+        "operationId": "api_cancel_assignment_schedule_api_v1_assignments__assignment_uuid__cancel_schedule_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Cancel Assignment Schedule",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/publish": {
+      "post": {
+        "description": "Publish immediately or schedule for a future date.\n\nBody ``scheduled_at`` is optional:\n- Omit or set to null → publish now (status becomes PUBLISHED).\n- Set to a future datetime → schedule (status becomes SCHEDULED).",
+        "operationId": "api_publish_assignment_api_v1_assignments__assignment_uuid__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentPublishInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Publish Assignment",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
     "/api/v1/assignments/{assignment_uuid}/submissions/me/draft": {
       "get": {
         "description": "Get the current user's Submission-backed assignment draft, if any.",
@@ -23137,6 +23816,160 @@
         ]
       }
     },
+    "/api/v1/grading/activities/{activity_id}/extend-deadline": {
+      "post": {
+        "description": "Grant selected students a deadline extension via StudentPolicyOverride.",
+        "operationId": "api_extend_deadline_api_v1_grading_activities__activity_id__extend_deadline_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_id",
+            "required": true,
+            "schema": {
+              "title": "Activity Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeadlineExtensionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkActionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Extend Deadline",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading/activities/{activity_id}/publish-grades": {
+      "post": {
+        "description": "Publish all graded submissions for an activity at once (BATCH release mode).\n\nFor each PUBLISHED submission without an existing published GradingEntry,\na new immutable GradingEntry is inserted with published_at stamped to now.\nAfter this call, students can see their grades for this activity.\n\nUse when AssessmentPolicy.grade_release_mode == BATCH to control when\nstudents can first see their grades (e.g., after the deadline has passed).",
+        "operationId": "api_bulk_publish_grades_api_v1_grading_activities__activity_id__publish_grades_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_id",
+            "required": true,
+            "schema": {
+              "title": "Activity Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkPublishGradesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Bulk Publish Grades",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading/bulk-actions/{action_uuid}": {
+      "get": {
+        "description": "Poll a bulk action created by an async teacher operation.",
+        "operationId": "api_get_bulk_action_api_v1_grading_bulk_actions__action_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "action_uuid",
+            "required": true,
+            "schema": {
+              "title": "Action Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkActionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Bulk Action",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
     "/api/v1/grading/courses/{course_uuid}/gradebook": {
       "get": {
         "description": "Return the teacher's course-level gradebook matrix.",
@@ -23185,10 +24018,105 @@
         ]
       }
     },
-    "/api/v1/grading/start/{activity_id}": {
+    "/api/v1/grading/feedback/{feedback_id}": {
+      "delete": {
+        "operationId": "api_delete_item_feedback_api_v1_grading_feedback__feedback_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedback_id",
+            "required": true,
+            "schema": {
+              "title": "Feedback Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Delete Item Feedback",
+        "tags": [
+          "grading"
+        ]
+      },
+      "patch": {
+        "operationId": "api_update_item_feedback_api_v1_grading_feedback__feedback_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedback_id",
+            "required": true,
+            "schema": {
+              "title": "Feedback Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemFeedbackUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemFeedbackRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Update Item Feedback",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading/start/v2/{activity_id}": {
       "post": {
-        "description": "Create a DRAFT Submission and record the server-stamped start time.\n\nMust be called before submitting a quiz or exam so the server controls\nthe start timestamp (prevents client falsification).",
-        "operationId": "api_start_submission_api_v1_grading_start__activity_id__post",
+        "description": "Create a DRAFT Submission and record the server-stamped start time.\n\nEnforces max_attempts from AssessmentPolicy (canonical DB source).\nMust be called before submitting a quiz or exam so the server controls\nthe start timestamp (prevents client falsification).",
+        "operationId": "api_start_submission_api_v1_grading_start_v2__activity_id__post",
         "parameters": [
           {
             "in": "path",
@@ -23236,6 +24164,62 @@
           }
         ],
         "summary": "Api Start Submission",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading/start/{activity_id}": {
+      "post": {
+        "description": "(Legacy) Create a DRAFT Submission and record the server-stamped start time.\n\nPrefer POST /grading/start/v2/{activity_id} for new integrations — that\nendpoint enforces max_attempts from AssessmentPolicy rather than block\ncontent so attempt counting is consistent across all submit paths.",
+        "operationId": "api_start_submission_legacy_api_v1_grading_start__activity_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_id",
+            "required": true,
+            "schema": {
+              "title": "Activity Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assessment_type",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Start Submission Legacy",
         "tags": [
           "grading"
         ]
@@ -23469,7 +24453,7 @@
     },
     "/api/v1/grading/submissions/me": {
       "get": {
-        "description": "Get the current user's submissions for an activity (most-recent first).",
+        "description": "Get the current user's submissions for an activity (most-recent first).\n\nGrade details are hidden when the activity uses BATCH release mode and the\nteacher has not yet published grades for this submission.",
         "operationId": "api_get_my_submissions_api_v1_grading_submissions_me_get",
         "parameters": [
           {
@@ -23521,7 +24505,7 @@
     },
     "/api/v1/grading/submissions/me/{submission_uuid}": {
       "get": {
-        "description": "Student fetches one of their own submissions to see grade/feedback.\n\nOwnership is enforced: only the submitting student can access this endpoint.",
+        "description": "Student fetches one of their own submissions to see grade/feedback.\n\nOwnership is enforced: only the submitting student can access this endpoint.\nGrade details are hidden when the activity uses BATCH release mode and the\nteacher has not yet published grades for this submission.",
         "operationId": "api_get_my_submission_api_v1_grading_submissions_me__submission_uuid__get",
         "parameters": [
           {
@@ -23663,7 +24647,7 @@
         ]
       },
       "patch": {
-        "description": "Save a teacher-entered final score and optional per-item feedback.\n\nPermission is checked in save_grade via the activity's creator_id.",
+        "description": "Save a teacher-entered final score and optional per-item feedback.\n\nPermission is checked in save_grade via the activity's creator_id.\n\nSupply `If-Match: <version>` to enable optimistic concurrency control and\nprevent silent overwrites when two teachers grade the same submission.",
         "operationId": "api_save_grade_api_v1_grading_submissions__submission_uuid__patch",
         "parameters": [
           {
@@ -23673,6 +24657,24 @@
             "schema": {
               "title": "Submission Uuid",
               "type": "string"
+            }
+          },
+          {
+            "description": "Optimistic concurrency token. Supply the `version` value from the submission you loaded. If the submission has been modified concurrently, 412 Precondition Failed is returned.",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optimistic concurrency token. Supply the `version` value from the submission you loaded. If the submission has been modified concurrently, 412 Precondition Failed is returned.",
+              "title": "If-Match"
             }
           }
         ],
@@ -23714,6 +24716,277 @@
           }
         ],
         "summary": "Api Save Grade",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading/submissions/{submission_uuid}/feedback": {
+      "get": {
+        "operationId": "api_list_item_feedback_api_v1_grading_submissions__submission_uuid__feedback_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ItemFeedbackRead"
+                  },
+                  "title": "Response Api List Item Feedback Api V1 Grading Submissions  Submission Uuid  Feedback Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api List Item Feedback",
+        "tags": [
+          "grading"
+        ]
+      },
+      "post": {
+        "operationId": "api_create_item_feedback_api_v1_grading_submissions__submission_uuid__feedback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemFeedbackCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemFeedbackRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Create Item Feedback",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading/submissions/{submission_uuid}/feedback-stream": {
+      "get": {
+        "description": "Stream grading events for one submission via Redis pub/sub.",
+        "operationId": "api_feedback_stream_api_v1_grading_submissions__submission_uuid__feedback_stream_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Feedback Stream",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading/submissions/{submission_uuid}/resubmit": {
+      "post": {
+        "description": "Create a new DRAFT from a RETURNED submission (resubmission flow).\n\nThe original RETURNED submission is preserved as the submission history.\nThe new DRAFT gets attempt_number = previous + 1 and a fresh started_at.\n\nReturns 422 if the submission is not in RETURNED state.\nReturns 403 if the student has exhausted max_attempts.",
+        "operationId": "api_resubmit_api_v1_grading_submissions__submission_uuid__resubmit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Resubmit",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading/submissions/{submission_uuid}/submit": {
+      "post": {
+        "description": "Submit a specific DRAFT submission identified by UUID.\n\nFunctionally equivalent to POST /grading/submit/{activity_id} but uses the\nsubmission UUID as the primary key, making it safe for multi-attempt flows\nwhere a student may have more than one submission row for an activity.",
+        "operationId": "api_submit_by_uuid_api_v1_grading_submissions__submission_uuid__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "Submission Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "violation_count",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Violation Count",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Answers Payload",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Submit By Uuid",
         "tags": [
           "grading"
         ]

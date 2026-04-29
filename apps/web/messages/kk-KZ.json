@@ -6369,6 +6369,7 @@
   },
   "HomePage": {
     "Collections": {
+      "collectionOfCourses": "{platformName} курстарының жинақтары",
       "newCollection": "Жаңа жинақ",
       "noContent": "Әзірге жинақтар жоқ",
       "noContentDescription": "Өз курстарыңыз және контентіңізді ұйымдастыру үшін жинақтар құрыңыз",

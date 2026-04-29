@@ -26,11 +26,15 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 import type { GradedItem, ItemFeedback, Submission, TeacherGradeInput } from '@/types/grading';
+import {
+  canTeacherEditGrade,
+  getSubmissionDisplayName as getDomainSubmissionDisplayName,
+  parseScoreInput,
+} from '@/features/grading/domain';
 import SubmissionStatusBadge from './SubmissionStatusBadge';
 import InlineFeedback from './InlineFeedback';
 import { useGradingPanel } from '@/hooks/useGradingPanel';
 import { saveGrade } from '@services/grading/grading';
-import { canTeacherEditGrade } from '@/types/grading';
 
 interface GradingPanelProps {
   submissionUuid: string | null;
@@ -85,12 +89,7 @@ export function buildChangedItemFeedbacks(current: ItemFeedbackMap, initial: Ite
 }
 
 export function parseDraftScore(score: string): number | null {
-  if (score === '') return null;
-  const parsed = Number.parseFloat(score);
-  if (Number.isNaN(parsed) || parsed < 0 || parsed > 100) {
-    return null;
-  }
-  return parsed;
+  return parseScoreInput(score, 100);
 }
 
 export function isDraftDirty(current: GradingDraftState, initial: GradingDraftState): boolean {
@@ -110,11 +109,7 @@ export function isDraftDirty(current: GradingDraftState, initial: GradingDraftSt
 }
 
 export function getSubmissionDisplayName(submission: Submission | null | undefined): string {
-  if (!submission?.user) return '—';
-  return (
-    [submission.user.first_name, submission.user.middle_name, submission.user.last_name].filter(Boolean).join(' ') ||
-    `@${submission.user.username}`
-  );
+  return submission ? getDomainSubmissionDisplayName(submission) : '—';
 }
 
 function getScoreInvalid(score: string): boolean {

@@ -97,7 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="relative"
         suppressHydrationWarning
       >
-        {isDevEnv && <DevScriptLoader />}
+        {/* {isDevEnv && <DevScriptLoader />} */}
         <div className="relative isolate flex min-h-svh flex-col">
           <Suspense fallback={null}>
             <LocalizedApp>{children}</LocalizedApp>

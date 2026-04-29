@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-import { canSelectForBatchGrading, canTeacherEditGrade, needsTeacherAction } from '@/types/grading';
+import { canSelectForBatchGrading, canTeacherEditGrade, needsTeacherAction } from '@/features/grading/domain';
 import type { Submission, SubmissionStatus, TeacherGradeInput } from '@/types/grading';
 import { exportGradesCSV, saveGrade } from '@services/grading/grading';
 import { useSubmissionStats } from '@/hooks/useSubmissionStats';

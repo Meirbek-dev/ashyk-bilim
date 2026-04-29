@@ -61,9 +61,9 @@ export const AssignmentContext = createContext<AssignmentContextType>({
 interface GetAssignmentsFullParams {
   assignment: AssignmentObject | null | undefined;
   assignment_tasks: AssignmentTaskObject[] | null | undefined;
-  course_uuid: string | undefined;
+  course_uuid: string | null | undefined;
   course_object: CourseObject | null | undefined;
-  activity_uuid: string | undefined;
+  activity_uuid: string | null | undefined;
   activity_object: ActivityObject | null | undefined;
 }
 

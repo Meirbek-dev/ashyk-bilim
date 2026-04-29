@@ -6355,6 +6355,7 @@
   },
   "HomePage": {
     "Collections": {
+      "collectionOfCourses": "Course collections from {platformName}",
       "newCollection": "New Collection",
       "noContent": "No collections yet",
       "noContentDescription": "Create collections to organize your courses and content",

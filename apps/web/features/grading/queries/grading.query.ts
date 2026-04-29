@@ -7,7 +7,7 @@ import type {
   SubmissionStats,
   SubmissionStatus,
   SubmissionsPage,
-} from '@/types/grading';
+} from '@/features/grading/domain';
 import { queryOptions } from '@tanstack/react-query';
 import { getAPIUrl } from '@services/config/config';
 import { queryKeys } from '@/lib/react-query/queryKeys';
