@@ -34,7 +34,7 @@ import { useSession } from '@/hooks/useSession';
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
 import { Suspense, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import dynamic from 'next/dynamic';
-import ActivityBreadcrumbs from '@components/Pages/Activity/ActivityBreadcrumbs';
+import { CourseBreadcrumbs } from '@/components/ui/app-breadcrumbs';
 import ActivityIndicators from '@components/Pages/Courses/ActivityIndicators';
 import CourseEndView from '@components/Pages/Activity/CourseEndView';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
@@ -587,7 +587,7 @@ const ActivityClient = (props: ActivityClientProps) => {
               ) : (
                 <div className="space-y-4 pt-0">
                   <div className="pt-2">
-                    <ActivityBreadcrumbs
+                    <CourseBreadcrumbs
                       course={course}
                       activity={activity}
                     />

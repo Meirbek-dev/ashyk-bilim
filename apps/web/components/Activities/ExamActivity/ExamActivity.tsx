@@ -1,11 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { apiFetch } from '@/lib/api-client';
 import { buildCourseActivityIndex, normalizeActivityUuid } from '@/lib/course-activity-index';
 import { queryKeys } from '@/lib/react-query/queryKeys';
@@ -17,8 +16,6 @@ import { examMyAttemptsQueryOptions } from '@/features/exams/queries/exams.query
 import PageLoading from '@components/Objects/Loaders/PageLoading';
 import type { AttemptData } from './state/examFlowReducer';
 import { examFlowReducer } from './state/examFlowReducer';
-import GradingReviewWorkspace from '@/features/grading/review/GradingReviewWorkspace';
-import { loadKindModule, type KindModule } from '@/features/assessments/registry';
 import ExamTakingInterface from './ExamTakingInterface';
 import { examActions } from './state/examActions';
 import { Button } from '@/components/ui/button';
@@ -26,7 +23,6 @@ import { useRouter } from 'next/navigation';
 import ExamPreScreen from './ExamPreScreen';
 import ExamResults from './ExamResults';
 import ExamLayout from './ExamLayout';
-import Link from '@components/ui/AppLink';
 
 interface ActivityObject {
   activity_uuid: string;
@@ -59,8 +55,6 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
 
   // Centralized state management with reducer
   const [state, dispatch] = useReducer(examFlowReducer, { phase: 'loading' });
-  const [activeTab, setActiveTab] = useState('studio');
-  const [examKindModule, setExamKindModule] = useState<KindModule | undefined>();
   const isCompletingRef = useRef(false);
 
   const isTeacher = contributorStatus === 'ACTIVE';
@@ -74,7 +68,7 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
   // Fetch questions
   const { data: questions, error: questionsError, refetch: mutateQuestions } = useExamQuestions(examUuid);
 
-  // Fetch user's attempts (fetch for both students and teachers now)
+  // Fetch user's attempts
   const { data: userAttempts, error: attemptsError, refetch: mutateAttempts } = useExamMyAttempts(examUuid);
 
   // Update state based on loaded data
@@ -103,33 +97,11 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
       return;
     }
 
-    // If teacher and no active attempt, show management
-    if (isTeacher && state.phase === 'loading') {
-      dispatch(examActions.setPreExam(exam, questions, userAttemptsList));
-      dispatch(examActions.enterManagementMode());
-      return;
-    }
-
-    // Default to pre-exam if we're not in a specific state
+    // Default to pre-exam if we're in loading state
     if (state.phase === 'loading') {
       dispatch(examActions.setPreExam(exam, questions, userAttemptsList));
     }
-  }, [exam, questions, userAttempts, examError, questionsError, attemptsError, isTeacher, t, state.phase]);
-
-  useEffect(() => {
-    if (!isTeacher) return;
-    let cancelled = false;
-    void loadKindModule('TYPE_EXAM')
-      .then((kindModule) => {
-        if (!cancelled) setExamKindModule(kindModule);
-      })
-      .catch(() => {
-        if (!cancelled) setExamKindModule(undefined);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isTeacher]);
+  }, [exam, questions, userAttempts, examError, questionsError, attemptsError, t, state.phase]);
 
   const handleStartExam = useCallback(
     (attempt: AttemptData) => {
@@ -187,7 +159,6 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
   const handleProceedToNextActivity = useCallback(() => {
     try {
       if (!nextCourseActivity) {
-        // Prefer a translation if available, otherwise fallback
         toast.info(t('noNextActivity') || 'No next activity');
         return;
       }
@@ -201,22 +172,17 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
   }, [course.course_uuid, nextCourseActivity, router, t]);
 
   const handleBackToPreExam = useCallback(() => {
-    if (state.phase === 'results' || state.phase === 'manage' || state.phase === 'reviewing') {
+    if (state.phase === 'results') {
       dispatch(examActions.backToPreExam(userAttempts || []));
     }
   }, [state.phase, userAttempts]);
 
-  const handleReviewAttempt = useCallback(
-    (attempt: AttemptData) => {
-      const returnPhase = state.phase === 'manage' ? 'manage' : 'pre-exam';
-      dispatch(examActions.reviewAttempt(attempt, returnPhase));
-    },
-    [state.phase],
-  );
+  const handleReviewAttempt = useCallback((attempt: AttemptData) => {
+    dispatch(examActions.reviewAttempt(attempt));
+  }, []);
 
   const handleExitReview = useCallback(() => {
     dispatch(examActions.exitReview());
-    // Refresh attempts data
     mutateAttempts();
   }, [mutateAttempts]);
 
@@ -241,69 +207,6 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
     );
   }
 
-  // Teacher management view
-  if (state.phase === 'manage' && isTeacher) {
-    const studioHref = `/dash/courses/${course.course_uuid.replace('course_', '')}/activity/${activity.activity_uuid.replace('activity_', '')}/studio`;
-
-    return (
-      <ExamLayout title={activity.name}>
-        <div className="space-y-6 p-0">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold">{activity.name}</h1>
-              <p className="text-muted-foreground">{t('manageExam')}</p>
-            </div>
-            <Button onClick={() => dispatch(examActions.exitManagementMode(userAttempts || []))}>
-              {t('previewExam')}
-            </Button>
-          </div>
-
-          <Tabs
-            value={activeTab}
-            onValueChange={(value) => value && setActiveTab(value)}
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="studio">Studio</TabsTrigger>
-              <TabsTrigger value="results">{t('results')}</TabsTrigger>
-            </TabsList>
-
-            <TabsContent
-              value="studio"
-              className="mt-6"
-            >
-              <div className="rounded-md border border-dashed p-6">
-                <h2 className="text-lg font-semibold">Exam authoring moved to Studio</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Questions and settings now use the shared assessment author surface.
-                </p>
-                <Button
-                  className="mt-4"
-                  render={<Link href={studioHref} />}
-                >
-                  Open Studio
-                </Button>
-              </div>
-            </TabsContent>
-
-            <TabsContent
-              value="results"
-              className="mt-6"
-            >
-              <GradingReviewWorkspace
-                activityId={exam.activity_id}
-                activityUuid={activity.activity_uuid}
-                title={t('results')}
-                initialFilter="ALL"
-                kindModule={examKindModule}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </ExamLayout>
-    );
-  }
-
-  // Student views
   if (state.phase === 'pre-exam') {
     return (
       <ExamLayout title={state.exam.title}>
@@ -314,7 +217,6 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
           onStartExam={handleStartExam}
           onReviewAttempt={handleReviewAttempt}
           isTeacher={isTeacher}
-          onBackToManage={isTeacher ? () => dispatch(examActions.enterManagementMode()) : undefined}
         />
       </ExamLayout>
     );
@@ -334,7 +236,6 @@ export default function ExamActivity({ activity, course }: ExamActivityProps) {
   }
 
   const handleRetry = async () => {
-    // Start a new attempt if allowed
     try {
       const response = await apiFetch(`exams/${exam.exam_uuid}/attempts/start`, {
         method: 'POST',

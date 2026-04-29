@@ -1,4 +1,4 @@
-export type ExamFlowPhase = 'loading' | 'pre-exam' | 'taking' | 'results' | 'manage' | 'error';
+export type ExamFlowPhase = 'loading' | 'pre-exam' | 'taking' | 'results' | 'reviewing' | 'error';
 
 export interface ExamData {
   exam_uuid: string;
@@ -59,14 +59,7 @@ export type ExamFlowState =
   | { phase: 'pre-exam'; exam: ExamData; questions: QuestionData[]; userAttempts: AttemptData[] }
   | { phase: 'taking'; exam: ExamData; questions: QuestionData[]; attempt: AttemptData }
   | { phase: 'results'; exam: ExamData; questions: QuestionData[]; attempt: AttemptData }
-  | {
-      phase: 'reviewing';
-      exam: ExamData;
-      questions: QuestionData[];
-      attempt: AttemptData;
-      returnPhase: 'pre-exam' | 'manage';
-    }
-  | { phase: 'manage'; exam: ExamData; questions: QuestionData[]; userAttempts: AttemptData[] }
+  | { phase: 'reviewing'; exam: ExamData; questions: QuestionData[]; attempt: AttemptData }
   | { phase: 'error'; error: ErrorInfo };
 
 export type ExamFlowAction =
@@ -78,14 +71,9 @@ export type ExamFlowAction =
   | { type: 'START_EXAM'; payload: { attempt: AttemptData } }
   | { type: 'SUBMIT_EXAM'; payload: { attempt: AttemptData } }
   | { type: 'VIEW_RESULTS'; payload: { attempt: AttemptData } }
-  | {
-      type: 'REVIEW_ATTEMPT';
-      payload: { attempt: AttemptData; returnPhase: 'pre-exam' | 'manage' };
-    }
+  | { type: 'REVIEW_ATTEMPT'; payload: { attempt: AttemptData } }
   | { type: 'EXIT_REVIEW' }
   | { type: 'BACK_TO_PRE_EXAM'; payload: { userAttempts: AttemptData[] } }
-  | { type: 'ENTER_MANAGEMENT_MODE' }
-  | { type: 'EXIT_MANAGEMENT_MODE'; payload: { userAttempts: AttemptData[] } }
   | { type: 'SET_ERROR'; payload: { error: ErrorInfo } }
   | { type: 'RETRY' };
 
@@ -105,8 +93,7 @@ export function examFlowReducer(state: ExamFlowState, action: ExamFlowAction): E
     }
 
     case 'START_EXAM': {
-      // Allow starting an exam from pre-exam, management mode, or results (retry flow)
-      if (state.phase !== 'pre-exam' && state.phase !== 'manage' && state.phase !== 'results') {
+      if (state.phase !== 'pre-exam' && state.phase !== 'results') {
         console.warn('Cannot start exam from phase:', state.phase);
         return state;
       }
@@ -132,7 +119,7 @@ export function examFlowReducer(state: ExamFlowState, action: ExamFlowAction): E
     }
 
     case 'VIEW_RESULTS': {
-      if (state.phase !== 'pre-exam' && state.phase !== 'manage') {
+      if (state.phase !== 'pre-exam') {
         console.warn('Cannot view results from phase:', state.phase);
         return state;
       }
@@ -145,7 +132,7 @@ export function examFlowReducer(state: ExamFlowState, action: ExamFlowAction): E
     }
 
     case 'REVIEW_ATTEMPT': {
-      if (state.phase !== 'pre-exam' && state.phase !== 'manage') {
+      if (state.phase !== 'pre-exam') {
         console.warn('Cannot review attempt from phase:', state.phase);
         return state;
       }
@@ -154,7 +141,6 @@ export function examFlowReducer(state: ExamFlowState, action: ExamFlowAction): E
         exam: state.exam,
         questions: state.questions,
         attempt: action.payload.attempt,
-        returnPhase: action.payload.returnPhase,
       };
     }
 
@@ -163,52 +149,17 @@ export function examFlowReducer(state: ExamFlowState, action: ExamFlowAction): E
         console.warn('Cannot exit review from phase:', state.phase);
         return state;
       }
-      if (state.returnPhase === 'pre-exam') {
-        return {
-          phase: 'pre-exam',
-          exam: state.exam,
-          questions: state.questions,
-          userAttempts: [],
-        };
-      } else {
-        return {
-          phase: 'manage',
-          exam: state.exam,
-          questions: state.questions,
-          userAttempts: [],
-        };
-      }
-    }
-
-    case 'BACK_TO_PRE_EXAM': {
-      if (state.phase !== 'results' && state.phase !== 'manage') {
-        console.warn('Cannot go back to pre-exam from phase:', state.phase);
-        return state;
-      }
       return {
         phase: 'pre-exam',
         exam: state.exam,
         questions: state.questions,
-        userAttempts: action.payload.userAttempts,
+        userAttempts: [],
       };
     }
 
-    case 'ENTER_MANAGEMENT_MODE': {
-      if (state.phase !== 'pre-exam') {
-        console.warn('Cannot enter management mode from phase:', state.phase);
-        return state;
-      }
-      return {
-        phase: 'manage',
-        exam: state.exam,
-        questions: state.questions,
-        userAttempts: state.userAttempts,
-      };
-    }
-
-    case 'EXIT_MANAGEMENT_MODE': {
-      if (state.phase !== 'manage') {
-        console.warn('Cannot exit management mode from phase:', state.phase);
+    case 'BACK_TO_PRE_EXAM': {
+      if (state.phase !== 'results') {
+        console.warn('Cannot go back to pre-exam from phase:', state.phase);
         return state;
       }
       return {

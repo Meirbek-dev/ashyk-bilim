@@ -13,7 +13,7 @@
  *   const { Author, Attempt, Review } = getKindModule('TYPE_ASSIGNMENT');
  */
 
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import type { AssessmentKind } from '../domain';
 import type { Submission } from '@/features/grading/domain/types';
 
@@ -50,8 +50,24 @@ export interface KindModule {
   label: string;
   /** Icon import key — maps to Lucide icon name. */
   iconName: string;
-  /** Teacher authoring panel. */
+  /**
+   * Optional context provider that wraps Outline + Author + Inspector together.
+   * Use when the three slots need shared state (e.g. selected task in assignments).
+   * AssessmentStudioWorkspace renders this as the outermost wrapper.
+   */
+  Provider?: ComponentType<KindAuthorProps & { children: ReactNode }>;
+  /**
+   * Optional left rail rendered in column 1 of the studio 3-column grid.
+   * Examples: task outline (assignment), question list (exam).
+   */
+  Outline?: ComponentType<KindAuthorProps>;
+  /** Teacher authoring panel — center column of the studio grid. */
   Author: ComponentType<KindAuthorProps>;
+  /**
+   * Optional right rail rendered in column 3 of the studio 3-column grid.
+   * Examples: policy inspector (assignment), exam settings summary.
+   */
+  Inspector?: ComponentType<KindAuthorProps>;
   /** Student attempt panel. */
   Attempt: ComponentType<KindAttemptProps>;
   /** Submission detail panel for the review surface. */
@@ -100,7 +116,7 @@ export async function loadKindModule(kind: AssessmentKind): Promise<KindModule> 
 
 // Register all built-in kinds eagerly so they are ready at import time.
 // Each kind file self-registers via a side-effect import.
-import './assignment';
+import './assignment/index';
 import './exam';
 import './code-challenge';
 import './quiz';

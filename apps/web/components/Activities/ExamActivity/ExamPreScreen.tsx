@@ -18,7 +18,6 @@ interface ExamPreScreenProps {
   onStartExam: (attempt: any) => void;
   onReviewAttempt?: (attempt: any) => void;
   isTeacher?: boolean;
-  onBackToManage?: () => void;
 }
 
 export default function ExamPreScreen({
@@ -28,7 +27,6 @@ export default function ExamPreScreen({
   onStartExam,
   onReviewAttempt,
   isTeacher = false,
-  onBackToManage,
 }: ExamPreScreenProps) {
   const t = useTranslations('Activities.ExamActivity');
   const [isStarting, setIsStarting] = useState(false);
@@ -216,17 +214,6 @@ export default function ExamPreScreen({
               )}
 
               <div className="mt-6 lg:hidden">
-                {/* Mobile CTA: Start button stays inside main content on small screens */}
-                {isTeacher && onBackToManage && (
-                  <Button
-                    size="lg"
-                    onClick={onBackToManage}
-                    variant="outline"
-                  >
-                    {t('backToManagement')}
-                  </Button>
-                )}
-
                 {canTakeExam ? (
                   <div className="mt-3">
                     <Button
@@ -325,16 +312,6 @@ export default function ExamPreScreen({
                   </Alert>
                 )}
 
-                {isTeacher && onBackToManage && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="mt-3 w-full"
-                    onClick={onBackToManage}
-                  >
-                    {t('backToManagement')}
-                  </Button>
-                )}
               </div>
             </CardContent>
           </Card>

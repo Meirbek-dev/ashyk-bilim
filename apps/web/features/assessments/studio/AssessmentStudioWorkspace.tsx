@@ -1,7 +1,15 @@
 'use client';
 
-import { AlertTriangle, Archive, CalendarClock, Eye, LoaderCircle, Send, Undo2 } from 'lucide-react';
-import { useEffect, useState, useTransition } from 'react';
+import {
+  AlertTriangle,
+  Archive,
+  CalendarClock,
+  Eye,
+  LoaderCircle,
+  Send,
+  Undo2,
+} from 'lucide-react';
+import { Fragment, useEffect, useState, useTransition } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -15,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import Link from '@components/ui/AppLink';
+import { cn } from '@/lib/utils';
 
 interface AssessmentStudioWorkspaceProps {
   courseUuid: string;
@@ -65,7 +74,6 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   }
 
   const { vm: studio } = vm;
-  const Author = kindModule?.Author;
   const previewHref = `/course/${courseUuid.replace('course_', '')}/activity/${activityUuid.replace('activity_', '')}`;
 
   const setLifecycle = (lifecycle: AssessmentLifecycle, nextScheduledAt?: string | null) => {
@@ -85,7 +93,9 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
           const message = (metadata.data as { detail?: string } | undefined)?.detail ?? 'Failed to update lifecycle';
           throw new Error(message);
         }
-        await queryClient.invalidateQueries({ queryKey: queryKeys.activities.detail(activityUuid.replace(/^activity_/, '')) });
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.activities.detail(activityUuid.replace(/^activity_/, '')),
+        });
         toast.success(`Lifecycle changed to ${LIFECYCLE_LABELS[lifecycle]}`);
       } catch (caught) {
         toast.error(caught instanceof Error ? caught.message : 'Failed to update lifecycle');
@@ -93,8 +103,20 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
     });
   };
 
+  // Resolve slots
+  const Author = kindModule?.Author;
+  const Outline = kindModule?.Outline;
+  const Inspector = kindModule?.Inspector;
+  const Provider = kindModule?.Provider ?? Fragment;
+
+  const hasOutline = Boolean(Outline);
+  const hasInspector = Boolean(Inspector);
+
+  const slotProps = { activityUuid, courseUuid };
+
   return (
     <div className="min-h-screen bg-background">
+      {/* ── Topbar ─────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur">
         <div className="flex flex-col gap-3 px-4 py-3 lg:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -116,16 +138,11 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                 <Badge variant={studio.lifecycle === 'PUBLISHED' ? 'default' : 'secondary'}>
                   {LIFECYCLE_LABELS[studio.lifecycle]}
                 </Badge>
-                <Badge variant="outline">Saved</Badge>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                render={<Link href={previewHref} target="_blank" />}
-              >
+              <Button variant="outline" size="sm" render={<Link href={previewHref} target="_blank" />}>
                 <Eye className="size-4" />
                 Preview
               </Button>
@@ -134,7 +151,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                 value={scheduledAt}
                 disabled={isPending || studio.lifecycle === 'ARCHIVED'}
                 className="w-52"
-                onChange={(event) => setScheduledAt(event.target.value)}
+                onChange={(e) => setScheduledAt(e.target.value)}
               />
               <Button
                 variant="outline"
@@ -174,22 +191,43 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
             </div>
           </div>
 
-          {studio.validationIssues.length > 0 ? (
+          {studio.validationIssues.length > 0 && (
             <Alert className="border-amber-200 bg-amber-50 text-amber-900">
               <AlertTriangle className="size-4" />
               <AlertDescription>
-                {studio.validationIssues.map((issue) => issue.message).join(' ')}
+                {studio.validationIssues.map((i) => i.message).join(' ')}
               </AlertDescription>
             </Alert>
-          ) : null}
+          )}
         </div>
       </header>
 
+      {/* ── Content ────────────────────────────────────────────────────── */}
       {Author ? (
-        <Author
-          activityUuid={activityUuid}
-          courseUuid={courseUuid}
-        />
+        <Provider {...slotProps}>
+          <div
+            className={cn(
+              'grid grid-cols-1',
+              hasOutline && !hasInspector && 'lg:grid-cols-[18rem_minmax(0,1fr)]',
+              hasOutline && hasInspector && 'lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)_22rem]',
+              !hasOutline && hasInspector && 'xl:grid-cols-[minmax(0,1fr)_22rem]',
+            )}
+          >
+            {Outline && (
+              <aside className="border-b lg:border-r lg:border-b-0">
+                <Outline {...slotProps} />
+              </aside>
+            )}
+            <main className="min-w-0 border-t lg:border-t-0">
+              <Author {...slotProps} />
+            </main>
+            {Inspector && (
+              <aside className="border-t xl:border-t-0 xl:border-l">
+                <Inspector {...slotProps} />
+              </aside>
+            )}
+          </div>
+        </Provider>
       ) : (
         <div className="flex min-h-[360px] items-center justify-center text-sm text-muted-foreground">
           <LoaderCircle className="mr-2 size-4 animate-spin" />

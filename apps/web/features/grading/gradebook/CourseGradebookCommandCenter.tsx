@@ -1,12 +1,11 @@
 'use client';
 
-import { ArrowLeft, Download, Filter, RefreshCcw, Search } from 'lucide-react';
+import { Download, Filter, RefreshCcw, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 
-import { assessmentTypeToKind, type AssessmentKind } from '@/features/assessments/domain';
-import { loadKindModule, type KindModule } from '@/features/assessments/registry';
 import { courseGradebookQueryOptions } from '@/features/grading/queries/grading.query';
 import {
   ACTIVITY_PROGRESS_STATE_CLASSES,
@@ -23,7 +22,6 @@ import {
   type GradebookRollupKind,
   type GradebookSavedFilterId,
 } from '@/features/grading/domain';
-import GradingReviewWorkspace from '@/features/grading/review/GradingReviewWorkspace';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -37,14 +35,6 @@ interface CourseGradebookCommandCenterProps {
   courseUuid: string;
 }
 
-interface ActiveReview {
-  activityId: number;
-  activityUuid?: string;
-  submissionUuid: string;
-  title: string;
-  kindModule?: KindModule;
-}
-
 const ROLLUP_KINDS: GradebookRollupKind[] = ['assignment_group', 'cohort', 'learner', 'activity'];
 
 function storageKey(courseUuid: string) {
@@ -53,6 +43,7 @@ function storageKey(courseUuid: string) {
 
 export default function CourseGradebookCommandCenter({ courseUuid }: CourseGradebookCommandCenterProps) {
   const t = useTranslations('Features.Grading.Gradebook');
+  const router = useRouter();
   const { data, error, isError, isLoading, refetch } = useQuery(courseGradebookQueryOptions(courseUuid));
   const [filters, setFilters] = useState<GradebookFilters>({
     savedFilter: 'needs_grading',
@@ -60,7 +51,6 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     activityType: 'all',
   });
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-  const [activeReview, setActiveReview] = useState<ActiveReview | null>(null);
 
   useEffect(() => {
     try {
@@ -107,29 +97,6 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     [cellMap, selectedKeys],
   );
 
-  if (activeReview) {
-    return (
-      <div className="space-y-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setActiveReview(null)}
-        >
-          <ArrowLeft className="size-4" />
-          {t('backToGradebook')}
-        </Button>
-        <GradingReviewWorkspace
-          activityId={activeReview.activityId}
-          activityUuid={activeReview.activityUuid}
-          initialSubmissionUuid={activeReview.submissionUuid}
-          initialFilter="ALL"
-          title={activeReview.title}
-          kindModule={activeReview.kindModule}
-        />
-      </div>
-    );
-  }
-
   if (isLoading) return <div className="text-muted-foreground text-sm">{t('loading')}</div>;
 
   if (isError) {
@@ -148,32 +115,12 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
   const openCell = (cell: ActivityProgressCell) => {
     if (!cell.latest_submission_uuid) return;
     const activity = data.activities.find((item) => item.id === cell.activity_id);
-    const nextReview: ActiveReview = {
-      activityId: cell.activity_id,
-      activityUuid: activity?.activity_uuid,
-      submissionUuid: cell.latest_submission_uuid,
-      title: activity?.name ?? t('submissionReview'),
-    };
-    setActiveReview(nextReview);
-
-    const kind = activity ? gradebookActivityToAssessmentKind(activity) : null;
-    if (!kind) return;
-
-    void loadKindModule(kind)
-      .then((kindModule) => {
-        setActiveReview((current) =>
-          current?.submissionUuid === nextReview.submissionUuid
-            ? {
-                ...current,
-                kindModule,
-              }
-            : current,
-        );
-      })
-      .catch(() => {
-        // Generic submission rendering remains available if a kind module has
-        // not been registered yet.
-      });
+    if (!activity?.activity_uuid) return;
+    const cleanCourse = courseUuid.replace(/^course_/, '');
+    const cleanActivity = activity.activity_uuid.replace(/^activity_/, '');
+    router.push(
+      `/dash/courses/${cleanCourse}/activity/${cleanActivity}/review?submission=${cell.latest_submission_uuid}`,
+    );
   };
 
   return (
@@ -523,17 +470,6 @@ function labelActivityType(t: (key: string) => string, type: string) {
   if (key === 'type_form' || key === 'form') return t('activityTypes.form');
   if (key === 'type_file' || key === 'file') return t('activityTypes.file');
   return type.replace('TYPE_', '').replaceAll('_', ' ');
-}
-
-function gradebookActivityToAssessmentKind(activity: {
-  activity_type: string;
-  assessment_type?: string | null;
-}): AssessmentKind | null {
-  if (activity.assessment_type) return assessmentTypeToKind(activity.assessment_type);
-  if (activity.activity_type === 'TYPE_ASSIGNMENT') return 'TYPE_ASSIGNMENT';
-  if (activity.activity_type === 'TYPE_EXAM') return 'TYPE_EXAM';
-  if (activity.activity_type === 'TYPE_CODE_CHALLENGE') return 'TYPE_CODE_CHALLENGE';
-  return null;
 }
 
 function labelRollupRow(t: (key: string) => string, kind: GradebookRollupKind, label: string) {

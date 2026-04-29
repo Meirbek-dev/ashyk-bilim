@@ -42,11 +42,11 @@ const DashMobileMenu = () => {
     ...(canSeeAssignments
       ? [
           {
-            href: '/dash/assignments',
+            href: '/dash/courses',
             icon: Backpack,
             label: t('mobile.assignments'),
             tooltip: t('tooltips.assignments'),
-            isActive: pathname.startsWith('/dash/assignments'),
+            isActive: pathname.startsWith('/dash/courses'),
           },
         ]
       : []),

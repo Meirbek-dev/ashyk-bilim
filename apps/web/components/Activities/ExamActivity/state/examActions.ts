@@ -25,9 +25,9 @@ export const examActions = {
     payload: { attempt },
   }),
 
-  reviewAttempt: (attempt: AttemptData, returnPhase: 'pre-exam' | 'manage'): ExamFlowAction => ({
+  reviewAttempt: (attempt: AttemptData): ExamFlowAction => ({
     type: 'REVIEW_ATTEMPT',
-    payload: { attempt, returnPhase },
+    payload: { attempt },
   }),
 
   exitReview: (): ExamFlowAction => ({
@@ -36,15 +36,6 @@ export const examActions = {
 
   backToPreExam: (userAttempts: AttemptData[]): ExamFlowAction => ({
     type: 'BACK_TO_PRE_EXAM',
-    payload: { userAttempts },
-  }),
-
-  enterManagementMode: (): ExamFlowAction => ({
-    type: 'ENTER_MANAGEMENT_MODE',
-  }),
-
-  exitManagementMode: (userAttempts: AttemptData[]): ExamFlowAction => ({
-    type: 'EXIT_MANAGEMENT_MODE',
     payload: { userAttempts },
   }),
 

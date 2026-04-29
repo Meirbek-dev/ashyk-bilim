@@ -47,7 +47,7 @@ export default async function PlatformDashHomePage() {
     },
     {
       visible: hasAssignmentsAccess,
-      href: '/dash/assignments',
+      href: '/dash/courses',
       icon: <ClipboardList size={22} />,
       title: t('Assignments.title'),
       description: t('Assignments.description'),

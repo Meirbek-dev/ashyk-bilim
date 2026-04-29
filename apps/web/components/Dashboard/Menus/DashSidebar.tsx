@@ -114,10 +114,10 @@ const useNavigationItems = () => {
       ? [
           {
             title: t('tooltips.assignments'),
-            href: '/dash/assignments',
+            href: '/dash/courses',
             icon: Backpack,
             tooltip: t('tooltips.assignments'),
-            isActive: pathname.startsWith('/dash/assignments'),
+            isActive: pathname.startsWith('/dash/courses'),
           },
         ]
       : []),

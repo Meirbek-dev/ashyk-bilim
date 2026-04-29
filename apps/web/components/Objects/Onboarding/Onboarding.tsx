@@ -171,7 +171,7 @@ const Onboarding: FC = () => {
         {
           label: t('step8Button'),
           action: () => {
-            router.push(getAbsoluteUrl('/dash/assignments?new=true'));
+            router.push(getAbsoluteUrl('/dash/courses'));
           },
           icon: <Book size={16} />,
         },

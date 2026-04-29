@@ -35,7 +35,7 @@ import { useSession } from '@/hooks/useSession';
 import { useCallback, useEffect, useMemo, useOptimistic, useState, useTransition } from 'react';
 import type { Course } from '@components/Objects/Thumbnails/CourseThumbnail';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs';
+import { DashBreadcrumbs } from '@/components/ui/app-breadcrumbs';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import DataTable from '@/components/ui/data-table';
@@ -510,7 +510,7 @@ const CoursesHome = ({
   return (
     <div className="bg-background min-h-screen w-full px-4 py-6 lg:px-8">
       <div className="mb-6">
-        <BreadCrumbs type="courses" />
+        <DashBreadcrumbs type="courses" />
 
         <div className="bg-card mt-4 rounded-xl border p-6 shadow-sm">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">

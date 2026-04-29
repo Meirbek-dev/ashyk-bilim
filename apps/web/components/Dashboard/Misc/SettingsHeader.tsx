@@ -1,6 +1,6 @@
 'use client';
 
-import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs';
+import { DashBreadcrumbs, type DashBreadcrumbType } from '@/components/ui/app-breadcrumbs';
 import React from 'react';
 
 interface Props {
@@ -21,7 +21,7 @@ export default function SettingsHeader({
   return (
     <header className={headerClassName}>
       <div className="px-6 lg:px-10">
-        <BreadCrumbs type={breadcrumbType as any} />
+        <DashBreadcrumbs type={breadcrumbType as DashBreadcrumbType} />
 
         <div className="pt-6 pb-4">
           <div className="max-w-7xl space-y-1.5">
