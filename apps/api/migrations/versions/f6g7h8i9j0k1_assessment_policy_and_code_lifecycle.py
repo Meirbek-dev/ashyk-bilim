@@ -48,7 +48,7 @@ def upgrade() -> None:
     """)
 
     op.execute("""
-        UPDATE assignment_task
+        UPDATE assignmenttask
         SET contents = jsonb_set(
             contents::jsonb,
             '{settings}',
