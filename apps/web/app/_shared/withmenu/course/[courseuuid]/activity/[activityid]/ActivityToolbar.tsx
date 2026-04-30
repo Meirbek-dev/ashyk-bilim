@@ -108,15 +108,7 @@ export default function ActivityToolbar({
   );
 }
 
-function MarkStatus({
-  activity,
-  course,
-  trailData,
-}: {
-  activity: Activity;
-  course: CourseStructure;
-  trailData: any;
-}) {
+function MarkStatus({ activity, course, trailData }: { activity: Activity; course: CourseStructure; trailData: any }) {
   const t = useTranslations('ActivityPage');
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -191,7 +183,13 @@ function MarkStatus({
           : 'border-border bg-background text-foreground hover:bg-muted inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60'
       }
     >
-      {isLoading ? <Loader2 className="size-3.5 animate-spin" /> : isActivityCompleted ? <CheckCircle size={14} /> : <Circle size={14} />}
+      {isLoading ? (
+        <Loader2 className="size-3.5 animate-spin" />
+      ) : isActivityCompleted ? (
+        <CheckCircle size={14} />
+      ) : (
+        <Circle size={14} />
+      )}
       {isLoading ? t('marking') : isActivityCompleted ? t('statusComplete') : t('markAsComplete')}
     </button>
   );
@@ -211,7 +209,11 @@ function NextActivityButton({ course, currentActivityId }: { course: CourseStruc
   return (
     <button
       type="button"
-      onClick={() => router.push(`${getAbsoluteUrl('')}/course/${course.course_uuid?.replace('course_', '')}/activity/${nextActivity.cleanUuid}`)}
+      onClick={() =>
+        router.push(
+          `${getAbsoluteUrl('')}/course/${course.course_uuid?.replace('course_', '')}/activity/${nextActivity.cleanUuid}`,
+        )
+      }
       className="bg-muted text-foreground hover:bg-muted/80 inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium transition-colors"
     >
       <span className="max-w-[180px] truncate">{nextActivity.name}</span>
@@ -231,7 +233,11 @@ function PreviousActivityButton({ course, currentActivityId }: { course: CourseS
   return (
     <button
       type="button"
-      onClick={() => router.push(`${getAbsoluteUrl('')}/course/${course.course_uuid?.replace('course_', '')}/activity/${previousActivity.cleanUuid}`)}
+      onClick={() =>
+        router.push(
+          `${getAbsoluteUrl('')}/course/${course.course_uuid?.replace('course_', '')}/activity/${previousActivity.cleanUuid}`,
+        )
+      }
       className="border-border bg-background text-foreground hover:bg-muted inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium transition-colors"
     >
       <ChevronLeft size={14} />

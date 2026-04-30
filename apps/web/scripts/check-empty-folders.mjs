@@ -12,11 +12,7 @@ async function walk(dir) {
     empty.push(dir);
     return;
   }
-  await Promise.all(
-    entries
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => walk(path.join(dir, entry.name))),
-  );
+  await Promise.all(entries.filter((entry) => entry.isDirectory()).map((entry) => walk(path.join(dir, entry.name))));
 }
 
 await Promise.all(roots.map((root) => walk(root)));

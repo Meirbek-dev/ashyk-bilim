@@ -29,8 +29,4 @@ export type {
   PersistedAttemptData,
 } from './hooks/useAssessmentAttempt';
 
-export {
-  useAttemptGuard,
-  type AttemptGuardOptions,
-  type AttemptTimerConfig,
-} from './hooks/useAssessmentPolicy';
+export { useAttemptGuard, type AttemptGuardOptions, type AttemptTimerConfig } from './hooks/useAssessmentPolicy';

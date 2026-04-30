@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-import { registerItemKind, type ItemAuthorProps, type ItemAttemptProps, type ItemReviewDetailProps } from '../registry';
+import { registerItemKind } from '../registry';
+import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
 
 export type ChoiceItemKind = 'CHOICE_SINGLE' | 'CHOICE_MULTIPLE' | 'TRUE_FALSE' | 'MATCHING';
 
@@ -57,7 +58,7 @@ export type ChoiceAttemptItem =
       pairs: MatchingPair[];
     };
 
-export type ChoiceAnswer = string | number | Array<string | number> | Record<string, string> | null | undefined;
+export type ChoiceAnswer = string | number | (string | number)[] | Record<string, string> | null | undefined;
 
 function optionId(option: ChoiceOption, index: number) {
   return option.id ?? index;
@@ -78,7 +79,7 @@ export function ChoiceItemAttempt({
         {item.pairs.map((pair) => (
           <div
             key={pair.id}
-            className="flex flex-col gap-3 rounded-md border bg-background p-3 sm:flex-row sm:items-center"
+            className="bg-background flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center"
           >
             <span className="min-w-0 flex-1 text-sm font-medium">{pair.left}</span>
             <NativeSelect
@@ -87,11 +88,18 @@ export function ChoiceItemAttempt({
               onChange={(event) => onAnswerChange({ ...current, [pair.left]: event.target.value })}
               aria-label={`Match ${pair.left}`}
             >
-              <NativeSelectOption value="" disabled hidden>
+              <NativeSelectOption
+                value=""
+                disabled
+                hidden
+              >
                 Select match
               </NativeSelectOption>
               {rightOptions.map((right) => (
-                <NativeSelectOption key={right} value={right}>
+                <NativeSelectOption
+                  key={right}
+                  value={right}
+                >
                   {right}
                 </NativeSelectOption>
               ))}
@@ -111,7 +119,7 @@ export function ChoiceItemAttempt({
           return (
             <label
               key={String(id)}
-              className="flex cursor-pointer items-center gap-3 rounded-md border bg-background p-3 transition-colors hover:bg-muted/60"
+              className="bg-background hover:bg-muted/60 flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors"
             >
               <Checkbox
                 checked={selected.includes(id)}
@@ -142,7 +150,7 @@ export function ChoiceItemAttempt({
         return (
           <label
             key={String(id)}
-            className="flex cursor-pointer items-center gap-3 rounded-md border bg-background p-3 transition-colors hover:bg-muted/60"
+            className="bg-background hover:bg-muted/60 flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors"
           >
             <RadioGroupItem value={String(id)} />
             <span className="text-sm leading-relaxed">{option.text || `Option ${index + 1}`}</span>
@@ -217,9 +225,17 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
       </div>
 
       {value.kind === 'MATCHING' ? (
-        <MatchingAuthor value={value} disabled={disabled} onChange={onChange} />
+        <MatchingAuthor
+          value={value}
+          disabled={disabled}
+          onChange={onChange}
+        />
       ) : (
-        <OptionsAuthor value={value} disabled={disabled} onChange={onChange} />
+        <OptionsAuthor
+          value={value}
+          disabled={disabled}
+          onChange={onChange}
+        />
       )}
     </div>
   );
@@ -246,7 +262,10 @@ function OptionsAuthor({
   return (
     <div className="space-y-2">
       {value.options.map((option, index) => (
-        <div key={String(option.id)} className="flex items-center gap-2">
+        <div
+          key={String(option.id)}
+          className="flex items-center gap-2"
+        >
           <Button
             type="button"
             variant={option.isCorrect ? 'default' : 'outline'}
@@ -275,7 +294,9 @@ function OptionsAuthor({
             variant="ghost"
             size="icon"
             disabled={disabled || value.kind === 'TRUE_FALSE' || value.options.length <= 1}
-            onClick={() => onChange({ ...value, options: value.options.filter((_, candidateIndex) => candidateIndex !== index) })}
+            onClick={() =>
+              onChange({ ...value, options: value.options.filter((_, candidateIndex) => candidateIndex !== index) })
+            }
           >
             <Trash2 className="size-4" />
           </Button>
@@ -310,7 +331,10 @@ function MatchingAuthor({
   return (
     <div className="space-y-2">
       {value.pairs.map((pair, index) => (
-        <div key={String(pair.id)} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+        <div
+          key={String(pair.id)}
+          className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
+        >
           <Input
             value={pair.left}
             placeholder="Left"
@@ -342,7 +366,9 @@ function MatchingAuthor({
             variant="ghost"
             size="icon"
             disabled={disabled || value.pairs.length <= 1}
-            onClick={() => onChange({ ...value, pairs: value.pairs.filter((_, candidateIndex) => candidateIndex !== index) })}
+            onClick={() =>
+              onChange({ ...value, pairs: value.pairs.filter((_, candidateIndex) => candidateIndex !== index) })
+            }
           >
             <Trash2 className="size-4" />
           </Button>
@@ -381,17 +407,22 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
         .map((option) => option.text)
         .join(', ');
     }
-    return item.options.find((option, index) => String(optionId(option, index)) === String(answer))?.text ?? String(answer ?? '-');
+    return (
+      item.options.find((option, index) => String(optionId(option, index)) === String(answer))?.text ??
+      String(answer ?? '-')
+    );
   })();
 
   return (
-    <div className="rounded-md border bg-card p-3">
+    <div className="bg-card rounded-md border p-3">
       <div className="mb-2 flex items-center gap-2">
         <Badge variant="outline">{item.kind.replaceAll('_', ' ')}</Badge>
         {typeof item.points === 'number' ? <Badge variant="secondary">{item.points} pts</Badge> : null}
       </div>
       <p className="text-sm font-medium">{item.prompt}</p>
-      <pre className={cn('mt-2 whitespace-pre-wrap text-sm', item.kind !== 'MATCHING' && 'font-sans')}>{answerLabel}</pre>
+      <pre className={cn('mt-2 whitespace-pre-wrap text-sm', item.kind !== 'MATCHING' && 'font-sans')}>
+        {answerLabel}
+      </pre>
     </div>
   );
 }

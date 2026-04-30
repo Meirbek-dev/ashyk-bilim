@@ -91,8 +91,7 @@ export function policyFromAssessmentPolicy(policy: AssessmentPolicyDTO | null | 
       devtoolsDetection: Boolean(antiCheat.devtools_detection),
       rightClickDisabled: Boolean(antiCheat.right_click_disable),
       fullscreenEnforced: Boolean(antiCheat.fullscreen_enforcement),
-      violationThreshold:
-        typeof antiCheat.violation_threshold === 'number' ? antiCheat.violation_threshold : null,
+      violationThreshold: typeof antiCheat.violation_threshold === 'number' ? antiCheat.violation_threshold : null,
     },
   };
 }

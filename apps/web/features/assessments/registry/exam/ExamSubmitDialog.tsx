@@ -43,7 +43,10 @@ export default function ExamSubmitDialog({
   onSubmit,
 }: ExamSubmitDialogProps) {
   return (
-    <AlertDialog open={open} onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(nextOpen) => !nextOpen && onCancel()}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogMedia>
@@ -52,14 +55,27 @@ export default function ExamSubmitDialog({
           <AlertDialogTitle>{labels.confirmSubmission}</AlertDialogTitle>
           <AlertDialogDescription>{labels.confirmSubmissionMessage}</AlertDialogDescription>
           <div className="bg-muted rounded-lg border p-4 text-sm">
-            <SummaryRow label={labels.totalQuestions} value={totalQuestions} />
-            <SummaryRow label={labels.answered} value={answeredCount} />
-            <SummaryRow label={labels.unanswered} value={totalQuestions - answeredCount} />
+            <SummaryRow
+              label={labels.totalQuestions}
+              value={totalQuestions}
+            />
+            <SummaryRow
+              label={labels.answered}
+              value={answeredCount}
+            />
+            <SummaryRow
+              label={labels.unanswered}
+              value={totalQuestions - answeredCount}
+            />
           </div>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isSubmitting}>{labels.reviewQuestions}</AlertDialogCancel>
-          <AlertDialogAction onClick={onSubmit} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700">
+          <AlertDialogAction
+            onClick={onSubmit}
+            disabled={isSubmitting}
+            className="bg-green-600 hover:bg-green-700"
+          >
             {isSubmitting ? labels.submitting : labels.confirmAndSubmit}
           </AlertDialogAction>
         </AlertDialogFooter>

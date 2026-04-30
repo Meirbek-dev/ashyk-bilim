@@ -76,7 +76,7 @@ function combineAbortSignals(signals: AbortSignal[]): { signal: AbortSignal; cle
   }
 
   const controller = new AbortController();
-  const listeners: Array<{ signal: AbortSignal; listener: () => void }> = [];
+  const listeners: { signal: AbortSignal; listener: () => void }[] = [];
 
   const abortFrom = (signal: AbortSignal) => {
     if (!controller.signal.aborted) {

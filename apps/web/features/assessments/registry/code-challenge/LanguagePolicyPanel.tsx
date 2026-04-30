@@ -41,10 +41,20 @@ export default function LanguagePolicyPanel() {
                 emptyMessage={t('noLanguagesFound')}
               />
               <div className="flex gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => field.onChange(JUDGE0_LANGUAGES.map((l) => l.id))}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => field.onChange(JUDGE0_LANGUAGES.map((l) => l.id))}
+                >
                   {t('selectAll')}
                 </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => field.onChange([])}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => field.onChange([])}
+                >
                   {t('deselectAll')}
                 </Button>
               </div>
@@ -54,9 +64,24 @@ export default function LanguagePolicyPanel() {
         />
 
         <div className="grid gap-4 md:grid-cols-3">
-          <NumberField name="time_limit" label={t('timeLimit')} min={1} max={60} />
-          <NumberField name="memory_limit" label={t('memoryLimit')} min={16} max={2048} />
-          <NumberField name="points" label={t('points')} min={0} max={10_000} />
+          <NumberField
+            name="time_limit"
+            label={t('timeLimit')}
+            min={1}
+            max={60}
+          />
+          <NumberField
+            name="memory_limit"
+            label={t('memoryLimit')}
+            min={16}
+            max={2048}
+          />
+          <NumberField
+            name="points"
+            label={t('points')}
+            min={0}
+            max={10_000}
+          />
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -93,12 +118,18 @@ export default function LanguagePolicyPanel() {
           control={form.control}
           name="allow_custom_input"
           render={({ field }) => (
-            <Field orientation="horizontal" className="justify-between rounded-md border p-3">
+            <Field
+              orientation="horizontal"
+              className="justify-between rounded-md border p-3"
+            >
               <div>
                 <FieldLabel>{t('allowCustomInput')}</FieldLabel>
                 <FieldDescription>{t('allowCustomInputDescription')}</FieldDescription>
               </div>
-              <Switch checked={field.value} onCheckedChange={field.onChange} />
+              <Switch
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
             </Field>
           )}
         />
@@ -107,7 +138,17 @@ export default function LanguagePolicyPanel() {
   );
 }
 
-function NumberField({ name, label, min, max }: { name: keyof CodeChallengeSettingsForm; label: string; min: number; max: number }) {
+function NumberField({
+  name,
+  label,
+  min,
+  max,
+}: {
+  name: keyof CodeChallengeSettingsForm;
+  label: string;
+  min: number;
+  max: number;
+}) {
   const form = useFormContext<CodeChallengeSettingsForm>();
   return (
     <Controller
@@ -116,7 +157,14 @@ function NumberField({ name, label, min, max }: { name: keyof CodeChallengeSetti
       render={({ field }) => (
         <Field>
           <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-          <Input id={field.name} type="number" min={min} max={max} value={Number(field.value ?? 0)} onChange={(e) => field.onChange(Number(e.target.value))} />
+          <Input
+            id={field.name}
+            type="number"
+            min={min}
+            max={max}
+            value={Number(field.value ?? 0)}
+            onChange={(e) => field.onChange(Number(e.target.value))}
+          />
         </Field>
       )}
     />
@@ -140,9 +188,15 @@ function SelectField({
       render={({ field }) => (
         <Field>
           <FieldLabel>{label}</FieldLabel>
-          <NativeSelect value={String(field.value)} onChange={(event) => field.onChange(event.target.value)}>
+          <NativeSelect
+            value={String(field.value)}
+            onChange={(event) => field.onChange(event.target.value)}
+          >
             {options.map(([value, optionLabel]) => (
-              <NativeSelectOption key={value} value={value}>
+              <NativeSelectOption
+                key={value}
+                value={value}
+              >
                 {optionLabel}
               </NativeSelectOption>
             ))}

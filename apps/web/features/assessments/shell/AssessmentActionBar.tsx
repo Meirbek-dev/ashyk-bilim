@@ -1,22 +1,7 @@
 'use client';
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-import {
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  LoaderCircle,
-  RotateCcw,
-  Save,
-  SendHorizonal,
-} from 'lucide-react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, ChevronLeft, ChevronRight, LoaderCircle, RotateCcw, Save, SendHorizonal } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -145,7 +130,7 @@ interface AssessmentActionBarProps {
  * This is the ONLY place `SaveStateBadge` is rendered — no duplicate in the header.
  */
 export function AssessmentActionBar({ controls, returned }: AssessmentActionBarProps) {
-  const navigation = controls.navigation;
+  const { navigation } = controls;
 
   return (
     <div className="bg-background/95 fixed right-0 bottom-0 left-0 z-40 border-t backdrop-blur">
@@ -196,11 +181,7 @@ export function AssessmentActionBar({ controls, returned }: AssessmentActionBarP
               disabled={!controls.canSave || controls.isSaving || controls.isSubmitting}
               onClick={controls.onSave}
             >
-              {controls.isSaving ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : (
-                <Save className="size-4" />
-              )}
+              {controls.isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />}
               Save draft
             </Button>
           ) : null}
@@ -229,13 +210,7 @@ export function AssessmentActionBar({ controls, returned }: AssessmentActionBarP
  * Exported so kinds can use it in their own inline status display if needed,
  * but the canonical placement is AssessmentActionBar (bottom bar only).
  */
-export function SaveStateBadge({
-  state,
-  status,
-}: {
-  state: AttemptSaveState;
-  status: SubmissionStatus | null;
-}) {
+export function SaveStateBadge({ state, status }: { state: AttemptSaveState; status: SubmissionStatus | null }) {
   if (state === 'saving')
     return (
       <Badge variant="secondary">

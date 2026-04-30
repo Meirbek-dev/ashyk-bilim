@@ -9,7 +9,8 @@
  */
 
 import type { ComponentType } from 'react';
-import { registerKind, type KindAuthorProps, type KindAttemptProps, type KindReviewProps } from './index';
+import { registerKind } from './index';
+import type { KindAuthorProps, KindAttemptProps, KindReviewProps } from './index';
 
 registerKind('TYPE_QUIZ', async () => {
   const [{ default: GradingReviewWorkspace }] = await Promise.all([

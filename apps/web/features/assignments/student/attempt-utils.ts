@@ -3,9 +3,8 @@ import {
   getLegacyTaskSubmission,
   normalizeFormSubmission,
   normalizeQuizSubmission,
-  type AssignmentDraftRead,
-  type AssignmentTaskAnswer,
 } from '@/features/assignments/domain';
+import type { AssignmentDraftRead, AssignmentTaskAnswer } from '@/features/assignments/domain';
 import type { Submission } from '@/features/grading/domain';
 
 import type { AssignmentAnswerMap } from './types';

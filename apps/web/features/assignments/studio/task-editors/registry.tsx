@@ -3,7 +3,8 @@
 import * as v from 'valibot';
 
 import type { AssignmentTaskType } from '@/features/assignments/domain';
-import { ChoiceItemAuthor, type ChoiceAuthorValue } from '@/features/assessments/items/choice';
+import { ChoiceItemAuthor } from '@/features/assessments/items/choice';
+import type { ChoiceAuthorValue } from '@/features/assessments/items/choice';
 import { FileUploadConstraintsEditor, normalizeFileUploadConstraints } from '@/features/assessments/items/file-upload';
 import { FormItemAuthor, normalizeFormItem } from '@/features/assessments/items/form';
 import { OpenTextAuthor, normalizeOpenText } from '@/features/assessments/items/open-text';
@@ -134,7 +135,10 @@ function QuizEditorComponent({ value, disabled, onChange }: Parameters<TaskTypeE
           })),
         };
         return (
-          <div key={question.questionUUID} className="rounded-md border p-4">
+          <div
+            key={question.questionUUID}
+            className="rounded-md border p-4"
+          >
             <ChoiceItemAuthor
               value={choiceValue}
               disabled={disabled}
@@ -165,7 +169,9 @@ function QuizEditorComponent({ value, disabled, onChange }: Parameters<TaskTypeE
         type="button"
         className="border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-9 items-center justify-center rounded-md border px-3 text-sm font-medium"
         disabled={disabled}
-        onClick={() => onChange({ ...value, contents: { ...contents, questions: [...contents.questions, createQuizQuestion()] } })}
+        onClick={() =>
+          onChange({ ...value, contents: { ...contents, questions: [...contents.questions, createQuizQuestion()] } })
+        }
       >
         Add question
       </button>
@@ -180,7 +186,10 @@ const FileTaskEditor: TaskTypeEditorModule = {
   buildDefaultContents: () => normalizeFileUploadConstraints(null) as unknown as Record<string, unknown>,
   validate: (value) => {
     const issues = validatePoints(value);
-    const parsed = v.safeParse(FileContentsSchema, { ...normalizeFileUploadConstraints(value.contents), kind: 'FILE_SUBMISSION' });
+    const parsed = v.safeParse(FileContentsSchema, {
+      ...normalizeFileUploadConstraints(value.contents),
+      kind: 'FILE_SUBMISSION',
+    });
     if (!parsed.success) {
       issues.push({ code: 'FILE_CONFIG_INVALID', message: parsed.issues[0]?.message ?? 'File settings are invalid.' });
     }
@@ -199,7 +208,8 @@ const FormTaskEditor: TaskTypeEditorModule = {
     const issues = validatePoints(value);
     const contents = normalizeFormItem(value.contents);
     const parsed = v.safeParse(FormContentsSchema, contents);
-    if (!parsed.success) issues.push({ code: 'FORM_INVALID', message: parsed.issues[0]?.message ?? 'Form content is invalid.' });
+    if (!parsed.success)
+      issues.push({ code: 'FORM_INVALID', message: parsed.issues[0]?.message ?? 'Form content is invalid.' });
     return issues;
   },
   getPreviewPayload: (value) => normalizeFormItem(value.contents) as unknown as Record<string, unknown>,
@@ -224,7 +234,8 @@ const QuizTaskEditor: TaskTypeEditorModule = {
     const issues = validatePoints(value);
     const contents = normalizeQuizContents(value);
     const parsed = v.safeParse(QuizContentsSchema, contents);
-    if (!parsed.success) issues.push({ code: 'QUIZ_INVALID', message: parsed.issues[0]?.message ?? 'Quiz content is invalid.' });
+    if (!parsed.success)
+      issues.push({ code: 'QUIZ_INVALID', message: parsed.issues[0]?.message ?? 'Quiz content is invalid.' });
     return issues;
   },
   getPreviewPayload: (value) => normalizeQuizContents(value),

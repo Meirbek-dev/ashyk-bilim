@@ -33,9 +33,7 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
   const isAssessable = Boolean(activity && ASSESSABLE_TYPES.has(activity.activity_type ?? ''));
   const cleanActivityId = normalizeActivityUuid(activityid);
   const activityIndex = useMemo(() => buildCourseActivityIndex<Activity>(course.chapters), [course.chapters]);
-  const currentEntry = activityIndex.allActivities[
-    activityIndex.indexByCleanUuid.get(cleanActivityId) ?? -1
-  ];
+  const currentEntry = activityIndex.allActivities[activityIndex.indexByCleanUuid.get(cleanActivityId) ?? -1];
   const chapterLabel = currentEntry
     ? `${t('chapter')} ${currentEntry.chapterIndex + 1} : ${currentEntry.chapterName ?? ''}`
     : null;
@@ -51,28 +49,29 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
     globalThis.dispatchEvent?.(new CustomEvent('focusModeChange', { detail: { isFocusMode: next } }));
   };
 
-  const body = activityid === 'end' ? (
-    <CourseEndPanel
-      course={course}
-      courseuuid={courseuuid}
-    />
-  ) : activity && canView ? (
-    isAssessable ? (
-      <AttemptShell
-        activityUuid={activity.activity_uuid}
-        courseUuid={course.course_uuid}
-      />
-    ) : (
-      <ActivityContent
-        activity={activity}
+  const body =
+    activityid === 'end' ? (
+      <CourseEndPanel
         course={course}
+        courseuuid={courseuuid}
       />
-    )
-  ) : (
-    <div className="border-border bg-muted/30 rounded-lg border p-7">
-      <p className="text-muted-foreground text-sm font-medium">{t('activityNotPublished')}</p>
-    </div>
-  );
+    ) : activity && canView ? (
+      isAssessable ? (
+        <AttemptShell
+          activityUuid={activity.activity_uuid}
+          courseUuid={course.course_uuid}
+        />
+      ) : (
+        <ActivityContent
+          activity={activity}
+          course={course}
+        />
+      )
+    ) : (
+      <div className="border-border bg-muted/30 rounded-lg border p-7">
+        <p className="text-muted-foreground text-sm font-medium">{t('activityNotPublished')}</p>
+      </div>
+    );
 
   return (
     <CourseProvider courseuuid={course.course_uuid}>

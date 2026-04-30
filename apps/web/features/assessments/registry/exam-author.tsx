@@ -17,7 +17,7 @@ export default function ExamAuthor({ activityUuid }: KindAuthorProps) {
 
   if (!exam || !examUuid) {
     return (
-      <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
         Exam data is unavailable for this activity.
       </div>
     );

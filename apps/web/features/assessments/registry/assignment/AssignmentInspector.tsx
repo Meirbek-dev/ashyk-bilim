@@ -4,7 +4,8 @@ import { CalendarClock } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { getAssignmentTotalPoints, pointsToPercent, type AssignmentRead } from '@/features/assignments/domain';
+import { getAssignmentTotalPoints, pointsToPercent } from '@/features/assignments/domain';
+import type { AssignmentRead } from '@/features/assignments/domain';
 import { updateAssignment } from '@services/courses/assignments';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Separator } from '@/components/ui/separator';
@@ -13,7 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 import { useAssignmentStudioContext } from './AssignmentStudioContext';
-import SaveStateBadge, { type SaveState } from './SaveStateBadge';
+import SaveStateBadge from './SaveStateBadge';
+import type { SaveState } from './SaveStateBadge';
 
 export default function AssignmentInspector() {
   const { assignment, tasks, isEditable, refresh } = useAssignmentStudioContext();
@@ -46,14 +48,19 @@ function AssignmentInspectorForm({
   const [dueAt, setDueAt] = useState(toDateTimeLocal(assignment.due_at));
   const [gradingType, setGradingType] = useState(assignment.grading_type);
   const [saveState, setSaveState] = useState<SaveState>('idle');
-  const lastSavedRef = useRef(serialize(assignment.title, assignment.description ?? '', assignment.due_at, assignment.grading_type));
+  const lastSavedRef = useRef(
+    serialize(assignment.title, assignment.description ?? '', assignment.due_at, assignment.grading_type),
+  );
   const totalPoints = getAssignmentTotalPoints(tasks);
 
   const save = useCallback(async () => {
     setSaveState('saving');
     try {
       const dueAtIso = dueAt ? new Date(dueAt).toISOString() : null;
-      await updateAssignment({ title, description, due_at: dueAtIso, grading_type: gradingType }, assignment.assignment_uuid);
+      await updateAssignment(
+        { title, description, due_at: dueAtIso, grading_type: gradingType },
+        assignment.assignment_uuid,
+      );
       lastSavedRef.current = serialize(title, description, dueAtIso, gradingType);
       setSaveState('saved');
       await onSaved();
@@ -93,7 +100,12 @@ function AssignmentInspectorForm({
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="assignment-title">Title</Label>
-          <Input id="assignment-title" value={title} disabled={!isEditable} onChange={(e) => setTitle(e.target.value)} />
+          <Input
+            id="assignment-title"
+            value={title}
+            disabled={!isEditable}
+            onChange={(e) => setTitle(e.target.value)}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="assignment-description">Description</Label>
@@ -135,13 +147,19 @@ function AssignmentInspectorForm({
         </div>
         <div className="space-y-2">
           <Label>Attempts</Label>
-          <NativeSelect value="policy" disabled>
+          <NativeSelect
+            value="policy"
+            disabled
+          >
             <NativeSelectOption value="policy">Per task or backend policy</NativeSelectOption>
           </NativeSelect>
         </div>
         <div className="space-y-2">
           <Label>Release mode</Label>
-          <NativeSelect value="manual" disabled>
+          <NativeSelect
+            value="manual"
+            disabled
+          >
             <NativeSelectOption value="manual">Manual release after grading</NativeSelectOption>
           </NativeSelect>
         </div>
@@ -157,7 +175,10 @@ function AssignmentInspectorForm({
         </div>
         <div className="space-y-2">
           {tasks.map((task) => (
-            <div key={task.assignment_task_uuid} className="rounded-md border p-2">
+            <div
+              key={task.assignment_task_uuid}
+              className="rounded-md border p-2"
+            >
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="truncate font-medium">{task.title || 'Untitled task'}</span>
                 <span className="shrink-0">{task.max_grade_value || 0} pts</span>
@@ -191,7 +212,10 @@ function AssignmentInspectorForm({
         ) : (
           <div className="space-y-2">
             {publishIssues.map((issue) => (
-              <div key={issue} className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+              <div
+                key={issue}
+                className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800"
+              >
                 {issue}
               </div>
             ))}

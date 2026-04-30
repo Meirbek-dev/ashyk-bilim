@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useTestGuard } from '@/hooks/useTestGuard';
-import { isAntiCheatEnabled, type PolicyView } from '@/features/assessments/domain/policy';
+import { isAntiCheatEnabled } from '@/features/assessments/domain/policy';
+import type { PolicyView } from '@/features/assessments/domain/policy';
 
 type FullscreenElement = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -31,7 +32,7 @@ export interface AttemptGuardOptions {
 }
 
 export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions = {}) {
-  const antiCheat = policy.antiCheat;
+  const { antiCheat } = policy;
   const enabled = options.enabled ?? isAntiCheatEnabled(antiCheat);
   const [violationCount, setViolationCount] = useState(options.initialViolationCount ?? 0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -97,9 +98,7 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
 
     const fullscreenDocument = document as FullscreenDocument;
     const target = document.documentElement as FullscreenElement;
-    const canUseStandardFullscreen = Boolean(
-      document.fullscreenEnabled && typeof target.requestFullscreen === 'function',
-    );
+    const canUseStandardFullscreen = document.fullscreenEnabled && typeof target.requestFullscreen === 'function';
     const canUseWebkitFullscreen = Boolean(
       fullscreenDocument.webkitFullscreenEnabled && typeof target.webkitRequestFullscreen === 'function',
     );

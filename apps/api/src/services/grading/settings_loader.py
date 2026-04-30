@@ -65,15 +65,13 @@ def load_activity_settings(
             loaded.time_limit_seconds = (
                 canonical.time_limit * 60 if canonical.time_limit else None
             )
-            loaded.track_violations = any(
-                [
-                    canonical.copy_paste_protection,
-                    canonical.tab_switch_detection,
-                    canonical.devtools_detection,
-                    canonical.right_click_disable,
-                    canonical.fullscreen_enforcement,
-                ]
-            )
+            loaded.track_violations = any([
+                canonical.copy_paste_protection,
+                canonical.tab_switch_detection,
+                canonical.devtools_detection,
+                canonical.right_click_disable,
+                canonical.fullscreen_enforcement,
+            ])
             loaded.max_violations = canonical.violation_threshold or 3
         return loaded
 

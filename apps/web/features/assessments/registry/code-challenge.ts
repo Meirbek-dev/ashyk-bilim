@@ -10,7 +10,8 @@
  */
 
 import type { ComponentType } from 'react';
-import { registerKind, type KindAttemptProps, type KindReviewProps } from './index';
+import { registerKind } from './index';
+import type { KindAttemptProps, KindReviewProps } from './index';
 
 registerKind('TYPE_CODE_CHALLENGE', async () => {
   const [

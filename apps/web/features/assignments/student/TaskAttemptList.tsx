@@ -4,7 +4,8 @@ import { FileUp, ListTodo, TextCursorInput } from 'lucide-react';
 
 import type { AssignmentTaskAnswer } from '@/features/assignments/domain';
 import type { AssignmentTaskRead } from '@/features/assignments/domain';
-import { ChoiceItemAttempt, type ChoiceAttemptItem, type ChoiceAnswer } from '@/features/assessments/items/choice';
+import { ChoiceItemAttempt } from '@/features/assessments/items/choice';
+import type { ChoiceAttemptItem, ChoiceAnswer } from '@/features/assessments/items/choice';
 import { FileUploadAttempt, normalizeFileUploadConstraints } from '@/features/assessments/items/file-upload';
 import { FormItemAttempt, normalizeFormItem } from '@/features/assessments/items/form';
 import { OpenTextAttempt, normalizeOpenText } from '@/features/assessments/items/open-text';
@@ -123,7 +124,7 @@ function AssignmentTaskAttempt({
     return (
       <OpenTextAttempt
         item={{ ...normalizeOpenText(task.contents), taskUuid: task.assignment_task_uuid }}
-      answer={answer as { text?: string } | null}
+        answer={answer as { text?: string } | null}
         disabled={disabled}
         onAnswerChange={(nextAnswer) => onAnswerChange(nextAnswer as AssignmentTaskAnswer)}
       />
@@ -150,7 +151,7 @@ function AssignmentTaskAttempt({
 interface AssignmentQuizQuestion {
   questionUUID?: string;
   questionText?: string;
-  options?: Array<{ optionUUID?: string; text?: string }>;
+  options?: { optionUUID?: string; text?: string }[];
 }
 
 function AssignmentQuizAttempt({
@@ -164,7 +165,9 @@ function AssignmentQuizAttempt({
   disabled?: boolean;
   onAnswerChange: (answer: AssignmentTaskAnswer) => void;
 }) {
-  const questions = Array.isArray(task.contents?.questions) ? (task.contents.questions as AssignmentQuizQuestion[]) : [];
+  const questions = Array.isArray(task.contents?.questions)
+    ? (task.contents.questions as AssignmentQuizQuestion[])
+    : [];
   const normalized = normalizeQuizAnswer(answer);
 
   if (questions.length === 0) {
@@ -185,7 +188,10 @@ function AssignmentQuizAttempt({
           })),
         };
         return (
-          <div key={questionId} className="rounded-md border bg-muted/30 p-4">
+          <div
+            key={questionId}
+            className="bg-muted/30 rounded-md border p-4"
+          >
             <div className="mb-3 flex items-start gap-2">
               <Badge variant="secondary">Q{questionIndex + 1}</Badge>
               <p className="font-medium">{item.prompt}</p>

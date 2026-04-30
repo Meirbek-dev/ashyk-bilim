@@ -61,14 +61,12 @@ export function AssessmentChrome({
   return (
     <div className={cn('flex flex-col gap-4', className)}>
       {/* ── Title card ────────────────────────────────────────────────────── */}
-      <header className="rounded-lg border bg-card p-5">
+      <header className="bg-card rounded-lg border p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <div className="text-muted-foreground text-xs font-medium uppercase">{kindLabel}</div>
             <h1 className="mt-1 text-2xl font-semibold">{title}</h1>
-            {description ? (
-              <p className="text-muted-foreground mt-2 max-w-3xl text-sm">{description}</p>
-            ) : null}
+            {description ? <p className="text-muted-foreground mt-2 max-w-3xl text-sm">{description}</p> : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

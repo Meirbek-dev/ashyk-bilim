@@ -32,7 +32,9 @@ export default function HintsPanel() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => append({ id: `hint_${generateUUID()}`, order: fields.length + 1, content: '', xp_penalty: 5 })}
+            onClick={() =>
+              append({ id: `hint_${generateUUID()}`, order: fields.length + 1, content: '', xp_penalty: 5 })
+            }
           >
             <Plus className="size-4" />
             Add hint
@@ -41,15 +43,23 @@ export default function HintsPanel() {
       </CardHeader>
       <CardContent className="space-y-3">
         {!fields.length ? (
-          <div className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+          <div className="text-muted-foreground rounded-md border border-dashed p-4 text-center text-sm">
             No hints configured.
           </div>
         ) : (
           fields.map((hint, index) => (
-            <div key={hint.id} className="space-y-3 rounded-md border p-3">
+            <div
+              key={hint.id}
+              className="space-y-3 rounded-md border p-3"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="text-sm font-medium">Hint #{index + 1}</div>
-                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => remove(index)}
+                >
                   <Trash2 className="size-4" />
                 </Button>
               </div>
@@ -59,7 +69,12 @@ export default function HintsPanel() {
                 render={({ field }) => (
                   <Field>
                     <FieldLabel htmlFor={field.name}>Content</FieldLabel>
-                    <Textarea id={field.name} rows={3} placeholder="Explain one useful direction without giving away the full solution." {...field} />
+                    <Textarea
+                      id={field.name}
+                      rows={3}
+                      placeholder="Explain one useful direction without giving away the full solution."
+                      {...field}
+                    />
                   </Field>
                 )}
               />
@@ -69,7 +84,14 @@ export default function HintsPanel() {
                 render={({ field }) => (
                   <Field className="max-w-40">
                     <FieldLabel htmlFor={field.name}>XP penalty</FieldLabel>
-                    <Input id={field.name} type="number" min={0} max={100} value={field.value ?? 5} onChange={(e) => field.onChange(Number(e.target.value))} />
+                    <Input
+                      id={field.name}
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={field.value ?? 5}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
                   </Field>
                 )}
               />

@@ -1,9 +1,10 @@
 'use client';
 
-import { type ComponentType } from 'react';
+import type { ComponentType } from 'react';
 import { LoaderCircle } from 'lucide-react';
 
-import { getSubmissionDisplayName, type Submission } from '@/features/grading/domain';
+import { getSubmissionDisplayName } from '@/features/grading/domain';
+import type { Submission } from '@/features/grading/domain';
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
 import type { KindReviewDetailProps } from '@/features/assessments/registry';
 import { useGradingPanel } from '@/hooks/useGradingPanel';
@@ -24,7 +25,9 @@ export default function SubmissionInspector({
   const current = submission ?? fallbackSubmission;
 
   if (!selectedUuid) {
-    return <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">Select a submission.</div>;
+    return (
+      <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">Select a submission.</div>
+    );
   }
 
   if (isLoading && !current) {
@@ -37,13 +40,15 @@ export default function SubmissionInspector({
   }
 
   if (!current) {
-    return <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">Submission unavailable.</div>;
+    return (
+      <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">Submission unavailable.</div>
+    );
   }
 
   return (
     <main className="min-w-0 border-b p-4 lg:border-b-0 xl:border-r">
       <div className="mx-auto max-w-4xl space-y-5">
-        <div className="rounded-lg border bg-card p-4">
+        <div className="bg-card rounded-lg border p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <h2 className="text-xl font-semibold">{getSubmissionDisplayName(current)}</h2>
@@ -59,7 +64,14 @@ export default function SubmissionInspector({
         </div>
 
         <AttemptHistory submission={current} />
-        {ReviewDetail ? <ReviewDetail submission={current} activityUuid={activityUuid} /> : <SubmittedAnswers submission={current} />}
+        {ReviewDetail ? (
+          <ReviewDetail
+            submission={current}
+            activityUuid={activityUuid}
+          />
+        ) : (
+          <SubmittedAnswers submission={current} />
+        )}
       </div>
     </main>
   );
@@ -67,13 +79,25 @@ export default function SubmissionInspector({
 
 function AttemptHistory({ submission }: { submission: Submission }) {
   return (
-    <section className="rounded-lg border bg-card p-4">
+    <section className="bg-card rounded-lg border p-4">
       <h3 className="text-sm font-semibold">Attempt history</h3>
       <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        <HistoryItem label="Started" value={formatDate(submission.started_at)} />
-        <HistoryItem label="Submitted" value={formatDate(submission.submitted_at)} />
-        <HistoryItem label="Graded" value={formatDate(submission.graded_at)} />
-        <HistoryItem label="Version" value={`v${submission.version}`} />
+        <HistoryItem
+          label="Started"
+          value={formatDate(submission.started_at)}
+        />
+        <HistoryItem
+          label="Submitted"
+          value={formatDate(submission.submitted_at)}
+        />
+        <HistoryItem
+          label="Graded"
+          value={formatDate(submission.graded_at)}
+        />
+        <HistoryItem
+          label="Version"
+          value={`v${submission.version}`}
+        />
       </div>
     </section>
   );
@@ -86,15 +110,24 @@ function SubmittedAnswers({ submission }: { submission: Submission }) {
     <section className="space-y-3">
       <h3 className="text-sm font-semibold">Submitted work</h3>
       {items.length === 0 ? (
-        <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">No answer payload was recorded.</div>
+        <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+          No answer payload was recorded.
+        </div>
       ) : (
         items.map((item, index) => (
-          <div key={typeof item === 'object' && item !== null && 'task_uuid' in item ? String(item.task_uuid) : index} className="rounded-lg border bg-card p-4">
+          <div
+            key={typeof item === 'object' && item !== null && 'task_uuid' in item ? String(item.task_uuid) : index}
+            className="bg-card rounded-lg border p-4"
+          >
             <div className="mb-2 flex items-center justify-between gap-3">
               <Badge variant="secondary">Task {index + 1}</Badge>
-              {typeof item === 'object' && item !== null && 'content_type' in item ? <Badge variant="outline">{String(item.content_type)}</Badge> : null}
+              {typeof item === 'object' && item !== null && 'content_type' in item ? (
+                <Badge variant="outline">{String(item.content_type)}</Badge>
+              ) : null}
             </div>
-            <pre className="bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs">{JSON.stringify(item, null, 2)}</pre>
+            <pre className="bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs">
+              {JSON.stringify(item, null, 2)}
+            </pre>
           </div>
         ))
       )}

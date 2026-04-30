@@ -56,7 +56,17 @@ interface CodeChallengeSettings {
 interface Submission {
   uuid?: string;
   submission_uuid?: string;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'PENDING_JUDGE0' | 'pending' | 'processing' | 'completed' | 'failed' | 'error';
+  status:
+    | 'PENDING'
+    | 'PROCESSING'
+    | 'COMPLETED'
+    | 'FAILED'
+    | 'PENDING_JUDGE0'
+    | 'pending'
+    | 'processing'
+    | 'completed'
+    | 'failed'
+    | 'error';
   submission_status?: SubmissionStatus | null;
   score?: number;
   max_score?: number;
@@ -496,7 +506,7 @@ export function CodeChallengeEditor({
 export default CodeChallengeEditor;
 
 function normalizeCodeRunStatus(status: Submission['status'] | undefined) {
-  return String(status ?? '').toUpperCase();
+  return (status ?? '').toUpperCase();
 }
 
 function codeRunToSubmissionStatus(status: Submission['status']): SubmissionStatus {

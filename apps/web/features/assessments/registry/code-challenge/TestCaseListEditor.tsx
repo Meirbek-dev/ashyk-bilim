@@ -45,9 +45,16 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
               <Icon className="size-5" />
               {title}
             </CardTitle>
-            <CardDescription>{visible ? t('visibleTestCasesDescription') : t('hiddenTestCasesDescription')}</CardDescription>
+            <CardDescription>
+              {visible ? t('visibleTestCasesDescription') : t('hiddenTestCasesDescription')}
+            </CardDescription>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={addTest}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addTest}
+          >
             <Plus className="size-4" />
             {t('addTestCase')}
           </Button>
@@ -55,13 +62,16 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
       </CardHeader>
       <CardContent>
         {!fields.length ? (
-          <div className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+          <div className="text-muted-foreground rounded-md border border-dashed p-4 text-center text-sm">
             {t('noHiddenTestCases')}
           </div>
         ) : (
           <Accordion defaultValue={fields.map((_, index) => `${name}-${index}`)}>
             {fields.map((field, index) => (
-              <AccordionItem key={field.id} value={`${name}-${index}`}>
+              <AccordionItem
+                key={field.id}
+                value={`${name}-${index}`}
+              >
                 <AccordionTrigger className="hover:no-underline">
                   <span className="truncate text-sm">
                     {visible ? t('testCase') : t('hiddenTest')} #{index + 1}
@@ -75,7 +85,11 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
                     render={({ field }) => (
                       <Field>
                         <FieldLabel htmlFor={field.name}>{t('testDescription')}</FieldLabel>
-                        <Input id={field.name} placeholder={t('testDescriptionPlaceholder')} {...field} />
+                        <Input
+                          id={field.name}
+                          placeholder={t('testDescriptionPlaceholder')}
+                          {...field}
+                        />
                       </Field>
                     )}
                   />
@@ -86,7 +100,13 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
                       render={({ field }) => (
                         <Field>
                           <FieldLabel htmlFor={field.name}>{t('input')}</FieldLabel>
-                          <Textarea id={field.name} rows={4} className="font-mono" placeholder={t('inputPlaceholder')} {...field} />
+                          <Textarea
+                            id={field.name}
+                            rows={4}
+                            className="font-mono"
+                            placeholder={t('inputPlaceholder')}
+                            {...field}
+                          />
                         </Field>
                       )}
                     />
@@ -96,7 +116,13 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
                       render={({ field }) => (
                         <Field>
                           <FieldLabel htmlFor={field.name}>{t('expectedOutput')}</FieldLabel>
-                          <Textarea id={field.name} rows={4} className="font-mono" placeholder={t('expectedOutputPlaceholder')} {...field} />
+                          <Textarea
+                            id={field.name}
+                            rows={4}
+                            className="font-mono"
+                            placeholder={t('expectedOutputPlaceholder')}
+                            {...field}
+                          />
                         </Field>
                       )}
                     />
@@ -107,13 +133,26 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
                     render={({ field }) => (
                       <Field className="max-w-36">
                         <FieldLabel htmlFor={field.name}>{t('testWeight')}</FieldLabel>
-                        <Input id={field.name} type="number" min={1} max={100} value={field.value ?? 1} onChange={(e) => field.onChange(Number(e.target.value))} />
+                        <Input
+                          id={field.name}
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={field.value ?? 1}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                        />
                         <FieldDescription>{t('testWeightDescription')}</FieldDescription>
                       </Field>
                     )}
                   />
                   <div className="flex justify-end">
-                    <Button type="button" variant="destructive" size="sm" disabled={visible && fields.length === 1} onClick={() => remove(index)}>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      disabled={visible && fields.length === 1}
+                      onClick={() => remove(index)}
+                    >
                       <Trash2 className="size-4" />
                       {t('removeTestCase')}
                     </Button>

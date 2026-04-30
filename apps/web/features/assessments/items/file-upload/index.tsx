@@ -13,7 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from '@components/ui/AppLink';
 
-import { registerItemKind, type ItemAuthorProps, type ItemAttemptProps, type ItemReviewDetailProps } from '../registry';
+import { registerItemKind } from '../registry';
+import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
 
 export interface FileUploadConstraints {
   kind: 'FILE_UPLOAD' | 'FILE_SUBMISSION';
@@ -48,11 +49,7 @@ export function normalizeFileUploadConstraints(raw: Record<string, unknown> | nu
   };
 }
 
-export function FileUploadConstraintsEditor({
-  value,
-  disabled,
-  onChange,
-}: ItemAuthorProps<FileUploadConstraints>) {
+export function FileUploadConstraintsEditor({ value, disabled, onChange }: ItemAuthorProps<FileUploadConstraints>) {
   const mimeText = value.allowed_mime_types.join(', ');
   return (
     <div className="space-y-4">
@@ -65,9 +62,7 @@ export function FileUploadConstraintsEditor({
             min={1}
             value={value.max_files}
             disabled={disabled}
-            onChange={(event) =>
-              onChange({ ...value, max_files: Math.max(1, Number(event.target.value) || 1) })
-            }
+            onChange={(event) => onChange({ ...value, max_files: Math.max(1, Number(event.target.value) || 1) })}
           />
         </div>
         <div className="space-y-2">
@@ -164,21 +159,38 @@ export function FileUploadAttempt({
       : null;
 
   return (
-    <div className="space-y-4 rounded-md border bg-muted/30 p-4">
+    <div className="bg-muted/30 space-y-4 rounded-md border p-4">
       {referenceUrl ? (
-        <Button variant="outline" render={<Link href={referenceUrl} target="_blank" download />}>
+        <Button
+          variant="outline"
+          render={
+            <Link
+              href={referenceUrl}
+              target="_blank"
+              download
+            />
+          }
+        >
           <Download className="size-4" />
           Reference file
         </Button>
       ) : null}
 
       {fileUrl ? (
-        <Button variant="outline" render={<Link href={fileUrl} target="_blank" />}>
+        <Button
+          variant="outline"
+          render={
+            <Link
+              href={fileUrl}
+              target="_blank"
+            />
+          }
+        >
           <File className="size-4" />
           Current file
         </Button>
       ) : localFileName ? (
-        <div className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
+        <div className="bg-background inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
           <File className="size-4" />
           {localFileName}
         </div>
@@ -196,7 +208,11 @@ export function FileUploadAttempt({
             uploadMutation.mutate(file);
           }}
         />
-        {uploadMutation.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <UploadCloud className="size-4" />}
+        {uploadMutation.isPending ? (
+          <LoaderCircle className="size-4 animate-spin" />
+        ) : (
+          <UploadCloud className="size-4" />
+        )}
       </div>
 
       <Alert>
@@ -209,9 +225,11 @@ export function FileUploadAttempt({
   );
 }
 
-export function FileUploadReviewDetail({ answer }: ItemReviewDetailProps<FileUploadAttemptItem, FileUploadAnswer | null>) {
+export function FileUploadReviewDetail({
+  answer,
+}: ItemReviewDetailProps<FileUploadAttemptItem, FileUploadAnswer | null>) {
   return (
-    <div className="rounded-md border bg-card p-3 text-sm">
+    <div className="bg-card rounded-md border p-3 text-sm">
       <div className="font-medium">Uploaded file</div>
       <div className="text-muted-foreground mt-1">{answer?.file_key ?? 'No file recorded'}</div>
     </div>

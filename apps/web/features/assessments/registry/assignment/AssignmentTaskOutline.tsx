@@ -1,10 +1,11 @@
 'use client';
 
 import { AlertTriangle, BookOpen, CheckCircle2, FileUp, ListTodo, LoaderCircle, TextCursorInput } from 'lucide-react';
-import { useTransition, type ElementType } from 'react';
+import { useTransition } from 'react';
+import type { ElementType } from 'react';
 import { toast } from 'sonner';
 
-import { type AssignmentTaskType } from '@/features/assignments/domain';
+import type { AssignmentTaskType } from '@/features/assignments/domain';
 import { createAssignmentTask } from '@services/courses/assignments';
 import { getTaskTypeEditor } from '@/features/assignments/studio/task-editors/registry';
 import { pointsToPercent } from '@/features/assignments/domain';

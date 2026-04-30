@@ -102,6 +102,7 @@ class ActivityBase(SQLModelStrictBaseModel):
     #     # Fallback: return empty dict to satisfy type expectations.
     #     return {}
 
+
 class Activity(ActivityBase, table=True):
     model_config = ConfigDict(from_attributes=True)
 

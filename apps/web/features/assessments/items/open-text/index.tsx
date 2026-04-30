@@ -3,7 +3,8 @@
 import { AlignLeft } from 'lucide-react';
 
 import { Textarea } from '@/components/ui/textarea';
-import { registerItemKind, type ItemAuthorProps, type ItemAttemptProps, type ItemReviewDetailProps } from '../registry';
+import { registerItemKind } from '../registry';
+import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
 
 export interface OpenTextValue {
   kind: 'OPEN_TEXT' | 'OTHER';
@@ -31,7 +32,7 @@ export function normalizeOpenText(raw: Record<string, unknown> | null | undefine
 export function OpenTextAuthor({ value, disabled, onChange }: ItemAuthorProps<OpenTextValue>) {
   return (
     <div className="space-y-4">
-      <div className="rounded-md border bg-muted/40 p-4">
+      <div className="bg-muted/40 rounded-md border p-4">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <AlignLeft className="size-4" />
           Open text item
@@ -75,7 +76,9 @@ export function OpenTextAttempt({
 }
 
 export function OpenTextReviewDetail({ answer }: ItemReviewDetailProps<OpenTextValue, OpenTextAnswer | null>) {
-  return <p className="whitespace-pre-wrap rounded-md border bg-card p-3 text-sm">{answer?.text ?? 'No text recorded'}</p>;
+  return (
+    <p className="bg-card rounded-md border p-3 text-sm whitespace-pre-wrap">{answer?.text ?? 'No text recorded'}</p>
+  );
 }
 
 registerItemKind({

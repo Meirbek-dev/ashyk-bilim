@@ -12,12 +12,14 @@ import {
 import type { AssignmentDraftRead, AssignmentTaskAnswer } from '@/features/assignments/domain';
 import { normalizeAssignmentTasks } from '@/features/assignments/domain';
 import { useAssignmentBundle, useAssignmentByActivity } from '@/features/assignments/hooks/useAssignments';
-import { isPublishedToStudent, type Submission } from '@/features/grading/domain';
+import { isPublishedToStudent } from '@/features/grading/domain';
+import type { Submission } from '@/features/grading/domain';
 import { useMySubmission } from '@/hooks/useMySubmission';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
 import { Separator } from '@/components/ui/separator';
 import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList';
-import { useAttemptShellControls, type AttemptSaveState } from '@/features/assessments/shell';
+import { useAttemptShellControls } from '@/features/assessments/shell';
+import type { AttemptSaveState } from '@/features/assessments/shell';
 import StudentResultPanel from '@/features/assignments/student/ResultPanel';
 import TaskAttemptList from '@/features/assignments/student/TaskAttemptList';
 import {
@@ -59,7 +61,7 @@ export default function AssignmentAttemptContent({ activityUuid, courseUuid }: K
   const lastSavedRef = useRef<AssignmentAnswerMap>({});
   const [saveState, setSaveState] = useState<AttemptSaveState>('saved');
 
-  const submission = latestSubmission.submission;
+  const { submission } = latestSubmission;
   const status = submission?.status ?? draftQuery.data?.submission?.status ?? null;
   const answerSource = draftQuery.data?.submission ?? (status === 'RETURNED' ? submission : null);
 
@@ -147,7 +149,11 @@ export default function AssignmentAttemptContent({ activityUuid, courseUuid }: K
   }
 
   if (!assignmentUuid || !bundle?.assignment_object) {
-    return <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">No assignment found.</div>;
+    return (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
+        No assignment found.
+      </div>
+    );
   }
 
   const tasks = normalizeAssignmentTasks(bundle.assignment_tasks);

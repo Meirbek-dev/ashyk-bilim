@@ -17,14 +17,10 @@ import { apiFetcher } from '@/lib/api-client';
 import { getAPIUrl } from '@services/config/config';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 
-import {
-  isAssessmentEditable,
-  canPublish,
-  canSchedule,
-  canArchive,
-  type AssessmentLifecycle,
-} from '../domain/lifecycle';
-import { policyFromAssessmentPolicy, type AssessmentPolicyDTO } from '../domain/policy';
+import { isAssessmentEditable, canPublish, canSchedule, canArchive } from '../domain/lifecycle';
+import type { AssessmentLifecycle } from '../domain/lifecycle';
+import { policyFromAssessmentPolicy } from '../domain/policy';
+import type { AssessmentPolicyDTO } from '../domain/policy';
 import type { AssessmentKind, AssessmentSurface, StudioViewModel, AttemptViewModel } from '../domain/view-models';
 
 // ── Internal activity shape (subset of what the API returns) ──────────────────
@@ -49,16 +45,21 @@ function activityDetailQueryOptions(activityUuid: string) {
 
 function activityTypeToKind(activityType: string): AssessmentKind | null {
   switch (activityType) {
-    case 'TYPE_ASSIGNMENT':
+    case 'TYPE_ASSIGNMENT': {
       return 'TYPE_ASSIGNMENT';
-    case 'TYPE_EXAM':
+    }
+    case 'TYPE_EXAM': {
       return 'TYPE_EXAM';
-    case 'TYPE_CODE_CHALLENGE':
+    }
+    case 'TYPE_CODE_CHALLENGE': {
       return 'TYPE_CODE_CHALLENGE';
-    case 'TYPE_QUIZ':
+    }
+    case 'TYPE_QUIZ': {
       return 'TYPE_QUIZ';
-    default:
+    }
+    default: {
       return null;
+    }
   }
 }
 

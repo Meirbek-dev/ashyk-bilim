@@ -7,11 +7,8 @@ import { toast } from 'sonner';
 import { pointsToPercent } from '@/features/assignments/domain';
 import { deleteAssignmentTask, updateAssignmentTask } from '@services/courses/assignments';
 import { getTaskTypeEditor } from '@/features/assignments/studio/task-editors/registry';
-import {
-  patchEditorValue,
-  taskToEditorValue,
-  type AssignmentTaskEditorValue,
-} from '@/features/assignments/studio/task-editors/types';
+import { patchEditorValue, taskToEditorValue } from '@/features/assignments/studio/task-editors/types';
+import type { AssignmentTaskEditorValue } from '@/features/assignments/studio/task-editors/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,7 +17,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 import { useAssignmentStudioContext } from './AssignmentStudioContext';
-import SaveStateBadge, { type SaveState } from './SaveStateBadge';
+import SaveStateBadge from './SaveStateBadge';
+import type { SaveState } from './SaveStateBadge';
 
 export default function AssignmentTaskEditor() {
   const { assignmentUuid, tasks, selectedTaskUuid, setSelectedTaskUuid, refresh, isEditable, totalPoints } =

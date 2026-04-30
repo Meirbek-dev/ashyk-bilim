@@ -38,7 +38,8 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   const startedRef = useRef<string | null>(null);
 
   const primaryLanguageId = settings?.allowed_languages?.[0];
-  const initialCode = primaryLanguageId !== undefined ? settings?.starter_code?.[String(primaryLanguageId)] ?? '' : '';
+  const initialCode =
+    primaryLanguageId !== undefined ? (settings?.starter_code?.[String(primaryLanguageId)] ?? '') : '';
   const isConfigured = Boolean(settings?.allowed_languages?.length);
 
   const shellControls = useMemo(

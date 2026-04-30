@@ -3,12 +3,8 @@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
-import {
-  ACTIVITY_PROGRESS_STATE_CLASSES,
-  formatGradebookStateKey,
-  type ActivityProgressCell,
-  type SubmissionStatus,
-} from '@/features/grading/domain';
+import { ACTIVITY_PROGRESS_STATE_CLASSES, formatGradebookStateKey } from '@/features/grading/domain';
+import type { ActivityProgressCell, SubmissionStatus } from '@/features/grading/domain';
 import { cn } from '@/lib/utils';
 
 interface ProgressCellProps {
@@ -59,7 +55,7 @@ export default function ProgressCell({
       <div className="mb-2 flex items-center justify-between gap-2">
         <Checkbox
           checked={selected}
-          onCheckedChange={(checked) => onSelect(checked === true)}
+          onCheckedChange={(checked) => onSelect(checked)}
           onClick={(event) => event.stopPropagation()}
           aria-label={selectLabel}
         />

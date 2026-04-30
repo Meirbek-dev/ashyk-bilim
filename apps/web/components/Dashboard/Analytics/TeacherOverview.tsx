@@ -66,12 +66,12 @@ export default function TeacherOverview({
     if (scopedQuery.window) params.set('window', scopedQuery.window);
     if (scopedQuery.compare) params.set('compare', scopedQuery.compare);
     if (scopedQuery.bucket) params.set('bucket', scopedQuery.bucket);
-    if (scopedQuery.course_ids) params.set('course_ids', String(scopedQuery.course_ids));
-    if (scopedQuery.cohort_ids) params.set('cohort_ids', String(scopedQuery.cohort_ids));
+    if (scopedQuery.course_ids) params.set('course_ids', scopedQuery.course_ids);
+    if (scopedQuery.cohort_ids) params.set('cohort_ids', scopedQuery.cohort_ids);
     if (scopedQuery.teacher_user_id) params.set('teacher_user_id', String(scopedQuery.teacher_user_id));
     if (scopedQuery.timezone) params.set('timezone', scopedQuery.timezone);
-    if (scopedQuery.bucket_start) params.set('bucket_start', String(scopedQuery.bucket_start));
-    if (scopedQuery.sort_by) params.set('sort_by', String(scopedQuery.sort_by));
+    if (scopedQuery.bucket_start) params.set('bucket_start', scopedQuery.bucket_start);
+    if (scopedQuery.sort_by) params.set('sort_by', scopedQuery.sort_by);
     if (scopedQuery.sort_order) params.set('sort_order', scopedQuery.sort_order);
     const serialized = params.toString();
     return serialized ? `${pathname}?${serialized}` : pathname;

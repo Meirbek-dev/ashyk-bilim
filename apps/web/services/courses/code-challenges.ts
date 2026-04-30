@@ -36,7 +36,17 @@ export interface CodeSubmission {
   uuid: string;
   submission_uuid?: string;
   submission_status?: 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED' | null;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'PENDING_JUDGE0' | 'pending' | 'processing' | 'completed' | 'failed' | 'error';
+  status:
+    | 'PENDING'
+    | 'PROCESSING'
+    | 'COMPLETED'
+    | 'FAILED'
+    | 'PENDING_JUDGE0'
+    | 'pending'
+    | 'processing'
+    | 'completed'
+    | 'failed'
+    | 'error';
   score?: number;
   max_score?: number;
   language_id: number;

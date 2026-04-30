@@ -1,11 +1,7 @@
 'use client';
 
-import {
-  type ComponentType,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { ComponentType } from 'react';
 import { AlertTriangle, LoaderCircle, Maximize2 } from 'lucide-react';
 
 import {
@@ -24,15 +20,12 @@ import { cn } from '@/lib/utils';
 import { DEFAULT_POLICY_VIEW, isAntiCheatEnabled } from '@/features/assessments/domain/policy';
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
 import { useAssessmentAttempt as useAssessmentAttemptData } from '@/features/assessments/hooks/useAssessment';
-import { loadKindModule, type KindModule } from '@/features/assessments/registry';
+import { loadKindModule } from '@/features/assessments/registry';
+import type { KindModule } from '@/features/assessments/registry';
 import { useAttemptGuard } from '@/features/assessments/shared/hooks/useAttemptGuard';
 
 import { AssessmentChrome } from './AssessmentChrome';
-import {
-  ActionBarContext,
-  AssessmentActionBar,
-  useActionBarState,
-} from './AssessmentActionBar';
+import { ActionBarContext, AssessmentActionBar, useActionBarState } from './AssessmentActionBar';
 import type { AttemptRecoveryState } from './AssessmentActionBar';
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -127,7 +120,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
 
   // ── Derived display state ──────────────────────────────────────────────────
 
-  const returned = Boolean(vm?.isReturnedForRevision || controls.status === 'RETURNED');
+  const returned = vm?.isReturnedForRevision || controls.status === 'RETURNED';
 
   // ── Loading ────────────────────────────────────────────────────────────────
 

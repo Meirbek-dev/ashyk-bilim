@@ -95,7 +95,11 @@ export function useAssignmentActivity(activityUuid: string | null | undefined) {
 }
 
 export function useAssignmentBundle(assignmentUuid: string | null | undefined) {
-  const { data: assignment, error: assignmentError, isPending: isAssignmentPending } = useAssignmentDetail(assignmentUuid);
+  const {
+    data: assignment,
+    error: assignmentError,
+    isPending: isAssignmentPending,
+  } = useAssignmentDetail(assignmentUuid);
   const {
     data: assignmentTasks,
     error: assignmentTasksError,
@@ -103,11 +107,7 @@ export function useAssignmentBundle(assignmentUuid: string | null | undefined) {
   } = useAssignmentTasks(assignmentUuid);
 
   const courseUuid = assignment?.course_uuid;
-  const {
-    data: courseObject,
-    error: courseObjectError,
-    isPending: isCoursePending,
-  } = useCourseMetadata(courseUuid);
+  const { data: courseObject, error: courseObjectError, isPending: isCoursePending } = useCourseMetadata(courseUuid);
 
   const activityUuid = assignment?.activity_uuid;
   const {

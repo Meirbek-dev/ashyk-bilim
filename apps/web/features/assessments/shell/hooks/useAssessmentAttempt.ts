@@ -90,7 +90,7 @@ export function useAssessmentAttempt<T = unknown>({
     if (typeof globalThis.window === 'undefined') return;
     try {
       const toRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
+      for (let i = 0; i < localStorage.length; i += 1) {
         const key = localStorage.key(i);
         if (!key?.startsWith(storageKeyPrefix)) continue;
         const raw = localStorage.getItem(key);
@@ -144,8 +144,8 @@ export function useAssessmentAttempt<T = unknown>({
           version: SCHEMA_VERSION,
         };
         localStorage.setItem(storageKey, JSON.stringify(entry));
-      } catch (err) {
-        if (err instanceof Error && err.name === 'QuotaExceededError') {
+      } catch (error) {
+        if (error instanceof Error && error.name === 'QuotaExceededError') {
           purgeExpired();
           try {
             localStorage.setItem(
@@ -204,8 +204,8 @@ export function useAssessmentAttempt<T = unknown>({
     if (data && onRestoreRef.current) {
       onRestoreRef.current(data.answers);
     }
-  // Run once on mount only.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Run once on mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { saveAnswers, clearSavedAnswers, getRecoverableData };

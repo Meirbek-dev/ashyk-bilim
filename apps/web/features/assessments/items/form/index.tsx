@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { generateUUID } from '@/lib/utils';
 
-import { registerItemKind, type ItemAuthorProps, type ItemAttemptProps, type ItemReviewDetailProps } from '../registry';
+import { registerItemKind } from '../registry';
+import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
 
 export interface FormBlank {
   blankUUID: string;
@@ -78,7 +79,7 @@ export function normalizeFormItem(raw: Record<string, unknown> | null | undefine
 export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<FormItemValue>) {
   return (
     <div className="space-y-5">
-      <div className="rounded-md border bg-muted/40 p-4">
+      <div className="bg-muted/40 rounded-md border p-4">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <TextCursorInput className="size-4" />
           Form item
@@ -87,7 +88,10 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
       </div>
 
       {value.questions.map((question, questionIndex) => (
-        <div key={question.questionUUID} className="space-y-3 rounded-md border p-4">
+        <div
+          key={question.questionUUID}
+          className="space-y-3 rounded-md border p-4"
+        >
           <div className="flex items-center gap-3">
             <Badge variant="secondary">Q{questionIndex + 1}</Badge>
             <Input
@@ -108,7 +112,9 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
               variant="ghost"
               size="icon"
               disabled={disabled || value.questions.length <= 1}
-              onClick={() => onChange({ ...value, questions: value.questions.filter((_, index) => index !== questionIndex) })}
+              onClick={() =>
+                onChange({ ...value, questions: value.questions.filter((_, index) => index !== questionIndex) })
+              }
             >
               <Trash2 className="size-4" />
             </Button>
@@ -116,24 +122,33 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
 
           <div className="space-y-2 pl-10">
             {question.blanks.map((blank, blankIndex) => (
-              <div key={blank.blankUUID} className="grid gap-2 rounded-md border bg-background p-3 md:grid-cols-[1fr_1fr_1fr_auto]">
+              <div
+                key={blank.blankUUID}
+                className="bg-background grid gap-2 rounded-md border p-3 md:grid-cols-[1fr_1fr_1fr_auto]"
+              >
                 <Input
                   value={blank.placeholder}
                   placeholder="Student field label"
                   disabled={disabled}
-                  onChange={(event) => updateBlank(value, questionIndex, blankIndex, { placeholder: event.target.value }, onChange)}
+                  onChange={(event) =>
+                    updateBlank(value, questionIndex, blankIndex, { placeholder: event.target.value }, onChange)
+                  }
                 />
                 <Input
                   value={blank.correctAnswer ?? ''}
                   placeholder="Correct answer"
                   disabled={disabled}
-                  onChange={(event) => updateBlank(value, questionIndex, blankIndex, { correctAnswer: event.target.value }, onChange)}
+                  onChange={(event) =>
+                    updateBlank(value, questionIndex, blankIndex, { correctAnswer: event.target.value }, onChange)
+                  }
                 />
                 <Input
                   value={blank.hint ?? ''}
                   placeholder="Hint"
                   disabled={disabled}
-                  onChange={(event) => updateBlank(value, questionIndex, blankIndex, { hint: event.target.value }, onChange)}
+                  onChange={(event) =>
+                    updateBlank(value, questionIndex, blankIndex, { hint: event.target.value }, onChange)
+                  }
                 />
                 <Button
                   type="button"
@@ -145,7 +160,10 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
                       ...value,
                       questions: value.questions.map((item, index) =>
                         index === questionIndex
-                          ? { ...item, blanks: item.blanks.filter((_, candidateIndex) => candidateIndex !== blankIndex) }
+                          ? {
+                              ...item,
+                              blanks: item.blanks.filter((_, candidateIndex) => candidateIndex !== blankIndex),
+                            }
                           : item,
                       ),
                     })
@@ -238,7 +256,10 @@ export function FormItemAttempt({
   return (
     <div className="space-y-4">
       {item.questions.map((question, questionIndex) => (
-        <div key={question.questionUUID} className="rounded-md border bg-muted/30 p-4">
+        <div
+          key={question.questionUUID}
+          className="bg-muted/30 rounded-md border p-4"
+        >
           <div className="mb-3 flex items-start gap-2">
             <Badge variant="secondary">Q{questionIndex + 1}</Badge>
             <p className="font-medium">{question.questionText || 'Prompt'}</p>
@@ -247,8 +268,13 @@ export function FormItemAttempt({
             {question.blanks.map((blank, blankIndex) => {
               const blankId = blank.blankUUID ?? `blank_${blankIndex}`;
               return (
-                <div key={blankId} className="space-y-2">
-                  <Label htmlFor={`${item.taskUuid ?? 'form'}-${blankId}`}>{blank.placeholder || `Answer ${blankIndex + 1}`}</Label>
+                <div
+                  key={blankId}
+                  className="space-y-2"
+                >
+                  <Label htmlFor={`${item.taskUuid ?? 'form'}-${blankId}`}>
+                    {blank.placeholder || `Answer ${blankIndex + 1}`}
+                  </Label>
                   <Input
                     id={`${item.taskUuid ?? 'form'}-${blankId}`}
                     value={normalized[blankId] ?? ''}

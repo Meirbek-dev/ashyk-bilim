@@ -4,7 +4,8 @@ import { CalendarClock, Lock, ShieldAlert, SlidersHorizontal, Trophy } from 'luc
 import type { ReactNode } from 'react';
 
 import type { NormalizedScore } from '@/features/assessments/domain/score';
-import { isAntiCheatEnabled, type PolicyView } from '@/features/assessments/domain/policy';
+import { isAntiCheatEnabled } from '@/features/assessments/domain/policy';
+import type { PolicyView } from '@/features/assessments/domain/policy';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import ScoreSummary from './ScoreSummary';
@@ -32,7 +33,7 @@ export default function PolicyInspector({
   title = 'Policy',
 }: PolicyInspectorProps) {
   const antiCheatEnabled = isAntiCheatEnabled(policy.antiCheat);
-  const possibleSections: Array<InspectorSection | null> = [
+  const possibleSections: (InspectorSection | null)[] = [
     policy.dueAt || scheduleItems.length
       ? {
           value: 'schedule',
@@ -40,9 +41,17 @@ export default function PolicyInspector({
           icon: CalendarClock,
           body: (
             <div className="space-y-2 text-sm">
-              <PolicyRow label="Due" value={policy.dueAt ? new Date(policy.dueAt).toLocaleString() : 'Not set'} />
+              <PolicyRow
+                label="Due"
+                value={policy.dueAt ? new Date(policy.dueAt).toLocaleString() : 'Not set'}
+              />
               {scheduleItems.map((item) => (
-                <div key={item} className="text-muted-foreground">{item}</div>
+                <div
+                  key={item}
+                  className="text-muted-foreground"
+                >
+                  {item}
+                </div>
               ))}
             </div>
           ),
@@ -55,8 +64,14 @@ export default function PolicyInspector({
           icon: SlidersHorizontal,
           body: (
             <div className="space-y-2 text-sm">
-              <PolicyRow label="Maximum attempts" value={policy.maxAttempts ? String(policy.maxAttempts) : 'Unlimited'} />
-              <PolicyRow label="Late penalty" value={`${policy.latePolicy.penaltyPercent}%`} />
+              <PolicyRow
+                label="Maximum attempts"
+                value={policy.maxAttempts ? String(policy.maxAttempts) : 'Unlimited'}
+              />
+              <PolicyRow
+                label="Late penalty"
+                value={`${policy.latePolicy.penaltyPercent}%`}
+              />
             </div>
           ),
         }
@@ -85,7 +100,12 @@ export default function PolicyInspector({
           body: (
             <div className="space-y-2">
               {accessItems.map((item) => (
-                <Badge key={item} variant="outline">{item}</Badge>
+                <Badge
+                  key={item}
+                  variant="outline"
+                >
+                  {item}
+                </Badge>
               ))}
             </div>
           ),
@@ -101,11 +121,17 @@ export default function PolicyInspector({
         <p className="text-muted-foreground text-xs">Schedule, attempts, anti-cheat, scoring, and access.</p>
       </div>
       {sections.length ? (
-        <Accordion defaultValue={sections.map((section) => section.value)} className="w-full">
+        <Accordion
+          defaultValue={sections.map((section) => section.value)}
+          className="w-full"
+        >
           {sections.map((section) => {
             const Icon = section.icon;
             return (
-              <AccordionItem key={section.value} value={section.value}>
+              <AccordionItem
+                key={section.value}
+                value={section.value}
+              >
                 <AccordionTrigger className="text-sm hover:no-underline">
                   <span className="flex items-center gap-2">
                     <Icon className="size-4" />
@@ -118,7 +144,7 @@ export default function PolicyInspector({
           })}
         </Accordion>
       ) : (
-        <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">
           No policy sections are enabled for this activity.
         </div>
       )}
@@ -151,10 +177,18 @@ function AntiCheatSummary({ policy }: { policy: PolicyView }) {
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         {items.map((item) => (
-          <Badge key={item} variant="outline">{item}</Badge>
+          <Badge
+            key={item}
+            variant="outline"
+          >
+            {item}
+          </Badge>
         ))}
       </div>
-      <PolicyRow label="Auto-submit threshold" value={policy.antiCheat.violationThreshold?.toString() ?? 'Not set'} />
+      <PolicyRow
+        label="Auto-submit threshold"
+        value={policy.antiCheat.violationThreshold?.toString() ?? 'Not set'}
+      />
     </div>
   );
 }

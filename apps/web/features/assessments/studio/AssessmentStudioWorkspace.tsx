@@ -1,19 +1,12 @@
 'use client';
 
-import {
-  AlertTriangle,
-  Archive,
-  CalendarClock,
-  Eye,
-  LoaderCircle,
-  Send,
-  Undo2,
-} from 'lucide-react';
+import { AlertTriangle, Archive, CalendarClock, Eye, LoaderCircle, Send, Undo2 } from 'lucide-react';
 import { Fragment, useEffect, useState, useTransition } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { loadKindModule, type KindModule } from '@/features/assessments/registry';
+import { loadKindModule } from '@/features/assessments/registry';
+import type { KindModule } from '@/features/assessments/registry';
 import { useAssessmentStudio } from '@/features/assessments/hooks/useAssessment';
 import type { AssessmentLifecycle } from '@/features/assessments/domain';
 import PolicyInspector from '@/features/assessments/shared/PolicyInspector';
@@ -59,16 +52,16 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[420px] items-center justify-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex min-h-[420px] items-center justify-center text-sm">
         <LoaderCircle className="mr-2 size-4 animate-spin" />
         Loading studio
       </div>
     );
   }
 
-  if (error || !vm || vm.surface !== 'STUDIO') {
+  if (error || vm?.surface !== 'STUDIO') {
     return (
-      <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
         Studio is unavailable for this activity.
       </div>
     );
@@ -98,8 +91,8 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
           queryKey: queryKeys.activities.detail(activityUuid.replace(/^activity_/, '')),
         });
         toast.success(`Lifecycle changed to ${LIFECYCLE_LABELS[lifecycle]}`);
-      } catch (caught) {
-        toast.error(caught instanceof Error ? caught.message : 'Failed to update lifecycle');
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to update lifecycle');
       }
     });
   };
@@ -116,13 +109,13 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   const slotProps = { activityUuid, courseUuid };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       {/* ── Topbar ─────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur">
+      <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur">
         <div className="flex flex-col gap-3 px-4 py-3 lg:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+              <div className="text-muted-foreground flex flex-wrap items-center gap-1 text-xs">
                 <Link
                   href={`/dash/courses/${courseUuid.replace('course_', '')}/curriculum`}
                   className="hover:text-foreground"
@@ -143,7 +136,16 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" render={<Link href={previewHref} target="_blank" />}>
+              <Button
+                variant="outline"
+                size="sm"
+                render={
+                  <Link
+                    href={previewHref}
+                    target="_blank"
+                  />
+                }
+              >
                 <Eye className="size-4" />
                 Preview
               </Button>
@@ -195,9 +197,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
           {studio.validationIssues.length > 0 && (
             <Alert className="border-amber-200 bg-amber-50 text-amber-900">
               <AlertTriangle className="size-4" />
-              <AlertDescription>
-                {studio.validationIssues.map((i) => i.message).join(' ')}
-              </AlertDescription>
+              <AlertDescription>{studio.validationIssues.map((i) => i.message).join(' ')}</AlertDescription>
             </Alert>
           )}
         </div>
@@ -210,7 +210,9 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
             className={cn(
               'grid grid-cols-1',
               hasOutline && !hasInspector && 'lg:grid-cols-[18rem_minmax(0,1fr)]',
-              hasOutline && hasInspector && 'lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)_22rem]',
+              hasOutline &&
+                hasInspector &&
+                'lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)_22rem]',
               !hasOutline && hasInspector && 'xl:grid-cols-[minmax(0,1fr)_22rem]',
             )}
           >
@@ -237,7 +239,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
           </div>
         </Provider>
       ) : (
-        <div className="flex min-h-[360px] items-center justify-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex min-h-[360px] items-center justify-center text-sm">
           <LoaderCircle className="mr-2 size-4 animate-spin" />
           Loading editor
         </div>

@@ -89,21 +89,53 @@ export default function ReviewBulkActionBar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Badge variant="outline">{submissions.length} selected</Badge>
-      <Button variant="outline" size="sm" disabled={disabled || isPending || gradeable.length === 0} onClick={() => bulkUpdate('PUBLISHED')}>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={disabled || isPending || gradeable.length === 0}
+        onClick={() => bulkUpdate('PUBLISHED')}
+      >
         <Send className="size-4" />
         Publish selected
       </Button>
-      <Button variant="outline" size="sm" disabled={disabled || isPending || gradeable.length === 0} onClick={() => bulkUpdate('RETURNED')}>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={disabled || isPending || gradeable.length === 0}
+        onClick={() => bulkUpdate('RETURNED')}
+      >
         <RotateCcw className="size-4" />
         Return selected
       </Button>
-      <Input type="datetime-local" value={deadlineLocal} disabled={disabled || isPending} className="w-48" onChange={(event) => setDeadlineLocal(event.target.value)} />
-      <Input value={reason} disabled={disabled || isPending} placeholder="Reason" className="w-40" onChange={(event) => setReason(event.target.value)} />
-      <Button variant="outline" size="sm" disabled={disabled || isPending || !deadlineLocal || userUuids.length === 0} onClick={applyDeadline}>
+      <Input
+        type="datetime-local"
+        value={deadlineLocal}
+        disabled={disabled || isPending}
+        className="w-48"
+        onChange={(event) => setDeadlineLocal(event.target.value)}
+      />
+      <Input
+        value={reason}
+        disabled={disabled || isPending}
+        placeholder="Reason"
+        className="w-40"
+        onChange={(event) => setReason(event.target.value)}
+      />
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={disabled || isPending || !deadlineLocal || userUuids.length === 0}
+        onClick={applyDeadline}
+      >
         <CalendarClock className="size-4" />
         Extend
       </Button>
-      <Button variant="outline" size="sm" disabled={isPending} onClick={exportCsv}>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={isPending}
+        onClick={exportCsv}
+      >
         <Download className="size-4" />
         Export
       </Button>

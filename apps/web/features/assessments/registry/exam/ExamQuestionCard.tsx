@@ -2,7 +2,8 @@
 
 import { useTranslations } from 'next-intl';
 
-import { ChoiceItemAttempt, type ChoiceAnswer, type ChoiceAttemptItem } from '@/features/assessments/items/choice';
+import { ChoiceItemAttempt } from '@/features/assessments/items/choice';
+import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 
 interface QuestionData {
@@ -64,11 +65,16 @@ export default function ExamQuestionCard({ question, questionNumber, answer, onA
   const questionId = question.id;
 
   return (
-    <Card role="group" aria-labelledby={`question-title-${questionId}`}>
+    <Card
+      role="group"
+      aria-labelledby={`question-title-${questionId}`}
+    >
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span id={`question-title-${questionId}`}>{t('questionNumber', { number: questionNumber })}</span>
-          <span className="text-muted-foreground text-sm font-normal">{t('points', { count: question.points ?? 0 })}</span>
+          <span className="text-muted-foreground text-sm font-normal">
+            {t('points', { count: question.points ?? 0 })}
+          </span>
         </CardTitle>
         <CardDescription className="text-foreground mt-4 text-xl leading-relaxed">
           {question.question_text}

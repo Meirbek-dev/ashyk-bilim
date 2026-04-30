@@ -66,7 +66,9 @@ export default function GradingReviewWorkspace({
     () => submissions.filter((submission) => selectedUuids.has(submission.submission_uuid)),
     [selectedUuids, submissions],
   );
-  const selectedIndex = selectedUuid ? submissions.findIndex((submission) => submission.submission_uuid === selectedUuid) : -1;
+  const selectedIndex = selectedUuid
+    ? submissions.findIndex((submission) => submission.submission_uuid === selectedUuid)
+    : -1;
 
   const refresh = useCallback(async () => {
     await Promise.all([mutate(), mutateStats()]);
@@ -92,8 +94,8 @@ export default function GradingReviewWorkspace({
         selectByOffset(-1);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    globalThis.addEventListener('keydown', handleKeyDown);
+    return () => globalThis.removeEventListener('keydown', handleKeyDown);
   }, [selectByOffset]);
 
   const navigation = {
@@ -156,7 +158,11 @@ export default function GradingReviewWorkspace({
         activityUuid={activityUuid}
         ReviewDetail={kindModule?.ReviewDetail}
       />
-      <GradeForm submissionUuid={selectedUuid} onSaved={refresh} navigation={navigation} />
+      <GradeForm
+        submissionUuid={selectedUuid}
+        onSaved={refresh}
+        navigation={navigation}
+      />
     </ReviewLayout>
   );
 }

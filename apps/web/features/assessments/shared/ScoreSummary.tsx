@@ -2,7 +2,8 @@
 
 import { Info } from 'lucide-react';
 
-import { formatPercent, type NormalizedScore } from '@/features/assessments/domain/score';
+import { formatPercent } from '@/features/assessments/domain/score';
+import type { NormalizedScore } from '@/features/assessments/domain/score';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
@@ -21,7 +22,8 @@ const SOURCE_LABELS: Record<NormalizedScore['source'], string> = {
 
 export default function ScoreSummary({ score, rawScore, maxScore, className }: ScoreSummaryProps) {
   const percent = formatPercent(score.percent);
-  const hasRaw = rawScore !== null && rawScore !== undefined && maxScore !== null && maxScore !== undefined && maxScore > 0;
+  const hasRaw =
+    rawScore !== null && rawScore !== undefined && maxScore !== null && maxScore !== undefined && maxScore > 0;
   const sourceLabel = SOURCE_LABELS[score.source];
   const detail = hasRaw ? `${rawScore}/${maxScore} points · ${percent}` : `${sourceLabel} · ${percent}`;
 

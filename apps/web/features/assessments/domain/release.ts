@@ -22,14 +22,18 @@ export const RELEASE_STATE_LABELS: Record<ReleaseState, string> = {
 
 export function getReleaseState(status: SubmissionStatus): ReleaseState {
   switch (status) {
-    case 'GRADED':
+    case 'GRADED': {
       return 'AWAITING_RELEASE';
-    case 'PUBLISHED':
+    }
+    case 'PUBLISHED': {
       return 'VISIBLE';
-    case 'RETURNED':
+    }
+    case 'RETURNED': {
       return 'RETURNED_FOR_REVISION';
-    default:
+    }
+    default: {
       return 'HIDDEN';
+    }
   }
 }
 

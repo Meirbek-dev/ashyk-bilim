@@ -2,9 +2,11 @@
 
 import { useCallback, useState } from 'react';
 
-import { CodeChallengeEditor, type CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges';
+import { CodeChallengeEditor } from '@/components/features/courses/code-challenges';
+import type { CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges';
 import { Skeleton } from '@/components/ui/skeleton';
-import { registerItemKind, UnsupportedItemAuthor, type ItemAttemptProps, type ItemReviewDetailProps } from '../registry';
+import { registerItemKind, UnsupportedItemAuthor } from '../registry';
+import type { ItemAttemptProps, ItemReviewDetailProps } from '../registry';
 
 export interface CodeItemSettings {
   uuid?: string;
@@ -15,22 +17,22 @@ export interface CodeItemSettings {
   max_submissions?: number;
   grading_strategy: string;
   allowed_languages: number[];
-  visible_tests: Array<{
+  visible_tests: {
     id: string;
     input: string;
     expected_output: string;
     description?: string;
     is_visible: boolean;
     weight?: number;
-  }>;
-  hidden_tests?: Array<{
+  }[];
+  hidden_tests?: {
     id: string;
     input: string;
     expected_output: string;
     description?: string;
     is_visible: boolean;
     weight?: number;
-  }>;
+  }[];
   starter_code?: Record<string, string>;
 }
 
@@ -44,9 +46,9 @@ export interface CodeAttemptItem {
   onSubmitControlChange?: (control: CodeChallengeSubmitControl | null) => void;
 }
 
-export function CodeItemAttempt({ item }: ItemAttemptProps<CodeAttemptItem, unknown>) {
+export function CodeItemAttempt({ item }: ItemAttemptProps<CodeAttemptItem>) {
   return (
-    <div className="min-h-[650px] overflow-hidden rounded-md border bg-card">
+    <div className="bg-card min-h-[650px] overflow-hidden rounded-md border">
       <CodeChallengeEditor
         activityUuid={item.activityUuid}
         settings={item.settings}
@@ -79,7 +81,7 @@ export function useCodeSubmitControl() {
   return { submitControl, handleSubmitControlChange };
 }
 
-export function CodeItemReviewDetail({ answer }: ItemReviewDetailProps<CodeAttemptItem, unknown>) {
+export function CodeItemReviewDetail({ answer }: ItemReviewDetailProps<CodeAttemptItem>) {
   return (
     <pre className="bg-muted max-h-96 overflow-auto rounded-md p-3 text-xs">
       {JSON.stringify(answer ?? {}, null, 2)}

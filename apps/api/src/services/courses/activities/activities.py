@@ -257,7 +257,10 @@ def _sync_assessment_lifecycle(
 
     activity.details = details
 
-    if activity.activity_type == ActivityTypeEnum.TYPE_ASSIGNMENT and activity.id is not None:
+    if (
+        activity.activity_type == ActivityTypeEnum.TYPE_ASSIGNMENT
+        and activity.id is not None
+    ):
         assignment = db_session.exec(
             select(Assignment).where(Assignment.activity_id == activity.id)
         ).first()

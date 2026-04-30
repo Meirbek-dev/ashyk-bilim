@@ -77,7 +77,11 @@ from src.services.code_challenges.sanitize import (
     sanitize_stdout,
 )
 from src.services.progress import submissions as progress_submissions
-from src.services.assessments.settings import CodeAssessmentSettings, get_settings, put_settings
+from src.services.assessments.settings import (
+    CodeAssessmentSettings,
+    get_settings,
+    put_settings,
+)
 from src.services.grading.submission import start_submission_v2
 
 logger = logging.getLogger(__name__)
@@ -365,9 +369,10 @@ async def update_challenge_settings(
 
     put_settings(
         activity.id,
-        CodeAssessmentSettings.model_validate(
-            {"kind": "CODE_CHALLENGE", **updated_settings.model_dump(mode="json")}
-        ),
+        CodeAssessmentSettings.model_validate({
+            "kind": "CODE_CHALLENGE",
+            **updated_settings.model_dump(mode="json"),
+        }),
         db_session,
     )
     db_session.refresh(activity)

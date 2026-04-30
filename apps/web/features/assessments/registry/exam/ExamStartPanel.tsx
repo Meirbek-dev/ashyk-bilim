@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import AttemptHistoryList, { type AttemptHistoryItem } from '@/features/assessments/shared/AttemptHistoryList';
+import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList';
+import type { AttemptHistoryItem } from '@/features/assessments/shared/AttemptHistoryList';
 import type { PolicyView } from '@/features/assessments/domain/policy';
 import { apiFetch } from '@/lib/api-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -38,7 +39,7 @@ export default function ExamStartPanel({
   const timeLimit = settings.time_limit;
   const remainingAttempts = isTeacher || !attemptLimit ? null : Math.max(attemptLimit - userAttempts.length, 0);
   const canTakeExam = isTeacher || !attemptLimit || attemptLimit === 0 || userAttempts.length < attemptLimit;
-  const antiCheat = policy.antiCheat;
+  const { antiCheat } = policy;
   const hasAntiCheatWarning =
     antiCheat.tabSwitchDetection || antiCheat.copyPasteProtection || antiCheat.devtoolsDetection;
 
@@ -87,8 +88,16 @@ export default function ExamStartPanel({
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid gap-3 sm:grid-cols-3">
-            <InfoTile icon={FileText} label={t('totalQuestions')} value={String(questionCount)} />
-            <InfoTile icon={Clock} label={t('timeLimit')} value={timeLimit ? t('minutes', { count: timeLimit }) : t('unlimited')} />
+            <InfoTile
+              icon={FileText}
+              label={t('totalQuestions')}
+              value={String(questionCount)}
+            />
+            <InfoTile
+              icon={Clock}
+              label={t('timeLimit')}
+              value={timeLimit ? t('minutes', { count: timeLimit }) : t('unlimited')}
+            />
             <InfoTile
               icon={isTeacher ? InfinityIcon : Users}
               label={isTeacher ? t('teacherPreview') : t('attemptsRemaining')}
@@ -96,14 +105,35 @@ export default function ExamStartPanel({
             />
           </div>
 
-          <div className="rounded-md border bg-muted/30 p-4">
+          <div className="bg-muted/30 rounded-md border p-4">
             <h3 className="mb-3 text-sm font-semibold">{t('instructions')}</h3>
             <ul className="space-y-2 text-sm">
-              <Instruction icon={CheckCircle} label={t('instruction1')} />
-              {timeLimit ? <Instruction icon={CheckCircle} label={t('instruction3', { minutes: timeLimit })} /> : null}
-              <Instruction icon={AlertCircle} label={t('instruction2')} />
-              {antiCheat.tabSwitchDetection ? <Instruction icon={AlertCircle} label={t('instruction4')} /> : null}
-              {antiCheat.copyPasteProtection ? <Instruction icon={AlertCircle} label={t('instruction5')} /> : null}
+              <Instruction
+                icon={CheckCircle}
+                label={t('instruction1')}
+              />
+              {timeLimit ? (
+                <Instruction
+                  icon={CheckCircle}
+                  label={t('instruction3', { minutes: timeLimit })}
+                />
+              ) : null}
+              <Instruction
+                icon={AlertCircle}
+                label={t('instruction2')}
+              />
+              {antiCheat.tabSwitchDetection ? (
+                <Instruction
+                  icon={AlertCircle}
+                  label={t('instruction4')}
+                />
+              ) : null}
+              {antiCheat.copyPasteProtection ? (
+                <Instruction
+                  icon={AlertCircle}
+                  label={t('instruction5')}
+                />
+              ) : null}
             </ul>
           </div>
 
@@ -126,13 +156,21 @@ export default function ExamStartPanel({
             <CardDescription>{t('readyToStartSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" size="lg" disabled={!canTakeExam || isStarting} onClick={handleStartExam}>
+            <Button
+              className="w-full"
+              size="lg"
+              disabled={!canTakeExam || isStarting}
+              onClick={handleStartExam}
+            >
               {isStarting ? t('starting') : t('startExam')}
             </Button>
             {!canTakeExam ? <p className="text-muted-foreground mt-2 text-sm">{t('noAttemptsRemaining')}</p> : null}
           </CardContent>
         </Card>
-        <AttemptHistoryList items={historyItems} title={t('previousAttempts')} />
+        <AttemptHistoryList
+          items={historyItems}
+          title={t('previousAttempts')}
+        />
       </aside>
     </div>
   );

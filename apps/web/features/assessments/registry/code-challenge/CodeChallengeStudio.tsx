@@ -6,7 +6,10 @@ import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { useCodeChallengeSettings, useSaveCodeChallengeSettings } from '@/features/code-challenges/hooks/useCodeChallenge';
+import {
+  useCodeChallengeSettings,
+  useSaveCodeChallengeSettings,
+} from '@/features/code-challenges/hooks/useCodeChallenge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import HintsPanel from './HintsPanel';
@@ -80,7 +83,9 @@ export default function CodeChallengeStudio({ activityUuid }: CodeChallengeStudi
     form.reset({
       ...DEFAULT_VALUES,
       ...settings,
-      allowed_languages: settings.allowed_languages?.length ? settings.allowed_languages : DEFAULT_VALUES.allowed_languages,
+      allowed_languages: settings.allowed_languages?.length
+        ? settings.allowed_languages
+        : DEFAULT_VALUES.allowed_languages,
       visible_tests: normalizeTests(settings.visible_tests, true, DEFAULT_VALUES.visible_tests),
       hidden_tests: normalizeTests(settings.hidden_tests, false, []),
       hints: (settings.hints ?? []).map((hint, index) => ({
@@ -119,14 +124,27 @@ export default function CodeChallengeStudio({ activityUuid }: CodeChallengeStudi
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-4 lg:p-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-6 p-4 lg:p-6"
+      >
         <LanguagePolicyPanel />
         <StarterCodeTabs />
-        <TestCaseListEditor name="visible_tests" title={t('visibleTestCases')} visible />
-        <TestCaseListEditor name="hidden_tests" title={t('hiddenTestCases')} />
+        <TestCaseListEditor
+          name="visible_tests"
+          title={t('visibleTestCases')}
+          visible
+        />
+        <TestCaseListEditor
+          name="hidden_tests"
+          title={t('hiddenTestCases')}
+        />
         <HintsPanel />
         <div className="flex justify-end">
-          <Button type="submit" disabled={saveSettings.isPending}>
+          <Button
+            type="submit"
+            disabled={saveSettings.isPending}
+          >
             {saveSettings.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             {t('saveConfig')}
           </Button>
@@ -142,12 +160,13 @@ function normalizeTests(
   fallback: CodeChallengeTestCaseForm[],
 ) {
   const source = tests?.length ? tests : fallback;
-  return source.map((test) => ({
-    ...test,
-    input: test.input ?? '',
-    expected_output: test.expected_output ?? '',
-    description: test.description ?? '',
-    weight: test.weight ?? 1,
-    is_visible: isVisible,
-  }));
+  return source.map((test) =>
+    Object.assign(test, {
+      input: test.input ?? ``,
+      expected_output: test.expected_output ?? ``,
+      description: test.description ?? ``,
+      weight: test.weight ?? 1,
+      is_visible: isVisible,
+    }),
+  );
 }

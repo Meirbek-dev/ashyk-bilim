@@ -3,10 +3,7 @@
 import { getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { tags } from '@/lib/cacheTags';
-import type {
-  AssignmentDraftPatch,
-  AssignmentRead,
-} from '@/features/assignments/domain';
+import type { AssignmentDraftPatch, AssignmentRead } from '@/features/assignments/domain';
 
 export type AssignmentType = 'QUIZ' | 'FILE_SUBMISSION' | 'FORM' | 'OTHER';
 

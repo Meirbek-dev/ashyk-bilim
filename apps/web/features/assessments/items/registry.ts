@@ -1,4 +1,5 @@
-import { createElement, type ComponentType, type ReactNode } from 'react';
+import { createElement } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 
 export type ItemKind =
   | 'CHOICE_SINGLE'
@@ -36,13 +37,13 @@ export interface ItemKindModule<TAuthorValue = any, TAttemptItem = any, TAttempt
   ReviewDetail: ComponentType<ItemReviewDetailProps<TAttemptItem, TAttemptAnswer>>;
 }
 
-const registry = new Map<ItemKind, ItemKindModule<any, any, any>>();
+const registry = new Map<ItemKind, ItemKindModule<any, any>>();
 
-export function registerItemKind(module: ItemKindModule<any, any, any>): void {
+export function registerItemKind(module: ItemKindModule<any, any>): void {
   registry.set(module.kind, module);
 }
 
-export function getItemKindModule(kind: ItemKind): ItemKindModule<any, any, any> {
+export function getItemKindModule(kind: ItemKind): ItemKindModule<any, any> {
   const module = registry.get(kind);
   if (!module) {
     throw new Error(`ItemKindRegistry: no module registered for item kind "${kind}"`);
@@ -50,8 +51,8 @@ export function getItemKindModule(kind: ItemKind): ItemKindModule<any, any, any>
   return module;
 }
 
-export function listItemKindModules(): ItemKindModule<any, any, any>[] {
-  return Array.from(registry.values());
+export function listItemKindModules(): ItemKindModule<any, any>[] {
+  return [...registry.values()];
 }
 
 export function UnsupportedItemAuthor({ value }: ItemAuthorProps): ReactNode {

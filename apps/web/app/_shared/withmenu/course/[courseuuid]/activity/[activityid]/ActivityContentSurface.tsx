@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Loader2, Minimize2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -25,29 +25,33 @@ const DocumentPdfActivity = dynamic(() => import('@components/Objects/Activities
 
 export function ActivityContent({ activity, course }: { activity: Activity; course: CourseStructure }) {
   switch (activity.activity_type) {
-    case 'TYPE_DYNAMIC':
+    case 'TYPE_DYNAMIC': {
       return (
         <Canva
           content={getValidTiptapContent(activity.content)}
           activity={activity}
         />
       );
-    case 'TYPE_VIDEO':
+    }
+    case 'TYPE_VIDEO': {
       return (
         <VideoActivity
           course={course}
           activity={activity as any}
         />
       );
-    case 'TYPE_DOCUMENT':
+    }
+    case 'TYPE_DOCUMENT': {
       return (
         <DocumentPdfActivity
           course={course}
           activity={activity}
         />
       );
-    default:
+    }
+    default: {
       return <div className="text-muted-foreground text-sm">Unsupported activity type.</div>;
+    }
   }
 }
 

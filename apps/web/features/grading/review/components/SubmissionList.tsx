@@ -31,14 +31,23 @@ export default function SubmissionList({
   onToggleSelected,
 }: SubmissionListProps) {
   return (
-    <aside className="border-b bg-muted/20 p-4 lg:border-r lg:border-b-0">
+    <aside className="bg-muted/20 border-b p-4 lg:border-r lg:border-b-0">
       <div className="space-y-3">
         <div className="relative">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Search learner" className="pl-9" />
+          <Input
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Search learner"
+            className="pl-9"
+          />
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <NativeSelect value={activeFilter} onChange={(event) => onFilterChange(event.target.value as StatusFilter)} aria-label="Status filter">
+          <NativeSelect
+            value={activeFilter}
+            onChange={(event) => onFilterChange(event.target.value as StatusFilter)}
+            aria-label="Status filter"
+          >
             <NativeSelectOption value="ALL">All</NativeSelectOption>
             <NativeSelectOption value="NEEDS_GRADING">Needs grading</NativeSelectOption>
             <NativeSelectOption value="PENDING">{SUBMISSION_STATUS_LABELS.PENDING}</NativeSelectOption>
@@ -46,7 +55,11 @@ export default function SubmissionList({
             <NativeSelectOption value="PUBLISHED">{SUBMISSION_STATUS_LABELS.PUBLISHED}</NativeSelectOption>
             <NativeSelectOption value="RETURNED">{SUBMISSION_STATUS_LABELS.RETURNED}</NativeSelectOption>
           </NativeSelect>
-          <NativeSelect value={sortBy} onChange={(event) => onSortChange(event.target.value)} aria-label="Sort">
+          <NativeSelect
+            value={sortBy}
+            onChange={(event) => onSortChange(event.target.value)}
+            aria-label="Sort"
+          >
             <NativeSelectOption value="submitted_at">Submitted</NativeSelectOption>
             <NativeSelectOption value="final_score">Score</NativeSelectOption>
             <NativeSelectOption value="attempt_number">Attempt</NativeSelectOption>
@@ -74,17 +87,26 @@ export default function SubmissionList({
             return (
               <div
                 key={submission.submission_uuid}
-                className={cn('rounded-md border bg-background p-3 transition hover:bg-muted/60', selected && 'border-primary ring-primary/20 ring-2')}
+                className={cn(
+                  'rounded-md border bg-background p-3 transition hover:bg-muted/60',
+                  selected && 'border-primary ring-primary/20 ring-2',
+                )}
               >
                 <div className="flex items-start gap-2">
                   <Checkbox
                     checked={selectedUuids.has(submission.submission_uuid)}
-                    onCheckedChange={(checked) => onToggleSelected(submission.submission_uuid, checked === true)}
+                    onCheckedChange={(checked) => onToggleSelected(submission.submission_uuid, checked)}
                     aria-label={`Select ${displayName}`}
                   />
-                  <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onSelectSubmission(submission.submission_uuid)}>
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 text-left"
+                    onClick={() => onSelectSubmission(submission.submission_uuid)}
+                  >
                     <div className="truncate text-sm font-medium">{displayName}</div>
-                    <div className="text-muted-foreground truncate text-xs">{submission.user?.email ?? `User #${submission.user_id}`}</div>
+                    <div className="text-muted-foreground truncate text-xs">
+                      {submission.user?.email ?? `User #${submission.user_id}`}
+                    </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <SubmissionStatusBadge status={submission.status} />
                       {submission.is_late ? <Badge variant="destructive">Late</Badge> : null}
@@ -100,11 +122,23 @@ export default function SubmissionList({
 
       {pages > 1 ? (
         <div className="mt-4 flex items-center justify-between gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange((current) => current - 1)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => onPageChange((current) => current - 1)}
+          >
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="text-muted-foreground text-sm">{page} / {pages}</span>
-          <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => onPageChange((current) => current + 1)}>
+          <span className="text-muted-foreground text-sm">
+            {page} / {pages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= pages}
+            onClick={() => onPageChange((current) => current + 1)}
+          >
             <ChevronRight className="size-4" />
           </Button>
         </div>

@@ -9,7 +9,8 @@
  */
 
 import type { ComponentType, ReactNode } from 'react';
-import { registerKind, type KindAuthorProps, type KindAttemptProps, type KindReviewProps } from '../index';
+import { registerKind } from '../index';
+import type { KindAuthorProps, KindAttemptProps, KindReviewProps } from '../index';
 
 registerKind('TYPE_ASSIGNMENT', async () => {
   const [
@@ -28,8 +29,15 @@ registerKind('TYPE_ASSIGNMENT', async () => {
     import('@/features/grading/review/GradingReviewWorkspace'),
   ]);
 
-  const Provider: ComponentType<KindAuthorProps & { children: ReactNode }> = ({ activityUuid, courseUuid, children }) => (
-    <AssignmentStudioProvider activityUuid={activityUuid} courseUuid={courseUuid}>
+  const Provider: ComponentType<KindAuthorProps & { children: ReactNode }> = ({
+    activityUuid,
+    courseUuid,
+    children,
+  }) => (
+    <AssignmentStudioProvider
+      activityUuid={activityUuid}
+      courseUuid={courseUuid}
+    >
       {children}
     </AssignmentStudioProvider>
   );

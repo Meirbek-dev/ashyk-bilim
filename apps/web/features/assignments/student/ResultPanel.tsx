@@ -81,7 +81,10 @@ export default function StudentResultPanel({ submission, onRefresh }: ResultPane
             <p className={cn('text-3xl font-bold', scoreColor)}>{score !== null ? `${score}/100` : '--'}</p>
           </div>
           {score !== null ? (
-            <Badge variant={passed ? 'success' : 'destructive'} className="self-start">
+            <Badge
+              variant={passed ? 'success' : 'destructive'}
+              className="self-start"
+            >
               {passed ? 'Passed' : 'Needs work'}
             </Badge>
           ) : null}
@@ -93,7 +96,10 @@ export default function StudentResultPanel({ submission, onRefresh }: ResultPane
       ) : null}
 
       {isPublished && breakdown?.feedback ? (
-        <Alert variant="default" className="border-primary/70 bg-primary/10 border-l-4">
+        <Alert
+          variant="default"
+          className="border-primary/70 bg-primary/10 border-l-4"
+        >
           <AlertTitle className="text-sm font-semibold">Teacher feedback</AlertTitle>
           <AlertDescription className="text-sm italic">{breakdown.feedback}</AlertDescription>
         </Alert>
@@ -103,7 +109,11 @@ export default function StudentResultPanel({ submission, onRefresh }: ResultPane
         <div className="space-y-4">
           <h3 className="text-foreground text-sm font-semibold">Breakdown</h3>
           {items.map((item, index) => (
-            <ResultItem key={item.item_id} item={item} index={index} />
+            <ResultItem
+              key={item.item_id}
+              item={item}
+              index={index}
+            />
           ))}
         </div>
       ) : null}
@@ -134,7 +144,10 @@ function ResultItem({ item, index }: { item: GradedItem; index: number }) {
               <p className="text-foreground text-sm font-medium">
                 {index + 1}. {item.item_text || item.item_id}
               </p>
-              <Badge variant="outline" className="text-xs font-semibold">
+              <Badge
+                variant="outline"
+                className="text-xs font-semibold"
+              >
                 {item.score ?? 0} / {item.max_score ?? 0}
               </Badge>
             </div>

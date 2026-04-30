@@ -3,11 +3,8 @@
 import { Download, Filter, RefreshCcw, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import {
-  GRADEBOOK_SAVED_FILTERS,
-  type CourseGradebookResponse,
-  type GradebookFilters,
-} from '@/features/grading/domain';
+import { GRADEBOOK_SAVED_FILTERS } from '@/features/grading/domain';
+import type { CourseGradebookResponse, GradebookFilters } from '@/features/grading/domain';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,18 +37,45 @@ export default function GradebookToolbar({
           <p className="text-muted-foreground text-sm">{data.course_name}</p>
         </div>
         <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
-          <SummaryTile label={t('summary.learners')} value={data.summary.student_count} />
-          <SummaryTile label={t('summary.activities')} value={data.summary.activity_count} />
-          <SummaryTile label={t('summary.needsGrading')} value={data.summary.needs_grading_count} tone="amber" />
-          <SummaryTile label={t('summary.overdue')} value={data.summary.overdue_count} tone="rose" />
-          <SummaryTile label={t('summary.selected')} value={selectedCount} />
+          <SummaryTile
+            label={t('summary.learners')}
+            value={data.summary.student_count}
+          />
+          <SummaryTile
+            label={t('summary.activities')}
+            value={data.summary.activity_count}
+          />
+          <SummaryTile
+            label={t('summary.needsGrading')}
+            value={data.summary.needs_grading_count}
+            tone="amber"
+          />
+          <SummaryTile
+            label={t('summary.overdue')}
+            value={data.summary.overdue_count}
+            tone="rose"
+          />
+          <SummaryTile
+            label={t('summary.selected')}
+            value={selectedCount}
+          />
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onRefresh}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+          >
             <RefreshCcw className="size-4" />
             {t('refresh')}
           </Button>
-          <Button type="button" variant="outline" size="sm" onClick={onExport}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onExport}
+          >
             <Download className="size-4" />
             {t('export')}
           </Button>
@@ -76,7 +100,10 @@ export default function GradebookToolbar({
           >
             <NativeSelectOption value="all">{t('allActivityTypes')}</NativeSelectOption>
             {activityTypes.map((type) => (
-              <NativeSelectOption key={type} value={type}>
+              <NativeSelectOption
+                key={type}
+                value={type}
+              >
                 {labelActivityType(t, type)}
               </NativeSelectOption>
             ))}

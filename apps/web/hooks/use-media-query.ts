@@ -56,20 +56,20 @@ function getServerSnapshot(): boolean {
   return false;
 }
 
-export type MediaQueryInput = {
+export interface MediaQueryInput {
   min?: Breakpoint | number;
   max?: Breakpoint | number;
   /** Touch-like input (finger). Use "fine" for mouse/trackpad. */
   pointer?: 'coarse' | 'fine';
-};
+}
 
 export function useMediaQuery(query: BreakpointQuery | MediaQueryInput | (string & {})): boolean {
   const mediaQuery = parseQuery(query);
 
   const subscribe = useCallback(
     (callback: () => void) => {
-      if (typeof window === 'undefined') return () => {};
-      const mql = window.matchMedia(mediaQuery);
+      if (typeof globalThis.window === 'undefined') return () => {};
+      const mql = globalThis.matchMedia(mediaQuery);
       mql.addEventListener('change', callback);
       return () => mql.removeEventListener('change', callback);
     },
@@ -77,8 +77,8 @@ export function useMediaQuery(query: BreakpointQuery | MediaQueryInput | (string
   );
 
   const getSnapshot = useCallback(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia(mediaQuery).matches;
+    if (typeof globalThis.window === 'undefined') return false;
+    return globalThis.matchMedia(mediaQuery).matches;
   }, [mediaQuery]);
 
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);

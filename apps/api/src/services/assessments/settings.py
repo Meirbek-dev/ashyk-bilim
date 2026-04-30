@@ -109,7 +109,9 @@ def put_settings(
 
     # Compatibility mirrors for routes that still read legacy storage.
     if validated.kind == "EXAM":
-        exam = db_session.exec(select(Exam).where(Exam.activity_id == activity.id)).first()
+        exam = db_session.exec(
+            select(Exam).where(Exam.activity_id == activity.id)
+        ).first()
         if exam is not None:
             exam.settings = {k: v for k, v in payload.items() if k != "kind"}
             db_session.add(exam)
@@ -139,10 +141,13 @@ def _legacy_settings_for_activity(
     db_session: Session,
 ) -> AssessmentSettings:
     if activity.activity_type == ActivityTypeEnum.TYPE_EXAM:
-        exam = db_session.exec(select(Exam).where(Exam.activity_id == activity.id)).first()
-        return validate_settings(
-            {"kind": "EXAM", **(exam.settings if exam is not None else {})}
-        )
+        exam = db_session.exec(
+            select(Exam).where(Exam.activity_id == activity.id)
+        ).first()
+        return validate_settings({
+            "kind": "EXAM",
+            **(exam.settings if exam is not None else {}),
+        })
 
     if activity.activity_type == ActivityTypeEnum.TYPE_CODE_CHALLENGE:
         return validate_settings({"kind": "CODE_CHALLENGE", **(activity.details or {})})
@@ -159,9 +164,7 @@ def _legacy_settings_for_activity(
     if quiz_block is not None:
         raw = quiz_block.content.get("settings", {})
         questions = quiz_block.content.get("questions", [])
-        return validate_settings(
-            {"kind": "QUIZ", **raw, "questions": questions}
-        )
+        return validate_settings({"kind": "QUIZ", **raw, "questions": questions})
 
     return AssignmentAssessmentSettings()
 

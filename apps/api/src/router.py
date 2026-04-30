@@ -66,6 +66,7 @@ def _legacy_assessment_redirect(
     router.add_api_route("/{path:path}", redirect, methods=list(methods))
     return router
 
+
 # Auth domains
 v1_router.include_router(
     fastapi_users.get_reset_password_router(),

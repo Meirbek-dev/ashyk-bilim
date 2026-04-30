@@ -65,10 +65,29 @@ function StatsGrid({ stats }: { stats?: SubmissionStats | null }) {
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatTile label="Total" value={stats.total} icon={Users} />
-      <StatTile label="Needs grading" value={stats.needs_grading_count} icon={Clock4} accent="amber" />
-      <StatTile label="Avg score" value={stats.avg_score !== null ? `${stats.avg_score.toFixed(1)}%` : '--'} icon={TrendingUp} accent="sky" />
-      <StatTile label="Pass rate" value={stats.pass_rate !== null ? `${stats.pass_rate.toFixed(0)}%` : '--'} icon={BookOpenCheck} accent="emerald" />
+      <StatTile
+        label="Total"
+        value={stats.total}
+        icon={Users}
+      />
+      <StatTile
+        label="Needs grading"
+        value={stats.needs_grading_count}
+        icon={Clock4}
+        accent="amber"
+      />
+      <StatTile
+        label="Avg score"
+        value={stats.avg_score !== null ? `${stats.avg_score.toFixed(1)}%` : '--'}
+        icon={TrendingUp}
+        accent="sky"
+      />
+      <StatTile
+        label="Pass rate"
+        value={stats.pass_rate !== null ? `${stats.pass_rate.toFixed(0)}%` : '--'}
+        icon={BookOpenCheck}
+        accent="emerald"
+      />
     </div>
   );
 }
@@ -92,7 +111,7 @@ function StatTile({
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-md border bg-card p-3">
+    <div className="bg-card flex items-center gap-3 rounded-md border p-3">
       <Icon className={cn('size-5 shrink-0', colorMap[accent])} />
       <div>
         <p className="text-muted-foreground text-xs">{label}</p>

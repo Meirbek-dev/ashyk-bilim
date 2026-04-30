@@ -41,7 +41,7 @@ const SYSTEM_FONT_FAMILY_NAMES = [
   'times new roman',
 ];
 
-export const SYSTEM_FONT_FAMILY_KEYS = Object.freeze([...SYSTEM_FONT_FAMILY_NAMES].sort());
+export const SYSTEM_FONT_FAMILY_KEYS = Object.freeze([...SYSTEM_FONT_FAMILY_NAMES].toSorted());
 
 export const GOOGLE_FONT_QUERY_BY_FAMILY = Object.freeze({
   'Albert Sans': 'Albert Sans:wght@400..700',
@@ -147,7 +147,7 @@ export function resolveThemeFontFamilies(tokens: Record<string, string>): Google
     if (googleFamily) families.add(googleFamily);
   }
 
-  return [...families].sort();
+  return [...families].toSorted();
 }
 
 function encodeGoogleFontQuery(query: string): string {
@@ -155,7 +155,7 @@ function encodeGoogleFontQuery(query: string): string {
 }
 
 export function buildGoogleFontCssUrl(families: readonly GoogleThemeFontFamily[]): string | null {
-  const uniqueFamilies = [...new Set(families)].sort();
+  const uniqueFamilies = [...new Set(families)].toSorted();
   if (uniqueFamilies.length === 0) return null;
 
   const familyParams = uniqueFamilies
@@ -216,7 +216,7 @@ export function loadGoogleFontFamilies(families: readonly GoogleThemeFontFamily[
 
   hydrateLoadedGoogleFontsFromDocument(document);
 
-  const missingFamilies = [...new Set(families)].filter((family) => !loadedGoogleFontFamilies.has(family)).sort();
+  const missingFamilies = [...new Set(families)].filter((family) => !loadedGoogleFontFamilies.has(family)).toSorted();
 
   if (missingFamilies.length === 0) return;
 

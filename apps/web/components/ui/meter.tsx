@@ -10,9 +10,7 @@ export function Meter({ className, children, ...props }: MeterPrimitive.Root.Pro
       className={cn('flex w-full flex-col gap-2', className)}
       {...props}
     >
-      {children ? (
-        children
-      ) : (
+      {children || (
         <MeterTrack>
           <MeterIndicator />
         </MeterTrack>

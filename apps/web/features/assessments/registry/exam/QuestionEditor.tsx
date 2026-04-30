@@ -2,7 +2,8 @@
 
 import { apiFetch } from '@/lib/api-client';
 
-import { ChoiceItemAuthor, type ChoiceAuthorValue } from '@/features/assessments/items/choice';
+import { ChoiceItemAuthor } from '@/features/assessments/items/choice';
+import type { ChoiceAuthorValue } from '@/features/assessments/items/choice';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -316,7 +317,11 @@ function choiceAuthorValueToQuestion(
   }
 
   const questionType =
-    value.kind === 'CHOICE_SINGLE' ? 'SINGLE_CHOICE' : value.kind === 'CHOICE_MULTIPLE' ? 'MULTIPLE_CHOICE' : 'TRUE_FALSE';
+    value.kind === 'CHOICE_SINGLE'
+      ? 'SINGLE_CHOICE'
+      : value.kind === 'CHOICE_MULTIPLE'
+        ? 'MULTIPLE_CHOICE'
+        : 'TRUE_FALSE';
 
   return {
     ...question,

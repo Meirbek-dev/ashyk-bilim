@@ -54,9 +54,7 @@ export function AutocompleteInput({
           className,
         )}
         data-slot="autocomplete-input"
-        render={
-          <Input size={typeof sizeValue === 'number' ? sizeValue : undefined} />
-        }
+        render={<Input size={typeof sizeValue === 'number' ? sizeValue : undefined} />}
         {...props}
       />
       {showTrigger && (

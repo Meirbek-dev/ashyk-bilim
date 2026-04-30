@@ -13,10 +13,12 @@ import {
   formatGradebookStateKey,
   gradebookCellKey,
   gradebookLearnerName,
-  type ActivityProgressCell,
-  type CourseGradebookResponse,
-  type GradebookFilters,
-  type GradebookRollupKind,
+} from '@/features/grading/domain';
+import type {
+  ActivityProgressCell,
+  CourseGradebookResponse,
+  GradebookFilters,
+  GradebookRollupKind,
 } from '@/features/grading/domain';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -65,7 +67,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     [data?.cells],
   );
   const activityTypes = useMemo(
-    () => Array.from(new Set((data?.activities ?? []).map((activity) => activity.activity_type))).sort(),
+    () => [...new Set((data?.activities ?? []).map((activity) => activity.activity_type))].sort(),
     [data?.activities],
   );
   const visibleActivities = useMemo(
@@ -82,9 +84,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
 
   const selectedCells = useMemo(
     () =>
-      Array.from(selectedKeys)
-        .map((key) => cellMap.get(key))
-        .filter((cell): cell is ActivityProgressCell => Boolean(cell)),
+      [...selectedKeys].map((key) => cellMap.get(key)).filter((cell): cell is ActivityProgressCell => Boolean(cell)),
     [cellMap, selectedKeys],
   );
 
@@ -284,7 +284,7 @@ function exportGradebookCsv(
     }),
   ]);
   const csv = [header, ...rows]
-    .map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))
+    .map((row) => row.map((value) => `"${value.replaceAll('"', '""')}"`).join(','))
     .join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);

@@ -253,7 +253,8 @@ def _create_exam_activity(
         sa.bindparam("details", type_=sa.JSON),
     )
     row = (
-        conn.execute(
+        conn
+        .execute(
             insert_stmt,
             {
                 "name": (name or "Конвертированный тест")[:500],
@@ -319,7 +320,8 @@ def _create_exam(
         """
     ).bindparams(sa.bindparam("settings", type_=sa.JSON))
     row = (
-        conn.execute(
+        conn
+        .execute(
             insert_stmt,
             {
                 "exam_uuid": exam_uuid,
@@ -413,9 +415,7 @@ def _convert_quiz_task_to_exam(
     )
     creator_id = (course_row or {}).get("creator_id")
 
-    base_title = (
-        task.get("title") or assignment.get("title") or "Конвертированный тест"
-    )
+    base_title = task.get("title") or assignment.get("title") or "Конвертированный тест"
     base_description = task.get("description") or assignment.get("description") or ""
     published = bool(assignment.get("published"))
 

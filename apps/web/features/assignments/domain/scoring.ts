@@ -1,11 +1,11 @@
 import type { AssignmentTaskRead } from './types';
 
 export function getTaskMaxPoints(task: Pick<AssignmentTaskRead, 'max_grade_value'>): number {
-  const points = Number(task.max_grade_value);
+  const points = task.max_grade_value;
   return Number.isFinite(points) && points > 0 ? points : 0;
 }
 
-export function getAssignmentTotalPoints(tasks: Array<Pick<AssignmentTaskRead, 'max_grade_value'>>): number {
+export function getAssignmentTotalPoints(tasks: Pick<AssignmentTaskRead, 'max_grade_value'>[]): number {
   return tasks.reduce((total, task) => total + getTaskMaxPoints(task), 0);
 }
 

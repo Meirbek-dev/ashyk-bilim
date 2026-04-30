@@ -788,7 +788,7 @@ def _positive_int_setting(settings: dict[str, object], key: str) -> int | None:
         return None
     try:
         parsed = int(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
     return parsed if parsed > 0 else None
 
@@ -799,7 +799,7 @@ def _number_setting(settings: dict[str, object], key: str, default: float) -> fl
         return default
     try:
         return float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return default
 
 

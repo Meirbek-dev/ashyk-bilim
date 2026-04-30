@@ -23,7 +23,7 @@ interface ExamQuestion {
   id: number;
   question_text: string;
   question_type: string;
-  answer_options?: Array<{ text: string }>;
+  answer_options?: { text: string }[];
 }
 
 export default function ExamReviewDetail({ submission, activityUuid }: KindReviewDetailProps) {
@@ -125,7 +125,7 @@ export default function ExamReviewDetail({ submission, activityUuid }: KindRevie
 function renderAnswer(
   questionType: string | undefined,
   userAnswer: unknown,
-  opts: Array<{ text: string }>,
+  opts: { text: string }[],
 ): React.ReactNode {
   switch (questionType) {
     case 'SINGLE_CHOICE':

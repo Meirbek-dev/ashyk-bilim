@@ -7,11 +7,17 @@
  * The Provider fetches assignment + task data once; all three slots read from it.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { normalizeAssignmentTasks, type AssignmentRead, type AssignmentTaskRead } from '@/features/assignments/domain';
-import { useAssignmentByActivity, useAssignmentDetail, useAssignmentTasks } from '@/features/assignments/hooks/useAssignments';
+import { normalizeAssignmentTasks } from '@/features/assignments/domain';
+import type { AssignmentRead, AssignmentTaskRead } from '@/features/assignments/domain';
+import {
+  useAssignmentByActivity,
+  useAssignmentDetail,
+  useAssignmentTasks,
+} from '@/features/assignments/hooks/useAssignments';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import type { KindAuthorProps } from '../index';
 import ErrorUI from '@/components/Objects/Elements/Error/Error';
@@ -52,8 +58,11 @@ export function AssignmentStudioProvider({ activityUuid, children }: ProviderPro
   const normalizedActivityUuid = activityUuid.replace(/^activity_/, '');
 
   // Step 1: resolve assignment from activity
-  const { data: assignmentLookup, isLoading: isLookupLoading, error: lookupError } =
-    useAssignmentByActivity(normalizedActivityUuid);
+  const {
+    data: assignmentLookup,
+    isLoading: isLookupLoading,
+    error: lookupError,
+  } = useAssignmentByActivity(normalizedActivityUuid);
 
   const assignmentUuid = assignmentLookup?.assignment_uuid ?? null;
   const canonicalAssignmentUuid = assignmentUuid
@@ -63,10 +72,12 @@ export function AssignmentStudioProvider({ activityUuid, children }: ProviderPro
     : null;
 
   // Step 2: load full assignment + tasks once we have the uuid
-  const { data: assignment, isLoading: isAssignmentLoading, error: assignmentError } =
-    useAssignmentDetail(canonicalAssignmentUuid);
-  const { data: rawTasks, isLoading: isTasksLoading, error: tasksError } =
-    useAssignmentTasks(canonicalAssignmentUuid);
+  const {
+    data: assignment,
+    isLoading: isAssignmentLoading,
+    error: assignmentError,
+  } = useAssignmentDetail(canonicalAssignmentUuid);
+  const { data: rawTasks, isLoading: isTasksLoading, error: tasksError } = useAssignmentTasks(canonicalAssignmentUuid);
 
   const tasks = useMemo(() => normalizeAssignmentTasks(rawTasks), [rawTasks]);
 

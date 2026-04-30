@@ -120,7 +120,7 @@ export function buildGradebookRollups(data: CourseGradebookResponse, kind: Grade
       const group = gradebookActivityKind(activity);
       groups.set(group, [...(groups.get(group) ?? []), ...(cellsByActivity.get(activity.id) ?? [])]);
     }
-    return Array.from(groups.entries()).map(([group, cells]) => buildRollupRow(group, group, cells));
+    return [...groups.entries()].map(([group, cells]) => buildRollupRow(group, group, cells));
   }
 
   const cohorts = new Map<string, ActivityProgressCell[]>();
@@ -129,9 +129,9 @@ export function buildGradebookRollups(data: CourseGradebookResponse, kind: Grade
       (student as GradebookStudent & { cohort_name?: string | null; cohort?: string | null }).cohort_name ??
       (student as GradebookStudent & { cohort_name?: string | null; cohort?: string | null }).cohort ??
       '__default_cohort__';
-    cohorts.set(String(cohort), [...(cohorts.get(String(cohort)) ?? []), ...(cellsByStudent.get(student.id) ?? [])]);
+    cohorts.set(cohort, [...(cohorts.get(cohort) ?? []), ...(cellsByStudent.get(student.id) ?? [])]);
   }
-  return Array.from(cohorts.entries()).map(([cohort, cells]) => buildRollupRow(cohort, cohort, cells));
+  return [...cohorts.entries()].map(([cohort, cells]) => buildRollupRow(cohort, cohort, cells));
 }
 
 function buildRollupRow(id: string, label: string, cells: ActivityProgressCell[]): GradebookRollupRow {

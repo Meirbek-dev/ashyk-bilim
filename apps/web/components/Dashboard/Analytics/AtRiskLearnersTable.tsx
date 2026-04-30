@@ -167,9 +167,7 @@ export default function AtRiskLearnersTable({
       cell: ({ row }) => {
         const riskRow = row.original as EnhancedAtRiskLearnerRow;
         const hasGradingBlock = riskRow.open_grading_blocks > 0;
-        const gradingHref = riskRow.course_uuid
-          ? `/dash/analytics/courses/${riskRow.course_uuid}`
-          : '/dash/courses';
+        const gradingHref = riskRow.course_uuid ? `/dash/analytics/courses/${riskRow.course_uuid}` : '/dash/courses';
         return (
           <div className="text-muted-foreground max-w-[280px] space-y-1 text-sm whitespace-normal">
             <span>{riskRow.recommended_action}</span>

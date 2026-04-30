@@ -22,20 +22,20 @@ Object.defineProperty(globalThis, 'matchMedia', {
 });
 
 class MockResizeObserver {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
+  public observe = vi.fn();
+  public unobserve = vi.fn();
+  public disconnect = vi.fn();
 }
 
 class MockIntersectionObserver {
-  root = null;
-  rootMargin = '';
-  scrollMargin = '';
-  thresholds = [];
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-  takeRecords = vi.fn(() => []);
+  public root = null;
+  public rootMargin = '';
+  public scrollMargin = '';
+  public thresholds = [];
+  public observe = vi.fn();
+  public unobserve = vi.fn();
+  public disconnect = vi.fn();
+  public takeRecords = vi.fn(() => []);
 }
 
 globalThis.ResizeObserver = MockResizeObserver;

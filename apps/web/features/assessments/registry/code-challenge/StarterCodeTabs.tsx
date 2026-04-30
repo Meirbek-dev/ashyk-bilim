@@ -29,13 +29,19 @@ export default function StarterCodeTabs() {
         <Tabs defaultValue={String(languages[0]?.id)}>
           <TabsList className="mb-3 flex h-auto flex-wrap justify-start">
             {languages.map((language) => (
-              <TabsTrigger key={language!.id} value={String(language!.id)}>
+              <TabsTrigger
+                key={language!.id}
+                value={String(language!.id)}
+              >
                 {language!.name}
               </TabsTrigger>
             ))}
           </TabsList>
           {languages.map((language) => (
-            <TabsContent key={language!.id} value={String(language!.id)}>
+            <TabsContent
+              key={language!.id}
+              value={String(language!.id)}
+            >
               <Controller
                 control={form.control}
                 name={`starter_code.${language!.id}`}

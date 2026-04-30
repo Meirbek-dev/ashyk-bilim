@@ -233,14 +233,11 @@ function ExamTakingContent({
       setIsSubmitting(true);
 
       try {
-        const response = await apiFetch(
-          `exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/submit`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(answers),
-          },
-        );
+        const response = await apiFetch(`exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(answers),
+        });
         if (!response.ok) throw new Error('Failed to submit exam');
         persistence.clearSavedAnswers();
         toast.success(t('examSubmittedSuccessfully'));
@@ -257,14 +254,11 @@ function ExamTakingContent({
   const handleViolation = useCallback(
     async (type: string, count: number) => {
       try {
-        const response = await apiFetch(
-          `exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/violations`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type, answers }),
-          },
-        );
+        const response = await apiFetch(`exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/violations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, answers }),
+        });
         const updatedAttempt = response.ok ? await response.json().catch(() => null) : null;
         if (updatedAttempt?.status === 'AUTO_SUBMITTED') {
           persistence.clearSavedAnswers();
@@ -356,9 +350,7 @@ function ExamTakingContent({
 
   if (!currentQuestion) {
     return (
-      <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-        No questions.
-      </div>
+      <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">No questions.</div>
     );
   }
 

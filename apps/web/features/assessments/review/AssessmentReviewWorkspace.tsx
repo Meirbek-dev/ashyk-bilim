@@ -7,7 +7,8 @@ import { LoaderCircle } from 'lucide-react';
 import { apiFetcher } from '@/lib/api-client';
 import { getAPIUrl } from '@services/config/config';
 import { queryKeys } from '@/lib/react-query/queryKeys';
-import { loadKindModule, type KindModule } from '@/features/assessments/registry';
+import { loadKindModule } from '@/features/assessments/registry';
+import type { KindModule } from '@/features/assessments/registry';
 import GradingReviewWorkspace from '@/features/grading/review/GradingReviewWorkspace';
 
 interface AssessmentReviewWorkspaceProps {
@@ -28,16 +29,21 @@ function activityTypeToRegistryKind(
   activityType: string,
 ): 'TYPE_ASSIGNMENT' | 'TYPE_EXAM' | 'TYPE_CODE_CHALLENGE' | 'TYPE_QUIZ' | null {
   switch (activityType) {
-    case 'TYPE_ASSIGNMENT':
+    case 'TYPE_ASSIGNMENT': {
       return 'TYPE_ASSIGNMENT';
-    case 'TYPE_EXAM':
+    }
+    case 'TYPE_EXAM': {
       return 'TYPE_EXAM';
-    case 'TYPE_CODE_CHALLENGE':
+    }
+    case 'TYPE_CODE_CHALLENGE': {
       return 'TYPE_CODE_CHALLENGE';
-    case 'TYPE_QUIZ':
+    }
+    case 'TYPE_QUIZ': {
       return 'TYPE_QUIZ';
-    default:
+    }
+    default: {
       return null;
+    }
   }
 }
 
@@ -48,7 +54,11 @@ export default function AssessmentReviewWorkspace({
   const cleanUuid = activityUuid.replace(/^activity_/, '');
   const [kindModule, setKindModule] = useState<KindModule | undefined>();
 
-  const { data: activity, isLoading, error } = useQuery(
+  const {
+    data: activity,
+    isLoading,
+    error,
+  } = useQuery(
     queryOptions({
       queryKey: queryKeys.activities.detail(cleanUuid),
       queryFn: () => apiFetcher(`${getAPIUrl()}activities/${cleanUuid}`) as Promise<ActivityDetail>,
@@ -65,7 +75,9 @@ export default function AssessmentReviewWorkspace({
       .then((mod) => {
         if (!cancelled) setKindModule(mod);
       })
-      .catch(() => {/* generic review rendering remains available */});
+      .catch(() => {
+        /* generic review rendering remains available */
+      });
     return () => {
       cancelled = true;
     };
@@ -73,7 +85,7 @@ export default function AssessmentReviewWorkspace({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[420px] items-center justify-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex min-h-[420px] items-center justify-center text-sm">
         <LoaderCircle className="mr-2 size-4 animate-spin" />
         Loading review
       </div>
@@ -82,7 +94,7 @@ export default function AssessmentReviewWorkspace({
 
   if (error || !activity) {
     return (
-      <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
         Review is unavailable for this activity.
       </div>
     );
