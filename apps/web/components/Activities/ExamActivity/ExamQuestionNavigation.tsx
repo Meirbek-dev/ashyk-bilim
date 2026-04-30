@@ -1,3 +1,6 @@
+// LEGACY — Phase 2 will move exam attempt navigation into features/assessments/registry/exam/.
+// TODO Phase 2: delete once ExamAttemptContent uses the new item navigation pattern.
+// See plans/assessment-system-redesign.md
 'use client';
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';

@@ -1,3 +1,7 @@
+// LEGACY — Phase 2 will migrate exam studio authoring into the registry KindModule.
+// TODO Phase 2: delete once exam author components move to features/assessments/registry/exam/.
+// See plans/assessment-system-redesign.md
+
 /**
  * QuestionEditorReducer - State machine for question management
  *

@@ -1,3 +1,7 @@
+// LEGACY — types are inlined in ExamAttemptContent.tsx after Phase 1 migration.
+// TODO Phase 1: delete once ExamAttemptContent no longer imports this.
+// See plans/assessment-system-redesign.md
+
 export interface ExamData {
   exam_uuid: string;
   title: string;

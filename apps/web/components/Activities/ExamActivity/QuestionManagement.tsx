@@ -1,3 +1,6 @@
+// LEGACY — Phase 2 will migrate exam question management into features/assessments/registry/exam/.
+// TODO Phase 2: delete once exam-author.tsx is fully migrated.
+// See plans/assessment-system-redesign.md
 'use client';
 
 import { apiFetch } from '@/lib/api-client';

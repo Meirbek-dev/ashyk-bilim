@@ -1,3 +1,8 @@
+// LEGACY — replaced by useState in ExamAttemptContent + useAssessmentAttempt.ts.
+// Recovery / violation / fullscreen modes are now owned by AssessmentLayout.
+// TODO Phase 1: delete once ExamAttemptContent no longer imports this.
+// See plans/assessment-system-redesign.md
+
 /**
  * ExamTakingReducer - State machine for exam-taking interface
  *

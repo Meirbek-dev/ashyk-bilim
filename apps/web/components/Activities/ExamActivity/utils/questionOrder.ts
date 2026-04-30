@@ -1,3 +1,8 @@
+// LEGACY — Phase 2 will move this utility alongside ExamAttemptContent into
+// features/assessments/registry/exam/.
+// TODO Phase 2: move and update import in ExamAttemptContent.tsx.
+// See plans/assessment-system-redesign.md
+
 type QuestionIdentifier = number | string;
 
 interface OrderableQuestion {

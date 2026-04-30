@@ -1,3 +1,6 @@
+// LEGACY — replaced by features/assessments/shell/hooks/useAssessmentAttempt.ts
+// TODO Phase 1: delete this file once ExamAttemptContent is migrated.
+// See plans/assessment-system-redesign.md
 'use client';
 import { useCallback, useEffect, useRef } from 'react';
 
