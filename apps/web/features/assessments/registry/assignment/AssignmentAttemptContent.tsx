@@ -108,7 +108,7 @@ export default function AssignmentAttemptContent({ activityUuid, courseUuid }: K
       return res.data as Submission;
     },
     onSuccess: async () => {
-      toast.success('Submitted for grading');
+      toast.success('Awaiting grade');
       lastSavedRef.current = answers;
       setSaveState('submitted');
       await Promise.all([

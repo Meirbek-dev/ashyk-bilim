@@ -20,6 +20,7 @@ import {
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
 import type { SubmissionStatus } from '@/features/assessments/domain/submission-status';
 
 // ── Save-state type ───────────────────────────────────────────────────────────
@@ -251,15 +252,9 @@ export function SaveStateBadge({
         Returned
       </Badge>
     );
-  if (state === 'submitted' || status === 'PENDING')
-    return (
-      <Badge variant="secondary">
-        <CheckCircle2 className="size-3" />
-        Submitted
-      </Badge>
-    );
-  if (status === 'GRADED') return <Badge variant="secondary">Awaiting grade</Badge>;
-  if (status === 'PUBLISHED') return <Badge variant="success">Released</Badge>;
+  if (state === 'submitted' || status === 'PENDING') return <SubmissionStatusBadge status="PENDING" />;
+  if (status === 'GRADED') return <SubmissionStatusBadge status="GRADED" />;
+  if (status === 'PUBLISHED') return <SubmissionStatusBadge status="PUBLISHED" />;
   return (
     <Badge variant="success">
       <CheckCircle2 className="size-3" />

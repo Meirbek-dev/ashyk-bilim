@@ -2,18 +2,18 @@ import type { ActivityProgressCell, ActivityProgressState, ReleaseState, Submiss
 
 export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
   DRAFT: 'Draft',
-  PENDING: 'Pending',
-  GRADED: 'Awaiting publication',
-  PUBLISHED: 'Published',
+  PENDING: 'Awaiting grade',
+  GRADED: 'Graded',
+  PUBLISHED: 'Released',
   RETURNED: 'Returned',
 };
 
 export const SUBMISSION_STATUS_COLORS: Record<SubmissionStatus, string> = {
-  DRAFT: 'bg-slate-100 text-slate-700',
-  PENDING: 'bg-amber-100 text-amber-800',
-  GRADED: 'bg-emerald-100 text-emerald-800',
-  PUBLISHED: 'bg-teal-100 text-teal-800',
-  RETURNED: 'bg-violet-100 text-violet-800',
+  DRAFT: 'bg-muted text-muted-foreground',
+  PENDING: 'bg-warning/10 text-warning',
+  GRADED: 'bg-success/10 text-success',
+  PUBLISHED: 'bg-primary/10 text-primary',
+  RETURNED: 'bg-destructive/10 text-destructive',
 };
 
 export const SUBMISSION_ALLOWED_TRANSITIONS: Record<SubmissionStatus, SubmissionStatus[]> = {
@@ -44,15 +44,15 @@ export const ACTIVITY_PROGRESS_STATE_LABELS: Record<ActivityProgressState, strin
 };
 
 export const ACTIVITY_PROGRESS_STATE_CLASSES: Record<ActivityProgressState, string> = {
-  NOT_STARTED: 'border-slate-200 bg-slate-50 text-slate-700',
-  IN_PROGRESS: 'border-blue-200 bg-blue-50 text-blue-700',
-  SUBMITTED: 'border-indigo-200 bg-indigo-50 text-indigo-700',
-  NEEDS_GRADING: 'border-amber-200 bg-amber-50 text-amber-800',
-  RETURNED: 'border-violet-200 bg-violet-50 text-violet-800',
-  GRADED: 'border-teal-200 bg-teal-50 text-teal-800',
-  PASSED: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  FAILED: 'border-rose-200 bg-rose-50 text-rose-800',
-  COMPLETED: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  NOT_STARTED: 'border-border bg-muted text-muted-foreground',
+  IN_PROGRESS: 'border-primary/20 bg-primary/10 text-primary',
+  SUBMITTED: 'border-warning/20 bg-warning/10 text-warning',
+  NEEDS_GRADING: 'border-warning/20 bg-warning/10 text-warning',
+  RETURNED: 'border-destructive/20 bg-destructive/10 text-destructive',
+  GRADED: 'border-success/20 bg-success/10 text-success',
+  PASSED: 'border-success/20 bg-success/10 text-success',
+  FAILED: 'border-destructive/20 bg-destructive/10 text-destructive',
+  COMPLETED: 'border-success/20 bg-success/10 text-success',
 };
 
 export function canTransitionSubmission(from: SubmissionStatus, to: SubmissionStatus): boolean {

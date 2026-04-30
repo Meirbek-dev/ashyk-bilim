@@ -22,9 +22,9 @@ export type SubmissionStatus = components['schemas']['src__db__grading__submissi
 
 export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
   DRAFT: 'Draft',
-  PENDING: 'Pending',
-  GRADED: 'Awaiting publication',
-  PUBLISHED: 'Published',
+  PENDING: 'Awaiting grade',
+  GRADED: 'Graded',
+  PUBLISHED: 'Released',
   RETURNED: 'Returned',
 };
 

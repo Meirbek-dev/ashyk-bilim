@@ -31,7 +31,7 @@ const STATUS_VARIANTS: Record<SubmissionStatus, 'secondary' | 'warning' | 'succe
 const STATUS_LABEL_KEYS: Record<SubmissionStatus, string> = {
   DRAFT: 'statusDraft',
   PENDING: 'statusPending',
-  GRADED: 'statusAwaitingPublication',
+  GRADED: 'statusGraded',
   PUBLISHED: 'statusPublished',
   RETURNED: 'statusReturned',
 };

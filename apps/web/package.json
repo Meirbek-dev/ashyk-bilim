@@ -9,6 +9,7 @@
     "dev-https": "next dev --experimental-https -p 443",
     "generate:api-types": "openapi-typescript ../api/openapi.json -o lib/api/generated/schema.ts",
     "generate:contracts": "bun run generate:api-types",
+    "i18n:consolidate": "bun run scripts/i18n-consolidate.ts",
     "messages:migrate": "bun messages/migrate.ts",
     "test": "vitest run",
     "test:ui": "vitest --browser.enabled --browser.name=chromium",

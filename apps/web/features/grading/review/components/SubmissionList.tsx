@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, LoaderCircle, Search } from 'lucide-react';
 
-import { getSubmissionDisplayName, needsTeacherAction } from '@/features/grading/domain';
+import { getSubmissionDisplayName, needsTeacherAction, SUBMISSION_STATUS_LABELS } from '@/features/grading/domain';
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -41,10 +41,10 @@ export default function SubmissionList({
           <NativeSelect value={activeFilter} onChange={(event) => onFilterChange(event.target.value as StatusFilter)} aria-label="Status filter">
             <NativeSelectOption value="ALL">All</NativeSelectOption>
             <NativeSelectOption value="NEEDS_GRADING">Needs grading</NativeSelectOption>
-            <NativeSelectOption value="PENDING">Pending</NativeSelectOption>
-            <NativeSelectOption value="GRADED">Graded</NativeSelectOption>
-            <NativeSelectOption value="PUBLISHED">Published</NativeSelectOption>
-            <NativeSelectOption value="RETURNED">Returned</NativeSelectOption>
+            <NativeSelectOption value="PENDING">{SUBMISSION_STATUS_LABELS.PENDING}</NativeSelectOption>
+            <NativeSelectOption value="GRADED">{SUBMISSION_STATUS_LABELS.GRADED}</NativeSelectOption>
+            <NativeSelectOption value="PUBLISHED">{SUBMISSION_STATUS_LABELS.PUBLISHED}</NativeSelectOption>
+            <NativeSelectOption value="RETURNED">{SUBMISSION_STATUS_LABELS.RETURNED}</NativeSelectOption>
           </NativeSelect>
           <NativeSelect value={sortBy} onChange={(event) => onSortChange(event.target.value)} aria-label="Sort">
             <NativeSelectOption value="submitted_at">Submitted</NativeSelectOption>

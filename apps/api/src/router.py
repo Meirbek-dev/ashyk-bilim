@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends
+from collections.abc import Iterable
+
+from fastapi import APIRouter, Depends, Request
+from starlette.responses import RedirectResponse
 
 from src.auth.users import fastapi_users
 from src.db.users import UserCreate, UserRead
@@ -17,15 +20,17 @@ from src.routers import (
     users,
 )
 from src.routers.ai import ai
+from src.routers.assessments import (
+    assignments as assessment_assignments,
+    code_challenges as assessment_code_challenges,
+    exams as assessment_exams,
+)
 from src.routers.courses import (
-    assignments,
     certifications,
     chapters,
-    code_challenges,
     collections,
     courses,
     discussions,
-    exams,
 )
 from src.routers.courses.activities import activities, blocks
 from src.routers.grading.feedback import router as grading_feedback_router
@@ -37,6 +42,29 @@ from src.routers.utils import router as utils_router
 from src.services.dev.dev import isDevModeEnabledOrRaise
 
 v1_router = APIRouter(prefix="/api/v1")
+
+
+def _legacy_assessment_redirect(
+    legacy_prefix: str,
+    target_prefix: str,
+) -> APIRouter:
+    router = APIRouter(include_in_schema=False)
+    methods: Iterable[str] = ("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+
+    async def redirect(request: Request, path: str = "") -> RedirectResponse:
+        target_path = request.url.path.replace(
+            f"/api/v1{legacy_prefix}",
+            f"/api/v1{target_prefix}",
+            1,
+        )
+        return RedirectResponse(
+            url=str(request.url.replace(path=target_path)),
+            status_code=308,
+        )
+
+    router.add_api_route("", redirect, methods=list(methods))
+    router.add_api_route("/{path:path}", redirect, methods=list(methods))
+    return router
 
 # Auth domains
 v1_router.include_router(
@@ -70,11 +98,31 @@ v1_router.include_router(discussions.router, prefix="/courses", tags=["discussio
 v1_router.include_router(chapters.router, prefix="/chapters", tags=["chapters"])
 v1_router.include_router(activities.router, prefix="/activities", tags=["activities"])
 v1_router.include_router(
-    assignments.router, prefix="/assignments", tags=["assignments"]
+    assessment_assignments.router,
+    prefix="/assessments/assignments",
+    tags=["assessment-assignments"],
 )
-v1_router.include_router(exams.router, prefix="/exams", tags=["exams"])
 v1_router.include_router(
-    code_challenges.router, prefix="/code-challenges", tags=["code-challenges"]
+    assessment_exams.router,
+    prefix="/assessments/exams",
+    tags=["assessment-exams"],
+)
+v1_router.include_router(
+    assessment_code_challenges.router,
+    prefix="/assessments/code-challenges",
+    tags=["assessment-code-challenges"],
+)
+v1_router.include_router(
+    _legacy_assessment_redirect("/assignments", "/assessments/assignments"),
+    prefix="/assignments",
+)
+v1_router.include_router(
+    _legacy_assessment_redirect("/exams", "/assessments/exams"),
+    prefix="/exams",
+)
+v1_router.include_router(
+    _legacy_assessment_redirect("/code-challenges", "/assessments/code-challenges"),
+    prefix="/code-challenges",
 )
 v1_router.include_router(
     certifications.router, prefix="/certifications", tags=["certifications"]

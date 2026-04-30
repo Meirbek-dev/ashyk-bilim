@@ -491,7 +491,7 @@
     "assignmentActions": {
       "submit": "Тапсырманы жіберу",
       "submitConfirm": "Тапсырманы тексеруге жібергіңіз келетініне сенімдісіз бе? Жібергеннен кейін өзгерістер енгізе алмайсыз.",
-      "submitForGrading": "Тексеруге жіберу",
+      "submitForGrading": "Жіберу",
       "submitYourAssingmentForGrading": "Тапсырмаңызды тексеруге жіберіңіз"
     },
     "assignmentStatus": {
@@ -6131,10 +6131,9 @@
       "submitted": "Жіберілді",
       "status": "Күй",
       "statusDraft": "Жоба",
-      "statusPending": "Күтуде",
+      "statusPending": "Бағалауды күтуде",
       "statusGraded": "Бағаланды",
-      "statusAwaitingPublication": "Жариялануды күтуде",
-      "statusPublished": "Жарияланған",
+      "statusPublished": "Жарияланды",
       "statusReturned": "Қайтарылған",
       "score": "Баға",
       "scorePlaceholder": "0–100",
@@ -6269,7 +6268,7 @@
       "alreadySubmitted": "Жіберілді",
       "notAuthenticated": "Жіберу үшін жүйеге кіріңіз",
       "submitFailed": "Жіберу сәтсіз аяқталды. Қайталап көріңіз.",
-      "confirmTitle": "Тексеруге жіберу керек пе?",
+      "confirmTitle": "Жіберу керек пе?",
       "confirmDescription": "Жіберілгеннен кейін жауаптарды өзгерту мүмкін болмайды.",
       "cancel": "Болдырмау",
       "confirmSubmit": "Жіберу"

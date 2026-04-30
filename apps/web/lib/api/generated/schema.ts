@@ -513,7 +513,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/activity/{activity_uuid}": {
+    "/api/v1/assessments/assignments/activity/{activity_uuid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -521,17 +521,17 @@ export interface paths {
             cookie?: never;
         };
         /** Api Read Assignment From Activity */
-        get: operations["api_read_assignment_from_activity_api_v1_assignments_activity__activity_uuid__get"];
+        get: operations["api_read_assignment_from_activity_api_v1_assessments_assignments_activity__activity_uuid__get"];
         put?: never;
         post?: never;
         /** Api Delete Assignment From Activity */
-        delete: operations["api_delete_assignment_from_activity_api_v1_assignments_activity__activity_uuid__delete"];
+        delete: operations["api_delete_assignment_from_activity_api_v1_assessments_assignments_activity__activity_uuid__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/course/{course_uuid}": {
+    "/api/v1/assessments/assignments/course/{course_uuid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -539,7 +539,7 @@ export interface paths {
             cookie?: never;
         };
         /** Api Get Assignments */
-        get: operations["api_get_assignments_api_v1_assignments_course__course_uuid__get"];
+        get: operations["api_get_assignments_api_v1_assessments_assignments_course__course_uuid__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -548,7 +548,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/courses": {
+    "/api/v1/assessments/assignments/courses": {
         parameters: {
             query?: never;
             header?: never;
@@ -556,7 +556,7 @@ export interface paths {
             cookie?: never;
         };
         /** Api Get Assignments For Courses */
-        get: operations["api_get_assignments_for_courses_api_v1_assignments_courses_get"];
+        get: operations["api_get_assignments_for_courses_api_v1_assessments_assignments_courses_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -565,7 +565,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/courses/editable": {
+    "/api/v1/assessments/assignments/courses/editable": {
         parameters: {
             query?: never;
             header?: never;
@@ -573,7 +573,7 @@ export interface paths {
             cookie?: never;
         };
         /** Api Get Editable Assignments For Courses */
-        get: operations["api_get_editable_assignments_for_courses_api_v1_assignments_courses_editable_get"];
+        get: operations["api_get_editable_assignments_for_courses_api_v1_assessments_assignments_courses_editable_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -582,7 +582,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/with-activity": {
+    "/api/v1/assessments/assignments/with-activity": {
         parameters: {
             query?: never;
             header?: never;
@@ -595,14 +595,14 @@ export interface paths {
          * Api Create Assignment With Activity
          * @description Create assignment with activity in a single transaction.
          */
-        post: operations["api_create_assignment_with_activity_api_v1_assignments_with_activity_post"];
+        post: operations["api_create_assignment_with_activity_api_v1_assessments_assignments_with_activity_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/{assignment_uuid}": {
+    "/api/v1/assessments/assignments/{assignment_uuid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -610,9 +610,9 @@ export interface paths {
             cookie?: never;
         };
         /** Api Read Assignment */
-        get: operations["api_read_assignment_api_v1_assignments__assignment_uuid__get"];
+        get: operations["api_read_assignment_api_v1_assessments_assignments__assignment_uuid__get"];
         /** Api Update Assignment */
-        put: operations["api_update_assignment_api_v1_assignments__assignment_uuid__put"];
+        put: operations["api_update_assignment_api_v1_assessments_assignments__assignment_uuid__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -620,7 +620,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/{assignment_uuid}/archive": {
+    "/api/v1/assessments/assignments/{assignment_uuid}/archive": {
         parameters: {
             query?: never;
             header?: never;
@@ -633,14 +633,14 @@ export interface paths {
          * Api Archive Assignment
          * @description Archive an assignment.  Read-only for everyone afterwards; not deletable.
          */
-        post: operations["api_archive_assignment_api_v1_assignments__assignment_uuid__archive_post"];
+        post: operations["api_archive_assignment_api_v1_assessments_assignments__assignment_uuid__archive_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/{assignment_uuid}/cancel-schedule": {
+    "/api/v1/assessments/assignments/{assignment_uuid}/cancel-schedule": {
         parameters: {
             query?: never;
             header?: never;
@@ -653,14 +653,14 @@ export interface paths {
          * Api Cancel Assignment Schedule
          * @description Revert a SCHEDULED assignment back to DRAFT.
          */
-        post: operations["api_cancel_assignment_schedule_api_v1_assignments__assignment_uuid__cancel_schedule_post"];
+        post: operations["api_cancel_assignment_schedule_api_v1_assessments_assignments__assignment_uuid__cancel_schedule_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/{assignment_uuid}/publish": {
+    "/api/v1/assessments/assignments/{assignment_uuid}/publish": {
         parameters: {
             query?: never;
             header?: never;
@@ -677,14 +677,14 @@ export interface paths {
          *     - Omit or set to null → publish now (status becomes PUBLISHED).
          *     - Set to a future datetime → schedule (status becomes SCHEDULED).
          */
-        post: operations["api_publish_assignment_api_v1_assignments__assignment_uuid__publish_post"];
+        post: operations["api_publish_assignment_api_v1_assessments_assignments__assignment_uuid__publish_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/{assignment_uuid}/submissions/me/draft": {
+    "/api/v1/assessments/assignments/{assignment_uuid}/submissions/me/draft": {
         parameters: {
             query?: never;
             header?: never;
@@ -695,7 +695,7 @@ export interface paths {
          * Api Get Assignment Draft Submission
          * @description Get the current user's Submission-backed assignment draft, if any.
          */
-        get: operations["api_get_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_get"];
+        get: operations["api_get_assignment_draft_submission_api_v1_assessments_assignments__assignment_uuid__submissions_me_draft_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -705,10 +705,10 @@ export interface paths {
          * Api Save Assignment Draft Submission
          * @description Create or update the current user's assignment draft in Submission.
          */
-        patch: operations["api_save_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_patch"];
+        patch: operations["api_save_assignment_draft_submission_api_v1_assessments_assignments__assignment_uuid__submissions_me_draft_patch"];
         trace?: never;
     };
-    "/api/v1/assignments/{assignment_uuid}/submit": {
+    "/api/v1/assessments/assignments/{assignment_uuid}/submit": {
         parameters: {
             query?: never;
             header?: never;
@@ -721,14 +721,14 @@ export interface paths {
          * Api Submit Assignment Draft Submission
          * @description Submit the current user's assignment draft through the unified Submission model.
          */
-        post: operations["api_submit_assignment_draft_submission_api_v1_assignments__assignment_uuid__submit_post"];
+        post: operations["api_submit_assignment_draft_submission_api_v1_assessments_assignments__assignment_uuid__submit_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/{assignment_uuid}/tasks": {
+    "/api/v1/assessments/assignments/{assignment_uuid}/tasks": {
         parameters: {
             query?: never;
             header?: never;
@@ -736,17 +736,17 @@ export interface paths {
             cookie?: never;
         };
         /** Api Read Assignment Tasks */
-        get: operations["api_read_assignment_tasks_api_v1_assignments__assignment_uuid__tasks_get"];
+        get: operations["api_read_assignment_tasks_api_v1_assessments_assignments__assignment_uuid__tasks_get"];
         put?: never;
         /** Api Create Assignment Tasks */
-        post: operations["api_create_assignment_tasks_api_v1_assignments__assignment_uuid__tasks_post"];
+        post: operations["api_create_assignment_tasks_api_v1_assessments_assignments__assignment_uuid__tasks_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}": {
+    "/api/v1/assessments/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}": {
         parameters: {
             query?: never;
             header?: never;
@@ -754,18 +754,18 @@ export interface paths {
             cookie?: never;
         };
         /** Api Read Assignment Task */
-        get: operations["api_read_assignment_task_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__get"];
+        get: operations["api_read_assignment_task_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__get"];
         /** Api Update Assignment Tasks */
-        put: operations["api_update_assignment_tasks_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__put"];
+        put: operations["api_update_assignment_tasks_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__put"];
         post?: never;
         /** Api Delete Assignment Tasks */
-        delete: operations["api_delete_assignment_tasks_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__delete"];
+        delete: operations["api_delete_assignment_tasks_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}/ref_file": {
+    "/api/v1/assessments/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}/ref_file": {
         parameters: {
             query?: never;
             header?: never;
@@ -778,14 +778,14 @@ export interface paths {
          * Api Put Assignment Task Ref File
          * @description Upload a reference file for an assignment task.
          */
-        post: operations["api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post"];
+        post: operations["api_put_assignment_task_ref_file_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}/sub_file": {
+    "/api/v1/assessments/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}/sub_file": {
         parameters: {
             query?: never;
             header?: never;
@@ -798,7 +798,582 @@ export interface paths {
          * Api Put Assignment Task Sub File
          * @description Upload a submission file for an assignment task.
          */
-        post: operations["api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post"];
+        post: operations["api_put_assignment_task_sub_file_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check Judge0 Health
+         * @description Check if Judge0 service is available
+         */
+        get: operations["check_judge0_health_api_v1_assessments_code_challenges_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Available Languages
+         * @description Get list of available programming languages from Judge0
+         */
+        get: operations["get_available_languages_api_v1_assessments_code_challenges_languages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/submissions/{submission_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Submission Detail
+         * @description Get detailed submission including source code
+         */
+        get: operations["get_submission_detail_api_v1_assessments_code_challenges_submissions__submission_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/{activity_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Code Challenge
+         * @description Get code challenge activity details
+         */
+        get: operations["get_code_challenge_api_v1_assessments_code_challenges__activity_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/{activity_uuid}/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Challenge Analytics
+         * @description Get analytics for a code challenge (instructor only)
+         */
+        get: operations["get_challenge_analytics_api_v1_assessments_code_challenges__activity_uuid__analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/{activity_uuid}/analytics/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Student Analytics
+         * @description Get analytics for a student on a code challenge
+         */
+        get: operations["get_student_analytics_api_v1_assessments_code_challenges__activity_uuid__analytics__user_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/{activity_uuid}/custom-test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Custom Test
+         * @description Run code with custom input (no expected output comparison)
+         */
+        post: operations["run_custom_test_api_v1_assessments_code_challenges__activity_uuid__custom_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/{activity_uuid}/leaderboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Leaderboard
+         * @description Get leaderboard for a code challenge
+         */
+        get: operations["get_leaderboard_api_v1_assessments_code_challenges__activity_uuid__leaderboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/{activity_uuid}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Challenge Settings Endpoint
+         * @description Get code challenge settings (visible tests only for students)
+         */
+        get: operations["get_challenge_settings_endpoint_api_v1_assessments_code_challenges__activity_uuid__settings_get"];
+        /**
+         * Update Challenge Settings
+         * @description Update code challenge settings (instructor only)
+         */
+        put: operations["update_challenge_settings_api_v1_assessments_code_challenges__activity_uuid__settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/{activity_uuid}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Code Challenge
+         * @description Create or return the canonical DRAFT submission for this challenge.
+         */
+        post: operations["start_code_challenge_api_v1_assessments_code_challenges__activity_uuid__start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/{activity_uuid}/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Submission History
+         * @description Get user's submission history for a challenge
+         */
+        get: operations["get_submission_history_api_v1_assessments_code_challenges__activity_uuid__submissions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/{activity_uuid}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Code Challenge
+         * @description Submit a solution to the code challenge
+         */
+        post: operations["submit_code_challenge_api_v1_assessments_code_challenges__activity_uuid__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/code-challenges/{activity_uuid}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Visible Tests
+         * @description Run visible test cases only (pre-submission testing)
+         */
+        post: operations["run_visible_tests_api_v1_assessments_code_challenges__activity_uuid__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Create Exam */
+        post: operations["api_create_exam_api_v1_assessments_exams_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/activity/{activity_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Exam From Activity */
+        get: operations["api_get_exam_from_activity_api_v1_assessments_exams_activity__activity_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/attempts/{attempt_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get Attempt By Uuid
+         * @description Get a specific exam attempt by UUID.
+         *
+         *     - Students can only access their own attempts
+         *     - Teachers/admins can access any attempt for exams they manage
+         */
+        get: operations["api_get_attempt_by_uuid_api_v1_assessments_exams_attempts__attempt_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/attempts/{attempt_uuid}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Attempt Review Questions */
+        get: operations["api_get_attempt_review_questions_api_v1_assessments_exams_attempts__attempt_uuid__questions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Exam Config */
+        get: operations["api_get_exam_config_api_v1_assessments_exams_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/questions/{question_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Api Update Question */
+        put: operations["api_update_question_api_v1_assessments_exams_questions__question_uuid__put"];
+        post?: never;
+        /** Api Delete Question */
+        delete: operations["api_delete_question_api_v1_assessments_exams_questions__question_uuid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/with-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Create Exam With Activity */
+        post: operations["api_create_exam_with_activity_api_v1_assessments_exams_with_activity_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/{exam_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Exam */
+        get: operations["api_get_exam_api_v1_assessments_exams__exam_uuid__get"];
+        /** Api Update Exam */
+        put: operations["api_update_exam_api_v1_assessments_exams__exam_uuid__put"];
+        post?: never;
+        /** Api Delete Exam */
+        delete: operations["api_delete_exam_api_v1_assessments_exams__exam_uuid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/{exam_uuid}/attempts/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get All Attempts
+         * @description Get all exam attempts for teacher results dashboard
+         */
+        get: operations["api_get_all_attempts_api_v1_assessments_exams__exam_uuid__attempts_all_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/{exam_uuid}/attempts/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get My Attempts */
+        get: operations["api_get_my_attempts_api_v1_assessments_exams__exam_uuid__attempts_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/{exam_uuid}/attempts/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Start Exam Attempt */
+        post: operations["api_start_exam_attempt_api_v1_assessments_exams__exam_uuid__attempts_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/{exam_uuid}/attempts/{attempt_uuid}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Submit Exam Attempt */
+        post: operations["api_submit_exam_attempt_api_v1_assessments_exams__exam_uuid__attempts__attempt_uuid__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/{exam_uuid}/attempts/{attempt_uuid}/violations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Record Violation */
+        post: operations["api_record_violation_api_v1_assessments_exams__exam_uuid__attempts__attempt_uuid__violations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/{exam_uuid}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Questions */
+        get: operations["api_get_questions_api_v1_assessments_exams__exam_uuid__questions_get"];
+        put?: never;
+        /** Api Create Question */
+        post: operations["api_create_question_api_v1_assessments_exams__exam_uuid__questions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/{exam_uuid}/questions/export-csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Export Questions Csv
+         * @description Export exam questions to CSV
+         */
+        get: operations["api_export_questions_csv_api_v1_assessments_exams__exam_uuid__questions_export_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/{exam_uuid}/questions/import-csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Import Questions Csv
+         * @description Import exam questions from CSV
+         */
+        post: operations["api_import_questions_csv_api_v1_assessments_exams__exam_uuid__questions_import_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/exams/{exam_uuid}/questions/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Reorder Questions
+         * @description Bulk update question order
+         */
+        post: operations["api_reorder_questions_api_v1_assessments_exams__exam_uuid__questions_reorder_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1338,250 +1913,6 @@ export interface paths {
          * @description Move a chapter to a specific position within its course (atomic).
          */
         patch: operations["api_move_chapter_to_order_api_v1_chapters__chapter_uuid__order_patch"];
-        trace?: never;
-    };
-    "/api/v1/code-challenges/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Check Judge0 Health
-         * @description Check if Judge0 service is available
-         */
-        get: operations["check_judge0_health_api_v1_code_challenges_health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/code-challenges/languages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Available Languages
-         * @description Get list of available programming languages from Judge0
-         */
-        get: operations["get_available_languages_api_v1_code_challenges_languages_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/code-challenges/submissions/{submission_uuid}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Submission Detail
-         * @description Get detailed submission including source code
-         */
-        get: operations["get_submission_detail_api_v1_code_challenges_submissions__submission_uuid__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/code-challenges/{activity_uuid}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Code Challenge
-         * @description Get code challenge activity details
-         */
-        get: operations["get_code_challenge_api_v1_code_challenges__activity_uuid__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/code-challenges/{activity_uuid}/analytics": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Challenge Analytics
-         * @description Get analytics for a code challenge (instructor only)
-         */
-        get: operations["get_challenge_analytics_api_v1_code_challenges__activity_uuid__analytics_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/code-challenges/{activity_uuid}/analytics/{user_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Student Analytics
-         * @description Get analytics for a student on a code challenge
-         */
-        get: operations["get_student_analytics_api_v1_code_challenges__activity_uuid__analytics__user_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/code-challenges/{activity_uuid}/custom-test": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Run Custom Test
-         * @description Run code with custom input (no expected output comparison)
-         */
-        post: operations["run_custom_test_api_v1_code_challenges__activity_uuid__custom_test_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/code-challenges/{activity_uuid}/leaderboard": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Leaderboard
-         * @description Get leaderboard for a code challenge
-         */
-        get: operations["get_leaderboard_api_v1_code_challenges__activity_uuid__leaderboard_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/code-challenges/{activity_uuid}/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Challenge Settings Endpoint
-         * @description Get code challenge settings (visible tests only for students)
-         */
-        get: operations["get_challenge_settings_endpoint_api_v1_code_challenges__activity_uuid__settings_get"];
-        /**
-         * Update Challenge Settings
-         * @description Update code challenge settings (instructor only)
-         */
-        put: operations["update_challenge_settings_api_v1_code_challenges__activity_uuid__settings_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/code-challenges/{activity_uuid}/submissions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Submission History
-         * @description Get user's submission history for a challenge
-         */
-        get: operations["get_submission_history_api_v1_code_challenges__activity_uuid__submissions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/code-challenges/{activity_uuid}/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit Code Challenge
-         * @description Submit a solution to the code challenge
-         */
-        post: operations["submit_code_challenge_api_v1_code_challenges__activity_uuid__submit_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/code-challenges/{activity_uuid}/test": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Run Visible Tests
-         * @description Run visible test cases only (pre-submission testing)
-         */
-        post: operations["run_visible_tests_api_v1_code_challenges__activity_uuid__test_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/collections": {
@@ -2210,317 +2541,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/exams": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Api Create Exam */
-        post: operations["api_create_exam_api_v1_exams_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/activity/{activity_uuid}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Api Get Exam From Activity */
-        get: operations["api_get_exam_from_activity_api_v1_exams_activity__activity_uuid__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/attempts/{attempt_uuid}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Api Get Attempt By Uuid
-         * @description Get a specific exam attempt by UUID.
-         *
-         *     - Students can only access their own attempts
-         *     - Teachers/admins can access any attempt for exams they manage
-         */
-        get: operations["api_get_attempt_by_uuid_api_v1_exams_attempts__attempt_uuid__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/attempts/{attempt_uuid}/questions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Api Get Attempt Review Questions */
-        get: operations["api_get_attempt_review_questions_api_v1_exams_attempts__attempt_uuid__questions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Api Get Exam Config */
-        get: operations["api_get_exam_config_api_v1_exams_config_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/questions/{question_uuid}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Api Update Question */
-        put: operations["api_update_question_api_v1_exams_questions__question_uuid__put"];
-        post?: never;
-        /** Api Delete Question */
-        delete: operations["api_delete_question_api_v1_exams_questions__question_uuid__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/with-activity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Api Create Exam With Activity */
-        post: operations["api_create_exam_with_activity_api_v1_exams_with_activity_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/{exam_uuid}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Api Get Exam */
-        get: operations["api_get_exam_api_v1_exams__exam_uuid__get"];
-        /** Api Update Exam */
-        put: operations["api_update_exam_api_v1_exams__exam_uuid__put"];
-        post?: never;
-        /** Api Delete Exam */
-        delete: operations["api_delete_exam_api_v1_exams__exam_uuid__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/{exam_uuid}/attempts/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Api Get All Attempts
-         * @description Get all exam attempts for teacher results dashboard
-         */
-        get: operations["api_get_all_attempts_api_v1_exams__exam_uuid__attempts_all_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/{exam_uuid}/attempts/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Api Get My Attempts */
-        get: operations["api_get_my_attempts_api_v1_exams__exam_uuid__attempts_me_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/{exam_uuid}/attempts/start": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Api Start Exam Attempt */
-        post: operations["api_start_exam_attempt_api_v1_exams__exam_uuid__attempts_start_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/{exam_uuid}/attempts/{attempt_uuid}/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Api Submit Exam Attempt */
-        post: operations["api_submit_exam_attempt_api_v1_exams__exam_uuid__attempts__attempt_uuid__submit_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/{exam_uuid}/attempts/{attempt_uuid}/violations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Api Record Violation */
-        post: operations["api_record_violation_api_v1_exams__exam_uuid__attempts__attempt_uuid__violations_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/{exam_uuid}/questions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Api Get Questions */
-        get: operations["api_get_questions_api_v1_exams__exam_uuid__questions_get"];
-        put?: never;
-        /** Api Create Question */
-        post: operations["api_create_question_api_v1_exams__exam_uuid__questions_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/{exam_uuid}/questions/export-csv": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Api Export Questions Csv
-         * @description Export exam questions to CSV
-         */
-        get: operations["api_export_questions_csv_api_v1_exams__exam_uuid__questions_export_csv_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/{exam_uuid}/questions/import-csv": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Api Import Questions Csv
-         * @description Import exam questions from CSV
-         */
-        post: operations["api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/exams/{exam_uuid}/questions/reorder": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Api Reorder Questions
-         * @description Bulk update question order
-         */
-        post: operations["api_reorder_questions_api_v1_exams__exam_uuid__questions_reorder_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/gamification/": {
         parameters: {
             query?: never;
@@ -2755,30 +2775,6 @@ export interface paths {
          *     the start timestamp (prevents client falsification).
          */
         post: operations["api_start_submission_api_v1_grading_start_v2__activity_id__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/grading/start/{activity_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Api Start Submission Legacy
-         * @description (Legacy) Create a DRAFT Submission and record the server-stamped start time.
-         *
-         *     Prefer POST /grading/start/v2/{activity_id} for new integrations — that
-         *     endpoint enforces max_attempts from AssessmentPolicy rather than block
-         *     content so attempt counting is consistent across all submit paths.
-         */
-        post: operations["api_start_submission_legacy_api_v1_grading_start__activity_id__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4333,6 +4329,33 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** ActivityAssessmentPolicyRead */
+        ActivityAssessmentPolicyRead: {
+            /** Anti Cheat Json */
+            anti_cheat_json?: {
+                [key: string]: unknown;
+            };
+            /** Assessment Type */
+            assessment_type: string;
+            /** Due At */
+            due_at?: string | null;
+            /** Id */
+            id: number;
+            /** Late Policy Json */
+            late_policy_json?: {
+                [key: string]: unknown;
+            };
+            /** Max Attempts */
+            max_attempts?: number | null;
+            /** Policy Uuid */
+            policy_uuid: string;
+            /** Settings Json */
+            settings_json?: {
+                [key: string]: unknown;
+            };
+            /** Time Limit Seconds */
+            time_limit_seconds?: number | null;
+        };
         /** ActivityCreate */
         ActivityCreate: {
             /** @default SUBTYPE_CUSTOM */
@@ -4356,6 +4379,10 @@ export interface components {
              * @default false
              */
             published: boolean;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
         };
         /** ActivityDetailResponse */
         ActivityDetailResponse: {
@@ -4472,6 +4499,10 @@ export interface components {
              * @default false
              */
             published: boolean;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
             /**
              * Update Date
              * Format: date-time
@@ -4487,6 +4518,7 @@ export interface components {
             activity_type: components["schemas"]["ActivityTypeEnum"];
             /** Activity Uuid */
             activity_uuid: string;
+            assessment_policy?: components["schemas"]["ActivityAssessmentPolicyRead"] | null;
             /** Can Delete */
             can_delete: boolean;
             /** Can Update */
@@ -4526,6 +4558,10 @@ export interface components {
              * @default false
              */
             published: boolean;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
             /**
              * Update Date
              * Format: date-time
@@ -4558,6 +4594,10 @@ export interface components {
             name?: string | null;
             /** Published */
             published?: boolean | null;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** AddPermissionBody */
         AddPermissionBody: {
@@ -5297,18 +5337,18 @@ export interface components {
             /** File Object */
             file_object: string;
         };
-        /** Body_api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post */
-        Body_api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post: {
+        /** Body_api_import_questions_csv_api_v1_assessments_exams__exam_uuid__questions_import_csv_post */
+        Body_api_import_questions_csv_api_v1_assessments_exams__exam_uuid__questions_import_csv_post: {
             /** File */
             file: string;
         };
-        /** Body_api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post */
-        Body_api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post: {
+        /** Body_api_put_assignment_task_ref_file_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post */
+        Body_api_put_assignment_task_ref_file_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post: {
             /** Reference File */
             reference_file?: string | null;
         };
-        /** Body_api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post */
-        Body_api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post: {
+        /** Body_api_put_assignment_task_sub_file_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post */
+        Body_api_put_assignment_task_sub_file_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post: {
             /** Sub File */
             sub_file?: string | null;
         };
@@ -5723,6 +5763,11 @@ export interface components {
              * @default
              */
             language_name: string;
+            /**
+             * Max Score
+             * @default 100
+             */
+            max_score: number;
             /** Memory Kb */
             memory_kb?: number | null;
             /**
@@ -5741,6 +5786,8 @@ export interface components {
             source_code: string;
             /** @default PENDING */
             status: components["schemas"]["src__db__courses__code_challenges__SubmissionStatus"];
+            /** Submission Status */
+            submission_status?: string | null;
             /** Submission Uuid */
             submission_uuid: string;
             /** Test Results */
@@ -5756,6 +5803,8 @@ export interface components {
             updated_at: string;
             /** User Id */
             user_id: number;
+            /** Uuid */
+            uuid?: string | null;
         };
         /**
          * CodeSubmissionRead
@@ -5777,6 +5826,11 @@ export interface components {
              * @default
              */
             language_name: string;
+            /**
+             * Max Score
+             * @default 100
+             */
+            max_score: number;
             /** Memory Kb */
             memory_kb?: number | null;
             /**
@@ -5795,6 +5849,8 @@ export interface components {
             source_code: string;
             /** @default PENDING */
             status: components["schemas"]["src__db__courses__code_challenges__SubmissionStatus"];
+            /** Submission Status */
+            submission_status?: string | null;
             /** Submission Uuid */
             submission_uuid: string;
             /** Test Results */
@@ -5810,6 +5866,8 @@ export interface components {
             updated_at: string;
             /** User Id */
             user_id: number;
+            /** Uuid */
+            uuid?: string | null;
         };
         /** CollectionCreate */
         CollectionCreate: {
@@ -7826,6 +7884,10 @@ export interface components {
             allow_custom_input?: boolean | null;
             /** Allowed Languages */
             allowed_languages?: number[] | null;
+            /** Archived At */
+            archived_at?: string | null;
+            /** Difficulty */
+            difficulty?: string | null;
             /** Due Date */
             due_date?: string | null;
             execution_mode?: components["schemas"]["ExecutionMode"] | null;
@@ -7834,10 +7896,20 @@ export interface components {
             hidden_tests?: {
                 [key: string]: unknown;
             }[] | null;
+            /** Hints */
+            hints?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Lifecycle Status */
+            lifecycle_status?: string | null;
             /** Memory Limit */
             memory_limit?: number | null;
             /** Points */
             points?: number | null;
+            /** Published At */
+            published_at?: string | null;
+            /** Scheduled At */
+            scheduled_at?: string | null;
             /** Starter Code */
             starter_code?: {
                 [key: string]: string;
@@ -7969,6 +8041,10 @@ export interface components {
             late_penalty_pct: number;
             /** Late Penalty Reason */
             late_penalty_reason?: string | null;
+            /** Metadata Json */
+            metadata_json?: {
+                [key: string]: unknown;
+            };
             /** Started At */
             started_at?: string | null;
             /** @default DRAFT */
@@ -10181,7 +10257,7 @@ export interface operations {
             };
         };
     };
-    api_read_assignment_from_activity_api_v1_assignments_activity__activity_uuid__get: {
+    api_read_assignment_from_activity_api_v1_assessments_assignments_activity__activity_uuid__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -10212,7 +10288,7 @@ export interface operations {
             };
         };
     };
-    api_delete_assignment_from_activity_api_v1_assignments_activity__activity_uuid__delete: {
+    api_delete_assignment_from_activity_api_v1_assessments_assignments_activity__activity_uuid__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -10243,7 +10319,7 @@ export interface operations {
             };
         };
     };
-    api_get_assignments_api_v1_assignments_course__course_uuid__get: {
+    api_get_assignments_api_v1_assessments_assignments_course__course_uuid__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -10274,7 +10350,7 @@ export interface operations {
             };
         };
     };
-    api_get_assignments_for_courses_api_v1_assignments_courses_get: {
+    api_get_assignments_for_courses_api_v1_assessments_assignments_courses_get: {
         parameters: {
             query?: {
                 course_uuids?: string[];
@@ -10305,7 +10381,7 @@ export interface operations {
             };
         };
     };
-    api_get_editable_assignments_for_courses_api_v1_assignments_courses_editable_get: {
+    api_get_editable_assignments_for_courses_api_v1_assessments_assignments_courses_editable_get: {
         parameters: {
             query?: {
                 course_uuids?: string[];
@@ -10336,7 +10412,7 @@ export interface operations {
             };
         };
     };
-    api_create_assignment_with_activity_api_v1_assignments_with_activity_post: {
+    api_create_assignment_with_activity_api_v1_assessments_assignments_with_activity_post: {
         parameters: {
             query: {
                 chapter_id: number;
@@ -10372,7 +10448,7 @@ export interface operations {
             };
         };
     };
-    api_read_assignment_api_v1_assignments__assignment_uuid__get: {
+    api_read_assignment_api_v1_assessments_assignments__assignment_uuid__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -10403,7 +10479,7 @@ export interface operations {
             };
         };
     };
-    api_update_assignment_api_v1_assignments__assignment_uuid__put: {
+    api_update_assignment_api_v1_assessments_assignments__assignment_uuid__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -10438,7 +10514,7 @@ export interface operations {
             };
         };
     };
-    api_archive_assignment_api_v1_assignments__assignment_uuid__archive_post: {
+    api_archive_assignment_api_v1_assessments_assignments__assignment_uuid__archive_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -10469,7 +10545,7 @@ export interface operations {
             };
         };
     };
-    api_cancel_assignment_schedule_api_v1_assignments__assignment_uuid__cancel_schedule_post: {
+    api_cancel_assignment_schedule_api_v1_assessments_assignments__assignment_uuid__cancel_schedule_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -10500,7 +10576,7 @@ export interface operations {
             };
         };
     };
-    api_publish_assignment_api_v1_assignments__assignment_uuid__publish_post: {
+    api_publish_assignment_api_v1_assessments_assignments__assignment_uuid__publish_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -10535,7 +10611,7 @@ export interface operations {
             };
         };
     };
-    api_get_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_get: {
+    api_get_assignment_draft_submission_api_v1_assessments_assignments__assignment_uuid__submissions_me_draft_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -10566,7 +10642,7 @@ export interface operations {
             };
         };
     };
-    api_save_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_patch: {
+    api_save_assignment_draft_submission_api_v1_assessments_assignments__assignment_uuid__submissions_me_draft_patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -10601,7 +10677,7 @@ export interface operations {
             };
         };
     };
-    api_submit_assignment_draft_submission_api_v1_assignments__assignment_uuid__submit_post: {
+    api_submit_assignment_draft_submission_api_v1_assessments_assignments__assignment_uuid__submit_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -10636,7 +10712,7 @@ export interface operations {
             };
         };
     };
-    api_read_assignment_tasks_api_v1_assignments__assignment_uuid__tasks_get: {
+    api_read_assignment_tasks_api_v1_assessments_assignments__assignment_uuid__tasks_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -10667,7 +10743,7 @@ export interface operations {
             };
         };
     };
-    api_create_assignment_tasks_api_v1_assignments__assignment_uuid__tasks_post: {
+    api_create_assignment_tasks_api_v1_assessments_assignments__assignment_uuid__tasks_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -10702,7 +10778,7 @@ export interface operations {
             };
         };
     };
-    api_read_assignment_task_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__get: {
+    api_read_assignment_task_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -10734,7 +10810,7 @@ export interface operations {
             };
         };
     };
-    api_update_assignment_tasks_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__put: {
+    api_update_assignment_tasks_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -10770,7 +10846,7 @@ export interface operations {
             };
         };
     };
-    api_delete_assignment_tasks_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__delete: {
+    api_delete_assignment_tasks_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -10802,7 +10878,7 @@ export interface operations {
             };
         };
     };
-    api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post: {
+    api_put_assignment_task_ref_file_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -10814,7 +10890,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post"];
+                "multipart/form-data": components["schemas"]["Body_api_put_assignment_task_ref_file_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post"];
             };
         };
         responses: {
@@ -10838,7 +10914,7 @@ export interface operations {
             };
         };
     };
-    api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post: {
+    api_put_assignment_task_sub_file_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -10850,7 +10926,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post"];
+                "multipart/form-data": components["schemas"]["Body_api_put_assignment_task_sub_file_api_v1_assessments_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post"];
             };
         };
         responses: {
@@ -10861,6 +10937,1127 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_judge0_health_api_v1_assessments_code_challenges_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_available_languages_api_v1_assessments_code_challenges_languages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Judge0Language"][];
+                };
+            };
+        };
+    };
+    get_submission_detail_api_v1_assessments_code_challenges_submissions__submission_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeSubmissionDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_code_challenge_api_v1_assessments_code_challenges__activity_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_challenge_analytics_api_v1_assessments_code_challenges__activity_uuid__analytics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorAnalytics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_student_analytics_api_v1_assessments_code_challenges__activity_uuid__analytics__user_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentAnalytics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_custom_test_api_v1_assessments_code_challenges__activity_uuid__custom_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomTestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_leaderboard_api_v1_assessments_code_challenges__activity_uuid__leaderboard_get: {
+        parameters: {
+            query?: {
+                timeframe?: "all" | "week" | "month";
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeChallengeLeaderboard"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_challenge_settings_endpoint_api_v1_assessments_code_challenges__activity_uuid__settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_challenge_settings_api_v1_assessments_code_challenges__activity_uuid__settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_code_challenge_api_v1_assessments_code_challenges__activity_uuid__start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_submission_history_api_v1_assessments_code_challenges__activity_uuid__submissions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeSubmissionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_code_challenge_api_v1_assessments_code_challenges__activity_uuid__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeSubmissionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_visible_tests_api_v1_assessments_code_challenges__activity_uuid__test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeSubmissionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_create_exam_api_v1_assessments_exams_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExamCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_exam_from_activity_api_v1_assessments_exams_activity__activity_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_attempt_by_uuid_api_v1_assessments_exams_attempts__attempt_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_attempt_review_questions_api_v1_assessments_exams_attempts__attempt_uuid__questions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_exam_config_api_v1_assessments_exams_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    api_update_question_api_v1_assessments_exams_questions__question_uuid__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_delete_question_api_v1_assessments_exams_questions__question_uuid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_create_exam_with_activity_api_v1_assessments_exams_with_activity_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExamCreateWithActivity"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_exam_api_v1_assessments_exams__exam_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_update_exam_api_v1_assessments_exams__exam_uuid__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExamUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_delete_exam_api_v1_assessments_exams__exam_uuid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_all_attempts_api_v1_assessments_exams__exam_uuid__attempts_all_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_my_attempts_api_v1_assessments_exams__exam_uuid__attempts_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamAttemptRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_start_exam_attempt_api_v1_assessments_exams__exam_uuid__attempts_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_submit_exam_attempt_api_v1_assessments_exams__exam_uuid__attempts__attempt_uuid__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+                attempt_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_record_violation_api_v1_assessments_exams__exam_uuid__attempts__attempt_uuid__violations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+                attempt_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_questions_api_v1_assessments_exams__exam_uuid__questions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_create_question_api_v1_assessments_exams__exam_uuid__questions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_export_questions_csv_api_v1_assessments_exams__exam_uuid__questions_export_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_import_questions_csv_api_v1_assessments_exams__exam_uuid__questions_import_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_api_import_questions_csv_api_v1_assessments_exams__exam_uuid__questions_import_csv_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_reorder_questions_api_v1_assessments_exams__exam_uuid__questions_reorder_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                }[];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -11939,410 +13136,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChapterRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    check_judge0_health_api_v1_code_challenges_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    get_available_languages_api_v1_code_challenges_languages_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Judge0Language"][];
-                };
-            };
-        };
-    };
-    get_submission_detail_api_v1_code_challenges_submissions__submission_uuid__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                submission_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CodeSubmissionDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_code_challenge_api_v1_code_challenges__activity_uuid__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                activity_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActivityRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_challenge_analytics_api_v1_code_challenges__activity_uuid__analytics_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                activity_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InstructorAnalytics"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_student_analytics_api_v1_code_challenges__activity_uuid__analytics__user_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                activity_uuid: string;
-                user_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StudentAnalytics"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    run_custom_test_api_v1_code_challenges__activity_uuid__custom_test_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                activity_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CustomTestRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CustomTestResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_leaderboard_api_v1_code_challenges__activity_uuid__leaderboard_get: {
-        parameters: {
-            query?: {
-                timeframe?: "all" | "week" | "month";
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                activity_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CodeChallengeLeaderboard"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_challenge_settings_endpoint_api_v1_code_challenges__activity_uuid__settings_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                activity_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_challenge_settings_api_v1_code_challenges__activity_uuid__settings_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                activity_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SettingsUpdateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_submission_history_api_v1_code_challenges__activity_uuid__submissions_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                activity_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CodeSubmissionRead"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    submit_code_challenge_api_v1_code_challenges__activity_uuid__submit_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                activity_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CodeSubmissionCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmissionResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    run_visible_tests_api_v1_code_challenges__activity_uuid__test_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                activity_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CodeSubmissionCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TestRunResponse"];
                 };
             };
             /** @description Validation Error */
@@ -13510,692 +14303,6 @@ export interface operations {
             };
         };
     };
-    api_create_exam_api_v1_exams_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExamCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExamRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_get_exam_from_activity_api_v1_exams_activity__activity_uuid__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                activity_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExamRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_get_attempt_by_uuid_api_v1_exams_attempts__attempt_uuid__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                attempt_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExamAttemptRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_get_attempt_review_questions_api_v1_exams_attempts__attempt_uuid__questions_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                attempt_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["QuestionRead"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_get_exam_config_api_v1_exams_config_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    api_update_question_api_v1_exams_questions__question_uuid__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                question_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["QuestionUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["QuestionRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_delete_question_api_v1_exams_questions__question_uuid__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                question_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_create_exam_with_activity_api_v1_exams_with_activity_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExamCreateWithActivity"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_get_exam_api_v1_exams__exam_uuid__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExamRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_update_exam_api_v1_exams__exam_uuid__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExamUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExamRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_delete_exam_api_v1_exams__exam_uuid__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_get_all_attempts_api_v1_exams__exam_uuid__attempts_all_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_get_my_attempts_api_v1_exams__exam_uuid__attempts_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExamAttemptRead"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_start_exam_attempt_api_v1_exams__exam_uuid__attempts_start_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExamAttemptRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_submit_exam_attempt_api_v1_exams__exam_uuid__attempts__attempt_uuid__submit_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-                attempt_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExamAttemptRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_record_violation_api_v1_exams__exam_uuid__attempts__attempt_uuid__violations_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-                attempt_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    [key: string]: unknown;
-                };
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExamAttemptRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_get_questions_api_v1_exams__exam_uuid__questions_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["QuestionRead"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_create_question_api_v1_exams__exam_uuid__questions_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["QuestionCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["QuestionRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_export_questions_csv_api_v1_exams__exam_uuid__questions_export_csv_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_reorder_questions_api_v1_exams__exam_uuid__questions_reorder_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exam_uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    [key: string]: unknown;
-                }[];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_unified_dashboard_api_v1_gamification__get: {
         parameters: {
             query?: never;
@@ -14560,39 +14667,6 @@ export interface operations {
         };
     };
     api_start_submission_api_v1_grading_start_v2__activity_id__post: {
-        parameters: {
-            query: {
-                assessment_type: components["schemas"]["AssessmentType"];
-            };
-            header?: never;
-            path: {
-                activity_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmissionRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_start_submission_legacy_api_v1_grading_start__activity_id__post: {
         parameters: {
             query: {
                 assessment_type: components["schemas"]["AssessmentType"];

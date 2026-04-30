@@ -1,5 +1,7 @@
 import { apiFetch } from '@/lib/api-client';
 
+const CODE_CHALLENGE_API_BASE = 'assessments/code-challenges';
+
 export interface CodeChallengeSettings {
   uuid: string;
   difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
@@ -68,7 +70,7 @@ export interface Judge0Language {
 }
 
 export async function getLanguages(): Promise<Judge0Language[]> {
-  const response = await apiFetch('code-challenges/languages', { cache: 'force-cache' });
+  const response = await apiFetch(`${CODE_CHALLENGE_API_BASE}/languages`, { cache: 'force-cache' });
 
   if (!response.ok) {
     throw new Error('Failed to fetch languages');
@@ -78,7 +80,7 @@ export async function getLanguages(): Promise<Judge0Language[]> {
 }
 
 export async function getCodeChallengeSettings(activityUuid: string): Promise<CodeChallengeSettings | null> {
-  const response = await apiFetch(`code-challenges/${activityUuid}/settings`);
+  const response = await apiFetch(`${CODE_CHALLENGE_API_BASE}/${activityUuid}/settings`);
 
   if (response.status === 404) {
     return null;
@@ -95,7 +97,7 @@ export async function saveCodeChallengeSettings(
   activityUuid: string,
   settings: Partial<CodeChallengeSettings>,
 ): Promise<CodeChallengeSettings> {
-  const response = await apiFetch(`code-challenges/${activityUuid}/settings`, {
+  const response = await apiFetch(`${CODE_CHALLENGE_API_BASE}/${activityUuid}/settings`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settings),
@@ -110,7 +112,7 @@ export async function saveCodeChallengeSettings(
 }
 
 export async function startCodeChallenge(activityUuid: string): Promise<CodeChallengeDraft> {
-  const response = await apiFetch(`code-challenges/${activityUuid}/start`, { method: 'POST' });
+  const response = await apiFetch(`${CODE_CHALLENGE_API_BASE}/${activityUuid}/start`, { method: 'POST' });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -125,7 +127,7 @@ export async function submitCode(
   sourceCode: string,
   languageId: number,
 ): Promise<CodeSubmission> {
-  const response = await apiFetch(`code-challenges/${activityUuid}/submit`, {
+  const response = await apiFetch(`${CODE_CHALLENGE_API_BASE}/${activityUuid}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ source_code: sourceCode, language_id: languageId }),
@@ -144,7 +146,7 @@ export async function runTests(
   sourceCode: string,
   languageId: number,
 ): Promise<{ results: TestCaseResult[] }> {
-  const response = await apiFetch(`code-challenges/${activityUuid}/test`, {
+  const response = await apiFetch(`${CODE_CHALLENGE_API_BASE}/${activityUuid}/test`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ source_code: sourceCode, language_id: languageId }),
@@ -172,7 +174,7 @@ export async function runCustomTest(
   time_ms?: number;
   memory_kb?: number;
 }> {
-  const response = await apiFetch(`code-challenges/${activityUuid}/custom-test`, {
+  const response = await apiFetch(`${CODE_CHALLENGE_API_BASE}/${activityUuid}/custom-test`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ source_code: sourceCode, language_id: languageId, stdin }),
@@ -187,7 +189,7 @@ export async function runCustomTest(
 }
 
 export async function getSubmission(submissionUuid: string): Promise<CodeSubmission> {
-  const response = await apiFetch(`code-challenges/submissions/${submissionUuid}`);
+  const response = await apiFetch(`${CODE_CHALLENGE_API_BASE}/submissions/${submissionUuid}`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch submission');
@@ -197,7 +199,7 @@ export async function getSubmission(submissionUuid: string): Promise<CodeSubmiss
 }
 
 export async function getSubmissions(activityUuid: string): Promise<CodeSubmission[]> {
-  const response = await apiFetch(`code-challenges/${activityUuid}/submissions`);
+  const response = await apiFetch(`${CODE_CHALLENGE_API_BASE}/${activityUuid}/submissions`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch submissions');
@@ -220,7 +222,7 @@ export async function getLeaderboard(
     first_solved_at: string;
   }[]
 > {
-  const response = await apiFetch(`code-challenges/${activityUuid}/leaderboard?limit=${limit}`);
+  const response = await apiFetch(`${CODE_CHALLENGE_API_BASE}/${activityUuid}/leaderboard?limit=${limit}`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch leaderboard');
@@ -238,7 +240,7 @@ export async function getAnalytics(activityUuid: string): Promise<{
   language_distribution: Record<string, number>;
   score_distribution: Record<string, number>;
 }> {
-  const response = await apiFetch(`code-challenges/${activityUuid}/analytics`);
+  const response = await apiFetch(`${CODE_CHALLENGE_API_BASE}/${activityUuid}/analytics`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch analytics');
