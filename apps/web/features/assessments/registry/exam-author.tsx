@@ -3,9 +3,9 @@
 import { useMemo } from 'react';
 
 import PageLoading from '@components/Objects/Loaders/PageLoading';
-import QuestionManagement from '@/components/Activities/ExamActivity/QuestionManagement';
 import { useExamActivity, useExamQuestions } from '@/features/exams/hooks/useExam';
 import type { KindAuthorProps } from './index';
+import QuestionManagement from './exam/QuestionManagement';
 
 export default function ExamAuthor({ activityUuid }: KindAuthorProps) {
   const { data: exam, isLoading: isExamLoading } = useExamActivity(activityUuid);

@@ -1,14 +1,11 @@
-// LEGACY — Phase 2 will migrate exam question management into features/assessments/registry/exam/.
-// TODO Phase 2: delete once exam-author.tsx is fully migrated.
-// See plans/assessment-system-redesign.md
 'use client';
 
 import { apiFetch } from '@/lib/api-client';
 
-import { createInitialEditorState, questionEditorReducer } from './state/questionEditorReducer';
+import { createInitialEditorState, questionEditorReducer } from './questionEditorReducer';
 import { Download, Edit2, GripVertical, Plus, Trash2, Upload } from 'lucide-react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
-import type { Question } from './state/questionEditorReducer';
+import type { Question } from './questionEditorReducer';
 import { useTranslations } from 'next-intl';
 import { useReducer, useRef } from 'react';
 import { toast } from 'sonner';

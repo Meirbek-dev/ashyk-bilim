@@ -121,7 +121,7 @@ export function useAssessmentAttempt<T = unknown>({
         entry.version !== SCHEMA_VERSION ||
         isExpired(entry) ||
         !entry.answers ||
-        (typeof entry.answers === 'object' && Object.keys(entry.answers as object).length === 0)
+        (typeof entry.answers === 'object' && Object.keys(entry.answers).length === 0)
       ) {
         return null;
       }

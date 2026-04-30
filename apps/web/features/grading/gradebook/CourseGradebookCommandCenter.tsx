@@ -1,10 +1,9 @@
 'use client';
 
-import { Download, Filter, RefreshCcw, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { courseGradebookQueryOptions } from '@/features/grading/queries/grading.query';
 import {
@@ -14,19 +13,15 @@ import {
   formatGradebookStateKey,
   gradebookCellKey,
   gradebookLearnerName,
-  GRADEBOOK_SAVED_FILTERS,
   type ActivityProgressCell,
   type CourseGradebookResponse,
   type GradebookFilters,
   type GradebookRollupKind,
 } from '@/features/grading/domain';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import ProgressCell, { progressStateLabelKey } from './ProgressCell';
-import { cn } from '@/lib/utils';
+import GradebookToolbar, { labelActivityType } from './GradebookToolbar';
+import GradebookActivityCell, { progressStateLabelKey } from './GradebookActivityCell';
 
 interface CourseGradebookCommandCenterProps {
   courseUuid: string;
@@ -34,37 +29,36 @@ interface CourseGradebookCommandCenterProps {
 
 const ROLLUP_KINDS: GradebookRollupKind[] = ['assignment_group', 'cohort', 'learner', 'activity'];
 
-function storageKey(courseUuid: string) {
-  return `gradebook:v2:${courseUuid}:filters`;
-}
-
 export default function CourseGradebookCommandCenter({ courseUuid }: CourseGradebookCommandCenterProps) {
   const t = useTranslations('Features.Grading.Gradebook');
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data, error, isError, isLoading, refetch } = useQuery(courseGradebookQueryOptions(courseUuid));
   const [filters, setFilters] = useState<GradebookFilters>({
-    savedFilter: 'needs_grading',
-    search: '',
-    activityType: 'all',
+    savedFilter: normalizeSavedFilter(searchParams.get('filter')),
+    search: searchParams.get('search') ?? '',
+    activityType: searchParams.get('activityType') ?? 'all',
   });
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(storageKey(courseUuid));
-      if (stored) setFilters((current) => ({ ...current, ...JSON.parse(stored) }));
-    } catch {
-      // Local storage is an enhancement; invalid saved state should not block the gradebook.
-    }
-  }, [courseUuid]);
+    setFilters({
+      savedFilter: normalizeSavedFilter(searchParams.get('filter')),
+      search: searchParams.get('search') ?? '',
+      activityType: searchParams.get('activityType') ?? 'all',
+    });
+  }, [searchParams]);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(storageKey(courseUuid), JSON.stringify(filters));
-    } catch {
-      // Ignore storage failures in private browsing or restricted contexts.
-    }
-  }, [courseUuid, filters]);
+    const params = new URLSearchParams(searchParams.toString());
+    setParam(params, 'filter', filters.savedFilter === 'needs_grading' ? '' : filters.savedFilter);
+    setParam(params, 'search', filters.search);
+    setParam(params, 'activityType', filters.activityType === 'all' ? '' : filters.activityType);
+    const next = params.toString();
+    const current = searchParams.toString();
+    if (next !== current) router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
+  }, [filters, pathname, router, searchParams]);
 
   const cellMap = useMemo(
     () => new Map((data?.cells ?? []).map((cell) => [gradebookCellKey(cell.user_id, cell.activity_id), cell])),
@@ -122,57 +116,17 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
 
   return (
     <div className="space-y-5">
-      <CommandHeader
+      <GradebookToolbar
         data={data}
+        filters={filters}
+        activityTypes={activityTypes}
         selectedCount={selectedCells.length}
+        onFiltersChange={setFilters}
         onExport={() => exportGradebookCsv(data, t)}
         onRefresh={() => void refetch()}
       />
 
       <RollupPanel data={data} />
-
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="grid min-w-0 flex-1 gap-2 md:grid-cols-3 xl:grid-cols-5">
-          <div className="relative md:col-span-2 xl:col-span-1">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-            <Input
-              value={filters.search}
-              onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
-              placeholder={t('searchLearner')}
-              className="pl-9"
-            />
-          </div>
-          <NativeSelect
-            value={filters.activityType}
-            onChange={(event) => setFilters((current) => ({ ...current, activityType: event.target.value }))}
-            aria-label={t('activityType')}
-          >
-            <NativeSelectOption value="all">{t('allActivityTypes')}</NativeSelectOption>
-            {activityTypes.map((type) => (
-              <NativeSelectOption
-                key={type}
-                value={type}
-              >
-                {labelActivityType(t, type)}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Filter className="text-muted-foreground size-4" />
-          {GRADEBOOK_SAVED_FILTERS.map((filter) => (
-            <Button
-              key={filter}
-              type="button"
-              variant={filters.savedFilter === filter ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilters((current) => ({ ...current, savedFilter: filter }))}
-            >
-              {t(`savedFilters.${filter}`)}
-            </Button>
-          ))}
-        </div>
-      </div>
 
       <div className="border-border overflow-x-auto rounded-lg border">
         <Table className="min-w-[980px] table-fixed">
@@ -204,101 +158,33 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
                   const cell = cellMap.get(key) ?? emptyGradebookCell(student.id, activity.id);
                   const selected = selectedKeys.has(key);
                   return (
-                    <TableCell
+                    <GradebookActivityCell
                       key={key}
-                      className="h-24 align-top"
-                    >
-                      <ProgressCell
-                        cell={cell}
-                        selected={selected}
-                        actionRequiredLabel={t('actionRequired')}
-                        attemptsLabel={t('attempts', { count: cell.attempt_count })}
-                        lateLabel={t('late')}
-                        selectLabel={t('selectCell')}
-                        stateLabel={t(progressStateLabelKey(cell.state))}
-                        onOpen={() => openCell(cell)}
-                        onSelect={(checked) => {
-                          setSelectedKeys((current) => {
-                            const next = new Set(current);
-                            if (checked) next.add(key);
-                            else next.delete(key);
-                            return next;
-                          });
-                        }}
-                      />
-                    </TableCell>
+                      cell={cell}
+                      selected={selected}
+                      labels={{
+                        actionRequired: t('actionRequired'),
+                        attempts: t('attempts', { count: cell.attempt_count }),
+                        late: t('late'),
+                        selectCell: t('selectCell'),
+                        state: t(progressStateLabelKey(cell.state)),
+                      }}
+                      onOpen={() => openCell(cell)}
+                      onSelect={(checked) => {
+                        setSelectedKeys((current) => {
+                          const next = new Set(current);
+                          if (checked) next.add(key);
+                          else next.delete(key);
+                          return next;
+                        });
+                      }}
+                    />
                   );
                 })}
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </div>
-    </div>
-  );
-}
-
-function CommandHeader({
-  data,
-  selectedCount,
-  onExport,
-  onRefresh,
-}: {
-  data: CourseGradebookResponse;
-  selectedCount: number;
-  onExport: () => void;
-  onRefresh: () => void;
-}) {
-  const t = useTranslations('Features.Grading.Gradebook');
-  return (
-    <div className="flex flex-col gap-4 border-b pb-4 xl:flex-row xl:items-end xl:justify-between">
-      <div>
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <p className="text-muted-foreground text-sm">{data.course_name}</p>
-      </div>
-      <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
-        <SummaryTile
-          label={t('summary.learners')}
-          value={data.summary.student_count}
-        />
-        <SummaryTile
-          label={t('summary.activities')}
-          value={data.summary.activity_count}
-        />
-        <SummaryTile
-          label={t('summary.needsGrading')}
-          value={data.summary.needs_grading_count}
-          tone="amber"
-        />
-        <SummaryTile
-          label={t('summary.overdue')}
-          value={data.summary.overdue_count}
-          tone="rose"
-        />
-        <SummaryTile
-          label={t('summary.selected')}
-          value={selectedCount}
-        />
-      </div>
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onRefresh}
-        >
-          <RefreshCcw className="size-4" />
-          {t('refresh')}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onExport}
-        >
-          <Download className="size-4" />
-          {t('export')}
-        </Button>
       </div>
     </div>
   );
@@ -381,29 +267,6 @@ function RollupMetric({ label, value }: { label: string; value: number }) {
   );
 }
 
-function SummaryTile({
-  label,
-  value,
-  tone = 'default',
-}: {
-  label: string;
-  value: number;
-  tone?: 'default' | 'amber' | 'rose';
-}) {
-  return (
-    <div
-      className={cn(
-        'border-border rounded-md border px-3 py-2',
-        tone === 'amber' && 'border-amber-200 bg-amber-50/60',
-        tone === 'rose' && 'border-rose-200 bg-rose-50/60',
-      )}
-    >
-      <div className="text-muted-foreground text-xs">{label}</div>
-      <div className="text-xl font-semibold">{value}</div>
-    </div>
-  );
-}
-
 function exportGradebookCsv(
   data: CourseGradebookResponse,
   t: (key: string, values?: Record<string, string | number>) => string,
@@ -432,19 +295,27 @@ function exportGradebookCsv(
   URL.revokeObjectURL(url);
 }
 
-function labelActivityType(t: (key: string) => string, type: string) {
-  const key = type.toLowerCase();
-  if (key === 'type_assignment' || key === 'assignment') return t('activityTypes.assignment');
-  if (key === 'type_exam' || key === 'exam') return t('activityTypes.exam');
-  if (key === 'type_code_challenge' || key === 'code_challenge') return t('activityTypes.codeChallenge');
-  if (key === 'type_dynamic' || key === 'quiz') return t('activityTypes.quiz');
-  if (key === 'type_form' || key === 'form') return t('activityTypes.form');
-  if (key === 'type_file' || key === 'file') return t('activityTypes.file');
-  return type.replace('TYPE_', '').replaceAll('_', ' ');
-}
-
 function labelRollupRow(t: (key: string) => string, kind: GradebookRollupKind, label: string) {
   if (kind === 'assignment_group') return labelActivityType(t, label);
   if (kind === 'cohort' && label === '__default_cohort__') return t('defaultCohort');
   return label;
+}
+
+function setParam(params: URLSearchParams, key: string, value: string) {
+  if (value) params.set(key, value);
+  else params.delete(key);
+}
+
+function normalizeSavedFilter(value: string | null): GradebookFilters['savedFilter'] {
+  if (
+    value === 'all' ||
+    value === 'needs_grading' ||
+    value === 'overdue' ||
+    value === 'returned' ||
+    value === 'failed' ||
+    value === 'not_started'
+  ) {
+    return value;
+  }
+  return 'needs_grading';
 }

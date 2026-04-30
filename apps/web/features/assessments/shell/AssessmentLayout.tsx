@@ -4,7 +4,6 @@ import {
   type ComponentType,
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from 'react';
 import { AlertTriangle, LoaderCircle, Maximize2 } from 'lucide-react';

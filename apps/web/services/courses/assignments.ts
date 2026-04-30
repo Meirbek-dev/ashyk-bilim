@@ -5,9 +5,7 @@ import { apiFetch } from '@/lib/api-client';
 import { tags } from '@/lib/cacheTags';
 import type {
   AssignmentDraftPatch,
-  AssignmentDraftRead,
   AssignmentRead,
-  AssignmentTaskAnswer,
 } from '@/features/assignments/domain';
 
 export type AssignmentType = 'QUIZ' | 'FILE_SUBMISSION' | 'FORM' | 'OTHER';

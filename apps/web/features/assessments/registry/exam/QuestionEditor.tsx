@@ -1,19 +1,14 @@
-// LEGACY — Phase 2 will migrate exam question authoring into features/assessments/registry/exam/.
-// TODO Phase 2: delete once exam-author.tsx is fully migrated.
-// See plans/assessment-system-redesign.md
 'use client';
 
 import { apiFetch } from '@/lib/api-client';
 
-import { Plus, Trash2 } from 'lucide-react';
+import { ChoiceItemAuthor, type ChoiceAuthorValue } from '@/features/assessments/items/choice';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { NativeSelect, NativeSelectOption } from '@components/ui/native-select';
-import { RadioGroup, RadioGroupItem } from '@components/ui/radio-group';
 import { Textarea } from '@components/ui/textarea';
-import { Checkbox } from '@components/ui/checkbox';
 import { Button } from '@components/ui/button';
 import { Label } from '@components/ui/label';
 import { Input } from '@components/ui/input';
@@ -120,38 +115,6 @@ export default function QuestionEditor({ question, examUuid, onSave, onCancel, a
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const addOption = () => {
-    // Prevent adding options for TRUE_FALSE - it's a fixed two-option question,
-    if (formData.question_type === 'TRUE_FALSE') return;
-
-    setFormData({
-      ...formData,
-      answer_options: [
-        ...formData.answer_options,
-        formData.question_type === 'MATCHING' ? { left: '', right: '' } : { text: '', is_correct: false },
-      ],
-    });
-  };
-
-  const removeOption = (index: number) => {
-    // Prevent removing options for TRUE_FALSE - options are fixed,
-    if (formData.question_type === 'TRUE_FALSE') return;
-
-    setFormData({
-      ...formData,
-      answer_options: formData.answer_options.filter((_, i) => i !== index),
-    });
-  };
-
-  const updateOption = (
-    index: number,
-    updates: Partial<{ text?: string; is_correct?: boolean; left?: string; right?: string }>,
-  ) => {
-    const newOptions = [...formData.answer_options];
-    newOptions[index] = { ...newOptions[index], ...updates };
-    setFormData({ ...formData, answer_options: newOptions });
   };
 
   // When switching question types, normalize options:
@@ -266,159 +229,11 @@ export default function QuestionEditor({ question, examUuid, onSave, onCancel, a
 
         <div>
           <Label>{t('answerOptions')}</Label>
-          <div className="mt-2 space-y-2">
-            {formData.question_type === 'MATCHING' ? (
-              formData.answer_options.map((option, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2"
-                >
-                  <Input
-                    placeholder={t('leftSide')}
-                    value={option.left || ''}
-                    onChange={(e) => updateOption(index, { left: e.target.value })}
-                    className="flex-1"
-                  />
-                  <span className="pt-2">→</span>
-                  <Input
-                    placeholder={t('rightSide')}
-                    value={option.right || ''}
-                    onChange={(e) => updateOption(index, { right: e.target.value })}
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeOption(index)}
-                    disabled={formData.answer_options.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))
-            ) : formData.question_type === 'MULTIPLE_CHOICE' ? (
-              formData.answer_options.map((option, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2"
-                >
-                  <Checkbox
-                    checked={option.is_correct}
-                    onCheckedChange={(checked) => updateOption(index, { is_correct: checked })}
-                  />
-                  <Input
-                    placeholder={t('optionText', { number: index + 1 })}
-                    value={option.text}
-                    onChange={(e) => updateOption(index, { text: e.target.value })}
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeOption(index)}
-                    disabled={formData.answer_options.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))
-            ) : formData.question_type === 'TRUE_FALSE' ? (
-              // TRUE_FALSE: fixed two-option UI (True / False) - no add/remove, no editable labels
-              <RadioGroup
-                value={(() => {
-                  const idx = formData.answer_options.findIndex((o) => o.is_correct);
-                  return idx === -1 ? '' : idx.toString();
-                })()}
-                onValueChange={(value: any) => {
-                  const i = Number.parseInt(String(value), 10);
-                  const newOptions = [
-                    { text: t('true'), is_correct: i === 0 },
-                    { text: t('false'), is_correct: i === 1 },
-                  ];
-                  setFormData({ ...formData, answer_options: newOptions });
-                }}
-                className="flex flex-col gap-3"
-              >
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem
-                    value="0"
-                    id="option-0"
-                  />
-                  <Label
-                    htmlFor="option-0"
-                    className="flex-1 cursor-default select-none"
-                  >
-                    {t('true')}
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem
-                    value="1"
-                    id="option-1"
-                  />
-                  <Label
-                    htmlFor="option-1"
-                    className="flex-1 cursor-default select-none"
-                  >
-                    {t('false')}
-                  </Label>
-                </div>
-              </RadioGroup>
-            ) : (
-              // SINGLE_CHOICE - radio with editable labels and add/remove allowed
-              <RadioGroup
-                value={(() => {
-                  const idx = formData.answer_options.findIndex((o) => o.is_correct);
-                  return idx === -1 ? '' : idx.toString();
-                })()}
-                onValueChange={(value: any) => {
-                  const i = Number.parseInt(String(value), 10);
-                  const newOptions = formData.answer_options.map((opt, idx) => ({
-                    ...opt,
-                    is_correct: idx === i,
-                  }));
-                  setFormData({ ...formData, answer_options: newOptions });
-                }}
-                className="flex flex-col gap-2"
-              >
-                {formData.answer_options.map((option, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2"
-                  >
-                    <RadioGroupItem
-                      value={index.toString()}
-                      id={`option-${index}`}
-                    />
-                    <Input
-                      placeholder={t('optionText', { number: index + 1 })}
-                      value={option.text}
-                      onChange={(e) => updateOption(index, { text: e.target.value })}
-                      className="flex-1"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeOption(index)}
-                      disabled={formData.answer_options.length === 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </RadioGroup>
-            )}
-
-            {formData.question_type !== 'TRUE_FALSE' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addOption}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                {t('addOption')}
-              </Button>
-            )}
+          <div className="mt-2">
+            <ChoiceItemAuthor
+              value={questionToChoiceAuthorValue(formData)}
+              onChange={(nextValue) => setFormData(choiceAuthorValueToQuestion(formData, nextValue, t))}
+            />
           </div>
         </div>
 
@@ -453,4 +268,66 @@ export default function QuestionEditor({ question, examUuid, onSave, onCancel, a
       </div>
     </div>
   );
+}
+
+function questionToChoiceAuthorValue(question: Question): ChoiceAuthorValue {
+  if (question.question_type === 'MATCHING') {
+    return {
+      kind: 'MATCHING',
+      prompt: question.question_text,
+      points: question.points,
+      pairs: question.answer_options.map((option, index) => ({
+        id: option.option_id ?? index,
+        left: option.left ?? '',
+        right: option.right ?? '',
+      })),
+    };
+  }
+
+  return {
+    kind:
+      question.question_type === 'SINGLE_CHOICE'
+        ? 'CHOICE_SINGLE'
+        : question.question_type === 'MULTIPLE_CHOICE'
+          ? 'CHOICE_MULTIPLE'
+          : 'TRUE_FALSE',
+    prompt: question.question_text,
+    points: question.points,
+    options: question.answer_options.map((option, index) => ({
+      id: option.option_id ?? index,
+      text: option.text ?? '',
+      isCorrect: option.is_correct === true,
+    })),
+  };
+}
+
+function choiceAuthorValueToQuestion(
+  question: Question,
+  value: ChoiceAuthorValue,
+  t: ReturnType<typeof useTranslations<'Components.QuestionManagement'>>,
+): Question {
+  if (value.kind === 'MATCHING') {
+    return {
+      ...question,
+      question_text: value.prompt,
+      question_type: 'MATCHING',
+      answer_options: value.pairs.map((pair) => ({ left: pair.left, right: pair.right })),
+    };
+  }
+
+  const questionType =
+    value.kind === 'CHOICE_SINGLE' ? 'SINGLE_CHOICE' : value.kind === 'CHOICE_MULTIPLE' ? 'MULTIPLE_CHOICE' : 'TRUE_FALSE';
+
+  return {
+    ...question,
+    question_text: value.prompt,
+    question_type: questionType,
+    answer_options:
+      value.kind === 'TRUE_FALSE'
+        ? [
+            { text: t('true'), is_correct: value.options[0]?.isCorrect === true },
+            { text: t('false'), is_correct: value.options[1]?.isCorrect === true },
+          ]
+        : value.options.map((option) => ({ text: option.text, is_correct: option.isCorrect === true })),
+  };
 }

@@ -29,8 +29,8 @@ function resolveMax(value: Breakpoint | number): string {
 function parseQuery(query: BreakpointQuery | MediaQueryInput | (string & {})): string {
   if (typeof query !== 'string') {
     const parts: string[] = [];
-    if (query.min != null) parts.push(resolveMin(query.min));
-    if (query.max != null) parts.push(resolveMax(query.max));
+    if (query.min !== null && query.min !== undefined) parts.push(resolveMin(query.min));
+    if (query.max !== null && query.max !== undefined) parts.push(resolveMax(query.max));
     if (query.pointer === 'coarse') parts.push('(pointer: coarse)');
     if (query.pointer === 'fine') parts.push('(pointer: fine)');
     if (parts.length === 0) return '(min-width: 0px)';

@@ -1,6 +1,5 @@
 import { getLocale, getMessages, setRequestLocale } from 'next-intl/server';
 import { IntlProvider } from '@/components/providers/IntlProvider';
-import DevScriptLoader from '@/components/DevScriptLoader';
 import { ThemeScript } from '@/components/providers/theme-script';
 import { getSession } from '@/lib/auth/session';
 import { cookies } from 'next/headers';
@@ -97,7 +96,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="relative"
         suppressHydrationWarning
       >
-        {/* {isDevEnv && <DevScriptLoader />} */}
         <div className="relative isolate flex min-h-svh flex-col">
           <Suspense fallback={null}>
             <LocalizedApp>{children}</LocalizedApp>

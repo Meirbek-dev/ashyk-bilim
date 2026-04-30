@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getOrderedExamQuestions } from '@/components/Activities/ExamActivity/utils/questionOrder';
+import { getOrderedExamQuestions } from '@/features/assessments/registry/exam/questionOrder';
 
 const questions = [
   { id: 10, question_uuid: 'question_alpha', question_text: 'Alpha', order_index: 1 },

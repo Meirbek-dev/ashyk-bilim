@@ -15,10 +15,8 @@ import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy';
 import { useAttemptShellControls } from '@/features/assessments/shell';
 import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAssessmentAttempt';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
-import ExamQuestionNavigation, {
-  ExamQuestionNavigationMobile,
-} from '@/components/Activities/ExamActivity/ExamQuestionNavigation';
-import { getOrderedExamQuestions } from '@/components/Activities/ExamActivity/utils/questionOrder';
+import ExamQuestionNavigation, { ExamQuestionNavigationMobile } from './ExamQuestionNavigation';
+import { getOrderedExamQuestions } from './questionOrder';
 import { Progress } from '@components/ui/progress';
 import type { KindAttemptProps } from '../index';
 import ExamQuestionCard from './ExamQuestionCard';
@@ -194,7 +192,7 @@ function ExamTakingContent({
       const answer = answers[questionId];
       if (answer === undefined || answer === null) return false;
       if (Array.isArray(answer)) return answer.length > 0;
-      if (typeof answer === 'object') return Object.keys(answer as object).length > 0;
+      if (typeof answer === 'object') return Object.keys(answer).length > 0;
       return true;
     },
     [answers],

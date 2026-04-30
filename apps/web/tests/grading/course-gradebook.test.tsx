@@ -49,6 +49,12 @@ vi.mock('next-intl', () => ({
     values?.count === undefined ? key : `${key}:${values.count}`,
 }));
 
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/dash/courses/course_gradebook/gradebook',
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 function baseGradebook(): CourseGradebookResponse {
   return {
     course_uuid: 'course_gradebook',

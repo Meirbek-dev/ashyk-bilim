@@ -28,10 +28,15 @@ class MockResizeObserver {
 }
 
 class MockIntersectionObserver {
+  root = null;
+  rootMargin = '';
+  scrollMargin = '';
+  thresholds = [];
   observe = vi.fn();
   unobserve = vi.fn();
   disconnect = vi.fn();
+  takeRecords = vi.fn(() => []);
 }
 
-globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
-globalThis.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+globalThis.ResizeObserver = MockResizeObserver;
+globalThis.IntersectionObserver = MockIntersectionObserver;

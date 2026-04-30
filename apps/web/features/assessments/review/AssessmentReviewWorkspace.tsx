@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { LoaderCircle } from 'lucide-react';
 
 import { apiFetcher } from '@/lib/api-client';
@@ -48,11 +48,13 @@ export default function AssessmentReviewWorkspace({
   const cleanUuid = activityUuid.replace(/^activity_/, '');
   const [kindModule, setKindModule] = useState<KindModule | undefined>();
 
-  const { data: activity, isLoading, error } = useQuery({
-    queryKey: queryKeys.activities.detail(cleanUuid),
-    queryFn: () => apiFetcher(`${getAPIUrl()}activities/${cleanUuid}`) as Promise<ActivityDetail>,
-    enabled: Boolean(cleanUuid),
-  });
+  const { data: activity, isLoading, error } = useQuery(
+    queryOptions({
+      queryKey: queryKeys.activities.detail(cleanUuid),
+      queryFn: () => apiFetcher(`${getAPIUrl()}activities/${cleanUuid}`) as Promise<ActivityDetail>,
+      enabled: Boolean(cleanUuid),
+    }),
+  );
 
   useEffect(() => {
     if (!activity?.activity_type) return;
