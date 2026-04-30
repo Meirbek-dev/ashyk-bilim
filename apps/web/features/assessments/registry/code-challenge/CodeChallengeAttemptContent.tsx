@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { CodeChallengeEditor, type CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCodeChallengeSettings } from '@/features/code-challenges/hooks/useCodeChallenge';
-import { useAttemptShellControls } from '@/features/assessments/shared/AttemptShell';
+import { useAttemptShellControls } from '@/features/assessments/shell';
 import type { KindAttemptProps } from '../index';
 
 interface CodeChallengeTestCase {
@@ -88,7 +88,6 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
         challengeTitle={vm?.title}
         challengeDescription={vm?.description ?? undefined}
         hideHeader
-        hideSubmitButton
         onSubmitControlChange={handleSubmitControlChange}
       />
     </div>

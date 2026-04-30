@@ -17,7 +17,7 @@ import { useMySubmission } from '@/hooks/useMySubmission';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
 import { Separator } from '@/components/ui/separator';
 import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList';
-import { useAttemptShellControls, type AttemptSaveState } from '@/features/assessments/shared/AttemptShell';
+import { useAttemptShellControls, type AttemptSaveState } from '@/features/assessments/shell';
 import StudentResultPanel from '@/features/assignments/student/ResultPanel';
 import TaskAttemptList from '@/features/assignments/student/TaskAttemptList';
 import {
