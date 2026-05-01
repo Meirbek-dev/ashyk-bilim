@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -50,16 +50,24 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const [localAnswers, setLocalAnswers] = useState<Record<string, ItemAnswer>>({});
   const [saveState, setSaveState] = useState<AssessmentSaveState>('idle');
 
+  const draftQueryOptions = useMemo(
+    () =>
+      queryOptions({
+        queryKey: [...queryKeys.assessments.draft(assessmentUuid), setLocalAnswers, setSaveState],
+        queryFn: async () => {
+          const response = await apiFetch(`assessments/${assessmentUuid}/draft`);
+          const payload = (await readJsonOrThrow(response)) as DraftRead;
+          setLocalAnswers(answersFromSubmission(payload.submission));
+          setSaveState('idle');
+          return payload;
+        },
+      }),
+    [assessmentUuid, setLocalAnswers, setSaveState],
+  );
+
   const draftQuery = useQuery({
-    queryKey: assessmentUuid ? ['assessments', 'draft', assessmentUuid] : ['assessments', 'draft', 'missing'],
+    ...draftQueryOptions,
     enabled: Boolean(assessmentUuid),
-    queryFn: async () => {
-      const response = await apiFetch(`assessments/${assessmentUuid}/draft`);
-      const payload = (await readJsonOrThrow(response)) as DraftRead;
-      setLocalAnswers(answersFromSubmission(payload.submission));
-      setSaveState('idle');
-      return payload;
-    },
   });
 
   const version = draftQuery.data?.submission?.version;
@@ -82,7 +90,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     onSuccess: async () => {
       setSaveState('saved');
       if (assessmentUuid) {
-        await queryClient.invalidateQueries({ queryKey: ['assessments', 'draft', assessmentUuid] });
+        await queryClient.invalidateQueries({ queryKey: draftQueryOptions.queryKey });
       }
     },
     onError: (error: Error & { status?: number; payload?: any }) => {
@@ -116,7 +124,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       setSaveState('saved');
       if (assessmentUuid) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['assessments', 'draft', assessmentUuid] }),
+          queryClient.invalidateQueries({ queryKey: draftQueryOptions.queryKey }),
           queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(assessmentUuid) }),
         ]);
       }
@@ -132,19 +140,22 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     setSaveState('dirty');
   }, []);
 
+  const { mutateAsync: saveMutateAsync, isPending: isSaving } = saveMutation;
+  const { mutateAsync: submitMutateAsync, isPending: isSubmitting } = submitMutation;
+
   return useMemo(
     () => ({
       answers: localAnswers,
       setItemAnswer,
-      save: () => saveMutation.mutateAsync(localAnswers),
-      submit: () => submitMutation.mutateAsync(localAnswers),
+      save: () => saveMutateAsync(localAnswers),
+      submit: () => submitMutateAsync(localAnswers),
       submission: draftQuery.data?.submission ?? null,
       status: draftQuery.data?.submission?.status ?? null,
       version,
       saveState,
       isLoading: draftQuery.isLoading,
-      isSaving: saveMutation.isPending,
-      isSubmitting: submitMutation.isPending,
+      isSaving,
+      isSubmitting,
       error: draftQuery.error,
     }),
     [
@@ -152,10 +163,12 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       draftQuery.error,
       draftQuery.isLoading,
       localAnswers,
-      saveMutation,
+      saveMutateAsync,
+      isSaving,
       saveState,
       setItemAnswer,
-      submitMutation,
+      submitMutateAsync,
+      isSubmitting,
       version,
     ],
   );

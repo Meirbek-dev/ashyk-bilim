@@ -6,6 +6,8 @@ export const queryKeys = {
   assessments: {
     activity: (activityUuid: string) => ['assessments', 'activity', activityUuid] as const,
     detail: (assessmentUuid: string) => ['assessments', 'detail', assessmentUuid] as const,
+    draft: (assessmentUuid: string | null | undefined) =>
+      ['assessments', 'draft', assessmentUuid || 'missing'] as const,
     readiness: (assessmentUuid: string) => ['assessments', 'readiness', assessmentUuid] as const,
   },
   assignments: {
