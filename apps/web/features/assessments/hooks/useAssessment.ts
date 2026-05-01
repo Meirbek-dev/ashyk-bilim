@@ -138,7 +138,7 @@ export function useAssessment(
   const { surface } = options;
 
   if (surface === 'STUDIO') {
-    const lifecycle = assessment.lifecycle;
+    const { lifecycle } = assessment;
 
     const vm: StudioViewModel = {
       surface: 'STUDIO',

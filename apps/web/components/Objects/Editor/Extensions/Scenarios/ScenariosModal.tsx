@@ -394,7 +394,11 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
                       <Button
                         size="sm"
                         onClick={() => setCurrentScenarioId(scenario.id)}
-                        className={`${scenario.id === currentScenarioId ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-slate-200 text-slate-700'}`}
+                        className={
+                          scenario.id === currentScenarioId
+                            ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                            : 'bg-slate-200 text-slate-700'
+                        }
                         title={t('setAsStartingScenario')}
                       >
                         {scenario.id === currentScenarioId ? t('start') : t('setStart')}

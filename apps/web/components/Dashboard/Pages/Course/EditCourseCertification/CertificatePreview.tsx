@@ -183,7 +183,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                 <div className="flex items-center justify-center">
                   {platform?.logo_image ? (
                     <Image
-                      src={`${getLogoMediaDirectory(platform.logo_image)}`}
+                      src={getLogoMediaDirectory(platform.logo_image)}
                       alt={t('organizationLogoAlt')}
                       className="h-10 w-10 object-contain"
                       width={40}

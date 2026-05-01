@@ -1,7 +1,7 @@
 'use client';
 
 import { AlertTriangle, Archive, CalendarClock, Eye, LoaderCircle, Send, Undo2 } from 'lucide-react';
-import { Fragment, useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -84,11 +84,16 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
         if (!response.ok) {
           const payload = await response.json().catch(() => null);
           const issues = Array.isArray(payload?.detail?.issues)
-            ? payload.detail.issues.map((issue: { message?: string }) => issue.message).filter(Boolean).join(' ')
+            ? payload.detail.issues
+                .map((issue: { message?: string }) => issue.message)
+                .filter(Boolean)
+                .join(' ')
             : '';
           const message =
             issues ||
-            (typeof payload?.detail === 'string' ? payload.detail : response.statusText || 'Failed to update lifecycle');
+            (typeof payload?.detail === 'string'
+              ? payload.detail
+              : response.statusText || 'Failed to update lifecycle');
           throw new Error(message);
         }
         await queryClient.invalidateQueries({
@@ -108,7 +113,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   const Author = kindModule?.Author;
   const Outline = kindModule?.Outline;
   const Inspector = kindModule?.Inspector;
-  const Provider = kindModule?.Provider ?? (({ children }: { children: React.ReactNode }) => <Fragment>{children}</Fragment>);
+  const Provider = kindModule?.Provider ?? (({ children }: { children: React.ReactNode }) => <>{children}</>);
 
   const slotProps = { activityUuid, courseUuid };
 
@@ -211,9 +216,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
       {/* ── Content ────────────────────────────────────────────────────── */}
       {Author ? (
         <Provider {...slotProps}>
-          <div
-            className={cn('grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_24rem]')}
-          >
+          <div className={cn('grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_24rem]')}>
             <main className="min-w-0 border-t lg:border-t-0">
               <Author {...slotProps} />
             </main>

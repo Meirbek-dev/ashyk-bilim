@@ -850,7 +850,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
             {thumbnailImage ? (
               <div className="relative h-[114px] w-[200px] overflow-hidden rounded-lg shadow-md">
                 <NextImage
-                  src={`${getCourseThumbnailMediaDirectory(courseUuid, thumbnailImage)}`}
+                  src={getCourseThumbnailMediaDirectory(courseUuid, thumbnailImage)}
                   alt={courseName}
                   fill
                   className="object-cover"
@@ -994,7 +994,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
           {thumbnailImage ? (
             <div className="relative h-[114px] w-[200px] overflow-hidden rounded-lg shadow-md">
               <NextImage
-                src={`${getCourseThumbnailMediaDirectory(courseUuid, thumbnailImage)}`}
+                src={getCourseThumbnailMediaDirectory(courseUuid, thumbnailImage)}
                 alt={courseName}
                 fill
                 className="object-cover"

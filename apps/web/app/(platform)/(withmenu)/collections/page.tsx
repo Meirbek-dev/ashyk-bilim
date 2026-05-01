@@ -22,7 +22,7 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
 
   return {
     title: `${t('title')} - ${PLATFORM_BRAND_NAME}`,
-    description: `${t('collectionOfCourses', { platformName: PLATFORM_BRAND_NAME })}`,
+    description: t('collectionOfCourses', { platformName: PLATFORM_BRAND_NAME }),
     robots: {
       index: true,
       follow: true,
@@ -35,7 +35,7 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
     },
     openGraph: {
       title: `${t('title')} - ${PLATFORM_BRAND_NAME}`,
-      description: `${t('collectionOfCourses', { platformName: PLATFORM_BRAND_NAME })}`,
+      description: t('collectionOfCourses', { platformName: PLATFORM_BRAND_NAME }),
       type: 'website',
       images: [
         {

@@ -603,7 +603,6 @@ Six phases. Each is shippable on its own and reversible behind a flag where appl
 
 ### Phase 7 (optional) — Quality of life
 
-- Antivirus scan on uploads (ClamAV in a sidecar).
 - Per-user upload quota (soft limit with banner; hard limit at 2× soft).
 - Rate-limit `POST /uploads` per user.
 - A real "needs grading" inbox view across courses (uses the same data, no schema changes).

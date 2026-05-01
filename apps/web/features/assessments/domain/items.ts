@@ -66,17 +66,23 @@ export interface AssessmentItem {
 export function isAnswered(answer: ItemAnswer | null | undefined): boolean {
   if (!answer) return false;
   switch (answer.kind) {
-    case 'CHOICE':
+    case 'CHOICE': {
       return answer.selected.length > 0;
-    case 'OPEN_TEXT':
+    }
+    case 'OPEN_TEXT': {
       return answer.text.trim().length > 0;
-    case 'FILE_UPLOAD':
+    }
+    case 'FILE_UPLOAD': {
       return answer.files.length > 0;
-    case 'FORM':
+    }
+    case 'FORM': {
       return Object.values(answer.values).some((value) => value.trim().length > 0);
-    case 'CODE':
+    }
+    case 'CODE': {
       return answer.source.trim().length > 0;
-    case 'MATCHING':
+    }
+    case 'MATCHING': {
       return answer.matches.length > 0;
+    }
   }
 }

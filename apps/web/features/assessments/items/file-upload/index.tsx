@@ -265,9 +265,7 @@ export function FileUploadAttempt({
 
       <Alert>
         <AlertCircle className="size-4" />
-        <AlertDescription>
-          File is verified before it is attached to this draft.
-        </AlertDescription>
+        <AlertDescription>File is verified before it is attached to this draft.</AlertDescription>
       </Alert>
     </div>
   );
@@ -279,7 +277,9 @@ export function FileUploadReviewDetail({
   return (
     <div className="bg-card rounded-md border p-3 text-sm">
       <div className="font-medium">Uploaded file</div>
-      <div className="text-muted-foreground mt-1">{answer?.files?.[0]?.filename ?? answer?.file_key ?? 'No file recorded'}</div>
+      <div className="text-muted-foreground mt-1">
+        {answer?.files?.[0]?.filename ?? answer?.file_key ?? 'No file recorded'}
+      </div>
     </div>
   );
 }

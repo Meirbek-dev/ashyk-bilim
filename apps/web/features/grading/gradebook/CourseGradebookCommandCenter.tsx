@@ -79,7 +79,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
         router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
       }
     },
-    [pathname, router, searchParams]
+    [pathname, router, searchParams],
   );
 
   const cellMap = useMemo(
@@ -87,7 +87,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
     [data?.cells],
   );
   const activityTypes = useMemo(
-    () => [...new Set((data?.activities ?? []).map((activity) => activity.activity_type))].sort(),
+    () => [...new Set((data?.activities ?? []).map((activity) => activity.activity_type))].toSorted(),
     [data?.activities],
   );
   const visibleActivities = useMemo(
