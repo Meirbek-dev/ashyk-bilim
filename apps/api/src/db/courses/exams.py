@@ -1,7 +1,7 @@
 from enum import Enum, StrEnum
 
 from pydantic import ConfigDict, field_validator
-from sqlalchemy import JSON, Column
+from sqlalchemy import JSON, Column, ForeignKey, Index, Integer
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
@@ -173,6 +173,24 @@ class ExamUpdate(SQLModelStrictBaseModel):
     update_date: str | None = None
 
 
+class Exam(ExamBase, table=True):
+    """Exam database model"""
+
+    id: int | None = Field(default=None, primary_key=True)
+    exam_uuid: str = ""
+    course_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE"))
+    )
+    chapter_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("chapter.id", ondelete="CASCADE"))
+    )
+    activity_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("activity.id", ondelete="CASCADE"))
+    )
+    creation_date: str = ""
+    update_date: str = ""
+
+
 # Question ##
 
 
@@ -230,7 +248,7 @@ class QuestionReadStudent(SQLModelStrictBaseModel):
 
     @classmethod
     def from_question(
-        cls, q: QuestionRead, shuffle_answers: bool = False
+        cls, q: Question | QuestionRead, shuffle_answers: bool = False
     ) -> QuestionReadStudent:
         """Create a student-facing question, stripping is_correct from answer_options."""
         import random as _random
@@ -291,6 +309,18 @@ class QuestionUpdate(SQLModelStrictBaseModel):
         if isinstance(v, str):
             return QuestionTypeEnum(v)
         return v
+
+
+class Question(QuestionBase, table=True):
+    """Question database model"""
+
+    id: int | None = Field(default=None, primary_key=True)
+    question_uuid: str = ""
+    exam_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("exam.id", ondelete="CASCADE"))
+    )
+    creation_date: str = ""
+    update_date: str = ""
 
 
 # Exam Attempt ##
@@ -375,6 +405,23 @@ class ExamAttemptUpdate(SQLModelStrictBaseModel):
         if isinstance(v, str):
             return AttemptStatusEnum(v)
         return v
+
+
+class ExamAttempt(ExamAttemptBase, table=True):
+    """Exam attempt database model"""
+
+    __table_args__ = (Index("idx_exam_attempt_exam_user", "exam_id", "user_id"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    attempt_uuid: str = ""
+    exam_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("exam.id", ondelete="CASCADE"))
+    )
+    user_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
+    )
+    creation_date: str = ""
+    update_date: str = ""
 
 
 # Combined Creation ##

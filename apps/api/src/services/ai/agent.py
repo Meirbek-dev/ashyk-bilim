@@ -1,5 +1,6 @@
 import logging
 
+from openai import AsyncOpenAI
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -75,11 +76,19 @@ def get_agent() -> Agent[AgentDependencies, str]:
 
 def get_model() -> OpenAIChatModel:
     settings = get_settings().ai_config
-    api_key = settings.openai_api_key
+    api_key = settings.openrouter_api_key
     if not api_key:
-        raise RetrievalError("OpenAI API key not configured")
+        raise RetrievalError("OpenRouter API key not configured")
 
+    openai_client = AsyncOpenAI(
+        base_url=settings.openrouter_base_url,
+        api_key=api_key,
+        default_headers={
+            "HTTP-Referer": settings.app_url,
+            "X-Title": settings.app_name,
+        },
+    )
     return OpenAIChatModel(
         settings.chat_model,
-        provider=OpenAIProvider(api_key=api_key),
+        provider=OpenAIProvider(openai_client=openai_client),
     )

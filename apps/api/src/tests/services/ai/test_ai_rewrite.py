@@ -132,13 +132,19 @@ def test_format_sse_message_serializes_typed_events() -> None:
     assert '"aichat_uuid": "s-1"' in payload
 
 
-def test_get_model_uses_platform_openai_api_key(
+def test_get_model_uses_openrouter_api_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fake_ai_config = type(
         "AIConfig",
         (),
-        {"chat_model": "gpt-5.4-nano", "openai_api_key": "test-key"},
+        {
+            "chat_model": "deepseek/deepseek-v4-flash",
+            "openrouter_api_key": "test-key",
+            "openrouter_base_url": "https://openrouter.ai/api/v1",
+            "app_url": "https://cs-mooc.tou.edu.kz",
+            "app_name": "Ashyq Bilim",
+        },
     )()
     fake_settings = type("Settings", (), {"ai_config": fake_ai_config})()
 
@@ -153,7 +159,7 @@ def test_get_model_uses_platform_openai_api_key(
 
 @dataclass
 class _FakeResponseMessage:
-    model_name: str | None = "openai:gpt-5.4-nano"
+    model_name: str | None = "openai:deepseek/deepseek-v4-flash"
     finish_reason: str | None = "stop"
 
 

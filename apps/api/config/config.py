@@ -123,8 +123,24 @@ class AIConfig(PlatformSectionSettings):
         default=None,
         validation_alias="PLATFORM_OPENAI_API_KEY",
     )
+    openrouter_api_key: str | None = Field(
+        default=None,
+        validation_alias="PLATFORM_OPENROUTER_API_KEY",
+    )
+    openrouter_base_url: str = Field(
+        default="https://openrouter.ai/api/v1",
+        validation_alias="PLATFORM_OPENROUTER_BASE_URL",
+    )
+    app_url: str = Field(
+        default="https://cs-mooc.tou.edu.kz",
+        validation_alias="PLATFORM_APP_URL",
+    )
+    app_name: str = Field(
+        default="Ashyq Bilim",
+        validation_alias="PLATFORM_APP_NAME",
+    )
     chat_model: str = Field(
-        default="gpt-5.4-nano",
+        default="deepseek/deepseek-v4-flash",
         validation_alias="PLATFORM_AI_CHAT_MODEL",
     )
     embedding_model: str = Field(
@@ -204,7 +220,7 @@ class AIConfig(PlatformSectionSettings):
         validation_alias="PLATFORM_AI_CHUNK_OVERLAP",
     )
 
-    @field_validator("openai_api_key", "chat_model", "embedding_model", mode="before")
+    @field_validator("openai_api_key", "openrouter_api_key", "chat_model", "embedding_model", mode="before")
     @classmethod
     def normalize_optional_ai_strings(cls, value: str | None) -> str | None:
         return _strip_optional_string(value)
