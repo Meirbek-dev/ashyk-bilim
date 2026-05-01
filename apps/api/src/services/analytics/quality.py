@@ -63,11 +63,7 @@ def build_data_quality(
                 "reason": "fewer_than_5_learners",
             })
 
-    excluded_preview_attempts = sum(
-        1 for attempt, _exam in context.exam_attempts if attempt.is_preview
-    )
-    # Preview exam attempts are how this codebase marks teacher test attempts today.
-    excluded_teacher_attempts = excluded_preview_attempts
+    excluded_teacher_attempts = 0
     issues: list[DataQualityIssue] = []
     if missing_sources:
         issues.append(

@@ -14,16 +14,13 @@ def import_orm_models() -> None:
     import src.db.collections
     import src.db.collections_courses
     import src.db.courses.activities
-    import src.db.courses.assignments
     import src.db.courses.blocks
     import src.db.courses.certifications
     import src.db.courses.chapters
-    import src.db.courses.code_challenges
     import src.db.courses.course_updates
     import src.db.courses.courses
     import src.db.courses.discussions
     import src.db.courses.enhanced_responses
-    import src.db.courses.exams
     import src.db.courses.quiz
     import src.db.gamification
     import src.db.grading.bulk_actions
@@ -39,6 +36,7 @@ def import_orm_models() -> None:
     import src.db.trail_runs
     import src.db.trail_steps
     import src.db.trails
+    import src.db.uploads
     import src.db.usergroup_resources
     import src.db.usergroup_user
     import src.db.usergroups

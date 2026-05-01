@@ -11,18 +11,11 @@ from sqlalchemy import select
 from sqlmodel import Session
 from zoneinfo import ZoneInfo
 
+from src.db.assessments import Assessment
 from src.db.courses.activities import Activity
-from src.db.courses.assignments import Assignment
 from src.db.courses.certifications import CertificateUser, Certifications
 from src.db.courses.chapters import Chapter
-from src.db.courses.code_challenges import (
-    CodeSubmission,
-)
-from src.db.courses.code_challenges import (
-    SubmissionStatus as CodeSubmissionStatus,
-)
 from src.db.courses.courses import Course
-from src.db.courses.exams import Exam, ExamAttempt
 from src.db.courses.quiz import QuizAttempt, QuizQuestionStat
 from src.db.grading.progress import ActivityProgress, CourseProgress
 from src.db.grading.submissions import (
@@ -67,6 +60,15 @@ class ProgressSnapshot:
 
 
 @dataclass(slots=True)
+class AssessmentAnalyticsRow:
+    id: int
+    activity_id: int
+    course_id: int
+    title: str
+    settings: dict[str, object]
+
+
+@dataclass(slots=True)
 class AnalyticsContext:
     generated_at: datetime
     courses_by_id: dict[int, Course]
@@ -79,13 +81,13 @@ class AnalyticsContext:
     activity_progress: list[ActivityProgress]
     course_progress: list[CourseProgress]
     certificates: list[tuple[CertificateUser, Certifications]]
-    assignments: list[Assignment]
-    assignment_submissions: list[tuple[Submission, Assignment]]
-    exams: list[Exam]
-    exam_attempts: list[tuple[ExamAttempt, Exam]]
+    assignments: list[AssessmentAnalyticsRow]
+    assignment_submissions: list[tuple[Submission, AssessmentAnalyticsRow]]
+    exams: list[AssessmentAnalyticsRow]
+    exam_attempts: list[tuple[Submission, AssessmentAnalyticsRow]]
     quiz_attempts: list[tuple[QuizAttempt, Activity]]
     quiz_question_stats: list[QuizQuestionStat]
-    code_submissions: list[tuple[CodeSubmission, Activity]]
+    code_submissions: list[tuple[Submission, Activity]]
     users_by_id: dict[int, User]
     usergroup_names_by_id: dict[int, str]
     cohort_ids_by_user: dict[int, set[int]]
@@ -453,21 +455,44 @@ def load_analytics_context(
         ).all()
     ]
 
-    assignments = [
-        _unwrap_model(assignment, Assignment)
-        for assignment in db_session.exec(
-            select(Assignment).where(Assignment.course_id.in_(course_ids))
+    assessment_rows = [
+        _unwrap_pair(row, Assessment, Activity)
+        for row in db_session.exec(
+            select(Assessment, Activity)
+            .join(Activity, Activity.id == Assessment.activity_id)
+            .where(Activity.course_id.in_(course_ids))
         ).all()
     ]
-    assignment_ids = [
-        assignment.id for assignment in assignments if assignment.id is not None
+    analytics_assessments = [
+        AssessmentAnalyticsRow(
+            id=assessment.id or 0,
+            activity_id=activity.id or 0,
+            course_id=activity.course_id,
+            title=assessment.title,
+            settings=activity.settings if isinstance(activity.settings, dict) else {},
+        )
+        for assessment, activity in assessment_rows
+        if assessment.id is not None and activity.id is not None
     ]
-    assignment_submissions: list[tuple[Submission, Assignment]] = []
-    if assignment_ids:
+    assessments_by_activity = {
+        row.activity_id: row for row in analytics_assessments
+    }
+
+    assignments = [
+        row
+        for row in analytics_assessments
+        if any(
+            assessment.activity_id == row.activity_id
+            and str(assessment.kind) == AssessmentType.ASSIGNMENT.value
+            for assessment, _activity in assessment_rows
+        )
+    ]
+    assignment_activity_ids = [row.activity_id for row in assignments]
+    assignment_submissions: list[tuple[Submission, AssessmentAnalyticsRow]] = []
+    if assignment_activity_ids:
         submission_stmt = (
-            select(Submission, Assignment)
-            .join(Assignment, Assignment.activity_id == Submission.activity_id)
-            .where(Assignment.id.in_(assignment_ids))
+            select(Submission)
+            .where(Submission.activity_id.in_(assignment_activity_ids))
             .where(Submission.assessment_type == AssessmentType.ASSIGNMENT)
             .where(Submission.status != SubmissionStatus.DRAFT)
         )
@@ -477,31 +502,37 @@ def load_analytics_context(
                 Submission.updated_at >= activity_start
             )
         assignment_submissions = [
-            _unwrap_pair(row, Submission, Assignment)
-            for row in db_session.exec(submission_stmt).all()
+            (submission, assessments_by_activity[submission.activity_id])
+            for submission in db_session.exec(submission_stmt).all()
+            if submission.activity_id in assessments_by_activity
         ]
 
     exams = [
-        _unwrap_model(exam, Exam)
-        for exam in db_session.exec(
-            select(Exam).where(Exam.course_id.in_(course_ids))
-        ).all()
+        row
+        for row in analytics_assessments
+        if any(
+            assessment.activity_id == row.activity_id
+            and str(assessment.kind) == AssessmentType.EXAM.value
+            for assessment, _activity in assessment_rows
+        )
     ]
-    exam_ids = [exam.id for exam in exams if exam.id is not None]
-    exam_attempts: list[tuple[ExamAttempt, Exam]] = []
-    if exam_ids:
+    exam_activity_ids = [row.activity_id for row in exams]
+    exam_attempts: list[tuple[Submission, AssessmentAnalyticsRow]] = []
+    if exam_activity_ids:
         exam_attempt_stmt = (
-            select(ExamAttempt, Exam)
-            .join(Exam, Exam.id == ExamAttempt.exam_id)
-            .where(Exam.id.in_(exam_ids))
+            select(Submission)
+            .where(Submission.activity_id.in_(exam_activity_ids))
+            .where(Submission.assessment_type == AssessmentType.EXAM)
+            .where(Submission.status != SubmissionStatus.DRAFT)
         )
         if activity_start is not None:
             exam_attempt_stmt = exam_attempt_stmt.where(
-                ExamAttempt.started_at >= activity_start
+                Submission.started_at >= activity_start
             )
         exam_attempts = [
-            _unwrap_pair(row, ExamAttempt, Exam)
-            for row in db_session.exec(exam_attempt_stmt).all()
+            (submission, assessments_by_activity[submission.activity_id])
+            for submission in db_session.exec(exam_attempt_stmt).all()
+            if submission.activity_id in assessments_by_activity
         ]
 
     activity_ids = [activity.id for activity in activities if activity.id is not None]
@@ -532,19 +563,21 @@ def load_analytics_context(
             ).all()
         ]
 
-    code_submissions: list[tuple[CodeSubmission, Activity]] = []
+    code_submissions: list[tuple[Submission, Activity]] = []
     if activity_ids:
         code_submission_stmt = (
-            select(CodeSubmission, Activity)
-            .join(Activity, Activity.id == CodeSubmission.activity_id)
+            select(Submission, Activity)
+            .join(Activity, Activity.id == Submission.activity_id)
             .where(Activity.id.in_(activity_ids))
+            .where(Submission.assessment_type == AssessmentType.CODE_CHALLENGE)
+            .where(Submission.status != SubmissionStatus.DRAFT)
         )
         if activity_start is not None:
             code_submission_stmt = code_submission_stmt.where(
-                CodeSubmission.created_at >= activity_start
+                Submission.created_at >= activity_start
             )
         code_submissions = [
-            _unwrap_pair(row, CodeSubmission, Activity)
+            _unwrap_pair(row, Submission, Activity)
             for row in db_session.exec(code_submission_stmt).all()
         ]
 
@@ -689,11 +722,7 @@ def build_activity_events(
     for attempt, exam in context.exam_attempts:
         if allowed_user_ids is not None and attempt.user_id not in allowed_user_ids:
             continue
-        if attempt.is_preview:
-            continue
-        ts = parse_timestamp(attempt.submitted_at) or parse_timestamp(
-            attempt.started_at
-        )
+        ts = parse_timestamp(attempt.submitted_at) or parse_timestamp(attempt.started_at)
         if ts is None:
             continue
         events.append(
@@ -733,10 +762,7 @@ def build_activity_events(
     for submission, activity in context.code_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
-        if (
-            submission.status != CodeSubmissionStatus.COMPLETED
-            or activity.course_id is None
-        ):
+        if submission.status not in {SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED} or activity.course_id is None:
             continue
         ts = parse_timestamp(submission.created_at)
         if ts is None:

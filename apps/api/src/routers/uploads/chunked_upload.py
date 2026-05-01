@@ -1,14 +1,26 @@
-"""
-Chunked upload endpoints for large file uploads.
-"""
+"""Upload endpoints for assessment files and legacy chunked uploads."""
 
+import hashlib
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from sqlmodel import Session, select
+from ulid import ULID
 
 from src.auth.users import get_public_user
 from src.db.strict_base_model import PydanticStrictBaseModel
+from src.db.uploads import (
+    Upload,
+    UploadCreate,
+    UploadCreateResponse,
+    UploadFinalize,
+    UploadRead,
+    UploadStatus,
+)
 from src.db.users import PublicUser
+from src.infra.db.session import get_db_session
 from src.services.utils.chunked_upload import (
     cleanup_session,
     complete_upload,
@@ -19,6 +31,7 @@ from src.services.utils.chunked_upload import (
 from src.services.utils.upload_content import upload_content
 
 router = APIRouter()
+_TEMP_UPLOAD_ROOT = Path("temp_uploads/assessment")
 
 
 class ChunkedUploadInitiateResponse(PydanticStrictBaseModel):
@@ -54,6 +67,132 @@ class ChunkedUploadStatusResponse(PydanticStrictBaseModel):
 class ChunkedUploadCancelResponse(PydanticStrictBaseModel):
     success: bool
     message: str
+
+
+def _temp_upload_path(upload_id: str) -> Path:
+    return _TEMP_UPLOAD_ROOT / upload_id / "bytes"
+
+
+def _read_upload(upload_id: str, db_session: Session) -> Upload | None:
+    return db_session.exec(select(Upload).where(Upload.upload_id == upload_id)).first()
+
+
+def _owned_upload(upload_id: str, user_id: int, db_session: Session) -> Upload:
+    upload = _read_upload(upload_id, db_session)
+    if upload is None or upload.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Upload not found")
+    return upload
+
+
+def _upload_key(upload: Upload, sha256: str) -> tuple[str, str]:
+    suffix = Path(upload.filename).suffix.lower()
+    if not suffix:
+        suffix = ".bin"
+    year = upload.created_at.strftime("%Y")
+    month = upload.created_at.strftime("%m")
+    directory = f"uploads/{year}/{month}/{upload.upload_id}"
+    filename = f"{sha256}{suffix}"
+    return directory, filename
+
+
+@router.post("", response_model=UploadCreateResponse)
+async def create_assessment_upload(
+    payload: UploadCreate,
+    request: Request,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> UploadCreateResponse:
+    upload = Upload(
+        upload_id=f"ul_{ULID()}",
+        user_id=current_user.id,
+        filename=payload.filename,
+        content_type=payload.content_type,
+        size=payload.size,
+        expires_at=datetime.now(UTC) + timedelta(hours=24),
+    )
+    db_session.add(upload)
+    db_session.commit()
+    db_session.refresh(upload)
+    put_url = str(request.url_for("put_assessment_upload_bytes", upload_id=upload.upload_id))
+    return UploadCreateResponse(
+        upload_id=upload.upload_id,
+        put_url=put_url,
+        expires_at=upload.expires_at,
+    )
+
+
+@router.put("/{upload_id}/bytes", response_model=UploadRead)
+async def put_assessment_upload_bytes(
+    upload_id: str,
+    request: Request,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> UploadRead:
+    upload = _owned_upload(upload_id, current_user.id, db_session)
+    if upload.status in {UploadStatus.FINALIZED, UploadStatus.CANCELLED}:
+        raise HTTPException(status_code=409, detail="Upload is already closed")
+    if upload.expires_at < datetime.now(UTC):
+        raise HTTPException(status_code=410, detail="Upload has expired")
+
+    content = await request.body()
+    temp_path = _temp_upload_path(upload.upload_id)
+    temp_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path.write_bytes(content)
+
+    upload.status = UploadStatus.RECEIVING
+    upload.size = len(content)
+    upload.content_type = request.headers.get("content-type", upload.content_type)
+    upload.updated_at = datetime.now(UTC)
+    db_session.add(upload)
+    db_session.commit()
+    db_session.refresh(upload)
+    return UploadRead.model_validate(upload)
+
+
+@router.post("/{upload_id}/finalize", response_model=UploadRead)
+async def finalize_assessment_upload(
+    upload_id: str,
+    payload: UploadFinalize,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> UploadRead:
+    upload = _owned_upload(upload_id, current_user.id, db_session)
+    if upload.status == UploadStatus.FINALIZED:
+        return UploadRead.model_validate(upload)
+    if upload.status == UploadStatus.CANCELLED:
+        raise HTTPException(status_code=409, detail="Upload is cancelled")
+
+    temp_path = _temp_upload_path(upload.upload_id)
+    if not temp_path.exists():
+        raise HTTPException(status_code=400, detail="Upload bytes are missing")
+    content = temp_path.read_bytes()
+    sha256 = hashlib.sha256(content).hexdigest()
+    if sha256.lower() != payload.sha256.lower():
+        raise HTTPException(status_code=422, detail="Upload sha256 mismatch")
+
+    directory, filename = _upload_key(upload, sha256)
+    user_uuid = current_user.user_uuid or str(current_user.id)
+    await upload_content(
+        directory=directory,
+        type_of_dir="users",
+        uuid=user_uuid,
+        file_binary=content,
+        file_and_format=filename,
+        allowed_formats=None,
+    )
+
+    upload.status = UploadStatus.FINALIZED
+    upload.sha256 = sha256
+    upload.content_type = payload.content_type or upload.content_type
+    upload.size = len(content)
+    upload.key = f"users/{user_uuid}/{directory}/{filename}"
+    upload.finalized_at = datetime.now(UTC)
+    upload.updated_at = upload.finalized_at
+    db_session.add(upload)
+    db_session.commit()
+    db_session.refresh(upload)
+    temp_path.unlink(missing_ok=True)
+    return UploadRead.model_validate(upload)
 
 
 @router.post("/initiate", response_model=ChunkedUploadInitiateResponse)
@@ -190,6 +329,7 @@ async def get_upload_status(
 async def cancel_upload(
     upload_id: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
 ):
     """
     Cancel an upload and clean up temporary files.
@@ -200,6 +340,23 @@ async def cancel_upload(
     Returns:
         Confirmation message
     """
+    if db_session is not None and current_user is not None:
+        upload = _read_upload(upload_id, db_session)
+        if upload is not None:
+            if upload.user_id != current_user.id:
+                raise HTTPException(status_code=404, detail="Upload not found")
+            upload.status = UploadStatus.CANCELLED
+            upload.updated_at = datetime.now(UTC)
+            db_session.add(upload)
+            db_session.commit()
+            temp_path = _temp_upload_path(upload_id)
+            temp_path.unlink(missing_ok=True)
+            cleanup_session(upload_id)
+            return {
+                "success": True,
+                "message": "Upload cancelled and cleaned up",
+            }
+
     cleanup_session(upload_id)
 
     return {

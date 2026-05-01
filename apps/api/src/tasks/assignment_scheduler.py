@@ -1,8 +1,8 @@
-"""Background task: auto-publish SCHEDULED assignments.
+"""Background task: auto-publish scheduled assessments.
 
-Runs every ``POLL_INTERVAL_SECONDS`` (default 60).  On each tick it queries for
-assignments whose ``scheduled_publish_at`` is in the past and whose ``status``
-is still ``SCHEDULED``, then transitions them to ``PUBLISHED``.
+Runs every ``POLL_INTERVAL_SECONDS`` (default 60). On each tick it queries for
+assessments whose ``scheduled_at`` is in the past and whose lifecycle is still
+``SCHEDULED``, then transitions them to ``PUBLISHED``.
 
 Wire into app startup via ``lifespan.py``:
 
@@ -14,8 +14,8 @@ import asyncio
 import logging
 from datetime import UTC, datetime
 
+from src.db.assessments import Assessment, AssessmentLifecycle
 from src.db.courses.activities import Activity
-from src.db.courses.assignments import Assignment, AssignmentStatus
 from src.infra.db.engine import get_bg_engine
 from src.infra.settings import AppSettings
 
@@ -25,22 +25,22 @@ POLL_INTERVAL_SECONDS: int = 60
 
 
 async def assignment_scheduler_loop(settings: AppSettings) -> None:
-    """Periodic loop that auto-publishes SCHEDULED assignments."""
+    """Periodic loop that auto-publishes SCHEDULED assessments."""
     logger.info(
-        "Assignment scheduler started (poll interval: %ds)", POLL_INTERVAL_SECONDS
+        "Assessment scheduler started (poll interval: %ds)", POLL_INTERVAL_SECONDS
     )
     while True:
         await asyncio.sleep(POLL_INTERVAL_SECONDS)
         try:
             await asyncio.to_thread(_publish_due_assignments)
         except Exception:
-            logger.exception("Assignment scheduler tick failed — will retry next cycle")
+            logger.exception("Assessment scheduler tick failed; will retry next cycle")
 
 
 def _publish_due_assignments() -> int:
     """Synchronous DB work executed in a thread-pool to avoid blocking the loop.
 
-    Returns the number of assignments published in this tick.
+    Returns the number of assessments published in this tick.
     """
     from sqlmodel import Session, select
 
@@ -53,22 +53,21 @@ def _publish_due_assignments() -> int:
     published = 0
 
     with Session(engine) as db:
-        due_assignments = db.exec(
-            select(Assignment).where(
-                Assignment.status == AssignmentStatus.SCHEDULED,
-                Assignment.scheduled_publish_at <= now,
+        due_assessments = db.exec(
+            select(Assessment).where(
+                Assessment.lifecycle == AssessmentLifecycle.SCHEDULED,
+                Assessment.scheduled_at <= now,
             )
         ).all()
 
-        for assignment in due_assignments:
+        for assessment in due_assessments:
             try:
-                activity = db.get(Activity, assignment.activity_id)
-                assignment.status = AssignmentStatus.PUBLISHED
-                assignment.published = True
-                assignment.published_at = now
-                assignment.scheduled_publish_at = None
-                assignment.updated_at = now
-                db.add(assignment)
+                activity = db.get(Activity, assessment.activity_id)
+                assessment.lifecycle = AssessmentLifecycle.PUBLISHED
+                assessment.published_at = now
+                assessment.scheduled_at = None
+                assessment.updated_at = now
+                db.add(assessment)
 
                 if activity is not None:
                     activity.published = True
@@ -77,15 +76,14 @@ def _publish_due_assignments() -> int:
                 db.commit()
                 published += 1
                 logger.info(
-                    "Auto-published assignment %s (was scheduled for %s)",
-                    assignment.assignment_uuid,
-                    assignment.published_at,
+                    "Auto-published assessment %s",
+                    assessment.assessment_uuid,
                 )
             except Exception:
                 db.rollback()
                 logger.exception(
-                    "Failed to auto-publish assignment %s",
-                    assignment.assignment_uuid,
+                    "Failed to auto-publish assessment %s",
+                    assessment.assessment_uuid,
                 )
 
     return published

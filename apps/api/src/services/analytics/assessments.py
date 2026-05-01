@@ -7,10 +7,9 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlmodel import Session
 
+from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
-from src.db.courses.assignments import Assignment
 from src.db.courses.courses import Course
-from src.db.courses.exams import Exam
 from src.db.usergroups import UserGroup
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
@@ -100,29 +99,15 @@ def _build_rollup_assessment_rows(
             )
         ).all()
     }
-    assignments = {
-        assignment.id: assignment
-        for assignment in db_session.exec(
-            select(Assignment).where(
-                Assignment.id.in_(
+    assessments = {
+        assessment.id: assessment
+        for assessment in db_session.exec(
+            select(Assessment).where(
+                Assessment.id.in_(
                     list({
                         row.assessment_id
                         for row in rollups
-                        if row.assessment_type == "assignment"
-                    })
-                )
-            )
-        ).all()
-    }
-    exams = {
-        exam.id: exam
-        for exam in db_session.exec(
-            select(Exam).where(
-                Exam.id.in_(
-                    list({
-                        row.assessment_id
-                        for row in rollups
-                        if row.assessment_type == "exam"
+                        if row.assessment_type in {"assignment", "exam"}
                     })
                 )
             )
@@ -150,14 +135,14 @@ def _build_rollup_assessment_rows(
             continue
         if row.assessment_type == "assignment":
             title = (
-                assignments.get(row.assessment_id).title
-                if row.assessment_id in assignments
+                assessments.get(row.assessment_id).title
+                if row.assessment_id in assessments
                 else f"Задание {row.assessment_id}"
             )
         elif row.assessment_type == "exam":
             title = (
-                exams.get(row.assessment_id).title
-                if row.assessment_id in exams
+                assessments.get(row.assessment_id).title
+                if row.assessment_id in assessments
                 else f"Экзамен {row.assessment_id}"
             )
         else:
@@ -497,7 +482,7 @@ def _build_exam_rows(
             attempt.submitted_at or attempt.started_at, bucket_window
         ):
             continue
-        if exam.id is not None and not attempt.is_preview:
+        if exam.id is not None:
             attempts_by_exam[exam.id].append((attempt, exam))
 
     rows: list[AssessmentOutlierRow] = []
@@ -511,15 +496,14 @@ def _build_exam_rows(
             attempt.user_id for attempt, _ in attempts if attempt.submitted_at
         }
         scores = [
-            ((float(attempt.score or 0) / float(attempt.max_score)) * 100)
+            score
             for attempt, _ in attempts
-            if attempt.score is not None and attempt.max_score
+            if (score := assignment_score(attempt)) is not None
         ]
         scores_by_user = {
-            attempt.user_id: (float(attempt.score or 0) / float(attempt.max_score))
-            * 100
+            attempt.user_id: score
             for attempt, _ in attempts
-            if attempt.score is not None and attempt.max_score
+            if (score := assignment_score(attempt)) is not None
         }
         attempts_by_user = Counter(attempt.user_id for attempt, _ in attempts)
         threshold = assessment_pass_threshold(exam.settings)
@@ -688,17 +672,17 @@ def _build_code_rows(
         submitted_users = {
             submission.user_id
             for submission, _ in submissions
-            if submission.status.value == "COMPLETED"
+            if assignment_is_graded(submission)
         }
         scores = [
-            float(submission.score)
+            score
             for submission, _ in submissions
-            if submission.status.value == "COMPLETED"
+            if (score := assignment_score(submission)) is not None
         ]
         scores_by_user = {
-            submission.user_id: float(submission.score)
+            submission.user_id: score
             for submission, _ in submissions
-            if submission.status.value == "COMPLETED"
+            if (score := assignment_score(submission)) is not None
         }
         attempts_by_user = Counter(submission.user_id for submission, _ in submissions)
         pass_rate = safe_pct(sum(1 for score in scores if score >= 60), len(scores))
@@ -991,7 +975,6 @@ def get_teacher_assessment_detail(
             (attempt, exam_)
             for attempt, exam_ in context.exam_attempts
             if exam_.id == assessment_id
-            and not attempt.is_preview
             and _is_allowed(attempt.user_id, allowed_user_ids)
         ]
         eligible = len(eligible_by_course.get(exam.course_id, set()))
@@ -999,8 +982,8 @@ def get_teacher_assessment_detail(
         scores: list[float] = []
         for attempt, _exam in records:
             attempts_by_user[attempt.user_id].append(attempt)
-            if attempt.score is not None and attempt.max_score:
-                scores.append((float(attempt.score) / float(attempt.max_score)) * 100)
+            if (score := assignment_score(attempt)) is not None:
+                scores.append(score)
         submitted_users = {
             attempt.user_id for attempt, _exam in records if attempt.submitted_at
         }
@@ -1008,20 +991,16 @@ def get_teacher_assessment_detail(
         for user_id, attempts in attempts_by_user.items():
             best_score = max(
                 (
-                    (float(item.score) / float(item.max_score)) * 100
+                    score
                     for item in attempts
-                    if item.score is not None and item.max_score
+                    if (score := assignment_score(item)) is not None
                 ),
                 default=None,
             )
             last_attempt = max(
                 attempts, key=lambda item: item.submitted_at or item.started_at or ""
             )
-            last_score = (
-                (float(last_attempt.score) / float(last_attempt.max_score)) * 100
-                if last_attempt.score is not None and last_attempt.max_score
-                else None
-            )
+            last_score = assignment_score(last_attempt)
             learner_rows.append(
                 AssessmentLearnerRow(
                     user_id=user_id,
@@ -1213,11 +1192,12 @@ def get_teacher_assessment_detail(
         failure_counter = Counter()
         for submission, _activity in records:
             attempts_by_user[submission.user_id].append(submission)
-            if submission.status.value == "COMPLETED":
-                scores.append(float(submission.score))
+            score = assignment_score(submission)
+            if score is not None:
+                scores.append(score)
                 failed_tests = (
-                    submission.test_results.get("failed_tests")
-                    or submission.test_results.get("failed")
+                    (submission.grading_json or {}).get("failed_tests")
+                    or (submission.grading_json or {}).get("failed")
                     or []
                 )
                 for failed in failed_tests:
@@ -1226,20 +1206,24 @@ def get_teacher_assessment_detail(
         submitted_users = {
             submission.user_id
             for submission, _activity in records
-            if submission.status.value == "COMPLETED"
+            if assignment_is_graded(submission)
         }
         learner_rows = []
         for user_id, attempts in attempts_by_user.items():
             ordered_attempts = sorted(attempts, key=lambda item: item.created_at)
-            best_score = max((float(item.score) for item in attempts), default=None)
+            best_score = max(
+                (score for item in attempts if (score := assignment_score(item)) is not None),
+                default=None,
+            )
             last_attempt = ordered_attempts[-1]
+            last_score = assignment_score(last_attempt)
             learner_rows.append(
                 AssessmentLearnerRow(
                     user_id=user_id,
                     user_display_name=display_name(context.users_by_id.get(user_id)),
                     attempts=len(attempts),
                     best_score=round(best_score, 2) if best_score is not None else None,
-                    last_score=round(float(last_attempt.score), 2),
+                    last_score=round(last_score, 2) if last_score is not None else None,
                     submitted_at=to_iso(last_attempt.created_at),
                     graded_at=None,
                     status=last_attempt.status.value,

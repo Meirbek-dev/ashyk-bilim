@@ -13,7 +13,7 @@ from sqlalchemy import asc, desc, func, or_
 from sqlmodel import Session, select
 from ulid import ULID
 
-from src.db.courses.activities import Activity, ActivityTypeEnum
+from src.db.courses.activities import Activity
 from src.db.gamification import XPSource
 from src.db.grading.entries import GradingEntry
 from src.db.grading.schemas import (
@@ -40,7 +40,6 @@ from src.security.rbac import PermissionChecker
 from src.services.gamification.service import award_xp as _gamification_award_xp
 from src.services.grading.assignment_breakdown import build_effective_grading_breakdown
 from src.services.grading.events import publish_grading_event
-from src.services.progress import submissions as progress_submissions
 from src.services.progress.submissions import (
     _attach_policy,
     recalculate_activity_progress,
@@ -123,7 +122,6 @@ async def get_submissions_for_activity(
         "assignment:read",
         resource_owner_id=activity.creator_id,
     )
-    _project_legacy_exam_attempts(activity, db_session)
 
     # Base query — join User for search support
     query = (
@@ -207,7 +205,6 @@ async def get_submission_stats(
     checker.require(
         current_user.id, "assignment:read", resource_owner_id=activity.creator_id
     )
-    _project_legacy_exam_attempts(activity, db_session)
 
     # Query 1: status counts (excludes DRAFTs)
     status_rows = db_session.exec(
@@ -333,7 +330,6 @@ def export_grades_csv(
     checker.require(
         current_user.id, "assignment:read", resource_owner_id=activity.creator_id
     )
-    _project_legacy_exam_attempts(activity, db_session)
 
     buf = io.StringIO()
     writer = csv.writer(buf)
@@ -904,16 +900,6 @@ def _make_submission_user(u: User) -> SubmissionUser:
         email=str(u.email),
         avatar_image=u.avatar_image or None,
         user_uuid=u.user_uuid or None,
-    )
-
-
-def _project_legacy_exam_attempts(activity: Activity, db_session: Session) -> None:
-    if activity.activity_type != ActivityTypeEnum.TYPE_EXAM:
-        return
-    progress_submissions.backfill_exam_attempt_submissions(
-        db_session,
-        activity_id=activity.id,
-        commit=True,
     )
 
 

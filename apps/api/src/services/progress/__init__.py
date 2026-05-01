@@ -2,7 +2,6 @@
 
 from src.services.progress.submissions import (
     backfill_activity_progress,
-    backfill_exam_attempt_submissions,
     grade_submission,
     publish_grade,
     recalculate_activity_progress,
@@ -11,14 +10,11 @@ from src.services.progress.submissions import (
     save_activity_draft,
     start_activity_submission,
     submit_activity,
-    sync_code_challenge_submission,
-    sync_exam_attempt,
     sync_quiz_attempt,
 )
 
 __all__ = [
     "backfill_activity_progress",
-    "backfill_exam_attempt_submissions",
     "grade_submission",
     "publish_grade",
     "recalculate_activity_progress",
@@ -27,7 +23,5 @@ __all__ = [
     "save_activity_draft",
     "start_activity_submission",
     "submit_activity",
-    "sync_code_challenge_submission",
-    "sync_exam_attempt",
     "sync_quiz_attempt",
 ]

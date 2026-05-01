@@ -44,7 +44,7 @@ class ItemFeedbackEntry(SQLModelStrictBaseModel, table=True):
         default=None,
         sa_column=Column(
             "task_id",
-            ForeignKey("assignmenttask.id", ondelete="SET NULL"),
+            ForeignKey("assessment_item.id", ondelete="SET NULL"),
             nullable=True,
         ),
     )

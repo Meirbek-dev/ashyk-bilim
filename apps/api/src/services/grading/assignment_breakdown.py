@@ -1,11 +1,11 @@
-"""Helpers for synthesizing assignment grading breakdown items."""
+"""Helpers for synthesizing grading breakdown items from assessment items."""
 
 from collections.abc import Sequence
 from typing import Any
 
 from sqlmodel import Session, select
 
-from src.db.courses.assignments import AssignmentTask
+from src.db.assessments import Assessment, AssessmentItem
 from src.db.grading.submissions import (
     AssessmentType,
     GradedItem,
@@ -24,10 +24,15 @@ def build_effective_grading_breakdown(
     if submission.assessment_type != AssessmentType.ASSIGNMENT:
         return existing
 
+    assessment = db_session.exec(
+        select(Assessment).where(Assessment.activity_id == submission.activity_id)
+    ).first()
+    if assessment is None:
+        return existing
     assignment_tasks = db_session.exec(
-        select(AssignmentTask)
-        .where(AssignmentTask.activity_id == submission.activity_id)
-        .order_by(AssignmentTask.id)
+        select(AssessmentItem)
+        .where(AssessmentItem.assessment_id == assessment.id)
+        .order_by(AssessmentItem.order, AssessmentItem.id)
     ).all()
     return build_assignment_breakdown(
         existing, submission.answers_json, assignment_tasks
@@ -37,7 +42,7 @@ def build_effective_grading_breakdown(
 def build_assignment_breakdown(
     existing: GradingBreakdown,
     answers_json: object,
-    assignment_tasks: Sequence[AssignmentTask],
+    assignment_tasks: Sequence[AssessmentItem],
 ) -> GradingBreakdown:
     """Merge assignment task metadata, answers, and any existing teacher grading."""
 
@@ -49,12 +54,12 @@ def build_assignment_breakdown(
     merged_items: list[GradedItem] = []
 
     for task in assignment_tasks:
-        task_uuid = task.assignment_task_uuid
+        task_uuid = task.item_uuid
         persisted_item = existing_items.pop(task_uuid, None)
         normalized_answer = _normalize_assignment_answer(
             answers_by_task_uuid.get(task_uuid)
         )
-        max_score = float(task.max_grade_value or 0)
+        max_score = float(task.max_score or 0)
 
         if persisted_item is not None:
             merged_items.append(
@@ -99,6 +104,14 @@ def build_assignment_breakdown(
 def _extract_assignment_answers(answers_json: object) -> dict[str, dict[str, Any]]:
     if not isinstance(answers_json, dict):
         return {}
+
+    raw_answers = answers_json.get("answers")
+    if isinstance(raw_answers, dict):
+        return {
+            str(item_uuid): answer
+            for item_uuid, answer in raw_answers.items()
+            if isinstance(answer, dict)
+        }
 
     raw_tasks = answers_json.get("tasks", [])
     if not isinstance(raw_tasks, list):

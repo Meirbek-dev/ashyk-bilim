@@ -5,6 +5,7 @@ from fastapi import HTTPException, Request
 from sqlmodel import Session, select
 from ulid import ULID
 
+from src.db.assessments import Assessment, AssessmentLifecycle
 from src.db.courses.activities import (
     Activity,
     ActivityAssessmentPolicyRead,
@@ -15,7 +16,6 @@ from src.db.courses.activities import (
     ActivityUpdate,
     AssessmentLifecycleStatus,
 )
-from src.db.courses.assignments import Assignment, AssignmentStatus
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
 from src.db.grading.progress import AssessmentPolicy
@@ -257,27 +257,28 @@ def _sync_assessment_lifecycle(
 
     activity.details = details
 
-    if (
-        activity.activity_type == ActivityTypeEnum.TYPE_ASSIGNMENT
-        and activity.id is not None
-    ):
-        assignment = db_session.exec(
-            select(Assignment).where(Assignment.activity_id == activity.id)
+    if activity.id is not None:
+        assessment = db_session.exec(
+            select(Assessment).where(Assessment.activity_id == activity.id)
         ).first()
-        if assignment is not None:
-            assignment.status = AssignmentStatus(lifecycle.value)
-            assignment.published = lifecycle == AssessmentLifecycleStatus.PUBLISHED
-            assignment.published_at = (
+        if assessment is not None:
+            assessment.lifecycle = AssessmentLifecycle(lifecycle.value)
+            assessment.published_at = (
                 datetime.now(tz=UTC)
                 if lifecycle == AssessmentLifecycleStatus.PUBLISHED
-                else assignment.published_at
+                else assessment.published_at
             )
-            assignment.scheduled_publish_at = (
+            assessment.scheduled_at = (
                 _coerce_datetime(details.get("scheduled_at"))
                 if lifecycle == AssessmentLifecycleStatus.SCHEDULED
                 else None
             )
-            db_session.add(assignment)
+            assessment.archived_at = (
+                datetime.now(tz=UTC)
+                if lifecycle == AssessmentLifecycleStatus.ARCHIVED
+                else assessment.archived_at
+            )
+            db_session.add(assessment)
 
 
 def _coerce_datetime(value: object) -> datetime | None:

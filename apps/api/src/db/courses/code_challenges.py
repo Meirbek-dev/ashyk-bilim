@@ -225,46 +225,6 @@ class CodeSubmissionBase(SQLModelStrictBaseModel):
         return v
 
 
-class CodeSubmission(CodeSubmissionBase, table=True):
-    """Legacy database table model for code submissions.
-
-    New features must write canonical src.db.grading.submissions.Submission
-    rows and ActivityProgress first. This table remains as the Judge0 adapter
-    record while old code-challenge URLs are supported.
-    """
-
-    __tablename__ = "code_submission"
-
-    id: int | None = Field(default=None, primary_key=True)
-    submission_uuid: str = Field(index=True)
-
-    activity_id: int = Field(
-        sa_column=Column(BigInteger, ForeignKey("activity.id", ondelete="CASCADE"))
-    )
-    user_id: int = Field(
-        sa_column=Column(BigInteger, ForeignKey("user.id", ondelete="CASCADE"))
-    )
-
-    # Test results stored as JSON
-    test_results: dict = Field(default_factory=dict, sa_column=Column(JSON))
-
-    # Timestamps
-    created_at: str = ""
-    updated_at: str = ""
-
-    # Optional plagiarism score from MOSS
-    plagiarism_score: float | None = None
-
-    # Judge0 batch tokens for polling
-    judge0_tokens: list[str] = Field(default_factory=list, sa_column=Column(JSON))
-
-    __table_args__ = (
-        Index("idx_code_submission_user_activity", "user_id", "activity_id"),
-        Index("idx_code_submission_score", "activity_id", "score"),
-        Index("idx_code_submission_created", "created_at"),
-    )
-
-
 class CodeSubmissionCreate(PydanticStrictBaseModel):
     """Model for creating a code submission"""
 

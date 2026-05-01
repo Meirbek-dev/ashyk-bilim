@@ -11,17 +11,10 @@ from typing import Any
 from sqlmodel import Session, select
 from ulid import ULID
 
+from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
-from src.db.courses.assignments import Assignment
 from src.db.courses.blocks import Block, BlockTypeEnum
-from src.db.courses.code_challenges import (
-    CodeSubmission,
-)
-from src.db.courses.code_challenges import (
-    SubmissionStatus as CodeSubmissionStatus,
-)
 from src.db.courses.courses import Course
-from src.db.courses.exams import AttemptStatusEnum, Exam, ExamAttempt
 from src.db.courses.quiz import QuizAttempt
 from src.db.grading.progress import (
     ActivityProgress,
@@ -167,18 +160,17 @@ def recalculate_course_progress(
     )
 
     # ── Weighted grade average ────────────────────────────────────────────────
-    # Fetch assignment weights for all activities that have scores.
-    # Activities without an Assignment row get weight = 1.0.
+    # Fetch assessment weights for all activities that have scores.
     scored_activity_ids = [row.activity_id for row in rows if row.score is not None]
     weight_by_activity: dict[int, float] = {}
     if scored_activity_ids:
-        assignment_rows = db_session.exec(
-            select(Assignment.activity_id, Assignment.weight).where(
-                Assignment.activity_id.in_(scored_activity_ids)
+        assessment_rows = db_session.exec(
+            select(Assessment.activity_id, Assessment.weight).where(
+                Assessment.activity_id.in_(scored_activity_ids)
             )
         ).all()
         weight_by_activity = {
-            row.activity_id: float(row.weight) for row in assignment_rows
+            row.activity_id: float(row.weight) for row in assessment_rows
         }
 
     weighted_numerator = 0.0
@@ -285,12 +277,6 @@ def backfill_activity_progress(
         if activity.course_id is not None
     ]
 
-    backfill_exam_attempt_submissions(
-        db_session,
-        course_id=course_id,
-        commit=False,
-    )
-
     user_ids_by_course = _known_user_ids_by_course(db_session, activities)
 
     rows = 0
@@ -322,35 +308,6 @@ def backfill_activity_progress(
     return {"activities": len(activities), "progress_rows_repaired": rows}
 
 
-def backfill_exam_attempt_submissions(
-    db_session: Session,
-    *,
-    course_id: int | None = None,
-    activity_id: int | None = None,
-    commit: bool = True,
-) -> int:
-    """Project legacy ExamAttempt rows into canonical Submission rows."""
-
-    query = (
-        select(ExamAttempt)
-        .join(Exam, Exam.id == ExamAttempt.exam_id)
-        .where(not ExamAttempt.is_preview)
-    )
-    if course_id is not None:
-        query = query.where(Exam.course_id == course_id)
-    if activity_id is not None:
-        query = query.where(Exam.activity_id == activity_id)
-
-    synced = 0
-    for attempt in db_session.exec(query).all():
-        if sync_exam_attempt(attempt, db_session, commit=False) is not None:
-            synced += 1
-
-    if commit:
-        db_session.commit()
-    return synced
-
-
 def sync_quiz_attempt(
     attempt: QuizAttempt,
     db_session: Session,
@@ -372,11 +329,11 @@ def sync_quiz_attempt(
     submission.attempt_number = attempt.attempt_number
     submission.status = status
     submission.answers_json = attempt.answers or {}
-    submission.grading_json = _legacy_quiz_grading_json(attempt)
+    submission.grading_json = _quiz_grading_json(attempt)
     submission.metadata_json = {
         **(submission.metadata_json or {}),
-        "legacy_quiz_attempt_id": attempt.id,
-        "legacy_attempt_uuid": attempt.attempt_uuid,
+        "quiz_attempt_id": attempt.id,
+        "attempt_uuid": attempt.attempt_uuid,
     }
     submission.auto_score = float(attempt.score or 0)
     submission.final_score = None if manual_review else float(attempt.score or 0)
@@ -386,153 +343,6 @@ def sync_quiz_attempt(
     submission.graded_at = None if manual_review else _coerce_datetime(attempt.end_ts)
     submission.created_at = _coerce_datetime(attempt.creation_date) or datetime.now(UTC)
     submission.updated_at = _coerce_datetime(attempt.update_date) or datetime.now(UTC)
-
-    _save_mirror_submission(submission, db_session, commit=commit)
-    return submission
-
-
-def sync_exam_attempt(
-    attempt: ExamAttempt,
-    db_session: Session,
-    *,
-    commit: bool = True,
-) -> Submission | None:
-    if attempt.is_preview:
-        return None
-
-    exam = db_session.get(Exam, attempt.exam_id)
-    if exam is None:
-        msg = f"Exam not found for attempt {attempt.attempt_uuid}"
-        raise ValueError(msg)
-
-    status = (
-        SubmissionStatus.DRAFT
-        if _enum_value(attempt.status) == AttemptStatusEnum.IN_PROGRESS.value
-        else SubmissionStatus.GRADED
-    )
-    score = _score_percent(attempt.score, attempt.max_score)
-    submission = _get_or_create_mirror_submission(
-        submission_uuid=f"submission_{attempt.attempt_uuid}",
-        activity_id=exam.activity_id,
-        user_id=attempt.user_id,
-        assessment_type=AssessmentType.EXAM,
-        db_session=db_session,
-    )
-    submission.attempt_number = _legacy_exam_attempt_number(attempt, db_session)
-    submission.status = status
-    submission.answers_json = {
-        "answers": attempt.answers or {},
-        "question_order": attempt.question_order or [],
-        "violations": attempt.violations or [],
-        "attempt_uuid": attempt.attempt_uuid,
-        "status": _enum_value(attempt.status),
-    }
-    submission.grading_json = {}
-    submission.auto_score = score
-    submission.final_score = score if status == SubmissionStatus.GRADED else None
-    submission.is_late = False
-    submission.started_at = _coerce_datetime(attempt.started_at)
-    submission.submitted_at = _coerce_datetime(attempt.submitted_at)
-    submission.graded_at = (
-        _coerce_datetime(attempt.submitted_at)
-        if status == SubmissionStatus.GRADED
-        else None
-    )
-    submission.created_at = _coerce_datetime(attempt.creation_date) or datetime.now(UTC)
-    submission.updated_at = _coerce_datetime(attempt.update_date) or datetime.now(UTC)
-
-    _save_mirror_submission(submission, db_session, commit=commit)
-    return submission
-
-
-def sync_exam_policy(
-    exam: Exam,
-    db_session: Session,
-    *,
-    commit: bool = True,
-) -> AssessmentPolicy:
-    policy = db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == exam.activity_id)
-    ).first()
-    if policy is None:
-        policy = AssessmentPolicy(
-            policy_uuid=f"policy_{ULID()}",
-            activity_id=exam.activity_id,
-            assessment_type=AssessmentType.EXAM,
-        )
-
-    settings = exam.settings or {}
-    policy.assessment_type = AssessmentType.EXAM
-    policy.grading_mode = AssessmentGradingMode.AUTO_THEN_MANUAL
-    policy.completion_rule = AssessmentCompletionRule.PASSED
-    policy.passing_score = _number_setting(settings, "passing_score", 60.0)
-    policy.max_attempts = _positive_int_setting(settings, "attempt_limit")
-    time_limit_minutes = _positive_int_setting(settings, "time_limit")
-    policy.time_limit_seconds = (
-        time_limit_minutes * 60 if time_limit_minutes is not None else None
-    )
-    policy.anti_cheat_json = anti_cheat_from_exam_settings(settings)
-    policy.settings_json = settings
-
-    db_session.add(policy)
-    db_session.flush()
-    if commit:
-        db_session.commit()
-    return policy
-
-
-def sync_code_challenge_submission(
-    code_submission: CodeSubmission,
-    db_session: Session,
-    *,
-    commit: bool = True,
-) -> Submission:
-    completed = (
-        _enum_value(code_submission.status) == CodeSubmissionStatus.COMPLETED.value
-    )
-    status = SubmissionStatus.GRADED if completed else SubmissionStatus.PENDING
-    submission = _get_or_create_mirror_submission(
-        submission_uuid=code_submission.submission_uuid,
-        activity_id=code_submission.activity_id,
-        user_id=code_submission.user_id,
-        assessment_type=AssessmentType.CODE_CHALLENGE,
-        db_session=db_session,
-    )
-    submission.attempt_number = _legacy_code_attempt_number(code_submission, db_session)
-    submission.status = status
-    submission.answers_json = {
-        "language_id": code_submission.language_id,
-        "language_name": code_submission.language_name,
-        "code_submission_uuid": code_submission.submission_uuid,
-    }
-    submission.metadata_json = {
-        **(submission.metadata_json or {}),
-        "code_submission_id": code_submission.id,
-        "code_submission_uuid": code_submission.submission_uuid,
-        "ledger_table": "code_submission",
-    }
-    submission.grading_json = {
-        "test_results": code_submission.test_results or {},
-        "passed_tests": code_submission.passed_tests,
-        "total_tests": code_submission.total_tests,
-    }
-    submission.auto_score = float(code_submission.score or 0)
-    submission.final_score = float(code_submission.score or 0) if completed else None
-    submission.is_late = False
-    submitted_at = _coerce_datetime(code_submission.updated_at) or _coerce_datetime(
-        code_submission.created_at
-    )
-    submission.started_at = submission.started_at or _coerce_datetime(
-        code_submission.created_at
-    )
-    submission.submitted_at = submitted_at
-    submission.graded_at = submitted_at if completed else None
-    submission.created_at = _coerce_datetime(
-        code_submission.created_at
-    ) or datetime.now(UTC)
-    submission.updated_at = _coerce_datetime(
-        code_submission.updated_at
-    ) or datetime.now(UTC)
 
     _save_mirror_submission(submission, db_session, commit=commit)
     return submission
@@ -706,13 +516,6 @@ def _get_or_create_policy(
     if assessment_type is None:
         return None
 
-    if assessment_type == AssessmentType.EXAM:
-        exam = db_session.exec(
-            select(Exam).where(Exam.activity_id == activity.id)
-        ).first()
-        if exam is not None:
-            return sync_exam_policy(exam, db_session, commit=False)
-
     grading_mode = (
         AssessmentGradingMode.MANUAL
         if assessment_type == AssessmentType.ASSIGNMENT
@@ -753,17 +556,6 @@ def _get_or_create_policy(
     db_session.add(policy)
     db_session.flush()
     return policy
-
-
-def anti_cheat_from_exam_settings(settings: dict[str, object]) -> dict[str, object]:
-    return {
-        "copy_paste_protection": bool(settings.get("copy_paste_protection")),
-        "tab_switch_detection": bool(settings.get("tab_switch_detection")),
-        "devtools_detection": bool(settings.get("devtools_detection")),
-        "right_click_disable": bool(settings.get("right_click_disable")),
-        "fullscreen_enforcement": bool(settings.get("fullscreen_enforcement")),
-        "violation_threshold": _positive_int_setting(settings, "violation_threshold"),
-    }
 
 
 def anti_cheat_from_quiz_settings(settings: dict[str, object]) -> dict[str, object]:
@@ -920,7 +712,7 @@ def _policy_passing_score(policy: AssessmentPolicy | None) -> float:
     return float(policy.passing_score) if policy is not None else 60.0
 
 
-def _legacy_quiz_grading_json(attempt: QuizAttempt) -> dict[str, Any]:
+def _quiz_grading_json(attempt: QuizAttempt) -> dict[str, Any]:
     return {
         "items": [
             {
@@ -944,57 +736,6 @@ def _legacy_quiz_grading_json(attempt: QuizAttempt) -> dict[str, Any]:
         "auto_graded": True,
         "feedback": "",
     }
-
-
-def _legacy_exam_attempt_number(attempt: ExamAttempt, db_session: Session) -> int:
-    attempts = list(
-        db_session.exec(
-            select(ExamAttempt)
-            .where(
-                ExamAttempt.exam_id == attempt.exam_id,
-                ExamAttempt.user_id == attempt.user_id,
-            )
-            .order_by(ExamAttempt.creation_date, ExamAttempt.id)
-        ).all()
-    )
-    return next(
-        (
-            index
-            for index, current in enumerate(attempts, start=1)
-            if current.id == attempt.id
-        ),
-        1,
-    )
-
-
-def _legacy_code_attempt_number(
-    code_submission: CodeSubmission,
-    db_session: Session,
-) -> int:
-    submissions = list(
-        db_session.exec(
-            select(CodeSubmission)
-            .where(
-                CodeSubmission.activity_id == code_submission.activity_id,
-                CodeSubmission.user_id == code_submission.user_id,
-            )
-            .order_by(CodeSubmission.created_at, CodeSubmission.id)
-        ).all()
-    )
-    return next(
-        (
-            index
-            for index, current in enumerate(submissions, start=1)
-            if current.id == code_submission.id
-        ),
-        1,
-    )
-
-
-def _score_percent(score: float | None, max_score: float | None) -> float | None:
-    if score is None or not max_score:
-        return None
-    return round((float(score) / float(max_score)) * 100, 2)
 
 
 def _submission_score(submission: Submission) -> float | None:

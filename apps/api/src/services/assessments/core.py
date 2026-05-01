@@ -1,8 +1,6 @@
 """Unified assessment service.
 
-This module owns the canonical Assessment/AssessmentItem write path. Legacy
-assignment, exam, and code-challenge models are only read here for migration
-projection and compatibility mirrors.
+This module owns the canonical Assessment/AssessmentItem write path.
 """
 
 from datetime import UTC, datetime
@@ -40,12 +38,9 @@ from src.db.courses.activities import (
     ActivitySubTypeEnum,
     ActivityTypeEnum,
 )
-from src.db.courses.assignments import Assignment, AssignmentStatus, AssignmentTask
 from src.db.courses.blocks import Block, BlockTypeEnum
 from src.db.courses.chapters import Chapter
-from src.db.courses.code_challenges import CodeChallengeSettings
 from src.db.courses.courses import Course
-from src.db.courses.exams import Exam, Question, QuestionTypeEnum
 from src.db.grading.progress import (
     AssessmentCompletionRule,
     AssessmentGradingMode,
@@ -58,6 +53,7 @@ from src.db.grading.submissions import (
     SubmissionRead,
     SubmissionStatus,
 )
+from src.db.uploads import Upload, UploadStatus
 from src.db.users import AnonymousUser, PublicUser, User
 from src.security.rbac import PermissionChecker
 from src.services.assessments.settings import validate_settings
@@ -325,7 +321,7 @@ async def transition_assessment_lifecycle(
     assessment.lifecycle = target
     assessment.updated_at = now
     activity.update_date = now
-    _sync_lifecycle_mirrors(assessment, activity, db_session)
+    _sync_activity_lifecycle(assessment, activity)
 
     db_session.add(assessment)
     db_session.add(activity)
@@ -539,7 +535,7 @@ async def save_assessment_draft(
     )
     _enforce_draft_version(draft, if_match)
 
-    answers = _normalize_answer_patch(assessment, payload, db_session)
+    answers = _normalize_answer_patch(assessment, payload, current_user, db_session)
     current_payload = draft.answers_json if isinstance(draft.answers_json, dict) else {}
     current_answers = current_payload.get("answers", {})
     if not isinstance(current_answers, dict):
@@ -694,7 +690,7 @@ def build_readiness(
     return AssessmentReadiness(ok=not issues, issues=issues)
 
 
-# ── Legacy projection ─────────────────────────────────────────────────────────
+# ── Activity lookup ───────────────────────────────────────────────────────────
 
 
 def _get_or_project_assessment_for_activity(
@@ -707,133 +703,10 @@ def _get_or_project_assessment_for_activity(
     if existing is not None:
         return existing
 
-    if activity.activity_type not in ASSESSABLE_ACTIVITY_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity is not an assessment",
-        )
-
-    kind = _ACTIVITY_TO_KIND[ActivityTypeEnum(activity.activity_type)]
-    now = datetime.now(UTC)
-    lifecycle = _legacy_lifecycle(activity, kind, db_session)
-    title, description, weight, grading_type = _legacy_metadata(
-        activity, kind, db_session
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Assessment not found for activity",
     )
-    policy = _get_or_create_policy(
-        activity_id=activity.id,
-        kind=kind,
-        patch=None,
-        db_session=db_session,
-        now=now,
-    )
-    db_session.flush()
-
-    assessment = Assessment(
-        assessment_uuid=f"assessment_{ULID()}",
-        activity_id=activity.id,
-        kind=kind,
-        title=title,
-        description=description,
-        lifecycle=lifecycle,
-        scheduled_at=_legacy_scheduled_at(activity, kind, db_session),
-        published_at=_legacy_published_at(activity, kind, db_session),
-        archived_at=_legacy_archived_at(activity, kind, db_session),
-        weight=weight,
-        grading_type=grading_type,
-        policy_id=policy.id,
-        created_at=now,
-        updated_at=now,
-    )
-    db_session.add(assessment)
-    db_session.flush()
-    _project_existing_items(assessment, activity, kind, db_session, now)
-    return assessment
-
-
-def _project_existing_items(
-    assessment: Assessment,
-    activity: Activity,
-    kind: AssessmentType,
-    db_session: Session,
-    now: datetime,
-) -> None:
-    if kind == AssessmentType.ASSIGNMENT:
-        tasks = db_session.exec(
-            select(AssignmentTask)
-            .where(AssignmentTask.activity_id == activity.id)
-            .order_by(AssignmentTask.order, AssignmentTask.id)
-        ).all()
-        for index, task in enumerate(tasks):
-            body = _assignment_task_to_item_body(task)
-            db_session.add(
-                AssessmentItem(
-                    item_uuid=task.assignment_task_uuid,
-                    assessment_id=assessment.id,
-                    order=task.order or index,
-                    kind=ItemKind(body["kind"]),
-                    title=task.title,
-                    body_json=body,
-                    max_score=float(task.max_grade_value or 0),
-                    created_at=now,
-                    updated_at=now,
-                )
-            )
-        return
-
-    if kind == AssessmentType.EXAM:
-        exam = db_session.exec(select(Exam).where(Exam.activity_id == activity.id)).first()
-        if exam is None:
-            return
-        questions = db_session.exec(
-            select(Question)
-            .where(Question.exam_id == exam.id)
-            .order_by(Question.order_index, Question.id)
-        ).all()
-        for question in questions:
-            body = _exam_question_to_item_body(question)
-            db_session.add(
-                AssessmentItem(
-                    item_uuid=question.question_uuid,
-                    assessment_id=assessment.id,
-                    order=question.order_index,
-                    kind=ItemKind(body["kind"]),
-                    title=question.question_text[:120],
-                    body_json=body,
-                    max_score=float(question.points or 0),
-                    created_at=now,
-                    updated_at=now,
-                )
-            )
-        return
-
-    if kind == AssessmentType.CODE_CHALLENGE:
-        settings = CodeChallengeSettings.model_validate(activity.details or {})
-        tests = [
-            *[test.model_dump(mode="json") for test in settings.visible_tests],
-            *[test.model_dump(mode="json") for test in settings.hidden_tests],
-        ]
-        body = {
-            "kind": "CODE",
-            "prompt": activity.content.get("prompt", "") if isinstance(activity.content, dict) else "",
-            "languages": settings.allowed_languages,
-            "starter_code": settings.starter_code,
-            "tests": tests,
-            "time_limit_seconds": settings.time_limit,
-            "memory_limit_mb": settings.memory_limit,
-        }
-        db_session.add(
-            AssessmentItem(
-                item_uuid=f"item_{ULID()}",
-                assessment_id=assessment.id,
-                order=0,
-                kind=ItemKind.CODE,
-                title=activity.name,
-                body_json=body,
-                max_score=float(settings.points),
-                created_at=now,
-                updated_at=now,
-            )
-        )
 
 
 # ── Builders and helpers ──────────────────────────────────────────────────────
@@ -985,7 +858,7 @@ def _require_grade(user: PublicUser, course: Course, db_session: Session) -> Non
     checker = PermissionChecker(db_session)
     if checker.check(user.id, "assessment:grade", resource_owner_id=course.creator_id):
         return
-    checker.require(user.id, "assignment:grade", resource_owner_id=course.creator_id)
+    checker.require(user.id, "assessment:grade", resource_owner_id=course.creator_id)
 
 
 def _require_read(
@@ -1022,15 +895,9 @@ def _require_submit_access(
         is_assigned=True,
     ):
         return
-    legacy_permission = {
-        AssessmentType.ASSIGNMENT: "assignment:submit",
-        AssessmentType.EXAM: "exam:submit",
-        AssessmentType.QUIZ: "quiz:submit",
-        AssessmentType.CODE_CHALLENGE: "assignment:submit",
-    }[AssessmentType(kind)]
     checker.require(
         user.id,
-        legacy_permission,
+        "assessment:submit",
         resource_owner_id=activity.creator_id,
         is_assigned=True,
     )
@@ -1119,10 +986,9 @@ def _default_activity_settings(kind: AssessmentType) -> dict[str, object]:
     return validate_settings({"kind": "ASSIGNMENT"}).model_dump(mode="json")
 
 
-def _sync_lifecycle_mirrors(
+def _sync_activity_lifecycle(
     assessment: Assessment,
     activity: Activity,
-    db_session: Session,
 ) -> None:
     lifecycle = AssessmentLifecycle(assessment.lifecycle)
     details = activity.details if isinstance(activity.details, dict) else {}
@@ -1141,30 +1007,11 @@ def _sync_lifecycle_mirrors(
     })
     activity.settings = settings
 
-    if AssessmentType(assessment.kind) == AssessmentType.ASSIGNMENT:
-        assignment = db_session.exec(
-            select(Assignment).where(Assignment.activity_id == activity.id)
-        ).first()
-        if assignment is not None:
-            assignment.status = AssignmentStatus(lifecycle.value)
-            assignment.published = lifecycle == AssessmentLifecycle.PUBLISHED
-            assignment.scheduled_publish_at = assessment.scheduled_at
-            assignment.published_at = assessment.published_at
-            assignment.archived_at = assessment.archived_at
-            assignment.updated_at = assessment.updated_at
-            db_session.add(assignment)
-
-    if AssessmentType(assessment.kind) == AssessmentType.EXAM:
-        exam = db_session.exec(select(Exam).where(Exam.activity_id == activity.id)).first()
-        if exam is not None:
-            exam.published = lifecycle == AssessmentLifecycle.PUBLISHED
-            exam.settings = {**(exam.settings or {}), **settings}
-            db_session.add(exam)
-
 
 def _normalize_answer_patch(
     assessment: Assessment,
     payload: AssessmentDraftPatch,
+    current_user: PublicUser,
     db_session: Session,
 ) -> dict[str, dict[str, object]]:
     items = {item.item_uuid: item for item in _get_items(assessment, db_session)}
@@ -1181,6 +1028,8 @@ def _normalize_answer_patch(
         if str(answer.kind) != str(item.kind):
             mismatched.append(entry.item_uuid)
             continue
+        if str(answer.kind) == ItemKind.FILE_UPLOAD.value:
+            _validate_file_upload_answer(answer.model_dump(mode="json"), item, current_user, db_session)
         normalized[entry.item_uuid] = answer.model_dump(mode="json")
 
     if invalid or mismatched:
@@ -1193,6 +1042,61 @@ def _normalize_answer_patch(
             },
         )
     return normalized
+
+
+def _validate_file_upload_answer(
+    answer: dict[str, object],
+    item: AssessmentItem,
+    current_user: PublicUser,
+    db_session: Session,
+) -> None:
+    body = item.body_json if isinstance(item.body_json, dict) else {}
+    allowed_mimes = body.get("mimes") if isinstance(body.get("mimes"), list) else []
+    max_mb = body.get("max_mb")
+    max_bytes = int(max_mb) * 1024 * 1024 if isinstance(max_mb, int) and max_mb > 0 else None
+    files = answer.get("files") if isinstance(answer.get("files"), list) else []
+    for file_ref in files:
+        if not isinstance(file_ref, dict):
+            raise HTTPException(status_code=400, detail="Invalid file upload answer")
+        upload_id = file_ref.get("upload_id")
+        upload = db_session.exec(
+            select(Upload).where(Upload.upload_id == upload_id)
+        ).first()
+        if (
+            upload is None
+            or upload.user_id != current_user.id
+            or upload.status != UploadStatus.FINALIZED
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "message": "File upload is not finalized for this user",
+                    "upload_id": upload_id,
+                    "item_uuid": item.item_uuid,
+                },
+            )
+        if allowed_mimes and upload.content_type not in allowed_mimes:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "message": "File content type is not allowed",
+                    "upload_id": upload_id,
+                    "item_uuid": item.item_uuid,
+                },
+            )
+        if max_bytes is not None and upload.size is not None and upload.size > max_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "message": "File is larger than this item allows",
+                    "upload_id": upload_id,
+                    "item_uuid": item.item_uuid,
+                },
+            )
+        if upload.referenced_at is None:
+            upload.referenced_at = datetime.now(UTC)
+            upload.updated_at = upload.referenced_at
+            db_session.add(upload)
 
 
 def _get_or_create_submission_draft(
@@ -1296,159 +1200,6 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
     elif body.kind == "MATCHING" and not body.pairs:
         issues.append(ReadinessIssue(code="matching.pairs_missing", message="Matching items need at least one pair.", item_uuid=item.item_uuid))
     return issues
-
-
-def _legacy_lifecycle(
-    activity: Activity,
-    kind: AssessmentType,
-    db_session: Session,
-) -> AssessmentLifecycle:
-    if kind == AssessmentType.ASSIGNMENT:
-        assignment = db_session.exec(
-            select(Assignment).where(Assignment.activity_id == activity.id)
-        ).first()
-        if assignment is not None:
-            return AssessmentLifecycle(str(assignment.status))
-    raw = (activity.details or {}).get("lifecycle_status") if isinstance(activity.details, dict) else None
-    if raw in {state.value for state in AssessmentLifecycle}:
-        return AssessmentLifecycle(str(raw))
-    return AssessmentLifecycle.PUBLISHED if activity.published else AssessmentLifecycle.DRAFT
-
-
-def _legacy_metadata(
-    activity: Activity,
-    kind: AssessmentType,
-    db_session: Session,
-) -> tuple[str, str, float, AssessmentGradingType]:
-    if kind == AssessmentType.ASSIGNMENT:
-        assignment = db_session.exec(
-            select(Assignment).where(Assignment.activity_id == activity.id)
-        ).first()
-        if assignment is not None:
-            return (
-                assignment.title,
-                assignment.description,
-                assignment.weight,
-                AssessmentGradingType(str(assignment.grading_type)),
-            )
-    if kind == AssessmentType.EXAM:
-        exam = db_session.exec(select(Exam).where(Exam.activity_id == activity.id)).first()
-        if exam is not None:
-            return exam.title, exam.description, 1.0, AssessmentGradingType.PERCENTAGE
-    return activity.name, "", 1.0, AssessmentGradingType.PERCENTAGE
-
-
-def _legacy_scheduled_at(
-    activity: Activity,
-    kind: AssessmentType,
-    db_session: Session,
-) -> datetime | None:
-    if kind == AssessmentType.ASSIGNMENT:
-        assignment = db_session.exec(
-            select(Assignment).where(Assignment.activity_id == activity.id)
-        ).first()
-        if assignment is not None:
-            return assignment.scheduled_publish_at
-    return _coerce_datetime((activity.details or {}).get("scheduled_at") if isinstance(activity.details, dict) else None)
-
-
-def _legacy_published_at(
-    activity: Activity,
-    kind: AssessmentType,
-    db_session: Session,
-) -> datetime | None:
-    if kind == AssessmentType.ASSIGNMENT:
-        assignment = db_session.exec(
-            select(Assignment).where(Assignment.activity_id == activity.id)
-        ).first()
-        if assignment is not None:
-            return assignment.published_at
-    return _coerce_datetime((activity.details or {}).get("published_at") if isinstance(activity.details, dict) else None)
-
-
-def _legacy_archived_at(
-    activity: Activity,
-    kind: AssessmentType,
-    db_session: Session,
-) -> datetime | None:
-    if kind == AssessmentType.ASSIGNMENT:
-        assignment = db_session.exec(
-            select(Assignment).where(Assignment.activity_id == activity.id)
-        ).first()
-        if assignment is not None:
-            return assignment.archived_at
-    return _coerce_datetime((activity.details or {}).get("archived_at") if isinstance(activity.details, dict) else None)
-
-
-def _assignment_task_to_item_body(task: AssignmentTask) -> dict[str, object]:
-    contents = task.contents if isinstance(task.contents, dict) else {}
-    if str(task.assignment_type) == "FILE_SUBMISSION":
-        return {
-            "kind": "FILE_UPLOAD",
-            "prompt": task.description,
-            "max_files": int(contents.get("max_files") or 1),
-            "max_mb": contents.get("max_file_size_mb"),
-            "mimes": contents.get("allowed_mime_types") or [],
-        }
-    if str(task.assignment_type) == "FORM":
-        questions = contents.get("questions") if isinstance(contents, dict) else []
-        fields = []
-        if isinstance(questions, list):
-            for question in questions:
-                if isinstance(question, dict):
-                    fields.append({
-                        "id": str(question.get("questionUUID") or f"field_{ULID()}"),
-                        "label": str(question.get("questionText") or ""),
-                        "field_type": "text",
-                        "required": False,
-                    })
-        return {"kind": "FORM", "prompt": task.description, "fields": fields}
-    if str(task.assignment_type) == "QUIZ":
-        questions = contents.get("questions")
-        question = questions[0] if isinstance(questions, list) and questions else {}
-        options = []
-        if isinstance(question, dict):
-            for option in question.get("options") or []:
-                if isinstance(option, dict):
-                    options.append({
-                        "id": str(option.get("optionUUID") or f"option_{ULID()}"),
-                        "text": str(option.get("text") or ""),
-                        "is_correct": bool(option.get("assigned_right_answer")),
-                    })
-        return {
-            "kind": "CHOICE",
-            "prompt": str(question.get("questionText") if isinstance(question, dict) else task.description),
-            "options": options,
-            "multiple": sum(1 for option in options if option["is_correct"]) > 1,
-        }
-    return {"kind": "OPEN_TEXT", "prompt": task.description, "rubric": task.hint}
-
-
-def _exam_question_to_item_body(question: Question) -> dict[str, object]:
-    if question.question_type == QuestionTypeEnum.MATCHING:
-        return {
-            "kind": "MATCHING",
-            "prompt": question.question_text,
-            "pairs": [
-                {"left": str(option.get("left", "")), "right": str(option.get("right", ""))}
-                for option in question.answer_options
-                if isinstance(option, dict)
-            ],
-        }
-    return {
-        "kind": "CHOICE",
-        "prompt": question.question_text,
-        "multiple": question.question_type == QuestionTypeEnum.MULTIPLE_CHOICE,
-        "options": [
-            {
-                "id": str(index),
-                "text": str(option.get("text", "")),
-                "is_correct": bool(option.get("is_correct")),
-            }
-            for index, option in enumerate(question.answer_options)
-            if isinstance(option, dict)
-        ],
-    }
 
 
 def _get_policy_for_assessment(

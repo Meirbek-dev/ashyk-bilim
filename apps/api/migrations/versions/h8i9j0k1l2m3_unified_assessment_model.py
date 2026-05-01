@@ -115,13 +115,48 @@ def upgrade() -> None:
         ["assessment_id", "order"],
         unique=False,
     )
+    op.create_table(
+        "upload",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("upload_id", sa.String(), nullable=False),
+        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("filename", sa.String(), nullable=False, server_default=""),
+        sa.Column("content_type", sa.String(), nullable=False, server_default=""),
+        sa.Column("size", sa.Integer(), nullable=True),
+        sa.Column("sha256", sa.String(), nullable=True),
+        sa.Column("key", sa.String(), nullable=True),
+        sa.Column("status", sa.String(), nullable=False, server_default="CREATED"),
+        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
+        sa.Column("finalized_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("referenced_at", sa.DateTime(timezone=True), nullable=True),
+        sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index("ix_upload_upload_id", "upload", ["upload_id"], unique=True)
+    op.create_index("ix_upload_user_status", "upload", ["user_id", "status"])
 
     _seed_permissions()
     _backfill_assessments()
     _backfill_items()
+    _backfill_legacy_submissions()
 
 
 def downgrade() -> None:
+    op.execute("DROP INDEX IF EXISTS ix_upload_user_status")
+    op.execute("DROP INDEX IF EXISTS ix_upload_upload_id")
+    op.execute("DROP TABLE IF EXISTS upload")
     op.drop_index("ix_assessment_item_assessment_order", table_name="assessment_item")
     op.drop_index("ix_assessment_item_uuid", table_name="assessment_item")
     op.drop_table("assessment_item")
@@ -131,8 +166,13 @@ def downgrade() -> None:
     op.drop_index("ix_assessment_uuid", table_name="assessment")
     op.drop_table("assessment")
 
-    permission_names = ", ".join(f"'{name}'" for name, *_ in ASSESSMENT_PERMISSIONS)
-    op.execute(f"DELETE FROM permissions WHERE name IN ({permission_names})")
+    permission_list = [name for name, *_ in ASSESSMENT_PERMISSIONS]
+    if permission_list:
+        op.execute(
+            sa.text("DELETE FROM permissions WHERE name IN :names").bindparams(
+                sa.bindparam("names", expanding=True, value=permission_list)
+            )
+        )
 
 
 def _seed_permissions() -> None:
@@ -285,8 +325,8 @@ def _backfill_assessments() -> None:
             1.0,
             'PERCENTAGE',
             assessment_policy.id,
-            activity.creation_date,
-            activity.update_date
+            COALESCE(NULLIF(activity.creation_date, '')::timestamptz, now()),
+            COALESCE(NULLIF(activity.update_date, '')::timestamptz, now())
         FROM activity
         LEFT JOIN assessment_policy
           ON assessment_policy.activity_id = activity.id
@@ -372,7 +412,241 @@ def _backfill_items() -> None:
           )
     """)
 
+
+def _backfill_legacy_submissions() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+
+    # Backfill exam-based submissions only if legacy table exists
+    if inspector.has_table('exam_attempt'):
+        op.execute("""
+        INSERT INTO submission (
+            submission_uuid,
+            assessment_type,
+            activity_id,
+            assessment_policy_id,
+            user_id,
+            auto_score,
+            final_score,
+            status,
+            attempt_number,
+            is_late,
+            late_penalty_pct,
+            answers_json,
+            grading_json,
+            metadata_json,
+            started_at,
+            submitted_at,
+            graded_at,
+            created_at,
+            updated_at,
+            grading_version,
+            version
+        )
+        SELECT
+            'submission_' || ranked.attempt_uuid,
+            'EXAM',
+            exam.activity_id,
+            assessment_policy.id,
+            ranked.user_id,
+            ranked.score_percent,
+            CASE WHEN ranked.status = 'IN_PROGRESS' THEN NULL ELSE ranked.score_percent END,
+            CASE WHEN ranked.status = 'IN_PROGRESS' THEN 'DRAFT' ELSE 'GRADED' END,
+            ranked.attempt_number,
+            false,
+            0,
+            jsonb_build_object(
+                'answers',
+                COALESCE(ranked.answers::jsonb, '{}'::jsonb),
+                'question_order',
+                COALESCE(ranked.question_order::jsonb, '[]'::jsonb),
+                'violations',
+                COALESCE(ranked.violations::jsonb, '[]'::jsonb),
+                'attempt_uuid',
+                ranked.attempt_uuid,
+                'status',
+                ranked.status
+            )::json,
+            '{}'::json,
+            jsonb_build_object(
+                'legacy_exam_attempt_id',
+                ranked.id,
+                'legacy_attempt_uuid',
+                ranked.attempt_uuid
+            )::json,
+            NULLIF(ranked.started_at, '')::timestamptz,
+            NULLIF(ranked.submitted_at, '')::timestamptz,
+            CASE
+                WHEN ranked.status = 'IN_PROGRESS' THEN NULL
+                ELSE NULLIF(ranked.submitted_at, '')::timestamptz
+            END,
+            COALESCE(NULLIF(ranked.creation_date, '')::timestamptz, now()),
+            COALESCE(NULLIF(ranked.update_date, '')::timestamptz, now()),
+            1,
+            1
+        FROM (
+            SELECT
+                exam_attempt.*,
+                row_number() OVER (
+                    PARTITION BY exam_attempt.exam_id, exam_attempt.user_id
+                    ORDER BY exam_attempt.creation_date, exam_attempt.id
+                ) AS attempt_number,
+                CASE
+                    WHEN exam_attempt.max_score IS NOT NULL
+                         AND exam_attempt.max_score > 0
+                        THEN (COALESCE(exam_attempt.score, 0)::float / exam_attempt.max_score::float) * 100.0
+                    ELSE COALESCE(exam_attempt.score, 0)::float
+                END AS score_percent
+            FROM exam_attempt
+            WHERE NOT exam_attempt.is_preview
+        ) AS ranked
+        JOIN exam ON exam.id = ranked.exam_id
+        LEFT JOIN assessment_policy
+          ON assessment_policy.activity_id = exam.activity_id
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM submission
+            WHERE submission.submission_uuid = 'submission_' || ranked.attempt_uuid
+        )
+    """)
+
+    # Backfill code challenge submissions only if legacy table exists
+    if inspector.has_table('code_submission'):
+        op.execute("""
+        INSERT INTO submission (
+            submission_uuid,
+            assessment_type,
+            activity_id,
+            assessment_policy_id,
+            user_id,
+            auto_score,
+            final_score,
+            status,
+            attempt_number,
+            is_late,
+            late_penalty_pct,
+            answers_json,
+            grading_json,
+            metadata_json,
+            started_at,
+            submitted_at,
+            graded_at,
+            created_at,
+            updated_at,
+            grading_version,
+            version
+        )
+        SELECT
+            ranked.submission_uuid,
+            'CODE_CHALLENGE',
+            ranked.activity_id,
+            assessment_policy.id,
+            ranked.user_id,
+            COALESCE(ranked.score, 0),
+            CASE WHEN ranked.status = 'COMPLETED' THEN COALESCE(ranked.score, 0) ELSE NULL END,
+            CASE WHEN ranked.status = 'COMPLETED' THEN 'GRADED' ELSE 'PENDING' END,
+            ranked.attempt_number,
+            false,
+            0,
+            jsonb_build_object(
+                'kind',
+                'CODE',
+                'language',
+                ranked.language_id,
+                'language_name',
+                ranked.language_name,
+                'source',
+                ranked.source_code,
+                'code_submission_uuid',
+                ranked.submission_uuid
+            )::json,
+            jsonb_build_object(
+                'test_results',
+                COALESCE(ranked.test_results::jsonb, '{}'::jsonb),
+                'passed_tests',
+                ranked.passed_tests,
+                'total_tests',
+                ranked.total_tests
+            )::json,
+            jsonb_build_object(
+                'code_submission_id',
+                ranked.id,
+                'code_submission_uuid',
+                ranked.submission_uuid,
+                'plagiarism_score',
+                ranked.plagiarism_score,
+                'judge0_tokens',
+                COALESCE(ranked.judge0_tokens::jsonb, '[]'::jsonb)
+            )::json,
+            COALESCE(NULLIF(ranked.created_at, '')::timestamptz, now()),
+            COALESCE(NULLIF(ranked.updated_at, '')::timestamptz, NULLIF(ranked.created_at, '')::timestamptz, now()),
+            CASE
+                WHEN ranked.status = 'COMPLETED'
+                    THEN COALESCE(NULLIF(ranked.updated_at, '')::timestamptz, NULLIF(ranked.created_at, '')::timestamptz, now())
+                ELSE NULL
+            END,
+            COALESCE(NULLIF(ranked.created_at, '')::timestamptz, now()),
+            COALESCE(NULLIF(ranked.updated_at, '')::timestamptz, NULLIF(ranked.created_at, '')::timestamptz, now()),
+            1,
+            1
+        FROM (
+            SELECT
+                code_submission.*,
+                row_number() OVER (
+                    PARTITION BY code_submission.activity_id, code_submission.user_id
+                    ORDER BY code_submission.created_at, code_submission.id
+                ) AS attempt_number
+            FROM code_submission
+        ) AS ranked
+        LEFT JOIN assessment_policy
+          ON assessment_policy.activity_id = ranked.activity_id
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM submission
+            WHERE submission.submission_uuid = ranked.submission_uuid
+        )
+    """)
+
+    # Create grading entries for any submissions we now have
     op.execute("""
+        INSERT INTO grading_entry (
+            entry_uuid,
+            submission_id,
+            graded_by,
+            raw_score,
+            penalty_pct,
+            final_score,
+            breakdown,
+            overall_feedback,
+            grading_version,
+            created_at,
+            published_at
+        )
+        SELECT
+            'entry_' || submission.submission_uuid || '_legacy',
+            submission.id,
+            NULL,
+            COALESCE(submission.final_score, submission.auto_score, 0),
+            COALESCE(submission.late_penalty_pct, 0),
+            COALESCE(submission.final_score, submission.auto_score, 0),
+            COALESCE(submission.grading_json, '{}'::json),
+            '',
+            submission.grading_version,
+            COALESCE(submission.graded_at, submission.submitted_at, submission.updated_at, now()),
+            NULL
+        FROM submission
+        WHERE submission.assessment_type IN ('EXAM', 'CODE_CHALLENGE')
+          AND submission.status IN ('GRADED', 'PUBLISHED')
+          AND NOT EXISTS (
+              SELECT 1
+              FROM grading_entry
+              WHERE grading_entry.entry_uuid = 'entry_' || submission.submission_uuid || '_legacy'
+          )
+    """)
+
+    # Backfill question-based assessment items only if legacy table exists
+    if inspector.has_table('question'):
+        op.execute("""
         INSERT INTO assessment_item (
             item_uuid,
             assessment_id,
@@ -421,6 +695,7 @@ def _backfill_items() -> None:
           )
     """)
 
+    # Backfill code challenge assessment items from activity (activity should exist)
     op.execute("""
         INSERT INTO assessment_item (
             item_uuid,
@@ -465,8 +740,8 @@ def _backfill_items() -> None:
                     THEN (activity.details ->> 'points')::float
                 ELSE 100.0
             END,
-            activity.creation_date,
-            activity.update_date
+            COALESCE(NULLIF(activity.creation_date, '')::timestamptz, now()),
+            COALESCE(NULLIF(activity.update_date, '')::timestamptz, now())
         FROM activity
         JOIN assessment ON assessment.activity_id = activity.id
         WHERE assessment.kind = 'CODE_CHALLENGE'

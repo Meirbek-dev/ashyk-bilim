@@ -3,18 +3,6 @@ from enum import StrEnum
 from typing import Literal
 
 from pydantic import ConfigDict, field_validator, model_validator
-from sqlalchemy import (
-    JSON,
-    Boolean,
-    Column,
-    DateTime,
-    Float,
-    ForeignKey,
-    Index,
-    Integer,
-    String,
-    UniqueConstraint,
-)
 from sqlmodel import Field
 
 from src.db.grading.submissions import SubmissionRead
@@ -125,81 +113,6 @@ _TASK_TYPE_TO_CONFIG: dict[str, type[SQLModelStrictBaseModel]] = {
     "FORM": AssignmentFormTaskConfig,
     "OTHER": AssignmentOtherTaskConfig,
 }
-
-
-# ── Assignment DB model ────────────────────────────────────────────────────────
-
-
-class Assignment(SQLModelStrictBaseModel, table=True):
-    """Assignment DB row — FK columns stay internal, not exposed via the API."""
-
-    __tablename__ = "assignment"
-    __table_args__ = (
-        UniqueConstraint("activity_id", name="uq_assignment_activity_id"),
-        Index("idx_assignment_activity_id", "activity_id"),
-        Index("idx_assignment_status", "status"),
-        Index("idx_assignment_scheduled_publish_at", "scheduled_publish_at"),
-    )
-
-    model_config = ConfigDict(use_enum_values=True)
-
-    id: int | None = Field(default=None, primary_key=True)
-    assignment_uuid: str
-    title: str
-    description: str
-    due_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True),
-    )
-    # Lifecycle status — replaces the legacy `published` boolean.
-    # Keep published col in DB for backward compat; dropped in Phase 7 cleanup.
-    published: bool = Field(
-        default=False,
-        sa_column=Column(Boolean, nullable=False, server_default="false"),
-    )
-    status: AssignmentStatus = Field(
-        default=AssignmentStatus.DRAFT,
-        sa_column=Column("status", String, nullable=False, server_default="DRAFT"),
-    )
-    scheduled_publish_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(
-            "scheduled_publish_at", DateTime(timezone=True), nullable=True
-        ),
-    )
-    published_at: datetime | None = Field(
-        default=None,
-        sa_column=Column("published_at", DateTime(timezone=True), nullable=True),
-    )
-    archived_at: datetime | None = Field(
-        default=None,
-        sa_column=Column("archived_at", DateTime(timezone=True), nullable=True),
-    )
-    # Relative weight of this assignment in the course grade calculation.
-    # Default 1.0 = equal weight.  Values above 1.0 make this assignment count
-    # more; 0.0 makes it optional (not included in weighted_grade_average).
-    weight: float = Field(
-        default=1.0,
-        sa_column=Column("weight", Float, nullable=False, server_default="1.0"),
-    )
-    grading_type: GradingTypeEnum = Field(
-        sa_column=Column("grading_type", String, nullable=False)
-    )
-    course_id: int = Field(
-        sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE"))
-    )
-    chapter_id: int = Field(
-        sa_column=Column("chapter_id", ForeignKey("chapter.id", ondelete="CASCADE"))
-    )
-    activity_id: int = Field(
-        sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE"))
-    )
-    created_at: datetime = Field(
-        sa_column=Column("created_at", DateTime(timezone=True), nullable=False)
-    )
-    updated_at: datetime = Field(
-        sa_column=Column("updated_at", DateTime(timezone=True), nullable=False)
-    )
 
 
 # ── Assignment API schemas ─────────────────────────────────────────────────────
@@ -384,52 +297,6 @@ class AssignmentTaskUpdate(SQLModelStrictBaseModel):
             )
             config_cls.model_validate(raw)
         return data
-
-
-class AssignmentTask(AssignmentTaskBase, table=True):
-    """Assignment task DB row."""
-
-    __table_args__ = (
-        UniqueConstraint("assignment_id", "order", name="uq_assignmenttask_order"),
-        UniqueConstraint(
-            "assignment_id",
-            "assignment_task_uuid",
-            name="uq_assignmenttask_assignment_uuid",
-        ),
-        Index("idx_assignmenttask_assignment_order", "assignment_id", "order"),
-        Index("idx_assignmenttask_activity_id", "activity_id"),
-    )
-
-    id: int | None = Field(default=None, primary_key=True)
-    assignment_task_uuid: str
-    order: int = Field(
-        default=0,
-        sa_column=Column(Integer, nullable=False, server_default="0"),
-    )
-    contents: dict[str, object] = Field(
-        default_factory=dict,
-        sa_column=Column(JSON),
-    )
-    created_at: datetime = Field(
-        sa_column=Column("created_at", DateTime(timezone=True), nullable=False)
-    )
-    updated_at: datetime = Field(
-        sa_column=Column("updated_at", DateTime(timezone=True), nullable=False)
-    )
-    assignment_id: int = Field(
-        sa_column=Column(
-            "assignment_id", ForeignKey("assignment.id", ondelete="CASCADE")
-        )
-    )
-    course_id: int = Field(
-        sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE"))
-    )
-    chapter_id: int = Field(
-        sa_column=Column("chapter_id", ForeignKey("chapter.id", ondelete="CASCADE"))
-    )
-    activity_id: int = Field(
-        sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE"))
-    )
 
 
 # ── Draft / submission schemas ─────────────────────────────────────────────────

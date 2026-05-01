@@ -233,14 +233,12 @@ def build_risk_rows(
     for attempt, exam in context.exam_attempts:
         if allowed_user_ids is not None and attempt.user_id not in allowed_user_ids:
             continue
-        if attempt.is_preview:
-            continue
         key = (exam.course_id, attempt.user_id)
         exam_seen[key].add(exam.id)
-        if attempt.score is None or attempt.max_score in {None, 0}:
+        score = assignment_score(attempt)
+        if score is None:
             continue
-        percentage = (float(attempt.score) / float(attempt.max_score)) * 100
-        if percentage < exam_thresholds.get(exam.id or 0, 60):
+        if score < exam_thresholds.get(exam.id or 0, 60):
             failed_assessments[key] += 1
 
     code_success_by_pair: dict[tuple[int, int], set[int]] = defaultdict(set)
@@ -250,9 +248,10 @@ def build_risk_rows(
         if activity.course_id is None:
             continue
         key = (activity.course_id, submission.user_id)
-        if submission.score >= 60:
+        score = assignment_score(submission)
+        if score is not None and score >= 60:
             code_success_by_pair[key].add(activity.id)
-        elif submission.status.value == "COMPLETED":
+        elif assignment_is_graded(submission):
             failed_assessments[key] += 1
 
     rows: list[AtRiskLearnerRow] = []

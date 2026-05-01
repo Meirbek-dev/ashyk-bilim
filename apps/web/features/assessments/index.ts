@@ -14,10 +14,11 @@ export type { KindModule, KindAuthorProps, KindAttemptProps, KindReviewProps } f
 // Shared components
 export { default as SubmissionStatusBadge } from './shared/components/SubmissionStatusBadge';
 export type { SubmissionStatusBadgeProps } from './shared/components/SubmissionStatusBadge';
-export { default as AttemptShell, useAttemptShellControls } from './shared/AttemptShell';
+export { default as AttemptShell } from './shell/AssessmentLayout';
+export { useAttemptShellControls } from './shell/AssessmentActionBar';
 export type {
   AttemptNavigationState,
   AttemptRecoveryState,
   AttemptSaveState,
   AttemptShellRegistration,
-} from './shared/AttemptShell';
+} from './shell/AssessmentActionBar';

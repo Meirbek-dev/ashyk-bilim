@@ -1,8 +1,7 @@
 """Canonical assessment settings read/write path.
 
 Assessment settings are stored once on Activity.settings and validated through
-the discriminated AssessmentSettings union below. Older per-kind storage is kept
-only for routes that have not moved to the unified assessment resource yet.
+the discriminated AssessmentSettings union below.
 """
 
 from typing import Annotated, Literal, TypeAlias
@@ -19,7 +18,7 @@ from src.db.courses.code_challenges import (
     ExecutionMode,
     GradingStrategy,
 )
-from src.db.courses.exams import AccessModeEnum, Exam
+from src.db.courses.exams import AccessModeEnum
 from src.db.courses.quiz import QuizSettings
 from src.db.strict_base_model import PydanticStrictBaseModel
 
@@ -91,8 +90,7 @@ def get_settings(activity_id: int, db_session: Session) -> AssessmentSettings:
     raw_settings = activity.settings or {}
     if raw_settings.get("kind"):
         return validate_settings(raw_settings)
-
-    return _legacy_settings_for_activity(activity, db_session)
+    return _settings_for_activity(activity, db_session)
 
 
 def put_settings(
@@ -105,17 +103,6 @@ def put_settings(
     payload = _dump_settings(validated)
 
     activity.settings = payload
-
-    # Compatibility mirrors for routes that still read legacy storage.
-    if validated.kind == "EXAM":
-        exam = db_session.exec(
-            select(Exam).where(Exam.activity_id == activity.id)
-        ).first()
-        if exam is not None:
-            exam.settings = {k: v for k, v in payload.items() if k != "kind"}
-            db_session.add(exam)
-    elif validated.kind == "CODE_CHALLENGE":
-        activity.details = {k: v for k, v in payload.items() if k != "kind"}
 
     db_session.add(activity)
     db_session.commit()
@@ -135,18 +122,12 @@ def _get_activity_or_404(activity_id: int, db_session: Session) -> Activity:
     return activity
 
 
-def _legacy_settings_for_activity(
+def _settings_for_activity(
     activity: Activity,
     db_session: Session,
 ) -> AssessmentSettings:
     if activity.activity_type == ActivityTypeEnum.TYPE_EXAM:
-        exam = db_session.exec(
-            select(Exam).where(Exam.activity_id == activity.id)
-        ).first()
-        return validate_settings({
-            "kind": "EXAM",
-            **(exam.settings if exam is not None else {}),
-        })
+        return validate_settings({"kind": "EXAM"})
 
     if activity.activity_type == ActivityTypeEnum.TYPE_CODE_CHALLENGE:
         return validate_settings({"kind": "CODE_CHALLENGE", **(activity.details or {})})

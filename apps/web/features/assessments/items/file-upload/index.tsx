@@ -5,13 +5,13 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { updateSubFile } from '@services/courses/assignments';
 import { getTaskFileSubmissionDir, getTaskRefFileDir } from '@services/media/media';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from '@components/ui/AppLink';
+import { apiFetch } from '@/lib/api-client';
 
 import { registerItemKind } from '../registry';
 import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
@@ -33,9 +33,26 @@ export interface FileUploadAttemptItem {
 }
 
 export interface FileUploadAnswer {
+  kind?: 'FILE_UPLOAD';
   task_uuid?: string;
   content_type?: 'file';
   file_key?: string | null;
+  files?: { upload_id: string; filename: string }[];
+}
+
+async function sha256(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function responseError(response: Response, fallback: string): Promise<Error> {
+  try {
+    const data = await response.json();
+    return new Error(typeof data?.detail === 'string' ? data.detail : data?.detail?.message || fallback);
+  } catch {
+    return new Error(fallback);
+  }
 }
 
 export function normalizeFileUploadConstraints(raw: Record<string, unknown> | null | undefined): FileUploadConstraints {
@@ -113,25 +130,56 @@ export function FileUploadAttempt({
   onAnswerChange,
 }: ItemAttemptProps<FileUploadAttemptItem, FileUploadAnswer | null>) {
   const [localFileName, setLocalFileName] = useState('');
-  const fileKey = answer?.file_key ?? '';
+  const uploadFile = answer?.files?.[0];
+  const fileKey = answer?.file_key ?? uploadFile?.upload_id ?? '';
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      const res = await updateSubFile({
-        file,
-        assignmentTaskUUID: item.taskUuid,
-        assignmentUUID: item.assignmentUuid,
+      if (item.constraints?.max_file_size_mb && file.size > item.constraints.max_file_size_mb * 1024 * 1024) {
+        throw new Error(`File exceeds ${item.constraints.max_file_size_mb} MB`);
+      }
+      if (item.constraints?.allowed_mime_types.length && !item.constraints.allowed_mime_types.includes(file.type)) {
+        throw new Error('File type is not allowed for this item');
+      }
+
+      const createResponse = await apiFetch('uploads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          content_type: file.type,
+          size: file.size,
+        }),
       });
-      if (!res.success || !res.data?.file_uuid) throw new Error(res.data?.detail || 'Upload failed');
-      return res.data.file_uuid as string;
+      if (!createResponse.ok) throw await responseError(createResponse, 'Upload could not be created');
+      const created = (await createResponse.json()) as { upload_id: string; put_url: string };
+
+      const putResponse = await apiFetch(created.put_url, {
+        method: 'PUT',
+        headers: file.type ? { 'Content-Type': file.type } : undefined,
+        body: file,
+        timeoutMs: false,
+      });
+      if (!putResponse.ok) throw await responseError(putResponse, 'Upload failed');
+
+      const digest = await sha256(file);
+      const finalizeResponse = await apiFetch(`uploads/${created.upload_id}/finalize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sha256: digest, content_type: file.type }),
+      });
+      if (!finalizeResponse.ok) throw await responseError(finalizeResponse, 'Upload finalize failed');
+      return { upload_id: created.upload_id, filename: file.name };
     },
-    onSuccess: (nextFileKey) => {
+    onSuccess: (uploaded) => {
       onAnswerChange({
+        kind: 'FILE_UPLOAD',
         task_uuid: item.taskUuid,
         content_type: 'file',
-        file_key: nextFileKey,
+        file_key: uploaded.upload_id,
+        files: [uploaded],
       });
-      toast.success('File attached. Save the draft to keep this change.');
+      toast.success('File attached to this draft.');
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : 'Upload failed'),
   });
@@ -218,7 +266,7 @@ export function FileUploadAttempt({
       <Alert>
         <AlertCircle className="size-4" />
         <AlertDescription>
-          Files are uploaded first, then included in the assessment draft when you save.
+          File is verified before it is attached to this draft.
         </AlertDescription>
       </Alert>
     </div>
@@ -231,7 +279,7 @@ export function FileUploadReviewDetail({
   return (
     <div className="bg-card rounded-md border p-3 text-sm">
       <div className="font-medium">Uploaded file</div>
-      <div className="text-muted-foreground mt-1">{answer?.file_key ?? 'No file recorded'}</div>
+      <div className="text-muted-foreground mt-1">{answer?.files?.[0]?.filename ?? answer?.file_key ?? 'No file recorded'}</div>
     </div>
   );
 }

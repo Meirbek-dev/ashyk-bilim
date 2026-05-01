@@ -6,10 +6,9 @@ from typing import Any
 from sqlalchemy import and_, or_, select
 from sqlmodel import Session
 
+from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
-from src.db.courses.assignments import Assignment
 from src.db.courses.courses import Course
-from src.db.courses.exams import Exam
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import (
@@ -160,14 +159,21 @@ def resolve_course_id_for_assessment(
     assessment_type: str,
     assessment_id: int,
 ) -> int | None:
-    if assessment_type == "assignment":
-        assignment = db_session.exec(
-            select(Assignment).where(Assignment.id == assessment_id)
+    if assessment_type in {"assignment", "exam"}:
+        row = db_session.exec(
+            select(Assessment, Activity)
+            .join(Activity, Activity.id == Assessment.activity_id)
+            .where(Assessment.id == assessment_id)
         ).first()
-        return assignment.course_id if assignment is not None else None
-    if assessment_type == "exam":
-        exam = db_session.exec(select(Exam).where(Exam.id == assessment_id)).first()
-        return exam.course_id if exam is not None else None
+        if row is None:
+            return None
+        if hasattr(row, "_mapping"):
+            activity = next(
+                value for value in row._mapping.values() if isinstance(value, Activity)
+            )
+        else:
+            activity = row[1]
+        return activity.course_id
     if assessment_type in {"quiz", "code_challenge"}:
         activity = db_session.exec(
             select(Activity).where(Activity.id == assessment_id)
