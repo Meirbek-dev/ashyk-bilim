@@ -2221,6 +2221,7 @@
       "deleteChapterConfirmation": "Are you sure you want to delete this chapter?",
       "deleteChapterTitle": "Delete {name}?"
     },
+    "dragChapter": "Drag to reorder chapter",
     "General": {
       "LearningItems": {
         "addItemButton": "Add Learning Item",
@@ -2348,7 +2349,9 @@
       "selectItemHintDescription": "Select an activity type and fill in the details. Changes are saved immediately.",
       "emptyStateTitle": "Build your curriculum",
       "emptyStateDescription": "Add your first chapter to organize lessons and activities.",
-      "emptyStateAction": "Add your first chapter"
+      "emptyStateAction": "Add your first chapter",
+      "activity": "Activity",
+      "chapter": "Chapter"
     },
     "Conflict": {
       "title": "This course changed in another editor",

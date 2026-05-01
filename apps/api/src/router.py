@@ -19,11 +19,14 @@ from src.routers import (
 from src.routers.ai import ai
 from src.routers.assessments import unified as assessment_unified
 from src.routers.courses import (
+    assignments,
     certifications,
     chapters,
+    code_challenges,
     collections,
     courses,
     discussions,
+    exams,
 )
 from src.routers.courses.activities import activities, blocks
 from src.routers.grading.feedback import router as grading_feedback_router
@@ -80,6 +83,13 @@ v1_router.include_router(
     collections.router, prefix="/collections", tags=["collections"]
 )
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
+
+# Legacy per-kind content routes
+v1_router.include_router(assignments.router, prefix="/assignments", tags=["assignments"])
+v1_router.include_router(exams.router, prefix="/exams", tags=["exams"])
+v1_router.include_router(
+    code_challenges.router, prefix="/code-challenges", tags=["code-challenges"]
+)
 
 # Gamification
 v1_router.include_router(

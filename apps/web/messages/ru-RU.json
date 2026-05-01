@@ -2223,6 +2223,7 @@
       "deleteChapterConfirmation": "Вы уверены, что хотите удалить эту главу?",
       "deleteChapterTitle": "Удалить {name}?"
     },
+    "dragChapter": "Перетащите, чтобы изменить порядок глав",
     "General": {
       "LearningItems": {
         "addItemButton": "Добавить элемент обучения",
@@ -2350,7 +2351,9 @@
       "selectItemHintDescription": "Выберите тип активности и заполните детали. Изменения сохраняются сразу.",
       "emptyStateTitle": "Создайте учебный план",
       "emptyStateDescription": "Добавьте первый раздел, чтобы организовать уроки и задания.",
-      "emptyStateAction": "Добавить первый раздел"
+      "emptyStateAction": "Добавить первый раздел",
+      "activity": "Активность",
+      "chapter": "Глава"
     },
     "Conflict": {
       "title": "Этот курс изменился в другом редакторе",
