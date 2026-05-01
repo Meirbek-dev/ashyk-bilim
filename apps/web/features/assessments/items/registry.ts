@@ -38,17 +38,17 @@ export interface ItemKindModule<TAuthorValue = any, TAttemptItem = any, TAttempt
   ReviewDetail: ComponentType<ItemReviewDetailProps<TAttemptItem, TAttemptAnswer>>;
 }
 
-function getRegistry(): Map<ItemKind, ItemKindModule<any>> {
+function getRegistry(): Map<ItemKind, ItemKindModule> {
   const f = getRegistry as any;
-  if (!f.map) f.map = new Map<ItemKind, ItemKindModule<any>>();
+  if (!f.map) f.map = new Map<ItemKind, ItemKindModule>();
   return f.map;
 }
 
-export function registerItemKind(module: ItemKindModule<any>): void {
+export function registerItemKind(module: ItemKindModule): void {
   getRegistry().set(module.kind, module);
 }
 
-export function getItemKindModule(kind: ItemKind): ItemKindModule<any> {
+export function getItemKindModule(kind: ItemKind): ItemKindModule {
   const module = getRegistry().get(kind);
   if (!module) {
     throw new Error(`ItemKindRegistry: no module registered for item kind "${kind}"`);
@@ -56,7 +56,7 @@ export function getItemKindModule(kind: ItemKind): ItemKindModule<any> {
   return module;
 }
 
-export function listItemKindModules(): ItemKindModule<any>[] {
+export function listItemKindModules(): ItemKindModule[] {
   return [...getRegistry().values()];
 }
 

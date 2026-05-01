@@ -19,6 +19,16 @@ const globalPromptState: {
   ownerId: null,
 };
 
+function tryReleasePromptOwnership(ownerId: symbol) {
+  if (globalPromptState.ownerId === ownerId) {
+    globalPromptState.ownerId = null;
+  }
+}
+
+function setPromptOwnership(ownerId: symbol) {
+  globalPromptState.ownerId = ownerId;
+}
+
 function createGuardHistoryState() {
   return { ...globalThis.history.state, __unsavedChangesGuard: true };
 }
@@ -35,9 +45,7 @@ export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChange
   const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation | null>(null);
 
   const releasePromptOwnership = useCallback(() => {
-    if (globalPromptState.ownerId === guardInstanceIdRef.current) {
-      globalPromptState.ownerId = null;
-    }
+    tryReleasePromptOwnership(guardInstanceIdRef.current);
   }, []);
 
   const openPendingNavigation = useCallback((nextPendingNavigation: PendingNavigation) => {
@@ -50,7 +58,7 @@ export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChange
       return;
     }
 
-    globalPromptState.ownerId = guardInstanceIdRef.current;
+    setPromptOwnership(guardInstanceIdRef.current);
     pendingNavigationRef.current = nextPendingNavigation;
     setPendingNavigation(nextPendingNavigation);
   }, []);

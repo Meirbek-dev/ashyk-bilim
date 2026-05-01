@@ -2,7 +2,7 @@
 
 import { useEditor } from '@tiptap/react';
 import type { UseEditorOptions } from '@tiptap/react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { createEditorExtensions, resolveEditorContent } from './editor-kernel';
 import type { EditorPresetName } from './editor-presets';
 import { getEditorPresetDefinition } from './editor-presets';
@@ -28,16 +28,11 @@ export function useEditorInstance(options: UseEditorInstanceOptions) {
   // Memoize extensions — only recompute when preset or activity identity changes
   const extensions = useMemo(
     () => createEditorExtensions({ preset, activity }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [preset, activity?.activity_uuid],
+    [preset, activity],
   );
 
   // Resolve content once on mount
-  const resolvedContent = useMemo(
-    () => resolveEditorContent(content),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+  const [resolvedContent] = useState(() => resolveEditorContent(content));
 
   return useEditor({
     extensions,

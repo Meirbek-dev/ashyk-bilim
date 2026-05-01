@@ -92,8 +92,7 @@ export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChil
       }),
     // Recreate adapter only when the activity changes — access token and
     // session UUID changes are handled inside the factory via getter/setter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activityUuid, locale],
+    [activityUuid, tStatus],
   );
 
   // Keep the abort ref in sync whenever the adapter is recreated.

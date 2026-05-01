@@ -205,8 +205,7 @@ export function useAssessmentAttempt<T = unknown>({
       onRestoreRef.current(data.answers);
     }
     // Run once on mount only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [getRecoverableData]);
 
   return { saveAnswers, clearSavedAnswers, getRecoverableData };
 }

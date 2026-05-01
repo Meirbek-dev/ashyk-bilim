@@ -67,7 +67,9 @@ describe('Auth Extended Scenarios', () => {
     let refreshTrigger: () => void = () => {};
     const TestComponent = () => {
       const { refresh } = useSessionContext();
-      refreshTrigger = refresh;
+      React.useEffect(() => {
+        refreshTrigger = refresh;
+      }, [refresh]);
       return null;
     };
 

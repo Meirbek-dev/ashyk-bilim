@@ -16,8 +16,7 @@ import type { CourseOrderPayload } from '@/schemas/chapterSchemas';
 import ChapterElement from './DraggableElements/ChapterElement';
 
 const CurriculumEditor = () => {
-  const tStructure = useTranslations('CourseEdit.Structure');
-  const tNotify = useTranslations('DashPage.Notifications');
+  const t = useTranslations('CourseEdit.Structure');
 
   const course = useCourse();
   const course_structure = course.courseStructure;
@@ -65,11 +64,11 @@ const CurriculumEditor = () => {
     setIsCreatingChapter(true);
     try {
       await createChapter({ name, course_uuid: course.courseStructure.course_uuid });
-      toast.success(tStructure('chapterCreatedSuccess'));
+      toast.success(t('chapterCreatedSuccess'));
       setShowChapterInput(false);
       setNewChapterName('');
     } catch {
-      toast.error(tStructure('chapterCreateFailed'));
+      toast.error(t('chapterCreateFailed'));
     } finally {
       setIsCreatingChapter(false);
     }
@@ -129,7 +128,7 @@ const CurriculumEditor = () => {
       setStructureStatus('saved');
     } catch (error: any) {
       setStructureStatus('error');
-      toast.error(error?.message || tStructure('saveOrderError'));
+      toast.error(error?.message || t('saveOrderError'));
     }
   };
 
@@ -148,13 +147,13 @@ const CurriculumEditor = () => {
           )}
           <AlertTitle>
             {structureStatus === 'saving'
-              ? tStructure('savingOrder')
+              ? t('savingOrder')
               : structureStatus === 'error'
-                ? tStructure('saveOrderError')
-                : tStructure('curriculumChangesApplyImmediately')}
+                ? t('saveOrderError')
+                : t('curriculumChangesApplyImmediately')}
           </AlertTitle>
           <AlertDescription>
-            {structureStatus === 'error' ? tStructure('refreshAfterError') : tStructure('curriculumInlineFeedback')}
+            {structureStatus === 'error' ? t('refreshAfterError') : t('curriculumInlineFeedback')}
           </AlertDescription>
         </Alert>
       )}
@@ -164,8 +163,8 @@ const CurriculumEditor = () => {
           <div className="bg-muted mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
             <BookOpen className="text-muted-foreground h-6 w-6" />
           </div>
-          <p className="text-foreground mb-1 text-sm font-semibold">{tStructure('emptyStateTitle')}</p>
-          <p className="text-muted-foreground mb-4 max-w-xs text-sm">{tStructure('emptyStateDescription')}</p>
+          <p className="text-foreground mb-1 text-sm font-semibold">{t('emptyStateTitle')}</p>
+          <p className="text-muted-foreground mb-4 max-w-xs text-sm">{t('emptyStateDescription')}</p>
           <Button
             variant="default"
             size="sm"
@@ -175,7 +174,7 @@ const CurriculumEditor = () => {
               strokeWidth={3}
               className="mr-2 size-4"
             />
-            {tStructure('emptyStateAction')}
+            {t('emptyStateAction')}
           </Button>
         </div>
       ) : (
@@ -219,7 +218,7 @@ const CurriculumEditor = () => {
               value={newChapterName}
               onChange={(e) => setNewChapterName(e.target.value)}
               onKeyDown={handleChapterInputKeyDown}
-              placeholder={tStructure('chapterNamePlaceholder')}
+              placeholder={t('chapterNamePlaceholder')}
               className="h-8 flex-1 text-sm"
               disabled={isCreatingChapter}
             />
@@ -229,7 +228,7 @@ const CurriculumEditor = () => {
               disabled={isCreatingChapter || !newChapterName.trim()}
               className="h-8"
             >
-              {isCreatingChapter ? <Loader2 className="size-4 animate-spin" /> : tStructure('confirmChapter')}
+              {isCreatingChapter ? <Loader2 className="size-4 animate-spin" /> : t('confirmChapter')}
             </Button>
             <Button
               size="sm"
@@ -238,7 +237,7 @@ const CurriculumEditor = () => {
               disabled={isCreatingChapter}
               className="h-8"
             >
-              {tStructure('cancel')}
+              {t('cancel')}
             </Button>
           </div>
         ) : (
@@ -251,7 +250,7 @@ const CurriculumEditor = () => {
               strokeWidth={3}
               className="mr-2 size-4"
             />
-            {tStructure('addChapterButton')}
+            {t('addChapterButton')}
           </Button>
         )}
       </div>

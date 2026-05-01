@@ -53,6 +53,10 @@ const getCreatedActivityUuid = (data: any): string | null =>
   data?.data?.activity?.activity_uuid ??
   null;
 
+const navigateTo = (url: string) => {
+  globalThis.location.href = url;
+};
+
 const NewExam = ({ chapterId, course, closeModal }: any) => {
   const validationT = useTranslations('Validation');
   const t = useTranslations('Components.NewExamModal');
@@ -141,11 +145,11 @@ const NewExam = ({ chapterId, course, closeModal }: any) => {
 
         if (courseUuidClean) {
           const activityUuidClean = cleanActivityUuid(createdActivityUuid);
-          globalThis.location.href = `/course/${courseUuidClean}/activity/${activityUuidClean}${
+          navigateTo(`/course/${courseUuidClean}/activity/${activityUuidClean}${
             withUnpublishedActivities ? '?withUnpublishedActivities=true' : ''
-          }`;
+          }`);
         } else {
-          globalThis.location.href = '/courses';
+          navigateTo('/courses');
         }
       }
 
