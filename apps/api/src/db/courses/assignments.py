@@ -8,6 +8,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Enum,
     Float,
     ForeignKey,
     Index,
@@ -183,7 +184,11 @@ class Assignment(SQLModelStrictBaseModel, table=True):
         sa_column=Column("weight", Float, nullable=False, server_default="1.0"),
     )
     grading_type: GradingTypeEnum = Field(
-        sa_column=Column("grading_type", String, nullable=False)
+        sa_column=Column(
+            "grading_type",
+            Enum(GradingTypeEnum, name="gradingtypeenum", inherit_schema=True),
+            nullable=False,
+        )
     )
     course_id: int = Field(
         sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE"))

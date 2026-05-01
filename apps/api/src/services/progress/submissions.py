@@ -348,6 +348,21 @@ def sync_quiz_attempt(
     return submission
 
 
+def sync_exam_policy(exam: object, db_session: Session, *, commit: bool = True) -> None:
+    """Ensure an AssessmentPolicy exists for the given exam."""
+    # We use object as type for exam to avoid circular imports, 
+    # but we expect it to have an activity_id.
+    activity_id = getattr(exam, "activity_id", None)
+    if activity_id is None:
+        return
+
+    activity = db_session.get(Activity, activity_id)
+    if activity:
+        _get_or_create_policy(activity, db_session, assessment_type=AssessmentType.EXAM)
+        if commit:
+            db_session.commit()
+
+
 def _record_submission_change(submission: Submission, db_session: Session) -> None:
     _attach_policy(submission, db_session)
     db_session.add(submission)

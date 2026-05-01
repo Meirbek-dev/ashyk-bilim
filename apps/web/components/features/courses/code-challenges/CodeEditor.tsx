@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import type { OnChange, OnMount } from '@monaco-editor/react';
 import dynamic from 'next/dynamic';
 
@@ -71,12 +71,6 @@ export function CodeEditor({
 }: CodeEditorProps) {
   const { resolvedTheme } = useTheme();
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    const id = setTimeout(() => setIsMounted(true), 0);
-    return () => clearTimeout(id);
-  }, []);
 
   const handleMount: OnMount = useCallback(
     (editor, monaco) => {
@@ -115,15 +109,6 @@ export function CodeEditor({
     [onChange],
   );
 
-  if (!isMounted) {
-    return (
-      <div
-        className={cn('animate-pulse rounded-lg bg-muted', className)}
-        style={{ height: typeof height === 'number' ? `${height}px` : height }}
-      />
-    );
-  }
-
   return (
     <div className={cn('overflow-hidden rounded-lg border', className)}>
       <MonacoEditor
@@ -136,9 +121,13 @@ export function CodeEditor({
         options={{
           readOnly,
           domReadOnly: readOnly,
+          automaticLayout: true,
         }}
         loading={
-          <div className="flex h-full items-center justify-center">
+          <div
+            className="flex items-center justify-center bg-muted animate-pulse rounded-lg"
+            style={{ height: typeof height === 'number' ? `${height}px` : height }}
+          >
             <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
           </div>
         }
