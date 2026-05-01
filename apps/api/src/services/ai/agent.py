@@ -74,7 +74,7 @@ def get_agent() -> Agent[AgentDependencies, str]:
     return _AGENT
 
 
-def get_model() -> OpenAIChatModel:
+def get_openrouter_model() -> OpenAIChatModel:
     settings = get_settings().ai_config
     api_key = settings.openrouter_api_key
     if not api_key:
@@ -91,4 +91,16 @@ def get_model() -> OpenAIChatModel:
     return OpenAIChatModel(
         settings.chat_model,
         provider=OpenAIProvider(openai_client=openai_client),
+    )
+
+
+def get_model() -> OpenAIChatModel:
+    settings = get_settings().ai_config
+    api_key = settings.openai_api_key
+    if not api_key:
+        raise RetrievalError("OpenAI API key not configured")
+
+    return OpenAIChatModel(
+        settings.chat_model,
+        provider=OpenAIProvider(api_key=api_key),
     )

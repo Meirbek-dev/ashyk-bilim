@@ -140,7 +140,7 @@ class AIConfig(PlatformSectionSettings):
         validation_alias="PLATFORM_APP_NAME",
     )
     chat_model: str = Field(
-        default="google/gemma-4-31b-it:free",
+        default="gpt-5.4-nano",
         validation_alias="PLATFORM_AI_CHAT_MODEL",
     )
     embedding_model: str = Field(
