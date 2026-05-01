@@ -81,16 +81,20 @@ export interface KindModule {
   ReviewDetail?: ComponentType<KindReviewDetailProps>;
 }
 
-const registry = new Map<AssessmentKind, () => Promise<KindModule>>();
+function getRegistry(): Map<AssessmentKind, () => Promise<KindModule>> {
+  const f = getRegistry as any;
+  if (!f._map) f._map = new Map();
+  return f._map;
+}
 
 /** Register a kind module factory. Call once per kind (e.g., in kind's own file). */
 export function registerKind(kind: AssessmentKind, factory: () => Promise<KindModule>): void {
-  registry.set(kind, factory);
+  getRegistry().set(kind, factory);
 }
 
 /** Resolve a kind module. Throws if the kind is not registered. */
 export async function resolveKindModule(kind: AssessmentKind): Promise<KindModule> {
-  const factory = registry.get(kind);
+  const factory = getRegistry().get(kind);
   if (!factory) {
     throw new Error(`AssessmentKindRegistry: no module registered for kind "${kind}"`);
   }
@@ -101,17 +105,21 @@ export async function resolveKindModule(kind: AssessmentKind): Promise<KindModul
  * Synchronous access for contexts where async loading is managed externally.
  * Returns undefined if the kind module has not been loaded yet.
  */
-const loadedModules = new Map<AssessmentKind, KindModule>();
+function getLoadedModules(): Map<AssessmentKind, KindModule> {
+  const f = getLoadedModules as any;
+  if (!f._map) f._map = new Map();
+  return f._map;
+}
 
 export function getLoadedKindModule(kind: AssessmentKind): KindModule | undefined {
-  return loadedModules.get(kind);
+  return getLoadedModules().get(kind);
 }
 
 export async function loadKindModule(kind: AssessmentKind): Promise<KindModule> {
-  const existing = loadedModules.get(kind);
+  const existing = getLoadedModules().get(kind);
   if (existing) return existing;
   const module_ = await resolveKindModule(kind);
-  loadedModules.set(kind, module_);
+  getLoadedModules().set(kind, module_);
   return module_;
 }
 

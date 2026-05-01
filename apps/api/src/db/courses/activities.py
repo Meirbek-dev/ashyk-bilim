@@ -77,31 +77,6 @@ class ActivityBase(SQLModelStrictBaseModel):
             return ActivitySubTypeEnum(v)
         return v
 
-    # TODO: write a migration to fix the root cause. For now let it break
-    # @field_validator("settings", mode="before")
-    # @classmethod
-    # def validate_settings(cls, v):
-    #     """Coerce legacy or malformed JSON stored as a list into a dict.
-
-    #     Some historical data may contain a list like [{'kind': 'ASSIGNMENT'}, None]
-    #     which should be represented as a dict. Merge any dict elements found
-    #     in the list; otherwise return an empty dict for non-dict inputs.
-    #     """
-    #     if v is None:
-    #         return {}
-    #     # If it's already a dict, accept it.
-    #     if isinstance(v, dict):
-    #         return v
-    #     # If a list was stored, try to merge any dict elements.
-    #     if isinstance(v, list):
-    #         merged: dict[str, object] = {}
-    #         for item in v:
-    #             if isinstance(item, dict):
-    #                 merged.update(item)
-    #         return merged
-    #     # Fallback: return empty dict to satisfy type expectations.
-    #     return {}
-
 
 class Activity(ActivityBase, table=True):
     model_config = ConfigDict(from_attributes=True)
