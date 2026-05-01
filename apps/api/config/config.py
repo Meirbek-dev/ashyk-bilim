@@ -140,7 +140,7 @@ class AIConfig(PlatformSectionSettings):
         validation_alias="PLATFORM_APP_NAME",
     )
     chat_model: str = Field(
-        default="deepseek/deepseek-v4-flash",
+        default="google/gemma-4-31b-it:free",
         validation_alias="PLATFORM_AI_CHAT_MODEL",
     )
     embedding_model: str = Field(

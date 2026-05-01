@@ -139,7 +139,7 @@ def test_get_model_uses_openrouter_api_key(
         "AIConfig",
         (),
         {
-            "chat_model": "deepseek/deepseek-v4-flash",
+            "chat_model": "google/gemma-4-31b-it:free",
             "openrouter_api_key": "test-key",
             "openrouter_base_url": "https://openrouter.ai/api/v1",
             "app_url": "https://cs-mooc.tou.edu.kz",
@@ -159,7 +159,7 @@ def test_get_model_uses_openrouter_api_key(
 
 @dataclass
 class _FakeResponseMessage:
-    model_name: str | None = "openai:deepseek/deepseek-v4-flash"
+    model_name: str | None = "openai:google/gemma-4-31b-it:free"
     finish_reason: str | None = "stop"
 
 
