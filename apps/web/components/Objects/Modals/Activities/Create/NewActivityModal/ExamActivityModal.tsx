@@ -145,9 +145,11 @@ const NewExam = ({ chapterId, course, closeModal }: any) => {
 
         if (courseUuidClean) {
           const activityUuidClean = cleanActivityUuid(createdActivityUuid);
-          navigateTo(`/course/${courseUuidClean}/activity/${activityUuidClean}${
-            withUnpublishedActivities ? '?withUnpublishedActivities=true' : ''
-          }`);
+          navigateTo(
+            `/course/${courseUuidClean}/activity/${activityUuidClean}${
+              withUnpublishedActivities ? '?withUnpublishedActivities=true' : ''
+            }`,
+          );
         } else {
           navigateTo('/courses');
         }

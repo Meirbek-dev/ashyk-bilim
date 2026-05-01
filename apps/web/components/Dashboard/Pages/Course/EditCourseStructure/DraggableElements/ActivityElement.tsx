@@ -39,7 +39,6 @@ import { useCourse } from '@components/Contexts/CourseContext';
 import { getAbsoluteUrl } from '@services/config/config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Draggable } from '@hello-pangea/dnd';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -70,6 +69,9 @@ interface ActivityElementProps {
   activity: Activity;
   activityIndex: number;
   course_uuid: string;
+  isDragging?: boolean;
+  attributes?: any;
+  listeners?: any;
 }
 
 const ACTIVITY_CONFIG = {
@@ -110,7 +112,14 @@ const ACTIVITY_CONFIG = {
 
 const ACTION_ICON_BUTTON_CLASS = 'text-muted-foreground shadow-sm';
 
-const ActivityElement = ({ activity, activityIndex, course_uuid }: ActivityElementProps) => {
+const ActivityElement = ({
+  activity,
+  activityIndex,
+  course_uuid,
+  isDragging,
+  attributes,
+  listeners,
+}: ActivityElementProps) => {
   const { deleteActivity, updateActivity } = useActivityMutations(course_uuid, true);
   const t = useTranslations('CourseEdit.ActivityElement');
 
@@ -208,218 +217,210 @@ const ActivityElement = ({ activity, activityIndex, course_uuid }: ActivityEleme
   if (!activity?.activity_uuid) return null;
 
   return (
-    <Draggable
-      draggableId={activity.activity_uuid}
-      index={activityIndex}
+    <div
+      className={cn(
+        'mb-2 flex items-center gap-3 rounded-lg border bg-card p-3 transition-all duration-200',
+        isDragging ? 'shadow-xl ring-2 ring-ring/30' : 'shadow-sm hover:shadow-md',
+      )}
     >
-      {(provided, snapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          className={cn(
-            'mb-2 flex items-center gap-3 rounded-lg border bg-card p-3 transition-all duration-200',
-            snapshot.isDragging ? 'shadow-xl ring-2 ring-ring/30' : 'shadow-sm hover:shadow-md',
-          )}
-        >
-          {/* Drag Handle */}
-          <div
-            {...provided.dragHandleProps}
-            className="text-muted-foreground hover:text-foreground flex-shrink-0 cursor-grab active:cursor-grabbing"
-          >
-            <GripVertical className="h-5 w-5" />
+      {/* Drag Handle */}
+      <div
+        className="text-muted-foreground hover:text-foreground flex-shrink-0 cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-5 w-5" />
+      </div>
+
+      {/* Type Badge */}
+      <ActivityTypeBadge activityType={activity.activity_type} />
+
+      {/* Name */}
+      <div className="min-w-0 flex-1">
+        {isEditing ? (
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={t('activityNamePlaceholder')}
+              className="h-8 text-sm"
+              disabled={isSavingEdit}
+            />
+            <ToolTip
+              content={t('save')}
+              side="top"
+            >
+              <Button
+                size="icon-sm"
+                variant="outline"
+                className="flex-shrink-0 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70"
+                onClick={() => void handleSaveEdit()}
+                disabled={isSavingEdit}
+              >
+                {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              </Button>
+            </ToolTip>
+            <ToolTip
+              content={t('cancel')}
+              side="top"
+            >
+              <Button
+                size="icon-sm"
+                variant="outline"
+                className="flex-shrink-0"
+                onClick={handleCancelEdit}
+                disabled={isSavingEdit}
+              >
+                <XIcon className="h-4 w-4" />
+              </Button>
+            </ToolTip>
           </div>
-
-          {/* Type Badge */}
-          <ActivityTypeBadge activityType={activity.activity_type} />
-
-          {/* Name */}
-          <div className="min-w-0 flex-1">
-            {isEditing ? (
-              <div className="flex items-center gap-1.5">
-                <Input
-                  type="text"
-                  value={editedName}
-                  onChange={(e) => setEditedName(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={t('activityNamePlaceholder')}
-                  className="h-8 text-sm"
-                  disabled={isSavingEdit}
-                />
-                <ToolTip
-                  content={t('save')}
-                  side="top"
-                >
-                  <Button
-                    size="icon-sm"
-                    variant="outline"
-                    className="flex-shrink-0 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70"
-                    onClick={() => void handleSaveEdit()}
-                    disabled={isSavingEdit}
-                  >
-                    {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                  </Button>
-                </ToolTip>
-                <ToolTip
-                  content={t('cancel')}
-                  side="top"
-                >
-                  <Button
-                    size="icon-sm"
-                    variant="outline"
-                    className="flex-shrink-0"
-                    onClick={handleCancelEdit}
-                    disabled={isSavingEdit}
-                  >
-                    <XIcon className="h-4 w-4" />
-                  </Button>
-                </ToolTip>
-              </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
+            {activity.published ? (
+              <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                {t('liveBadge')}
+              </span>
             ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
-                {activity.published ? (
-                  <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
-                    {t('liveBadge')}
-                  </span>
-                ) : (
-                  <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                    {t('draftBadge')}
-                  </span>
-                )}
-                {isOwner && (
-                  <ToolTip content={t('ownerBadge')}>
-                    <CourseWorkflowBadge tone="info">{t('ownerLabel')}</CourseWorkflowBadge>
-                  </ToolTip>
-                )}
-                {canUpdate && (
-                  <ToolTip
-                    content={t('editButton')}
-                    side="top"
-                  >
-                    <Button
-                      size="icon-sm"
-                      variant="outline"
-                      className="flex-shrink-0"
-                      onClick={handleStartEdit}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  </ToolTip>
-                )}
-              </div>
+              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                {t('draftBadge')}
+              </span>
             )}
-          </div>
-
-          {/* Action icons */}
-          {!isEditing && (
-            <div className="flex flex-shrink-0 items-center gap-1">
-              {/* Open content editor */}
-              <ActivityEditButton
-                activity={activity}
-                course_uuid={course_uuid}
-                assignmentUUID={assignmentUUID ?? null}
-                isAssignmentLoading={isAssignmentLoading}
-                onRequestAssignment={() => setFetchAssignment(true)}
-              />
-
-              {/* Preview */}
+            {isOwner && (
+              <ToolTip content={t('ownerBadge')}>
+                <CourseWorkflowBadge tone="info">{t('ownerLabel')}</CourseWorkflowBadge>
+              </ToolTip>
+            )}
+            {canUpdate && (
               <ToolTip
-                content={t('previewTooltip')}
+                content={t('editButton')}
                 side="top"
               >
                 <Button
-                  size="icon"
+                  size="icon-sm"
                   variant="outline"
-                  className={ACTION_ICON_BUTTON_CLASS}
-                  onClick={() =>
-                    window.open(
-                      `${getAbsoluteUrl('')}/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`,
-                      '_blank',
-                      'noopener,noreferrer',
-                    )
-                  }
+                  className="flex-shrink-0"
+                  onClick={handleStartEdit}
                 >
-                  <Eye className="h-4 w-4" />
+                  <Pencil className="h-3.5 w-3.5" />
                 </Button>
               </ToolTip>
+            )}
+          </div>
+        )}
+      </div>
 
-              {/* Publish toggle */}
-              {canUpdate && (
-                <ToolTip
-                  content={activity.published ? t('unpublish') : t('publish')}
-                  side="top"
-                >
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className={ACTION_ICON_BUTTON_CLASS}
-                    onClick={handleTogglePublish}
-                    disabled={isUpdatingPublish}
-                  >
-                    {isUpdatingPublish ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : activity.published ? (
-                      <Lock className="h-4 w-4" />
-                    ) : (
-                      <Globe className="h-4 w-4" />
-                    )}
-                  </Button>
-                </ToolTip>
-              )}
+      {/* Action icons */}
+      {!isEditing && (
+        <div className="flex flex-shrink-0 items-center gap-1">
+          {/* Open content editor */}
+          <ActivityEditButton
+            activity={activity}
+            course_uuid={course_uuid}
+            assignmentUUID={assignmentUUID ?? null}
+            isAssignmentLoading={isAssignmentLoading}
+            onRequestAssignment={() => setFetchAssignment(true)}
+          />
 
-              {/* Delete */}
-              {canDelete && (
-                <ToolTip
-                  content={t('deleteButton')}
-                  side="top"
-                >
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="text-muted-foreground hover:text-destructive shadow-sm"
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </ToolTip>
-              )}
-            </div>
+          {/* Preview */}
+          <ToolTip
+            content={t('previewTooltip')}
+            side="top"
+          >
+            <Button
+              size="icon"
+              variant="outline"
+              className={ACTION_ICON_BUTTON_CLASS}
+              onClick={() =>
+                window.open(
+                  `${getAbsoluteUrl('')}/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`,
+                  '_blank',
+                  'noopener,noreferrer',
+                )
+              }
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          </ToolTip>
+
+          {/* Publish toggle */}
+          {canUpdate && (
+            <ToolTip
+              content={activity.published ? t('unpublish') : t('publish')}
+              side="top"
+            >
+              <Button
+                size="icon"
+                variant="outline"
+                className={ACTION_ICON_BUTTON_CLASS}
+                onClick={handleTogglePublish}
+                disabled={isUpdatingPublish}
+              >
+                {isUpdatingPublish ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : activity.published ? (
+                  <Lock className="h-4 w-4" />
+                ) : (
+                  <Globe className="h-4 w-4" />
+                )}
+              </Button>
+            </ToolTip>
           )}
 
-          <AlertDialog
-            open={isDeleteDialogOpen}
-            onOpenChange={setIsDeleteDialogOpen}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogMedia className="bg-muted text-foreground">
-                  <AlertTriangle className="size-8" />
-                </AlertDialogMedia>
-                <AlertDialogTitle>{t('deleteTitle', { name: activity.name })}</AlertDialogTitle>
-                <AlertDialogDescription>{t('deleteConfirmation')}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={isDeletingActivity} />
-                <AlertDialogAction
-                  variant="destructive"
-                  onClick={handleDeleteActivity}
-                  disabled={isDeletingActivity}
-                >
-                  {isDeletingActivity ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t('deleting')}
-                    </>
-                  ) : (
-                    t('deleteButton')
-                  )}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          {/* Delete */}
+          {canDelete && (
+            <ToolTip
+              content={t('deleteButton')}
+              side="top"
+            >
+              <Button
+                size="icon"
+                variant="outline"
+                className="text-muted-foreground hover:text-destructive shadow-sm"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </ToolTip>
+          )}
         </div>
       )}
-    </Draggable>
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-muted text-foreground">
+              <AlertTriangle className="size-8" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>{t('deleteTitle', { name: activity.name })}</AlertDialogTitle>
+            <AlertDialogDescription>{t('deleteConfirmation')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingActivity} />
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDeleteActivity}
+              disabled={isDeletingActivity}
+            >
+              {isDeletingActivity ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('deleting')}
+                </>
+              ) : (
+                t('deleteButton')
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 };
 

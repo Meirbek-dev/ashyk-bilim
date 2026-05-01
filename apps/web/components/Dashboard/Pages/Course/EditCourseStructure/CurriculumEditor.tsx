@@ -1,11 +1,18 @@
 'use client';
 
+import { closestCenter, DndContext, DragOverlay, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { AlertTriangle, BookOpen, CheckCircle2, Hexagon, Loader2 } from 'lucide-react';
 import { useChapterMutations } from '@/hooks/mutations/useChapterMutations';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useCourse } from '@components/Contexts/CourseContext';
-import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslations } from 'next-intl';
@@ -15,6 +22,13 @@ import { toast } from 'sonner';
 import type { CourseOrderPayload } from '@/schemas/chapterSchemas';
 import ChapterElement from './DraggableElements/ChapterElement';
 
+type DndItemType = 'chapter' | 'activity';
+
+interface DndData {
+  type: DndItemType;
+  chapterUuid?: string;
+}
+
 const CurriculumEditor = () => {
   const t = useTranslations('CourseEdit.Structure');
 
@@ -23,17 +37,33 @@ const CurriculumEditor = () => {
   const { course_uuid } = course_structure;
   const { createChapter, reorderStructure } = useChapterMutations(course_uuid, true);
 
-  // Inline chapter creation state
   const [showChapterInput, setShowChapterInput] = useState(false);
   const [newChapterName, setNewChapterName] = useState('');
   const [isCreatingChapter, setIsCreatingChapter] = useState(false);
   const newChapterInputRef = useRef<HTMLInputElement>(null);
 
-  // Structure save status
   const [structureStatus, setStructureStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [activeDragType, setActiveDragType] = useState<DndItemType | null>(null);
+
+  const chapterIds = useMemo(
+    () => course_structure.chapters.map((chapter: any) => chapter.chapter_uuid),
+    [course_structure.chapters],
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   useEffect(() => {
     if (structureStatus !== 'saved') return;
+
     const timer = setTimeout(() => setStructureStatus('idle'), 3000);
     return () => clearTimeout(timer);
   }, [structureStatus]);
@@ -43,7 +73,6 @@ const CurriculumEditor = () => {
     newChapterInputRef.current?.focus();
   }, [showChapterInput]);
 
-  // --- Chapter creation ---
   const handleStartNewChapter = () => {
     setShowChapterInput(true);
     setNewChapterName('');
@@ -56,14 +85,16 @@ const CurriculumEditor = () => {
 
   const handleSubmitNewChapter = async () => {
     const name = newChapterName.trim();
+
     if (!name) {
       handleCancelNewChapter();
       return;
     }
 
     setIsCreatingChapter(true);
+
     try {
-      await createChapter({ name, course_uuid: course.courseStructure.course_uuid });
+      await createChapter({ name, course_uuid });
       toast.success(t('chapterCreatedSuccess'));
       setShowChapterInput(false);
       setNewChapterName('');
@@ -78,49 +109,47 @@ const CurriculumEditor = () => {
     if (e.key === 'Enter') {
       e.preventDefault();
       void handleSubmitNewChapter();
-    } else if (e.key === 'Escape') {
+      return;
+    }
+
+    if (e.key === 'Escape') {
       e.preventDefault();
       handleCancelNewChapter();
     }
   };
 
-  // --- Drag-and-drop reorder ---
-  const updateStructure = async (result: any) => {
-    const { destination, source, type } = result;
-    if (!destination) return;
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+  const buildPayload = (newCourseStructure: any): CourseOrderPayload => ({
+    chapter_order_by_uuids: newCourseStructure.chapters.map((chapter: any) => ({
+      chapter_uuid: chapter.chapter_uuid,
+      activities_order_by_uuids: (chapter.activities ?? []).map((activity: any) => activity.activity_uuid),
+    })),
+  });
 
-    const newCourseStructure = structuredClone(course_structure);
+  const findChapterByActivityUuid = (activityUuid: string) => {
+    return course_structure.chapters.find((chapter: any) =>
+      (chapter.activities ?? []).some((activity: any) => activity.activity_uuid === activityUuid),
+    );
+  };
 
-    if (type === 'chapter') {
-      const newChapterOrder = [...newCourseStructure.chapters];
-      const [movedChapter] = newChapterOrder.splice(source.index, 1);
-      if (!movedChapter) return;
-      newChapterOrder.splice(destination.index, 0, movedChapter);
-      newCourseStructure.chapters = newChapterOrder;
+  const findActivityLocation = (activityUuid: string) => {
+    for (const chapter of course_structure.chapters) {
+      const activityIndex = (chapter.activities ?? []).findIndex(
+        (activity: any) => activity.activity_uuid === activityUuid,
+      );
+
+      if (activityIndex !== -1) {
+        return {
+          chapterUuid: chapter.chapter_uuid,
+          activityIndex,
+        };
+      }
     }
 
-    if (type === 'activity') {
-      const newChapterOrder = [...newCourseStructure.chapters];
-      const sourceChapter = newChapterOrder.find((c: any) => c.chapter_uuid === source.droppableId);
-      const destinationChapter =
-        newChapterOrder.find((c: any) => c.chapter_uuid === destination.droppableId) ?? sourceChapter;
+    return null;
+  };
 
-      if (!(sourceChapter && destinationChapter)) return;
-      if (!(sourceChapter.activities && destinationChapter.activities)) return;
-
-      const [movedActivity] = sourceChapter.activities.splice(source.index, 1);
-      if (!movedActivity) return;
-      destinationChapter.activities.splice(destination.index, 0, movedActivity);
-      newCourseStructure.chapters = newChapterOrder;
-    }
-
-    const payload: CourseOrderPayload = {
-      chapter_order_by_uuids: newCourseStructure.chapters.map((chapter: any) => ({
-        chapter_uuid: chapter.chapter_uuid,
-        activities_order_by_uuids: (chapter.activities || []).map((activity: any) => activity.activity_uuid),
-      })),
-    };
+  const saveStructure = async (newCourseStructure: any) => {
+    const payload = buildPayload(newCourseStructure);
 
     try {
       setStructureStatus('saving');
@@ -130,6 +159,93 @@ const CurriculumEditor = () => {
       setStructureStatus('error');
       toast.error(error?.message || t('saveOrderError'));
     }
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const data = event.active.data.current as DndData | undefined;
+    setActiveDragType(data?.type ?? null);
+  };
+
+  const handleDragOver = (_event: DragOverEvent) => {
+    // Keep this intentionally empty unless you want optimistic cross-chapter preview.
+    // Persisting on dragEnd is simpler and avoids mutating server-backed course context locally.
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveDragType(null);
+
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    if (activeId === overId) return;
+
+    const activeData = active.data.current as DndData | undefined;
+    const overData = over.data.current as DndData | undefined;
+
+    const newCourseStructure = structuredClone(course_structure);
+
+    if (activeData?.type === 'chapter') {
+      const oldIndex = newCourseStructure.chapters.findIndex((chapter: any) => chapter.chapter_uuid === activeId);
+      const newIndex = newCourseStructure.chapters.findIndex((chapter: any) => chapter.chapter_uuid === overId);
+
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+
+      newCourseStructure.chapters = arrayMove(newCourseStructure.chapters, oldIndex, newIndex);
+      await saveStructure(newCourseStructure);
+      return;
+    }
+
+    if (activeData?.type === 'activity') {
+      const sourceLocation = findActivityLocation(activeId);
+      if (!sourceLocation) return;
+
+      const destinationChapterUuid =
+        overData?.type === 'chapter'
+          ? overId
+          : (overData?.chapterUuid ?? findChapterByActivityUuid(overId)?.chapter_uuid ?? sourceLocation.chapterUuid);
+
+      const sourceChapter = newCourseStructure.chapters.find(
+        (chapter: any) => chapter.chapter_uuid === sourceLocation.chapterUuid,
+      );
+
+      const destinationChapter = newCourseStructure.chapters.find(
+        (chapter: any) => chapter.chapter_uuid === destinationChapterUuid,
+      );
+
+      if (!sourceChapter || !destinationChapter) return;
+
+      sourceChapter.activities ??= [];
+      destinationChapter.activities ??= [];
+
+      const sourceIndex = sourceChapter.activities.findIndex((activity: any) => activity.activity_uuid === activeId);
+      if (sourceIndex === -1) return;
+
+      const [movedActivity] = sourceChapter.activities.splice(sourceIndex, 1);
+      if (!movedActivity) return;
+
+      let destinationIndex = destinationChapter.activities.length;
+
+      if (overData?.type === 'activity') {
+        const overActivityIndex = destinationChapter.activities.findIndex(
+          (activity: any) => activity.activity_uuid === overId,
+        );
+
+        if (overActivityIndex !== -1) {
+          destinationIndex = overActivityIndex;
+        }
+      }
+
+      destinationChapter.activities.splice(destinationIndex, 0, movedActivity);
+
+      await saveStructure(newCourseStructure);
+    }
+  };
+
+  const handleDragCancel = () => {
+    setActiveDragType(null);
   };
 
   if (!course) return null;
@@ -178,34 +294,40 @@ const CurriculumEditor = () => {
           </Button>
         </div>
       ) : (
-        <DragDropContext onDragEnd={updateStructure}>
-          <Droppable
-            type="chapter"
-            droppableId="chapters"
-            direction="vertical"
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={(event) => void handleDragEnd(event)}
+          onDragCancel={handleDragCancel}
+        >
+          <SortableContext
+            items={chapterIds}
+            strategy={verticalListSortingStrategy}
           >
-            {(provided, snapshot) => (
-              <div
-                className={cn('space-y-4', snapshot.isDraggingOver && 'bg-muted/40 rounded-xl')}
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-              >
-                {course_structure.chapters.map((chapter: any, index: any) => (
-                  <ChapterElement
-                    key={chapter.chapter_uuid}
-                    chapterIndex={index}
-                    course_uuid={course_uuid}
-                    chapter={chapter}
-                  />
-                ))}
-                {provided.placeholder}
+            <div className={cn('space-y-4', activeDragType === 'chapter' && 'rounded-xl bg-muted/20')}>
+              {course_structure.chapters.map((chapter: any, index: number) => (
+                <ChapterElement
+                  key={chapter.chapter_uuid}
+                  chapterIndex={index}
+                  course_uuid={course_uuid}
+                  chapter={chapter}
+                />
+              ))}
+            </div>
+          </SortableContext>
+
+          <DragOverlay dropAnimation={null}>
+            {activeDragType ? (
+              <div className="bg-card rounded-xl border px-4 py-3 text-sm font-medium shadow-2xl">
+                {activeDragType === 'chapter' ? t('chapter') : t('activity')}
               </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
-      {/* Inline chapter creation */}
       <div className="mt-4">
         {showChapterInput ? (
           <div className="border-primary/50 bg-muted/30 flex items-center gap-2 rounded-xl border border-dashed px-4 py-3">

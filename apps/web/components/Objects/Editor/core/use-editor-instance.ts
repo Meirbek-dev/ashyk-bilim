@@ -26,10 +26,7 @@ export function useEditorInstance(options: UseEditorInstanceOptions) {
   const presetDef = getEditorPresetDefinition(preset);
 
   // Memoize extensions — only recompute when preset or activity identity changes
-  const extensions = useMemo(
-    () => createEditorExtensions({ preset, activity }),
-    [preset, activity],
-  );
+  const extensions = useMemo(() => createEditorExtensions({ preset, activity }), [preset, activity]);
 
   // Resolve content once on mount
   const [resolvedContent] = useState(() => resolveEditorContent(content));
