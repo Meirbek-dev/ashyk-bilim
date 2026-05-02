@@ -737,6 +737,311 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assignments/activity/{activity_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Read Assignment From Activity */
+        get: operations["api_read_assignment_from_activity_api_v1_assignments_activity__activity_uuid__get"];
+        put?: never;
+        post?: never;
+        /** Api Delete Assignment From Activity */
+        delete: operations["api_delete_assignment_from_activity_api_v1_assignments_activity__activity_uuid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/course/{course_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Assignments */
+        get: operations["api_get_assignments_api_v1_assignments_course__course_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/courses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Assignments For Courses */
+        get: operations["api_get_assignments_for_courses_api_v1_assignments_courses_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/courses/editable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Editable Assignments For Courses */
+        get: operations["api_get_editable_assignments_for_courses_api_v1_assignments_courses_editable_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/with-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Create Assignment With Activity
+         * @description Create assignment with activity in a single transaction.
+         */
+        post: operations["api_create_assignment_with_activity_api_v1_assignments_with_activity_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Read Assignment */
+        get: operations["api_read_assignment_api_v1_assignments__assignment_uuid__get"];
+        /** Api Update Assignment */
+        put: operations["api_update_assignment_api_v1_assignments__assignment_uuid__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Archive Assignment
+         * @description Archive an assignment.  Read-only for everyone afterwards; not deletable.
+         *
+         *     **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/lifecycle`` instead.
+         */
+        post: operations["api_archive_assignment_api_v1_assignments__assignment_uuid__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/cancel-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Cancel Assignment Schedule
+         * @description Revert a SCHEDULED assignment back to DRAFT.
+         *
+         *     **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/lifecycle`` instead.
+         */
+        post: operations["api_cancel_assignment_schedule_api_v1_assignments__assignment_uuid__cancel_schedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Publish Assignment
+         * @description Publish immediately or schedule for a future date.
+         *
+         *     Body ``scheduled_at`` is optional:
+         *     - Omit or set to null → publish now (status becomes PUBLISHED).
+         *     - Set to a future datetime → schedule (status becomes SCHEDULED).
+         *
+         *     **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/lifecycle`` instead.
+         *     This endpoint will redirect (308) to the canonical URL when possible.
+         */
+        post: operations["api_publish_assignment_api_v1_assignments__assignment_uuid__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/submissions/me/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get Assignment Draft Submission
+         * @description Get the current user's Submission-backed assignment draft, if any.
+         *
+         *     **Deprecated** — compatibility adapter over ``GET /api/v1/assessments/{assessment_uuid}/draft``.
+         */
+        get: operations["api_get_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Api Save Assignment Draft Submission
+         * @description Create or update the current user's assignment draft in Submission.
+         *
+         *     **Deprecated** — compatibility adapter over ``PATCH /api/v1/assessments/{assessment_uuid}/draft``.
+         */
+        patch: operations["api_save_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_patch"];
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Submit Assignment Draft Submission
+         * @description Submit the current user's assignment draft through the unified Submission model.
+         *
+         *     **Deprecated** — compatibility adapter over ``POST /api/v1/assessments/{assessment_uuid}/submit``.
+         */
+        post: operations["api_submit_assignment_draft_submission_api_v1_assignments__assignment_uuid__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Read Assignment Tasks */
+        get: operations["api_read_assignment_tasks_api_v1_assignments__assignment_uuid__tasks_get"];
+        put?: never;
+        /** Api Create Assignment Tasks */
+        post: operations["api_create_assignment_tasks_api_v1_assignments__assignment_uuid__tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Read Assignment Task */
+        get: operations["api_read_assignment_task_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__get"];
+        /** Api Update Assignment Tasks */
+        put: operations["api_update_assignment_tasks_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__put"];
+        post?: never;
+        /** Api Delete Assignment Tasks */
+        delete: operations["api_delete_assignment_tasks_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}/ref_file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Put Assignment Task Ref File
+         * @description Upload a reference file for an assignment task.
+         */
+        post: operations["api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}/sub_file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Put Assignment Task Sub File
+         * @description Upload a submission file for an assignment task.
+         */
+        post: operations["api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/forgot-password": {
         parameters: {
             query?: never;
@@ -1270,6 +1575,273 @@ export interface paths {
          * @description Move a chapter to a specific position within its course (atomic).
          */
         patch: operations["api_move_chapter_to_order_api_v1_chapters__chapter_uuid__order_patch"];
+        trace?: never;
+    };
+    "/api/v1/code-challenges/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check Judge0 Health
+         * @description Check if Judge0 service is available
+         */
+        get: operations["check_judge0_health_api_v1_code_challenges_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Available Languages
+         * @description Get list of available programming languages from Judge0
+         */
+        get: operations["get_available_languages_api_v1_code_challenges_languages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/submissions/{submission_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Submission Detail
+         * @description Get canonical submission detail for a code challenge.
+         */
+        get: operations["get_submission_detail_api_v1_code_challenges_submissions__submission_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/{activity_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Code Challenge
+         * @description Get code challenge activity details
+         */
+        get: operations["get_code_challenge_api_v1_code_challenges__activity_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/{activity_uuid}/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Challenge Analytics
+         * @description Get analytics for a code challenge (instructor only)
+         */
+        get: operations["get_challenge_analytics_api_v1_code_challenges__activity_uuid__analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/{activity_uuid}/analytics/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Student Analytics
+         * @description Get analytics for a student on a code challenge
+         */
+        get: operations["get_student_analytics_api_v1_code_challenges__activity_uuid__analytics__user_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/{activity_uuid}/custom-test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Custom Test
+         * @description Run code with custom input (no expected output comparison)
+         */
+        post: operations["run_custom_test_api_v1_code_challenges__activity_uuid__custom_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/{activity_uuid}/leaderboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Leaderboard
+         * @description Get leaderboard for a code challenge
+         */
+        get: operations["get_leaderboard_api_v1_code_challenges__activity_uuid__leaderboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/{activity_uuid}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Challenge Settings Endpoint
+         * @description Get code challenge settings (visible tests only for students)
+         */
+        get: operations["get_challenge_settings_endpoint_api_v1_code_challenges__activity_uuid__settings_get"];
+        /**
+         * Update Challenge Settings
+         * @description Update code challenge settings (instructor only)
+         */
+        put: operations["update_challenge_settings_api_v1_code_challenges__activity_uuid__settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/{activity_uuid}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Code Challenge
+         * @description Create or return the canonical DRAFT submission for this challenge.
+         */
+        post: operations["start_code_challenge_api_v1_code_challenges__activity_uuid__start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/{activity_uuid}/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Submission History
+         * @description Get user's submission history for a challenge
+         */
+        get: operations["get_submission_history_api_v1_code_challenges__activity_uuid__submissions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/{activity_uuid}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Code Challenge
+         * @description Submit a solution to the code challenge.
+         *
+         *     **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/submit`` instead.
+         *     Compatibility adapter over the canonical Submission pipeline.
+         */
+        post: operations["submit_code_challenge_api_v1_code_challenges__activity_uuid__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-challenges/{activity_uuid}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Visible Tests
+         * @description Run visible test cases only (pre-submission testing)
+         */
+        post: operations["run_visible_tests_api_v1_code_challenges__activity_uuid__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/collections": {
@@ -1892,6 +2464,334 @@ export interface paths {
         get: operations["config_api_v1_dev_config_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Create Exam */
+        post: operations["api_create_exam_api_v1_exams_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/activity/{activity_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Exam From Activity */
+        get: operations["api_get_exam_from_activity_api_v1_exams_activity__activity_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/attempts/{attempt_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get Attempt By Uuid
+         * @description Get a specific exam attempt by UUID.
+         *
+         *     - Students can only access their own attempts
+         *     - Teachers/admins can access any attempt for exams they manage
+         */
+        get: operations["api_get_attempt_by_uuid_api_v1_exams_attempts__attempt_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/attempts/{attempt_uuid}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Attempt Review Questions */
+        get: operations["api_get_attempt_review_questions_api_v1_exams_attempts__attempt_uuid__questions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Exam Config */
+        get: operations["api_get_exam_config_api_v1_exams_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/questions/{question_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Api Update Question */
+        put: operations["api_update_question_api_v1_exams_questions__question_uuid__put"];
+        post?: never;
+        /** Api Delete Question */
+        delete: operations["api_delete_question_api_v1_exams_questions__question_uuid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/with-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Create Exam With Activity */
+        post: operations["api_create_exam_with_activity_api_v1_exams_with_activity_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/{exam_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Exam */
+        get: operations["api_get_exam_api_v1_exams__exam_uuid__get"];
+        /** Api Update Exam */
+        put: operations["api_update_exam_api_v1_exams__exam_uuid__put"];
+        post?: never;
+        /** Api Delete Exam */
+        delete: operations["api_delete_exam_api_v1_exams__exam_uuid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/{exam_uuid}/attempts/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get All Attempts
+         * @description Get all exam attempts for teacher results dashboard
+         */
+        get: operations["api_get_all_attempts_api_v1_exams__exam_uuid__attempts_all_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/{exam_uuid}/attempts/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get My Attempts */
+        get: operations["api_get_my_attempts_api_v1_exams__exam_uuid__attempts_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/{exam_uuid}/attempts/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Start Exam Attempt
+         * @description Start an exam attempt.
+         *
+         *     **Deprecated** — compatibility adapter over ``POST /api/v1/assessments/{assessment_uuid}/start``.
+         */
+        post: operations["api_start_exam_attempt_api_v1_exams__exam_uuid__attempts_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/{exam_uuid}/attempts/{attempt_uuid}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Submit Exam Attempt
+         * @description Submit an exam attempt.
+         *
+         *     **Deprecated** — compatibility adapter over ``POST /api/v1/assessments/{assessment_uuid}/submit``.
+         */
+        post: operations["api_submit_exam_attempt_api_v1_exams__exam_uuid__attempts__attempt_uuid__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/{exam_uuid}/attempts/{attempt_uuid}/violations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Record Violation
+         * @description Record an anti-cheat violation.
+         *
+         *     **Deprecated** — violations are now written to Submission.metadata_json.violations
+         *     via ``PATCH /api/v1/assessments/{assessment_uuid}/draft``. This endpoint continues
+         *     to accept requests and delegates to the legacy service during the shim period.
+         */
+        post: operations["api_record_violation_api_v1_exams__exam_uuid__attempts__attempt_uuid__violations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/{exam_uuid}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Questions */
+        get: operations["api_get_questions_api_v1_exams__exam_uuid__questions_get"];
+        put?: never;
+        /** Api Create Question */
+        post: operations["api_create_question_api_v1_exams__exam_uuid__questions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/{exam_uuid}/questions/export-csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Export Questions Csv
+         * @description Export exam questions to CSV
+         */
+        get: operations["api_export_questions_csv_api_v1_exams__exam_uuid__questions_export_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/{exam_uuid}/questions/import-csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Import Questions Csv
+         * @description Import exam questions from CSV
+         */
+        post: operations["api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exams/{exam_uuid}/questions/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Reorder Questions
+         * @description Bulk update question order
+         */
+        post: operations["api_reorder_questions_api_v1_exams__exam_uuid__questions_reorder_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3259,6 +4159,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/uploads/{upload_id}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Assessment Upload Url
+         * @description Return a short-lived signed URL to read a finalised upload.
+         */
+        get: operations["get_assessment_upload_url_api_v1_uploads__upload_id__url_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/usergroups": {
         parameters: {
             query?: never;
@@ -4391,6 +5311,8 @@ export interface components {
             chapter_id: number;
             /** Course Id */
             course_id?: number | null;
+            /** Course Uuid */
+            course_uuid?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -4468,6 +5390,187 @@ export interface components {
             title?: string | null;
             /** Weight */
             weight?: number | null;
+        };
+        /**
+         * AssignmentCreateWithActivity
+         * @description Input for POST /assignments/with-activity.
+         */
+        AssignmentCreateWithActivity: {
+            /** Chapter Id */
+            chapter_id: number;
+            /** Course Id */
+            course_id: number;
+            /** Description */
+            description: string;
+            /** Due At */
+            due_at?: string | null;
+            grading_type: components["schemas"]["GradingTypeEnum"];
+            /** @default DRAFT */
+            status: components["schemas"]["AssignmentStatus"];
+            /** Title */
+            title: string;
+        };
+        /**
+         * AssignmentDraftPatch
+         * @description Patch/upsert payload for the current user's assignment draft.
+         */
+        AssignmentDraftPatch: {
+            /** Tasks */
+            tasks?: components["schemas"]["AssignmentTaskAnswer"][];
+        };
+        /** AssignmentDraftRead */
+        AssignmentDraftRead: {
+            /** Assignment Uuid */
+            assignment_uuid: string;
+            submission?: components["schemas"]["SubmissionRead"] | null;
+        };
+        /**
+         * AssignmentPublishInput
+         * @description Input for POST /assignments/{uuid}/publish.
+         */
+        AssignmentPublishInput: {
+            /** Scheduled At */
+            scheduled_at?: string | null;
+        };
+        /**
+         * AssignmentRead
+         * @description Projection returned by the API — never exposes internal FK integer IDs.
+         */
+        AssignmentRead: {
+            /** Activity Uuid */
+            activity_uuid?: string | null;
+            /** Archived At */
+            archived_at?: string | null;
+            /** Assignment Uuid */
+            assignment_uuid: string;
+            /** Course Uuid */
+            course_uuid?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Description */
+            description: string;
+            /** Due At */
+            due_at?: string | null;
+            grading_type: components["schemas"]["GradingTypeEnum"];
+            /** Published */
+            published: boolean;
+            /** Published At */
+            published_at?: string | null;
+            /** Scheduled Publish At */
+            scheduled_publish_at?: string | null;
+            status: components["schemas"]["AssignmentStatus"];
+            /** Title */
+            title: string;
+            /** Updated At */
+            updated_at?: string | null;
+            /**
+             * Weight
+             * @default 1
+             */
+            weight: number;
+        };
+        /**
+         * AssignmentStatus
+         * @enum {string}
+         */
+        AssignmentStatus: "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
+        /**
+         * AssignmentTaskAnswer
+         * @description Canonical assignment answer shape stored in Submission.answers_json.
+         */
+        AssignmentTaskAnswer: {
+            /** Answer Metadata */
+            answer_metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Content Type
+             * @enum {string}
+             */
+            content_type: "file" | "text" | "form" | "quiz" | "other";
+            /** File Key */
+            file_key?: string | null;
+            /** Form Data */
+            form_data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Quiz Answers */
+            quiz_answers?: {
+                [key: string]: unknown;
+            } | null;
+            /** Task Uuid */
+            task_uuid: string;
+            /** Text Content */
+            text_content?: string | null;
+        };
+        /**
+         * AssignmentTaskCreate
+         * @description Input for creating a new task — contents validated against task type.
+         */
+        AssignmentTaskCreate: {
+            assignment_type: components["schemas"]["AssignmentTaskTypeEnum"];
+            /** Contents */
+            contents?: {
+                [key: string]: unknown;
+            };
+            /** Description */
+            description: string;
+            /** Hint */
+            hint: string;
+            /**
+             * Max Grade Value
+             * @default 0
+             */
+            max_grade_value: number;
+            /** Reference File */
+            reference_file?: string | null;
+            /** Title */
+            title: string;
+        };
+        /**
+         * AssignmentTaskTypeEnum
+         * @enum {string}
+         */
+        AssignmentTaskTypeEnum: "FILE_SUBMISSION" | "QUIZ" | "FORM" | "OTHER";
+        /**
+         * AssignmentTaskUpdate
+         * @description Partial update for an existing task.
+         *
+         *     ``order`` is intentionally absent — use the dedicated reorder endpoint.
+         *     ``contents`` is validated against ``assignment_type`` when both are present.
+         */
+        AssignmentTaskUpdate: {
+            assignment_type?: components["schemas"]["AssignmentTaskTypeEnum"] | null;
+            /** Contents */
+            contents?: {
+                [key: string]: unknown;
+            } | null;
+            /** Description */
+            description?: string | null;
+            /** Hint */
+            hint?: string | null;
+            /** Max Grade Value */
+            max_grade_value?: number | null;
+            /** Reference File */
+            reference_file?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /**
+         * AssignmentUpdate
+         * @description Partial update — only the fields a teacher can change after creation.
+         *
+         *     Lifecycle transitions (publish, archive) use dedicated endpoints;
+         *     ``status`` is intentionally absent from this schema.
+         */
+        AssignmentUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Due At */
+            due_at?: string | null;
+            grading_type?: components["schemas"]["GradingTypeEnum"] | null;
+            /** Title */
+            title?: string | null;
         };
         /** AtRiskLearnerRow */
         AtRiskLearnerRow: {
@@ -4572,6 +5675,11 @@ export interface components {
             /** Total */
             total: number;
         };
+        /**
+         * AttemptStatusEnum
+         * @enum {string}
+         */
+        AttemptStatusEnum: "IN_PROGRESS" | "SUBMITTED" | "AUTO_SUBMITTED";
         /** AuthorWithRole */
         AuthorWithRole: {
             authorship: components["schemas"]["ResourceAuthorshipEnum"];
@@ -4761,6 +5869,21 @@ export interface components {
             activity_uuid: string;
             /** File Object */
             file_object: string;
+        };
+        /** Body_api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post */
+        Body_api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post: {
+            /** File */
+            file: string;
+        };
+        /** Body_api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post */
+        Body_api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post: {
+            /** Reference File */
+            reference_file?: string | null;
+        };
+        /** Body_api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post */
+        Body_api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post: {
+            /** Sub File */
+            sub_file?: string | null;
         };
         /** Body_api_update_avatar_user_api_v1_users_update_avatar__user_id__put */
         Body_api_update_avatar_user_api_v1_users_update_avatar__user_id__put: {
@@ -5174,6 +6297,20 @@ export interface components {
             /** Upload Id */
             upload_id: string;
         };
+        /**
+         * CodeChallengeLeaderboard
+         * @description Leaderboard for a code challenge
+         */
+        CodeChallengeLeaderboard: {
+            /** Activity Uuid */
+            activity_uuid: string;
+            /** Current User Rank */
+            current_user_rank?: number | null;
+            /** Entries */
+            entries: components["schemas"]["LeaderboardEntry"][];
+            /** Total Participants */
+            total_participants: number;
+        };
         /** CodeItemAnswer */
         CodeItemAnswer: {
             /**
@@ -5233,6 +6370,16 @@ export interface components {
              * @default 0
              */
             total: number;
+        };
+        /**
+         * CodeSubmissionCreate
+         * @description Model for creating a code submission
+         */
+        CodeSubmissionCreate: {
+            /** Language Id */
+            language_id: number;
+            /** Source Code */
+            source_code: string;
         };
         /** CodeTestCase */
         CodeTestCase: {
@@ -5796,6 +6943,41 @@ export interface components {
             is_user: boolean;
         };
         /**
+         * CustomTestRequest
+         * @description Request model for custom test execution
+         */
+        CustomTestRequest: {
+            /** Language Id */
+            language_id: number;
+            /** Source Code */
+            source_code: string;
+            /**
+             * Stdin
+             * @default
+             */
+            stdin: string;
+        };
+        /**
+         * CustomTestResponse
+         * @description Response for custom test input
+         */
+        CustomTestResponse: {
+            /** Compile Output */
+            compile_output?: string | null;
+            /** Memory Kb */
+            memory_kb?: number | null;
+            /** Status */
+            status: number;
+            /** Status Description */
+            status_description: string;
+            /** Stderr */
+            stderr?: string | null;
+            /** Stdout */
+            stdout?: string | null;
+            /** Time Ms */
+            time_ms?: number | null;
+        };
+        /**
          * DashboardRead
          * @description Dashboard data combining profile, transactions, and leaderboard snapshot.
          */
@@ -5893,6 +7075,149 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /**
+         * ExamAttemptRead
+         * @description Model for reading an exam attempt
+         */
+        ExamAttemptRead: {
+            /** Answers */
+            answers?: {
+                [key: string]: unknown;
+            };
+            /** Attempt Uuid */
+            attempt_uuid: string;
+            /** Creation Date */
+            creation_date?: string | null;
+            /** Exam Id */
+            exam_id: number;
+            /** Id */
+            id: number;
+            /**
+             * Is Preview
+             * @default false
+             */
+            is_preview: boolean;
+            /** Max Score */
+            max_score?: number | null;
+            /** Question Order */
+            question_order?: number[];
+            /** Score */
+            score?: number | null;
+            /** Started At */
+            started_at?: string | null;
+            /** @default IN_PROGRESS */
+            status: components["schemas"]["AttemptStatusEnum"];
+            /** Submitted At */
+            submitted_at?: string | null;
+            /** Update Date */
+            update_date?: string | null;
+            /** User Id */
+            user_id: number;
+            /** Violations */
+            violations?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * ExamCreate
+         * @description Model for creating a new exam
+         */
+        ExamCreate: {
+            /** Activity Id */
+            activity_id: number;
+            /** Chapter Id */
+            chapter_id: number;
+            /** Course Id */
+            course_id: number;
+            /** Description */
+            description: string;
+            /**
+             * Published
+             * @default false
+             */
+            published: boolean;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
+            /** Title */
+            title: string;
+        };
+        /**
+         * ExamCreateWithActivity
+         * @description Model for creating exam with activity in one request
+         */
+        ExamCreateWithActivity: {
+            /** Activity Name */
+            activity_name: string;
+            /** Chapter Id */
+            chapter_id: number;
+            /** Exam Description */
+            exam_description: string;
+            /** Exam Title */
+            exam_title: string;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * ExamRead
+         * @description Model for reading an exam
+         */
+        ExamRead: {
+            /** Activity Id */
+            activity_id: number;
+            /** Chapter Id */
+            chapter_id: number;
+            /** Course Id */
+            course_id: number;
+            /** Creation Date */
+            creation_date?: string | null;
+            /** Description */
+            description: string;
+            /** Exam Uuid */
+            exam_uuid: string;
+            /** Id */
+            id: number;
+            /**
+             * Published
+             * @default false
+             */
+            published: boolean;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
+            /** Title */
+            title: string;
+            /** Update Date */
+            update_date?: string | null;
+        };
+        /**
+         * ExamUpdate
+         * @description Model for updating an exam
+         */
+        ExamUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Published */
+            published?: boolean | null;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            } | null;
+            /** Title */
+            title?: string | null;
+            /** Update Date */
+            update_date?: string | null;
+        };
+        /**
+         * ExecutionMode
+         * @description Execution mode for test cases
+         * @enum {string}
+         */
+        ExecutionMode: "FAST_FEEDBACK" | "COMPLETE_FEEDBACK";
         /** ExternalVideo */
         ExternalVideo: {
             /** Chapter Id */
@@ -5914,13 +7239,13 @@ export interface components {
         };
         /** FileUploadItemAnswer */
         FileUploadItemAnswer: {
-            /** Files */
-            files?: components["schemas"]["FileUploadReference"][];
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             kind: "FILE_UPLOAD";
+            /** Uploads */
+            uploads?: components["schemas"]["FileUploadReference"][];
         };
         /** FileUploadItemBody */
         FileUploadItemBody: {
@@ -5951,8 +7276,8 @@ export interface components {
              * @default
              */
             filename: string;
-            /** Upload Id */
-            upload_id: string;
+            /** Upload Uuid */
+            upload_uuid: string;
         };
         /** ForecastItem */
         ForecastItem: {
@@ -6227,6 +7552,17 @@ export interface components {
              */
             needs_manual_review: boolean;
         };
+        /**
+         * GradingStrategy
+         * @description Grading strategy for code challenges
+         * @enum {string}
+         */
+        GradingStrategy: "ALL_OR_NOTHING" | "PARTIAL_CREDIT" | "BEST_SUBMISSION" | "LATEST_SUBMISSION";
+        /**
+         * GradingTypeEnum
+         * @enum {string}
+         */
+        GradingTypeEnum: "NUMERIC" | "PERCENTAGE";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -6271,6 +7607,36 @@ export interface components {
             severity: "info" | "warning" | "critical";
             /** Title */
             title: string;
+        };
+        /**
+         * InstructorAnalytics
+         * @description Analytics for instructors on a code challenge
+         */
+        InstructorAnalytics: {
+            /** Average Score */
+            average_score: number;
+            /** Common Errors */
+            common_errors: {
+                [key: string]: unknown;
+            }[];
+            /** Completion Rate */
+            completion_rate: number;
+            /** Failing Tests */
+            failing_tests: {
+                [key: string]: number;
+            };
+            /** Language Distribution */
+            language_distribution: {
+                [key: string]: number;
+            };
+            /** Score Distribution */
+            score_distribution: {
+                [key: string]: number;
+            };
+            /** Total Submissions */
+            total_submissions: number;
+            /** Unique Students */
+            unique_students: number;
         };
         /** InterventionSummary */
         InterventionSummary: {
@@ -6396,6 +7762,38 @@ export interface components {
          * @enum {string}
          */
         ItemKind: "CHOICE" | "OPEN_TEXT" | "FILE_UPLOAD" | "FORM" | "CODE" | "MATCHING";
+        /**
+         * Judge0Language
+         * @description Judge0 language info
+         */
+        Judge0Language: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /**
+         * LeaderboardEntry
+         * @description Single entry in the leaderboard
+         */
+        LeaderboardEntry: {
+            /** Attempts */
+            attempts: number;
+            /** Avatar Url */
+            avatar_url?: string | null;
+            /** Composite Score */
+            composite_score: number;
+            /** Rank */
+            rank: number;
+            /** Score */
+            score: number;
+            /** Time To First Ac Ms */
+            time_to_first_ac_ms?: number | null;
+            /** User Id */
+            user_id: number;
+            /** Username */
+            username: string;
+        };
         /**
          * LeaderboardEntryRead
          * @description Single leaderboard entry.
@@ -6722,6 +8120,33 @@ export interface components {
             /** Xp To Next Level */
             xp_to_next_level: number;
         };
+        /**
+         * QuestionCreate
+         * @description Model for creating a question
+         */
+        QuestionCreate: {
+            /** Answer Options */
+            answer_options?: {
+                [key: string]: unknown;
+            }[];
+            /** Exam Id */
+            exam_id?: number | null;
+            /** Explanation */
+            explanation?: string | null;
+            /**
+             * Order Index
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Points
+             * @default 1
+             */
+            points: number;
+            /** Question Text */
+            question_text: string;
+            question_type: components["schemas"]["QuestionTypeEnum"];
+        };
         /** QuestionDifficultyRow */
         QuestionDifficultyRow: {
             /** Accuracy Pct */
@@ -6743,6 +8168,65 @@ export interface components {
             strong_miss_pct?: number | null;
             /** Weak Correct Pct */
             weak_correct_pct?: number | null;
+        };
+        /**
+         * QuestionRead
+         * @description Model for reading a question (full data for teachers)
+         */
+        QuestionRead: {
+            /** Answer Options */
+            answer_options?: {
+                [key: string]: unknown;
+            }[];
+            /** Creation Date */
+            creation_date?: string | null;
+            /** Exam Id */
+            exam_id?: number | null;
+            /** Explanation */
+            explanation?: string | null;
+            /** Id */
+            id: number;
+            /**
+             * Order Index
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Points
+             * @default 1
+             */
+            points: number;
+            /** Question Text */
+            question_text: string;
+            question_type: components["schemas"]["QuestionTypeEnum"];
+            /** Question Uuid */
+            question_uuid: string;
+            /** Update Date */
+            update_date?: string | null;
+        };
+        /**
+         * QuestionTypeEnum
+         * @enum {string}
+         */
+        QuestionTypeEnum: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "TRUE_FALSE" | "MATCHING";
+        /**
+         * QuestionUpdate
+         * @description Model for updating a question
+         */
+        QuestionUpdate: {
+            /** Answer Options */
+            answer_options?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Explanation */
+            explanation?: string | null;
+            /** Order Index */
+            order_index?: number | null;
+            /** Points */
+            points?: number | null;
+            /** Question Text */
+            question_text?: string | null;
+            question_type?: components["schemas"]["QuestionTypeEnum"] | null;
         };
         /**
          * QuizAttemptRead
@@ -7105,6 +8589,52 @@ export interface components {
             /** Message */
             message: string;
         };
+        /**
+         * SettingsUpdateRequest
+         * @description Request model for updating challenge settings
+         */
+        SettingsUpdateRequest: {
+            /** Allow Custom Input */
+            allow_custom_input?: boolean | null;
+            /** Allowed Languages */
+            allowed_languages?: number[] | null;
+            /** Archived At */
+            archived_at?: string | null;
+            /** Difficulty */
+            difficulty?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            execution_mode?: components["schemas"]["ExecutionMode"] | null;
+            grading_strategy?: components["schemas"]["GradingStrategy"] | null;
+            /** Hidden Tests */
+            hidden_tests?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Hints */
+            hints?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Lifecycle Status */
+            lifecycle_status?: string | null;
+            /** Memory Limit */
+            memory_limit?: number | null;
+            /** Points */
+            points?: number | null;
+            /** Published At */
+            published_at?: string | null;
+            /** Scheduled At */
+            scheduled_at?: string | null;
+            /** Starter Code */
+            starter_code?: {
+                [key: string]: string;
+            } | null;
+            /** Time Limit */
+            time_limit?: number | null;
+            /** Visible Tests */
+            visible_tests?: {
+                [key: string]: unknown;
+            }[] | null;
+        };
         /** StartActivityAIChatSession */
         StartActivityAIChatSession: {
             /** Activity Uuid */
@@ -7136,6 +8666,30 @@ export interface components {
             longest_count: number;
             /** Streak Type */
             streak_type: string;
+        };
+        /**
+         * StudentAnalytics
+         * @description Analytics for a student on a code challenge
+         */
+        StudentAnalytics: {
+            /** Average Score */
+            average_score: number;
+            /** Best Score */
+            best_score: number;
+            /** Best Submission Uuid */
+            best_submission_uuid?: string | null;
+            /** First Ac Time Ms */
+            first_ac_time_ms?: number | null;
+            /** Hints Used */
+            hints_used: number;
+            /** Languages Used */
+            languages_used: string[];
+            /** Total Submissions */
+            total_submissions: number;
+            /** Total Time Spent Ms */
+            total_time_spent_ms: number;
+            /** Xp Earned */
+            xp_earned: number;
         };
         /**
          * SubmissionListResponse
@@ -7208,7 +8762,7 @@ export interface components {
             /** Started At */
             started_at?: string | null;
             /** @default DRAFT */
-            status: components["schemas"]["SubmissionStatus"];
+            status: components["schemas"]["src__db__grading__submissions__SubmissionStatus"];
             /** Submission Uuid */
             submission_uuid: string;
             /** Submitted At */
@@ -7228,6 +8782,20 @@ export interface components {
             version: number;
         };
         /**
+         * SubmissionResponse
+         * @description Response after creating a submission
+         */
+        SubmissionResponse: {
+            /**
+             * Message
+             * @default Submission created successfully
+             */
+            message: string;
+            status: components["schemas"]["src__db__courses__code_challenges__SubmissionStatus"];
+            /** Submission Uuid */
+            submission_uuid: string;
+        };
+        /**
          * SubmissionStats
          * @description Aggregate statistics for the teacher dashboard header.
          */
@@ -7245,11 +8813,6 @@ export interface components {
             /** Total */
             total: number;
         };
-        /**
-         * SubmissionStatus
-         * @enum {string}
-         */
-        SubmissionStatus: "DRAFT" | "PENDING" | "GRADED" | "PUBLISHED" | "RETURNED";
         /**
          * SubmissionUser
          * @description Public user info embedded in teacher-view submissions.
@@ -7702,6 +9265,46 @@ export interface components {
             sla_breaches: number;
         };
         /**
+         * TestCaseResult
+         * @description Result of a single test case execution
+         */
+        TestCaseResult: {
+            /** Compile Output */
+            compile_output?: string | null;
+            /** Memory Kb */
+            memory_kb?: number | null;
+            /** Message */
+            message?: string | null;
+            /** Passed */
+            passed: boolean;
+            /** Status */
+            status: number;
+            /** Status Description */
+            status_description: string;
+            /** Stderr */
+            stderr?: string | null;
+            /** Stdout */
+            stdout?: string | null;
+            /** Test Case Id */
+            test_case_id: string;
+            /** Time Ms */
+            time_ms?: number | null;
+        };
+        /**
+         * TestRunResponse
+         * @description Response for running visible tests only
+         */
+        TestRunResponse: {
+            /** Execution Time Ms */
+            execution_time_ms?: number | null;
+            /** Passed */
+            passed: number;
+            /** Results */
+            results: components["schemas"]["TestCaseResult"][];
+            /** Total */
+            total: number;
+        };
+        /**
          * ThumbnailType
          * @enum {string}
          */
@@ -7906,6 +9509,18 @@ export interface components {
          * @enum {string}
          */
         UploadStatus: "CREATED" | "RECEIVING" | "FINALIZED" | "CANCELLED";
+        /** UploadUrlResponse */
+        UploadUrlResponse: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Get Url */
+            get_url: string;
+            /** Upload Id */
+            upload_id: string;
+        };
         /** UserCreate */
         UserCreate: {
             /**
@@ -8249,6 +9864,17 @@ export interface components {
          * @enum {string}
          */
         XPSource: "activity_completion" | "course_completion" | "login_bonus" | "quiz_completion" | "assignment_submission" | "exam_completion" | "streak_bonus" | "admin_award" | "code_challenge_completion" | "code_challenge_perfect" | "code_challenge_first_solve";
+        /**
+         * SubmissionStatus
+         * @description Status of a code submission
+         * @enum {string}
+         */
+        src__db__courses__code_challenges__SubmissionStatus: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "PENDING_JUDGE0";
+        /**
+         * SubmissionStatus
+         * @enum {string}
+         */
+        src__db__grading__submissions__SubmissionStatus: "DRAFT" | "PENDING" | "GRADED" | "PUBLISHED" | "RETURNED";
     };
     responses: never;
     parameters: never;
@@ -9959,6 +11585,703 @@ export interface operations {
             };
         };
     };
+    api_read_assignment_from_activity_api_v1_assignments_activity__activity_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_delete_assignment_from_activity_api_v1_assignments_activity__activity_uuid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_assignments_api_v1_assignments_course__course_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_assignments_for_courses_api_v1_assignments_courses_get: {
+        parameters: {
+            query?: {
+                course_uuids?: string[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_editable_assignments_for_courses_api_v1_assignments_courses_editable_get: {
+        parameters: {
+            query?: {
+                course_uuids?: string[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_create_assignment_with_activity_api_v1_assignments_with_activity_post: {
+        parameters: {
+            query: {
+                chapter_id: number;
+                activity_name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentCreateWithActivity"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_read_assignment_api_v1_assignments__assignment_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_update_assignment_api_v1_assignments__assignment_uuid__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_archive_assignment_api_v1_assignments__assignment_uuid__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_cancel_assignment_schedule_api_v1_assignments__assignment_uuid__cancel_schedule_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_publish_assignment_api_v1_assignments__assignment_uuid__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentPublishInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentDraftRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_save_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentDraftPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_submit_assignment_draft_submission_api_v1_assignments__assignment_uuid__submit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AssignmentDraftPatch"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_read_assignment_tasks_api_v1_assignments__assignment_uuid__tasks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_create_assignment_tasks_api_v1_assignments__assignment_uuid__tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentTaskCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_read_assignment_task_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+                assignment_task_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_update_assignment_tasks_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+                assignment_task_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentTaskUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_delete_assignment_tasks_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+                assignment_task_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+                assignment_task_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_uuid: string;
+                assignment_task_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     reset_forgot_password_api_v1_auth_forgot_password_post: {
         parameters: {
             query?: never;
@@ -11024,6 +13347,441 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChapterRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_judge0_health_api_v1_code_challenges_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_available_languages_api_v1_code_challenges_languages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Judge0Language"][];
+                };
+            };
+        };
+    };
+    get_submission_detail_api_v1_code_challenges_submissions__submission_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_code_challenge_api_v1_code_challenges__activity_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_challenge_analytics_api_v1_code_challenges__activity_uuid__analytics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorAnalytics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_student_analytics_api_v1_code_challenges__activity_uuid__analytics__user_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentAnalytics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_custom_test_api_v1_code_challenges__activity_uuid__custom_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomTestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_leaderboard_api_v1_code_challenges__activity_uuid__leaderboard_get: {
+        parameters: {
+            query?: {
+                timeframe?: "all" | "week" | "month";
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeChallengeLeaderboard"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_challenge_settings_endpoint_api_v1_code_challenges__activity_uuid__settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_challenge_settings_api_v1_code_challenges__activity_uuid__settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_code_challenge_api_v1_code_challenges__activity_uuid__start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_submission_history_api_v1_code_challenges__activity_uuid__submissions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_code_challenge_api_v1_code_challenges__activity_uuid__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeSubmissionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_visible_tests_api_v1_code_challenges__activity_uuid__test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeSubmissionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestRunResponse"];
                 };
             };
             /** @description Validation Error */
@@ -12187,6 +14945,692 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    api_create_exam_api_v1_exams_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExamCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_exam_from_activity_api_v1_exams_activity__activity_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_attempt_by_uuid_api_v1_exams_attempts__attempt_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_attempt_review_questions_api_v1_exams_attempts__attempt_uuid__questions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_exam_config_api_v1_exams_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    api_update_question_api_v1_exams_questions__question_uuid__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_delete_question_api_v1_exams_questions__question_uuid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_create_exam_with_activity_api_v1_exams_with_activity_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExamCreateWithActivity"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_exam_api_v1_exams__exam_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_update_exam_api_v1_exams__exam_uuid__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExamUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_delete_exam_api_v1_exams__exam_uuid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_all_attempts_api_v1_exams__exam_uuid__attempts_all_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_my_attempts_api_v1_exams__exam_uuid__attempts_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamAttemptRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_start_exam_attempt_api_v1_exams__exam_uuid__attempts_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_submit_exam_attempt_api_v1_exams__exam_uuid__attempts__attempt_uuid__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+                attempt_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_record_violation_api_v1_exams__exam_uuid__attempts__attempt_uuid__violations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+                attempt_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_questions_api_v1_exams__exam_uuid__questions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_create_question_api_v1_exams__exam_uuid__questions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_export_questions_csv_api_v1_exams__exam_uuid__questions_export_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_reorder_questions_api_v1_exams__exam_uuid__questions_reorder_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                }[];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -14395,6 +17839,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UploadRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_assessment_upload_url_api_v1_uploads__upload_id__url_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadUrlResponse"];
                 };
             };
             /** @description Validation Error */

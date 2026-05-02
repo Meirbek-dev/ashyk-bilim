@@ -2,7 +2,6 @@
   "components": {
     "schemas": {
       "ActivityAIChatSessionResponse": {
-        "additionalProperties": false,
         "properties": {
           "activity_uuid": {
             "title": "Activity Uuid",
@@ -26,7 +25,6 @@
         "type": "object"
       },
       "ActivityAssessmentPolicyRead": {
-        "additionalProperties": false,
         "properties": {
           "anti_cheat_json": {
             "additionalProperties": true,
@@ -99,7 +97,6 @@
         "type": "object"
       },
       "ActivityCreate": {
-        "additionalProperties": false,
         "properties": {
           "activity_sub_type": {
             "$ref": "#/components/schemas/ActivitySubTypeEnum",
@@ -146,7 +143,6 @@
         "type": "object"
       },
       "ActivityDetailResponse": {
-        "additionalProperties": false,
         "properties": {
           "detail": {
             "title": "Detail",
@@ -160,7 +156,6 @@
         "type": "object"
       },
       "ActivityDropoffRow": {
-        "additionalProperties": false,
         "properties": {
           "activity_id": {
             "title": "Activity Id",
@@ -204,7 +199,6 @@
         "type": "object"
       },
       "ActivityOrderPayload": {
-        "additionalProperties": false,
         "description": "Move an activity to position N, optionally into a different chapter.",
         "properties": {
           "chapter_uuid": {
@@ -230,7 +224,6 @@
         "type": "object"
       },
       "ActivityProgressCell": {
-        "additionalProperties": false,
         "properties": {
           "activity_id": {
             "title": "Activity Id",
@@ -386,7 +379,6 @@
         "type": "string"
       },
       "ActivityRead": {
-        "additionalProperties": false,
         "properties": {
           "activity_sub_type": {
             "$ref": "#/components/schemas/ActivitySubTypeEnum"
@@ -478,7 +470,6 @@
         "type": "object"
       },
       "ActivityReadWithPermissions": {
-        "additionalProperties": false,
         "description": "Activity response with permission metadata.",
         "properties": {
           "activity_sub_type": {
@@ -630,7 +621,6 @@
         "type": "string"
       },
       "ActivityUpdate": {
-        "additionalProperties": false,
         "properties": {
           "activity_sub_type": {
             "anyOf": [
@@ -728,7 +718,6 @@
         "type": "object"
       },
       "AdminAnalyticsCohortRow": {
-        "additionalProperties": false,
         "properties": {
           "avg_progress_pct": {
             "anyOf": [
@@ -779,7 +768,6 @@
         "type": "object"
       },
       "AdminAnalyticsCourseRow": {
-        "additionalProperties": false,
         "properties": {
           "active_learners_7d": {
             "title": "Active Learners 7D",
@@ -834,7 +822,6 @@
         "type": "object"
       },
       "AdminAnalyticsProgramRow": {
-        "additionalProperties": false,
         "properties": {
           "completion_rate": {
             "anyOf": [
@@ -891,7 +878,6 @@
         "type": "object"
       },
       "AdminAnalyticsResponse": {
-        "additionalProperties": false,
         "properties": {
           "cohort_retention": {
             "items": {
@@ -945,7 +931,6 @@
         "type": "object"
       },
       "AdminAnalyticsTeacherRow": {
-        "additionalProperties": false,
         "properties": {
           "at_risk_learners": {
             "title": "At Risk Learners",
@@ -995,7 +980,6 @@
         "type": "object"
       },
       "AlertItem": {
-        "additionalProperties": false,
         "properties": {
           "activity_id": {
             "anyOf": [
@@ -1085,7 +1069,6 @@
         "type": "object"
       },
       "AnalyticsDataQuality": {
-        "additionalProperties": false,
         "properties": {
           "confidence_level": {
             "enum": [
@@ -1164,7 +1147,6 @@
         "type": "object"
       },
       "AnalyticsFilterOption": {
-        "additionalProperties": false,
         "properties": {
           "label": {
             "title": "Label",
@@ -1183,7 +1165,6 @@
         "type": "object"
       },
       "AnomalyItem": {
-        "additionalProperties": false,
         "properties": {
           "activity_id": {
             "anyOf": [
@@ -1305,7 +1286,6 @@
         "type": "object"
       },
       "AssessmentAnswerPatch": {
-        "additionalProperties": false,
         "properties": {
           "answer": {
             "$ref": "#/components/schemas/ItemAnswer"
@@ -1323,7 +1303,6 @@
         "type": "object"
       },
       "AssessmentCreate": {
-        "additionalProperties": false,
         "properties": {
           "chapter_id": {
             "title": "Chapter Id",
@@ -1375,7 +1354,6 @@
         "type": "object"
       },
       "AssessmentDraftPatch": {
-        "additionalProperties": false,
         "properties": {
           "answers": {
             "items": {
@@ -1389,7 +1367,6 @@
         "type": "object"
       },
       "AssessmentDraftRead": {
-        "additionalProperties": false,
         "properties": {
           "assessment_uuid": {
             "title": "Assessment Uuid",
@@ -1421,7 +1398,6 @@
         "type": "string"
       },
       "AssessmentItemCreate": {
-        "additionalProperties": false,
         "properties": {
           "body": {
             "$ref": "#/components/schemas/ItemBody"
@@ -1448,7 +1424,6 @@
         "type": "object"
       },
       "AssessmentItemReorder": {
-        "additionalProperties": false,
         "properties": {
           "items": {
             "items": {
@@ -1465,7 +1440,6 @@
         "type": "object"
       },
       "AssessmentItemReorderEntry": {
-        "additionalProperties": false,
         "properties": {
           "item_uuid": {
             "title": "Item Uuid",
@@ -1484,7 +1458,6 @@
         "type": "object"
       },
       "AssessmentItemUpdate": {
-        "additionalProperties": false,
         "properties": {
           "body": {
             "anyOf": [
@@ -1533,7 +1506,6 @@
         "type": "object"
       },
       "AssessmentLearnerRow": {
-        "additionalProperties": false,
         "properties": {
           "attempts": {
             "title": "Attempts",
@@ -1622,7 +1594,6 @@
         "type": "string"
       },
       "AssessmentLifecycleTransition": {
-        "additionalProperties": false,
         "properties": {
           "scheduled_at": {
             "anyOf": [
@@ -1647,7 +1618,6 @@
         "type": "object"
       },
       "AssessmentOutlierRow": {
-        "additionalProperties": false,
         "properties": {
           "activity_id": {
             "anyOf": [
@@ -1838,7 +1808,6 @@
         "type": "object"
       },
       "AssessmentPolicyPatch": {
-        "additionalProperties": false,
         "properties": {
           "allow_late": {
             "anyOf": [
@@ -1926,7 +1895,6 @@
         "type": "object"
       },
       "AssessmentRead": {
-        "additionalProperties": false,
         "properties": {
           "activity_id": {
             "title": "Activity Id",
@@ -1976,6 +1944,17 @@
               }
             ],
             "title": "Course Id"
+          },
+          "course_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Uuid"
           },
           "created_at": {
             "format": "date-time",
@@ -2074,7 +2053,6 @@
         "type": "object"
       },
       "AssessmentReadItem": {
-        "additionalProperties": false,
         "properties": {
           "body": {
             "$ref": "#/components/schemas/ItemBody"
@@ -2128,7 +2106,6 @@
         "type": "object"
       },
       "AssessmentReadiness": {
-        "additionalProperties": false,
         "properties": {
           "issues": {
             "items": {
@@ -2159,7 +2136,6 @@
         "type": "string"
       },
       "AssessmentUpdate": {
-        "additionalProperties": false,
         "properties": {
           "description": {
             "anyOf": [
@@ -2218,8 +2194,529 @@
         "title": "AssessmentUpdate",
         "type": "object"
       },
+      "AssignmentCreateWithActivity": {
+        "description": "Input for POST /assignments/with-activity.",
+        "properties": {
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "grading_type": {
+            "$ref": "#/components/schemas/GradingTypeEnum"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssignmentStatus",
+            "default": "DRAFT"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "grading_type",
+          "course_id",
+          "chapter_id"
+        ],
+        "title": "AssignmentCreateWithActivity",
+        "type": "object"
+      },
+      "AssignmentDraftPatch": {
+        "description": "Patch/upsert payload for the current user's assignment draft.",
+        "properties": {
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentTaskAnswer"
+            },
+            "title": "Tasks",
+            "type": "array"
+          }
+        },
+        "title": "AssignmentDraftPatch",
+        "type": "object"
+      },
+      "AssignmentDraftRead": {
+        "properties": {
+          "assignment_uuid": {
+            "title": "Assignment Uuid",
+            "type": "string"
+          },
+          "submission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubmissionRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "assignment_uuid"
+        ],
+        "title": "AssignmentDraftRead",
+        "type": "object"
+      },
+      "AssignmentPublishInput": {
+        "description": "Input for POST /assignments/{uuid}/publish.",
+        "properties": {
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At"
+          }
+        },
+        "title": "AssignmentPublishInput",
+        "type": "object"
+      },
+      "AssignmentRead": {
+        "description": "Projection returned by the API — never exposes internal FK integer IDs.",
+        "properties": {
+          "activity_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Uuid"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "assignment_uuid": {
+            "title": "Assignment Uuid",
+            "type": "string"
+          },
+          "course_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Uuid"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "grading_type": {
+            "$ref": "#/components/schemas/GradingTypeEnum"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "scheduled_publish_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled Publish At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssignmentStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "weight": {
+            "default": 1.0,
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "assignment_uuid",
+          "title",
+          "description",
+          "published",
+          "status",
+          "grading_type"
+        ],
+        "title": "AssignmentRead",
+        "type": "object"
+      },
+      "AssignmentStatus": {
+        "enum": [
+          "DRAFT",
+          "SCHEDULED",
+          "PUBLISHED",
+          "ARCHIVED"
+        ],
+        "title": "AssignmentStatus",
+        "type": "string"
+      },
+      "AssignmentTaskAnswer": {
+        "description": "Canonical assignment answer shape stored in Submission.answers_json.",
+        "properties": {
+          "answer_metadata": {
+            "additionalProperties": true,
+            "title": "Answer Metadata",
+            "type": "object"
+          },
+          "content_type": {
+            "enum": [
+              "file",
+              "text",
+              "form",
+              "quiz",
+              "other"
+            ],
+            "title": "Content Type",
+            "type": "string"
+          },
+          "file_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Key"
+          },
+          "form_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Form Data"
+          },
+          "quiz_answers": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiz Answers"
+          },
+          "task_uuid": {
+            "title": "Task Uuid",
+            "type": "string"
+          },
+          "text_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Content"
+          }
+        },
+        "required": [
+          "task_uuid",
+          "content_type"
+        ],
+        "title": "AssignmentTaskAnswer",
+        "type": "object"
+      },
+      "AssignmentTaskCreate": {
+        "description": "Input for creating a new task — contents validated against task type.",
+        "properties": {
+          "assignment_type": {
+            "$ref": "#/components/schemas/AssignmentTaskTypeEnum"
+          },
+          "contents": {
+            "additionalProperties": true,
+            "title": "Contents",
+            "type": "object"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "hint": {
+            "title": "Hint",
+            "type": "string"
+          },
+          "max_grade_value": {
+            "default": 0,
+            "title": "Max Grade Value",
+            "type": "integer"
+          },
+          "reference_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference File"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "hint",
+          "assignment_type"
+        ],
+        "title": "AssignmentTaskCreate",
+        "type": "object"
+      },
+      "AssignmentTaskTypeEnum": {
+        "enum": [
+          "FILE_SUBMISSION",
+          "QUIZ",
+          "FORM",
+          "OTHER"
+        ],
+        "title": "AssignmentTaskTypeEnum",
+        "type": "string"
+      },
+      "AssignmentTaskUpdate": {
+        "description": "Partial update for an existing task.\n\n``order`` is intentionally absent — use the dedicated reorder endpoint.\n``contents`` is validated against ``assignment_type`` when both are present.",
+        "properties": {
+          "assignment_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssignmentTaskTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contents": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contents"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint"
+          },
+          "max_grade_value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Grade Value"
+          },
+          "reference_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference File"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "AssignmentTaskUpdate",
+        "type": "object"
+      },
+      "AssignmentUpdate": {
+        "description": "Partial update — only the fields a teacher can change after creation.\n\nLifecycle transitions (publish, archive) use dedicated endpoints;\n``status`` is intentionally absent from this schema.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "grading_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GradingTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "AssignmentUpdate",
+        "type": "object"
+      },
       "AtRiskLearnerRow": {
-        "additionalProperties": false,
         "properties": {
           "cohort_name": {
             "anyOf": [
@@ -2441,7 +2938,6 @@
         "type": "object"
       },
       "AtRiskLearnersResponse": {
-        "additionalProperties": false,
         "properties": {
           "cohort_options": {
             "default": [],
@@ -2493,8 +2989,16 @@
         "title": "AtRiskLearnersResponse",
         "type": "object"
       },
+      "AttemptStatusEnum": {
+        "enum": [
+          "IN_PROGRESS",
+          "SUBMITTED",
+          "AUTO_SUBMITTED"
+        ],
+        "title": "AttemptStatusEnum",
+        "type": "string"
+      },
       "AuthorWithRole": {
-        "additionalProperties": false,
         "properties": {
           "authorship": {
             "$ref": "#/components/schemas/ResourceAuthorshipEnum"
@@ -2525,7 +3029,6 @@
         "type": "object"
       },
       "BatchGradeItem": {
-        "additionalProperties": false,
         "description": "Single submission grade payload for batch teacher grading.",
         "properties": {
           "feedback": {
@@ -2582,7 +3085,6 @@
         "type": "object"
       },
       "BatchGradeRequest": {
-        "additionalProperties": false,
         "description": "Batch teacher grading request.",
         "properties": {
           "grades": {
@@ -2602,7 +3104,6 @@
         "type": "object"
       },
       "BatchGradeResponse": {
-        "additionalProperties": false,
         "description": "Batch teacher grading response.",
         "properties": {
           "failed": {
@@ -2627,7 +3128,6 @@
         "type": "object"
       },
       "BatchGradeResultItem": {
-        "additionalProperties": false,
         "description": "Per-submission batch grading result.",
         "properties": {
           "error": {
@@ -2690,7 +3190,6 @@
         "type": "object"
       },
       "BlockRead": {
-        "additionalProperties": false,
         "description": "Model for reading a block with all related data.",
         "properties": {
           "activity_id": {
@@ -3037,6 +3536,56 @@
         "title": "Body_api_create_video_file_block_api_v1_blocks_video_post",
         "type": "object"
       },
+      "Body_api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post",
+        "type": "object"
+      },
+      "Body_api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post": {
+        "properties": {
+          "reference_file": {
+            "anyOf": [
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference File"
+          }
+        },
+        "title": "Body_api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post",
+        "type": "object"
+      },
+      "Body_api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post": {
+        "properties": {
+          "sub_file": {
+            "anyOf": [
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub File"
+          }
+        },
+        "title": "Body_api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post",
+        "type": "object"
+      },
       "Body_api_update_avatar_user_api_v1_users_update_avatar__user_id__put": {
         "properties": {
           "avatar_file": {
@@ -3278,7 +3827,6 @@
         "type": "object"
       },
       "BulkActionRead": {
-        "additionalProperties": false,
         "properties": {
           "action_type": {
             "$ref": "#/components/schemas/BulkActionType"
@@ -3376,7 +3924,6 @@
         "type": "string"
       },
       "BulkPublishGradesResponse": {
-        "additionalProperties": false,
         "description": "Response for POST /grading/activities/{activity_id}/publish-grades.",
         "properties": {
           "activity_id": {
@@ -3401,7 +3948,6 @@
         "type": "object"
       },
       "CertificationCreate": {
-        "additionalProperties": false,
         "properties": {
           "config": {
             "additionalProperties": true,
@@ -3432,7 +3978,6 @@
         "type": "object"
       },
       "CertificationRead": {
-        "additionalProperties": false,
         "properties": {
           "certification_uuid": {
             "title": "Certification Uuid",
@@ -3472,7 +4017,6 @@
         "type": "object"
       },
       "CertificationUpdate": {
-        "additionalProperties": false,
         "properties": {
           "config": {
             "anyOf": [
@@ -3503,7 +4047,6 @@
         "type": "object"
       },
       "ChapterCreateRequest": {
-        "additionalProperties": false,
         "description": "API-facing create schema. Accepts a UUID so internal integer IDs are never exposed.",
         "properties": {
           "course_uuid": {
@@ -3547,7 +4090,6 @@
         "type": "object"
       },
       "ChapterOrderByUuid": {
-        "additionalProperties": false,
         "properties": {
           "activities_order_by_uuids": {
             "items": {
@@ -3569,7 +4111,6 @@
         "type": "object"
       },
       "ChapterOrderPayload": {
-        "additionalProperties": false,
         "description": "Single-item order update: move this chapter to position N.",
         "properties": {
           "position": {
@@ -3584,7 +4125,6 @@
         "type": "object"
       },
       "ChapterRead": {
-        "additionalProperties": false,
         "properties": {
           "activities": {
             "items": {
@@ -3662,7 +4202,6 @@
         "type": "object"
       },
       "ChapterReadWithPermissions": {
-        "additionalProperties": false,
         "description": "ChapterRead that includes per-activity permission metadata.",
         "properties": {
           "activities": {
@@ -3741,7 +4280,6 @@
         "type": "object"
       },
       "ChapterUpdate": {
-        "additionalProperties": false,
         "properties": {
           "description": {
             "anyOf": [
@@ -3781,7 +4319,6 @@
         "type": "object"
       },
       "ChapterUpdateOrder": {
-        "additionalProperties": false,
         "properties": {
           "chapter_order_by_uuids": {
             "items": {
@@ -3810,7 +4347,6 @@
         "type": "object"
       },
       "ChoiceItemAnswer": {
-        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "CHOICE",
@@ -3830,7 +4366,6 @@
         "type": "object"
       },
       "ChoiceItemBody": {
-        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "CHOICE",
@@ -3860,7 +4395,6 @@
         "type": "object"
       },
       "ChoiceOption": {
-        "additionalProperties": false,
         "properties": {
           "id": {
             "title": "Id",
@@ -3884,7 +4418,6 @@
         "type": "object"
       },
       "ChunkedUploadCancelResponse": {
-        "additionalProperties": false,
         "properties": {
           "message": {
             "title": "Message",
@@ -3903,7 +4436,6 @@
         "type": "object"
       },
       "ChunkedUploadChunkResponse": {
-        "additionalProperties": false,
         "properties": {
           "chunk_index": {
             "title": "Chunk Index",
@@ -3942,7 +4474,6 @@
         "type": "object"
       },
       "ChunkedUploadCompleteResponse": {
-        "additionalProperties": false,
         "properties": {
           "file_size": {
             "title": "File Size",
@@ -3971,7 +4502,6 @@
         "type": "object"
       },
       "ChunkedUploadInitiateResponse": {
-        "additionalProperties": false,
         "properties": {
           "message": {
             "title": "Message",
@@ -3990,7 +4520,6 @@
         "type": "object"
       },
       "ChunkedUploadStatusResponse": {
-        "additionalProperties": false,
         "properties": {
           "chunks_received": {
             "title": "Chunks Received",
@@ -4028,8 +4557,45 @@
         "title": "ChunkedUploadStatusResponse",
         "type": "object"
       },
+      "CodeChallengeLeaderboard": {
+        "description": "Leaderboard for a code challenge",
+        "properties": {
+          "activity_uuid": {
+            "title": "Activity Uuid",
+            "type": "string"
+          },
+          "current_user_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current User Rank"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/LeaderboardEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "total_participants": {
+            "title": "Total Participants",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "activity_uuid",
+          "entries",
+          "total_participants"
+        ],
+        "title": "CodeChallengeLeaderboard",
+        "type": "object"
+      },
       "CodeItemAnswer": {
-        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "CODE",
@@ -4064,7 +4630,6 @@
         "type": "object"
       },
       "CodeItemBody": {
-        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "CODE",
@@ -4125,7 +4690,6 @@
         "type": "object"
       },
       "CodeRunResult": {
-        "additionalProperties": false,
         "properties": {
           "details": {
             "additionalProperties": true,
@@ -4157,8 +4721,26 @@
         "title": "CodeRunResult",
         "type": "object"
       },
+      "CodeSubmissionCreate": {
+        "description": "Model for creating a code submission",
+        "properties": {
+          "language_id": {
+            "title": "Language Id",
+            "type": "integer"
+          },
+          "source_code": {
+            "title": "Source Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "language_id",
+          "source_code"
+        ],
+        "title": "CodeSubmissionCreate",
+        "type": "object"
+      },
       "CodeTestCase": {
-        "additionalProperties": false,
         "properties": {
           "description": {
             "anyOf": [
@@ -4203,7 +4785,6 @@
         "type": "object"
       },
       "CollectionCreate": {
-        "additionalProperties": false,
         "properties": {
           "courses": {
             "items": {
@@ -4242,7 +4823,6 @@
         "type": "object"
       },
       "CollectionRead": {
-        "additionalProperties": false,
         "properties": {
           "collection_uuid": {
             "title": "Collection Uuid",
@@ -4299,7 +4879,6 @@
         "type": "object"
       },
       "CollectionReadWithPermissions": {
-        "additionalProperties": false,
         "description": "Collection response with permission metadata for frontend.",
         "properties": {
           "can_delete": {
@@ -4372,7 +4951,6 @@
         "type": "object"
       },
       "CollectionUpdate": {
-        "additionalProperties": false,
         "properties": {
           "courses": {
             "anyOf": [
@@ -4425,7 +5003,6 @@
         "type": "object"
       },
       "CommonFailureRow": {
-        "additionalProperties": false,
         "properties": {
           "count": {
             "title": "Count",
@@ -4449,7 +5026,6 @@
         "type": "object"
       },
       "ContentBottleneckRow": {
-        "additionalProperties": false,
         "properties": {
           "activity_id": {
             "title": "Activity Id",
@@ -4562,7 +5138,6 @@
         "type": "object"
       },
       "ContentHealthRow": {
-        "additionalProperties": false,
         "properties": {
           "course_id": {
             "title": "Course Id",
@@ -4607,7 +5182,6 @@
         "type": "object"
       },
       "CourseAccessUpdate": {
-        "additionalProperties": false,
         "properties": {
           "last_known_update_date": {
             "anyOf": [
@@ -4648,7 +5222,6 @@
         "type": "object"
       },
       "CourseDetailResponse": {
-        "additionalProperties": false,
         "properties": {
           "detail": {
             "title": "Detail",
@@ -4662,7 +5235,6 @@
         "type": "object"
       },
       "CourseDiscussionCreate": {
-        "additionalProperties": false,
         "properties": {
           "content": {
             "title": "Content",
@@ -4691,7 +5263,6 @@
         "type": "object"
       },
       "CourseDiscussionRead": {
-        "additionalProperties": false,
         "properties": {
           "content": {
             "title": "Content",
@@ -4804,7 +5375,6 @@
         "type": "object"
       },
       "CourseDiscussionReadWithPermissions": {
-        "additionalProperties": false,
         "description": "Discussion response with permission metadata.",
         "properties": {
           "available_actions": {
@@ -4951,7 +5521,6 @@
         "type": "object"
       },
       "CourseDiscussionUpdate": {
-        "additionalProperties": false,
         "properties": {
           "content": {
             "anyOf": [
@@ -4979,7 +5548,6 @@
         "type": "object"
       },
       "CourseGradebookResponse": {
-        "additionalProperties": false,
         "properties": {
           "activities": {
             "items": {
@@ -5039,7 +5607,6 @@
         "type": "object"
       },
       "CourseMetadataUpdate": {
-        "additionalProperties": false,
         "properties": {
           "about": {
             "anyOf": [
@@ -5123,7 +5690,6 @@
         "type": "object"
       },
       "CourseRead": {
-        "additionalProperties": false,
         "properties": {
           "about": {
             "anyOf": [
@@ -5255,7 +5821,6 @@
         "type": "object"
       },
       "CourseReadWithPermissions": {
-        "additionalProperties": false,
         "description": "Course response with permission metadata.\n\nExtends CourseRead with fields that indicate what actions\nthe current user can perform on this course.",
         "properties": {
           "about": {
@@ -5412,7 +5977,6 @@
         "type": "object"
       },
       "CourseUpdateCreate": {
-        "additionalProperties": false,
         "properties": {
           "content": {
             "title": "Content",
@@ -5442,7 +6006,6 @@
         "type": "object"
       },
       "CourseUpdateRead": {
-        "additionalProperties": false,
         "properties": {
           "content": {
             "title": "Content",
@@ -5497,7 +6060,6 @@
         "type": "object"
       },
       "CourseUpdateUpdate": {
-        "additionalProperties": false,
         "properties": {
           "content": {
             "anyOf": [
@@ -5537,7 +6099,6 @@
         "type": "object"
       },
       "CourseUserRightsOwnership": {
-        "additionalProperties": false,
         "properties": {
           "authorship_status": {
             "anyOf": [
@@ -5576,7 +6137,6 @@
         "type": "object"
       },
       "CourseUserRightsPermissions": {
-        "additionalProperties": false,
         "properties": {
           "create": {
             "title": "Create",
@@ -5645,7 +6205,6 @@
         "type": "object"
       },
       "CourseUserRightsResponse": {
-        "additionalProperties": false,
         "properties": {
           "course_uuid": {
             "title": "Course Uuid",
@@ -5681,7 +6240,6 @@
         "type": "object"
       },
       "CourseUserRightsRoles": {
-        "additionalProperties": false,
         "properties": {
           "is_admin": {
             "title": "Is Admin",
@@ -5709,8 +6267,105 @@
         "title": "CourseUserRightsRoles",
         "type": "object"
       },
+      "CustomTestRequest": {
+        "description": "Request model for custom test execution",
+        "properties": {
+          "language_id": {
+            "title": "Language Id",
+            "type": "integer"
+          },
+          "source_code": {
+            "title": "Source Code",
+            "type": "string"
+          },
+          "stdin": {
+            "default": "",
+            "title": "Stdin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "language_id",
+          "source_code"
+        ],
+        "title": "CustomTestRequest",
+        "type": "object"
+      },
+      "CustomTestResponse": {
+        "description": "Response for custom test input",
+        "properties": {
+          "compile_output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compile Output"
+          },
+          "memory_kb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Kb"
+          },
+          "status": {
+            "title": "Status",
+            "type": "integer"
+          },
+          "status_description": {
+            "title": "Status Description",
+            "type": "string"
+          },
+          "stderr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stderr"
+          },
+          "stdout": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stdout"
+          },
+          "time_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Ms"
+          }
+        },
+        "required": [
+          "status",
+          "status_description"
+        ],
+        "title": "CustomTestResponse",
+        "type": "object"
+      },
       "DashboardRead": {
-        "additionalProperties": false,
         "description": "Dashboard data combining profile, transactions, and leaderboard snapshot.",
         "properties": {
           "leaderboard": {
@@ -5753,7 +6408,6 @@
         "type": "object"
       },
       "DataQualityIssue": {
-        "additionalProperties": false,
         "properties": {
           "course_id": {
             "anyOf": [
@@ -5809,7 +6463,6 @@
         "type": "object"
       },
       "DeadlineExtensionRequest": {
-        "additionalProperties": false,
         "description": "Request for extending an activity deadline for selected students.",
         "properties": {
           "new_due_at": {
@@ -5840,7 +6493,6 @@
         "type": "object"
       },
       "DiscussionLikeRead": {
-        "additionalProperties": false,
         "properties": {
           "creation_date": {
             "title": "Creation Date",
@@ -5886,7 +6538,6 @@
         "type": "string"
       },
       "DrillThroughResponse": {
-        "additionalProperties": false,
         "properties": {
           "generated_at": {
             "title": "Generated At",
@@ -5947,8 +6598,357 @@
         "title": "ErrorModel",
         "type": "object"
       },
+      "ExamAttemptRead": {
+        "description": "Model for reading an exam attempt",
+        "properties": {
+          "answers": {
+            "additionalProperties": true,
+            "title": "Answers",
+            "type": "object"
+          },
+          "attempt_uuid": {
+            "title": "Attempt Uuid",
+            "type": "string"
+          },
+          "creation_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creation Date"
+          },
+          "exam_id": {
+            "title": "Exam Id",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_preview": {
+            "default": false,
+            "title": "Is Preview",
+            "type": "boolean"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "question_order": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Question Order",
+            "type": "array"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AttemptStatusEnum",
+            "default": "IN_PROGRESS"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "update_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Update Date"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "violations": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Violations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "exam_id",
+          "user_id",
+          "id",
+          "attempt_uuid"
+        ],
+        "title": "ExamAttemptRead",
+        "type": "object"
+      },
+      "ExamCreate": {
+        "description": "Model for creating a new exam",
+        "properties": {
+          "activity_id": {
+            "title": "Activity Id",
+            "type": "integer"
+          },
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "published": {
+            "default": false,
+            "title": "Published",
+            "type": "boolean"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "title": "Settings",
+            "type": "object"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "course_id",
+          "chapter_id",
+          "activity_id"
+        ],
+        "title": "ExamCreate",
+        "type": "object"
+      },
+      "ExamCreateWithActivity": {
+        "description": "Model for creating exam with activity in one request",
+        "properties": {
+          "activity_name": {
+            "title": "Activity Name",
+            "type": "string"
+          },
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "integer"
+          },
+          "exam_description": {
+            "title": "Exam Description",
+            "type": "string"
+          },
+          "exam_title": {
+            "title": "Exam Title",
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "title": "Settings",
+            "type": "object"
+          }
+        },
+        "required": [
+          "activity_name",
+          "chapter_id",
+          "exam_title",
+          "exam_description"
+        ],
+        "title": "ExamCreateWithActivity",
+        "type": "object"
+      },
+      "ExamRead": {
+        "description": "Model for reading an exam",
+        "properties": {
+          "activity_id": {
+            "title": "Activity Id",
+            "type": "integer"
+          },
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "creation_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creation Date"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "exam_uuid": {
+            "title": "Exam Uuid",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "published": {
+            "default": false,
+            "title": "Published",
+            "type": "boolean"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "title": "Settings",
+            "type": "object"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "update_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Update Date"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "course_id",
+          "chapter_id",
+          "activity_id",
+          "id",
+          "exam_uuid"
+        ],
+        "title": "ExamRead",
+        "type": "object"
+      },
+      "ExamUpdate": {
+        "description": "Model for updating an exam",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "published": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published"
+          },
+          "settings": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settings"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "update_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Update Date"
+          }
+        },
+        "title": "ExamUpdate",
+        "type": "object"
+      },
+      "ExecutionMode": {
+        "description": "Execution mode for test cases",
+        "enum": [
+          "FAST_FEEDBACK",
+          "COMPLETE_FEEDBACK"
+        ],
+        "title": "ExecutionMode",
+        "type": "string"
+      },
       "ExternalVideo": {
-        "additionalProperties": false,
         "properties": {
           "chapter_id": {
             "title": "Chapter Id",
@@ -5983,27 +6983,25 @@
         "type": "object"
       },
       "FileUploadItemAnswer": {
-        "additionalProperties": false,
         "properties": {
-          "files": {
-            "items": {
-              "$ref": "#/components/schemas/FileUploadReference"
-            },
-            "title": "Files",
-            "type": "array"
-          },
           "kind": {
             "const": "FILE_UPLOAD",
             "default": "FILE_UPLOAD",
             "title": "Kind",
             "type": "string"
+          },
+          "uploads": {
+            "items": {
+              "$ref": "#/components/schemas/FileUploadReference"
+            },
+            "title": "Uploads",
+            "type": "array"
           }
         },
         "title": "FileUploadItemAnswer",
         "type": "object"
       },
       "FileUploadItemBody": {
-        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "FILE_UPLOAD",
@@ -6044,26 +7042,24 @@
         "type": "object"
       },
       "FileUploadReference": {
-        "additionalProperties": false,
         "properties": {
           "filename": {
             "default": "",
             "title": "Filename",
             "type": "string"
           },
-          "upload_id": {
-            "title": "Upload Id",
+          "upload_uuid": {
+            "title": "Upload Uuid",
             "type": "string"
           }
         },
         "required": [
-          "upload_id"
+          "upload_uuid"
         ],
         "title": "FileUploadReference",
         "type": "object"
       },
       "ForecastItem": {
-        "additionalProperties": false,
         "properties": {
           "assessment_id": {
             "anyOf": [
@@ -6206,7 +7202,6 @@
         "type": "object"
       },
       "FormField": {
-        "additionalProperties": false,
         "properties": {
           "field_type": {
             "default": "text",
@@ -6241,7 +7236,6 @@
         "type": "object"
       },
       "FormItemAnswer": {
-        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "FORM",
@@ -6261,7 +7255,6 @@
         "type": "object"
       },
       "FormItemBody": {
-        "additionalProperties": false,
         "properties": {
           "fields": {
             "items": {
@@ -6286,7 +7279,6 @@
         "type": "object"
       },
       "FullCourseRead": {
-        "additionalProperties": false,
         "properties": {
           "about": {
             "anyOf": [
@@ -6443,7 +7435,6 @@
         "type": "object"
       },
       "FunnelStep": {
-        "additionalProperties": false,
         "properties": {
           "count": {
             "title": "Count",
@@ -6473,7 +7464,6 @@
         "type": "object"
       },
       "GradebookActivity": {
-        "additionalProperties": false,
         "properties": {
           "activity_type": {
             "title": "Activity Type",
@@ -6529,7 +7519,6 @@
         "type": "object"
       },
       "GradebookStudent": {
-        "additionalProperties": false,
         "properties": {
           "email": {
             "title": "Email",
@@ -6580,7 +7569,6 @@
         "type": "object"
       },
       "GradebookSummary": {
-        "additionalProperties": false,
         "properties": {
           "activity_count": {
             "title": "Activity Count",
@@ -6619,7 +7607,6 @@
         "type": "object"
       },
       "GradedItem": {
-        "additionalProperties": false,
         "description": "Per-question or per-task grading detail.",
         "properties": {
           "correct": {
@@ -6676,7 +7663,6 @@
         "type": "object"
       },
       "GradingBacklogItem": {
-        "additionalProperties": false,
         "properties": {
           "age_hours": {
             "anyOf": [
@@ -6743,7 +7729,6 @@
         "type": "object"
       },
       "GradingBreakdown": {
-        "additionalProperties": false,
         "description": "Complete grading result for a submission.",
         "properties": {
           "auto_graded": {
@@ -6772,6 +7757,25 @@
         "title": "GradingBreakdown",
         "type": "object"
       },
+      "GradingStrategy": {
+        "description": "Grading strategy for code challenges",
+        "enum": [
+          "ALL_OR_NOTHING",
+          "PARTIAL_CREDIT",
+          "BEST_SUBMISSION",
+          "LATEST_SUBMISSION"
+        ],
+        "title": "GradingStrategy",
+        "type": "string"
+      },
+      "GradingTypeEnum": {
+        "enum": [
+          "NUMERIC",
+          "PERCENTAGE"
+        ],
+        "title": "GradingTypeEnum",
+        "type": "string"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -6786,7 +7790,6 @@
         "type": "object"
       },
       "HistogramBucket": {
-        "additionalProperties": false,
         "properties": {
           "count": {
             "title": "Count",
@@ -6805,7 +7808,6 @@
         "type": "object"
       },
       "InsightFeedItem": {
-        "additionalProperties": false,
         "properties": {
           "activity_id": {
             "anyOf": [
@@ -6922,8 +7924,69 @@
         "title": "InsightFeedItem",
         "type": "object"
       },
+      "InstructorAnalytics": {
+        "description": "Analytics for instructors on a code challenge",
+        "properties": {
+          "average_score": {
+            "title": "Average Score",
+            "type": "number"
+          },
+          "common_errors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Common Errors",
+            "type": "array"
+          },
+          "completion_rate": {
+            "title": "Completion Rate",
+            "type": "number"
+          },
+          "failing_tests": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Failing Tests",
+            "type": "object"
+          },
+          "language_distribution": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Language Distribution",
+            "type": "object"
+          },
+          "score_distribution": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Score Distribution",
+            "type": "object"
+          },
+          "total_submissions": {
+            "title": "Total Submissions",
+            "type": "integer"
+          },
+          "unique_students": {
+            "title": "Unique Students",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_submissions",
+          "unique_students",
+          "completion_rate",
+          "average_score",
+          "score_distribution",
+          "language_distribution",
+          "common_errors",
+          "failing_tests"
+        ],
+        "title": "InstructorAnalytics",
+        "type": "object"
+      },
       "InterventionSummary": {
-        "additionalProperties": false,
         "properties": {
           "avg_risk_delta_after_intervention": {
             "anyOf": [
@@ -7027,7 +8090,6 @@
         ]
       },
       "ItemFeedback": {
-        "additionalProperties": false,
         "description": "Optional per-item feedback from the teacher.",
         "properties": {
           "feedback": {
@@ -7067,7 +8129,6 @@
         "type": "string"
       },
       "ItemFeedbackCreate": {
-        "additionalProperties": false,
         "properties": {
           "annotation_data_key": {
             "anyOf": [
@@ -7149,7 +8210,6 @@
         "type": "object"
       },
       "ItemFeedbackRead": {
-        "additionalProperties": false,
         "properties": {
           "annotation_data_key": {
             "anyOf": [
@@ -7254,7 +8314,6 @@
         "type": "object"
       },
       "ItemFeedbackUpdate": {
-        "additionalProperties": false,
         "properties": {
           "annotation_data_key": {
             "anyOf": [
@@ -7352,8 +8411,87 @@
         "title": "ItemKind",
         "type": "string"
       },
+      "Judge0Language": {
+        "description": "Judge0 language info",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Judge0Language",
+        "type": "object"
+      },
+      "LeaderboardEntry": {
+        "description": "Single entry in the leaderboard",
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "composite_score": {
+            "title": "Composite Score",
+            "type": "number"
+          },
+          "rank": {
+            "title": "Rank",
+            "type": "integer"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "time_to_first_ac_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time To First Ac Ms"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rank",
+          "user_id",
+          "username",
+          "score",
+          "attempts",
+          "composite_score"
+        ],
+        "title": "LeaderboardEntry",
+        "type": "object"
+      },
       "LeaderboardEntryRead": {
-        "additionalProperties": false,
         "description": "Single leaderboard entry.\n\nIncludes user profile data for rich leaderboard displays.",
         "properties": {
           "avatar_url": {
@@ -7438,7 +8576,6 @@
         "type": "object"
       },
       "LeaderboardRead": {
-        "additionalProperties": false,
         "description": "Leaderboard.",
         "properties": {
           "entries": {
@@ -7461,7 +8598,6 @@
         "type": "object"
       },
       "MatchPair": {
-        "additionalProperties": false,
         "properties": {
           "left": {
             "title": "Left",
@@ -7480,7 +8616,6 @@
         "type": "object"
       },
       "MatchingAnswerPair": {
-        "additionalProperties": false,
         "properties": {
           "left": {
             "title": "Left",
@@ -7499,7 +8634,6 @@
         "type": "object"
       },
       "MatchingItemAnswer": {
-        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "MATCHING",
@@ -7519,7 +8653,6 @@
         "type": "object"
       },
       "MatchingItemBody": {
-        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "MATCHING",
@@ -7544,7 +8677,6 @@
         "type": "object"
       },
       "MetricCard": {
-        "additionalProperties": false,
         "properties": {
           "benchmark": {
             "anyOf": [
@@ -7635,7 +8767,6 @@
         "type": "object"
       },
       "OpenTextItemAnswer": {
-        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "OPEN_TEXT",
@@ -7653,7 +8784,6 @@
         "type": "object"
       },
       "OpenTextItemBody": {
-        "additionalProperties": false,
         "properties": {
           "kind": {
             "const": "OPEN_TEXT",
@@ -7693,7 +8823,6 @@
         "type": "object"
       },
       "PaginatedPlatformUsers": {
-        "additionalProperties": false,
         "description": "Paginated response for platform users.",
         "properties": {
           "page": {
@@ -7789,7 +8918,6 @@
         "type": "object"
       },
       "PermissionRead": {
-        "additionalProperties": false,
         "properties": {
           "action": {
             "title": "Action",
@@ -7834,7 +8962,6 @@
         "type": "object"
       },
       "PlatformDetailResponse": {
-        "additionalProperties": false,
         "properties": {
           "detail": {
             "title": "Detail",
@@ -7848,7 +8975,6 @@
         "type": "object"
       },
       "PlatformLandingUploadResponse": {
-        "additionalProperties": false,
         "properties": {
           "detail": {
             "title": "Detail",
@@ -7867,7 +8993,6 @@
         "type": "object"
       },
       "PlatformPreviewUploadResponse": {
-        "additionalProperties": false,
         "properties": {
           "name_in_disk": {
             "title": "Name In Disk",
@@ -7881,7 +9006,6 @@
         "type": "object"
       },
       "PlatformRead": {
-        "additionalProperties": false,
         "description": "Model for reading the platform with all related data.",
         "properties": {
           "about": {
@@ -8014,7 +9138,6 @@
         "type": "object"
       },
       "PlatformUpdate": {
-        "additionalProperties": false,
         "description": "Model for updating the platform.",
         "properties": {
           "about": {
@@ -8113,7 +9236,6 @@
         "type": "object"
       },
       "PlatformUser": {
-        "additionalProperties": false,
         "description": "Model representing a user's role on the platform.",
         "properties": {
           "role": {
@@ -8131,7 +9253,6 @@
         "type": "object"
       },
       "ProfileRead": {
-        "additionalProperties": false,
         "description": "User gamification profile for API responses.",
         "properties": {
           "created_at": {
@@ -8259,8 +9380,65 @@
         "title": "ProfileRead",
         "type": "object"
       },
+      "QuestionCreate": {
+        "description": "Model for creating a question",
+        "properties": {
+          "answer_options": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Answer Options",
+            "type": "array"
+          },
+          "exam_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exam Id"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation"
+          },
+          "order_index": {
+            "default": 0,
+            "title": "Order Index",
+            "type": "integer"
+          },
+          "points": {
+            "default": 1,
+            "title": "Points",
+            "type": "integer"
+          },
+          "question_text": {
+            "title": "Question Text",
+            "type": "string"
+          },
+          "question_type": {
+            "$ref": "#/components/schemas/QuestionTypeEnum"
+          }
+        },
+        "required": [
+          "question_text",
+          "question_type"
+        ],
+        "title": "QuestionCreate",
+        "type": "object"
+      },
       "QuestionDifficultyRow": {
-        "additionalProperties": false,
         "properties": {
           "accuracy_pct": {
             "anyOf": [
@@ -8338,8 +9516,183 @@
         "title": "QuestionDifficultyRow",
         "type": "object"
       },
+      "QuestionRead": {
+        "description": "Model for reading a question (full data for teachers)",
+        "properties": {
+          "answer_options": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Answer Options",
+            "type": "array"
+          },
+          "creation_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creation Date"
+          },
+          "exam_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exam Id"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "order_index": {
+            "default": 0,
+            "title": "Order Index",
+            "type": "integer"
+          },
+          "points": {
+            "default": 1,
+            "title": "Points",
+            "type": "integer"
+          },
+          "question_text": {
+            "title": "Question Text",
+            "type": "string"
+          },
+          "question_type": {
+            "$ref": "#/components/schemas/QuestionTypeEnum"
+          },
+          "question_uuid": {
+            "title": "Question Uuid",
+            "type": "string"
+          },
+          "update_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Update Date"
+          }
+        },
+        "required": [
+          "question_text",
+          "question_type",
+          "id",
+          "question_uuid"
+        ],
+        "title": "QuestionRead",
+        "type": "object"
+      },
+      "QuestionTypeEnum": {
+        "enum": [
+          "SINGLE_CHOICE",
+          "MULTIPLE_CHOICE",
+          "TRUE_FALSE",
+          "MATCHING"
+        ],
+        "title": "QuestionTypeEnum",
+        "type": "string"
+      },
+      "QuestionUpdate": {
+        "description": "Model for updating a question",
+        "properties": {
+          "answer_options": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Options"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation"
+          },
+          "order_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Index"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "question_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Text"
+          },
+          "question_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuestionTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "QuestionUpdate",
+        "type": "object"
+      },
       "QuizAttemptRead": {
-        "additionalProperties": false,
         "description": "Schema for reading quiz attempt data.",
         "properties": {
           "activity_id": {
@@ -8478,7 +9831,6 @@
         "type": "object"
       },
       "QuizGradingResult": {
-        "additionalProperties": false,
         "description": "Grading result for a quiz submission.",
         "properties": {
           "max_score": {
@@ -8527,7 +9879,6 @@
         "type": "object"
       },
       "QuizQuestionStatRead": {
-        "additionalProperties": false,
         "description": "Schema for reading quiz question statistics.",
         "properties": {
           "activity_id": {
@@ -8584,7 +9935,6 @@
         "type": "object"
       },
       "QuizSubmissionRequest": {
-        "additionalProperties": false,
         "description": "Request payload for quiz submission.",
         "properties": {
           "answers": {
@@ -8646,7 +9996,6 @@
         "type": "object"
       },
       "QuizSubmissionResponse": {
-        "additionalProperties": false,
         "description": "Response for quiz submission.",
         "properties": {
           "attempt_number": {
@@ -8680,7 +10029,6 @@
         "type": "object"
       },
       "ReadinessIssue": {
-        "additionalProperties": false,
         "properties": {
           "code": {
             "title": "Code",
@@ -8729,7 +10077,6 @@
         "type": "string"
       },
       "RiskDistributionCounts": {
-        "additionalProperties": false,
         "properties": {
           "high": {
             "default": 0,
@@ -8864,7 +10211,6 @@
         "type": "object"
       },
       "RoleCreate": {
-        "additionalProperties": false,
         "properties": {
           "description": {
             "anyOf": [
@@ -8899,7 +10245,6 @@
         "type": "object"
       },
       "RoleRead": {
-        "additionalProperties": false,
         "properties": {
           "created_at": {
             "format": "date-time",
@@ -8985,7 +10330,6 @@
         "type": "object"
       },
       "RoleUpdate": {
-        "additionalProperties": false,
         "properties": {
           "description": {
             "anyOf": [
@@ -9025,7 +10369,6 @@
         "type": "object"
       },
       "SavedAnalyticsViewCreate": {
-        "additionalProperties": false,
         "properties": {
           "name": {
             "title": "Name",
@@ -9050,7 +10393,6 @@
         "type": "object"
       },
       "SavedAnalyticsViewListResponse": {
-        "additionalProperties": false,
         "properties": {
           "generated_at": {
             "title": "Generated At",
@@ -9077,7 +10419,6 @@
         "type": "object"
       },
       "SavedAnalyticsViewRow": {
-        "additionalProperties": false,
         "properties": {
           "created_at": {
             "title": "Created At",
@@ -9122,7 +10463,6 @@
         "type": "object"
       },
       "SearchResult": {
-        "additionalProperties": false,
         "properties": {
           "collections": {
             "items": {
@@ -9155,7 +10495,6 @@
         "type": "object"
       },
       "SendActivityAIChatMessage": {
-        "additionalProperties": false,
         "properties": {
           "activity_uuid": {
             "title": "Activity Uuid",
@@ -9180,8 +10519,217 @@
         "title": "SendActivityAIChatMessage",
         "type": "object"
       },
+      "SettingsUpdateRequest": {
+        "description": "Request model for updating challenge settings",
+        "properties": {
+          "allow_custom_input": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Custom Input"
+          },
+          "allowed_languages": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Languages"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "difficulty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "execution_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "grading_strategy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GradingStrategy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hidden_tests": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden Tests"
+          },
+          "hints": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hints"
+          },
+          "lifecycle_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifecycle Status"
+          },
+          "memory_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Limit"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At"
+          },
+          "starter_code": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starter Code"
+          },
+          "time_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit"
+          },
+          "visible_tests": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visible Tests"
+          }
+        },
+        "title": "SettingsUpdateRequest",
+        "type": "object"
+      },
       "StartActivityAIChatSession": {
-        "additionalProperties": false,
         "properties": {
           "activity_uuid": {
             "title": "Activity Uuid",
@@ -9221,7 +10769,6 @@
         "type": "string"
       },
       "StreakUpdateRead": {
-        "additionalProperties": false,
         "description": "Streak update response.",
         "properties": {
           "current_count": {
@@ -9250,8 +10797,76 @@
         "title": "StreakUpdateRead",
         "type": "object"
       },
+      "StudentAnalytics": {
+        "description": "Analytics for a student on a code challenge",
+        "properties": {
+          "average_score": {
+            "title": "Average Score",
+            "type": "number"
+          },
+          "best_score": {
+            "title": "Best Score",
+            "type": "number"
+          },
+          "best_submission_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Submission Uuid"
+          },
+          "first_ac_time_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Ac Time Ms"
+          },
+          "hints_used": {
+            "title": "Hints Used",
+            "type": "integer"
+          },
+          "languages_used": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Languages Used",
+            "type": "array"
+          },
+          "total_submissions": {
+            "title": "Total Submissions",
+            "type": "integer"
+          },
+          "total_time_spent_ms": {
+            "title": "Total Time Spent Ms",
+            "type": "number"
+          },
+          "xp_earned": {
+            "title": "Xp Earned",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_submissions",
+          "best_score",
+          "average_score",
+          "languages_used",
+          "total_time_spent_ms",
+          "hints_used",
+          "xp_earned"
+        ],
+        "title": "StudentAnalytics",
+        "type": "object"
+      },
       "SubmissionListResponse": {
-        "additionalProperties": false,
         "description": "Typed paginated response for the teacher submissions list.",
         "properties": {
           "items": {
@@ -9289,7 +10904,6 @@
         "type": "object"
       },
       "SubmissionRead": {
-        "additionalProperties": false,
         "description": "Output model for reading a submission.",
         "properties": {
           "activity_id": {
@@ -9399,7 +11013,7 @@
             "title": "Started At"
           },
           "status": {
-            "$ref": "#/components/schemas/SubmissionStatus",
+            "$ref": "#/components/schemas/src__db__grading__submissions__SubmissionStatus",
             "default": "DRAFT"
           },
           "submission_uuid": {
@@ -9455,8 +11069,30 @@
         "title": "SubmissionRead",
         "type": "object"
       },
+      "SubmissionResponse": {
+        "description": "Response after creating a submission",
+        "properties": {
+          "message": {
+            "default": "Submission created successfully",
+            "title": "Message",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/src__db__courses__code_challenges__SubmissionStatus"
+          },
+          "submission_uuid": {
+            "title": "Submission Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "submission_uuid",
+          "status"
+        ],
+        "title": "SubmissionResponse",
+        "type": "object"
+      },
       "SubmissionStats": {
-        "additionalProperties": false,
         "description": "Aggregate statistics for the teacher dashboard header.",
         "properties": {
           "avg_score": {
@@ -9509,19 +11145,7 @@
         "title": "SubmissionStats",
         "type": "object"
       },
-      "SubmissionStatus": {
-        "enum": [
-          "DRAFT",
-          "PENDING",
-          "GRADED",
-          "PUBLISHED",
-          "RETURNED"
-        ],
-        "title": "SubmissionStatus",
-        "type": "string"
-      },
       "SubmissionUser": {
-        "additionalProperties": false,
         "description": "Public user info embedded in teacher-view submissions.",
         "properties": {
           "avatar_image": {
@@ -9601,7 +11225,6 @@
         "type": "object"
       },
       "TeacherAction": {
-        "additionalProperties": false,
         "properties": {
           "action_type": {
             "const": "GRADE_SUBMISSION",
@@ -9658,7 +11281,6 @@
         "type": "object"
       },
       "TeacherAssessmentDetailResponse": {
-        "additionalProperties": false,
         "properties": {
           "assessment_id": {
             "title": "Assessment Id",
@@ -9770,7 +11392,6 @@
         "type": "object"
       },
       "TeacherAssessmentDetailSummary": {
-        "additionalProperties": false,
         "properties": {
           "avg_attempts": {
             "anyOf": [
@@ -9855,7 +11476,6 @@
         "type": "object"
       },
       "TeacherAssessmentListResponse": {
-        "additionalProperties": false,
         "properties": {
           "cohort_options": {
             "default": [],
@@ -9908,7 +11528,6 @@
         "type": "object"
       },
       "TeacherCourseDetailResponse": {
-        "additionalProperties": false,
         "properties": {
           "activity_dropoff": {
             "items": {
@@ -10000,7 +11619,6 @@
         "type": "object"
       },
       "TeacherCourseDetailSummary": {
-        "additionalProperties": false,
         "properties": {
           "active_learners_7d": {
             "title": "Active Learners 7D",
@@ -10044,7 +11662,6 @@
         "type": "object"
       },
       "TeacherCourseListResponse": {
-        "additionalProperties": false,
         "properties": {
           "cohort_options": {
             "default": [],
@@ -10097,7 +11714,6 @@
         "type": "object"
       },
       "TeacherCourseRow": {
-        "additionalProperties": false,
         "properties": {
           "active_learners_7d": {
             "title": "Active Learners 7D",
@@ -10233,7 +11849,6 @@
         "type": "object"
       },
       "TeacherGradeInput": {
-        "additionalProperties": false,
         "description": "Body for PATCH /grading/submissions/{submission_uuid}.",
         "properties": {
           "feedback": {
@@ -10269,7 +11884,6 @@
         "type": "object"
       },
       "TeacherInterventionCreate": {
-        "additionalProperties": false,
         "properties": {
           "course_id": {
             "title": "Course Id",
@@ -10338,7 +11952,6 @@
         "type": "object"
       },
       "TeacherInterventionListResponse": {
-        "additionalProperties": false,
         "properties": {
           "generated_at": {
             "title": "Generated At",
@@ -10365,7 +11978,6 @@
         "type": "object"
       },
       "TeacherInterventionRow": {
-        "additionalProperties": false,
         "properties": {
           "course_id": {
             "title": "Course Id",
@@ -10469,7 +12081,6 @@
         "type": "object"
       },
       "TeacherOverviewResponse": {
-        "additionalProperties": false,
         "properties": {
           "alerts": {
             "items": {
@@ -10630,7 +12241,6 @@
         "type": "object"
       },
       "TeacherOverviewScope": {
-        "additionalProperties": false,
         "properties": {
           "cohort_ids": {
             "items": {
@@ -10660,7 +12270,6 @@
         "type": "object"
       },
       "TeacherOverviewSummary": {
-        "additionalProperties": false,
         "properties": {
           "active_learners": {
             "$ref": "#/components/schemas/MetricCard"
@@ -10693,7 +12302,6 @@
         "type": "object"
       },
       "TeacherOverviewTrends": {
-        "additionalProperties": false,
         "properties": {
           "active_learners": {
             "items": {
@@ -10734,7 +12342,6 @@
         "type": "object"
       },
       "TeacherWorkloadSummary": {
-        "additionalProperties": false,
         "properties": {
           "aging_buckets": {
             "$ref": "#/components/schemas/WorkloadAgingBuckets"
@@ -10780,6 +12387,139 @@
         "title": "TeacherWorkloadSummary",
         "type": "object"
       },
+      "TestCaseResult": {
+        "description": "Result of a single test case execution",
+        "properties": {
+          "compile_output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compile Output"
+          },
+          "memory_kb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Kb"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "status": {
+            "title": "Status",
+            "type": "integer"
+          },
+          "status_description": {
+            "title": "Status Description",
+            "type": "string"
+          },
+          "stderr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stderr"
+          },
+          "stdout": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stdout"
+          },
+          "test_case_id": {
+            "title": "Test Case Id",
+            "type": "string"
+          },
+          "time_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Ms"
+          }
+        },
+        "required": [
+          "test_case_id",
+          "status",
+          "status_description",
+          "passed"
+        ],
+        "title": "TestCaseResult",
+        "type": "object"
+      },
+      "TestRunResponse": {
+        "description": "Response for running visible tests only",
+        "properties": {
+          "execution_time_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Time Ms"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/TestCaseResult"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "results",
+          "passed",
+          "total"
+        ],
+        "title": "TestRunResponse",
+        "type": "object"
+      },
       "ThumbnailType": {
         "enum": [
           "image",
@@ -10790,7 +12530,6 @@
         "type": "string"
       },
       "TimeSeriesPoint": {
-        "additionalProperties": false,
         "properties": {
           "bucket_start": {
             "title": "Bucket Start",
@@ -10809,7 +12548,6 @@
         "type": "object"
       },
       "Trail": {
-        "additionalProperties": false,
         "properties": {
           "creation_date": {
             "default": "",
@@ -10849,7 +12587,6 @@
         "type": "object"
       },
       "TrailCreate": {
-        "additionalProperties": false,
         "properties": {
           "user_id": {
             "title": "User Id",
@@ -10863,7 +12600,6 @@
         "type": "object"
       },
       "TrailRead": {
-        "additionalProperties": false,
         "properties": {
           "creation_date": {
             "anyOf": [
@@ -10929,7 +12665,6 @@
         "type": "object"
       },
       "TrailRunRead": {
-        "additionalProperties": false,
         "properties": {
           "course": {
             "anyOf": [
@@ -11017,7 +12752,6 @@
         "type": "object"
       },
       "TrailStepRead": {
-        "additionalProperties": false,
         "properties": {
           "activity": {
             "anyOf": [
@@ -11116,7 +12850,6 @@
         "type": "object"
       },
       "TransactionRead": {
-        "additionalProperties": false,
         "description": "XP transaction for API responses.",
         "properties": {
           "amount": {
@@ -11172,7 +12905,6 @@
         "type": "object"
       },
       "UploadCreate": {
-        "additionalProperties": false,
         "properties": {
           "content_type": {
             "default": "",
@@ -11205,7 +12937,6 @@
         "type": "object"
       },
       "UploadCreateResponse": {
-        "additionalProperties": false,
         "properties": {
           "expires_at": {
             "format": "date-time",
@@ -11230,7 +12961,6 @@
         "type": "object"
       },
       "UploadFinalize": {
-        "additionalProperties": false,
         "properties": {
           "content_type": {
             "default": "",
@@ -11251,7 +12981,6 @@
         "type": "object"
       },
       "UploadRead": {
-        "additionalProperties": false,
         "properties": {
           "content_type": {
             "title": "Content Type",
@@ -11339,8 +13068,31 @@
         "title": "UploadStatus",
         "type": "string"
       },
+      "UploadUrlResponse": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "get_url": {
+            "title": "Get Url",
+            "type": "string"
+          },
+          "upload_id": {
+            "title": "Upload Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id",
+          "get_url",
+          "expires_at"
+        ],
+        "title": "UploadUrlResponse",
+        "type": "object"
+      },
       "UserCreate": {
-        "additionalProperties": false,
         "properties": {
           "avatar_image": {
             "anyOf": [
@@ -11459,7 +13211,6 @@
         "type": "object"
       },
       "UserGroupCreate": {
-        "additionalProperties": false,
         "properties": {
           "description": {
             "title": "Description",
@@ -11478,7 +13229,6 @@
         "type": "object"
       },
       "UserGroupRead": {
-        "additionalProperties": false,
         "properties": {
           "creation_date": {
             "title": "Creation Date",
@@ -11517,7 +13267,6 @@
         "type": "object"
       },
       "UserGroupUpdate": {
-        "additionalProperties": false,
         "properties": {
           "description": {
             "anyOf": [
@@ -11571,7 +13320,6 @@
         "type": "object"
       },
       "UserRankRead": {
-        "additionalProperties": false,
         "properties": {
           "rank": {
             "anyOf": [
@@ -11596,7 +13344,6 @@
         "type": "object"
       },
       "UserRead": {
-        "additionalProperties": false,
         "properties": {
           "auth_provider": {
             "default": "local",
@@ -11826,7 +13573,6 @@
         "type": "object"
       },
       "UserSession": {
-        "additionalProperties": false,
         "properties": {
           "expires_at": {
             "anyOf": [
@@ -11888,7 +13634,6 @@
         "type": "object"
       },
       "UserSessionRole": {
-        "additionalProperties": false,
         "properties": {
           "role": {
             "$ref": "#/components/schemas/RoleRead"
@@ -11968,7 +13713,6 @@
         "type": "object"
       },
       "UserUpdate": {
-        "additionalProperties": false,
         "properties": {
           "avatar_image": {
             "anyOf": [
@@ -12098,7 +13842,6 @@
         "type": "object"
       },
       "UserUpdatePassword": {
-        "additionalProperties": false,
         "properties": {
           "new_password": {
             "title": "New Password",
@@ -12157,7 +13900,6 @@
         "type": "object"
       },
       "WorkloadAgingBuckets": {
-        "additionalProperties": false,
         "properties": {
           "d1_3": {
             "default": 0,
@@ -12184,7 +13926,6 @@
         "type": "object"
       },
       "XPAwardRequest": {
-        "additionalProperties": false,
         "description": "Request to award XP.",
         "properties": {
           "custom_amount": {
@@ -12239,7 +13980,6 @@
         "type": "object"
       },
       "XPAwardResponse": {
-        "additionalProperties": false,
         "description": "Response from XP award operation.",
         "properties": {
           "is_new_transaction": {
@@ -12287,6 +14027,29 @@
           "code_challenge_first_solve"
         ],
         "title": "XPSource",
+        "type": "string"
+      },
+      "src__db__courses__code_challenges__SubmissionStatus": {
+        "description": "Status of a code submission",
+        "enum": [
+          "PENDING",
+          "PROCESSING",
+          "COMPLETED",
+          "FAILED",
+          "PENDING_JUDGE0"
+        ],
+        "title": "SubmissionStatus",
+        "type": "string"
+      },
+      "src__db__grading__submissions__SubmissionStatus": {
+        "enum": [
+          "DRAFT",
+          "PENDING",
+          "GRADED",
+          "PUBLISHED",
+          "RETURNED"
+        ],
+        "title": "SubmissionStatus",
         "type": "string"
       }
     },
@@ -17625,6 +19388,1167 @@
         ]
       }
     },
+    "/api/v1/assignments/activity/{activity_uuid}": {
+      "delete": {
+        "operationId": "api_delete_assignment_from_activity_api_v1_assignments_activity__activity_uuid__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Delete Assignment From Activity",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "get": {
+        "operationId": "api_read_assignment_from_activity_api_v1_assignments_activity__activity_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Read Assignment From Activity",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/course/{course_uuid}": {
+      "get": {
+        "operationId": "api_get_assignments_api_v1_assignments_course__course_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Assignments",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/courses": {
+      "get": {
+        "operationId": "api_get_assignments_for_courses_api_v1_assignments_courses_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "course_uuids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Course Uuids"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Assignments For Courses",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/courses/editable": {
+      "get": {
+        "operationId": "api_get_editable_assignments_for_courses_api_v1_assignments_courses_editable_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "course_uuids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Course Uuids"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Editable Assignments For Courses",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/with-activity": {
+      "post": {
+        "description": "Create assignment with activity in a single transaction.",
+        "operationId": "api_create_assignment_with_activity_api_v1_assignments_with_activity_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "chapter_id",
+            "required": true,
+            "schema": {
+              "title": "Chapter Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "activity_name",
+            "required": true,
+            "schema": {
+              "title": "Activity Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentCreateWithActivity"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Create Assignment With Activity",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}": {
+      "get": {
+        "operationId": "api_read_assignment_api_v1_assignments__assignment_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Read Assignment",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "put": {
+        "operationId": "api_update_assignment_api_v1_assignments__assignment_uuid__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Update Assignment",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/archive": {
+      "post": {
+        "description": "Archive an assignment.  Read-only for everyone afterwards; not deletable.\n\n**Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/lifecycle`` instead.",
+        "operationId": "api_archive_assignment_api_v1_assignments__assignment_uuid__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Archive Assignment",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/cancel-schedule": {
+      "post": {
+        "description": "Revert a SCHEDULED assignment back to DRAFT.\n\n**Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/lifecycle`` instead.",
+        "operationId": "api_cancel_assignment_schedule_api_v1_assignments__assignment_uuid__cancel_schedule_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Cancel Assignment Schedule",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/publish": {
+      "post": {
+        "description": "Publish immediately or schedule for a future date.\n\nBody ``scheduled_at`` is optional:\n- Omit or set to null → publish now (status becomes PUBLISHED).\n- Set to a future datetime → schedule (status becomes SCHEDULED).\n\n**Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/lifecycle`` instead.\nThis endpoint will redirect (308) to the canonical URL when possible.",
+        "operationId": "api_publish_assignment_api_v1_assignments__assignment_uuid__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentPublishInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Publish Assignment",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/submissions/me/draft": {
+      "get": {
+        "description": "Get the current user's Submission-backed assignment draft, if any.\n\n**Deprecated** — compatibility adapter over ``GET /api/v1/assessments/{assessment_uuid}/draft``.",
+        "operationId": "api_get_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentDraftRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Assignment Draft Submission",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "patch": {
+        "description": "Create or update the current user's assignment draft in Submission.\n\n**Deprecated** — compatibility adapter over ``PATCH /api/v1/assessments/{assessment_uuid}/draft``.",
+        "operationId": "api_save_assignment_draft_submission_api_v1_assignments__assignment_uuid__submissions_me_draft_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentDraftPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Save Assignment Draft Submission",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/submit": {
+      "post": {
+        "description": "Submit the current user's assignment draft through the unified Submission model.\n\n**Deprecated** — compatibility adapter over ``POST /api/v1/assessments/{assessment_uuid}/submit``.",
+        "operationId": "api_submit_assignment_draft_submission_api_v1_assignments__assignment_uuid__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AssignmentDraftPatch"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Draft Patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Submit Assignment Draft Submission",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/tasks": {
+      "get": {
+        "operationId": "api_read_assignment_tasks_api_v1_assignments__assignment_uuid__tasks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Read Assignment Tasks",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "post": {
+        "operationId": "api_create_assignment_tasks_api_v1_assignments__assignment_uuid__tasks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentTaskCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Create Assignment Tasks",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}": {
+      "delete": {
+        "operationId": "api_delete_assignment_tasks_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignment_task_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Task Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Delete Assignment Tasks",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "get": {
+        "operationId": "api_read_assignment_task_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignment_task_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Task Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Read Assignment Task",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "put": {
+        "operationId": "api_update_assignment_tasks_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignment_task_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Task Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentTaskUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Update Assignment Tasks",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}/ref_file": {
+      "post": {
+        "description": "Upload a reference file for an assignment task.",
+        "operationId": "api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignment_task_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Task Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_api_put_assignment_task_ref_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__ref_file_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Put Assignment Task Ref File",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_uuid}/tasks/{assignment_task_uuid}/sub_file": {
+      "post": {
+        "description": "Upload a submission file for an assignment task.",
+        "operationId": "api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignment_task_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assignment Task Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_api_put_assignment_task_sub_file_api_v1_assignments__assignment_uuid__tasks__assignment_task_uuid__sub_file_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Put Assignment Task Sub File",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
     "/api/v1/auth/forgot-password": {
       "post": {
         "operationId": "reset_forgot_password_api_v1_auth_forgot_password_post",
@@ -19277,6 +22201,723 @@
         "summary": "Api Move Chapter To Order",
         "tags": [
           "chapters"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/health": {
+      "get": {
+        "description": "Check if Judge0 service is available",
+        "operationId": "check_judge0_health_api_v1_code_challenges_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Check Judge0 Health",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/languages": {
+      "get": {
+        "description": "Get list of available programming languages from Judge0",
+        "operationId": "get_available_languages_api_v1_code_challenges_languages_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Judge0Language"
+                  },
+                  "title": "Response Get Available Languages Api V1 Code Challenges Languages Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Available Languages",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/submissions/{submission_uuid}": {
+      "get": {
+        "description": "Get canonical submission detail for a code challenge.",
+        "operationId": "get_submission_detail_api_v1_code_challenges_submissions__submission_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Submission Detail",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/{activity_uuid}": {
+      "get": {
+        "description": "Get code challenge activity details",
+        "operationId": "get_code_challenge_api_v1_code_challenges__activity_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Code Challenge",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/{activity_uuid}/analytics": {
+      "get": {
+        "description": "Get analytics for a code challenge (instructor only)",
+        "operationId": "get_challenge_analytics_api_v1_code_challenges__activity_uuid__analytics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorAnalytics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Challenge Analytics",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/{activity_uuid}/analytics/{user_id}": {
+      "get": {
+        "description": "Get analytics for a student on a code challenge",
+        "operationId": "get_student_analytics_api_v1_code_challenges__activity_uuid__analytics__user_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentAnalytics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Student Analytics",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/{activity_uuid}/custom-test": {
+      "post": {
+        "description": "Run code with custom input (no expected output comparison)",
+        "operationId": "run_custom_test_api_v1_code_challenges__activity_uuid__custom_test_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomTestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomTestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Run Custom Test",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/{activity_uuid}/leaderboard": {
+      "get": {
+        "description": "Get leaderboard for a code challenge",
+        "operationId": "get_leaderboard_api_v1_code_challenges__activity_uuid__leaderboard_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "timeframe",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "enum": [
+                "all",
+                "week",
+                "month"
+              ],
+              "title": "Timeframe",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodeChallengeLeaderboard"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Leaderboard",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/{activity_uuid}/settings": {
+      "get": {
+        "description": "Get code challenge settings (visible tests only for students)",
+        "operationId": "get_challenge_settings_endpoint_api_v1_code_challenges__activity_uuid__settings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Challenge Settings Endpoint",
+        "tags": [
+          "code-challenges"
+        ]
+      },
+      "put": {
+        "description": "Update code challenge settings (instructor only)",
+        "operationId": "update_challenge_settings_api_v1_code_challenges__activity_uuid__settings_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Update Challenge Settings",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/{activity_uuid}/start": {
+      "post": {
+        "description": "Create or return the canonical DRAFT submission for this challenge.",
+        "operationId": "start_code_challenge_api_v1_code_challenges__activity_uuid__start_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Start Code Challenge",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/{activity_uuid}/submissions": {
+      "get": {
+        "description": "Get user's submission history for a challenge",
+        "operationId": "get_submission_history_api_v1_code_challenges__activity_uuid__submissions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SubmissionRead"
+                  },
+                  "title": "Response Get Submission History Api V1 Code Challenges  Activity Uuid  Submissions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Submission History",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/{activity_uuid}/submit": {
+      "post": {
+        "description": "Submit a solution to the code challenge.\n\n**Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/submit`` instead.\nCompatibility adapter over the canonical Submission pipeline.",
+        "operationId": "submit_code_challenge_api_v1_code_challenges__activity_uuid__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeSubmissionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Submit Code Challenge",
+        "tags": [
+          "code-challenges"
+        ]
+      }
+    },
+    "/api/v1/code-challenges/{activity_uuid}/test": {
+      "post": {
+        "description": "Run visible test cases only (pre-submission testing)",
+        "operationId": "run_visible_tests_api_v1_code_challenges__activity_uuid__test_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeSubmissionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Run Visible Tests",
+        "tags": [
+          "code-challenges"
         ]
       }
     },
@@ -21291,6 +24932,1077 @@
         "summary": "Config",
         "tags": [
           "dev"
+        ]
+      }
+    },
+    "/api/v1/exams": {
+      "post": {
+        "operationId": "api_create_exam_api_v1_exams_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Create Exam",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/activity/{activity_uuid}": {
+      "get": {
+        "operationId": "api_get_exam_from_activity_api_v1_exams_activity__activity_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Exam From Activity",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/attempts/{attempt_uuid}": {
+      "get": {
+        "description": "Get a specific exam attempt by UUID.\n\n- Students can only access their own attempts\n- Teachers/admins can access any attempt for exams they manage",
+        "operationId": "api_get_attempt_by_uuid_api_v1_exams_attempts__attempt_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attempt_uuid",
+            "required": true,
+            "schema": {
+              "title": "Attempt Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamAttemptRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Attempt By Uuid",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/attempts/{attempt_uuid}/questions": {
+      "get": {
+        "operationId": "api_get_attempt_review_questions_api_v1_exams_attempts__attempt_uuid__questions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attempt_uuid",
+            "required": true,
+            "schema": {
+              "title": "Attempt Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QuestionRead"
+                  },
+                  "title": "Response Api Get Attempt Review Questions Api V1 Exams Attempts  Attempt Uuid  Questions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Attempt Review Questions",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/config": {
+      "get": {
+        "operationId": "api_get_exam_config_api_v1_exams_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Api Get Exam Config",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/questions/{question_uuid}": {
+      "delete": {
+        "operationId": "api_delete_question_api_v1_exams_questions__question_uuid__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "question_uuid",
+            "required": true,
+            "schema": {
+              "title": "Question Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Api Delete Question Api V1 Exams Questions  Question Uuid  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Delete Question",
+        "tags": [
+          "exams"
+        ]
+      },
+      "put": {
+        "operationId": "api_update_question_api_v1_exams_questions__question_uuid__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "question_uuid",
+            "required": true,
+            "schema": {
+              "title": "Question Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Update Question",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/with-activity": {
+      "post": {
+        "operationId": "api_create_exam_with_activity_api_v1_exams_with_activity_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamCreateWithActivity"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Create Exam With Activity Api V1 Exams With Activity Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Create Exam With Activity",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/{exam_uuid}": {
+      "delete": {
+        "operationId": "api_delete_exam_api_v1_exams__exam_uuid__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Api Delete Exam Api V1 Exams  Exam Uuid  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Delete Exam",
+        "tags": [
+          "exams"
+        ]
+      },
+      "get": {
+        "operationId": "api_get_exam_api_v1_exams__exam_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Exam",
+        "tags": [
+          "exams"
+        ]
+      },
+      "put": {
+        "operationId": "api_update_exam_api_v1_exams__exam_uuid__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Update Exam",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/{exam_uuid}/attempts/all": {
+      "get": {
+        "description": "Get all exam attempts for teacher results dashboard",
+        "operationId": "api_get_all_attempts_api_v1_exams__exam_uuid__attempts_all_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Api Get All Attempts Api V1 Exams  Exam Uuid  Attempts All Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get All Attempts",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/{exam_uuid}/attempts/me": {
+      "get": {
+        "operationId": "api_get_my_attempts_api_v1_exams__exam_uuid__attempts_me_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExamAttemptRead"
+                  },
+                  "title": "Response Api Get My Attempts Api V1 Exams  Exam Uuid  Attempts Me Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get My Attempts",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/{exam_uuid}/attempts/start": {
+      "post": {
+        "description": "Start an exam attempt.\n\n**Deprecated** — compatibility adapter over ``POST /api/v1/assessments/{assessment_uuid}/start``.",
+        "operationId": "api_start_exam_attempt_api_v1_exams__exam_uuid__attempts_start_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamAttemptRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Start Exam Attempt",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/{exam_uuid}/attempts/{attempt_uuid}/submit": {
+      "post": {
+        "description": "Submit an exam attempt.\n\n**Deprecated** — compatibility adapter over ``POST /api/v1/assessments/{assessment_uuid}/submit``.",
+        "operationId": "api_submit_exam_attempt_api_v1_exams__exam_uuid__attempts__attempt_uuid__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attempt_uuid",
+            "required": true,
+            "schema": {
+              "title": "Attempt Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamAttemptRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Submit Exam Attempt",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/{exam_uuid}/attempts/{attempt_uuid}/violations": {
+      "post": {
+        "description": "Record an anti-cheat violation.\n\n**Deprecated** — violations are now written to Submission.metadata_json.violations\nvia ``PATCH /api/v1/assessments/{assessment_uuid}/draft``. This endpoint continues\nto accept requests and delegates to the legacy service during the shim period.",
+        "operationId": "api_record_violation_api_v1_exams__exam_uuid__attempts__attempt_uuid__violations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attempt_uuid",
+            "required": true,
+            "schema": {
+              "title": "Attempt Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Violation Data",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamAttemptRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Record Violation",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/{exam_uuid}/questions": {
+      "get": {
+        "operationId": "api_get_questions_api_v1_exams__exam_uuid__questions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QuestionRead"
+                  },
+                  "title": "Response Api Get Questions Api V1 Exams  Exam Uuid  Questions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Questions",
+        "tags": [
+          "exams"
+        ]
+      },
+      "post": {
+        "operationId": "api_create_question_api_v1_exams__exam_uuid__questions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Create Question",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/{exam_uuid}/questions/export-csv": {
+      "get": {
+        "description": "Export exam questions to CSV",
+        "operationId": "api_export_questions_csv_api_v1_exams__exam_uuid__questions_export_csv_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Export Questions Csv",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/{exam_uuid}/questions/import-csv": {
+      "post": {
+        "description": "Import exam questions from CSV",
+        "operationId": "api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_api_import_questions_csv_api_v1_exams__exam_uuid__questions_import_csv_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Import Questions Csv Api V1 Exams  Exam Uuid  Questions Import Csv Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Import Questions Csv",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/{exam_uuid}/questions/reorder": {
+      "post": {
+        "description": "Bulk update question order",
+        "operationId": "api_reorder_questions_api_v1_exams__exam_uuid__questions_reorder_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exam_uuid",
+            "required": true,
+            "schema": {
+              "title": "Exam Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "title": "Question Order",
+                "type": "array"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Reorder Questions Api V1 Exams  Exam Uuid  Questions Reorder Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Reorder Questions",
+        "tags": [
+          "exams"
         ]
       }
     },
@@ -24752,6 +29464,54 @@
           }
         ],
         "summary": "Finalize Assessment Upload",
+        "tags": [
+          "uploads"
+        ]
+      }
+    },
+    "/api/v1/uploads/{upload_id}/url": {
+      "get": {
+        "description": "Return a short-lived signed URL to read a finalised upload.",
+        "operationId": "get_assessment_upload_url_api_v1_uploads__upload_id__url_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "title": "Upload Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadUrlResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Assessment Upload Url",
         "tags": [
           "uploads"
         ]
