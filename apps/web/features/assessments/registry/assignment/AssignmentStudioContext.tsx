@@ -11,17 +11,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { normalizeAssignmentTasks } from '@/features/assignments/domain';
-import type { AssignmentRead, AssignmentTaskRead } from '@/features/assignments/domain';
-import {
-  useAssignmentByActivity,
-  useAssignmentDetail,
-  useAssignmentTasks,
-} from '@/features/assignments/hooks/useAssignments';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import type { KindAuthorProps } from '../index';
 import ErrorUI from '@/components/Objects/Elements/Error/Error';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
+import {
+  normalizeAssignmentTasks,
+  type AssignmentRead,
+  type AssignmentTaskRead,
+  useAssignmentByActivity,
+  useAssignmentDetail,
+  useAssignmentTasks,
+} from './studio-compat';
 
 // ── Context shape ─────────────────────────────────────────────────────────────
 

@@ -5,14 +5,18 @@ import { useTransition } from 'react';
 import type { ElementType } from 'react';
 import { toast } from 'sonner';
 
-import type { AssignmentTaskType } from '@/features/assignments/domain';
 import { createAssignmentTask } from '@services/courses/assignments';
-import { getTaskTypeEditor } from '@/features/assignments/studio/task-editors/registry';
-import { pointsToPercent } from '@/features/assignments/domain';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 import { useAssignmentStudioContext } from './AssignmentStudioContext';
+import {
+  getTaskTypeEditor,
+  pointsToPercent,
+  taskToEditorValue,
+  type AssignmentTaskRead,
+  type AssignmentTaskType,
+} from './studio-compat';
 
 const TASK_ICONS: Record<AssignmentTaskType, ElementType> = {
   FILE_SUBMISSION: FileUp,
@@ -138,9 +142,6 @@ export default function AssignmentTaskOutline() {
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
-
-import type { AssignmentTaskRead } from '@/features/assignments/domain';
-import { taskToEditorValue } from '@/features/assignments/studio/task-editors/types';
 
 function getTaskIssuesMap(tasks: AssignmentTaskRead[]): Map<string, string[]> {
   const result = new Map<string, string[]>();

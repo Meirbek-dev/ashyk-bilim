@@ -1,133 +1,29 @@
 'use client';
 
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { useMemo } from 'react';
 
-import {
-  getAssignmentDraftSubmission,
-  saveAssignmentDraftSubmission,
-  submitAssignmentDraftSubmission,
-} from '@services/courses/assignments';
-import type { AssignmentDraftRead, AssignmentTaskAnswer } from '@/features/assignments/domain';
-import { normalizeAssignmentTasks } from '@/features/assignments/domain';
-import { useAssignmentBundle, useAssignmentByActivity } from '@/features/assignments/hooks/useAssignments';
-import { isPublishedToStudent } from '@/features/grading/domain';
-import type { Submission } from '@/features/grading/domain';
-import { useMySubmission } from '@/hooks/useMySubmission';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
-import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Textarea } from '@/components/ui/textarea';
 import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList';
 import { useAttemptShellControls } from '@/features/assessments/shell';
+import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
+import { getItemKindModule } from '@/features/assessments/items/registry';
+import type { AssessmentItem, ItemAnswer, MatchPair } from '@/features/assessments/domain/items';
 import type { AttemptSaveState } from '@/features/assessments/shell';
-import StudentResultPanel from '@/features/assignments/student/ResultPanel';
-import TaskAttemptList from '@/features/assignments/student/TaskAttemptList';
-import {
-  areAnswerMapsEqual,
-  answerMapToPatch,
-  buildAnswerMapFromDraft,
-  buildAnswerMapFromSubmission,
-} from '@/features/assignments/student/attempt-utils';
-import type { AssignmentAnswerMap } from '@/features/assignments/student/types';
 import type { KindAttemptProps } from '../index';
-
-const assignmentDraftQueryKey = (assignmentUuid: string | undefined) =>
-  ['assignments', 'student-attempt-draft', assignmentUuid ?? 'missing'] as const;
-
-function useAssignmentDraft(assignmentUuid: string | undefined) {
-  return useQuery(
-    queryOptions({
-      queryKey: assignmentDraftQueryKey(assignmentUuid),
-      queryFn: async () => {
-        if (!assignmentUuid) return null;
-        const res = await getAssignmentDraftSubmission(assignmentUuid);
-        if (!res.success) throw new Error(res.data?.detail || 'Failed to load assignment draft');
-        return res.data as AssignmentDraftRead;
-      },
-      enabled: Boolean(assignmentUuid),
-    }),
-  );
-}
-
-export default function AssignmentAttemptContent({ activityUuid, courseUuid }: KindAttemptProps) {
-  const assignmentByActivity = useAssignmentByActivity(activityUuid);
-  const assignmentUuid = assignmentByActivity.data?.assignment_uuid;
-  const { data: bundle, isPending: isBundlePending } = useAssignmentBundle(assignmentUuid ?? null);
-  const queryClient = useQueryClient();
-  const draftQuery = useAssignmentDraft(assignmentUuid);
-  const activityId = bundle?.activity_object?.id ?? null;
-  const latestSubmission = useMySubmission(activityId);
-  const [answers, setAnswers] = useState<AssignmentAnswerMap>({});
-  const lastSavedRef = useRef<AssignmentAnswerMap>({});
-  const [saveState, setSaveState] = useState<AttemptSaveState>('saved');
-
-  const { submission } = latestSubmission;
-  const status = submission?.status ?? draftQuery.data?.submission?.status ?? null;
-  const answerSource = draftQuery.data?.submission ?? (status === 'RETURNED' ? submission : null);
-
-  useEffect(() => {
-    if (draftQuery.isPending || latestSubmission.isLoading) return;
-    const nextAnswers = draftQuery.data?.submission
-      ? buildAnswerMapFromDraft(draftQuery.data)
-      : buildAnswerMapFromSubmission(answerSource);
-    setAnswers(nextAnswers);
-    lastSavedRef.current = nextAnswers;
-    setSaveState('saved');
-  }, [answerSource, draftQuery.data, draftQuery.isPending, latestSubmission.isLoading]);
-
-  useEffect(() => {
-    if (areAnswerMapsEqual(answers, lastSavedRef.current)) {
-      setSaveState((current) => (current === 'saving' ? current : 'saved'));
-    } else {
-      setSaveState('unsaved');
-    }
-  }, [answers]);
-
-  const saveMutation = useMutation({
-    mutationFn: async (nextAnswers: AssignmentAnswerMap) => {
-      if (!assignmentUuid) throw new Error('Assignment is not ready');
-      const res = await saveAssignmentDraftSubmission(assignmentUuid, answerMapToPatch(nextAnswers));
-      if (!res.success) throw new Error(res.data?.detail || 'Failed to save draft');
-      return res.data as Submission;
-    },
-    onMutate: () => setSaveState('saving'),
-    onSuccess: async (_saved, savedAnswers) => {
-      lastSavedRef.current = savedAnswers;
-      setSaveState('saved');
-      await queryClient.invalidateQueries({ queryKey: assignmentDraftQueryKey(assignmentUuid) });
-    },
-    onError: (error) => {
-      setSaveState('error');
-      toast.error(error instanceof Error ? error.message : 'Failed to save draft');
-    },
-  });
-
-  const submitMutation = useMutation({
-    mutationFn: async () => {
-      if (!assignmentUuid) throw new Error('Assignment is not ready');
-      const res = await submitAssignmentDraftSubmission(assignmentUuid, answerMapToPatch(answers));
-      if (!res.success) throw new Error(res.data?.detail || 'Failed to submit assignment');
-      return res.data as Submission;
-    },
-    onSuccess: async () => {
-      toast.success('Awaiting grade');
-      lastSavedRef.current = answers;
-      setSaveState('submitted');
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: assignmentDraftQueryKey(assignmentUuid) }),
-        latestSubmission.mutate(),
-      ]);
-    },
-    onError: (error) => toast.error(error instanceof Error ? error.message : 'Failed to submit assignment'),
-  });
-
+export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
+  const assessmentUuid = vm?.assessmentUuid ?? null;
+  const submissionState = useAssessmentSubmission(assessmentUuid);
+  const status = submissionState.status;
+  const saveState = mapSaveState(submissionState.saveState, status);
   const canEdit = status === null || status === 'DRAFT' || status === 'RETURNED';
-  const canSubmit = status === null || status === 'DRAFT' || status === 'RETURNED';
-  const canSave = canEdit && !areAnswerMapsEqual(answers, lastSavedRef.current);
-  const saveDraft = saveMutation.mutate;
-  const submitDraft = submitMutation.mutate;
-  const handleSave = useCallback(() => saveDraft(answers), [answers, saveDraft]);
-  const handleSubmit = useCallback(() => submitDraft(), [submitDraft]);
+  const canSave = canEdit && submissionState.saveState === 'dirty';
+  const canSubmit = canEdit;
 
   const shellControls = useMemo(
     () => ({
@@ -135,70 +31,414 @@ export default function AssignmentAttemptContent({ activityUuid, courseUuid }: K
       status,
       canSave,
       canSubmit,
-      isSaving: saveMutation.isPending,
-      isSubmitting: submitMutation.isPending,
-      onSave: handleSave,
-      onSubmit: handleSubmit,
+      isSaving: submissionState.isSaving,
+      isSubmitting: submissionState.isSubmitting,
+      onSave: canSave ? () => void submissionState.save() : undefined,
+      onSubmit: canSubmit ? () => void submissionState.submit() : undefined,
+      navigation: null,
     }),
-    [canSave, canSubmit, handleSave, handleSubmit, saveMutation.isPending, saveState, status, submitMutation.isPending],
+    [canSave, canSubmit, saveState, status, submissionState],
   );
   useAttemptShellControls(shellControls);
 
-  if (assignmentByActivity.isPending || isBundlePending || draftQuery.isPending || latestSubmission.isLoading) {
+  if (!vm || submissionState.isLoading) {
     return <PageLoading />;
   }
 
-  if (!assignmentUuid || !bundle?.assignment_object) {
+  if (!assessmentUuid) {
     return (
       <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-        No assignment found.
+        No assessment found.
       </div>
     );
   }
 
-  const tasks = normalizeAssignmentTasks(bundle.assignment_tasks);
-  const resultSubmission = submission ?? draftQuery.data?.submission ?? null;
-  const showResult = Boolean(resultSubmission?.status && isPublishedToStudent(resultSubmission.status));
-  const attemptHistory = resultSubmission
-    ? [
-        {
-          id: resultSubmission.submission_uuid,
-          label: 'Latest submission',
-          submittedAt: resultSubmission.submitted_at ?? resultSubmission.updated_at,
-          status: resultSubmission.status,
-          scoreLabel:
-            resultSubmission.final_score !== null && resultSubmission.final_score !== undefined
-              ? `${Math.round(resultSubmission.final_score)}%`
-              : null,
-        },
-      ]
-    : [];
+  const attemptHistory = submissionState.submissions.map((submission, index) => ({
+    id: submission.submission_uuid,
+    label: index === 0 ? 'Latest submission' : `Attempt ${submissionState.submissions.length - index}`,
+    submittedAt: submission.submitted_at ?? submission.updated_at,
+    status: submission.status,
+    scoreLabel:
+      submission.final_score !== null && submission.final_score !== undefined
+        ? `${Math.round(submission.final_score)}%`
+        : null,
+  }));
 
   return (
     <div className="space-y-6">
       {attemptHistory.length ? <AttemptHistoryList items={attemptHistory} /> : null}
 
-      <TaskAttemptList
-        tasks={tasks}
-        answers={answers}
-        disabled={!canEdit || saveMutation.isPending || submitMutation.isPending}
-        courseUuid={bundle.course_object?.course_uuid ?? courseUuid}
-        activityUuid={bundle.activity_object?.activity_uuid ?? activityUuid}
-        assignmentUuid={assignmentUuid}
-        onAnswerChange={(answer: AssignmentTaskAnswer) =>
-          setAnswers((current) => ({ ...current, [answer.task_uuid]: answer }))
-        }
-      />
+      <SubmissionStatePanel submission={submissionState.submission} />
 
-      {showResult && resultSubmission ? (
-        <>
-          <Separator />
-          <StudentResultPanel
-            submission={resultSubmission}
-            onRefresh={() => void latestSubmission.mutate()}
+      <div className="space-y-4">
+        {vm.items.map((item, index) => (
+          <AssessmentItemCard
+            key={item.item_uuid}
+            index={index}
+            item={item}
+            answer={submissionState.answers[item.item_uuid]}
+            disabled={!canEdit || submissionState.isSaving || submissionState.isSubmitting}
+            assessmentUuid={assessmentUuid}
+            onChange={(answer) => submissionState.setItemAnswer(item.item_uuid, answer)}
           />
-        </>
-      ) : null}
+        ))}
+      </div>
     </div>
   );
+}
+
+function mapSaveState(
+  saveState: 'idle' | 'dirty' | 'saving' | 'saved' | 'conflict' | 'error',
+  status: string | null,
+): AttemptSaveState {
+  if (status === 'PENDING') return 'submitted';
+  if (status === 'RETURNED') return 'returned';
+  switch (saveState) {
+    case 'dirty': {
+      return 'unsaved';
+    }
+    case 'saving': {
+      return 'saving';
+    }
+    case 'error':
+    case 'conflict': {
+      return 'error';
+    }
+    default: {
+      return 'saved';
+    }
+  }
+}
+
+function SubmissionStatePanel({
+  submission,
+}: {
+  submission:
+    | {
+        status: 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED';
+        final_score?: number | null;
+        grading_json?: { feedback?: string } | null;
+        submitted_at?: string | null;
+      }
+    | null;
+}) {
+  if (!submission || submission.status === 'DRAFT') return null;
+
+  if (submission.status === 'PENDING') {
+    return (
+      <Alert>
+        <AlertTitle>Awaiting grade</AlertTitle>
+        <AlertDescription>
+          Submitted{submission.submitted_at ? ` on ${formatDateTime(submission.submitted_at)}` : ''}. Your teacher will release the grade when review is complete.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  const scoreVisible = submission.status === 'PUBLISHED' || submission.status === 'RETURNED';
+  const scoreLabel =
+    scoreVisible && submission.final_score !== null && submission.final_score !== undefined
+      ? `${Math.round(submission.final_score)}%`
+      : null;
+
+  return (
+    <Alert>
+      <AlertTitle>{submission.status === 'RETURNED' ? 'Returned for revision' : 'Result available'}</AlertTitle>
+      <AlertDescription className="space-y-3">
+        {scoreLabel ? (
+          <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
+            <Badge variant="secondary">Score</Badge>
+            {scoreLabel}
+          </span>
+        ) : null}
+        {submission.grading_json?.feedback ? <p className="whitespace-pre-wrap">{submission.grading_json.feedback}</p> : null}
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+function AssessmentItemCard({
+  index,
+  item,
+  answer,
+  disabled,
+  assessmentUuid,
+  onChange,
+}: {
+  index: number;
+  item: AssessmentItem;
+  answer: ItemAnswer | undefined;
+  disabled: boolean;
+  assessmentUuid: string;
+  onChange: (answer: ItemAnswer) => void;
+}) {
+  return (
+    <section
+      id={`item-${item.item_uuid}`}
+      className="bg-card space-y-4 rounded-lg border p-5"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-muted-foreground text-xs font-medium uppercase">Question {index + 1}</div>
+          <h2 className="mt-1 text-base font-semibold">{item.title || `Item ${index + 1}`}</h2>
+        </div>
+        <Badge variant="outline">{item.max_score} pts</Badge>
+      </div>
+
+      <ItemAttemptRenderer
+        item={item}
+        answer={answer}
+        disabled={disabled}
+        assessmentUuid={assessmentUuid}
+        onChange={onChange}
+      />
+    </section>
+  );
+}
+
+function ItemAttemptRenderer({
+  item,
+  answer,
+  disabled,
+  assessmentUuid,
+  onChange,
+}: {
+  item: AssessmentItem;
+  answer: ItemAnswer | undefined;
+  disabled: boolean;
+  assessmentUuid: string;
+  onChange: (answer: ItemAnswer) => void;
+}) {
+  if (item.kind === 'CHOICE') {
+    const choiceModule = getItemKindModule(item.body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE');
+    const ChoiceAttempt = choiceModule.Attempt;
+    const choiceItem = {
+      id: item.item_uuid,
+      kind: item.body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE',
+      prompt: item.body.prompt,
+      points: item.max_score,
+      options: item.body.options.map((option) => ({
+        id: option.id,
+        text: option.text,
+        isCorrect: option.is_correct,
+      })),
+    };
+    const choiceAnswer = item.body.multiple ? answer?.kind === 'CHOICE' ? answer.selected : [] : answer?.kind === 'CHOICE' ? (answer.selected[0] ?? null) : null;
+    return (
+      <ChoiceAttempt
+        item={choiceItem}
+        answer={choiceAnswer}
+        disabled={disabled}
+        onAnswerChange={(nextAnswer) => {
+          const selected = Array.isArray(nextAnswer)
+            ? nextAnswer.map(String)
+            : nextAnswer === null || nextAnswer === undefined || nextAnswer === ''
+              ? []
+              : [String(nextAnswer)];
+          onChange({ kind: 'CHOICE', selected });
+        }}
+      />
+    );
+  }
+
+  if (item.kind === 'OPEN_TEXT') {
+    return (
+      <div className="space-y-3">
+        {item.body.prompt ? <p className="text-sm">{item.body.prompt}</p> : null}
+        <Textarea
+          value={answer?.kind === 'OPEN_TEXT' ? answer.text : ''}
+          disabled={disabled}
+          className="min-h-36"
+          onChange={(event) => onChange({ kind: 'OPEN_TEXT', text: event.target.value })}
+        />
+      </div>
+    );
+  }
+
+  if (item.kind === 'FILE_UPLOAD') {
+    const uploadModule = getItemKindModule('FILE_UPLOAD');
+    const FileUploadAttempt = uploadModule.Attempt;
+    return (
+      <FileUploadAttempt
+        item={{
+          taskUuid: item.item_uuid,
+          assignmentUuid: assessmentUuid,
+          constraints: {
+            kind: 'FILE_UPLOAD',
+            allowed_mime_types: item.body.mimes,
+            max_file_size_mb: item.body.max_mb ?? null,
+            max_files: item.body.max_files,
+          },
+        }}
+        answer={answer?.kind === 'FILE_UPLOAD' ? answer : null}
+        disabled={disabled}
+        onAnswerChange={(nextAnswer) =>
+          onChange({
+            kind: 'FILE_UPLOAD',
+            uploads: nextAnswer?.uploads ?? [],
+          })
+        }
+      />
+    );
+  }
+
+  if (item.kind === 'FORM') {
+    const currentValues = answer?.kind === 'FORM' ? answer.values : {};
+    return (
+      <div className="space-y-4">
+        {item.body.prompt ? <p className="text-sm">{item.body.prompt}</p> : null}
+        {item.body.fields.map((field, fieldIndex) => (
+          <div
+            key={field.id}
+            className="space-y-2"
+          >
+            <Label htmlFor={`${item.item_uuid}-${field.id}`}>
+              {field.label || `Field ${fieldIndex + 1}`}
+              {field.required ? ' *' : ''}
+            </Label>
+            {field.field_type === 'textarea' ? (
+              <Textarea
+                id={`${item.item_uuid}-${field.id}`}
+                value={currentValues[field.id] ?? ''}
+                disabled={disabled}
+                className="min-h-28"
+                onChange={(event) =>
+                  onChange({
+                    kind: 'FORM',
+                    values: {
+                      ...currentValues,
+                      [field.id]: event.target.value,
+                    },
+                  })
+                }
+              />
+            ) : (
+              <Input
+                id={`${item.item_uuid}-${field.id}`}
+                type={field.field_type === 'number' ? 'number' : field.field_type === 'date' ? 'date' : 'text'}
+                value={currentValues[field.id] ?? ''}
+                disabled={disabled}
+                onChange={(event) =>
+                  onChange({
+                    kind: 'FORM',
+                    values: {
+                      ...currentValues,
+                      [field.id]: event.target.value,
+                    },
+                  })
+                }
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (item.kind === 'MATCHING') {
+    const rightOptions = item.body.pairs.map((pair) => pair.right);
+    const currentMatches = new Map<string, string>(
+      answer?.kind === 'MATCHING' ? answer.matches.map((pair) => [pair.left, pair.right]) : [],
+    );
+    const updateMatch = (left: string, right: string) => {
+      const next = new Map(currentMatches);
+      if (right) {
+        next.set(left, right);
+      } else {
+        next.delete(left);
+      }
+      onChange({
+        kind: 'MATCHING',
+        matches: Array.from(next.entries()).map(([matchLeft, matchRight]): MatchPair => ({
+          left: matchLeft,
+          right: matchRight,
+        })),
+      });
+    };
+
+    return (
+      <div className="space-y-3">
+        {item.body.prompt ? <p className="text-sm">{item.body.prompt}</p> : null}
+        {item.body.pairs.map((pair, pairIndex) => (
+          <div
+            key={`${pair.left}-${pairIndex}`}
+            className="bg-background flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center"
+          >
+            <span className="min-w-0 flex-1 text-sm font-medium">{pair.left}</span>
+            <NativeSelect
+              value={currentMatches.get(pair.left) ?? ''}
+              disabled={disabled}
+              onChange={(event) => updateMatch(pair.left, event.target.value)}
+              className="sm:max-w-xs"
+            >
+              <NativeSelectOption value="">Select match</NativeSelectOption>
+              {rightOptions.map((option) => (
+                <NativeSelectOption
+                  key={option}
+                  value={option}
+                >
+                  {option}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (item.kind === 'CODE') {
+    const currentAnswer = answer?.kind === 'CODE' ? answer : { kind: 'CODE' as const, language: item.body.languages[0] ?? 71, source: '' };
+    return (
+      <div className="space-y-4">
+        {item.body.prompt ? <p className="text-sm">{item.body.prompt}</p> : null}
+        <div className="space-y-2">
+          <Label htmlFor={`${item.item_uuid}-language`}>Language</Label>
+          <NativeSelect
+            id={`${item.item_uuid}-language`}
+            value={String(currentAnswer.language)}
+            disabled={disabled}
+            onChange={(event) =>
+              onChange({
+                kind: 'CODE',
+                language: Number(event.target.value),
+                source: currentAnswer.source,
+                latest_run: currentAnswer.latest_run,
+              })
+            }
+          >
+            {item.body.languages.map((language) => (
+              <NativeSelectOption
+                key={language}
+                value={String(language)}
+              >
+                Language {language}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </div>
+        <Textarea
+          value={currentAnswer.source}
+          disabled={disabled}
+          className="min-h-[20rem] font-mono text-sm"
+          onChange={(event) =>
+            onChange({
+              kind: 'CODE',
+              language: currentAnswer.language,
+              source: event.target.value,
+              latest_run: currentAnswer.latest_run,
+            })
+          }
+        />
+      </div>
+    );
+  }
+
+  return <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">Unsupported item.</div>;
+}
+
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }

@@ -4,11 +4,7 @@ import { AlertTriangle, BookOpen, LoaderCircle, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
-import { pointsToPercent } from '@/features/assignments/domain';
 import { deleteAssignmentTask, updateAssignmentTask } from '@services/courses/assignments';
-import { getTaskTypeEditor } from '@/features/assignments/studio/task-editors/registry';
-import { patchEditorValue, taskToEditorValue } from '@/features/assignments/studio/task-editors/types';
-import type { AssignmentTaskEditorValue } from '@/features/assignments/studio/task-editors/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,6 +15,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAssignmentStudioContext } from './AssignmentStudioContext';
 import SaveStateBadge from './SaveStateBadge';
 import type { SaveState } from './SaveStateBadge';
+import {
+  getTaskTypeEditor,
+  patchEditorValue,
+  pointsToPercent,
+  taskToEditorValue,
+  type AssignmentTaskEditorValue,
+} from './studio-compat';
 
 export default function AssignmentTaskEditor() {
   const { assignmentUuid, tasks, selectedTaskUuid, setSelectedTaskUuid, refresh, isEditable, totalPoints } =

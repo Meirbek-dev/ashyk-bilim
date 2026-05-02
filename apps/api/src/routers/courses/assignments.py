@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse
 from sqlmodel import Session, select
 
 from src.auth.users import get_optional_public_user, get_public_user
-from src.db.assessments import Assessment
+from src.db.assessments import Assessment, AssessmentDraftPatch as UnifiedAssessmentDraftPatch
 from src.db.courses.assignments import (
     Assignment,
     AssignmentCreateWithActivity,
@@ -20,6 +20,11 @@ from src.db.courses.assignments import (
 from src.db.grading.submissions import SubmissionRead
 from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
+from src.services.assessments.core import (
+    get_my_assessment_draft as get_unified_assessment_draft,
+    save_assessment_draft as save_unified_assessment_draft,
+    submit_assessment as submit_unified_assessment,
+)
 from src.services.courses.activities.assignments import (
     create_assignment_task,
     create_assignment_with_activity,
@@ -60,6 +65,79 @@ def _assessment_uuid_for_assignment(assignment_uuid: str, db_session: Session) -
         select(Assessment).where(Assessment.activity_id == assignment.activity_id)
     ).first()
     return assessment.assessment_uuid if assessment else None
+
+
+def _assignment_patch_to_unified_patch(
+    draft_patch: AssignmentDraftPatch | None,
+) -> UnifiedAssessmentDraftPatch | None:
+    if draft_patch is None:
+        return None
+
+    return UnifiedAssessmentDraftPatch(
+        answers=[
+            {
+                "item_uuid": task.task_uuid,
+                "answer": _assignment_task_answer_to_unified_answer(task),
+            }
+            for task in draft_patch.tasks
+        ]
+    )
+
+
+def _assignment_task_answer_to_unified_answer(task: object) -> dict[str, object]:
+    content_type = getattr(task, "content_type", None)
+
+    if content_type == "file":
+        file_key = getattr(task, "file_key", None)
+        return {
+            "kind": "FILE_UPLOAD",
+            "uploads": [{"upload_uuid": file_key}] if isinstance(file_key, str) and file_key else [],
+        }
+
+    if content_type == "form":
+        form_data = getattr(task, "form_data", None)
+        answers = form_data.get("answers", {}) if isinstance(form_data, dict) else {}
+        return {
+            "kind": "FORM",
+            "values": {
+                str(key): value
+                for key, value in answers.items()
+                if isinstance(value, str)
+            } if isinstance(answers, dict) else {},
+        }
+
+    if content_type == "quiz":
+        quiz_answers = getattr(task, "quiz_answers", None)
+        raw_answers = quiz_answers.get("answers", {}) if isinstance(quiz_answers, dict) else {}
+        selected: list[str] = []
+        if isinstance(raw_answers, dict):
+            for raw_selected in raw_answers.values():
+                if not isinstance(raw_selected, list):
+                    continue
+                for option_id in raw_selected:
+                    if isinstance(option_id, str) and option_id not in selected:
+                        selected.append(option_id)
+        return {
+            "kind": "CHOICE",
+            "selected": selected,
+        }
+
+    text_content = getattr(task, "text_content", None)
+    return {
+        "kind": "OPEN_TEXT",
+        "text": text_content if isinstance(text_content, str) else "",
+    }
+
+
+def _assignment_draft_read_from_unified(
+    assignment_uuid: str,
+    unified_draft: object,
+) -> AssignmentDraftRead:
+    submission = getattr(unified_draft, "submission", None)
+    return AssignmentDraftRead(
+        assignment_uuid=assignment_uuid,
+        submission=submission,
+    )
 
 # ASSIGNMENTS ##
 
@@ -279,21 +357,23 @@ async def api_delete_assignment_tasks(
 @router.get("/{assignment_uuid}/submissions/me/draft")
 async def api_get_assignment_draft_submission(
     assignment_uuid: str,
-    request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> AssignmentDraftRead:
     """Get the current user's Submission-backed assignment draft, if any.
 
-    **Deprecated** — use ``GET /api/v1/assessments/{assessment_uuid}/draft`` instead.
+    **Deprecated** — compatibility adapter over ``GET /api/v1/assessments/{assessment_uuid}/draft``.
     """
     assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
     if assessment_uuid:
-        canonical = str(request.url).replace(
-            f"/assignments/{assignment_uuid}/submissions/me/draft",
-            f"/assessments/{assessment_uuid}/draft",
+        return _assignment_draft_read_from_unified(
+            assignment_uuid,
+            await get_unified_assessment_draft(
+                assessment_uuid,
+                current_user,
+                db_session,
+            ),
         )
-        return RedirectResponse(url=canonical, status_code=308)
     return await get_assignment_draft_submission(
         assignment_uuid, current_user, db_session
     )
@@ -303,22 +383,24 @@ async def api_get_assignment_draft_submission(
 async def api_save_assignment_draft_submission(
     assignment_uuid: str,
     draft_patch: AssignmentDraftPatch,
-    request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> SubmissionRead:
     """Create or update the current user's assignment draft in Submission.
 
-    **Deprecated** — use ``PATCH /api/v1/assessments/{assessment_uuid}/draft`` instead.
+    **Deprecated** — compatibility adapter over ``PATCH /api/v1/assessments/{assessment_uuid}/draft``.
     """
     assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
     if assessment_uuid:
-        canonical = str(request.url).replace(
-            f"/assignments/{assignment_uuid}/submissions/me/draft",
-            f"/assessments/{assessment_uuid}/draft",
+        unified_patch = _assignment_patch_to_unified_patch(draft_patch)
+        return await save_unified_assessment_draft(
+            assessment_uuid,
+            unified_patch or UnifiedAssessmentDraftPatch(),
+            current_user,
+            db_session,
+            if_match=if_match,
         )
-        return RedirectResponse(url=canonical, status_code=308)
     return await save_assignment_draft_submission(
         assignment_uuid, draft_patch, current_user, db_session, if_match=if_match
     )
@@ -327,7 +409,6 @@ async def api_save_assignment_draft_submission(
 @router.post("/{assignment_uuid}/submit")
 async def api_submit_assignment_draft_submission(
     assignment_uuid: str,
-    request: Request,
     draft_patch: AssignmentDraftPatch | None = None,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
@@ -335,15 +416,17 @@ async def api_submit_assignment_draft_submission(
 ) -> SubmissionRead:
     """Submit the current user's assignment draft through the unified Submission model.
 
-    **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/submit`` instead.
+    **Deprecated** — compatibility adapter over ``POST /api/v1/assessments/{assessment_uuid}/submit``.
     """
     assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
     if assessment_uuid:
-        canonical = str(request.url).replace(
-            f"/assignments/{assignment_uuid}/submit",
-            f"/assessments/{assessment_uuid}/submit",
+        return await submit_unified_assessment(
+            assessment_uuid,
+            _assignment_patch_to_unified_patch(draft_patch),
+            current_user,
+            db_session,
+            if_match=if_match,
         )
-        return RedirectResponse(url=canonical, status_code=308)
     return await submit_assignment_draft_submission(
         assignment_uuid, draft_patch, current_user, db_session, if_match=if_match
     )

@@ -4,8 +4,6 @@ import { CalendarClock } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { getAssignmentTotalPoints, pointsToPercent } from '@/features/assignments/domain';
-import type { AssignmentRead } from '@/features/assignments/domain';
 import { updateAssignment } from '@services/courses/assignments';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Separator } from '@/components/ui/separator';
@@ -16,6 +14,11 @@ import { Label } from '@/components/ui/label';
 import { useAssignmentStudioContext } from './AssignmentStudioContext';
 import SaveStateBadge from './SaveStateBadge';
 import type { SaveState } from './SaveStateBadge';
+import {
+  getAssignmentTotalPoints,
+  pointsToPercent,
+  type AssignmentRead,
+} from './studio-compat';
 
 export default function AssignmentInspector() {
   const { assignment, tasks, isEditable, refresh } = useAssignmentStudioContext();

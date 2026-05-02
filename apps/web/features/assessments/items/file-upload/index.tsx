@@ -128,6 +128,7 @@ export function FileUploadAttempt({
 }: ItemAttemptProps<FileUploadAttemptItem, FileUploadAnswer | null>) {
   const [localFileName, setLocalFileName] = useState('');
   const fileKey = answer?.uploads?.[0]?.upload_uuid ?? '';
+  const uploadedLabel = answer?.uploads?.[0]?.filename ?? answer?.uploads?.[0]?.upload_uuid ?? '';
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -230,6 +231,11 @@ export function FileUploadAttempt({
           <File className="size-4" />
           Current file
         </Button>
+      ) : uploadedLabel ? (
+        <div className="bg-background inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+          <File className="size-4" />
+          {uploadedLabel}
+        </div>
       ) : localFileName ? (
         <div className="bg-background inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
           <File className="size-4" />

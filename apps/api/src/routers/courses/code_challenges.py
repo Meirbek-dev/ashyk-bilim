@@ -10,7 +10,6 @@ from datetime import datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse
 from pydantic import ValidationError, field_validator
 from sqlmodel import Session, func, select
 from ulid import ULID
@@ -215,6 +214,145 @@ def code_submission_detail(
     )
 
 
+def _get_canonical_code_submission(
+    submission_uuid: str,
+    db_session: Session,
+) -> Submission | None:
+    return db_session.exec(
+        select(Submission).where(Submission.submission_uuid == submission_uuid)
+    ).first()
+
+
+def _set_canonical_code_submission_pending(
+    canonical_submission: Submission,
+    *,
+    submission_uuid: str,
+    language_id: int,
+    language_name: str,
+    submitted_at: datetime,
+) -> None:
+    canonical_submission.status = GradingSubmissionStatus.PENDING
+    canonical_submission.answers_json = {
+        "language_id": language_id,
+        "language_name": language_name,
+        "code_submission_uuid": submission_uuid,
+    }
+    canonical_submission.metadata_json = {
+        **(
+            canonical_submission.metadata_json
+            if isinstance(canonical_submission.metadata_json, dict)
+            else {}
+        ),
+        "code_submission_uuid": submission_uuid,
+        "ledger_table": "code_submission",
+        "judge0_state": SubmissionStatus.PENDING,
+    }
+    canonical_submission.submitted_at = submitted_at
+    canonical_submission.updated_at = submitted_at
+
+
+def _set_canonical_code_submission_state(
+    submission_uuid: str,
+    db_session: Session,
+    *,
+    judge0_state: str,
+    auto_score: float | None = None,
+    final_score: float | None = None,
+    grading_json: dict[str, object] | None = None,
+    metadata_update: dict[str, object] | None = None,
+    graded: bool = False,
+) -> Submission | None:
+    canonical_submission = _get_canonical_code_submission(submission_uuid, db_session)
+    if canonical_submission is None:
+        return None
+
+    now = datetime.now(UTC)
+    canonical_submission.status = (
+        GradingSubmissionStatus.GRADED if graded else GradingSubmissionStatus.PENDING
+    )
+    if auto_score is not None:
+        canonical_submission.auto_score = auto_score
+    if final_score is not None:
+        canonical_submission.final_score = final_score
+    if grading_json is not None:
+        canonical_submission.grading_json = grading_json
+
+    merged_meta = (
+        canonical_submission.metadata_json
+        if isinstance(canonical_submission.metadata_json, dict)
+        else {}
+    )
+    canonical_submission.metadata_json = {
+        **merged_meta,
+        "judge0_state": judge0_state,
+        **(metadata_update or {}),
+    }
+    canonical_submission.updated_at = now
+    if graded:
+        canonical_submission.graded_at = now
+
+    db_session.add(canonical_submission)
+    db_session.commit()
+    db_session.refresh(canonical_submission)
+    return canonical_submission
+
+
+def _finalize_canonical_code_submission(
+    submission: CodeSubmission,
+    *,
+    language_id: int,
+    score: float,
+    passed_tests: int,
+    test_cases: list[TestCase],
+    results: list[TestCaseResult],
+    db_session: Session,
+) -> Submission | None:
+    canonical_submission = _get_canonical_code_submission(
+        submission.submission_uuid,
+        db_session,
+    )
+    if canonical_submission is None:
+        return None
+
+    run_record = {
+        "run_id": submission.submission_uuid,
+        "language_id": language_id,
+        "status": SubmissionStatus.COMPLETED,
+        "score": score,
+        "passed": passed_tests,
+        "total": len(test_cases),
+        "details": [result.model_dump() for result in results],
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    existing_meta = (
+        canonical_submission.metadata_json
+        if isinstance(canonical_submission.metadata_json, dict)
+        else {}
+    )
+    runs = existing_meta.get("runs", [])
+    if not isinstance(runs, list):
+        runs = []
+    grading_breakdown = {
+        "items": [],
+        "needs_manual_review": False,
+        "auto_graded": True,
+        "feedback": f"Score: {score:.1f}% ({passed_tests}/{len(test_cases)} tests passed)",
+    }
+    return _set_canonical_code_submission_state(
+        submission.submission_uuid,
+        db_session,
+        judge0_state=SubmissionStatus.COMPLETED,
+        auto_score=score,
+        final_score=score,
+        grading_json=grading_breakdown,
+        metadata_update={
+            "latest_run": run_record,
+            "runs": [*runs, run_record],
+        },
+        graded=True,
+    )
+
+
 # Endpoints
 
 
@@ -416,25 +554,16 @@ async def submit_code_challenge(
     activity_uuid: str,
     submission: CodeSubmissionCreate,
     background_tasks: BackgroundTasks,
-    request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     """Submit a solution to the code challenge.
 
     **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/submit`` instead.
-    Redirects (308) to the canonical URL when the activity is backed by a unified
-    Assessment; falls back to the legacy Judge0 pipeline otherwise.
+    Compatibility adapter over the canonical Submission pipeline.
     """
     activity = await get_activity_or_404(activity_uuid, db_session)
     await verify_code_challenge_activity(activity)
-    assessment_uuid = _assessment_uuid_for_activity(activity.id, db_session)
-    if assessment_uuid:
-        canonical = str(request.url).replace(
-            f"/code-challenges/{activity_uuid}/submit",
-            f"/assessments/{assessment_uuid}/submit",
-        )
-        return RedirectResponse(url=canonical, status_code=308)
     await check_challenge_access(activity, current_user, db_session)
 
     settings = get_challenge_settings(activity, db_session)
@@ -469,7 +598,7 @@ async def submit_code_challenge(
 
     # Canonical state is created at start. CodeSubmission is only the Judge0
     # per-run ledger referenced from Submission.metadata_json.
-    now = datetime.now().isoformat()
+    now = datetime.now(UTC)
     draft = start_submission_v2(
         activity_id=activity.id,
         assessment_type=AssessmentType.CODE_CHALLENGE,
@@ -486,19 +615,14 @@ async def submit_code_challenge(
     # Combine all test cases
     all_tests = settings.visible_tests + settings.hidden_tests
 
-    submitted_at = datetime.now()
-    canonical_submission.status = GradingSubmissionStatus.PENDING
-    canonical_submission.answers_json = {
-        "language_id": submission.language_id,
-        "language_name": language_name,
-        "code_submission_uuid": submission_uuid,
-    }
-    canonical_submission.metadata_json = {
-        "code_submission_uuid": submission_uuid,
-        "ledger_table": "code_submission",
-    }
-    canonical_submission.submitted_at = submitted_at
-    canonical_submission.updated_at = submitted_at
+    submitted_at = datetime.now(UTC)
+    _set_canonical_code_submission_pending(
+        canonical_submission,
+        submission_uuid=submission_uuid,
+        language_id=submission.language_id,
+        language_name=language_name,
+        submitted_at=submitted_at,
+    )
 
     code_submission = CodeSubmission(
         submission_uuid=submission_uuid,
@@ -509,15 +633,19 @@ async def submit_code_challenge(
         source_code=submission.source_code,  # Keep base64 encoded
         status=SubmissionStatus.PENDING,
         total_tests=len(all_tests),
-        created_at=now,
-        updated_at=now,
+        created_at=now.isoformat(),
+        updated_at=now.isoformat(),
     )
 
     db_session.add(canonical_submission)
     db_session.add(code_submission)
     db_session.flush()
     canonical_submission.metadata_json = {
-        **canonical_submission.metadata_json,
+        **(
+            canonical_submission.metadata_json
+            if isinstance(canonical_submission.metadata_json, dict)
+            else {}
+        ),
         "code_submission_id": code_submission.id,
     }
     db_session.commit()
@@ -572,6 +700,11 @@ async def process_submission(
             submission.status = SubmissionStatus.PENDING_JUDGE0
             submission.updated_at = datetime.now().isoformat()
             db_session.commit()
+            _set_canonical_code_submission_state(
+                submission.submission_uuid,
+                db_session,
+                judge0_state=SubmissionStatus.PENDING_JUDGE0,
+            )
             progress_submissions.sync_code_challenge_submission(submission, db_session)
             logger.warning(
                 "Judge0 unavailable, submission %s marked as pending", submission_id
@@ -606,38 +739,17 @@ async def process_submission(
         db_session.commit()
         progress_submissions.sync_code_challenge_submission(submission, db_session)
 
-        # Write results back to the canonical Submission and append a GradingEntry
-        # so the teacher dashboard and audit trail are complete for code challenges.
-        canonical = db_session.exec(
-            select(Submission).where(
-                Submission.submission_uuid == submission.submission_uuid
-            )
-        ).first()
+        canonical = _finalize_canonical_code_submission(
+            submission,
+            language_id=language_id,
+            score=score,
+            passed_tests=passed_tests,
+            test_cases=test_cases,
+            results=results,
+            db_session=db_session,
+        )
         if canonical is not None:
-            now = datetime.now(UTC)
-            run_record = {
-                "language_id": language_id,
-                "score": score,
-                "passed": passed_tests,
-                "total": len(test_cases),
-                "results": [r.model_dump() for r in results],
-            }
-            meta = canonical.metadata_json or {}
-            meta["runs"] = meta.get("runs", []) + [run_record]
-            canonical.metadata_json = meta
-            canonical.auto_score = score
-            canonical.final_score = score
-            canonical.status = GradingStatus.GRADED
-            canonical.graded_at = now
-            canonical.updated_at = now
-            grading_breakdown = {
-                "items": [],
-                "needs_manual_review": False,
-                "auto_graded": True,
-                "feedback": f"Score: {score:.1f}% ({passed_tests}/{len(test_cases)} tests passed)",
-            }
-            canonical.grading_json = grading_breakdown
-            db_session.add(canonical)
+            grading_breakdown = canonical.grading_json
             if canonical.id is not None:
                 db_session.add(
                     GradingEntry(
@@ -648,10 +760,14 @@ async def process_submission(
                         penalty_pct=0.0,
                         final_score=float(score),
                         breakdown=grading_breakdown,
-                        overall_feedback=grading_breakdown["feedback"],
+                        overall_feedback=(
+                            grading_breakdown.get("feedback", "")
+                            if isinstance(grading_breakdown, dict)
+                            else ""
+                        ),
                         grading_version=canonical.grading_version,
-                        created_at=now,
-                        published_at=now,
+                        created_at=canonical.graded_at or datetime.now(UTC),
+                        published_at=canonical.graded_at or datetime.now(UTC),
                     )
                 )
             db_session.commit()
@@ -667,6 +783,11 @@ async def process_submission(
             submission.status = SubmissionStatus.PENDING_JUDGE0
             submission.updated_at = datetime.now().isoformat()
             db_session.commit()
+            _set_canonical_code_submission_state(
+                submission.submission_uuid,
+                db_session,
+                judge0_state=SubmissionStatus.PENDING_JUDGE0,
+            )
             progress_submissions.sync_code_challenge_submission(submission, db_session)
         logger.warning(
             "Judge0 unavailable during processing of submission %s", submission_id
@@ -679,6 +800,20 @@ async def process_submission(
             submission.status = SubmissionStatus.FAILED
             submission.updated_at = datetime.now().isoformat()
             db_session.commit()
+            _set_canonical_code_submission_state(
+                submission.submission_uuid,
+                db_session,
+                judge0_state=SubmissionStatus.FAILED,
+                auto_score=0.0,
+                final_score=0.0,
+                grading_json={
+                    "items": [],
+                    "needs_manual_review": False,
+                    "auto_graded": True,
+                    "feedback": "Judge0 processing failed",
+                },
+                graded=True,
+            )
             progress_submissions.sync_code_challenge_submission(submission, db_session)
 
     finally:
