@@ -1,12 +1,16 @@
 import { getActivity } from '@services/courses/activities';
+import { getAssessmentByActivityUuid } from '@services/assessments/assessments';
 import { getCourseMetadata } from '@services/courses/courses';
 import { getTranslations } from 'next-intl/server';
+import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
 import { jetBrainsMono } from '@/lib/fonts';
 import type { Metadata } from 'next';
 
 import ActivityClient from './activity';
 import { getSession } from '@/lib/auth/session';
+
+const ASSESSABLE_TYPES = new Set(['TYPE_ASSIGNMENT', 'TYPE_EXAM', 'TYPE_CODE_CHALLENGE', 'TYPE_QUIZ']);
 
 interface MetadataProps {
   params: Promise<{ courseuuid: string; activityid: string }>;
@@ -70,6 +74,13 @@ const ActivityPage = async (params: any) => {
     fetchCourseMetadata(courseuuid),
     isCourseEnd ? Promise.resolve(null) : getActivity(activityid),
   ]);
+
+  if (!isCourseEnd && activity && ASSESSABLE_TYPES.has(activity.activity_type ?? '')) {
+    const assessment = await getAssessmentByActivityUuid(activity.activity_uuid);
+    if (assessment) {
+      redirect(`/assessments/${assessment.assessment_uuid}`);
+    }
+  }
 
   return (
     <div className={jetBrainsMono.variable}>

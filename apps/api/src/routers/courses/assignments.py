@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlmodel import Session, select
 
@@ -30,7 +30,6 @@ from src.services.courses.activities.assignments import (
     create_assignment_with_activity,
     delete_assignment_from_activity_uuid,
     delete_assignment_task,
-    get_assignment_draft_submission,
     get_assignments_from_course,
     get_assignments_from_courses,
     get_editable_assignments_from_courses,
@@ -40,8 +39,6 @@ from src.services.courses.activities.assignments import (
     read_assignment_from_activity_uuid,
     read_assignment_task,
     read_assignment_tasks,
-    save_assignment_draft_submission,
-    submit_assignment_draft_submission,
     update_assignment,
     update_assignment_task,
 )
@@ -65,6 +62,19 @@ def _assessment_uuid_for_assignment(assignment_uuid: str, db_session: Session) -
         select(Assessment).where(Assessment.activity_id == assignment.activity_id)
     ).first()
     return assessment.assessment_uuid if assessment else None
+
+
+def _require_assessment_uuid_for_assignment(
+    assignment_uuid: str,
+    db_session: Session,
+) -> str:
+    assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
+    if assessment_uuid is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Canonical assessment not found for this assignment",
+        )
+    return assessment_uuid
 
 
 def _assignment_patch_to_unified_patch(
@@ -355,7 +365,7 @@ async def api_delete_assignment_tasks(
 
 
 @router.get("/{assignment_uuid}/submissions/me/draft")
-async def api_get_assignment_draft_submission(
+async def api_get_assignment_draft(
     assignment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
@@ -364,23 +374,22 @@ async def api_get_assignment_draft_submission(
 
     **Deprecated** — compatibility adapter over ``GET /api/v1/assessments/{assessment_uuid}/draft``.
     """
-    assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
-    if assessment_uuid:
-        return _assignment_draft_read_from_unified(
-            assignment_uuid,
-            await get_unified_assessment_draft(
-                assessment_uuid,
-                current_user,
-                db_session,
-            ),
-        )
-    return await get_assignment_draft_submission(
-        assignment_uuid, current_user, db_session
+    assessment_uuid = _require_assessment_uuid_for_assignment(
+        assignment_uuid,
+        db_session,
+    )
+    return _assignment_draft_read_from_unified(
+        assignment_uuid,
+        await get_unified_assessment_draft(
+            assessment_uuid,
+            current_user,
+            db_session,
+        ),
     )
 
 
 @router.patch("/{assignment_uuid}/submissions/me/draft")
-async def api_save_assignment_draft_submission(
+async def api_save_assignment_draft(
     assignment_uuid: str,
     draft_patch: AssignmentDraftPatch,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
@@ -391,23 +400,22 @@ async def api_save_assignment_draft_submission(
 
     **Deprecated** — compatibility adapter over ``PATCH /api/v1/assessments/{assessment_uuid}/draft``.
     """
-    assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
-    if assessment_uuid:
-        unified_patch = _assignment_patch_to_unified_patch(draft_patch)
-        return await save_unified_assessment_draft(
-            assessment_uuid,
-            unified_patch or UnifiedAssessmentDraftPatch(),
-            current_user,
-            db_session,
-            if_match=if_match,
-        )
-    return await save_assignment_draft_submission(
-        assignment_uuid, draft_patch, current_user, db_session, if_match=if_match
+    assessment_uuid = _require_assessment_uuid_for_assignment(
+        assignment_uuid,
+        db_session,
+    )
+    unified_patch = _assignment_patch_to_unified_patch(draft_patch)
+    return await save_unified_assessment_draft(
+        assessment_uuid,
+        unified_patch or UnifiedAssessmentDraftPatch(),
+        current_user,
+        db_session,
+        if_match=if_match,
     )
 
 
 @router.post("/{assignment_uuid}/submit")
-async def api_submit_assignment_draft_submission(
+async def api_submit_assignment(
     assignment_uuid: str,
     draft_patch: AssignmentDraftPatch | None = None,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
@@ -418,17 +426,16 @@ async def api_submit_assignment_draft_submission(
 
     **Deprecated** — compatibility adapter over ``POST /api/v1/assessments/{assessment_uuid}/submit``.
     """
-    assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
-    if assessment_uuid:
-        return await submit_unified_assessment(
-            assessment_uuid,
-            _assignment_patch_to_unified_patch(draft_patch),
-            current_user,
-            db_session,
-            if_match=if_match,
-        )
-    return await submit_assignment_draft_submission(
-        assignment_uuid, draft_patch, current_user, db_session, if_match=if_match
+    assessment_uuid = _require_assessment_uuid_for_assignment(
+        assignment_uuid,
+        db_session,
+    )
+    return await submit_unified_assessment(
+        assessment_uuid,
+        _assignment_patch_to_unified_patch(draft_patch),
+        current_user,
+        db_session,
+        if_match=if_match,
     )
 
 

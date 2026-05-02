@@ -90,8 +90,20 @@ export async function cancelAssignmentSchedule(assignmentUUID: string) {
 }
 
 export async function getAssignmentFromActivityUUID(activityUUID: string) {
-  const result = await apiFetch(`assignments/activity/${activityUUID}`);
-  return await getResponseMetadata(result);
+  const result = await apiFetch(`assessments/activity/${activityUUID}`);
+  const metadata = await getResponseMetadata(result);
+
+  if (!metadata.success || !metadata.data) {
+    return metadata;
+  }
+
+  return {
+    ...metadata,
+    data: {
+      ...metadata.data,
+      assignment_uuid: metadata.data.assessment_uuid,
+    },
+  };
 }
 
 export async function deleteAssignment(assignmentUUID: string) {

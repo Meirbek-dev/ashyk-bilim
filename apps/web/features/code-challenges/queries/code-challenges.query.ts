@@ -1,25 +1,18 @@
 'use client';
 
-import { apiFetch } from '@/lib/api-client';
-import { getAPIUrl } from '@services/config/config';
 import { queryOptions } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/react-query/queryKeys';
-import { mapCanonicalCodeSubmission, type CodeSubmission } from '@/services/courses/code-challenges';
-import type { Submission as GradingSubmission } from '@/features/grading/domain';
+import {
+  getCodeChallengeSettings,
+  getSubmission,
+  getSubmissions,
+  type CodeChallengeSettings,
+} from '@/services/courses/code-challenges';
 
-async function fetchCodeChallengeJson<T>(url: string): Promise<T | null> {
-  const response = await apiFetch(url);
-  if (!response.ok) {
-    if (response.status === 404) return null;
-    throw new Error('Failed to fetch');
-  }
-  return response.json() as Promise<T>;
-}
-
-export function codeChallengeSettingsQueryOptions<TSettings = unknown>(activityUuid: string) {
+export function codeChallengeSettingsQueryOptions<TSettings = CodeChallengeSettings>(activityUuid: string) {
   return queryOptions({
     queryKey: queryKeys.codeChallenges.settings(activityUuid),
-    queryFn: () => fetchCodeChallengeJson<TSettings>(`${getAPIUrl()}code-challenges/${activityUuid}/settings`),
+    queryFn: async () => (await getCodeChallengeSettings(activityUuid)) as TSettings | null,
     refetchOnWindowFocus: false,
   });
 }
@@ -27,10 +20,7 @@ export function codeChallengeSettingsQueryOptions<TSettings = unknown>(activityU
 export function codeChallengeSubmissionsQueryOptions<TSubmission = unknown>(activityUuid: string) {
   return queryOptions({
     queryKey: queryKeys.codeChallenges.submissions(activityUuid),
-    queryFn: async () => {
-      const raw = await fetchCodeChallengeJson<GradingSubmission[]>(`${getAPIUrl()}code-challenges/${activityUuid}/submissions`);
-      return raw ? raw.map(mapCanonicalCodeSubmission) : null;
-    },
+    queryFn: async () => (await getSubmissions(activityUuid)) as TSubmission,
     refetchOnWindowFocus: false,
   });
 }
@@ -38,10 +28,7 @@ export function codeChallengeSubmissionsQueryOptions<TSubmission = unknown>(acti
 export function codeChallengeSubmissionQueryOptions<TSubmission = unknown>(submissionUuid: string) {
   return queryOptions({
     queryKey: queryKeys.codeChallenges.submission(submissionUuid),
-    queryFn: async () => {
-      const raw = await fetchCodeChallengeJson<GradingSubmission>(`${getAPIUrl()}code-challenges/submissions/${submissionUuid}`);
-      return raw ? mapCanonicalCodeSubmission(raw) : null;
-    },
+    queryFn: async () => (await getSubmission(submissionUuid)) as TSubmission,
     refetchOnWindowFocus: false,
   });
 }

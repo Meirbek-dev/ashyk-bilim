@@ -13,30 +13,44 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+interface ExamStartAttempt {
+  submission_uuid?: string;
+  status?: string;
+  submitted_at?: string | null;
+  updated_at?: string | null;
+  created_at?: string | null;
+  final_score?: number | null;
+}
+
 interface ExamStartPanelProps {
-  exam: any;
+  assessmentUuid: string;
+  title: string;
+  description?: string | null;
   questionCount: number;
-  userAttempts: any[];
+  userAttempts: ExamStartAttempt[];
   policy: PolicyView;
+  attemptLimit?: number | null;
+  timeLimitMinutes?: number | null;
   isTeacher?: boolean;
-  onStartExam: (attempt: any) => void;
-  onReviewAttempt?: (attempt: any) => void;
+  onStartExam: (attempt: ExamStartAttempt) => void;
+  onReviewAttempt?: (attempt: ExamStartAttempt) => void;
 }
 
 export default function ExamStartPanel({
-  exam,
+  assessmentUuid,
+  title,
+  description,
   questionCount,
   userAttempts,
   policy,
+  attemptLimit = null,
+  timeLimitMinutes = null,
   isTeacher = false,
   onStartExam,
   onReviewAttempt,
 }: ExamStartPanelProps) {
   const t = useTranslations('Activities.ExamActivity');
   const [isStarting, setIsStarting] = useState(false);
-  const settings = exam.settings || {};
-  const attemptLimit = settings.attempt_limit;
-  const timeLimit = settings.time_limit;
   const remainingAttempts = isTeacher || !attemptLimit ? null : Math.max(attemptLimit - userAttempts.length, 0);
   const canTakeExam = isTeacher || !attemptLimit || attemptLimit === 0 || userAttempts.length < attemptLimit;
   const { antiCheat } = policy;
@@ -44,15 +58,12 @@ export default function ExamStartPanel({
     antiCheat.tabSwitchDetection || antiCheat.copyPasteProtection || antiCheat.devtoolsDetection;
 
   const historyItems: AttemptHistoryItem[] = userAttempts.map((attempt, index) => ({
-    id: attempt.attempt_uuid ?? attempt.id ?? index,
+    id: attempt.submission_uuid ?? index,
     label: t('attemptNumber', { number: userAttempts.length - index }),
-    submittedAt: attempt.submitted_at ?? attempt.updated_at ?? attempt.started_at,
-    scoreLabel:
-      attempt.max_score > 0 && attempt.score !== undefined
-        ? `${Math.round((attempt.score / attempt.max_score) * 100)}%`
-        : null,
-    metaLabel: attempt.status,
-    onReview: onReviewAttempt && exam.settings?.allow_result_review ? () => onReviewAttempt(attempt) : undefined,
+    submittedAt: attempt.submitted_at ?? attempt.updated_at ?? attempt.created_at ?? null,
+    scoreLabel: typeof attempt.final_score === 'number' ? `${Math.round(attempt.final_score)}%` : null,
+    metaLabel: attempt.status ?? null,
+    onReview: onReviewAttempt ? () => onReviewAttempt(attempt) : undefined,
   }));
 
   const handleStartExam = async () => {
@@ -62,15 +73,15 @@ export default function ExamStartPanel({
     }
     setIsStarting(true);
     try {
-      const response = await apiFetch(`exams/${exam.exam_uuid}/attempts/start`, {
+      const response = await apiFetch(`assessments/${assessmentUuid}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({}));
         throw new Error(error.detail || 'Failed to start exam');
       }
-      const attempt = await response.json();
+      const attempt = (await response.json()) as ExamStartAttempt;
       toast.success(t('examStarted'));
       onStartExam(attempt);
     } catch (error) {
@@ -83,8 +94,8 @@ export default function ExamStartPanel({
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <Card>
         <CardHeader>
-          <CardTitle>{exam.title}</CardTitle>
-          <CardDescription>{exam.description}</CardDescription>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid gap-3 sm:grid-cols-3">
@@ -96,7 +107,7 @@ export default function ExamStartPanel({
             <InfoTile
               icon={Clock}
               label={t('timeLimit')}
-              value={timeLimit ? t('minutes', { count: timeLimit }) : t('unlimited')}
+              value={timeLimitMinutes ? t('minutes', { count: timeLimitMinutes }) : t('unlimited')}
             />
             <InfoTile
               icon={isTeacher ? InfinityIcon : Users}
@@ -112,10 +123,10 @@ export default function ExamStartPanel({
                 icon={CheckCircle}
                 label={t('instruction1')}
               />
-              {timeLimit ? (
+              {timeLimitMinutes ? (
                 <Instruction
                   icon={CheckCircle}
-                  label={t('instruction3', { minutes: timeLimit })}
+                  label={t('instruction3', { minutes: timeLimitMinutes })}
                 />
               ) : null}
               <Instruction

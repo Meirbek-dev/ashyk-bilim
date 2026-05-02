@@ -1,19 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { apiFetch } from '@/lib/api-client';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { courseKeys } from '@/hooks/courses/courseKeys';
 import { useContributorStatus } from '@/hooks/useContributorStatus';
-import { useExamActivity, useExamMyAttempts, useExamQuestions } from '@/features/exams/hooks/useExam';
-import { examMyAttemptsQueryOptions } from '@/features/exams/queries/exams.query';
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy';
+import { isAnswered as isItemAnswered, type AssessmentItem, type ItemAnswer } from '@/features/assessments/domain/items';
 import { useAttemptShellControls } from '@/features/assessments/shell';
 import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAssessmentAttempt';
+import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
 import ExamQuestionNavigation, { ExamQuestionNavigationMobile } from './ExamQuestionNavigation';
 import { getOrderedExamQuestions } from './questionOrder';
@@ -23,102 +22,62 @@ import ExamQuestionCard from './ExamQuestionCard';
 import ExamStartPanel from './ExamStartPanel';
 import ExamSubmitDialog from './ExamSubmitDialog';
 
-// ── Inline DTO types (previously from legacy examTypes.ts) ────────────────────
-
-interface ExamData {
-  exam_uuid: string;
-  title: string;
-  description: string;
-  settings: {
-    time_limit?: number;
-    attempt_limit?: number;
-    shuffle_questions: boolean;
-    question_limit?: number;
-    access_mode: 'NO_ACCESS' | 'WHITELIST' | 'ALL_ENROLLED';
-    allow_result_review: boolean;
-    show_correct_answers: boolean;
-    copy_paste_protection: boolean;
-    tab_switch_detection: boolean;
-    devtools_detection: boolean;
-    right_click_disable: boolean;
-    fullscreen_enforcement: boolean;
-    violation_threshold?: number;
-  };
-  [key: string]: unknown;
-}
-
-interface AttemptData {
-  id: number;
-  attempt_uuid: string;
-  exam_id: number;
-  user_id: number;
-  status: 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
-  score: number;
-  max_score: number;
-  started_at: string;
-  finished_at?: string | null;
-  question_order: (number | string)[];
-  violations: { type: string; timestamp: string }[];
-  answers?: Record<number, unknown>;
-  [key: string]: unknown;
-}
-
 interface QuestionData {
-  id: number;
+  id: string;
   question_uuid: string;
   question_text: string;
   question_type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MATCHING';
   points: number;
   explanation?: string;
-  answer_options: { text: string; is_correct?: boolean; left?: string; right?: string; option_id?: number }[];
+  answer_options: { text: string; is_correct?: boolean; left?: string; right?: string; option_id?: string | number }[];
 }
 
-// ── Entry component ───────────────────────────────────────────────────────────
-
-export default function ExamAttemptContent({ activityUuid, courseUuid, vm }: KindAttemptProps) {
+export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps) {
   const t = useTranslations('Activities.ExamActivity');
   const queryClient = useQueryClient();
   const { contributorStatus } = useContributorStatus(courseUuid);
-  const { data: exam, error: examError } = useExamActivity(activityUuid);
-  const examUuid = exam?.exam_uuid ?? null;
-  const { data: questions, error: questionsError, refetch: refetchQuestions } = useExamQuestions(examUuid);
-  const { data: attempts, error: attemptsError, refetch: refetchAttempts } = useExamMyAttempts(examUuid);
-  const [activeAttempt, setActiveAttempt] = useState<AttemptData | null>(null);
+  const submissionState = useAssessmentSubmission(vm?.assessmentUuid ?? null);
   const policy = vm?.policy ?? DEFAULT_POLICY_VIEW;
-
-  useEffect(() => {
-    if (activeAttempt || !attempts?.length) return;
-    const inProgress = attempts.find((a: AttemptData) => a.status === 'IN_PROGRESS') ?? null;
-    if (inProgress) setActiveAttempt(inProgress);
-  }, [activeAttempt, attempts]);
+  const assessmentUuid = vm?.assessmentUuid ?? null;
+  const questions = useMemo(() => buildExamQuestions(vm?.items ?? []), [vm?.items]);
 
   const handleComplete = useCallback(async () => {
-    await refetchAttempts();
     await Promise.allSettled([
       queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() }),
       queryClient.invalidateQueries({ queryKey: courseKeys.structure(courseUuid, false) }),
     ]);
-    if (examUuid) await queryClient.fetchQuery(examMyAttemptsQueryOptions(examUuid));
-    setActiveAttempt(null);
-  }, [courseUuid, examUuid, queryClient, refetchAttempts]);
 
-  if (examError || questionsError || attemptsError) {
-    return <div className="text-destructive rounded-lg border p-6 text-sm">{t('errorLoadingExam')}</div>;
-  }
+    if (!assessmentUuid) return;
 
-  if (!exam || !questions || !attempts) {
+    await Promise.allSettled([
+      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.draft(assessmentUuid) }),
+      queryClient.invalidateQueries({ queryKey: ['assessments', 'submissions', 'me', assessmentUuid] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(assessmentUuid) }),
+    ]);
+  }, [assessmentUuid, courseUuid, queryClient]);
+
+  if (!vm || submissionState.isLoading) {
     return <PageLoading />;
   }
 
-  if (!activeAttempt) {
+  if (!assessmentUuid) {
+    return <div className="text-destructive rounded-lg border p-6 text-sm">{t('errorLoadingExam')}</div>;
+  }
+
+  if (!submissionState.draft) {
     return (
       <ExamStartPanel
-        exam={exam}
+        assessmentUuid={assessmentUuid}
+        title={vm.title}
+        description={vm.description}
         questionCount={questions.length}
-        userAttempts={attempts}
-        onStartExam={(attempt) => {
-          setActiveAttempt(attempt);
-          void refetchQuestions();
+        userAttempts={submissionState.submissions.filter((submission) => submission.status !== 'DRAFT')}
+        attemptLimit={policy.maxAttempts}
+        timeLimitMinutes={
+          typeof policy.timeLimitSeconds === 'number' ? Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)) : null
+        }
+        onStartExam={() => {
+          void handleComplete();
         }}
         isTeacher={contributorStatus === 'ACTIVE'}
         policy={policy}
@@ -128,81 +87,75 @@ export default function ExamAttemptContent({ activityUuid, courseUuid, vm }: Kin
 
   return (
     <ExamTakingContent
-      exam={exam}
+      title={vm.title}
       questions={questions}
-      attempt={activeAttempt}
+      submissionState={submissionState}
+      attempt={submissionState.draft}
       policy={policy}
       onComplete={handleComplete}
     />
   );
 }
 
-// ── Taking sub-component ──────────────────────────────────────────────────────
-
 function ExamTakingContent({
-  exam,
+  title,
   questions,
+  submissionState,
   attempt,
   policy,
   onComplete,
 }: {
-  exam: ExamData;
+  title: string;
   questions: QuestionData[];
-  attempt: AttemptData;
+  submissionState: ReturnType<typeof useAssessmentSubmission>;
+  attempt: NonNullable<ReturnType<typeof useAssessmentSubmission>['draft']>;
   policy: typeof DEFAULT_POLICY_VIEW;
   onComplete: () => void | Promise<void>;
 }) {
   const t = useTranslations('Activities.ExamActivity');
-
-  // ── Simple state (replaces examTakingReducer) ────────────────────────────
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, unknown>>(attempt.answers ?? {});
   const [isConfirmingSubmit, setIsConfirmingSubmit] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [unansweredForDialog, setUnansweredForDialog] = useState<number[]>([]);
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
-  const [recoveredAnswers, setRecoveredAnswers] = useState<Record<number, unknown> | null>(null);
+  const [recoveredAnswers, setRecoveredAnswers] = useState<Record<string, ItemAnswer> | null>(null);
+  const violationCountRef = useRef(0);
 
-  // ── Persistence (replaces useExamPersistence) ────────────────────────────
-  const persistence = useAssessmentAttempt<Record<number, unknown>>({
-    attemptUuid: attempt.attempt_uuid,
+  const persistence = useAssessmentAttempt<Record<string, ItemAnswer>>({
+    attemptUuid: attempt.submission_uuid,
     autoSaveInterval: 5000,
     expirationHours: 24,
-    storageKeyPrefix: 'exam_answers_', // keep same key prefix for existing drafts
+    storageKeyPrefix: 'exam_answers_',
     onRestore: (recovered) => {
-      if (Object.keys(answers).length === 0 && Object.keys(recovered).length > 0) {
+      if (Object.keys(submissionState.answers).length === 0 && Object.keys(recovered).length > 0) {
         setRecoveredAnswers(recovered);
         setShowRecoveryDialog(true);
       }
     },
   });
 
-  // ── Ordered questions ────────────────────────────────────────────────────
-  const orderedQuestions = useMemo(
-    () => getOrderedExamQuestions(questions, attempt.question_order),
-    [attempt.question_order, questions],
-  );
-  const settings = useMemo(() => exam.settings ?? {}, [exam.settings]);
+  const orderedQuestions = useMemo(() => getOrderedExamQuestions(questions, null), [questions]);
   const currentQuestion = orderedQuestions[currentIndex];
+  const questionById = useMemo(() => new Map(orderedQuestions.map((question) => [question.id, question])), [orderedQuestions]);
 
-  // ── Derived ──────────────────────────────────────────────────────────────
+  const displayAnswers = useMemo(() => {
+    const next: Record<string, unknown> = {};
+    for (const question of orderedQuestions) {
+      const answer = submissionState.answers[question.id];
+      if (!answer) continue;
+      next[question.id] = toExamAnswer(question, answer);
+    }
+    return next;
+  }, [orderedQuestions, submissionState.answers]);
 
   const isAnswered = useCallback(
-    (questionId: number) => {
-      const answer = answers[questionId];
-      if (answer === undefined || answer === null) return false;
-      if (Array.isArray(answer)) return answer.length > 0;
-      if (typeof answer === 'object') return Object.keys(answer).length > 0;
-      return true;
-    },
-    [answers],
+    (questionId: string) => isItemAnswered(submissionState.answers[questionId]),
+    [submissionState.answers],
   );
 
-  const answeredCount = orderedQuestions.filter((q) => isAnswered(q.id)).length;
+  const answeredCount = orderedQuestions.filter((question) => isAnswered(question.id)).length;
   const answeredIndexes = useMemo(
     () =>
-      orderedQuestions.reduce<Set<number>>((set, q, i) => {
-        if (isAnswered(q.id)) set.add(i);
+      orderedQuestions.reduce<Set<number>>((set, question, index) => {
+        if (isAnswered(question.id)) set.add(index);
         return set;
       }, new Set()),
     [isAnswered, orderedQuestions],
@@ -210,77 +163,71 @@ function ExamTakingContent({
 
   const progress = orderedQuestions.length > 0 ? ((currentIndex + 1) / orderedQuestions.length) * 100 : 0;
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
-
-  const handleAnswerChange = (questionId: number, answer: unknown) => {
-    const updated = { ...answers, [questionId]: answer };
-    setAnswers(updated);
-    persistence.saveAnswers(updated);
+  const handleAnswerChange = (questionId: string, answer: unknown) => {
+    const question = questionById.get(questionId);
+    if (!question) return;
+    const canonicalAnswer = fromExamAnswer(question, answer);
+    submissionState.setItemAnswer(question.id, canonicalAnswer);
+    persistence.saveAnswers({
+      ...submissionState.answers,
+      [question.id]: canonicalAnswer,
+    });
   };
 
   const handleOpenSubmitConfirmation = useCallback(() => {
-    const unanswered = orderedQuestions
-      .map((q, i) => (!isAnswered(q.id) ? i + 1 : null))
-      .filter((n): n is number => n !== null);
-    setUnansweredForDialog(unanswered);
     setIsConfirmingSubmit(true);
-  }, [isAnswered, orderedQuestions]);
+  }, []);
 
   const handleSubmit = useCallback(
     async (isAutoSubmit = false) => {
-      if (isSubmitting) return;
+      void isAutoSubmit;
+      if (submissionState.isSubmitting) return;
       setIsConfirmingSubmit(false);
-      setIsSubmitting(true);
 
       try {
-        const response = await apiFetch(`exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/submit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(answers),
-        });
-        if (!response.ok) throw new Error('Failed to submit exam');
+        await submissionState.submit({ violationCount: violationCountRef.current });
         persistence.clearSavedAnswers();
         toast.success(t('examSubmittedSuccessfully'));
         await onComplete();
       } catch (error) {
         console.error('Error submitting exam:', error);
         toast.error(t('errorSubmittingExam'));
-        setIsSubmitting(false);
       }
     },
-    [answers, attempt.attempt_uuid, exam.exam_uuid, isSubmitting, onComplete, persistence, t],
+    [onComplete, persistence, submissionState, t],
   );
 
-  const handleViolation = useCallback(
-    async (type: string, count: number) => {
-      try {
-        const response = await apiFetch(`exams/${exam.exam_uuid}/attempts/${attempt.attempt_uuid}/violations`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, answers }),
-        });
-        const updatedAttempt = response.ok ? await response.json().catch(() => null) : null;
-        if (updatedAttempt?.status === 'AUTO_SUBMITTED') {
-          persistence.clearSavedAnswers();
-          toast.error(t('autoSubmitting', { reason: t('autoSubmittingReason.violationThresholdExceeded') }));
-          await onComplete();
-        }
-      } catch {
-        // Best-effort violation recording — do not interrupt the attempt.
-      }
-    },
-    [answers, attempt.attempt_uuid, exam.exam_uuid, onComplete, persistence, t],
-  );
+  const handleViolation = useCallback((type: string, count: number) => {
+    void type;
+    violationCountRef.current = count;
+  }, []);
 
-  // ── Shell controls registration ──────────────────────────────────────────
+  useEffect(() => {
+    if (submissionState.status !== 'DRAFT' || submissionState.saveState !== 'dirty') return;
+    const timeout = setTimeout(() => {
+      void submissionState.save();
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [submissionState]);
 
   const shellControls = useMemo(
     () => ({
-      saveState: isSubmitting ? ('saving' as const) : ('saved' as const),
+      saveState: submissionState.isSubmitting
+        ? ('saving' as const)
+        : submissionState.status === 'PENDING'
+          ? ('submitted' as const)
+          : submissionState.saveState === 'dirty'
+            ? ('unsaved' as const)
+            : submissionState.saveState === 'saving'
+              ? ('saving' as const)
+              : submissionState.saveState === 'error' || submissionState.saveState === 'conflict'
+                ? ('error' as const)
+                : ('saved' as const),
+      status: submissionState.status,
       canSave: false,
       canSubmit: true,
-      isSaving: false,
-      isSubmitting,
+      isSaving: submissionState.isSaving,
+      isSubmitting: submissionState.isSubmitting,
       onSubmit: handleOpenSubmitConfirmation,
       navigation: {
         current: currentIndex + 1,
@@ -288,13 +235,13 @@ function ExamTakingContent({
         answered: answeredCount,
         canPrevious: currentIndex > 0,
         canNext: currentIndex < orderedQuestions.length - 1,
-        onPrevious: () => setCurrentIndex((i) => Math.max(0, i - 1)),
-        onNext: () => setCurrentIndex((i) => i + 1),
+        onPrevious: () => setCurrentIndex((index) => Math.max(0, index - 1)),
+        onNext: () => setCurrentIndex((index) => index + 1),
       },
-      timer: settings.time_limit
+      timer: policy.timeLimitSeconds
         ? {
-            startedAt: attempt.started_at,
-            timeLimitMinutes: settings.time_limit,
+            startedAt: attempt.created_at,
+            timeLimitMinutes: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)),
             onExpire: () => {
               toast.error(t('autoSubmitting', { reason: t('autoSubmittingReason.timeExpired') }));
               void handleSubmit(true);
@@ -302,7 +249,7 @@ function ExamTakingContent({
           }
         : null,
       policy,
-      initialViolationCount: attempt.violations?.length ?? 0,
+      initialViolationCount: 0,
       onViolation: handleViolation,
       onGuardAutoSubmit: () => {
         toast.error(t('autoSubmitting', { reason: t('autoSubmittingReason.violationThresholdExceeded') }));
@@ -313,7 +260,11 @@ function ExamTakingContent({
             open: true,
             lastSavedAt: persistence.getRecoverableData()?.lastSaved ?? null,
             onAccept: () => {
-              if (recoveredAnswers) setAnswers(recoveredAnswers);
+              if (recoveredAnswers) {
+                for (const [itemUuid, answer] of Object.entries(recoveredAnswers)) {
+                  submissionState.setItemAnswer(itemUuid, answer);
+                }
+              }
               setShowRecoveryDialog(false);
               toast.success(t('answersRecovered'));
             },
@@ -327,30 +278,28 @@ function ExamTakingContent({
     }),
     [
       answeredCount,
-      attempt.started_at,
-      attempt.violations?.length,
+      attempt.created_at,
       currentIndex,
       handleOpenSubmitConfirmation,
       handleSubmit,
       handleViolation,
-      isSubmitting,
       orderedQuestions.length,
       persistence,
       policy,
       recoveredAnswers,
-      settings.time_limit,
       showRecoveryDialog,
+      submissionState,
       t,
     ],
   );
 
   useAttemptShellControls(shellControls);
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   if (!currentQuestion) {
     return (
-      <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">No questions.</div>
+      <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
+        {title ? `${title}: ` : ''}No questions.
+      </div>
     );
   }
 
@@ -367,7 +316,7 @@ function ExamTakingContent({
           <ExamQuestionCard
             question={currentQuestion}
             questionNumber={currentIndex + 1}
-            answer={answers}
+            answer={displayAnswers}
             onAnswerChange={handleAnswerChange}
           />
         </div>
@@ -387,8 +336,8 @@ function ExamTakingContent({
         currentQuestionIndex={currentIndex}
         answeredQuestions={answeredIndexes}
         onQuestionSelect={setCurrentIndex}
-        onPrevious={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-        onNext={() => setCurrentIndex((i) => i + 1)}
+        onPrevious={() => setCurrentIndex((index) => Math.max(0, index - 1))}
+        onNext={() => setCurrentIndex((index) => Math.min(orderedQuestions.length - 1, index + 1))}
         onSubmit={handleOpenSubmitConfirmation}
         canGoNext={currentIndex < orderedQuestions.length - 1}
         canGoPrevious={currentIndex > 0}
@@ -398,7 +347,7 @@ function ExamTakingContent({
         open={isConfirmingSubmit}
         totalQuestions={orderedQuestions.length}
         answeredCount={answeredCount}
-        isSubmitting={isSubmitting}
+        isSubmitting={submissionState.isSubmitting}
         labels={{
           confirmSubmission: t('confirmSubmission'),
           confirmSubmissionMessage: t('confirmSubmissionMessage'),
@@ -410,8 +359,78 @@ function ExamTakingContent({
           confirmAndSubmit: t('confirmAndSubmit'),
         }}
         onCancel={() => setIsConfirmingSubmit(false)}
-        onSubmit={() => void handleSubmit(false)}
+        onSubmit={() => void handleSubmit()}
       />
     </div>
   );
+}
+
+function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
+  return items.flatMap((item) => {
+    if (item.kind === 'CHOICE') {
+      return [
+        {
+          id: item.item_uuid,
+          question_uuid: item.item_uuid,
+          question_text: item.body.prompt,
+          question_type: item.body.multiple ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE',
+          points: item.max_score,
+          answer_options: item.body.options.map((option) => ({
+            text: option.text,
+            is_correct: option.is_correct,
+            option_id: option.id,
+          })),
+        },
+      ];
+    }
+
+    if (item.kind === 'MATCHING') {
+      return [
+        {
+          id: item.item_uuid,
+          question_uuid: item.item_uuid,
+          question_text: item.body.prompt,
+          question_type: 'MATCHING',
+          points: item.max_score,
+          answer_options: item.body.pairs.map((pair, index) => ({
+            text: '',
+            left: pair.left,
+            right: pair.right,
+            option_id: String(index),
+          })),
+        },
+      ];
+    }
+
+    return [];
+  });
+}
+
+function toExamAnswer(question: QuestionData, answer: ItemAnswer): unknown {
+  if (question.question_type === 'MATCHING' && answer.kind === 'MATCHING') {
+    return Object.fromEntries(answer.matches.map((pair) => [pair.left, pair.right]));
+  }
+
+  if (answer.kind !== 'CHOICE') return null;
+  if (question.question_type === 'MULTIPLE_CHOICE') return answer.selected;
+  return answer.selected[0] ?? null;
+}
+
+function fromExamAnswer(question: QuestionData, answer: unknown): ItemAnswer {
+  if (question.question_type === 'MATCHING') {
+    const matches =
+      answer && typeof answer === 'object' && !Array.isArray(answer)
+        ? Object.entries(answer as Record<string, string>)
+            .filter(([, right]) => typeof right === 'string' && right.length > 0)
+            .map(([left, right]) => ({ left, right }))
+        : [];
+    return { kind: 'MATCHING', matches };
+  }
+
+  const selected = Array.isArray(answer)
+    ? answer.map(String)
+    : answer === null || answer === undefined || answer === ''
+      ? []
+      : [String(answer)];
+  return { kind: 'CHOICE', selected };
 }

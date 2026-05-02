@@ -7,24 +7,24 @@ import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/ite
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 
 interface QuestionData {
-  id: number;
+  id: string;
   question_uuid: string;
   question_text: string;
   question_type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MATCHING';
   points: number;
   explanation?: string;
-  answer_options: { text: string; is_correct?: boolean; left?: string; right?: string; option_id?: number }[];
+  answer_options: { text: string; is_correct?: boolean; left?: string; right?: string; option_id?: string | number }[];
 }
 
 interface ExamQuestionCardProps {
   question: QuestionData;
   questionNumber: number;
-  answer: Record<number, unknown>;
-  onAnswerChange: (questionId: number, answer: unknown) => void;
+  answer: Record<string, unknown>;
+  onAnswerChange: (questionId: string, answer: unknown) => void;
 }
 
-function getAnswerOptionId(option: QuestionData['answer_options'][number], visualIndex: number): number {
-  return typeof option.option_id === 'number' ? option.option_id : visualIndex;
+function getAnswerOptionId(option: QuestionData['answer_options'][number], visualIndex: number): string | number {
+  return typeof option.option_id === 'string' || typeof option.option_id === 'number' ? option.option_id : visualIndex;
 }
 
 function toChoiceItem(question: QuestionData): ChoiceAttemptItem {

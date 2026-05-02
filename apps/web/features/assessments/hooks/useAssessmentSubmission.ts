@@ -10,6 +10,7 @@ import type { ItemAnswer } from '../domain/items';
 
 interface SubmissionRead {
   submission_uuid: string;
+  created_at: string;
   answers_json: { answers?: Record<string, ItemAnswer> } | Record<string, unknown>;
   status: 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED';
   version: number;
@@ -24,6 +25,10 @@ interface SubmissionRead {
 interface DraftRead {
   assessment_uuid: string;
   submission: SubmissionRead | null;
+}
+
+interface SubmitOptions {
+  violationCount?: number;
 }
 
 export type AssessmentSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'conflict' | 'error';
@@ -85,7 +90,8 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     },
   });
 
-  const submission = draftQuery.data?.submission ?? submissionsQuery.data?.[0] ?? null;
+  const draft = draftQuery.data?.submission ?? null;
+  const submission = draft ?? submissionsQuery.data?.[0] ?? null;
   const version = submission?.version;
 
   const saveMutation = useMutation({
@@ -125,9 +131,20 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   });
 
   const submitMutation = useMutation({
-    mutationFn: async (answers: Record<string, ItemAnswer>) => {
+    mutationFn: async ({
+      answers,
+      violationCount,
+    }: {
+      answers: Record<string, ItemAnswer>;
+      violationCount?: number;
+    }) => {
       if (!assessmentUuid) throw new Error('Assessment is not ready');
-      const response = await apiFetch(`assessments/${assessmentUuid}/submit`, {
+      const params = new URLSearchParams();
+      if (typeof violationCount === 'number' && violationCount > 0) {
+        params.set('violation_count', String(violationCount));
+      }
+      const suffix = params.size > 0 ? `?${params.toString()}` : '';
+      const response = await apiFetch(`assessments/${assessmentUuid}/submit${suffix}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -190,7 +207,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       answers: localAnswers,
       setItemAnswer,
       save: () => saveMutateAsync(localAnswers),
-      submit: () => submitMutateAsync(localAnswers),
+      submit: (options?: SubmitOptions) =>
+        submitMutateAsync({ answers: localAnswers, violationCount: options?.violationCount }),
+      draft,
       submission,
       submissions: submissionsQuery.data ?? [],
       status: submission?.status ?? null,
@@ -202,6 +221,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       error: draftQuery.error ?? submissionsQuery.error,
     }),
     [
+      draft,
       draftQuery.error,
       draftQuery.isLoading,
       localAnswers,

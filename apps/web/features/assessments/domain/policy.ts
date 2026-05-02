@@ -36,6 +36,8 @@ export interface PolicyView {
   dueAt: string | null;
   /** Maximum number of student submissions. null = unlimited. */
   maxAttempts: number | null;
+  /** Time limit in seconds. null = unlimited. */
+  timeLimitSeconds: number | null;
   latePolicy: LatePolicy;
   antiCheat: AntiCheatPolicy;
 }
@@ -52,6 +54,7 @@ export const DEFAULT_ANTI_CHEAT_POLICY: AntiCheatPolicy = {
 export const DEFAULT_POLICY_VIEW: PolicyView = {
   dueAt: null,
   maxAttempts: null,
+  timeLimitSeconds: null,
   latePolicy: { penaltyPercent: 0 },
   antiCheat: DEFAULT_ANTI_CHEAT_POLICY,
 };
@@ -82,6 +85,7 @@ export function policyFromAssessmentPolicy(policy: AssessmentPolicyDTO | null | 
   return {
     dueAt: policy.due_at ?? null,
     maxAttempts: typeof policy.max_attempts === 'number' ? policy.max_attempts : null,
+    timeLimitSeconds: typeof policy.time_limit_seconds === 'number' ? policy.time_limit_seconds : null,
     latePolicy: {
       penaltyPercent: typeof latePolicy.penalty_percent === 'number' ? latePolicy.penalty_percent : 0,
     },
