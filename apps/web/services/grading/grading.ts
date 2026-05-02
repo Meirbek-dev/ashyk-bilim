@@ -112,12 +112,38 @@ export async function getSubmission(submissionUuid: string): Promise<Submission 
   return meta.data as Submission;
 }
 
-export async function saveGrade(submissionUuid: string, gradeInput: TeacherGradeInput): Promise<Submission> {
+export class StaleGradeError extends Error {
+  readonly name = 'StaleGradeError';
+  readonly serverSubmission: Submission;
+  constructor(serverSubmission: Submission) {
+    super('Grade was updated by another session. Review the latest values before saving.');
+    this.serverSubmission = serverSubmission;
+  }
+}
+
+export async function saveGrade(
+  submissionUuid: string,
+  gradeInput: TeacherGradeInput,
+  /** Optimistic-concurrency version from the last-fetched submission. */
+  version?: number,
+): Promise<Submission> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (version !== undefined) {
+    headers['If-Match'] = String(version);
+  }
   const res = await apiFetch(`grading/submissions/${submissionUuid}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(gradeInput),
   });
+
+  if (res.status === 412) {
+    // Server has a newer version — retrieve it and throw a typed error so the
+    // UI can show a merge banner instead of a generic toast.
+    const latest = await getSubmission(submissionUuid);
+    throw new StaleGradeError(latest ?? ({ submission_uuid: submissionUuid } as Submission));
+  }
+
   const meta = await getResponseMetadata(res);
   if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to save grade');
 

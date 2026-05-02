@@ -1,9 +1,13 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Query, UploadFile
+from fastapi import APIRouter, Depends, Header, Query, Request, UploadFile
+from fastapi.responses import RedirectResponse
+from sqlmodel import Session, select
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.db.assessments import Assessment
 from src.db.courses.assignments import (
+    Assignment,
     AssignmentCreateWithActivity,
     AssignmentDraftPatch,
     AssignmentDraftRead,
@@ -43,6 +47,19 @@ from src.services.courses.assignment_lifecycle import (
 )
 
 router = APIRouter()
+
+
+def _assessment_uuid_for_assignment(assignment_uuid: str, db_session: Session) -> str | None:
+    """Return the canonical assessment_uuid for an assignment, or None if not found."""
+    assignment = db_session.exec(
+        select(Assignment).where(Assignment.assignment_uuid == assignment_uuid)
+    ).first()
+    if assignment is None:
+        return None
+    assessment = db_session.exec(
+        select(Assessment).where(Assessment.activity_id == assignment.activity_id)
+    ).first()
+    return assessment.assessment_uuid if assessment else None
 
 # ASSIGNMENTS ##
 
@@ -87,15 +104,26 @@ async def api_update_assignment(
 async def api_publish_assignment(
     assignment_uuid: str,
     publish_input: AssignmentPublishInput,
+    request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session=Depends(get_db_session),
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssignmentRead:
     """Publish immediately or schedule for a future date.
 
     Body ``scheduled_at`` is optional:
     - Omit or set to null → publish now (status becomes PUBLISHED).
     - Set to a future datetime → schedule (status becomes SCHEDULED).
+
+    **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/lifecycle`` instead.
+    This endpoint will redirect (308) to the canonical URL when possible.
     """
+    assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
+    if assessment_uuid:
+        canonical = str(request.url).replace(
+            f"/assignments/{assignment_uuid}/publish",
+            f"/assessments/{assessment_uuid}/lifecycle",
+        )
+        return RedirectResponse(url=canonical, status_code=308)
     return await publish_assignment(
         assignment_uuid, publish_input, current_user, db_session
     )
@@ -104,20 +132,42 @@ async def api_publish_assignment(
 @router.post("/{assignment_uuid}/archive")
 async def api_archive_assignment(
     assignment_uuid: str,
+    request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session=Depends(get_db_session),
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssignmentRead:
-    """Archive an assignment.  Read-only for everyone afterwards; not deletable."""
+    """Archive an assignment.  Read-only for everyone afterwards; not deletable.
+
+    **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/lifecycle`` instead.
+    """
+    assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
+    if assessment_uuid:
+        canonical = str(request.url).replace(
+            f"/assignments/{assignment_uuid}/archive",
+            f"/assessments/{assessment_uuid}/lifecycle",
+        )
+        return RedirectResponse(url=canonical, status_code=308)
     return await archive_assignment(assignment_uuid, current_user, db_session)
 
 
 @router.post("/{assignment_uuid}/cancel-schedule")
 async def api_cancel_assignment_schedule(
     assignment_uuid: str,
+    request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session=Depends(get_db_session),
+    db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssignmentRead:
-    """Revert a SCHEDULED assignment back to DRAFT."""
+    """Revert a SCHEDULED assignment back to DRAFT.
+
+    **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/lifecycle`` instead.
+    """
+    assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
+    if assessment_uuid:
+        canonical = str(request.url).replace(
+            f"/assignments/{assignment_uuid}/cancel-schedule",
+            f"/assessments/{assessment_uuid}/lifecycle",
+        )
+        return RedirectResponse(url=canonical, status_code=308)
     return await cancel_schedule(assignment_uuid, current_user, db_session)
 
 
@@ -229,10 +279,21 @@ async def api_delete_assignment_tasks(
 @router.get("/{assignment_uuid}/submissions/me/draft")
 async def api_get_assignment_draft_submission(
     assignment_uuid: str,
+    request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db_session=Depends(get_db_session),
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> AssignmentDraftRead:
-    """Get the current user's Submission-backed assignment draft, if any."""
+    """Get the current user's Submission-backed assignment draft, if any.
+
+    **Deprecated** — use ``GET /api/v1/assessments/{assessment_uuid}/draft`` instead.
+    """
+    assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
+    if assessment_uuid:
+        canonical = str(request.url).replace(
+            f"/assignments/{assignment_uuid}/submissions/me/draft",
+            f"/assessments/{assessment_uuid}/draft",
+        )
+        return RedirectResponse(url=canonical, status_code=308)
     return await get_assignment_draft_submission(
         assignment_uuid, current_user, db_session
     )
@@ -242,11 +303,22 @@ async def api_get_assignment_draft_submission(
 async def api_save_assignment_draft_submission(
     assignment_uuid: str,
     draft_patch: AssignmentDraftPatch,
+    request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db_session=Depends(get_db_session),
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> SubmissionRead:
-    """Create or update the current user's assignment draft in Submission."""
+    """Create or update the current user's assignment draft in Submission.
+
+    **Deprecated** — use ``PATCH /api/v1/assessments/{assessment_uuid}/draft`` instead.
+    """
+    assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
+    if assessment_uuid:
+        canonical = str(request.url).replace(
+            f"/assignments/{assignment_uuid}/submissions/me/draft",
+            f"/assessments/{assessment_uuid}/draft",
+        )
+        return RedirectResponse(url=canonical, status_code=308)
     return await save_assignment_draft_submission(
         assignment_uuid, draft_patch, current_user, db_session, if_match=if_match
     )
@@ -255,12 +327,23 @@ async def api_save_assignment_draft_submission(
 @router.post("/{assignment_uuid}/submit")
 async def api_submit_assignment_draft_submission(
     assignment_uuid: str,
+    request: Request,
     draft_patch: AssignmentDraftPatch | None = None,
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db_session=Depends(get_db_session),
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> SubmissionRead:
-    """Submit the current user's assignment draft through the unified Submission model."""
+    """Submit the current user's assignment draft through the unified Submission model.
+
+    **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/submit`` instead.
+    """
+    assessment_uuid = _assessment_uuid_for_assignment(assignment_uuid, db_session)
+    if assessment_uuid:
+        canonical = str(request.url).replace(
+            f"/assignments/{assignment_uuid}/submit",
+            f"/assessments/{assessment_uuid}/submit",
+        )
+        return RedirectResponse(url=canonical, status_code=308)
     return await submit_assignment_draft_submission(
         assignment_uuid, draft_patch, current_user, db_session, if_match=if_match
     )

@@ -407,6 +407,7 @@ class AssessmentRead(PydanticStrictBaseModel):
     activity_id: int
     activity_uuid: str
     course_id: int | None = None
+    course_uuid: str | None = None
     chapter_id: int
     kind: AssessmentType
     title: str

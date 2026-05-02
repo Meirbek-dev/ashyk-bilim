@@ -85,12 +85,15 @@ async def put_assignment_task_submission_file(
 
     ext = sub_file.filename.split(".")[-1]
     name_in_disk = f"{assignment_task_uuid}_sub_{current_user.user_uuid or current_user.id}_{ULID()}.{ext}"
-    await upload_submission_file(
+    upload_id = await upload_submission_file(
         sub_file,
         name_in_disk,
         activity.activity_uuid,
         course.course_uuid,
         assignment.assignment_uuid,
         assignment_task_uuid,
+        db_session=db_session,
+        user_id=current_user.id,
+        user_uuid=current_user.user_uuid,
     )
-    return {"file_uuid": name_in_disk}
+    return {"file_uuid": upload_id}

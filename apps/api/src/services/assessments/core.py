@@ -719,12 +719,19 @@ def _build_assessment_read(
     activity = db_session.get(Activity, assessment.activity_id)
     if activity is None:
         raise HTTPException(status_code=404, detail="Activity not found")
+    course_uuid: str | None = None
+    if activity.course_id is not None:
+        from src.db.courses.courses import Course
+        course_row = db_session.get(Course, activity.course_id)
+        if course_row is not None:
+            course_uuid = course_row.course_uuid
     return AssessmentRead(
         id=assessment.id or 0,
         assessment_uuid=assessment.assessment_uuid,
         activity_id=assessment.activity_id,
         activity_uuid=activity.activity_uuid,
         course_id=activity.course_id,
+        course_uuid=course_uuid,
         chapter_id=activity.chapter_id,
         kind=assessment.kind,
         title=assessment.title,
@@ -1096,6 +1103,7 @@ def _validate_file_upload_answer(
         if upload.referenced_at is None:
             upload.referenced_at = datetime.now(UTC)
             upload.updated_at = upload.referenced_at
+            upload.referenced_count = (upload.referenced_count or 0) + 1
             db_session.add(upload)
 
 

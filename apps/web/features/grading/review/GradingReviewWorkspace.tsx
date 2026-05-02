@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import type { KindModule } from '@/features/assessments/registry';
 import { useSubmissionStats } from '@/hooks/useSubmissionStats';
@@ -28,11 +29,37 @@ export default function GradingReviewWorkspace({
   kindModule,
   initialFilter,
 }: GradingReviewWorkspaceProps) {
-  const [activeFilter, setActiveFilter] = useState<StatusFilter>(
-    initialFilter ?? (initialSubmissionUuid ? 'ALL' : 'NEEDS_GRADING'),
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // ── URL-persisted filters ─────────────────────────────────────────────────
+  const filterFromUrl = (searchParams.get('filter') as StatusFilter | null) ?? (initialFilter ?? 'NEEDS_GRADING');
+  const sortFromUrl = searchParams.get('sort') ?? 'submitted_at';
+  const searchFromUrl = searchParams.get('q') ?? '';
+
+  const [activeFilter, setActiveFilter] = useState<StatusFilter>(filterFromUrl);
+  const [search, setSearch] = useState(searchFromUrl);
+  const [sortBy, setSortBy] = useState(sortFromUrl);
+
+  const updateUrl = useCallback(
+    (updates: Partial<{ filter: StatusFilter; sort: string; q: string }>) => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (updates.filter !== undefined) {
+        if (updates.filter === 'NEEDS_GRADING') next.delete('filter');
+        else next.set('filter', updates.filter);
+      }
+      if (updates.sort !== undefined) {
+        if (updates.sort === 'submitted_at') next.delete('sort');
+        else next.set('sort', updates.sort);
+      }
+      if (updates.q !== undefined) {
+        if (updates.q === '') next.delete('q');
+        else next.set('q', updates.q);
+      }
+      router.replace(`?${next.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
   );
-  const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('submitted_at');
   const [selectedUuid, setSelectedUuid] = useState<string | null>(initialSubmissionUuid ?? null);
   const [selectedUuids, setSelectedUuids] = useState<Set<string>>(new Set());
 
@@ -132,14 +159,17 @@ export default function GradingReviewWorkspace({
         onFilterChange={(value) => {
           setActiveFilter(value);
           setPage(1);
+          updateUrl({ filter: value });
         }}
         onSearchChange={(value) => {
           setSearch(value);
           setPage(1);
+          updateUrl({ q: value });
         }}
         onSortChange={(value) => {
           setSortBy(value);
           setPage(1);
+          updateUrl({ sort: value });
         }}
         onPageChange={setPage}
         onSelectSubmission={setSelectedUuid}

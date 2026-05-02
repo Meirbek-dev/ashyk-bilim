@@ -205,9 +205,28 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
           </div>
 
           {studio.validationIssues.length > 0 && (
-            <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+            <Alert className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
               <AlertTriangle className="size-4" />
-              <AlertDescription>{studio.validationIssues.map((i) => i.message).join(' ')}</AlertDescription>
+              <AlertDescription>
+                <ul className="space-y-0.5">
+                  {studio.validationIssues.map((issue, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-center gap-2"
+                    >
+                      <span>{issue.message}</span>
+                      {issue.itemUuid ? (
+                        <a
+                          href={`#item-${issue.itemUuid}`}
+                          className="underline text-amber-700 dark:text-amber-300 text-xs"
+                        >
+                          Jump to
+                        </a>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </AlertDescription>
             </Alert>
           )}
         </div>

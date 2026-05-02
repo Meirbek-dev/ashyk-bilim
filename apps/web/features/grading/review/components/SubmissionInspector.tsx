@@ -1,7 +1,7 @@
 'use client';
 
 import type { ComponentType } from 'react';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, ShieldAlert } from 'lucide-react';
 
 import { getSubmissionDisplayName } from '@/features/grading/domain';
 import type { Submission } from '@/features/grading/domain';
@@ -9,6 +9,7 @@ import SubmissionStatusBadge from '@/features/assessments/shared/components/Subm
 import type { KindReviewDetailProps } from '@/features/assessments/registry';
 import { useGradingPanel } from '@/hooks/useGradingPanel';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function SubmissionInspector({
   selectedUuid,
@@ -64,16 +65,99 @@ export default function SubmissionInspector({
         </div>
 
         <AttemptHistory submission={current} />
-        {ReviewDetail ? (
-          <ReviewDetail
-            submission={current}
-            activityUuid={activityUuid}
-          />
-        ) : (
-          <SubmittedAnswers submission={current} />
-        )}
+
+        <Tabs defaultValue="work">
+          <TabsList>
+            <TabsTrigger value="work">Submitted work</TabsTrigger>
+            <TabsTrigger value="violations">
+              Violations
+              {getViolationCount(current) > 0 ? (
+                <Badge
+                  variant="destructive"
+                  className="ml-1.5 h-4 min-w-4 rounded-full px-1 text-[10px]"
+                >
+                  {getViolationCount(current)}
+                </Badge>
+              ) : null}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent
+            value="work"
+            className="mt-4"
+          >
+            {ReviewDetail ? (
+              <ReviewDetail
+                submission={current}
+                activityUuid={activityUuid}
+              />
+            ) : (
+              <SubmittedAnswers submission={current} />
+            )}
+          </TabsContent>
+
+          <TabsContent
+            value="violations"
+            className="mt-4"
+          >
+            <ViolationLog submission={current} />
+          </TabsContent>
+        </Tabs>
       </div>
     </main>
+  );
+}
+
+function getViolationCount(submission: Submission): number {
+  const meta = submission.metadata_json as Record<string, unknown> | null | undefined;
+  const violations = meta?.violations;
+  return Array.isArray(violations) ? violations.length : 0;
+}
+
+function ViolationLog({ submission }: { submission: Submission }) {
+  const meta = submission.metadata_json as Record<string, unknown> | null | undefined;
+  const violations: unknown[] = Array.isArray(meta?.violations) ? (meta.violations as unknown[]) : [];
+
+  if (violations.length === 0) {
+    return (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
+        No violations recorded.
+      </div>
+    );
+  }
+
+  return (
+    <section className="bg-card rounded-lg border p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <ShieldAlert className="size-4 text-amber-500" />
+        <h3 className="text-sm font-semibold">{violations.length} violation{violations.length !== 1 ? 's' : ''}</h3>
+      </div>
+      <ul className="space-y-2 text-xs">
+        {violations.map((v, idx) => {
+          const vObj = typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : {};
+          const kind = String(vObj.kind ?? vObj.type ?? 'UNKNOWN');
+          const occurredAt = String(vObj.occurred_at ?? vObj.timestamp ?? '');
+          const count = vObj.count ? Number(vObj.count) : null;
+          return (
+            <li
+              key={idx}
+              className="flex items-center justify-between gap-4 rounded-md border px-3 py-2"
+            >
+              <Badge
+                variant="outline"
+                className="font-mono text-[10px]"
+              >
+                {kind}
+              </Badge>
+              <span className="text-muted-foreground grow text-right">
+                {occurredAt ? formatDate(occurredAt) : '—'}
+                {count !== null && count > 1 ? ` ×${count}` : ''}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
