@@ -34,10 +34,7 @@ export interface FileUploadAttemptItem {
 
 export interface FileUploadAnswer {
   kind?: 'FILE_UPLOAD';
-  task_uuid?: string;
-  content_type?: 'file';
-  file_key?: string | null;
-  files?: { upload_id: string; filename: string }[];
+  uploads?: { upload_uuid: string; filename?: string }[];
 }
 
 async function sha256(file: File): Promise<string> {
@@ -130,8 +127,7 @@ export function FileUploadAttempt({
   onAnswerChange,
 }: ItemAttemptProps<FileUploadAttemptItem, FileUploadAnswer | null>) {
   const [localFileName, setLocalFileName] = useState('');
-  const uploadFile = answer?.files?.[0];
-  const fileKey = answer?.file_key ?? uploadFile?.upload_id ?? '';
+  const fileKey = answer?.uploads?.[0]?.upload_uuid ?? '';
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -174,10 +170,7 @@ export function FileUploadAttempt({
     onSuccess: (uploaded) => {
       onAnswerChange({
         kind: 'FILE_UPLOAD',
-        task_uuid: item.taskUuid,
-        content_type: 'file',
-        file_key: uploaded.upload_id,
-        files: [uploaded],
+        uploads: [{ upload_uuid: uploaded.upload_id, filename: uploaded.filename }],
       });
       toast.success('File attached to this draft.');
     },
@@ -278,7 +271,7 @@ export function FileUploadReviewDetail({
     <div className="bg-card rounded-md border p-3 text-sm">
       <div className="font-medium">Uploaded file</div>
       <div className="text-muted-foreground mt-1">
-        {answer?.files?.[0]?.filename ?? answer?.file_key ?? 'No file recorded'}
+        {answer?.uploads?.[0]?.filename ?? answer?.uploads?.[0]?.upload_uuid ?? 'No file recorded'}
       </div>
     </div>
   );

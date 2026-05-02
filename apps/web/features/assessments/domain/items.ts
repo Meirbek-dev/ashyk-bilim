@@ -46,7 +46,7 @@ export type ItemBody =
 export type ItemAnswer =
   | { kind: 'CHOICE'; selected: string[] }
   | { kind: 'OPEN_TEXT'; text: string }
-  | { kind: 'FILE_UPLOAD'; files: { upload_id: string; filename: string }[] }
+  | { kind: 'FILE_UPLOAD'; uploads: { upload_uuid: string; filename?: string }[] }
   | { kind: 'FORM'; values: Record<string, string> }
   | { kind: 'CODE'; language: number; source: string; latest_run?: { passed: number; total: number; score?: number } }
   | { kind: 'MATCHING'; matches: MatchPair[] };
@@ -73,7 +73,7 @@ export function isAnswered(answer: ItemAnswer | null | undefined): boolean {
       return answer.text.trim().length > 0;
     }
     case 'FILE_UPLOAD': {
-      return answer.files.length > 0;
+      return answer.uploads.length > 0;
     }
     case 'FORM': {
       return Object.values(answer.values).some((value) => value.trim().length > 0);

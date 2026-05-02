@@ -10,7 +10,6 @@ import ActivityIndicators from '@components/Pages/Courses/ActivityIndicators';
 import FixedActivitySecondaryBar from '@components/Pages/Activity/FixedActivitySecondaryBar';
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
 import { CourseBreadcrumbs } from '@/components/ui/app-breadcrumbs';
-import { AttemptShell } from '@/features/assessments';
 import { useContributorStatus } from '@/hooks/useContributorStatus';
 import { buildCourseActivityIndex, normalizeActivityUuid } from '@/lib/course-activity-index';
 import { ActivityContent, CourseEndPanel, FocusActivityView, LoadingFallback } from './ActivityContentSurface';
@@ -23,14 +22,11 @@ interface ActivityClientProps {
   course: CourseStructure;
 }
 
-const ASSESSABLE_TYPES = new Set(['TYPE_ASSIGNMENT', 'TYPE_EXAM', 'TYPE_CODE_CHALLENGE', 'TYPE_QUIZ']);
-
 export default function ActivityClient({ activityid, courseuuid, activity, course }: ActivityClientProps) {
   const t = useTranslations('ActivityPage');
   const { contributorStatus } = useContributorStatus(courseuuid);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const canView = activity ? activity.published === true || contributorStatus === 'ACTIVE' : false;
-  const isAssessable = Boolean(activity && ASSESSABLE_TYPES.has(activity.activity_type ?? ''));
   const cleanActivityId = normalizeActivityUuid(activityid);
   const activityIndex = useMemo(() => buildCourseActivityIndex<Activity>(course.chapters), [course.chapters]);
   const currentEntry = activityIndex.allActivities[activityIndex.indexByCleanUuid.get(cleanActivityId) ?? -1];
@@ -56,17 +52,10 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
         courseuuid={courseuuid}
       />
     ) : activity && canView ? (
-      isAssessable ? (
-        <AttemptShell
-          activityUuid={activity.activity_uuid}
-          courseUuid={course.course_uuid}
-        />
-      ) : (
-        <ActivityContent
-          activity={activity}
-          course={course}
-        />
-      )
+      <ActivityContent
+        activity={activity}
+        course={course}
+      />
     ) : (
       <div className="border-border bg-muted/30 rounded-lg border p-7">
         <p className="text-muted-foreground text-sm font-medium">{t('activityNotPublished')}</p>
@@ -76,7 +65,7 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
   return (
     <CourseProvider courseuuid={course.course_uuid}>
       <ActivityAIChatProvider activityUuid={activity?.activity_uuid ?? ''}>
-        {isFocusMode && activity && canView && !isAssessable ? (
+        {isFocusMode && activity && canView ? (
           <FocusActivityView
             activity={activity}
             course={course}
@@ -127,7 +116,7 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
               ) : null}
 
               <Suspense fallback={<LoadingFallback />}>
-                <div className={isAssessable ? '' : 'border-border relative rounded-lg border p-7'}>{body}</div>
+                <div className="border-border relative rounded-lg border p-7">{body}</div>
               </Suspense>
 
               {activity && canView ? (
@@ -138,7 +127,7 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
                     course={course}
                     courseuuid={courseuuid}
                     showFocusButton={false}
-                    showMarkComplete={!isAssessable}
+                    showMarkComplete
                   />
                   <FixedActivitySecondaryBar
                     course={course}

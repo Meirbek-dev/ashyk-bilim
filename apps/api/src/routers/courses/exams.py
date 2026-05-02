@@ -1,10 +1,13 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, UploadFile
-from sqlmodel import Session
+from fastapi.responses import RedirectResponse
+from sqlmodel import Session, select
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.db.assessments import Assessment
 from src.db.courses.exams import (
+    Exam,
     ExamAttemptRead,
     ExamCreate,
     ExamCreateWithActivity,
@@ -38,6 +41,19 @@ from src.services.courses.activities.exams import (
 )
 
 router = APIRouter()
+
+
+def _assessment_uuid_for_exam(exam_uuid: str, db_session: Session) -> str | None:
+    """Return the canonical assessment_uuid for an exam, or None if not found."""
+    exam = db_session.exec(
+        select(Exam).where(Exam.exam_uuid == exam_uuid)
+    ).first()
+    if exam is None:
+        return None
+    assessment = db_session.exec(
+        select(Assessment).where(Assessment.activity_id == exam.activity_id)
+    ).first()
+    return assessment.assessment_uuid if assessment else None
 
 
 # Public endpoint to expose exam input limits to frontends
@@ -195,6 +211,18 @@ async def api_start_exam_attempt(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> ExamAttemptRead:
+    """Start an exam attempt.
+
+    **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/start`` instead.
+    This endpoint redirects (308) to the canonical URL when possible.
+    """
+    assessment_uuid = _assessment_uuid_for_exam(exam_uuid, db_session)
+    if assessment_uuid:
+        canonical = str(request.url).replace(
+            f"/exams/{exam_uuid}/attempts/start",
+            f"/assessments/{assessment_uuid}/start",
+        )
+        return RedirectResponse(url=canonical, status_code=308)
     return await start_exam_attempt(request, exam_uuid, current_user, db_session)
 
 
@@ -206,7 +234,18 @@ async def api_submit_exam_attempt(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> ExamAttemptRead:
-    # Parse answers from request body
+    """Submit an exam attempt.
+
+    **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/submit`` instead.
+    This endpoint redirects (308) to the canonical URL when possible.
+    """
+    assessment_uuid = _assessment_uuid_for_exam(exam_uuid, db_session)
+    if assessment_uuid:
+        canonical = str(request.url).replace(
+            f"/exams/{exam_uuid}/attempts/{attempt_uuid}/submit",
+            f"/assessments/{assessment_uuid}/submit",
+        )
+        return RedirectResponse(url=canonical, status_code=308)
     body = await request.json()
     answers = body if isinstance(body, dict) else {}
     return await submit_exam_attempt(
@@ -223,6 +262,12 @@ async def api_record_violation(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> ExamAttemptRead:
+    """Record an anti-cheat violation.
+
+    **Deprecated** — violations are now written to Submission.metadata_json.violations
+    via ``PATCH /api/v1/assessments/{assessment_uuid}/draft``. This endpoint continues
+    to accept requests and delegates to the legacy service during the shim period.
+    """
     violation_type = violation_data.get("type", "UNKNOWN")
     answers = violation_data.get("answers", {})
     return await record_violation(

@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from sqlmodel import Session
 
 from src.app.observability import configure_observability
 from src.infra import redis as redis_infra
@@ -18,6 +19,7 @@ from src.infra.db.engine import (
 from src.infra.logging import configure_logging
 from src.infra.settings import AppSettings
 from src.tasks.assignment_scheduler import assignment_scheduler_loop
+from src.tasks.upload_reaper import reap_orphan_uploads
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +44,17 @@ async def _ttl_sweep_loop(retention_seconds: int) -> None:
                 logger.info("Vector TTL sweep removed %d expired chunk(s)", removed)
         except Exception:
             logger.exception("Vector TTL sweep failed")
+
+
+async def _upload_reaper_loop(session_factory: Callable[[], Session]) -> None:
+    while True:
+        await asyncio.sleep(3600 * 6)  # run every 6 hours
+        try:
+            with session_factory() as db_session:
+                result = await asyncio.to_thread(reap_orphan_uploads, db_session)
+                logger.info("upload_reaper done: %s", result)
+        except Exception:
+            logger.exception("Upload reaper failed")
 
 
 def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[None]]:
@@ -72,11 +85,15 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[
             assignment_scheduler_loop(settings),
             name="assignment_scheduler",
         )
+        upload_reaper_task = asyncio.create_task(
+            _upload_reaper_loop(session_factory),
+            name="upload_reaper",
+        )
 
         try:
             yield
         finally:
-            for bg_task in (ttl_sweep_task, scheduler_task):
+            for bg_task in (ttl_sweep_task, scheduler_task, upload_reaper_task):
                 if not bg_task.done():
                     bg_task.cancel()
                     with contextlib.suppress(asyncio.CancelledError):

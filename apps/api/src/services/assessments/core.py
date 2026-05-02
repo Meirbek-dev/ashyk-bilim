@@ -1061,11 +1061,11 @@ def _validate_file_upload_answer(
     allowed_mimes = body.get("mimes") if isinstance(body.get("mimes"), list) else []
     max_mb = body.get("max_mb")
     max_bytes = int(max_mb) * 1024 * 1024 if isinstance(max_mb, int) and max_mb > 0 else None
-    files = answer.get("files") if isinstance(answer.get("files"), list) else []
-    for file_ref in files:
+    uploads = answer.get("uploads") if isinstance(answer.get("uploads"), list) else []
+    for file_ref in uploads:
         if not isinstance(file_ref, dict):
             raise HTTPException(status_code=400, detail="Invalid file upload answer")
-        upload_id = file_ref.get("upload_id")
+        upload_id = file_ref.get("upload_uuid")
         upload = db_session.exec(
             select(Upload).where(Upload.upload_id == upload_id)
         ).first()
@@ -1078,7 +1078,7 @@ def _validate_file_upload_answer(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
                     "message": "File upload is not finalized for this user",
-                    "upload_id": upload_id,
+                    "upload_uuid": upload_id,
                     "item_uuid": item.item_uuid,
                 },
             )
@@ -1087,7 +1087,7 @@ def _validate_file_upload_answer(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
                     "message": "File content type is not allowed",
-                    "upload_id": upload_id,
+                    "upload_uuid": upload_id,
                     "item_uuid": item.item_uuid,
                 },
             )
@@ -1096,7 +1096,7 @@ def _validate_file_upload_answer(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
                     "message": "File is larger than this item allows",
-                    "upload_id": upload_id,
+                    "upload_uuid": upload_id,
                     "item_uuid": item.item_uuid,
                 },
             )

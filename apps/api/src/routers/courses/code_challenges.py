@@ -9,12 +9,14 @@ import logging
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 from pydantic import ValidationError, field_validator
 from sqlmodel import Session, func, select
 from ulid import ULID
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.db.assessments import Assessment
 from src.db.courses.activities import (
     Activity,
     ActivityCreate,
@@ -90,6 +92,14 @@ router = APIRouter()
 
 # Initialize Judge0 service
 judge0_service = Judge0Service()
+
+
+def _assessment_uuid_for_activity(activity_id: int, db_session: Session) -> str | None:
+    """Return the canonical assessment_uuid for an activity, or None if not found."""
+    assessment = db_session.exec(
+        select(Assessment).where(Assessment.activity_id == activity_id)
+    ).first()
+    return assessment.assessment_uuid if assessment else None
 
 
 # Helper functions
@@ -406,12 +416,25 @@ async def submit_code_challenge(
     activity_uuid: str,
     submission: CodeSubmissionCreate,
     background_tasks: BackgroundTasks,
+    request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
-    """Submit a solution to the code challenge"""
+    """Submit a solution to the code challenge.
+
+    **Deprecated** — use ``POST /api/v1/assessments/{assessment_uuid}/submit`` instead.
+    Redirects (308) to the canonical URL when the activity is backed by a unified
+    Assessment; falls back to the legacy Judge0 pipeline otherwise.
+    """
     activity = await get_activity_or_404(activity_uuid, db_session)
     await verify_code_challenge_activity(activity)
+    assessment_uuid = _assessment_uuid_for_activity(activity.id, db_session)
+    if assessment_uuid:
+        canonical = str(request.url).replace(
+            f"/code-challenges/{activity_uuid}/submit",
+            f"/assessments/{assessment_uuid}/submit",
+        )
+        return RedirectResponse(url=canonical, status_code=308)
     await check_challenge_access(activity, current_user, db_session)
 
     settings = get_challenge_settings(activity, db_session)
@@ -525,8 +548,12 @@ async def process_submission(
     test_cases: list[TestCase],
     settings: CodeChallengeSettings,
 ):
-    """Background task to process a submission"""
+    """Background task to process a submission via Judge0 and write back to the
+    canonical Submission + GradingEntry tables."""
+    from src.db.grading.entries import GradingEntry
+    from src.db.grading.submissions import SubmissionStatus as GradingStatus
     from src.infra.db.session import open_db_session
+    from ulid import ULID
 
     db_session = open_db_session()
 
@@ -536,13 +563,11 @@ async def process_submission(
             logger.error("Submission %s not found", submission_id)
             return
 
-        # Update status to processing
         submission.status = SubmissionStatus.PROCESSING
         submission.updated_at = datetime.now().isoformat()
         db_session.commit()
         progress_submissions.sync_code_challenge_submission(submission, db_session)
 
-        # Check Judge0 health
         if not await judge0_service.health_check():
             submission.status = SubmissionStatus.PENDING_JUDGE0
             submission.updated_at = datetime.now().isoformat()
@@ -553,7 +578,6 @@ async def process_submission(
             )
             return
 
-        # Run test cases
         stop_on_failure = settings.execution_mode == ExecutionMode.FAST_FEEDBACK
 
         results = await judge0_service.run_test_cases(
@@ -565,15 +589,12 @@ async def process_submission(
             stop_on_failure=stop_on_failure,
         )
 
-        # Calculate score
         score = calculate_score(results, test_cases)
         passed_tests = sum(1 for r in results if r.passed)
 
-        # Calculate execution stats
         execution_times = [r.time_ms for r in results if r.time_ms]
         memory_usage = [r.memory_kb for r in results if r.memory_kb]
 
-        # Update submission
         submission.status = SubmissionStatus.COMPLETED
         submission.score = score
         submission.passed_tests = passed_tests
@@ -582,11 +603,59 @@ async def process_submission(
         submission.execution_time_ms = sum(execution_times) if execution_times else None
         submission.memory_kb = max(memory_usage) if memory_usage else None
         submission.updated_at = datetime.now().isoformat()
-
         db_session.commit()
         progress_submissions.sync_code_challenge_submission(submission, db_session)
 
-        # Award XP if challenge completed
+        # Write results back to the canonical Submission and append a GradingEntry
+        # so the teacher dashboard and audit trail are complete for code challenges.
+        canonical = db_session.exec(
+            select(Submission).where(
+                Submission.submission_uuid == submission.submission_uuid
+            )
+        ).first()
+        if canonical is not None:
+            now = datetime.now(UTC)
+            run_record = {
+                "language_id": language_id,
+                "score": score,
+                "passed": passed_tests,
+                "total": len(test_cases),
+                "results": [r.model_dump() for r in results],
+            }
+            meta = canonical.metadata_json or {}
+            meta["runs"] = meta.get("runs", []) + [run_record]
+            canonical.metadata_json = meta
+            canonical.auto_score = score
+            canonical.final_score = score
+            canonical.status = GradingStatus.GRADED
+            canonical.graded_at = now
+            canonical.updated_at = now
+            grading_breakdown = {
+                "items": [],
+                "needs_manual_review": False,
+                "auto_graded": True,
+                "feedback": f"Score: {score:.1f}% ({passed_tests}/{len(test_cases)} tests passed)",
+            }
+            canonical.grading_json = grading_breakdown
+            db_session.add(canonical)
+            if canonical.id is not None:
+                db_session.add(
+                    GradingEntry(
+                        entry_uuid=f"entry_{ULID()}",
+                        submission_id=canonical.id,
+                        graded_by=canonical.user_id,
+                        raw_score=float(score),
+                        penalty_pct=0.0,
+                        final_score=float(score),
+                        breakdown=grading_breakdown,
+                        overall_feedback=grading_breakdown["feedback"],
+                        grading_version=canonical.grading_version,
+                        created_at=now,
+                        published_at=now,
+                    )
+                )
+            db_session.commit()
+
         if passed_tests == len(test_cases) and len(test_cases) > 0:
             award_challenge_xp(submission, db_session)
 

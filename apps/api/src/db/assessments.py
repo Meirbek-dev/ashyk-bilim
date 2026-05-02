@@ -140,13 +140,13 @@ class OpenTextItemAnswer(PydanticStrictBaseModel):
 
 
 class FileUploadReference(PydanticStrictBaseModel):
-    upload_id: str
+    upload_uuid: str
     filename: str = ""
 
 
 class FileUploadItemAnswer(PydanticStrictBaseModel):
     kind: Literal["FILE_UPLOAD"] = "FILE_UPLOAD"
-    files: list[FileUploadReference] = Field(default_factory=list)
+    uploads: list[FileUploadReference] = Field(default_factory=list)
 
 
 class FormItemAnswer(PydanticStrictBaseModel):

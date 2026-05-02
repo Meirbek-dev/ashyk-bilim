@@ -1,0 +1,81 @@
+name: Assessment model contract
+
+on:
+  push:
+    paths:
+      - 'apps/api/src/db/**'
+      - 'apps/api/src/routers/**'
+      - 'apps/api/src/services/**'
+      - 'apps/web/features/assessments/**'
+      - 'apps/web/features/assignments/**'
+      - 'apps/web/lib/api/generated/**'
+  pull_request:
+    paths:
+      - 'apps/api/src/db/**'
+      - 'apps/api/src/routers/**'
+      - 'apps/api/src/services/**'
+      - 'apps/web/features/assessments/**'
+      - 'apps/web/features/assignments/**'
+      - 'apps/web/lib/api/generated/**'
+
+jobs:
+  grep-contract:
+    name: Grep contract (zero-hit assertions)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Each assertion prints the pattern + file:line on failure so the author
+      # knows exactly which line caused the violation.
+
+      - name: No new published:bool on Assignment*/Exam* DB models
+        run: |
+          ! grep -rn --include="*.py" -E "published\s*:\s*bool" \
+              apps/api/src/db/courses/assignments.py \
+              apps/api/src/db/courses/exams.py \
+              apps/api/src/db/courses/code_challenges.py \
+              2>/dev/null
+
+      - name: No writes to Exam.settings (anti-cheat must go through AssessmentPolicy)
+        run: |
+          ! grep -rn --include="*.py" \
+              'Exam\.settings\s*=' \
+              apps/api/src/
+
+      - name: No submit_assignment_draft_submission calls outside its own module
+        run: |
+          hits=$(grep -rn --include="*.py" \
+              'submit_assignment_draft_submission' \
+              apps/api/src/ \
+              | grep -v 'apps/api/src/services/courses/activities/assignments/submissions.py' \
+              | grep -v 'apps/api/src/routers/courses/assignments.py' \
+              | grep -v '^Binary' || true)
+          if [ -n "$hits" ]; then
+            echo "FAIL: submit_assignment_draft_submission referenced outside its shim files:"
+            echo "$hits"
+            exit 1
+          fi
+
+      - name: No _project_legacy_ functions in services
+        run: |
+          ! grep -rn --include="*.py" '_project_legacy_' apps/api/src/services/
+
+      - name: No lifecycleFromExamPublished in web
+        run: |
+          ! grep -rn --include="*.ts" --include="*.tsx" \
+              'lifecycleFromExamPublished' apps/web/
+
+      - name: No submissionStatusFromAttemptStatus in web
+        run: |
+          ! grep -rn --include="*.ts" --include="*.tsx" \
+              'submissionStatusFromAttemptStatus' apps/web/
+
+      - name: No deprecated compatibility mirror comments in services
+        run: |
+          ! grep -rn --include="*.py" \
+              'deprecated compatibility mirror' apps/api/src/services/
+
+      - name: No Python module paths leaking into generated TS schema
+        run: |
+          ! grep -rn --include="*.ts" \
+              'src__db__courses__' apps/web/lib/api/generated/
