@@ -1,8 +1,8 @@
 """Unified assessment authoring models.
 
 An Assessment is the canonical authoring row for every gradeable activity. The
-legacy assignment/exam/code tables may still exist as compatibility adapters,
-but new API surfaces should read and write this module.
+legacy course assessment tables may still exist for analytics or historical
+storage, but new API surfaces should read and write this module.
 """
 
 from datetime import UTC, datetime

@@ -1,7 +1,7 @@
 """Unified assessment routes.
 
 These are the canonical verbs for authoring, lifecycle, attempts, drafts, and
-teacher submission lists. Per-kind routers stay as compatibility adapters.
+teacher submission lists.
 """
 
 from typing import Annotated
@@ -45,10 +45,10 @@ from src.services.assessments.core import (
     update_assessment,
     update_assessment_item,
 )
-from src.services.assessments.compat import (
-    create_assignment_task_compat,
+from src.services.assessments.authoring import (
+    create_assignment_task,
     create_exam_question,
-    delete_assignment_task_compat,
+    delete_assignment_task,
     delete_exam_question,
     exam_authoring_config,
     export_exam_questions_csv,
@@ -57,7 +57,7 @@ from src.services.assessments.compat import (
     list_assignment_tasks,
     list_exam_questions,
     reorder_exam_questions,
-    update_assignment_task_compat,
+    update_assignment_task,
     update_exam_question,
 )
 from src.db.courses.assignments import AssignmentTaskCreate, AssignmentTaskRead, AssignmentTaskUpdate
@@ -208,7 +208,7 @@ async def api_create_assignment_task(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssignmentTaskRead:
-    return await create_assignment_task_compat(assessment_uuid, payload, current_user, db_session)
+    return await create_assignment_task(assessment_uuid, payload, current_user, db_session)
 
 
 @router.put("/{assessment_uuid}/assignment/tasks/{task_uuid}", response_model=AssignmentTaskRead)
@@ -219,7 +219,7 @@ async def api_update_assignment_task(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssignmentTaskRead:
-    return await update_assignment_task_compat(assessment_uuid, task_uuid, payload, current_user, db_session)
+    return await update_assignment_task(assessment_uuid, task_uuid, payload, current_user, db_session)
 
 
 @router.delete("/{assessment_uuid}/assignment/tasks/{task_uuid}")
@@ -229,7 +229,7 @@ async def api_delete_assignment_task(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> dict[str, str]:
-    return await delete_assignment_task_compat(assessment_uuid, task_uuid, current_user, db_session)
+    return await delete_assignment_task(assessment_uuid, task_uuid, current_user, db_session)
 
 
 @router.get("/{assessment_uuid}/exam/questions", response_model=list[QuestionRead])

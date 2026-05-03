@@ -29,23 +29,9 @@ from src.db.assessments import (
     AssessmentReadiness,
     AssessmentReadItem,
     AssessmentUpdate,
-    AssignmentFileItemBody,
-    AssignmentFormBlank,
-    AssignmentFormItemBody,
-    AssignmentFormQuestion,
-    AssignmentOtherItemBody,
-    AssignmentQuizItemBody,
-    AssignmentQuizOption,
-    AssignmentQuizQuestion,
-    AssignmentQuizSettings,
-    ChoiceItemBody,
-    ChoiceOption,
     ItemKind,
-    MatchPair,
-    MatchingItemBody,
     ReadinessIssue,
 )
-from src.db.courses.assignments import Assignment, AssignmentTask, AssignmentTaskTypeEnum
 from src.db.courses.activities import (
     Activity,
     ActivityAssessmentPolicyRead,
@@ -55,7 +41,6 @@ from src.db.courses.activities import (
 from src.db.courses.blocks import Block, BlockTypeEnum
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
-from src.db.courses.exams import Exam, Question, QuestionTypeEnum
 from src.db.grading.progress import (
     AssessmentCompletionRule,
     AssessmentGradingMode,
@@ -204,9 +189,6 @@ async def get_assessment(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_read(current_user, activity, course, db_session)
-    if _ensure_legacy_items_projected(assessment, db_session):
-        db_session.commit()
-        db_session.refresh(assessment)
     return _build_assessment_read(assessment, db_session)
 
 
@@ -219,9 +201,6 @@ async def get_assessment_by_activity_uuid(
     course = _get_course_for_activity_or_404(activity, db_session)
     _require_read(current_user, activity, course, db_session)
     assessment = _get_or_project_assessment_for_activity(activity, db_session)
-    _ensure_legacy_items_projected(assessment, db_session)
-    db_session.commit()
-    db_session.refresh(assessment)
     return _build_assessment_read(assessment, db_session)
 
 
@@ -271,9 +250,6 @@ async def check_publish_readiness(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     _activity, course = _get_activity_and_course(assessment, db_session)
     _require_author(current_user, course, db_session)
-    if _ensure_legacy_items_projected(assessment, db_session):
-        db_session.commit()
-        db_session.refresh(assessment)
     return build_readiness(assessment, db_session)
 
 
@@ -489,9 +465,6 @@ async def start_assessment(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_submit_access(current_user, activity, course, assessment.kind, db_session)
-    if _ensure_legacy_items_projected(assessment, db_session):
-        db_session.commit()
-        db_session.refresh(assessment)
     return start_submission_v2(
         activity_id=activity.id,
         assessment_type=AssessmentType(assessment.kind),
@@ -527,9 +500,6 @@ async def get_my_assessment_draft(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_submit_access(current_user, activity, course, assessment.kind, db_session)
-    if _ensure_legacy_items_projected(assessment, db_session):
-        db_session.commit()
-        db_session.refresh(assessment)
     draft = db_session.exec(
         select(Submission).where(
             Submission.activity_id == activity.id,
@@ -554,9 +524,6 @@ async def save_assessment_draft(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_submit_access(current_user, activity, course, assessment.kind, db_session)
-    if _ensure_legacy_items_projected(assessment, db_session):
-        db_session.commit()
-        db_session.refresh(assessment)
 
     draft = _get_or_create_submission_draft(
         assessment=assessment,
@@ -601,9 +568,6 @@ async def submit_assessment(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_submit_access(current_user, activity, course, assessment.kind, db_session)
-    if _ensure_legacy_items_projected(assessment, db_session):
-        db_session.commit()
-        db_session.refresh(assessment)
 
     if payload is not None:
         draft = await save_assessment_draft(
@@ -808,209 +772,6 @@ def _get_items_raw(assessment: Assessment, db_session: Session) -> list[Assessme
         .where(AssessmentItem.assessment_id == assessment.id)
         .order_by(AssessmentItem.order, AssessmentItem.id)
     ).all()
-
-
-def _ensure_legacy_items_projected(
-    assessment: Assessment,
-    db_session: Session,
-) -> bool:
-    if _get_items_raw(assessment, db_session):
-        return False
-
-    created_items: list[AssessmentItem] = []
-    if assessment.kind == AssessmentType.ASSIGNMENT:
-        assignment = db_session.exec(
-            select(Assignment).where(Assignment.activity_id == assessment.activity_id)
-        ).first()
-        if assignment is None:
-            return False
-        tasks = db_session.exec(
-            select(AssignmentTask)
-            .where(AssignmentTask.assignment_id == assignment.id)
-            .order_by(AssignmentTask.order, AssignmentTask.id)
-        ).all()
-        for task in tasks:
-            created_items.append(
-                AssessmentItem(
-                    item_uuid=task.assignment_task_uuid,
-                    assessment_id=assessment.id,
-                    order=task.order,
-                    kind=_assignment_task_type_to_item_kind(task.assignment_type),
-                    title=task.title,
-                    body_json=_assignment_task_body_from_legacy_task(task).model_dump(mode="json"),
-                    max_score=float(task.max_grade_value or 0),
-                    created_at=task.created_at,
-                    updated_at=task.updated_at,
-                )
-            )
-    elif assessment.kind == AssessmentType.EXAM:
-        exam = db_session.exec(
-            select(Exam).where(Exam.activity_id == assessment.activity_id)
-        ).first()
-        if exam is None:
-            return False
-        questions = db_session.exec(
-            select(Question)
-            .where(Question.exam_id == exam.id)
-            .order_by(Question.order_index, Question.id)
-        ).all()
-        for question in questions:
-            created_items.append(
-                AssessmentItem(
-                    item_uuid=question.question_uuid,
-                    assessment_id=assessment.id,
-                    order=question.order_index,
-                    kind=_question_type_to_item_kind(question.question_type),
-                    title=question.question_text,
-                    body_json=_question_body_from_legacy_question(question).model_dump(mode="json"),
-                    max_score=float(question.points or 0),
-                    created_at=_parse_legacy_datetime(question.creation_date),
-                    updated_at=_parse_legacy_datetime(question.update_date),
-                )
-            )
-
-    if not created_items:
-        return False
-
-    for item in created_items:
-        db_session.add(item)
-    assessment.updated_at = datetime.now(UTC)
-    db_session.add(assessment)
-    return True
-
-
-def _assignment_task_type_to_item_kind(task_type: AssignmentTaskTypeEnum | str) -> ItemKind:
-    normalized = AssignmentTaskTypeEnum(task_type)
-    if normalized == AssignmentTaskTypeEnum.FILE_SUBMISSION:
-        return ItemKind.ASSIGNMENT_FILE
-    if normalized == AssignmentTaskTypeEnum.QUIZ:
-        return ItemKind.ASSIGNMENT_QUIZ
-    if normalized == AssignmentTaskTypeEnum.FORM:
-        return ItemKind.ASSIGNMENT_FORM
-    return ItemKind.ASSIGNMENT_OTHER
-
-
-def _assignment_task_body_from_legacy_task(task: AssignmentTask):
-    contents = task.contents if isinstance(task.contents, dict) else {}
-    if task.assignment_type == AssignmentTaskTypeEnum.FILE_SUBMISSION:
-        return AssignmentFileItemBody(
-            description=task.description,
-            hint=task.hint,
-            reference_file=task.reference_file,
-            allowed_mime_types=[
-                mime for mime in contents.get("allowed_mime_types", []) if isinstance(mime, str)
-            ] if isinstance(contents.get("allowed_mime_types"), list) else [],
-            max_file_size_mb=contents.get("max_file_size_mb") if isinstance(contents.get("max_file_size_mb"), int) else None,
-            max_files=contents.get("max_files") if isinstance(contents.get("max_files"), int) else 1,
-        )
-    if task.assignment_type == AssignmentTaskTypeEnum.QUIZ:
-        return AssignmentQuizItemBody(
-            description=task.description,
-            hint=task.hint,
-            questions=[
-                AssignmentQuizQuestion(
-                    questionUUID=str(question.get("questionUUID", "")),
-                    questionText=str(question.get("questionText", "")),
-                    options=[
-                        AssignmentQuizOption(
-                            optionUUID=str(option.get("optionUUID", "")),
-                            text=str(option.get("text", "")),
-                            fileID=str(option.get("fileID", "")),
-                            type=str(option.get("type", "text")),
-                            assigned_right_answer=option.get("assigned_right_answer") is True,
-                        )
-                        for option in question.get("options", [])
-                        if isinstance(option, dict)
-                    ],
-                )
-                for question in contents.get("questions", [])
-                if isinstance(question, dict)
-            ],
-            settings=AssignmentQuizSettings.model_validate(contents.get("settings", {})),
-        )
-    if task.assignment_type == AssignmentTaskTypeEnum.FORM:
-        return AssignmentFormItemBody(
-            description=task.description,
-            hint=task.hint,
-            questions=[
-                AssignmentFormQuestion(
-                    questionUUID=str(question.get("questionUUID", "")),
-                    questionText=str(question.get("questionText", "")),
-                    blanks=[
-                        AssignmentFormBlank(
-                            blankUUID=str(blank.get("blankUUID", "")),
-                            placeholder=str(blank.get("placeholder", "")),
-                            correctAnswer=str(blank.get("correctAnswer", "")),
-                            hint=str(blank.get("hint", "")),
-                        )
-                        for blank in question.get("blanks", [])
-                        if isinstance(blank, dict)
-                    ],
-                )
-                for question in contents.get("questions", [])
-                if isinstance(question, dict)
-            ],
-        )
-    return AssignmentOtherItemBody(
-        description=task.description,
-        hint=task.hint,
-        body=contents.get("body") if isinstance(contents.get("body"), dict) else contents,
-    )
-
-
-def _question_type_to_item_kind(question_type: QuestionTypeEnum | str) -> ItemKind:
-    if QuestionTypeEnum(question_type) == QuestionTypeEnum.MATCHING:
-        return ItemKind.MATCHING
-    return ItemKind.CHOICE
-
-
-def _question_body_from_legacy_question(question: Question):
-    if question.question_type == QuestionTypeEnum.MATCHING:
-        return MatchingItemBody(
-            prompt=question.question_text,
-            pairs=[
-                MatchPair(
-                    left=str(option.get("left", "")),
-                    right=str(option.get("right", "")),
-                )
-                for option in question.answer_options
-                if isinstance(option, dict)
-            ],
-            explanation=question.explanation,
-        )
-
-    multiple = question.question_type == QuestionTypeEnum.MULTIPLE_CHOICE
-    variant = (
-        "TRUE_FALSE"
-        if question.question_type == QuestionTypeEnum.TRUE_FALSE
-        else "MULTIPLE_CHOICE"
-        if multiple
-        else "SINGLE_CHOICE"
-    )
-    return ChoiceItemBody(
-        prompt=question.question_text,
-        options=[
-            ChoiceOption(
-                id=str(index),
-                text=str(option.get("text", "")),
-                is_correct=option.get("is_correct") is True,
-            )
-            for index, option in enumerate(question.answer_options)
-            if isinstance(option, dict)
-        ],
-        multiple=multiple,
-        variant=variant,
-        explanation=question.explanation,
-    )
-
-
-def _parse_legacy_datetime(value: object) -> datetime:
-    if isinstance(value, datetime):
-        return value if value.tzinfo else value.replace(tzinfo=UTC)
-    if isinstance(value, str) and value:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
-    return datetime.now(UTC)
 
 
 def _get_item_or_404(
