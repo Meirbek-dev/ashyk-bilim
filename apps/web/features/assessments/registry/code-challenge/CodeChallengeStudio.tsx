@@ -6,10 +6,7 @@ import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import {
-  useCodeChallengeSettings,
-  useSaveCodeChallengeSettings,
-} from './hooks';
+import { useCodeChallengeSettings, useSaveCodeChallengeSettings } from './hooks';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import HintsPanel from './HintsPanel';

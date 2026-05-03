@@ -49,7 +49,8 @@ async def upload_submission_file(
             upload_id=f"ul_{ULID()}",
             user_id=user_id,
             filename=name_in_disk,
-            content_type=getattr(file, "content_type", None) or "application/octet-stream",
+            content_type=getattr(file, "content_type", None)
+            or "application/octet-stream",
             size=len(contents),
             sha256=sha256,
             status=UploadStatus.FINALIZED,
@@ -84,4 +85,3 @@ async def upload_submission_file(
         ["pdf", "docx", "mkv", "mp4", "jpg", "jpeg", "png", "pptx", "zip"],
     )
     return name_in_disk
-

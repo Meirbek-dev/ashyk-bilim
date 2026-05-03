@@ -22,7 +22,6 @@ from sqlmodel import Field as SQLField
 
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
 
-
 # ── Submission metadata sub-shapes ────────────────────────────────────────────
 
 

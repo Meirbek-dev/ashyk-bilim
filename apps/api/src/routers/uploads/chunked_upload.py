@@ -116,7 +116,9 @@ async def create_assessment_upload(
     db_session.add(upload)
     db_session.commit()
     db_session.refresh(upload)
-    put_url = str(request.url_for("put_assessment_upload_bytes", upload_id=upload.upload_id))
+    put_url = str(
+        request.url_for("put_assessment_upload_bytes", upload_id=upload.upload_id)
+    )
     return UploadCreateResponse(
         upload_id=upload.upload_id,
         put_url=put_url,
@@ -240,7 +242,9 @@ async def get_assessment_upload_url(
     # placeholder.  In production this would be replaced with a presigned S3 GET URL.
     get_url = str(request.url_for("put_assessment_upload_bytes", upload_id=upload_id))
     expires_at = datetime.now(UTC) + timedelta(hours=1)
-    return UploadUrlResponse(upload_id=upload_id, get_url=get_url, expires_at=expires_at)
+    return UploadUrlResponse(
+        upload_id=upload_id, get_url=get_url, expires_at=expires_at
+    )
 
 
 @router.post("/initiate", response_model=ChunkedUploadInitiateResponse)

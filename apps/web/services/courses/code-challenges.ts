@@ -1,5 +1,8 @@
 import { apiFetch } from '@/lib/api-client';
-import type { Submission as GradingSubmission, SubmissionStatus as CanonicalSubmissionStatus } from '@/features/grading/domain';
+import type {
+  Submission as GradingSubmission,
+  SubmissionStatus as CanonicalSubmissionStatus,
+} from '@/features/grading/domain';
 
 const CODE_CHALLENGE_API_BASE = 'assessments/code-challenges';
 
@@ -114,7 +117,7 @@ export function mapCanonicalCodeSubmission(raw: GradingSubmission): CodeSubmissi
     submission_uuid: raw.submission_uuid,
     submission_status: raw.status,
     status: normalizeJudge0State(metadata.judge0_state, raw.status),
-    score: typeof raw.final_score === 'number' ? raw.final_score : raw.auto_score ?? undefined,
+    score: typeof raw.final_score === 'number' ? raw.final_score : (raw.auto_score ?? undefined),
     max_score: 100,
     language_id:
       typeof answers.language_id === 'number'

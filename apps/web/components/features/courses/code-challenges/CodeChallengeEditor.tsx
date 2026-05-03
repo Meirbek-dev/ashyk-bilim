@@ -23,11 +23,10 @@ import { toast } from 'sonner';
 
 import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList';
 import type { SubmissionStatus } from '@/features/grading/domain';
-import { LanguageSelector } from './LanguageSelector';
+import { JUDGE0_LANGUAGES, LanguageSelector } from './LanguageSelector';
 import type { TestCaseResult } from './TestCaseCard';
 import { TestResultsList } from './TestCaseCard';
 import { CodeEditor } from './CodeEditor';
-import { JUDGE0_LANGUAGES } from '.';
 
 interface TestCase {
   id: string;
@@ -125,12 +124,14 @@ export function CodeChallengeEditor({
   const isRunning = runCustomTestMutation.isPending || runCodeChallengeTestsMutation.isPending;
 
   // Fetch submissions history
-  const { data: submissions, refetch: refreshSubmissions } = useCodeChallengeSubmissions(activityUuid);
+  const { data: submissionsData, refetch: refreshSubmissions } = useCodeChallengeSubmissions(activityUuid);
+  const submissions = submissionsData as Submission[] | null | undefined;
 
   // Poll for active submission status
-  const { data: activeSubmission } = useCodeChallengeSubmission(activeSubmissionId, {
+  const { data: activeSubmissionData } = useCodeChallengeSubmission(activeSubmissionId, {
     refetchInterval: activeSubmissionId ? 1000 : false,
   });
+  const activeSubmission = activeSubmissionData as Submission | null | undefined;
 
   // Handle submission completion
   useEffect(() => {
@@ -481,7 +482,7 @@ export function CodeChallengeEditor({
                     <AttemptHistoryList
                       compact
                       title={t('history')}
-                      items={submissions.map((submission, index) => ({
+                      items={submissions.map((submission: Submission, index: number) => ({
                         id: submission.submission_uuid ?? submission.uuid ?? index,
                         label: `Attempt ${submissions.length - index} · ${getLanguageName(submission.language_id)}`,
                         submittedAt: submission.created_at,

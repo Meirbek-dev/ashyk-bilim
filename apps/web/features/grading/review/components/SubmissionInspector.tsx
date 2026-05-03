@@ -127,7 +127,9 @@ function ViolationLog({ submission }: { submission: Submission }) {
     <section className="bg-card rounded-lg border p-4">
       <div className="mb-3 flex items-center gap-2">
         <ShieldAlert className="size-4 text-amber-500" />
-        <h3 className="text-sm font-semibold">{violations.length} violation{violations.length !== 1 ? 's' : ''}</h3>
+        <h3 className="text-sm font-semibold">
+          {violations.length} violation{violations.length !== 1 ? 's' : ''}
+        </h3>
       </div>
       <ul className="space-y-2 text-xs">
         {violations.map((v, idx) => {

@@ -2,11 +2,7 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query';
 
-import {
-  assignmentByActivityQueryOptions,
-  assignmentDetailQueryOptions,
-  assignmentTasksQueryOptions,
-} from './queries';
+import { assignmentByActivityQueryOptions, assignmentDetailQueryOptions, assignmentTasksQueryOptions } from './queries';
 
 function assignmentDetailHookOptions(assignmentUuid: string | null | undefined) {
   const normalizedAssignmentUuid =

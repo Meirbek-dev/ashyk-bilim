@@ -220,7 +220,13 @@ class AIConfig(PlatformSectionSettings):
         validation_alias="PLATFORM_AI_CHUNK_OVERLAP",
     )
 
-    @field_validator("openai_api_key", "openrouter_api_key", "chat_model", "embedding_model", mode="before")
+    @field_validator(
+        "openai_api_key",
+        "openrouter_api_key",
+        "chat_model",
+        "embedding_model",
+        mode="before",
+    )
     @classmethod
     def normalize_optional_ai_strings(cls, value: str | None) -> str | None:
         return _strip_optional_string(value)

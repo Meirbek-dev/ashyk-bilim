@@ -35,11 +35,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface AssessmentStudioWorkspaceProps {
   courseUuid: string;
@@ -53,20 +49,14 @@ const LIFECYCLE_LABELS: Record<AssessmentLifecycle, string> = {
   ARCHIVED: 'Archived',
 };
 
-const LIFECYCLE_BADGE_VARIANT: Record<
-  AssessmentLifecycle,
-  'default' | 'secondary' | 'outline' | 'destructive'
-> = {
+const LIFECYCLE_BADGE_VARIANT: Record<AssessmentLifecycle, 'default' | 'secondary' | 'outline' | 'destructive'> = {
   DRAFT: 'secondary',
   SCHEDULED: 'outline',
   PUBLISHED: 'default',
   ARCHIVED: 'destructive',
 };
 
-export default function AssessmentStudioWorkspace({
-  courseUuid,
-  activityUuid,
-}: AssessmentStudioWorkspaceProps) {
+export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: AssessmentStudioWorkspaceProps) {
   const { vm, isLoading, error } = useAssessmentStudio(activityUuid);
   const [kindModule, setKindModule] = useState<KindModule | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -109,23 +99,17 @@ export default function AssessmentStudioWorkspace({
   const previewHref = `/course/${courseUuid.replace('course_', '')}/activity/${activityUuid.replace('activity_', '')}`;
   const hasIssues = studio.validationIssues.length > 0;
 
-  const setLifecycle = (
-    lifecycle: AssessmentLifecycle,
-    nextScheduledAt?: string | null,
-  ) => {
+  const setLifecycle = (lifecycle: AssessmentLifecycle, nextScheduledAt?: string | null) => {
     startTransition(async () => {
       try {
-        const response = await apiFetch(
-          `assessments/${studio.assessmentUuid}/lifecycle`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              to: lifecycle,
-              scheduled_at: nextScheduledAt ?? null,
-            }),
-          },
-        );
+        const response = await apiFetch(`assessments/${studio.assessmentUuid}/lifecycle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: lifecycle,
+            scheduled_at: nextScheduledAt ?? null,
+          }),
+        });
         if (!response.ok) {
           const payload = await response.json().catch(() => null);
           const issues = Array.isArray(payload?.detail?.issues)
@@ -142,9 +126,7 @@ export default function AssessmentStudioWorkspace({
           throw new Error(message);
         }
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.assessments.activity(
-            activityUuid.replace(/^activity_/, ''),
-          ),
+          queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
         });
         await queryClient.invalidateQueries({
           queryKey: queryKeys.assessments.readiness(studio.assessmentUuid),
@@ -153,9 +135,7 @@ export default function AssessmentStudioWorkspace({
         setScheduleOpen(false);
         setScheduledAt('');
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : 'Failed to update lifecycle',
-        );
+        toast.error(err instanceof Error ? err.message : 'Failed to update lifecycle');
       }
     });
   };
@@ -164,9 +144,7 @@ export default function AssessmentStudioWorkspace({
   const Author = kindModule?.Author;
   const Outline = kindModule?.Outline;
   const Inspector = kindModule?.Inspector;
-  const Provider =
-    kindModule?.Provider ??
-    (({ children }: { children: React.ReactNode }) => <>{children}</>);
+  const Provider = kindModule?.Provider ?? (({ children }: { children: React.ReactNode }) => <>{children}</>);
 
   const slotProps = { activityUuid, courseUuid };
 
@@ -191,17 +169,14 @@ export default function AssessmentStudioWorkspace({
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h1 className="truncate text-xl font-semibold">{studio.title}</h1>
-              <Badge variant={LIFECYCLE_BADGE_VARIANT[studio.lifecycle]}>
-                {LIFECYCLE_LABELS[studio.lifecycle]}
-              </Badge>
+              <Badge variant={LIFECYCLE_BADGE_VARIANT[studio.lifecycle]}>{LIFECYCLE_LABELS[studio.lifecycle]}</Badge>
               {hasIssues && (
                 <Badge
                   variant="outline"
                   className="border-amber-400 text-amber-700 dark:text-amber-300"
                 >
                   <AlertTriangle className="mr-1 size-3" />
-                  {studio.validationIssues.length}{' '}
-                  {studio.validationIssues.length === 1 ? 'issue' : 'issues'}
+                  {studio.validationIssues.length} {studio.validationIssues.length === 1 ? 'issue' : 'issues'}
                 </Badge>
               )}
             </div>
@@ -212,7 +187,12 @@ export default function AssessmentStudioWorkspace({
             <Button
               variant="ghost"
               size="sm"
-              render={<Link href={previewHref} target="_blank" />}
+              render={
+                <Link
+                  href={previewHref}
+                  target="_blank"
+                />
+              }
             >
               <Eye className="size-4" />
               Preview
@@ -229,7 +209,10 @@ export default function AssessmentStudioWorkspace({
                 <Send className="size-4" />
                 Publish now
               </Button>
-              <Popover open={scheduleOpen} onOpenChange={setScheduleOpen}>
+              <Popover
+                open={scheduleOpen}
+                onOpenChange={setScheduleOpen}
+              >
                 <PopoverTrigger asChild>
                   <Button
                     size="sm"
@@ -241,25 +224,23 @@ export default function AssessmentStudioWorkspace({
                     <ChevronDown className="size-4" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-64 space-y-3 p-3">
+                <PopoverContent
+                  align="end"
+                  className="w-64 space-y-3 p-3"
+                >
                   <p className="text-sm font-medium">Schedule publication</p>
                   <input
                     ref={scheduleInputRef}
                     type="datetime-local"
                     value={scheduledAt}
                     onChange={(e) => setScheduledAt(e.target.value)}
-                    className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   />
                   <Button
                     size="sm"
                     className="w-full"
                     disabled={isPending || !scheduledAt || !studio.canSchedule}
-                    onClick={() =>
-                      setLifecycle(
-                        'SCHEDULED',
-                        new Date(scheduledAt).toISOString(),
-                      )
-                    }
+                    onClick={() => setLifecycle('SCHEDULED', new Date(scheduledAt).toISOString())}
                   >
                     <CalendarClock className="mr-1 size-4" />
                     Schedule
@@ -269,8 +250,7 @@ export default function AssessmentStudioWorkspace({
             </div>
 
             {/* Save as draft (when published/scheduled) */}
-            {(studio.lifecycle === 'PUBLISHED' ||
-              studio.lifecycle === 'SCHEDULED') && (
+            {(studio.lifecycle === 'PUBLISHED' || studio.lifecycle === 'SCHEDULED') && (
               <Button
                 variant="outline"
                 size="sm"
@@ -322,12 +302,7 @@ export default function AssessmentStudioWorkspace({
       {/* ── Content ─────────────────────────────────────────────────────── */}
       {Author ? (
         <Provider {...slotProps}>
-          <div
-            className={cn(
-              'grid grid-cols-1',
-              inspectorOpen && 'xl:grid-cols-[minmax(0,1fr)_22rem]',
-            )}
-          >
+          <div className={cn('grid grid-cols-1', inspectorOpen && 'xl:grid-cols-[minmax(0,1fr)_22rem]')}>
             <main className="min-w-0">
               <Author {...slotProps} />
             </main>
@@ -345,16 +320,16 @@ export default function AssessmentStudioWorkspace({
                   <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
                     <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
                     <AlertDescription className="text-amber-900 dark:text-amber-200">
-                      <p className="mb-1 font-medium text-sm">
+                      <p className="mb-1 text-sm font-medium">
                         {studio.validationIssues.length}{' '}
-                        {studio.validationIssues.length === 1
-                          ? 'issue blocks'
-                          : 'issues block'}{' '}
-                        publishing:
+                        {studio.validationIssues.length === 1 ? 'issue blocks' : 'issues block'} publishing:
                       </p>
                       <ul className="space-y-1">
                         {studio.validationIssues.map((issue, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-sm">
+                          <li
+                            key={idx}
+                            className="flex items-start gap-2 text-sm"
+                          >
                             <span>·</span>
                             <span className="flex-1">{issue.message}</span>
                             {issue.itemUuid ? (

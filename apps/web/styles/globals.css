@@ -224,8 +224,6 @@
   }
 }
 
-
-
 /* Tailwind v4 native component definitions */
 @utility soft-shadow {
   @apply shadow-md shadow-black/[0.08] outline-1 outline-black/[0.06];

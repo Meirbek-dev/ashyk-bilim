@@ -4,7 +4,8 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import ConfigDict, Field as PydanticField, TypeAdapter, field_validator
+from pydantic import ConfigDict, TypeAdapter, field_validator
+from pydantic import Field as PydanticField
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -22,7 +23,6 @@ from sqlmodel import Field
 
 from src.db.grading.submissions import AssessmentType
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
-
 
 # ── Late policy discriminated union ────────────────────────────────────────────
 

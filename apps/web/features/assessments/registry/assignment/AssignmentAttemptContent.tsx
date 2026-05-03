@@ -117,14 +117,12 @@ function mapSaveState(
 function SubmissionStatePanel({
   submission,
 }: {
-  submission:
-    | {
-        status: 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED';
-        final_score?: number | null;
-        grading_json?: { feedback?: string } | null;
-        submitted_at?: string | null;
-      }
-    | null;
+  submission: {
+    status: 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED';
+    final_score?: number | null;
+    grading_json?: { feedback?: string } | null;
+    submitted_at?: string | null;
+  } | null;
 }) {
   if (!submission || submission.status === 'DRAFT') return null;
 
@@ -133,7 +131,8 @@ function SubmissionStatePanel({
       <Alert>
         <AlertTitle>Awaiting grade</AlertTitle>
         <AlertDescription>
-          Submitted{submission.submitted_at ? ` on ${formatDateTime(submission.submitted_at)}` : ''}. Your teacher will release the grade when review is complete.
+          Submitted{submission.submitted_at ? ` on ${formatDateTime(submission.submitted_at)}` : ''}. Your teacher will
+          release the grade when review is complete.
         </AlertDescription>
       </Alert>
     );
@@ -155,7 +154,9 @@ function SubmissionStatePanel({
             {scoreLabel}
           </span>
         ) : null}
-        {submission.grading_json?.feedback ? <p className="whitespace-pre-wrap">{submission.grading_json.feedback}</p> : null}
+        {submission.grading_json?.feedback ? (
+          <p className="whitespace-pre-wrap">{submission.grading_json.feedback}</p>
+        ) : null}
       </AlertDescription>
     </Alert>
   );
@@ -229,7 +230,13 @@ function ItemAttemptRenderer({
         isCorrect: option.is_correct,
       })),
     };
-    const choiceAnswer = body.multiple ? answer?.kind === 'CHOICE' ? answer.selected : [] : answer?.kind === 'CHOICE' ? (answer.selected[0] ?? null) : null;
+    const choiceAnswer = body.multiple
+      ? answer?.kind === 'CHOICE'
+        ? answer.selected
+        : []
+      : answer?.kind === 'CHOICE'
+        ? (answer.selected[0] ?? null)
+        : null;
     return (
       <ChoiceAttempt
         item={choiceItem}
@@ -274,11 +281,7 @@ function ItemAttemptRenderer({
             max_files: body.max_files,
           }),
         }}
-        answer={
-          answer?.kind === 'ASSIGNMENT_FILE'
-            ? { kind: 'FILE_UPLOAD', uploads: answer.uploads }
-            : null
-        }
+        answer={answer?.kind === 'ASSIGNMENT_FILE' ? { kind: 'FILE_UPLOAD', uploads: answer.uploads } : null}
         disabled={disabled}
         onAnswerChange={(nextAnswer) =>
           onChange({
@@ -320,11 +323,7 @@ function ItemAttemptRenderer({
           ...normalizeOpenText({ body: body.body }),
           taskUuid: item.item_uuid,
         }}
-        answer={
-          answer?.kind === 'ASSIGNMENT_OTHER'
-            ? { content_type: 'text', text: answer.text_content ?? '' }
-            : null
-        }
+        answer={answer?.kind === 'ASSIGNMENT_OTHER' ? { content_type: 'text', text: answer.text_content ?? '' } : null}
         disabled={disabled}
         onAnswerChange={(nextAnswer) =>
           onChange({
@@ -338,10 +337,12 @@ function ItemAttemptRenderer({
   }
 
   if (body.kind === 'ASSIGNMENT_QUIZ') {
-    const normalizedAnswers = answer?.kind === 'ASSIGNMENT_QUIZ' ? answer.quiz_answers?.answers ?? {} : {};
+    const normalizedAnswers = answer?.kind === 'ASSIGNMENT_QUIZ' ? (answer.quiz_answers?.answers ?? {}) : {};
 
     if (body.questions.length === 0) {
-      return <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">No quiz questions.</div>;
+      return (
+        <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">No quiz questions.</div>
+      );
     }
 
     return (
@@ -484,10 +485,12 @@ function ItemAttemptRenderer({
       }
       onChange({
         kind: 'MATCHING',
-        matches: Array.from(next.entries()).map(([matchLeft, matchRight]): MatchPair => ({
-          left: matchLeft,
-          right: matchRight,
-        })),
+        matches: Array.from(next.entries()).map(
+          ([matchLeft, matchRight]): MatchPair => ({
+            left: matchLeft,
+            right: matchRight,
+          }),
+        ),
       });
     };
 
@@ -523,7 +526,10 @@ function ItemAttemptRenderer({
   }
 
   if (body.kind === 'CODE') {
-    const currentAnswer = answer?.kind === 'CODE' ? answer : { kind: 'CODE' as const, language: body.languages[0] ?? 71, source: '', latest_run: undefined };
+    const currentAnswer =
+      answer?.kind === 'CODE'
+        ? answer
+        : { kind: 'CODE' as const, language: body.languages[0] ?? 71, source: '', latest_run: undefined };
     return (
       <div className="space-y-4">
         {body.prompt ? <p className="text-sm">{body.prompt}</p> : null}

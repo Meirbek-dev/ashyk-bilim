@@ -474,9 +474,7 @@ def load_analytics_context(
         for assessment, activity in assessment_rows
         if assessment.id is not None and activity.id is not None
     ]
-    assessments_by_activity = {
-        row.activity_id: row for row in analytics_assessments
-    }
+    assessments_by_activity = {row.activity_id: row for row in analytics_assessments}
 
     assignments = [
         row
@@ -722,7 +720,9 @@ def build_activity_events(
     for attempt, exam in context.exam_attempts:
         if allowed_user_ids is not None and attempt.user_id not in allowed_user_ids:
             continue
-        ts = parse_timestamp(attempt.submitted_at) or parse_timestamp(attempt.started_at)
+        ts = parse_timestamp(attempt.submitted_at) or parse_timestamp(
+            attempt.started_at
+        )
         if ts is None:
             continue
         events.append(
@@ -762,7 +762,11 @@ def build_activity_events(
     for submission, activity in context.code_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
-        if submission.status not in {SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED} or activity.course_id is None:
+        if (
+            submission.status
+            not in {SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED}
+            or activity.course_id is None
+        ):
             continue
         ts = parse_timestamp(submission.created_at)
         if ts is None:

@@ -90,7 +90,10 @@ export default function QuestionManagement({ examUuid, questions, onQuestionsCha
     formData.append('file', file);
 
     try {
-      const response = await apiFetch(`assessments/${examUuid}/exam/questions:import-csv`, { method: 'POST', body: formData });
+      const response = await apiFetch(`assessments/${examUuid}/exam/questions:import-csv`, {
+        method: 'POST',
+        body: formData,
+      });
 
       if (!response.ok) throw new Error('Failed to import questions');
 

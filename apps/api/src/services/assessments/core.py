@@ -70,7 +70,9 @@ ASSESSABLE_ACTIVITY_TYPES = {
     ActivityTypeEnum.TYPE_CODE_CHALLENGE,
 }
 
-_KIND_TO_ACTIVITY: dict[AssessmentType, tuple[ActivityTypeEnum, ActivitySubTypeEnum]] = {
+_KIND_TO_ACTIVITY: dict[
+    AssessmentType, tuple[ActivityTypeEnum, ActivitySubTypeEnum]
+] = {
     AssessmentType.ASSIGNMENT: (
         ActivityTypeEnum.TYPE_ASSIGNMENT,
         ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY,
@@ -293,7 +295,9 @@ async def transition_assessment_lifecycle(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="scheduled_at is required when scheduling",
             )
-        scheduled_at = scheduled_at if scheduled_at.tzinfo else scheduled_at.replace(tzinfo=UTC)
+        scheduled_at = (
+            scheduled_at if scheduled_at.tzinfo else scheduled_at.replace(tzinfo=UTC)
+        )
         if scheduled_at <= now:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -416,7 +420,9 @@ async def reorder_assessment_items(
         select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)
     ).all()
     by_uuid = {item.item_uuid: item for item in items}
-    missing = [entry.item_uuid for entry in payload.items if entry.item_uuid not in by_uuid]
+    missing = [
+        entry.item_uuid for entry in payload.items if entry.item_uuid not in by_uuid
+    ]
     if missing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -590,7 +596,9 @@ async def submit_assessment(
         answers_payload = draft.answers_json
         submission_uuid = draft.submission_uuid
 
-    settings = load_activity_settings(activity.id, AssessmentType(assessment.kind), db_session)
+    settings = load_activity_settings(
+        activity.id, AssessmentType(assessment.kind), db_session
+    )
     return await submit_assessment_pipeline(
         request=None,
         activity_id=activity.id,
@@ -624,12 +632,11 @@ async def get_assessment_submissions(
         else:
             query = query.where(Submission.status == SubmissionStatus(status_filter))
 
-    total = db_session.exec(
-        select(func.count()).select_from(query.subquery())
-    ).one()
+    total = db_session.exec(select(func.count()).select_from(query.subquery())).one()
     offset = max(page - 1, 0) * page_size
     rows = db_session.exec(
-        query.order_by(desc(Submission.submitted_at), desc(Submission.created_at))
+        query
+        .order_by(desc(Submission.submitted_at), desc(Submission.created_at))
         .offset(offset)
         .limit(page_size)
     ).all()
@@ -662,7 +669,9 @@ def build_readiness(
 ) -> AssessmentReadiness:
     issues: list[ReadinessIssue] = []
     if not assessment.title.strip():
-        issues.append(ReadinessIssue(code="assessment.title_missing", message="Title is required"))
+        issues.append(
+            ReadinessIssue(code="assessment.title_missing", message="Title is required")
+        )
 
     items = _get_items(assessment, db_session)
     if not items:
@@ -720,6 +729,7 @@ def _build_assessment_read(
     course_uuid: str | None = None
     if activity.course_id is not None:
         from src.db.courses.courses import Course
+
         course_row = db_session.get(Course, activity.course_id)
         if course_row is not None:
             course_uuid = course_row.course_uuid
@@ -741,7 +751,9 @@ def _build_assessment_read(
         weight=assessment.weight,
         grading_type=assessment.grading_type,
         policy_id=assessment.policy_id,
-        assessment_policy=_build_policy_read(_get_policy_for_assessment(assessment, db_session)),
+        assessment_policy=_build_policy_read(
+            _get_policy_for_assessment(assessment, db_session)
+        ),
         items=[_build_item_read(item) for item in _get_items(assessment, db_session)],
         created_at=assessment.created_at,
         updated_at=assessment.updated_at,
@@ -803,7 +815,11 @@ def _get_assessment_by_uuid_or_404(
 
 
 def _get_activity_by_uuid_or_404(activity_uuid: str, db_session: Session) -> Activity:
-    normalized = activity_uuid if activity_uuid.startswith("activity_") else f"activity_{activity_uuid}"
+    normalized = (
+        activity_uuid
+        if activity_uuid.startswith("activity_")
+        else f"activity_{activity_uuid}"
+    )
     activity = db_session.exec(
         select(Activity).where(Activity.activity_uuid == normalized)
     ).first()
@@ -858,7 +874,9 @@ def _require_author(user: PublicUser, course: Course, db_session: Session) -> No
 
 def _require_publish(user: PublicUser, course: Course, db_session: Session) -> None:
     checker = PermissionChecker(db_session)
-    if checker.check(user.id, "assessment:publish", resource_owner_id=course.creator_id):
+    if checker.check(
+        user.id, "assessment:publish", resource_owner_id=course.creator_id
+    ):
         return
     checker.require(user.id, "activity:update", resource_owner_id=course.creator_id)
 
@@ -879,9 +897,19 @@ def _require_read(
     if course.public and activity.published:
         return
     checker = PermissionChecker(db_session)
-    if checker.check(user.id, "assessment:read", resource_owner_id=course.creator_id, is_assigned=True):
+    if checker.check(
+        user.id,
+        "assessment:read",
+        resource_owner_id=course.creator_id,
+        is_assigned=True,
+    ):
         return
-    checker.require(user.id, "activity:read", resource_owner_id=activity.creator_id, is_assigned=True)
+    checker.require(
+        user.id,
+        "activity:read",
+        resource_owner_id=activity.creator_id,
+        is_assigned=True,
+    )
 
 
 def _require_submit_access(
@@ -1033,17 +1061,30 @@ def _normalize_answer_patch(
         if item is None:
             invalid.append(entry.item_uuid)
             continue
-        answer = ITEM_ANSWER_ADAPTER.validate_python(entry.answer.model_dump(mode="json"))
+        answer = ITEM_ANSWER_ADAPTER.validate_python(
+            entry.answer.model_dump(mode="json")
+        )
         if str(answer.kind) != str(item.kind):
             mismatched.append(entry.item_uuid)
             continue
         answer_payload = answer.model_dump(mode="json")
-        if str(answer.kind) in {ItemKind.FILE_UPLOAD.value, ItemKind.ASSIGNMENT_FILE.value}:
+        if str(answer.kind) in {
+            ItemKind.FILE_UPLOAD.value,
+            ItemKind.ASSIGNMENT_FILE.value,
+        }:
             _validate_file_upload_answer(answer_payload, item, current_user, db_session)
-            uploads = answer_payload.get("uploads") if isinstance(answer_payload.get("uploads"), list) else []
+            uploads = (
+                answer_payload.get("uploads")
+                if isinstance(answer_payload.get("uploads"), list)
+                else []
+            )
             if uploads and not answer_payload.get("file_key"):
                 first_upload = uploads[0] if isinstance(uploads[0], dict) else None
-                upload_uuid = first_upload.get("upload_uuid") if isinstance(first_upload, dict) else None
+                upload_uuid = (
+                    first_upload.get("upload_uuid")
+                    if isinstance(first_upload, dict)
+                    else None
+                )
                 if isinstance(upload_uuid, str) and upload_uuid:
                     answer_payload["file_key"] = upload_uuid
         normalized[entry.item_uuid] = answer_payload
@@ -1067,9 +1108,21 @@ def _validate_file_upload_answer(
     db_session: Session,
 ) -> None:
     body = item.body_json if isinstance(item.body_json, dict) else {}
-    allowed_mimes = body.get("mimes") if isinstance(body.get("mimes"), list) else body.get("allowed_mime_types") if isinstance(body.get("allowed_mime_types"), list) else []
-    max_mb = body.get("max_mb") if isinstance(body.get("max_mb"), int) else body.get("max_file_size_mb")
-    max_bytes = int(max_mb) * 1024 * 1024 if isinstance(max_mb, int) and max_mb > 0 else None
+    allowed_mimes = (
+        body.get("mimes")
+        if isinstance(body.get("mimes"), list)
+        else body.get("allowed_mime_types")
+        if isinstance(body.get("allowed_mime_types"), list)
+        else []
+    )
+    max_mb = (
+        body.get("max_mb")
+        if isinstance(body.get("max_mb"), int)
+        else body.get("max_file_size_mb")
+    )
+    max_bytes = (
+        int(max_mb) * 1024 * 1024 if isinstance(max_mb, int) and max_mb > 0 else None
+    )
     uploads = answer.get("uploads") if isinstance(answer.get("uploads"), list) else []
     for file_ref in uploads:
         if not isinstance(file_ref, dict):
@@ -1100,7 +1153,11 @@ def _validate_file_upload_answer(
                     "item_uuid": item.item_uuid,
                 },
             )
-        if max_bytes is not None and upload.size is not None and upload.size > max_bytes:
+        if (
+            max_bytes is not None
+            and upload.size is not None
+            and upload.size > max_bytes
+        ):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
@@ -1192,39 +1249,117 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
 
     if body.kind == "CHOICE":
         if not body.prompt.strip():
-            issues.append(ReadinessIssue(code="item.prompt_missing", message="Choice prompt is required.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="item.prompt_missing",
+                    message="Choice prompt is required.",
+                    item_uuid=item.item_uuid,
+                )
+            )
         if len(body.options) < 2:
-            issues.append(ReadinessIssue(code="choice.options_missing", message="Choice items need at least two options.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="choice.options_missing",
+                    message="Choice items need at least two options.",
+                    item_uuid=item.item_uuid,
+                )
+            )
         correct = [option for option in body.options if option.is_correct]
         if not correct:
-            issues.append(ReadinessIssue(code="choice.correct_missing", message="Mark at least one correct choice.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="choice.correct_missing",
+                    message="Mark at least one correct choice.",
+                    item_uuid=item.item_uuid,
+                )
+            )
         if not body.multiple and len(correct) > 1:
-            issues.append(ReadinessIssue(code="choice.too_many_correct", message="Single-choice items can only have one correct option.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="choice.too_many_correct",
+                    message="Single-choice items can only have one correct option.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     elif body.kind == "OPEN_TEXT":
         if not body.prompt.strip():
-            issues.append(ReadinessIssue(code="item.prompt_missing", message="Open-text prompt is required.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="item.prompt_missing",
+                    message="Open-text prompt is required.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     elif body.kind == "FILE_UPLOAD":
         if body.max_files < 1:
-            issues.append(ReadinessIssue(code="file.max_files_invalid", message="File upload items must allow at least one file.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="file.max_files_invalid",
+                    message="File upload items must allow at least one file.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     elif body.kind == "FORM":
         if not body.fields:
-            issues.append(ReadinessIssue(code="form.fields_missing", message="Form items need at least one field.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="form.fields_missing",
+                    message="Form items need at least one field.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     elif body.kind == "CODE":
         if not body.languages:
-            issues.append(ReadinessIssue(code="code.languages_missing", message="Code items need at least one allowed language.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="code.languages_missing",
+                    message="Code items need at least one allowed language.",
+                    item_uuid=item.item_uuid,
+                )
+            )
         if not body.tests:
-            issues.append(ReadinessIssue(code="code.tests_missing", message="Code items need at least one test case.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="code.tests_missing",
+                    message="Code items need at least one test case.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     elif body.kind == "MATCHING" and not body.pairs:
-        issues.append(ReadinessIssue(code="matching.pairs_missing", message="Matching items need at least one pair.", item_uuid=item.item_uuid))
+        issues.append(
+            ReadinessIssue(
+                code="matching.pairs_missing",
+                message="Matching items need at least one pair.",
+                item_uuid=item.item_uuid,
+            )
+        )
     elif body.kind == "ASSIGNMENT_FILE":
         if body.max_files < 1:
-            issues.append(ReadinessIssue(code="assignment.file.max_files_invalid", message="Assignment file tasks must allow at least one file.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="assignment.file.max_files_invalid",
+                    message="Assignment file tasks must allow at least one file.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     elif body.kind == "ASSIGNMENT_QUIZ":
         if not body.questions:
-            issues.append(ReadinessIssue(code="assignment.quiz.questions_missing", message="Assignment quiz tasks need at least one question.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="assignment.quiz.questions_missing",
+                    message="Assignment quiz tasks need at least one question.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     elif body.kind == "ASSIGNMENT_FORM":
         if not body.questions:
-            issues.append(ReadinessIssue(code="assignment.form.questions_missing", message="Assignment form tasks need at least one question.", item_uuid=item.item_uuid))
+            issues.append(
+                ReadinessIssue(
+                    code="assignment.form.questions_missing",
+                    message="Assignment form tasks need at least one question.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     return issues
 
 
@@ -1237,7 +1372,9 @@ def _get_policy_for_assessment(
         if policy is not None:
             return policy
     return db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
+        select(AssessmentPolicy).where(
+            AssessmentPolicy.activity_id == assessment.activity_id
+        )
     ).first()
 
 

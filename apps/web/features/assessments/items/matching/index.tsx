@@ -39,9 +39,7 @@ export function MatchingItemAuthor({ value, disabled, onChange }: ItemAuthorProp
   };
 
   const updatePair = (index: number, side: 'left' | 'right', text: string) => {
-    const updated = value.pairs.map((pair, i) =>
-      i === index ? { ...pair, [side]: text } : pair,
-    );
+    const updated = value.pairs.map((pair, i) => (i === index ? { ...pair, [side]: text } : pair));
     onChange({ ...value, pairs: updated });
   };
 
@@ -180,10 +178,7 @@ export function MatchingItemAttempt({
 
 // ── Review ────────────────────────────────────────────────────────────────────
 
-export function MatchingItemReview({
-  item,
-  answer,
-}: ItemReviewDetailProps<MatchingBody, MatchingAnswer | null>) {
+export function MatchingItemReview({ item, answer }: ItemReviewDetailProps<MatchingBody, MatchingAnswer | null>) {
   const matchMap: Record<string, string> = {};
   if (answer?.matches) {
     for (const m of answer.matches) {

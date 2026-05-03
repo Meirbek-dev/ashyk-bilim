@@ -68,10 +68,16 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_assessment_uuid", "assessment", ["assessment_uuid"], unique=True)
-    op.create_index("ix_assessment_activity_id", "assessment", ["activity_id"], unique=True)
+    op.create_index(
+        "ix_assessment_uuid", "assessment", ["assessment_uuid"], unique=True
+    )
+    op.create_index(
+        "ix_assessment_activity_id", "assessment", ["activity_id"], unique=True
+    )
     op.create_index("ix_assessment_kind", "assessment", ["kind"], unique=False)
-    op.create_index("ix_assessment_lifecycle", "assessment", ["lifecycle"], unique=False)
+    op.create_index(
+        "ix_assessment_lifecycle", "assessment", ["lifecycle"], unique=False
+    )
 
     op.create_table(
         "assessment_item",
@@ -100,7 +106,9 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("now()"),
         ),
-        sa.ForeignKeyConstraint(["assessment_id"], ["assessment.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["assessment_id"], ["assessment.id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -418,7 +426,7 @@ def _backfill_legacy_submissions() -> None:
     inspector = sa.inspect(conn)
 
     # Backfill exam-based submissions only if legacy table exists
-    if inspector.has_table('exam_attempt'):
+    if inspector.has_table("exam_attempt"):
         op.execute("""
         INSERT INTO submission (
             submission_uuid,
@@ -511,7 +519,7 @@ def _backfill_legacy_submissions() -> None:
     """)
 
     # Backfill code challenge submissions only if legacy table exists
-    if inspector.has_table('code_submission'):
+    if inspector.has_table("code_submission"):
         op.execute("""
         INSERT INTO submission (
             submission_uuid,
@@ -645,7 +653,7 @@ def _backfill_legacy_submissions() -> None:
     """)
 
     # Backfill question-based assessment items only if legacy table exists
-    if inspector.has_table('question'):
+    if inspector.has_table("question"):
         op.execute("""
         INSERT INTO assessment_item (
             item_uuid,

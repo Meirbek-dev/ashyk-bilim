@@ -150,7 +150,7 @@ def _coerce_datetime(value: object) -> datetime | None:
     if isinstance(value, datetime):
         return value if value.tzinfo else value.replace(tzinfo=UTC)
     if isinstance(value, str):
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value)
         return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
     return None
 
@@ -183,9 +183,15 @@ def _assignment_item_body(row: sa.Row) -> dict[str, object]:
             "description": row.description or "",
             "hint": row.hint or "",
             "reference_file": row.reference_file,
-            "allowed_mime_types": [item for item in _as_list(allowed) if isinstance(item, str)],
-            "max_file_size_mb": contents.get("max_file_size_mb") if isinstance(contents.get("max_file_size_mb"), int) else None,
-            "max_files": contents.get("max_files") if isinstance(contents.get("max_files"), int) else 1,
+            "allowed_mime_types": [
+                item for item in _as_list(allowed) if isinstance(item, str)
+            ],
+            "max_file_size_mb": contents.get("max_file_size_mb")
+            if isinstance(contents.get("max_file_size_mb"), int)
+            else None,
+            "max_files": contents.get("max_files")
+            if isinstance(contents.get("max_files"), int)
+            else 1,
         }
     if task_type == "QUIZ":
         questions: list[dict[str, object]] = []
@@ -201,7 +207,8 @@ def _assignment_item_body(row: sa.Row) -> dict[str, object]:
                     "text": str(option.get("text", "")),
                     "fileID": str(option.get("fileID", "")),
                     "type": str(option.get("type", "text")),
-                    "assigned_right_answer": option.get("assigned_right_answer") is True,
+                    "assigned_right_answer": option.get("assigned_right_answer")
+                    is True,
                 })
             questions.append({
                 "questionUUID": str(question.get("questionUUID", "")),
@@ -245,7 +252,9 @@ def _assignment_item_body(row: sa.Row) -> dict[str, object]:
         "kind": "ASSIGNMENT_OTHER",
         "description": row.description or "",
         "hint": row.hint or "",
-        "body": contents.get("body") if isinstance(contents.get("body"), dict) else contents,
+        "body": contents.get("body")
+        if isinstance(contents.get("body"), dict)
+        else contents,
     }
 
 
@@ -254,7 +263,9 @@ def _question_item_kind(question_type: str | None) -> str:
 
 
 def _question_item_body(row: sa.Row) -> dict[str, object]:
-    answer_options = [option for option in _as_list(row.answer_options) if isinstance(option, dict)]
+    answer_options = [
+        option for option in _as_list(row.answer_options) if isinstance(option, dict)
+    ]
     if row.question_type == "MATCHING":
         return {
             "kind": "MATCHING",
@@ -270,7 +281,13 @@ def _question_item_body(row: sa.Row) -> dict[str, object]:
         }
 
     multiple = row.question_type == "MULTIPLE_CHOICE"
-    variant = "TRUE_FALSE" if row.question_type == "TRUE_FALSE" else "MULTIPLE_CHOICE" if multiple else "SINGLE_CHOICE"
+    variant = (
+        "TRUE_FALSE"
+        if row.question_type == "TRUE_FALSE"
+        else "MULTIPLE_CHOICE"
+        if multiple
+        else "SINGLE_CHOICE"
+    )
     return {
         "kind": "CHOICE",
         "prompt": row.question_text or "",
@@ -288,9 +305,13 @@ def _question_item_body(row: sa.Row) -> dict[str, object]:
     }
 
 
-def _build_code_submission_metadata(row: sa.Row, updated_at: datetime) -> dict[str, object]:
+def _build_code_submission_metadata(
+    row: sa.Row, updated_at: datetime
+) -> dict[str, object]:
     test_results = _as_dict(row.test_results)
-    raw_results = [item for item in _as_list(test_results.get("results")) if isinstance(item, dict)]
+    raw_results = [
+        item for item in _as_list(test_results.get("results")) if isinstance(item, dict)
+    ]
     latest_run = {
         "run_id": row.submission_uuid,
         "language_id": int(row.language_id or 0),
@@ -300,7 +321,9 @@ def _build_code_submission_metadata(row: sa.Row, updated_at: datetime) -> dict[s
         "score": float(row.score or 0.0),
         "stdout": None,
         "stderr": None,
-        "time": (float(row.execution_time_ms) / 1000.0) if row.execution_time_ms is not None else None,
+        "time": (float(row.execution_time_ms) / 1000.0)
+        if row.execution_time_ms is not None
+        else None,
         "memory": int(row.memory_kb) if row.memory_kb is not None else None,
         "details": raw_results,
         "created_at": updated_at.isoformat(),
@@ -341,7 +364,8 @@ def upgrade() -> None:
     touched_assessment_ids: set[int] = set()
 
     assignment_rows = bind.execute(
-        sa.select(
+        sa
+        .select(
             assignment_task_table.c.assignment_task_uuid,
             assignment_task_table.c.order,
             assignment_task_table.c.assignment_type,
@@ -361,7 +385,11 @@ def upgrade() -> None:
                 assignment_task_table.c.assignment_id == assignment_table.c.id,
             )
         )
-        .order_by(assignment_table.c.activity_id, assignment_task_table.c.order, assignment_task_table.c.id)
+        .order_by(
+            assignment_table.c.activity_id,
+            assignment_task_table.c.order,
+            assignment_task_table.c.id,
+        )
     ).all()
     for row in assignment_rows:
         if not row.assignment_task_uuid:
@@ -390,7 +418,8 @@ def upgrade() -> None:
         touched_assessment_ids.add(int(assessment["id"]))
 
     question_rows = bind.execute(
-        sa.select(
+        sa
+        .select(
             question_table.c.question_uuid,
             question_table.c.order_index,
             question_table.c.question_type,
@@ -405,14 +434,18 @@ def upgrade() -> None:
         .select_from(
             question_table.join(exam_table, question_table.c.exam_id == exam_table.c.id)
         )
-        .order_by(exam_table.c.activity_id, question_table.c.order_index, question_table.c.id)
+        .order_by(
+            exam_table.c.activity_id, question_table.c.order_index, question_table.c.id
+        )
     ).all()
     for row in question_rows:
         if not row.question_uuid:
             raise RuntimeError("Question row is missing question_uuid")
         assessment = assessments.get(("EXAM", int(row.activity_id)))
         if assessment is None:
-            raise RuntimeError(f"Missing canonical assessment for exam activity {row.activity_id}")
+            raise RuntimeError(
+                f"Missing canonical assessment for exam activity {row.activity_id}"
+            )
         if row.question_uuid in existing_item_uuids:
             continue
         created_at = _coerce_datetime(row.creation_date) or now
@@ -434,7 +467,8 @@ def upgrade() -> None:
     if items_to_insert:
         bind.execute(sa.insert(assessment_item_table), items_to_insert)
         bind.execute(
-            sa.update(assessment_table)
+            sa
+            .update(assessment_table)
             .where(assessment_table.c.id.in_(touched_assessment_ids))
             .values(updated_at=now)
         )
@@ -445,7 +479,8 @@ def upgrade() -> None:
     submissions_to_insert: list[dict[str, object]] = []
 
     exam_attempt_rows = bind.execute(
-        sa.select(
+        sa
+        .select(
             exam_attempt_table.c.id,
             exam_attempt_table.c.attempt_uuid,
             exam_attempt_table.c.user_id,
@@ -460,7 +495,9 @@ def upgrade() -> None:
             exam_table.c.activity_id,
         )
         .select_from(
-            exam_attempt_table.join(exam_table, exam_attempt_table.c.exam_id == exam_table.c.id)
+            exam_attempt_table.join(
+                exam_table, exam_attempt_table.c.exam_id == exam_table.c.id
+            )
         )
         .order_by(
             exam_table.c.activity_id,
@@ -480,15 +517,23 @@ def upgrade() -> None:
             continue
         assessment = assessments.get(("EXAM", int(row.activity_id)))
         if assessment is None:
-            raise RuntimeError(f"Missing canonical assessment for exam activity {row.activity_id}")
+            raise RuntimeError(
+                f"Missing canonical assessment for exam activity {row.activity_id}"
+            )
         status_value = str(row.status or "")
         canonical_status = (
-            "GRADED"
-            if status_value in {"SUBMITTED", "AUTO_SUBMITTED"}
-            else "DRAFT"
+            "GRADED" if status_value in {"SUBMITTED", "AUTO_SUBMITTED"} else "DRAFT"
         )
-        created_at = _coerce_datetime(row.creation_date) or _coerce_datetime(row.started_at) or now
-        updated_at = _coerce_datetime(row.update_date) or _coerce_datetime(row.submitted_at) or created_at
+        created_at = (
+            _coerce_datetime(row.creation_date)
+            or _coerce_datetime(row.started_at)
+            or now
+        )
+        updated_at = (
+            _coerce_datetime(row.update_date)
+            or _coerce_datetime(row.submitted_at)
+            or created_at
+        )
         submitted_at = _coerce_datetime(row.submitted_at)
         metadata: dict[str, object] = {
             "exam_attempt_id": row.id,
@@ -503,7 +548,9 @@ def upgrade() -> None:
             "assessment_policy_id": assessment["policy_id"],
             "user_id": int(row.user_id),
             "auto_score": float(row.score or 0),
-            "final_score": float(row.score) if row.score is not None and canonical_status == "GRADED" else None,
+            "final_score": float(row.score)
+            if row.score is not None and canonical_status == "GRADED"
+            else None,
             "status": canonical_status,
             "attempt_number": exam_attempt_numbers[key],
             "is_late": False,
@@ -537,8 +584,7 @@ def upgrade() -> None:
             code_submission_table.c.plagiarism_score,
             code_submission_table.c.created_at,
             code_submission_table.c.updated_at,
-        )
-        .order_by(
+        ).order_by(
             code_submission_table.c.activity_id,
             code_submission_table.c.user_id,
             code_submission_table.c.created_at,
@@ -574,7 +620,9 @@ def upgrade() -> None:
             "assessment_policy_id": assessment["policy_id"],
             "user_id": int(row.user_id),
             "auto_score": float(row.score or 0),
-            "final_score": float(row.score) if row.score is not None and canonical_status == "GRADED" else None,
+            "final_score": float(row.score)
+            if row.score is not None and canonical_status == "GRADED"
+            else None,
             "status": canonical_status,
             "attempt_number": code_attempt_numbers[key],
             "is_late": False,
@@ -617,10 +665,30 @@ def downgrade() -> None:
         sa.Column("contents", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("assignment_id", sa.Integer(), sa.ForeignKey("assignment.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("course_id", sa.BigInteger(), sa.ForeignKey("course.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("chapter_id", sa.BigInteger(), sa.ForeignKey("chapter.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("activity_id", sa.BigInteger(), sa.ForeignKey("activity.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "assignment_id",
+            sa.Integer(),
+            sa.ForeignKey("assignment.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "course_id",
+            sa.BigInteger(),
+            sa.ForeignKey("course.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "chapter_id",
+            sa.BigInteger(),
+            sa.ForeignKey("chapter.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "activity_id",
+            sa.BigInteger(),
+            sa.ForeignKey("activity.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.UniqueConstraint("assignment_id", "order", name="uq_assignmenttask_order"),
         sa.UniqueConstraint(
             "assignment_id",
@@ -645,7 +713,12 @@ def downgrade() -> None:
         "question",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("question_uuid", sa.String(), nullable=False, server_default=""),
-        sa.Column("exam_id", sa.Integer(), sa.ForeignKey("exam.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "exam_id",
+            sa.Integer(),
+            sa.ForeignKey("exam.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("question_text", sa.Text(), nullable=False),
         sa.Column("question_type", sa.String(), nullable=False),
         sa.Column("points", sa.Integer(), nullable=False, server_default="1"),
@@ -660,15 +733,27 @@ def downgrade() -> None:
         "exam_attempt",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("attempt_uuid", sa.String(), nullable=False, server_default=""),
-        sa.Column("exam_id", sa.Integer(), sa.ForeignKey("exam.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("user_id", sa.Integer(), sa.ForeignKey("user.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "exam_id",
+            sa.Integer(),
+            sa.ForeignKey("exam.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "user_id",
+            sa.Integer(),
+            sa.ForeignKey("user.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("status", sa.String(), nullable=False),
         sa.Column("score", sa.Integer(), nullable=True),
         sa.Column("max_score", sa.Integer(), nullable=True),
         sa.Column("answers", sa.JSON(), nullable=True),
         sa.Column("question_order", sa.JSON(), nullable=True),
         sa.Column("violations", sa.JSON(), nullable=True),
-        sa.Column("is_preview", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column(
+            "is_preview", sa.Boolean(), nullable=False, server_default=sa.text("false")
+        ),
         sa.Column("started_at", sa.String(), nullable=True),
         sa.Column("submitted_at", sa.String(), nullable=True),
         sa.Column("creation_date", sa.String(), nullable=False, server_default=""),
@@ -685,8 +770,18 @@ def downgrade() -> None:
         "code_submission",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("submission_uuid", sa.String(), nullable=False),
-        sa.Column("activity_id", sa.BigInteger(), sa.ForeignKey("activity.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("user_id", sa.BigInteger(), sa.ForeignKey("user.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "activity_id",
+            sa.BigInteger(),
+            sa.ForeignKey("activity.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "user_id",
+            sa.BigInteger(),
+            sa.ForeignKey("user.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("language_id", sa.Integer(), nullable=False),
         sa.Column("language_name", sa.String(), nullable=False, server_default=""),
         sa.Column("source_code", sa.Text(), nullable=False),

@@ -176,7 +176,9 @@ export function isAnswered(answer: ItemAnswer | null | undefined): boolean {
       return answer.uploads.length > 0 || Boolean(answer.file_key);
     }
     case 'ASSIGNMENT_QUIZ': {
-      return Object.values(answer.quiz_answers?.answers ?? {}).some((value) => Array.isArray(value) && value.length > 0);
+      return Object.values(answer.quiz_answers?.answers ?? {}).some(
+        (value) => Array.isArray(value) && value.length > 0,
+      );
     }
     case 'ASSIGNMENT_FORM': {
       return Object.values(answer.form_data?.answers ?? {}).some((value) => value.trim().length > 0);

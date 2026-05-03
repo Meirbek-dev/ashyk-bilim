@@ -6,6 +6,24 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
+from src.db.assessment_contracts import (
+    QUESTION_LIMIT_MIN,
+    TIME_LIMIT_MAX,
+    TIME_LIMIT_MIN,
+    VIOLATION_THRESHOLD_MAX,
+    VIOLATION_THRESHOLD_MIN,
+    AssignmentRead,
+    AssignmentStatus,
+    AssignmentTaskCreate,
+    AssignmentTaskRead,
+    AssignmentTaskTypeEnum,
+    AssignmentTaskUpdate,
+    GradingTypeEnum,
+    QuestionCreate,
+    QuestionRead,
+    QuestionTypeEnum,
+    QuestionUpdate,
+)
 from src.db.assessments import (
     AssessmentItemCreate,
     AssessmentItemReorder,
@@ -24,26 +42,8 @@ from src.db.assessments import (
     ChoiceItemBody,
     ChoiceOption,
     ItemKind,
-    MatchPair,
     MatchingItemBody,
-)
-from src.db.assessment_contracts import (
-    AssignmentRead,
-    AssignmentStatus,
-    AssignmentTaskCreate,
-    AssignmentTaskRead,
-    AssignmentTaskTypeEnum,
-    AssignmentTaskUpdate,
-    QUESTION_LIMIT_MIN,
-    TIME_LIMIT_MAX,
-    TIME_LIMIT_MIN,
-    VIOLATION_THRESHOLD_MAX,
-    VIOLATION_THRESHOLD_MIN,
-    GradingTypeEnum,
-    QuestionCreate,
-    QuestionRead,
-    QuestionTypeEnum,
-    QuestionUpdate,
+    MatchPair,
 )
 from src.db.grading.submissions import AssessmentType
 from src.db.users import PublicUser
@@ -65,7 +65,11 @@ from src.services.assessments.core import (
 
 def assessment_to_assignment_read(assessment: dict[str, object]) -> AssignmentRead:
     lifecycle = str(assessment.get("lifecycle", AssignmentStatus.DRAFT.value))
-    policy = assessment.get("assessment_policy") if isinstance(assessment.get("assessment_policy"), dict) else {}
+    policy = (
+        assessment.get("assessment_policy")
+        if isinstance(assessment.get("assessment_policy"), dict)
+        else {}
+    )
     return AssignmentRead.model_validate({
         "assignment_uuid": assessment.get("assessment_uuid"),
         "title": assessment.get("title", ""),
@@ -77,7 +81,9 @@ def assessment_to_assignment_read(assessment: dict[str, object]) -> AssignmentRe
         "published_at": assessment.get("published_at"),
         "archived_at": assessment.get("archived_at"),
         "weight": assessment.get("weight", 1.0),
-        "grading_type": assessment.get("grading_type", GradingTypeEnum.PERCENTAGE.value),
+        "grading_type": assessment.get(
+            "grading_type", GradingTypeEnum.PERCENTAGE.value
+        ),
         "course_uuid": assessment.get("course_uuid"),
         "activity_uuid": assessment.get("activity_uuid"),
         "created_at": assessment.get("created_at"),
@@ -147,7 +153,7 @@ async def update_assignment_task(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     if assessment.kind != AssessmentType.ASSIGNMENT:
         raise HTTPException(status_code=404, detail="Assignment assessment not found")
-    activity, course = _get_activity_and_course(assessment, db_session)
+    _activity, course = _get_activity_and_course(assessment, db_session)
     _require_author(current_user, course, db_session)
     _ensure_authorable(assessment)
     item = _get_item_or_404(assessment, task_uuid, db_session)
@@ -175,7 +181,9 @@ async def delete_assignment_task(
     current_user: PublicUser,
     db_session: Session,
 ) -> dict[str, str]:
-    return await delete_assessment_item(assessment_uuid, task_uuid, current_user, db_session)
+    return await delete_assessment_item(
+        assessment_uuid, task_uuid, current_user, db_session
+    )
 
 
 async def list_exam_questions(
@@ -201,7 +209,9 @@ async def create_exam_question(
     current_user: PublicUser,
     db_session: Session,
 ) -> QuestionRead:
-    _validate_question_payload(payload.question_text, payload.question_type, payload.answer_options)
+    _validate_question_payload(
+        payload.question_text, payload.question_type, payload.answer_options
+    )
     item = await create_assessment_item(
         assessment_uuid,
         AssessmentItemCreate(
@@ -226,14 +236,16 @@ async def update_exam_question(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     if assessment.kind != AssessmentType.EXAM:
         raise HTTPException(status_code=404, detail="Exam assessment not found")
-    activity, course = _get_activity_and_course(assessment, db_session)
+    _activity, course = _get_activity_and_course(assessment, db_session)
     _require_author(current_user, course, db_session)
     _ensure_authorable(assessment)
     item = _get_item_or_404(assessment, question_uuid, db_session)
     current = _question_from_item(_build_item_read(item)).model_dump()
     update_data = payload.model_dump(exclude_unset=True, exclude_none=True)
     merged = QuestionRead.model_validate({**current, **update_data})
-    _validate_question_payload(merged.question_text, merged.question_type, merged.answer_options)
+    _validate_question_payload(
+        merged.question_text, merged.question_type, merged.answer_options
+    )
     updated = await update_assessment_item(
         assessment_uuid,
         question_uuid,
@@ -255,7 +267,9 @@ async def delete_exam_question(
     current_user: PublicUser,
     db_session: Session,
 ) -> dict[str, str]:
-    return await delete_assessment_item(assessment_uuid, question_uuid, current_user, db_session)
+    return await delete_assessment_item(
+        assessment_uuid, question_uuid, current_user, db_session
+    )
 
 
 async def reorder_exam_questions(
@@ -278,7 +292,11 @@ async def reorder_exam_questions(
         current_user,
         db_session,
     )
-    return [_question_from_item(item) for item in reordered if item.kind in {ItemKind.CHOICE, ItemKind.MATCHING}]
+    return [
+        _question_from_item(item)
+        for item in reordered
+        if item.kind in {ItemKind.CHOICE, ItemKind.MATCHING}
+    ]
 
 
 async def export_exam_questions_csv(
@@ -324,11 +342,17 @@ async def import_exam_questions_csv(
 
     for row_num, row in enumerate(reader, start=2):
         try:
-            question_text = (row.get("Question Text", "") or row.get("Текст вопроса", "")).strip()
+            question_text = (
+                row.get("Question Text", "") or row.get("Текст вопроса", "")
+            ).strip()
             question_type = (row.get("Type", "") or row.get("Тип", "")).strip()
             points_raw = row.get("Points", "") or row.get("Баллы", "1")
-            answer_options_json = row.get("Answer Options (JSON)", "[]") or row.get("Варианты ответов (JSON)", "[]")
-            explanation = (row.get("Explanation", "") or row.get("Пояснение", "")).strip() or None
+            answer_options_json = row.get("Answer Options (JSON)", "[]") or row.get(
+                "Варианты ответов (JSON)", "[]"
+            )
+            explanation = (
+                row.get("Explanation", "") or row.get("Пояснение", "")
+            ).strip() or None
             question_type_enum = QuestionTypeEnum(question_type)
             answer_options = json.loads(answer_options_json)
             if not isinstance(answer_options, list):
@@ -341,7 +365,9 @@ async def import_exam_questions_csv(
                 answer_options=answer_options,
                 order_index=next_order,
             )
-            await create_exam_question(assessment_uuid, payload, current_user, db_session)
+            await create_exam_question(
+                assessment_uuid, payload, current_user, db_session
+            )
             imported += 1
             next_order += 1
         except Exception as exc:  # noqa: BLE001
@@ -357,7 +383,10 @@ async def import_exam_questions_csv(
 def exam_authoring_config() -> dict[str, dict[str, int]]:
     return {
         "time_limit": {"min": TIME_LIMIT_MIN, "max": TIME_LIMIT_MAX},
-        "violation_threshold": {"min": VIOLATION_THRESHOLD_MIN, "max": VIOLATION_THRESHOLD_MAX},
+        "violation_threshold": {
+            "min": VIOLATION_THRESHOLD_MIN,
+            "max": VIOLATION_THRESHOLD_MAX,
+        },
         "question_limit": {"min": QUESTION_LIMIT_MIN},
     }
 
@@ -370,7 +399,9 @@ _ASSIGNMENT_ITEM_KINDS = {
 }
 
 
-def _assignment_task_type_to_item_kind(task_type: AssignmentTaskTypeEnum | str) -> ItemKind:
+def _assignment_task_type_to_item_kind(
+    task_type: AssignmentTaskTypeEnum | str,
+) -> ItemKind:
     normalized = AssignmentTaskTypeEnum(task_type)
     if normalized == AssignmentTaskTypeEnum.FILE_SUBMISSION:
         return ItemKind.ASSIGNMENT_FILE
@@ -381,7 +412,9 @@ def _assignment_task_type_to_item_kind(task_type: AssignmentTaskTypeEnum | str) 
     return ItemKind.ASSIGNMENT_OTHER
 
 
-def _assignment_task_type_from_item_kind(kind: ItemKind | str) -> AssignmentTaskTypeEnum:
+def _assignment_task_type_from_item_kind(
+    kind: ItemKind | str,
+) -> AssignmentTaskTypeEnum:
     normalized = ItemKind(kind)
     if normalized == ItemKind.ASSIGNMENT_FILE:
         return AssignmentTaskTypeEnum.FILE_SUBMISSION
@@ -409,13 +442,17 @@ def _assignment_task_from_item(item: AssessmentReadItem) -> AssignmentTaskRead:
     elif body.kind == "ASSIGNMENT_QUIZ":
         contents = {
             "kind": "QUIZ",
-            "questions": [question.model_dump(mode="json") for question in body.questions],
+            "questions": [
+                question.model_dump(mode="json") for question in body.questions
+            ],
             "settings": body.settings.model_dump(mode="json"),
         }
     elif body.kind == "ASSIGNMENT_FORM":
         contents = {
             "kind": "FORM",
-            "questions": [question.model_dump(mode="json") for question in body.questions],
+            "questions": [
+                question.model_dump(mode="json") for question in body.questions
+            ],
         }
     else:
         contents = {
@@ -431,7 +468,7 @@ def _assignment_task_from_item(item: AssessmentReadItem) -> AssignmentTaskRead:
         "description": description,
         "hint": hint,
         "reference_file": reference_file,
-        "max_grade_value": int(round(item.max_score)),
+        "max_grade_value": round(item.max_score),
         "contents": contents,
         "order": item.order,
         "created_at": item.created_at,
@@ -446,9 +483,19 @@ def _assignment_item_body_from_payload(payload: AssignmentTaskCreate):
             description=payload.description,
             hint=payload.hint or "",
             reference_file=payload.reference_file,
-            allowed_mime_types=[item for item in contents.get("allowed_mime_types", []) if isinstance(item, str)] if isinstance(contents.get("allowed_mime_types"), list) else [],
-            max_file_size_mb=contents.get("max_file_size_mb") if isinstance(contents.get("max_file_size_mb"), int) else None,
-            max_files=contents.get("max_files") if isinstance(contents.get("max_files"), int) else 1,
+            allowed_mime_types=[
+                item
+                for item in contents.get("allowed_mime_types", [])
+                if isinstance(item, str)
+            ]
+            if isinstance(contents.get("allowed_mime_types"), list)
+            else [],
+            max_file_size_mb=contents.get("max_file_size_mb")
+            if isinstance(contents.get("max_file_size_mb"), int)
+            else None,
+            max_files=contents.get("max_files")
+            if isinstance(contents.get("max_files"), int)
+            else 1,
         )
     if payload.assignment_type == AssignmentTaskTypeEnum.QUIZ:
         return AssignmentQuizItemBody(
@@ -459,7 +506,9 @@ def _assignment_item_body_from_payload(payload: AssignmentTaskCreate):
                 for question in contents.get("questions", [])
                 if isinstance(question, dict)
             ],
-            settings=AssignmentQuizSettings.model_validate(contents.get("settings", {})),
+            settings=AssignmentQuizSettings.model_validate(
+                contents.get("settings", {})
+            ),
         )
     if payload.assignment_type == AssignmentTaskTypeEnum.FORM:
         return AssignmentFormItemBody(
@@ -474,22 +523,34 @@ def _assignment_item_body_from_payload(payload: AssignmentTaskCreate):
     return AssignmentOtherItemBody(
         description=payload.description,
         hint=payload.hint or "",
-        body=contents.get("body") if isinstance(contents.get("body"), dict) else contents,
+        body=contents.get("body")
+        if isinstance(contents.get("body"), dict)
+        else contents,
     )
 
 
 def _assignment_item_body_from_read(task: AssignmentTaskRead):
     if task.assignment_type == AssignmentTaskTypeEnum.FILE_SUBMISSION:
-        return _assignment_item_body_from_payload(AssignmentTaskCreate(**task.model_dump()))
+        return _assignment_item_body_from_payload(
+            AssignmentTaskCreate(**task.model_dump())
+        )
     if task.assignment_type == AssignmentTaskTypeEnum.QUIZ:
-        return _assignment_item_body_from_payload(AssignmentTaskCreate(**task.model_dump()))
+        return _assignment_item_body_from_payload(
+            AssignmentTaskCreate(**task.model_dump())
+        )
     if task.assignment_type == AssignmentTaskTypeEnum.FORM:
-        return _assignment_item_body_from_payload(AssignmentTaskCreate(**task.model_dump()))
+        return _assignment_item_body_from_payload(
+            AssignmentTaskCreate(**task.model_dump())
+        )
     return _assignment_item_body_from_payload(AssignmentTaskCreate(**task.model_dump()))
 
 
 def _question_type_to_item_kind(question_type: QuestionTypeEnum | str) -> ItemKind:
-    return ItemKind.MATCHING if QuestionTypeEnum(question_type) == QuestionTypeEnum.MATCHING else ItemKind.CHOICE
+    return (
+        ItemKind.MATCHING
+        if QuestionTypeEnum(question_type) == QuestionTypeEnum.MATCHING
+        else ItemKind.CHOICE
+    )
 
 
 def _question_from_item(item: AssessmentReadItem) -> QuestionRead:
@@ -502,7 +563,9 @@ def _question_from_item(item: AssessmentReadItem) -> QuestionRead:
         ]
         explanation = body.explanation
     else:
-        variant = body.variant or ("MULTIPLE_CHOICE" if body.multiple else "SINGLE_CHOICE")
+        variant = body.variant or (
+            "MULTIPLE_CHOICE" if body.multiple else "SINGLE_CHOICE"
+        )
         question_type = QuestionTypeEnum(variant)
         answer_options = [
             {
@@ -518,7 +581,7 @@ def _question_from_item(item: AssessmentReadItem) -> QuestionRead:
         "question_uuid": item.item_uuid,
         "question_text": body.prompt,
         "question_type": question_type,
-        "points": int(round(item.max_score)),
+        "points": round(item.max_score),
         "explanation": explanation,
         "answer_options": answer_options,
         "order_index": item.order,
@@ -587,11 +650,17 @@ def _validate_question_payload(
     answer_options: list[dict[str, object]],
 ) -> None:
     if not question_text.strip():
-        raise HTTPException(status_code=400, detail="Текст вопроса не может быть пустым")
+        raise HTTPException(
+            status_code=400, detail="Текст вопроса не может быть пустым"
+        )
     if len(answer_options) == 0:
-        raise HTTPException(status_code=400, detail="Требуется как минимум один вариант ответа")
+        raise HTTPException(
+            status_code=400, detail="Требуется как минимум один вариант ответа"
+        )
     if len(answer_options) > 10:
-        raise HTTPException(status_code=400, detail="Слишком много вариантов ответа (макс. 10)")
+        raise HTTPException(
+            status_code=400, detail="Слишком много вариантов ответа (макс. 10)"
+        )
     normalized_type = QuestionTypeEnum(question_type)
     if normalized_type in {
         QuestionTypeEnum.SINGLE_CHOICE,

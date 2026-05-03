@@ -276,7 +276,9 @@ export async function createAssignmentTask(body: AssignmentTaskMutationPayload, 
 }
 
 export async function getAssignmentTask(assignmentUUID: string, assignmentTaskUUID: string) {
-  const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/assignment/tasks/${assignmentTaskUUID}`);
+  const result = await apiFetch(
+    `assessments/${normalizeAssignmentUuid(assignmentUUID)}/assignment/tasks/${assignmentTaskUUID}`,
+  );
   return await getResponseMetadata(result);
 }
 
@@ -287,11 +289,14 @@ export interface UpdateAssignmentTaskParams {
 }
 
 export async function updateAssignmentTask({ body, assignmentTaskUUID, assignmentUUID }: UpdateAssignmentTaskParams) {
-  const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/assignment/tasks/${assignmentTaskUUID}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  const result = await apiFetch(
+    `assessments/${normalizeAssignmentUuid(assignmentUUID)}/assignment/tasks/${assignmentTaskUUID}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  );
   const metadata = await getResponseMetadata(result);
 
   if (metadata.success) {
@@ -303,9 +308,12 @@ export async function updateAssignmentTask({ body, assignmentTaskUUID, assignmen
 }
 
 export async function deleteAssignmentTask(assignmentTaskUUID: string, assignmentUUID: string) {
-  const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/assignment/tasks/${assignmentTaskUUID}`, {
-    method: 'DELETE',
-  });
+  const result = await apiFetch(
+    `assessments/${normalizeAssignmentUuid(assignmentUUID)}/assignment/tasks/${assignmentTaskUUID}`,
+    {
+      method: 'DELETE',
+    },
+  );
   const metadata = await getResponseMetadata(result);
 
   if (metadata.success) {

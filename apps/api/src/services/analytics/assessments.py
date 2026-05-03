@@ -1210,7 +1210,11 @@ def get_teacher_assessment_detail(
         for user_id, attempts in attempts_by_user.items():
             ordered_attempts = sorted(attempts, key=lambda item: item.created_at)
             best_score = max(
-                (score for item in attempts if (score := assignment_score(item)) is not None),
+                (
+                    score
+                    for item in attempts
+                    if (score := assignment_score(item)) is not None
+                ),
                 default=None,
             )
             last_attempt = ordered_attempts[-1]

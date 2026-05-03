@@ -35,10 +35,7 @@ export default async function AssessmentAttemptPage(props: Props) {
   await connection();
   const { assessmentUuid } = await props.params;
 
-  const [assessment, initialSession] = await Promise.all([
-    getAssessmentByUuid(assessmentUuid),
-    getSession(),
-  ]);
+  const [assessment, initialSession] = await Promise.all([getAssessmentByUuid(assessmentUuid), getSession()]);
 
   if (!assessment) {
     notFound();

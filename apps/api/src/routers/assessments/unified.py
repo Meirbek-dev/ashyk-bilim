@@ -11,6 +11,14 @@ from fastapi.responses import Response
 from sqlmodel import Session
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.db.assessment_contracts import (
+    AssignmentTaskCreate,
+    AssignmentTaskRead,
+    AssignmentTaskUpdate,
+    QuestionCreate,
+    QuestionRead,
+    QuestionUpdate,
+)
 from src.db.assessments import (
     AssessmentCreate,
     AssessmentDraftPatch,
@@ -24,17 +32,24 @@ from src.db.assessments import (
     AssessmentReadItem,
     AssessmentUpdate,
 )
-from src.db.assessment_contracts import (
-    AssignmentTaskCreate,
-    AssignmentTaskRead,
-    AssignmentTaskUpdate,
-    QuestionCreate,
-    QuestionRead,
-    QuestionUpdate,
-)
 from src.db.grading.submissions import SubmissionListResponse, SubmissionRead
 from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
+from src.services.assessments.authoring import (
+    create_assignment_task,
+    create_exam_question,
+    delete_assignment_task,
+    delete_exam_question,
+    exam_authoring_config,
+    export_exam_questions_csv,
+    get_assignment_task,
+    import_exam_questions_csv,
+    list_assignment_tasks,
+    list_exam_questions,
+    reorder_exam_questions,
+    update_assignment_task,
+    update_exam_question,
+)
 from src.services.assessments.core import (
     check_publish_readiness,
     create_assessment,
@@ -52,21 +67,6 @@ from src.services.assessments.core import (
     transition_assessment_lifecycle,
     update_assessment,
     update_assessment_item,
-)
-from src.services.assessments.authoring import (
-    create_assignment_task,
-    create_exam_question,
-    delete_assignment_task,
-    delete_exam_question,
-    exam_authoring_config,
-    export_exam_questions_csv,
-    get_assignment_task,
-    import_exam_questions_csv,
-    list_assignment_tasks,
-    list_exam_questions,
-    reorder_exam_questions,
-    update_assignment_task,
-    update_exam_question,
 )
 
 router = APIRouter()
@@ -94,7 +94,9 @@ async def api_get_assessment_by_activity(
     ],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssessmentRead:
-    return await get_assessment_by_activity_uuid(activity_uuid, current_user, db_session)
+    return await get_assessment_by_activity_uuid(
+        activity_uuid, current_user, db_session
+    )
 
 
 @router.get("/{assessment_uuid}", response_model=AssessmentRead)
@@ -164,7 +166,9 @@ async def api_update_item(
     )
 
 
-@router.post("/{assessment_uuid}/items:reorder", response_model=list[AssessmentReadItem])
+@router.post(
+    "/{assessment_uuid}/items:reorder", response_model=list[AssessmentReadItem]
+)
 async def api_reorder_items(
     assessment_uuid: str,
     payload: AssessmentItemReorder,
@@ -188,7 +192,9 @@ async def api_delete_item(
     )
 
 
-@router.get("/{assessment_uuid}/assignment/tasks", response_model=list[AssignmentTaskRead])
+@router.get(
+    "/{assessment_uuid}/assignment/tasks", response_model=list[AssignmentTaskRead]
+)
 async def api_list_assignment_tasks(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
@@ -197,14 +203,18 @@ async def api_list_assignment_tasks(
     return await list_assignment_tasks(assessment_uuid, current_user, db_session)
 
 
-@router.get("/{assessment_uuid}/assignment/tasks/{task_uuid}", response_model=AssignmentTaskRead)
+@router.get(
+    "/{assessment_uuid}/assignment/tasks/{task_uuid}", response_model=AssignmentTaskRead
+)
 async def api_get_assignment_task(
     assessment_uuid: str,
     task_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssignmentTaskRead:
-    return await get_assignment_task(assessment_uuid, task_uuid, current_user, db_session)
+    return await get_assignment_task(
+        assessment_uuid, task_uuid, current_user, db_session
+    )
 
 
 @router.post("/{assessment_uuid}/assignment/tasks", response_model=AssignmentTaskRead)
@@ -214,10 +224,14 @@ async def api_create_assignment_task(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssignmentTaskRead:
-    return await create_assignment_task(assessment_uuid, payload, current_user, db_session)
+    return await create_assignment_task(
+        assessment_uuid, payload, current_user, db_session
+    )
 
 
-@router.put("/{assessment_uuid}/assignment/tasks/{task_uuid}", response_model=AssignmentTaskRead)
+@router.put(
+    "/{assessment_uuid}/assignment/tasks/{task_uuid}", response_model=AssignmentTaskRead
+)
 async def api_update_assignment_task(
     assessment_uuid: str,
     task_uuid: str,
@@ -225,7 +239,9 @@ async def api_update_assignment_task(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssignmentTaskRead:
-    return await update_assignment_task(assessment_uuid, task_uuid, payload, current_user, db_session)
+    return await update_assignment_task(
+        assessment_uuid, task_uuid, payload, current_user, db_session
+    )
 
 
 @router.delete("/{assessment_uuid}/assignment/tasks/{task_uuid}")
@@ -235,7 +251,9 @@ async def api_delete_assignment_task(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> dict[str, str]:
-    return await delete_assignment_task(assessment_uuid, task_uuid, current_user, db_session)
+    return await delete_assignment_task(
+        assessment_uuid, task_uuid, current_user, db_session
+    )
 
 
 @router.get("/{assessment_uuid}/exam/questions", response_model=list[QuestionRead])
@@ -254,10 +272,14 @@ async def api_create_exam_question(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> QuestionRead:
-    return await create_exam_question(assessment_uuid, payload, current_user, db_session)
+    return await create_exam_question(
+        assessment_uuid, payload, current_user, db_session
+    )
 
 
-@router.put("/{assessment_uuid}/exam/questions/{question_uuid}", response_model=QuestionRead)
+@router.put(
+    "/{assessment_uuid}/exam/questions/{question_uuid}", response_model=QuestionRead
+)
 async def api_update_exam_question(
     assessment_uuid: str,
     question_uuid: str,
@@ -265,7 +287,9 @@ async def api_update_exam_question(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> QuestionRead:
-    return await update_exam_question(assessment_uuid, question_uuid, payload, current_user, db_session)
+    return await update_exam_question(
+        assessment_uuid, question_uuid, payload, current_user, db_session
+    )
 
 
 @router.delete("/{assessment_uuid}/exam/questions/{question_uuid}")
@@ -275,17 +299,23 @@ async def api_delete_exam_question(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> dict[str, str]:
-    return await delete_exam_question(assessment_uuid, question_uuid, current_user, db_session)
+    return await delete_exam_question(
+        assessment_uuid, question_uuid, current_user, db_session
+    )
 
 
-@router.post("/{assessment_uuid}/exam/questions:reorder", response_model=list[QuestionRead])
+@router.post(
+    "/{assessment_uuid}/exam/questions:reorder", response_model=list[QuestionRead]
+)
 async def api_reorder_exam_questions(
     assessment_uuid: str,
     payload: list[dict[str, object]],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[QuestionRead]:
-    return await reorder_exam_questions(assessment_uuid, payload, current_user, db_session)
+    return await reorder_exam_questions(
+        assessment_uuid, payload, current_user, db_session
+    )
 
 
 @router.get("/{assessment_uuid}/exam/questions:export-csv")
@@ -306,7 +336,9 @@ async def api_import_exam_questions_csv(
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> dict[str, object]:
     content = (await file.read()).decode("utf-8-sig")
-    return await import_exam_questions_csv(assessment_uuid, content, current_user, db_session)
+    return await import_exam_questions_csv(
+        assessment_uuid, content, current_user, db_session
+    )
 
 
 @router.post("/{assessment_uuid}/start", response_model=SubmissionRead)

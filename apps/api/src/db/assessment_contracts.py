@@ -9,7 +9,6 @@ from sqlmodel import Field
 from src.db.assessments import AssessmentGradingType, AssessmentLifecycle
 from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBaseModel
 
-
 AssignmentStatus = AssessmentLifecycle
 GradingTypeEnum = AssessmentGradingType
 
@@ -59,7 +58,9 @@ class AssignmentQuizTaskSettings(SQLModelStrictBaseModel):
 class AssignmentQuizTaskConfig(SQLModelStrictBaseModel):
     kind: Literal["QUIZ"] = "QUIZ"
     questions: list[AssignmentQuizQuestionConfig] = Field(default_factory=list)
-    settings: AssignmentQuizTaskSettings = Field(default_factory=AssignmentQuizTaskSettings)
+    settings: AssignmentQuizTaskSettings = Field(
+        default_factory=AssignmentQuizTaskSettings
+    )
 
 
 class AssignmentFormBlankConfig(SQLModelStrictBaseModel):
@@ -193,7 +194,9 @@ class AssignmentTaskUpdate(SQLModelStrictBaseModel):
         task_type = data.get("assignment_type")
         raw = data.get("contents")
         if task_type is not None and isinstance(raw, dict) and raw:
-            config_cls = _TASK_TYPE_TO_CONFIG.get(str(task_type), AssignmentOtherTaskConfig)
+            config_cls = _TASK_TYPE_TO_CONFIG.get(
+                str(task_type), AssignmentOtherTaskConfig
+            )
             config_cls.model_validate(raw)
         return data
 

@@ -1,5 +1,6 @@
 import os
 import warnings
+
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel
 

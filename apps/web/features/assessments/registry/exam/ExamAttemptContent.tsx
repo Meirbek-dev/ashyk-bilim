@@ -9,7 +9,11 @@ import { queryKeys } from '@/lib/react-query/queryKeys';
 import { courseKeys } from '@/hooks/courses/courseKeys';
 import { useContributorStatus } from '@/hooks/useContributorStatus';
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy';
-import { isAnswered as isItemAnswered, type AssessmentItem, type ItemAnswer } from '@/features/assessments/domain/items';
+import {
+  isAnswered as isItemAnswered,
+  type AssessmentItem,
+  type ItemAnswer,
+} from '@/features/assessments/domain/items';
 import { useAttemptShellControls } from '@/features/assessments/shell';
 import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAssessmentAttempt';
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
@@ -134,7 +138,10 @@ function ExamTakingContent({
 
   const orderedQuestions = useMemo(() => getOrderedExamQuestions(questions, null), [questions]);
   const currentQuestion = orderedQuestions[currentIndex];
-  const questionById = useMemo(() => new Map(orderedQuestions.map((question) => [question.id, question])), [orderedQuestions]);
+  const questionById = useMemo(
+    () => new Map(orderedQuestions.map((question) => [question.id, question])),
+    [orderedQuestions],
+  );
 
   const displayAnswers = useMemo(() => {
     const next: Record<string, unknown> = {};
@@ -375,11 +382,7 @@ function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
         question_uuid: item.item_uuid,
         question_text: body.prompt,
         question_type:
-          body.variant === 'TRUE_FALSE'
-            ? 'TRUE_FALSE'
-            : body.multiple
-              ? 'MULTIPLE_CHOICE'
-              : 'SINGLE_CHOICE',
+          body.variant === 'TRUE_FALSE' ? 'TRUE_FALSE' : body.multiple ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE',
         points: item.max_score,
         explanation: body.explanation ?? undefined,
         answer_options: body.options.map((option) => ({

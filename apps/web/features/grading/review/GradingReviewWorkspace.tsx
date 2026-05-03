@@ -33,7 +33,7 @@ export default function GradingReviewWorkspace({
   const router = useRouter();
 
   // ── URL-persisted filters ─────────────────────────────────────────────────
-  const filterFromUrl = (searchParams.get('filter') as StatusFilter | null) ?? (initialFilter ?? 'NEEDS_GRADING');
+  const filterFromUrl = (searchParams.get('filter') as StatusFilter | null) ?? initialFilter ?? 'NEEDS_GRADING';
   const sortFromUrl = searchParams.get('sort') ?? 'submitted_at';
   const searchFromUrl = searchParams.get('q') ?? '';
 

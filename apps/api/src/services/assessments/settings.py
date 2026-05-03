@@ -11,14 +11,14 @@ from pydantic import Field as PydanticField
 from pydantic import TypeAdapter
 from sqlmodel import Session, select
 
-from src.db.courses.activities import Activity, ActivityTypeEnum
-from src.db.courses.blocks import Block, BlockTypeEnum
 from src.db.assessment_contracts import (
+    AccessModeEnum,
     CodeChallengeSettings,
     ExecutionMode,
     GradingStrategy,
-    AccessModeEnum,
 )
+from src.db.courses.activities import Activity, ActivityTypeEnum
+from src.db.courses.blocks import Block, BlockTypeEnum
 from src.db.courses.quiz import QuizSettings
 from src.db.strict_base_model import PydanticStrictBaseModel
 

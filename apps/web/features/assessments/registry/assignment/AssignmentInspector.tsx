@@ -14,11 +14,7 @@ import { Label } from '@/components/ui/label';
 import { useAssignmentStudioContext } from './AssignmentStudioContext';
 import SaveStateBadge from './SaveStateBadge';
 import type { SaveState } from './SaveStateBadge';
-import {
-  getAssignmentTotalPoints,
-  pointsToPercent,
-  type AssignmentRead,
-} from './studio-compat';
+import { getAssignmentTotalPoints, pointsToPercent, type AssignmentRead } from './studio-compat';
 
 export default function AssignmentInspector() {
   const { assignment, tasks, isEditable, refresh } = useAssignmentStudioContext();

@@ -125,7 +125,7 @@ export function CodeEditor({
         }}
         loading={
           <div
-            className="flex items-center justify-center bg-muted animate-pulse rounded-lg"
+            className="bg-muted flex animate-pulse items-center justify-center rounded-lg"
             style={{ height: typeof height === 'number' ? `${height}px` : height }}
           >
             <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
