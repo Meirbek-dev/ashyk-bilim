@@ -62,7 +62,7 @@ class PlagiarismScore(PydanticStrictBaseModel):
 class SubmissionMetadata(PydanticStrictBaseModel):
     """Typed sub-shapes carved out of Submission.metadata_json."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
     # Latest visible-test run result (overwritten on each Run click; never finalised)
     latest_run: CodeRunRecord | None = None
@@ -201,8 +201,8 @@ class SubmissionBase(SQLModelStrictBaseModel):
     # Late flag — set when submitted after due_date, independent of status
     is_late: bool = False
 
-    # Penalty percentage snapshotted at submit time from the AssessmentPolicy's
-    # late_policy_json.  0.0 = no penalty.  final_score = raw * (1 - pct/100).
+    # Penalty percentage snapshotted at submit time from the canonical late policy.
+    # 0.0 = no penalty. final_score = raw * (1 - pct/100).
     late_penalty_pct: float = 0.0
 
     @field_validator("assessment_type", mode="before")

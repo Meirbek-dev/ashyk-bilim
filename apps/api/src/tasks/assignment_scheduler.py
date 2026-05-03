@@ -15,9 +15,9 @@ import logging
 from datetime import UTC, datetime
 
 from src.db.assessments import Assessment, AssessmentLifecycle
-from src.db.courses.activities import Activity
 from src.infra.db.engine import get_bg_engine
 from src.infra.settings import AppSettings
+from src.services.assessments.core import _sync_activity_lifecycle
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,11 @@ def _publish_due_assignments() -> int:
 
         for assessment in due_assessments:
             try:
-                activity = db.get(Activity, assessment.activity_id)
+                activity = None
+                if assessment.activity_id is not None:
+                    from src.db.courses.activities import Activity
+
+                    activity = db.get(Activity, assessment.activity_id)
                 assessment.lifecycle = AssessmentLifecycle.PUBLISHED
                 assessment.published_at = now
                 assessment.scheduled_at = None
@@ -70,7 +74,7 @@ def _publish_due_assignments() -> int:
                 db.add(assessment)
 
                 if activity is not None:
-                    activity.published = True
+                    _sync_activity_lifecycle(assessment, activity)
                     db.add(activity)
 
                 db.commit()

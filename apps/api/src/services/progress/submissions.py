@@ -330,11 +330,7 @@ def sync_quiz_attempt(
     submission.status = status
     submission.answers_json = attempt.answers or {}
     submission.grading_json = _quiz_grading_json(attempt)
-    submission.metadata_json = {
-        **(submission.metadata_json or {}),
-        "quiz_attempt_id": attempt.id,
-        "attempt_uuid": attempt.attempt_uuid,
-    }
+    submission.metadata_json = submission.metadata_json or {}
     submission.auto_score = float(attempt.score or 0)
     submission.final_score = None if manual_review else float(attempt.score or 0)
     submission.is_late = False

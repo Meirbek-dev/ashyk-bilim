@@ -35,13 +35,13 @@ _TEMP_UPLOAD_ROOT = Path("temp_uploads/assessment")
 
 
 class ChunkedUploadInitiateResponse(PydanticStrictBaseModel):
-    upload_id: str
+    upload_uuid: str
     message: str
 
 
 class ChunkedUploadChunkResponse(PydanticStrictBaseModel):
     success: bool
-    upload_id: str
+    upload_uuid: str
     chunk_index: int
     chunks_received: int
     total_chunks: int
@@ -56,7 +56,7 @@ class ChunkedUploadCompleteResponse(PydanticStrictBaseModel):
 
 
 class ChunkedUploadStatusResponse(PydanticStrictBaseModel):
-    upload_id: str
+    upload_uuid: str
     filename: str
     chunks_received: int
     total_chunks: int
@@ -64,21 +64,18 @@ class ChunkedUploadStatusResponse(PydanticStrictBaseModel):
     file_size: int
 
 
-class ChunkedUploadCancelResponse(PydanticStrictBaseModel):
-    success: bool
-    message: str
+def _temp_upload_path(upload_uuid: str) -> Path:
+    return _TEMP_UPLOAD_ROOT / upload_uuid / "bytes"
 
 
-def _temp_upload_path(upload_id: str) -> Path:
-    return _TEMP_UPLOAD_ROOT / upload_id / "bytes"
+def _read_upload(upload_uuid: str, db_session: Session) -> Upload | None:
+    return db_session.exec(
+        select(Upload).where(Upload.upload_uuid == upload_uuid)
+    ).first()
 
 
-def _read_upload(upload_id: str, db_session: Session) -> Upload | None:
-    return db_session.exec(select(Upload).where(Upload.upload_id == upload_id)).first()
-
-
-def _owned_upload(upload_id: str, user_id: int, db_session: Session) -> Upload:
-    upload = _read_upload(upload_id, db_session)
+def _owned_upload(upload_uuid: str, user_id: int, db_session: Session) -> Upload:
+    upload = _read_upload(upload_uuid, db_session)
     if upload is None or upload.user_id != user_id:
         raise HTTPException(status_code=404, detail="Upload not found")
     return upload
@@ -87,7 +84,7 @@ def _owned_upload(upload_id: str, user_id: int, db_session: Session) -> Upload:
 def _upload_key(upload: Upload, sha256: str, user_uuid: str) -> str:
     """Return the PII-free object-storage key for a finalised upload.
 
-    Format: uploads/{user_uuid}/{yyyy}/{mm}/{upload_id}/{sha256}.{ext}
+    Format: uploads/{user_uuid}/{yyyy}/{mm}/{upload_uuid}/{sha256}.{ext}
     The user's email is never embedded in the key.
     """
     suffix = Path(upload.filename).suffix.lower()
@@ -95,7 +92,7 @@ def _upload_key(upload: Upload, sha256: str, user_uuid: str) -> str:
         suffix = ".bin"
     year = upload.created_at.strftime("%Y")
     month = upload.created_at.strftime("%m")
-    return f"uploads/{user_uuid}/{year}/{month}/{upload.upload_id}/{sha256}{suffix}"
+    return f"uploads/{user_uuid}/{year}/{month}/{upload.upload_uuid}/{sha256}{suffix}"
 
 
 @router.post("", response_model=UploadCreateResponse)
@@ -106,21 +103,21 @@ async def create_assessment_upload(
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> UploadCreateResponse:
     upload = Upload(
-        upload_id=f"ul_{ULID()}",
+        upload_uuid=f"ul_{ULID()}",
         user_id=current_user.id,
         filename=payload.filename,
         content_type=payload.content_type,
-        size=payload.size,
+        size_bytes=payload.size,
         expires_at=datetime.now(UTC) + timedelta(hours=24),
     )
     db_session.add(upload)
     db_session.commit()
     db_session.refresh(upload)
     put_url = str(
-        request.url_for("put_assessment_upload_bytes", upload_id=upload.upload_id)
+        request.url_for("put_assessment_upload_bytes", upload_id=upload.upload_uuid)
     )
     return UploadCreateResponse(
-        upload_id=upload.upload_id,
+        upload_uuid=upload.upload_uuid,
         put_url=put_url,
         expires_at=upload.expires_at,
     )
@@ -140,12 +137,12 @@ async def put_assessment_upload_bytes(
         raise HTTPException(status_code=410, detail="Upload has expired")
 
     content = await request.body()
-    temp_path = _temp_upload_path(upload.upload_id)
+    temp_path = _temp_upload_path(upload.upload_uuid)
     temp_path.parent.mkdir(parents=True, exist_ok=True)
     temp_path.write_bytes(content)
 
     upload.status = UploadStatus.RECEIVING
-    upload.size = len(content)
+    upload.size_bytes = len(content)
     upload.content_type = request.headers.get("content-type", upload.content_type)
     upload.updated_at = datetime.now(UTC)
     db_session.add(upload)
@@ -167,7 +164,7 @@ async def finalize_assessment_upload(
     if upload.status == UploadStatus.CANCELLED:
         raise HTTPException(status_code=409, detail="Upload is cancelled")
 
-    temp_path = _temp_upload_path(upload.upload_id)
+    temp_path = _temp_upload_path(upload.upload_uuid)
     if not temp_path.exists():
         raise HTTPException(status_code=400, detail="Upload bytes are missing")
     content = temp_path.read_bytes()
@@ -191,8 +188,8 @@ async def finalize_assessment_upload(
     upload.status = UploadStatus.FINALIZED
     upload.sha256 = sha256
     upload.content_type = payload.content_type or upload.content_type
-    upload.size = len(content)
-    upload.key = key
+    upload.size_bytes = len(content)
+    upload.storage_key = key
     upload.finalized_at = datetime.now(UTC)
     upload.updated_at = upload.finalized_at
     db_session.add(upload)
@@ -222,7 +219,7 @@ async def delete_assessment_upload(
 
 
 class UploadUrlResponse(PydanticStrictBaseModel):
-    upload_id: str
+    upload_uuid: str
     get_url: str
     expires_at: datetime
 
@@ -243,7 +240,7 @@ async def get_assessment_upload_url(
     get_url = str(request.url_for("put_assessment_upload_bytes", upload_id=upload_id))
     expires_at = datetime.now(UTC) + timedelta(hours=1)
     return UploadUrlResponse(
-        upload_id=upload_id, get_url=get_url, expires_at=expires_at
+        upload_uuid=upload_id, get_url=get_url, expires_at=expires_at
     )
 
 
@@ -269,7 +266,7 @@ async def initiate_chunked_upload(
         file_size: Total file size in bytes
 
     Returns:
-        upload_id: Unique identifier for this upload session
+        upload_uuid: Unique identifier for this upload session
     """
     upload_id = create_upload_session(
         directory=directory,
@@ -281,7 +278,7 @@ async def initiate_chunked_upload(
     )
 
     return {
-        "upload_id": upload_id,
+        "upload_uuid": upload_id,
         "message": "Upload session initiated",
     }
 
@@ -308,7 +305,7 @@ async def upload_chunk(
 
     return {
         "success": True,
-        "upload_id": result["upload_id"],
+        "upload_uuid": result["upload_id"],
         "chunk_index": result["chunk_index"],
         "chunks_received": result["chunks_received"],
         "total_chunks": result["total_chunks"],
@@ -374,44 +371,12 @@ async def get_upload_status(
     Returns:
         Upload progress and details
     """
-    return get_session_status(upload_id)
-
-
-@router.delete("/{upload_id}", response_model=ChunkedUploadCancelResponse)
-async def cancel_upload(
-    upload_id: str,
-    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
-    db_session: Annotated[Session, Depends(get_db_session)] = None,
-):
-    """
-    Cancel an upload and clean up temporary files.
-
-    Args:
-        upload_id: Upload session ID
-
-    Returns:
-        Confirmation message
-    """
-    if db_session is not None and current_user is not None:
-        upload = _read_upload(upload_id, db_session)
-        if upload is not None:
-            if upload.user_id != current_user.id:
-                raise HTTPException(status_code=404, detail="Upload not found")
-            upload.status = UploadStatus.CANCELLED
-            upload.updated_at = datetime.now(UTC)
-            db_session.add(upload)
-            db_session.commit()
-            temp_path = _temp_upload_path(upload_id)
-            temp_path.unlink(missing_ok=True)
-            cleanup_session(upload_id)
-            return {
-                "success": True,
-                "message": "Upload cancelled and cleaned up",
-            }
-
-    cleanup_session(upload_id)
-
+    status = get_session_status(upload_id)
     return {
-        "success": True,
-        "message": "Upload cancelled and cleaned up",
+        "upload_uuid": status["upload_id"],
+        "filename": status["filename"],
+        "chunks_received": status["chunks_received"],
+        "total_chunks": status["total_chunks"],
+        "is_complete": status["is_complete"],
+        "file_size": status["file_size"],
     }

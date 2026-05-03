@@ -1,7 +1,6 @@
 'use client';
 
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CodeSubmission } from '@/services/courses/code-challenges';
 import {
   runCodeChallengeTestsMutationOptions,
   runCustomTestMutationOptions,

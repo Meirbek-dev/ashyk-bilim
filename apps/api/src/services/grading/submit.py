@@ -27,6 +27,7 @@ from src.db.grading.submissions import (
     SubmissionRead,
     SubmissionStatus,
 )
+from src.db.grading.progress import LATE_POLICY_ADAPTER
 from src.db.users import PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.gamification.service import award_xp as _gamification_award_xp
@@ -475,21 +476,17 @@ def _calculate_late_penalty(
     if policy is None or not policy.allow_late:
         return 0.0
 
-    late_policy = policy.late_policy_json or {}
-    policy_type = str(late_policy.get("type", "NO_PENALTY")).upper()
+    late_policy = LATE_POLICY_ADAPTER.validate_python(policy.late_policy_json or {})
 
-    if policy_type == "NO_PENALTY":
+    if late_policy.kind == "NONE":
         return 0.0
-    if policy_type == "FLAT_PERCENT":
-        return _clamp_pct(late_policy.get("percent", 0.0))
-    if policy_type == "PER_DAY":
+    if late_policy.kind == "CUTOFF":
+        return 100.0 if submitted_at > late_policy.cutoff_at else 0.0
+    if late_policy.kind == "PENALTY":
         seconds_late = max(0.0, (submitted_at - due_at).total_seconds())
-        days_late = max(1, ceil(seconds_late / 86400))
-        pct_per_day = _float_or_zero(late_policy.get("percent_per_day", 0.0))
-        max_pct = _clamp_pct(late_policy.get("max_pct", 100.0))
-        return min(max_pct, _clamp_pct(days_late * pct_per_day))
-    if policy_type == "ZERO_GRADE":
-        return 100.0
+        days_late = min(late_policy.max_days, max(1, ceil(seconds_late / 86400)))
+        max_pct = _clamp_pct(days_late * late_policy.percent_per_day)
+        return min(100.0, max_pct)
     return 0.0
 
 

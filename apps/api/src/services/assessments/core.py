@@ -38,7 +38,6 @@ from src.db.courses.activities import (
     ActivitySubTypeEnum,
     ActivityTypeEnum,
 )
-from src.db.courses.blocks import Block, BlockTypeEnum
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
 from src.db.grading.progress import (

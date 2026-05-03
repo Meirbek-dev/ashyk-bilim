@@ -83,12 +83,14 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   });
 
   const submissionsQuery = useQuery({
-    queryKey: submissionsQueryKey,
-    enabled: Boolean(assessmentUuid),
-    queryFn: async () => {
-      const response = await apiFetch(`assessments/${assessmentUuid}/me`);
-       return (await readJsonOrThrow(response)) as AssessmentSubmissionRead[];
-    },
+    ...queryOptions({
+      queryKey: submissionsQueryKey,
+      queryFn: async () => {
+        const response = await apiFetch(`assessments/${assessmentUuid}/me`);
+        return (await readJsonOrThrow(response)) as AssessmentSubmissionRead[];
+      },
+      enabled: Boolean(assessmentUuid),
+    }),
   });
 
   const draft = draftQuery.data?.submission ?? null;

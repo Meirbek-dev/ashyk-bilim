@@ -22,7 +22,7 @@ class Upload(SQLModelStrictBaseModel, table=True):
 
     __tablename__ = "upload"
     __table_args__ = (
-        Index("ix_upload_upload_id", "upload_id", unique=True),
+        Index("ix_upload_upload_uuid", "upload_uuid", unique=True),
         Index("ix_upload_user_status", "user_id", "status"),
     )
 
