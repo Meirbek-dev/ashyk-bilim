@@ -331,7 +331,7 @@ async def api_export_exam_questions_csv(
 @router.post("/{assessment_uuid}/exam/questions:import-csv")
 async def api_import_exam_questions_csv(
     assessment_uuid: str,
-    file: UploadFile = File(...),
+    file: Annotated[UploadFile, File()],
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> dict[str, object]:

@@ -15,13 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAssignmentStudioContext } from './AssignmentStudioContext';
 import SaveStateBadge from './SaveStateBadge';
 import type { SaveState } from './SaveStateBadge';
-import {
-  getTaskTypeEditor,
-  patchEditorValue,
-  pointsToPercent,
-  taskToEditorValue,
-  type AssignmentTaskEditorValue,
-} from './studio-compat';
+import { getTaskTypeEditor, patchEditorValue, pointsToPercent, taskToEditorValue } from './studio-compat';
+import type { AssignmentTaskEditorValue } from './studio-compat';
 
 export default function AssignmentTaskEditor() {
   const { assignmentUuid, tasks, selectedTaskUuid, setSelectedTaskUuid, refresh, isEditable, totalPoints } =

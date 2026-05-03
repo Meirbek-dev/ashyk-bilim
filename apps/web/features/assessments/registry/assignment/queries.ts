@@ -5,7 +5,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { getAPIUrl } from '@services/config/config';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 
-import { assessmentItemToAssignmentTask, assessmentToAssignmentRead, type AssignmentRead } from './models';
+import { assessmentItemToAssignmentTask, assessmentToAssignmentRead } from './models';
 
 function normalizeAssignmentUuid(assignmentUuid: string) {
   return assignmentUuid.startsWith('assignment_') ? assignmentUuid : `assignment_${assignmentUuid}`;

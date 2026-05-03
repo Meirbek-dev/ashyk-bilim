@@ -373,9 +373,9 @@ def _preset_sql_filter(preset: str | None):
     if not preset or preset == "all":
         return None
     if preset == "published":
-        return Course.public == True
+        return Course.public
     if preset == "private":
-        return Course.public == False
+        return not Course.public
     if preset == "recent":
         cutoff = datetime.now(tz=UTC) - timedelta(days=14)
         return Course.update_date >= cutoff
@@ -383,7 +383,7 @@ def _preset_sql_filter(preset: str | None):
         return _attention_sql_condition()
     if preset == "drafts":
         # Draft = not public OR not ready.
-        return or_(Course.public == False, ~_ready_sql_condition())
+        return or_(not Course.public, ~_ready_sql_condition())
     return None
 
 

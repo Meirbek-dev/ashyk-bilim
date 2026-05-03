@@ -113,9 +113,9 @@ export async function getSubmission(submissionUuid: string): Promise<Submission 
 }
 
 export class StaleGradeError extends Error {
-  readonly name = 'StaleGradeError';
-  readonly serverSubmission: Submission;
-  constructor(serverSubmission: Submission) {
+  public readonly name = 'StaleGradeError';
+  public readonly serverSubmission: Submission;
+  public constructor(serverSubmission: Submission) {
     super('Grade was updated by another session. Review the latest values before saving.');
     this.serverSubmission = serverSubmission;
   }

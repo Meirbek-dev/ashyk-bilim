@@ -29,7 +29,7 @@ export async function getAssessmentByUuid(assessmentUuid: string): Promise<Asses
     const result = await apiFetch(`assessments/${assessmentUuid}`, {
       method: 'GET',
       baseUrl: getAPIUrl(),
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(8000),
     });
     if (result.status === 404) return null;
     return (await errorHandling(result)) as AssessmentSummary;
@@ -47,7 +47,7 @@ export async function getAssessmentByActivityUuid(activityUuid: string): Promise
     const result = await apiFetch(`assessments/activity/${activityUuid}`, {
       method: 'GET',
       baseUrl: getAPIUrl(),
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(8000),
     });
     if (result.status === 404) return null;
     return (await errorHandling(result)) as AssessmentSummary;

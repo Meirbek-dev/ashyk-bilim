@@ -64,7 +64,7 @@ function assessmentToAssignmentRead(data: any): AssignmentRead {
     activity_uuid: data.activity_uuid ?? null,
     created_at: data.created_at ?? null,
     updated_at: data.updated_at ?? null,
-  } as AssignmentRead;
+  };
 }
 
 function assignmentPatchToAssessmentPatch(body: AssignmentDraftPatch) {

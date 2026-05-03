@@ -62,11 +62,11 @@ export interface SubmissionMetadata {
 
 export function getSubmissionMetadata(submission: Pick<Submission, 'metadata_json'>): SubmissionMetadata {
   const raw = submission.metadata_json;
-  return raw && typeof raw === 'object' ? (raw as SubmissionMetadata) : {};
+  return raw && typeof raw === 'object' ? raw : {};
 }
 
 export function getSubmissionViolations(submission: Pick<Submission, 'metadata_json'>): AntiCheatViolation[] {
-  const violations = getSubmissionMetadata(submission).violations;
+  const { violations } = getSubmissionMetadata(submission);
   return Array.isArray(violations) ? violations : [];
 }
 

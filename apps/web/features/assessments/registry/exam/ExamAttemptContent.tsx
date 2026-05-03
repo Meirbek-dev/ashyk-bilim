@@ -9,11 +9,8 @@ import { queryKeys } from '@/lib/react-query/queryKeys';
 import { courseKeys } from '@/hooks/courses/courseKeys';
 import { useContributorStatus } from '@/hooks/useContributorStatus';
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy';
-import {
-  isAnswered as isItemAnswered,
-  type AssessmentItem,
-  type ItemAnswer,
-} from '@/features/assessments/domain/items';
+import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items';
+import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items';
 import { useAttemptShellControls } from '@/features/assessments/shell';
 import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAssessmentAttempt';
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
@@ -374,7 +371,7 @@ function ExamTakingContent({
 
 function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
   return items.reduce<QuestionData[]>((questions, item) => {
-    const body = item.body;
+    const { body } = item;
 
     if (body.kind === 'CHOICE') {
       questions.push({

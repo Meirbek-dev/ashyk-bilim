@@ -12,8 +12,7 @@ async function updateExamSettingsRequest(examUuid: string, settings: Record<stri
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       policy: {
-        time_limit_seconds:
-          typeof settings.time_limit === 'number' ? Math.max(0, Number(settings.time_limit)) * 60 : null,
+        time_limit_seconds: typeof settings.time_limit === 'number' ? Math.max(0, settings.time_limit) * 60 : null,
         anti_cheat_json: {
           copy_paste_protection: settings.copy_paste_protection,
           tab_switch_detection: settings.tab_switch_detection,
@@ -65,8 +64,7 @@ async function createExamWithActivityRequest(
       grading_type: 'PERCENTAGE',
       policy: {
         max_attempts: typeof input.settings.attempt_limit === 'number' ? input.settings.attempt_limit : 1,
-        time_limit_seconds:
-          typeof input.settings.time_limit === 'number' ? Number(input.settings.time_limit) * 60 : null,
+        time_limit_seconds: typeof input.settings.time_limit === 'number' ? input.settings.time_limit * 60 : null,
         anti_cheat_json: {
           copy_paste_protection: input.settings.copy_paste_protection,
           tab_switch_detection: input.settings.tab_switch_detection,

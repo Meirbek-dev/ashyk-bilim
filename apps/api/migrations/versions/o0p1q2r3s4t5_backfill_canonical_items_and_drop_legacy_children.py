@@ -396,8 +396,9 @@ def upgrade() -> None:
             raise RuntimeError("Assignment task row is missing assignment_task_uuid")
         assessment = assessments.get(("ASSIGNMENT", int(row.activity_id)))
         if assessment is None:
+            msg = f"Missing canonical assessment for assignment activity {row.activity_id}"
             raise RuntimeError(
-                f"Missing canonical assessment for assignment activity {row.activity_id}"
+                msg
             )
         if row.assignment_task_uuid in existing_item_uuids:
             continue
@@ -443,8 +444,9 @@ def upgrade() -> None:
             raise RuntimeError("Question row is missing question_uuid")
         assessment = assessments.get(("EXAM", int(row.activity_id)))
         if assessment is None:
+            msg = f"Missing canonical assessment for exam activity {row.activity_id}"
             raise RuntimeError(
-                f"Missing canonical assessment for exam activity {row.activity_id}"
+                msg
             )
         if row.question_uuid in existing_item_uuids:
             continue
@@ -517,8 +519,9 @@ def upgrade() -> None:
             continue
         assessment = assessments.get(("EXAM", int(row.activity_id)))
         if assessment is None:
+            msg = f"Missing canonical assessment for exam activity {row.activity_id}"
             raise RuntimeError(
-                f"Missing canonical assessment for exam activity {row.activity_id}"
+                msg
             )
         status_value = str(row.status or "")
         canonical_status = (
@@ -601,8 +604,9 @@ def upgrade() -> None:
             continue
         assessment = assessments.get(("CODE_CHALLENGE", int(row.activity_id)))
         if assessment is None:
+            msg = f"Missing canonical assessment for code challenge activity {row.activity_id}"
             raise RuntimeError(
-                f"Missing canonical assessment for code challenge activity {row.activity_id}"
+                msg
             )
         status_value = str(row.status or "")
         canonical_status = (

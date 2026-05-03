@@ -17,12 +17,11 @@ import ErrorUI from '@/components/Objects/Elements/Error/Error';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
 import {
   normalizeAssignmentTasks,
-  type AssignmentRead,
-  type AssignmentTaskRead,
   useAssignmentByActivity,
   useAssignmentDetail,
   useAssignmentTasks,
 } from './studio-compat';
+import type { AssignmentRead, AssignmentTaskRead } from './studio-compat';
 
 // ── Context shape ─────────────────────────────────────────────────────────────
 

@@ -16,7 +16,7 @@ class StrictAPIRoute(APIRoute):
     defined in the response model, preventing schema drift.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         if "response_model_exclude_none" not in kwargs:
             kwargs["response_model_exclude_none"] = False
         super().__init__(*args, **kwargs)

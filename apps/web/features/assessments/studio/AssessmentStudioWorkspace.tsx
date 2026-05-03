@@ -134,8 +134,8 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
         toast.success(`Lifecycle changed to ${LIFECYCLE_LABELS[lifecycle]}`);
         setScheduleOpen(false);
         setScheduledAt('');
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to update lifecycle');
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to update lifecycle');
       }
     });
   };

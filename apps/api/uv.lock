@@ -158,7 +158,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.18.4" },
     { name = "alembic-postgresql-enum", specifier = ">=1.10.0" },
     { name = "argon2-cffi", specifier = ">=25.1.0" },
-    { name = "cachetools", specifier = ">=7.0.6" },
+    { name = "cachetools", specifier = ">=7.1.0" },
     { name = "cryptography", specifier = ">=47.0.0" },
     { name = "fastapi", extras = ["standard-no-fastapi-cloud-cli"], specifier = ">=0.136.1" },
     { name = "fastapi-users", extras = ["sqlalchemy"], specifier = ">=15.0.5" },
@@ -167,9 +167,9 @@ requires-dist = [
     { name = "openai", specifier = ">=2.33.0" },
     { name = "passlib", extras = ["argon2"], specifier = ">=1.7.4" },
     { name = "pgvector", specifier = ">=0.4.2" },
-    { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.3.3" },
+    { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.3.4" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.13.3" },
-    { name = "pydantic-ai-slim", extras = ["logfire", "evals", "openai"], specifier = ">=1.88.0" },
+    { name = "pydantic-ai-slim", extras = ["logfire", "evals", "openai"], specifier = ">=1.89.1" },
     { name = "pydantic-settings", specifier = ">=2.14.0" },
     { name = "pyjwt", specifier = ">=2.12.1" },
     { name = "python-ulid", specifier = ">=3.1.0" },
@@ -179,7 +179,7 @@ requires-dist = [
     { name = "slowapi", specifier = ">=0.1.9" },
     { name = "sqlmodel", specifier = ">=0.0.38" },
     { name = "tiktoken", specifier = ">=0.12.0" },
-    { name = "typer", specifier = ">=0.25.0" },
+    { name = "typer", specifier = ">=0.25.1" },
 ]
 
 [package.metadata.requires-dev]

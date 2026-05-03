@@ -12,7 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList';
 import { useAttemptShellControls } from '@/features/assessments/shell';
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
-import { ChoiceItemAttempt, type ChoiceAttemptItem, type ChoiceAnswer } from '@/features/assessments/items/choice';
+import { ChoiceItemAttempt } from '@/features/assessments/items/choice';
+import type { ChoiceAttemptItem, ChoiceAnswer } from '@/features/assessments/items/choice';
 import { FileUploadAttempt, normalizeFileUploadConstraints } from '@/features/assessments/items/file-upload';
 import { FormItemAttempt, normalizeFormItem } from '@/features/assessments/items/form';
 import { OpenTextAttempt, normalizeOpenText } from '@/features/assessments/items/open-text';
@@ -23,7 +24,7 @@ import type { KindAttemptProps } from '../index';
 export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
   const assessmentUuid = vm?.assessmentUuid ?? null;
   const submissionState = useAssessmentSubmission(assessmentUuid);
-  const status = submissionState.status;
+  const { status } = submissionState;
   const saveState = mapSaveState(submissionState.saveState, status);
   const canEdit = status === null || status === 'DRAFT' || status === 'RETURNED';
   const canSave = canEdit && submissionState.saveState === 'dirty';
@@ -214,7 +215,7 @@ function ItemAttemptRenderer({
   assessmentUuid: string;
   onChange: (answer: ItemAnswer) => void;
 }) {
-  const body = item.body;
+  const { body } = item;
 
   if (body.kind === 'CHOICE') {
     const choiceModule = getItemKindModule(body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE');
@@ -485,7 +486,7 @@ function ItemAttemptRenderer({
       }
       onChange({
         kind: 'MATCHING',
-        matches: Array.from(next.entries()).map(
+        matches: [...next.entries()].map(
           ([matchLeft, matchRight]): MatchPair => ({
             left: matchLeft,
             right: matchRight,

@@ -133,8 +133,8 @@ function ViolationLog({ submission }: { submission: Submission }) {
       </div>
       <ul className="space-y-2 text-xs">
         {violations.map((v, idx) => {
-          const kind = String(v.kind ?? 'UNKNOWN');
-          const occurredAt = String(v.occurred_at ?? '');
+          const kind = v.kind ?? 'UNKNOWN';
+          const occurredAt = v.occurred_at ?? '';
           const count = typeof v.count === 'number' ? v.count : null;
           return (
             <li
