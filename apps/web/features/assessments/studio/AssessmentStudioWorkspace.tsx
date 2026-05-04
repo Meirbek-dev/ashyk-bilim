@@ -215,7 +215,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                 onOpenChange={setScheduleOpen}
               >
                 <PopoverTrigger
-                  nativeButton={false}
+                  nativeButton
                   render={
                     <Button
                       size="sm"
@@ -269,7 +269,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
             {/* Overflow: archive */}
             <DropdownMenu>
               <DropdownMenuTrigger
-                nativeButton={false}
+                nativeButton
                 render={
                   <Button
                     variant="outline"

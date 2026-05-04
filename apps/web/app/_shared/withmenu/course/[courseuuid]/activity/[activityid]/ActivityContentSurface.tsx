@@ -1,13 +1,15 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Loader2, Minimize2 } from 'lucide-react';
+import { ClipboardList, Loader2, Minimize2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext';
 import CourseEndView from '@components/Pages/Activity/CourseEndView';
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail';
+import { Button } from '@/components/ui/button';
 import ActivityToolbar from './ActivityToolbar';
 
 const Canva = dynamic(
@@ -24,6 +26,8 @@ const DocumentPdfActivity = dynamic(() => import('@components/Objects/Activities
 });
 
 export function ActivityContent({ activity, course }: { activity: Activity; course: CourseStructure }) {
+  const t = useTranslations('ActivityPage');
+
   switch (activity.activity_type) {
     case 'TYPE_DYNAMIC': {
       return (
@@ -49,8 +53,32 @@ export function ActivityContent({ activity, course }: { activity: Activity; cour
         />
       );
     }
+    case 'TYPE_ASSIGNMENT':
+    case 'TYPE_EXAM':
+    case 'TYPE_CODE_CHALLENGE': {
+      return (
+        <div className="flex flex-col items-center gap-4 py-12 text-center">
+          <div className="bg-muted flex size-12 items-center justify-center rounded-full">
+            <ClipboardList className="text-muted-foreground size-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-medium">{t('assessmentTitle') || 'Assessment'}</h3>
+            <p className="text-muted-foreground max-w-sm text-sm">
+              {t('assessmentDescription') ||
+                'This activity is an assessment. Please use the button below to start or continue your attempt.'}
+            </p>
+          </div>
+          <Button
+            nativeButton={false}
+            render={<Link href={`/assessments/${activity.activity_uuid.replace('activity_', '')}`} />}
+          >
+            {t('openAssessment') || 'Open Assessment'}
+          </Button>
+        </div>
+      );
+    }
     default: {
-      return <div className="text-muted-foreground text-sm">Unsupported activity type.</div>;
+      return <div className="text-muted-foreground text-sm">Unsupported activity type: {activity.activity_type}</div>;
     }
   }
 }

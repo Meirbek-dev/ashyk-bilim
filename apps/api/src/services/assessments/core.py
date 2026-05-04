@@ -710,6 +710,35 @@ def _get_or_project_assessment_for_activity(
     if existing is not None:
         return existing
 
+    if activity.activity_type in _ACTIVITY_TO_KIND:
+        kind = _ACTIVITY_TO_KIND[activity.activity_type]
+        now = datetime.now(UTC)
+        policy = _get_or_create_policy(
+            activity_id=activity.id,
+            kind=kind,
+            patch=None,
+            db_session=db_session,
+            now=now,
+        )
+        db_session.flush()
+        assessment = Assessment(
+            assessment_uuid=f"assessment_{ULID()}",
+            activity_id=activity.id,
+            kind=kind,
+            title=activity.name,
+            description="",
+            lifecycle=AssessmentLifecycle.DRAFT,
+            weight=1.0,
+            grading_type=AssessmentGradingType.PERCENTAGE,
+            policy_id=policy.id,
+            created_at=now,
+            updated_at=now,
+        )
+        db_session.add(assessment)
+        db_session.commit()
+        db_session.refresh(assessment)
+        return assessment
+
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="Assessment not found for activity",
