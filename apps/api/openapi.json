@@ -51,10 +51,8 @@
             "title": "Id",
             "type": "integer"
           },
-          "late_policy_json": {
-            "additionalProperties": true,
-            "title": "Late Policy Json",
-            "type": "object"
+          "late_policy": {
+            "$ref": "#/components/schemas/LatePolicy"
           },
           "max_attempts": {
             "anyOf": [
@@ -1844,17 +1842,15 @@
             ],
             "title": "Due At"
           },
-          "late_policy_json": {
+          "late_policy": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/LatePolicy"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Late Policy Json"
+            ]
           },
           "max_attempts": {
             "anyOf": [
@@ -2192,682 +2188,6 @@
           }
         },
         "title": "AssessmentUpdate",
-        "type": "object"
-      },
-      "AssignmentFileItemAnswer": {
-        "properties": {
-          "answer_metadata": {
-            "additionalProperties": true,
-            "title": "Answer Metadata",
-            "type": "object"
-          },
-          "content_type": {
-            "const": "file",
-            "default": "file",
-            "title": "Content Type",
-            "type": "string"
-          },
-          "file_key": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Key"
-          },
-          "kind": {
-            "const": "ASSIGNMENT_FILE",
-            "default": "ASSIGNMENT_FILE",
-            "title": "Kind",
-            "type": "string"
-          },
-          "uploads": {
-            "items": {
-              "$ref": "#/components/schemas/FileUploadReference"
-            },
-            "title": "Uploads",
-            "type": "array"
-          }
-        },
-        "title": "AssignmentFileItemAnswer",
-        "type": "object"
-      },
-      "AssignmentFileItemBody": {
-        "properties": {
-          "allowed_mime_types": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Allowed Mime Types",
-            "type": "array"
-          },
-          "description": {
-            "default": "",
-            "title": "Description",
-            "type": "string"
-          },
-          "hint": {
-            "default": "",
-            "title": "Hint",
-            "type": "string"
-          },
-          "kind": {
-            "const": "ASSIGNMENT_FILE",
-            "default": "ASSIGNMENT_FILE",
-            "title": "Kind",
-            "type": "string"
-          },
-          "max_file_size_mb": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max File Size Mb"
-          },
-          "max_files": {
-            "default": 1,
-            "title": "Max Files",
-            "type": "integer"
-          },
-          "reference_file": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reference File"
-          }
-        },
-        "title": "AssignmentFileItemBody",
-        "type": "object"
-      },
-      "AssignmentFormBlank": {
-        "properties": {
-          "blankUUID": {
-            "title": "Blankuuid",
-            "type": "string"
-          },
-          "correctAnswer": {
-            "default": "",
-            "title": "Correctanswer",
-            "type": "string"
-          },
-          "hint": {
-            "default": "",
-            "title": "Hint",
-            "type": "string"
-          },
-          "placeholder": {
-            "default": "",
-            "title": "Placeholder",
-            "type": "string"
-          }
-        },
-        "required": [
-          "blankUUID"
-        ],
-        "title": "AssignmentFormBlank",
-        "type": "object"
-      },
-      "AssignmentFormItemAnswer": {
-        "properties": {
-          "answer_metadata": {
-            "additionalProperties": true,
-            "title": "Answer Metadata",
-            "type": "object"
-          },
-          "content_type": {
-            "const": "form",
-            "default": "form",
-            "title": "Content Type",
-            "type": "string"
-          },
-          "form_data": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Form Data"
-          },
-          "kind": {
-            "const": "ASSIGNMENT_FORM",
-            "default": "ASSIGNMENT_FORM",
-            "title": "Kind",
-            "type": "string"
-          }
-        },
-        "title": "AssignmentFormItemAnswer",
-        "type": "object"
-      },
-      "AssignmentFormItemBody": {
-        "properties": {
-          "description": {
-            "default": "",
-            "title": "Description",
-            "type": "string"
-          },
-          "hint": {
-            "default": "",
-            "title": "Hint",
-            "type": "string"
-          },
-          "kind": {
-            "const": "ASSIGNMENT_FORM",
-            "default": "ASSIGNMENT_FORM",
-            "title": "Kind",
-            "type": "string"
-          },
-          "questions": {
-            "items": {
-              "$ref": "#/components/schemas/AssignmentFormQuestion"
-            },
-            "title": "Questions",
-            "type": "array"
-          }
-        },
-        "title": "AssignmentFormItemBody",
-        "type": "object"
-      },
-      "AssignmentFormQuestion": {
-        "properties": {
-          "blanks": {
-            "items": {
-              "$ref": "#/components/schemas/AssignmentFormBlank"
-            },
-            "title": "Blanks",
-            "type": "array"
-          },
-          "questionText": {
-            "default": "",
-            "title": "Questiontext",
-            "type": "string"
-          },
-          "questionUUID": {
-            "title": "Questionuuid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "questionUUID"
-        ],
-        "title": "AssignmentFormQuestion",
-        "type": "object"
-      },
-      "AssignmentOtherItemAnswer": {
-        "properties": {
-          "answer_metadata": {
-            "additionalProperties": true,
-            "title": "Answer Metadata",
-            "type": "object"
-          },
-          "content_type": {
-            "default": "text",
-            "enum": [
-              "text",
-              "other"
-            ],
-            "title": "Content Type",
-            "type": "string"
-          },
-          "kind": {
-            "const": "ASSIGNMENT_OTHER",
-            "default": "ASSIGNMENT_OTHER",
-            "title": "Kind",
-            "type": "string"
-          },
-          "text_content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Text Content"
-          }
-        },
-        "title": "AssignmentOtherItemAnswer",
-        "type": "object"
-      },
-      "AssignmentOtherItemBody": {
-        "properties": {
-          "body": {
-            "additionalProperties": true,
-            "title": "Body",
-            "type": "object"
-          },
-          "description": {
-            "default": "",
-            "title": "Description",
-            "type": "string"
-          },
-          "hint": {
-            "default": "",
-            "title": "Hint",
-            "type": "string"
-          },
-          "kind": {
-            "const": "ASSIGNMENT_OTHER",
-            "default": "ASSIGNMENT_OTHER",
-            "title": "Kind",
-            "type": "string"
-          }
-        },
-        "title": "AssignmentOtherItemBody",
-        "type": "object"
-      },
-      "AssignmentQuizItemAnswer": {
-        "properties": {
-          "answer_metadata": {
-            "additionalProperties": true,
-            "title": "Answer Metadata",
-            "type": "object"
-          },
-          "content_type": {
-            "const": "quiz",
-            "default": "quiz",
-            "title": "Content Type",
-            "type": "string"
-          },
-          "kind": {
-            "const": "ASSIGNMENT_QUIZ",
-            "default": "ASSIGNMENT_QUIZ",
-            "title": "Kind",
-            "type": "string"
-          },
-          "quiz_answers": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Quiz Answers"
-          }
-        },
-        "title": "AssignmentQuizItemAnswer",
-        "type": "object"
-      },
-      "AssignmentQuizItemBody": {
-        "properties": {
-          "description": {
-            "default": "",
-            "title": "Description",
-            "type": "string"
-          },
-          "hint": {
-            "default": "",
-            "title": "Hint",
-            "type": "string"
-          },
-          "kind": {
-            "const": "ASSIGNMENT_QUIZ",
-            "default": "ASSIGNMENT_QUIZ",
-            "title": "Kind",
-            "type": "string"
-          },
-          "questions": {
-            "items": {
-              "$ref": "#/components/schemas/AssignmentQuizQuestion"
-            },
-            "title": "Questions",
-            "type": "array"
-          },
-          "settings": {
-            "$ref": "#/components/schemas/AssignmentQuizSettings"
-          }
-        },
-        "title": "AssignmentQuizItemBody",
-        "type": "object"
-      },
-      "AssignmentQuizOption": {
-        "properties": {
-          "assigned_right_answer": {
-            "default": false,
-            "title": "Assigned Right Answer",
-            "type": "boolean"
-          },
-          "fileID": {
-            "default": "",
-            "title": "Fileid",
-            "type": "string"
-          },
-          "optionUUID": {
-            "title": "Optionuuid",
-            "type": "string"
-          },
-          "text": {
-            "default": "",
-            "title": "Text",
-            "type": "string"
-          },
-          "type": {
-            "default": "text",
-            "enum": [
-              "text",
-              "image",
-              "audio",
-              "video"
-            ],
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "optionUUID"
-        ],
-        "title": "AssignmentQuizOption",
-        "type": "object"
-      },
-      "AssignmentQuizQuestion": {
-        "properties": {
-          "options": {
-            "items": {
-              "$ref": "#/components/schemas/AssignmentQuizOption"
-            },
-            "title": "Options",
-            "type": "array"
-          },
-          "questionText": {
-            "default": "",
-            "title": "Questiontext",
-            "type": "string"
-          },
-          "questionUUID": {
-            "title": "Questionuuid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "questionUUID"
-        ],
-        "title": "AssignmentQuizQuestion",
-        "type": "object"
-      },
-      "AssignmentQuizSettings": {
-        "properties": {
-          "max_attempts": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Attempts"
-          },
-          "max_score_penalty_per_attempt": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Score Penalty Per Attempt"
-          },
-          "time_limit_seconds": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Time Limit Seconds"
-          }
-        },
-        "title": "AssignmentQuizSettings",
-        "type": "object"
-      },
-      "AssignmentTaskCreate": {
-        "properties": {
-          "assignment_type": {
-            "$ref": "#/components/schemas/AssignmentTaskTypeEnum"
-          },
-          "contents": {
-            "additionalProperties": true,
-            "title": "Contents",
-            "type": "object"
-          },
-          "description": {
-            "title": "Description",
-            "type": "string"
-          },
-          "hint": {
-            "title": "Hint",
-            "type": "string"
-          },
-          "max_grade_value": {
-            "default": 0,
-            "title": "Max Grade Value",
-            "type": "integer"
-          },
-          "reference_file": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reference File"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          }
-        },
-        "required": [
-          "title",
-          "description",
-          "hint",
-          "assignment_type"
-        ],
-        "title": "AssignmentTaskCreate",
-        "type": "object"
-      },
-      "AssignmentTaskRead": {
-        "properties": {
-          "assignment_task_uuid": {
-            "title": "Assignment Task Uuid",
-            "type": "string"
-          },
-          "assignment_type": {
-            "$ref": "#/components/schemas/AssignmentTaskTypeEnum"
-          },
-          "contents": {
-            "additionalProperties": true,
-            "title": "Contents",
-            "type": "object"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          },
-          "description": {
-            "title": "Description",
-            "type": "string"
-          },
-          "hint": {
-            "title": "Hint",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "max_grade_value": {
-            "default": 0,
-            "title": "Max Grade Value",
-            "type": "integer"
-          },
-          "order": {
-            "default": 0,
-            "title": "Order",
-            "type": "integer"
-          },
-          "reference_file": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reference File"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
-          }
-        },
-        "required": [
-          "title",
-          "description",
-          "hint",
-          "assignment_type",
-          "id",
-          "assignment_task_uuid"
-        ],
-        "title": "AssignmentTaskRead",
-        "type": "object"
-      },
-      "AssignmentTaskTypeEnum": {
-        "enum": [
-          "FILE_SUBMISSION",
-          "QUIZ",
-          "FORM",
-          "OTHER"
-        ],
-        "title": "AssignmentTaskTypeEnum",
-        "type": "string"
-      },
-      "AssignmentTaskUpdate": {
-        "properties": {
-          "assignment_type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AssignmentTaskTypeEnum"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "contents": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Contents"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "hint": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Hint"
-          },
-          "max_grade_value": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Grade Value"
-          },
-          "reference_file": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reference File"
-          },
-          "title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Title"
-          }
-        },
-        "title": "AssignmentTaskUpdate",
         "type": "object"
       },
       "AtRiskLearnerRow": {
@@ -3679,20 +2999,6 @@
           "activity_uuid"
         ],
         "title": "Body_api_create_video_file_block_api_v1_blocks_video_post",
-        "type": "object"
-      },
-      "Body_api_import_exam_questions_csv_api_v1_assessments__assessment_uuid__exam_questions_import_csv_post": {
-        "properties": {
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "title": "Body_api_import_exam_questions_csv_api_v1_assessments__assessment_uuid__exam_questions_import_csv_post",
         "type": "object"
       },
       "Body_api_update_avatar_user_api_v1_users_update_avatar__user_id__put": {
@@ -4553,24 +3859,6 @@
         "title": "ChoiceOption",
         "type": "object"
       },
-      "ChunkedUploadCancelResponse": {
-        "properties": {
-          "message": {
-            "title": "Message",
-            "type": "string"
-          },
-          "success": {
-            "title": "Success",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "success",
-          "message"
-        ],
-        "title": "ChunkedUploadCancelResponse",
-        "type": "object"
-      },
       "ChunkedUploadChunkResponse": {
         "properties": {
           "chunk_index": {
@@ -4593,14 +3881,14 @@
             "title": "Total Chunks",
             "type": "integer"
           },
-          "upload_id": {
-            "title": "Upload Id",
+          "upload_uuid": {
+            "title": "Upload Uuid",
             "type": "string"
           }
         },
         "required": [
           "success",
-          "upload_id",
+          "upload_uuid",
           "chunk_index",
           "chunks_received",
           "total_chunks",
@@ -4643,13 +3931,13 @@
             "title": "Message",
             "type": "string"
           },
-          "upload_id": {
-            "title": "Upload Id",
+          "upload_uuid": {
+            "title": "Upload Uuid",
             "type": "string"
           }
         },
         "required": [
-          "upload_id",
+          "upload_uuid",
           "message"
         ],
         "title": "ChunkedUploadInitiateResponse",
@@ -4677,13 +3965,13 @@
             "title": "Total Chunks",
             "type": "integer"
           },
-          "upload_id": {
-            "title": "Upload Id",
+          "upload_uuid": {
+            "title": "Upload Uuid",
             "type": "string"
           }
         },
         "required": [
-          "upload_id",
+          "upload_uuid",
           "filename",
           "chunks_received",
           "total_chunks",
@@ -7576,10 +6864,6 @@
       "ItemAnswer": {
         "discriminator": {
           "mapping": {
-            "ASSIGNMENT_FILE": "#/components/schemas/AssignmentFileItemAnswer",
-            "ASSIGNMENT_FORM": "#/components/schemas/AssignmentFormItemAnswer",
-            "ASSIGNMENT_OTHER": "#/components/schemas/AssignmentOtherItemAnswer",
-            "ASSIGNMENT_QUIZ": "#/components/schemas/AssignmentQuizItemAnswer",
             "CHOICE": "#/components/schemas/ChoiceItemAnswer",
             "CODE": "#/components/schemas/CodeItemAnswer",
             "FILE_UPLOAD": "#/components/schemas/FileUploadItemAnswer",
@@ -7607,28 +6891,12 @@
           },
           {
             "$ref": "#/components/schemas/MatchingItemAnswer"
-          },
-          {
-            "$ref": "#/components/schemas/AssignmentFileItemAnswer"
-          },
-          {
-            "$ref": "#/components/schemas/AssignmentQuizItemAnswer"
-          },
-          {
-            "$ref": "#/components/schemas/AssignmentFormItemAnswer"
-          },
-          {
-            "$ref": "#/components/schemas/AssignmentOtherItemAnswer"
           }
         ]
       },
       "ItemBody": {
         "discriminator": {
           "mapping": {
-            "ASSIGNMENT_FILE": "#/components/schemas/AssignmentFileItemBody",
-            "ASSIGNMENT_FORM": "#/components/schemas/AssignmentFormItemBody",
-            "ASSIGNMENT_OTHER": "#/components/schemas/AssignmentOtherItemBody",
-            "ASSIGNMENT_QUIZ": "#/components/schemas/AssignmentQuizItemBody",
             "CHOICE": "#/components/schemas/ChoiceItemBody",
             "CODE": "#/components/schemas/CodeItemBody",
             "FILE_UPLOAD": "#/components/schemas/FileUploadItemBody",
@@ -7656,18 +6924,6 @@
           },
           {
             "$ref": "#/components/schemas/MatchingItemBody"
-          },
-          {
-            "$ref": "#/components/schemas/AssignmentFileItemBody"
-          },
-          {
-            "$ref": "#/components/schemas/AssignmentQuizItemBody"
-          },
-          {
-            "$ref": "#/components/schemas/AssignmentFormItemBody"
-          },
-          {
-            "$ref": "#/components/schemas/AssignmentOtherItemBody"
           }
         ]
       },
@@ -7988,14 +7244,93 @@
           "FILE_UPLOAD",
           "FORM",
           "CODE",
-          "MATCHING",
-          "ASSIGNMENT_FILE",
-          "ASSIGNMENT_QUIZ",
-          "ASSIGNMENT_FORM",
-          "ASSIGNMENT_OTHER"
+          "MATCHING"
         ],
         "title": "ItemKind",
         "type": "string"
+      },
+      "LatePolicy": {
+        "discriminator": {
+          "mapping": {
+            "CUTOFF": "#/components/schemas/LatePolicyCutoff",
+            "NONE": "#/components/schemas/LatePolicyNone",
+            "PENALTY": "#/components/schemas/LatePolicyPenalty"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LatePolicyNone"
+          },
+          {
+            "$ref": "#/components/schemas/LatePolicyPenalty"
+          },
+          {
+            "$ref": "#/components/schemas/LatePolicyCutoff"
+          }
+        ]
+      },
+      "LatePolicyCutoff": {
+        "description": "Submissions are rejected after this cutoff timestamp.",
+        "properties": {
+          "cutoff_at": {
+            "format": "date-time",
+            "title": "Cutoff At",
+            "type": "string"
+          },
+          "kind": {
+            "const": "CUTOFF",
+            "default": "CUTOFF",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cutoff_at"
+        ],
+        "title": "LatePolicyCutoff",
+        "type": "object"
+      },
+      "LatePolicyNone": {
+        "description": "No late penalty — submissions accepted without penalty regardless of due date.",
+        "properties": {
+          "kind": {
+            "const": "NONE",
+            "default": "NONE",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "title": "LatePolicyNone",
+        "type": "object"
+      },
+      "LatePolicyPenalty": {
+        "description": "Percentage deducted per day, up to a maximum number of days.",
+        "properties": {
+          "kind": {
+            "const": "PENALTY",
+            "default": "PENALTY",
+            "title": "Kind",
+            "type": "string"
+          },
+          "max_days": {
+            "minimum": 1.0,
+            "title": "Max Days",
+            "type": "integer"
+          },
+          "percent_per_day": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Percent Per Day",
+            "type": "number"
+          }
+        },
+        "required": [
+          "percent_per_day",
+          "max_days"
+        ],
+        "title": "LatePolicyPenalty",
+        "type": "object"
       },
       "LeaderboardEntryRead": {
         "description": "Single leaderboard entry.\n\nIncludes user profile data for rich leaderboard displays.",
@@ -8897,52 +8232,6 @@
         "title": "ProfileRead",
         "type": "object"
       },
-      "QuestionCreate": {
-        "properties": {
-          "answer_options": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "title": "Answer Options",
-            "type": "array"
-          },
-          "explanation": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Explanation"
-          },
-          "order_index": {
-            "default": 0,
-            "title": "Order Index",
-            "type": "integer"
-          },
-          "points": {
-            "default": 1,
-            "title": "Points",
-            "type": "integer"
-          },
-          "question_text": {
-            "title": "Question Text",
-            "type": "string"
-          },
-          "question_type": {
-            "$ref": "#/components/schemas/QuestionTypeEnum"
-          }
-        },
-        "required": [
-          "question_text",
-          "question_type"
-        ],
-        "title": "QuestionCreate",
-        "type": "object"
-      },
       "QuestionDifficultyRow": {
         "properties": {
           "accuracy_pct": {
@@ -9019,169 +8308,6 @@
           "question_label"
         ],
         "title": "QuestionDifficultyRow",
-        "type": "object"
-      },
-      "QuestionRead": {
-        "properties": {
-          "answer_options": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "title": "Answer Options",
-            "type": "array"
-          },
-          "creation_date": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Creation Date"
-          },
-          "explanation": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Explanation"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "order_index": {
-            "default": 0,
-            "title": "Order Index",
-            "type": "integer"
-          },
-          "points": {
-            "default": 1,
-            "title": "Points",
-            "type": "integer"
-          },
-          "question_text": {
-            "title": "Question Text",
-            "type": "string"
-          },
-          "question_type": {
-            "$ref": "#/components/schemas/QuestionTypeEnum"
-          },
-          "question_uuid": {
-            "title": "Question Uuid",
-            "type": "string"
-          },
-          "update_date": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Update Date"
-          }
-        },
-        "required": [
-          "question_text",
-          "question_type",
-          "id",
-          "question_uuid"
-        ],
-        "title": "QuestionRead",
-        "type": "object"
-      },
-      "QuestionTypeEnum": {
-        "enum": [
-          "SINGLE_CHOICE",
-          "MULTIPLE_CHOICE",
-          "TRUE_FALSE",
-          "MATCHING"
-        ],
-        "title": "QuestionTypeEnum",
-        "type": "string"
-      },
-      "QuestionUpdate": {
-        "properties": {
-          "answer_options": {
-            "anyOf": [
-              {
-                "items": {
-                  "additionalProperties": true,
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Answer Options"
-          },
-          "explanation": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Explanation"
-          },
-          "order_index": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Order Index"
-          },
-          "points": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Points"
-          },
-          "question_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Question Text"
-          },
-          "question_type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/QuestionTypeEnum"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "title": "QuestionUpdate",
         "type": "object"
       },
       "QuizAttemptRead": {
@@ -12015,13 +11141,13 @@
             "title": "Put Url",
             "type": "string"
           },
-          "upload_id": {
-            "title": "Upload Id",
+          "upload_uuid": {
+            "title": "Upload Uuid",
             "type": "string"
           }
         },
         "required": [
-          "upload_id",
+          "upload_uuid",
           "put_url",
           "expires_at"
         ],
@@ -12075,17 +11201,6 @@
             ],
             "title": "Finalized At"
           },
-          "key": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Key"
-          },
           "sha256": {
             "anyOf": [
               {
@@ -12097,7 +11212,7 @@
             ],
             "title": "Sha256"
           },
-          "size": {
+          "size_bytes": {
             "anyOf": [
               {
                 "type": "integer"
@@ -12106,18 +11221,29 @@
                 "type": "null"
               }
             ],
-            "title": "Size"
+            "title": "Size Bytes"
           },
           "status": {
             "$ref": "#/components/schemas/UploadStatus"
           },
-          "upload_id": {
-            "title": "Upload Id",
+          "storage_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Key"
+          },
+          "upload_uuid": {
+            "title": "Upload Uuid",
             "type": "string"
           }
         },
         "required": [
-          "upload_id",
+          "upload_uuid",
           "filename",
           "content_type",
           "status",
@@ -12147,13 +11273,13 @@
             "title": "Get Url",
             "type": "string"
           },
-          "upload_id": {
-            "title": "Upload Id",
+          "upload_uuid": {
+            "title": "Upload Uuid",
             "type": "string"
           }
         },
         "required": [
-          "upload_id",
+          "upload_uuid",
           "get_url",
           "expires_at"
         ],
@@ -17592,34 +16718,6 @@
         ]
       }
     },
-    "/api/v1/assessments/exam/config": {
-      "get": {
-        "operationId": "api_get_exam_authoring_config_api_v1_assessments_exam_config_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "additionalProperties": {
-                      "type": "integer"
-                    },
-                    "type": "object"
-                  },
-                  "title": "Response Api Get Exam Authoring Config Api V1 Assessments Exam Config Get",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Api Get Exam Authoring Config",
-        "tags": [
-          "assessments"
-        ]
-      }
-    },
     "/api/v1/assessments/{assessment_uuid}": {
       "get": {
         "operationId": "api_get_assessment_api_v1_assessments__assessment_uuid__get",
@@ -17717,290 +16815,6 @@
           }
         ],
         "summary": "Api Update Assessment",
-        "tags": [
-          "assessments"
-        ]
-      }
-    },
-    "/api/v1/assessments/{assessment_uuid}/assignment/tasks": {
-      "get": {
-        "operationId": "api_list_assignment_tasks_api_v1_assessments__assessment_uuid__assignment_tasks_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AssignmentTaskRead"
-                  },
-                  "title": "Response Api List Assignment Tasks Api V1 Assessments  Assessment Uuid  Assignment Tasks Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api List Assignment Tasks",
-        "tags": [
-          "assessments"
-        ]
-      },
-      "post": {
-        "operationId": "api_create_assignment_task_api_v1_assessments__assessment_uuid__assignment_tasks_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssignmentTaskCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssignmentTaskRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Create Assignment Task",
-        "tags": [
-          "assessments"
-        ]
-      }
-    },
-    "/api/v1/assessments/{assessment_uuid}/assignment/tasks/{task_uuid}": {
-      "delete": {
-        "operationId": "api_delete_assignment_task_api_v1_assessments__assessment_uuid__assignment_tasks__task_uuid__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "task_uuid",
-            "required": true,
-            "schema": {
-              "title": "Task Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Api Delete Assignment Task Api V1 Assessments  Assessment Uuid  Assignment Tasks  Task Uuid  Delete",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Delete Assignment Task",
-        "tags": [
-          "assessments"
-        ]
-      },
-      "get": {
-        "operationId": "api_get_assignment_task_api_v1_assessments__assessment_uuid__assignment_tasks__task_uuid__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "task_uuid",
-            "required": true,
-            "schema": {
-              "title": "Task Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssignmentTaskRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Get Assignment Task",
-        "tags": [
-          "assessments"
-        ]
-      },
-      "put": {
-        "operationId": "api_update_assignment_task_api_v1_assessments__assessment_uuid__assignment_tasks__task_uuid__put",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "task_uuid",
-            "required": true,
-            "schema": {
-              "title": "Task Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssignmentTaskUpdate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssignmentTaskRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Update Assignment Task",
         "tags": [
           "assessments"
         ]
@@ -18119,406 +16933,6 @@
           }
         ],
         "summary": "Api Save Draft",
-        "tags": [
-          "assessments"
-        ]
-      }
-    },
-    "/api/v1/assessments/{assessment_uuid}/exam/questions": {
-      "get": {
-        "operationId": "api_list_exam_questions_api_v1_assessments__assessment_uuid__exam_questions_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/QuestionRead"
-                  },
-                  "title": "Response Api List Exam Questions Api V1 Assessments  Assessment Uuid  Exam Questions Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api List Exam Questions",
-        "tags": [
-          "assessments"
-        ]
-      },
-      "post": {
-        "operationId": "api_create_exam_question_api_v1_assessments__assessment_uuid__exam_questions_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QuestionCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QuestionRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Create Exam Question",
-        "tags": [
-          "assessments"
-        ]
-      }
-    },
-    "/api/v1/assessments/{assessment_uuid}/exam/questions/{question_uuid}": {
-      "delete": {
-        "operationId": "api_delete_exam_question_api_v1_assessments__assessment_uuid__exam_questions__question_uuid__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "question_uuid",
-            "required": true,
-            "schema": {
-              "title": "Question Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Api Delete Exam Question Api V1 Assessments  Assessment Uuid  Exam Questions  Question Uuid  Delete",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Delete Exam Question",
-        "tags": [
-          "assessments"
-        ]
-      },
-      "put": {
-        "operationId": "api_update_exam_question_api_v1_assessments__assessment_uuid__exam_questions__question_uuid__put",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "question_uuid",
-            "required": true,
-            "schema": {
-              "title": "Question Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QuestionUpdate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QuestionRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Update Exam Question",
-        "tags": [
-          "assessments"
-        ]
-      }
-    },
-    "/api/v1/assessments/{assessment_uuid}/exam/questions:export-csv": {
-      "get": {
-        "operationId": "api_export_exam_questions_csv_api_v1_assessments__assessment_uuid__exam_questions_export_csv_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Export Exam Questions Csv",
-        "tags": [
-          "assessments"
-        ]
-      }
-    },
-    "/api/v1/assessments/{assessment_uuid}/exam/questions:import-csv": {
-      "post": {
-        "operationId": "api_import_exam_questions_csv_api_v1_assessments__assessment_uuid__exam_questions_import_csv_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_api_import_exam_questions_csv_api_v1_assessments__assessment_uuid__exam_questions_import_csv_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Api Import Exam Questions Csv Api V1 Assessments  Assessment Uuid  Exam Questions Import Csv Post",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Import Exam Questions Csv",
-        "tags": [
-          "assessments"
-        ]
-      }
-    },
-    "/api/v1/assessments/{assessment_uuid}/exam/questions:reorder": {
-      "post": {
-        "operationId": "api_reorder_exam_questions_api_v1_assessments__assessment_uuid__exam_questions_reorder_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assessment_uuid",
-            "required": true,
-            "schema": {
-              "title": "Assessment Uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "items": {
-                  "additionalProperties": true,
-                  "type": "object"
-                },
-                "title": "Payload",
-                "type": "array"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/QuestionRead"
-                  },
-                  "title": "Response Api Reorder Exam Questions Api V1 Assessments  Assessment Uuid  Exam Questions Reorder Post",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Reorder Exam Questions",
         "tags": [
           "assessments"
         ]
@@ -26032,7 +24446,7 @@
     },
     "/api/v1/uploads/initiate": {
       "post": {
-        "description": "Initiate a chunked upload session.\n\nArgs:\n    directory: Target directory (e.g., \"courses/xxx/activities/yyy/video\")\n    type_of_dir: \"platform\" or \"users\"\n    uuid: Platform or user UUID\n    filename: Final filename for the assembled file\n    total_chunks: Total number of chunks that will be uploaded\n    file_size: Total file size in bytes\n\nReturns:\n    upload_id: Unique identifier for this upload session",
+        "description": "Initiate a chunked upload session.\n\nArgs:\n    directory: Target directory (e.g., \"courses/xxx/activities/yyy/video\")\n    type_of_dir: \"platform\" or \"users\"\n    uuid: Platform or user UUID\n    filename: Final filename for the assembled file\n    total_chunks: Total number of chunks that will be uploaded\n    file_size: Total file size in bytes\n\nReturns:\n    upload_uuid: Unique identifier for this upload session",
         "operationId": "initiate_chunked_upload_api_v1_uploads_initiate_post",
         "requestBody": {
           "content": {
@@ -26127,8 +24541,8 @@
     },
     "/api/v1/uploads/{upload_id}": {
       "delete": {
-        "description": "Cancel an upload and clean up temporary files.\n\nArgs:\n    upload_id: Upload session ID\n\nReturns:\n    Confirmation message",
-        "operationId": "cancel_upload_api_v1_uploads__upload_id__delete",
+        "description": "Cancel and delete an upload that has not yet been referenced by a submission.",
+        "operationId": "delete_assessment_upload_api_v1_uploads__upload_id__delete",
         "parameters": [
           {
             "in": "path",
@@ -26141,14 +24555,7 @@
           }
         ],
         "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChunkedUploadCancelResponse"
-                }
-              }
-            },
+          "204": {
             "description": "Successful Response"
           },
           "422": {
@@ -26167,7 +24574,7 @@
             "APIKeyCookie": []
           }
         ],
-        "summary": "Cancel Upload",
+        "summary": "Delete Assessment Upload",
         "tags": [
           "uploads"
         ]

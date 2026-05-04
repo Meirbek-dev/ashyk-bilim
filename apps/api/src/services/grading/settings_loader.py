@@ -1,8 +1,9 @@
 """
-Activity settings loader — extracts questions and grading config from the DB.
+Activity settings loader — extracts canonical items and grading config.
 
 Keeps the router layer clean: routers pass activity_id + assessment_type,
-this service fetches the Block and returns a typed AssessmentSettings object.
+this service resolves the assessment + policy and returns a typed
+AssessmentSettings object.
 """
 
 from dataclasses import dataclass, field
@@ -11,6 +12,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import desc
 from sqlmodel import Session, select
 
+from src.db.assessments import Assessment, AssessmentItem, ITEM_BODY_ADAPTER, ItemBody
 from src.db.courses.blocks import Block, BlockTypeEnum
 from src.db.courses.quiz import QuizSettings
 from src.db.grading.submissions import AssessmentType
@@ -18,10 +20,22 @@ from src.services.assessments.settings import get_settings
 
 
 @dataclass
+class CanonicalAssessmentItem:
+    """Canonical assessment item payload used by the grading pipeline."""
+
+    item_uuid: str
+    kind: str
+    title: str
+    body: ItemBody
+    max_score: float
+
+
+@dataclass
 class AssessmentSettings:
     """Typed grading config for a single activity."""
 
     questions: list[dict] = field(default_factory=list)
+    items: list[CanonicalAssessmentItem] = field(default_factory=list)
     max_attempts: int | None = None
     time_limit_seconds: int | None = None
     max_score_penalty_per_attempt: float | None = None
@@ -29,6 +43,7 @@ class AssessmentSettings:
     track_violations: bool = False
     block_on_violations: bool = False
     max_violations: int = 3
+    code_strategy: str = "BEST_SUBMISSION"
 
 
 def load_activity_settings(
@@ -43,11 +58,13 @@ def load_activity_settings(
     checks treat None/False/0 as "no restriction".
     """
     canonical = get_settings(activity_id, db_session)
+    assessment_items = _load_canonical_items(activity_id, db_session)
 
     if assessment_type == AssessmentType.QUIZ:
         if canonical.kind == "QUIZ":
             return AssessmentSettings(
                 questions=canonical.questions,
+                items=assessment_items,
                 max_attempts=canonical.max_attempts,
                 time_limit_seconds=canonical.time_limit_seconds,
                 max_score_penalty_per_attempt=canonical.max_score_penalty_per_attempt,
@@ -56,10 +73,13 @@ def load_activity_settings(
                 block_on_violations=canonical.block_on_violations,
                 max_violations=canonical.max_violations,
             )
-        return _load_quiz_settings(activity_id, db_session)
+        loaded = _load_quiz_settings(activity_id, db_session)
+        loaded.items = assessment_items
+        return loaded
 
     if assessment_type == AssessmentType.EXAM:
         loaded = _load_exam_settings(activity_id, db_session)
+        loaded.items = assessment_items
         if canonical.kind == "EXAM":
             loaded.max_attempts = canonical.attempt_limit
             loaded.time_limit_seconds = (
@@ -77,13 +97,20 @@ def load_activity_settings(
 
     # ASSIGNMENT and CODE_CHALLENGE have no timed settings but may have due_date
     if canonical.kind == "CODE_CHALLENGE":
-        return AssessmentSettings(due_date_iso=canonical.due_date)
+        return AssessmentSettings(
+            items=assessment_items,
+            due_date_iso=canonical.due_date,
+            code_strategy=str(canonical.grading_strategy),
+        )
     if canonical.kind == "ASSIGNMENT":
         return AssessmentSettings(
+            items=assessment_items,
             due_date_iso=canonical.due_at,
             max_attempts=canonical.attempt_limit,
         )
-    return _load_generic_settings(activity_id, db_session)
+    loaded = _load_generic_settings(activity_id, db_session)
+    loaded.items = assessment_items
+    return loaded
 
 
 # ── Per-type loaders ──────────────────────────────────────────────────────────
@@ -145,4 +172,33 @@ def _load_generic_settings(activity_id: int, db_session: Session) -> AssessmentS
     raw_settings: dict = block.content.get("settings", {})
     return AssessmentSettings(
         due_date_iso=raw_settings.get("due_date_iso"),
+    )
+
+
+def _load_canonical_items(
+    activity_id: int,
+    db_session: Session,
+) -> list[CanonicalAssessmentItem]:
+    assessment = db_session.exec(
+        select(Assessment).where(Assessment.activity_id == activity_id)
+    ).first()
+    if assessment is None or assessment.id is None:
+        return []
+
+    items = db_session.exec(
+        select(AssessmentItem)
+        .where(AssessmentItem.assessment_id == assessment.id)
+        .order_by(AssessmentItem.order, AssessmentItem.id)
+    ).all()
+    return [_to_canonical_item(item) for item in items]
+
+
+def _to_canonical_item(item: AssessmentItem) -> CanonicalAssessmentItem:
+    body = ITEM_BODY_ADAPTER.validate_python(item.body_json or {})
+    return CanonicalAssessmentItem(
+        item_uuid=item.item_uuid,
+        kind=str(item.kind),
+        title=item.title,
+        body=body,
+        max_score=float(item.max_score or 0),
     )

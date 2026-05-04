@@ -3,7 +3,11 @@
 import { getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { tags } from '@/lib/cacheTags';
-import type { AssignmentRead } from '@/features/assessments/registry/assignment/models';
+import {
+  assessmentItemToAssignmentTask,
+  type AssignmentRead,
+} from '@/features/assessments/registry/assignment/models';
+import type { AssessmentItem } from '@/features/assessments/domain/items';
 
 interface AssignmentTaskPatchAnswer {
   task_uuid: string;
@@ -53,7 +57,6 @@ function assessmentToAssignmentRead(data: any): AssignmentRead {
     title: data.title,
     description: data.description ?? '',
     due_at: data.assessment_policy?.due_at ?? null,
-    published: lifecycleToPublished(data.lifecycle),
     status: data.lifecycle,
     scheduled_publish_at: data.scheduled_at ?? null,
     published_at: data.published_at ?? null,
@@ -74,23 +77,19 @@ function assignmentPatchToAssessmentPatch(body: AssignmentDraftPatch) {
         return {
           item_uuid: task.task_uuid,
           answer: {
-            kind: 'ASSIGNMENT_FILE',
-            content_type: 'file',
-            uploads: task.file_key ? [{ upload_uuid: task.file_key }] : [],
-            file_key: task.file_key ?? null,
-            answer_metadata: task.answer_metadata ?? {},
+            kind: 'FILE_UPLOAD',
+            uploads: task.uploads ?? (task.file_key ? [{ upload_uuid: task.file_key }] : []),
           },
         };
       }
 
       if (task.content_type === 'quiz') {
+        const firstAnswer = Object.values(task.quiz_answers?.answers ?? {})[0] ?? [];
         return {
           item_uuid: task.task_uuid,
           answer: {
-            kind: 'ASSIGNMENT_QUIZ',
-            content_type: 'quiz',
-            quiz_answers: task.quiz_answers ?? null,
-            answer_metadata: task.answer_metadata ?? {},
+            kind: 'CHOICE',
+            selected: Array.isArray(firstAnswer) ? firstAnswer : [],
           },
         };
       }
@@ -99,10 +98,8 @@ function assignmentPatchToAssessmentPatch(body: AssignmentDraftPatch) {
         return {
           item_uuid: task.task_uuid,
           answer: {
-            kind: 'ASSIGNMENT_FORM',
-            content_type: 'form',
-            form_data: task.form_data ?? null,
-            answer_metadata: task.answer_metadata ?? {},
+            kind: 'FORM',
+            values: task.form_data?.answers ?? {},
           },
         };
       }
@@ -110,13 +107,128 @@ function assignmentPatchToAssessmentPatch(body: AssignmentDraftPatch) {
       return {
         item_uuid: task.task_uuid,
         answer: {
-          kind: 'ASSIGNMENT_OTHER',
-          content_type: task.content_type === 'other' ? 'other' : 'text',
-          text_content: task.text_content ?? null,
-          answer_metadata: task.answer_metadata ?? {},
+          kind: 'OPEN_TEXT',
+          text: task.text_content ?? '',
         },
       };
     }),
+  };
+}
+
+function toAssignmentTask(data: unknown) {
+  return assessmentItemToAssignmentTask(data as AssessmentItem);
+}
+
+function normalizeTaskType(type?: AssignmentType | null) {
+  switch (type) {
+    case 'FILE_SUBMISSION':
+    case 'FORM':
+    case 'QUIZ':
+      return type;
+    default:
+      return 'OTHER' as const;
+  }
+}
+
+function normalizeNumber(value: unknown, fallback = 0) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function normalizeString(value: unknown, fallback = '') {
+  return typeof value === 'string' ? value : fallback;
+}
+
+function normalizeRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function normalizeArray<T = unknown>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
+function taskMutationToAssessmentItemPayload(body: AssignmentTaskMutationPayload) {
+  const assignmentType = normalizeTaskType(body.assignment_type);
+  const contents = normalizeRecord(body.contents);
+  const title = body.title ?? '';
+  const max_score = normalizeNumber(body.max_grade_value);
+
+  if (assignmentType === 'FILE_SUBMISSION') {
+    return {
+      kind: 'FILE_UPLOAD',
+      title,
+      max_score,
+      body: {
+        kind: 'FILE_UPLOAD',
+        prompt: body.description ?? '',
+        max_files: Math.max(1, normalizeNumber(contents.max_files, 1)),
+        max_mb: contents.max_file_size_mb == null ? null : normalizeNumber(contents.max_file_size_mb, 1),
+        mimes: normalizeArray<string>(contents.allowed_mime_types).filter((item): item is string => typeof item === 'string'),
+      },
+    };
+  }
+
+  if (assignmentType === 'FORM') {
+    const questions = normalizeArray<Record<string, unknown>>(contents.questions);
+    const prompt = normalizeString(questions[0]?.questionText, body.description ?? '');
+    const fields = questions.flatMap((question, questionIndex) => {
+      const blanks = normalizeArray<Record<string, unknown>>(question.blanks);
+      return blanks.map((blank, blankIndex) => ({
+        id: normalizeString(blank.blankUUID, `field_${questionIndex}_${blankIndex}`),
+        label:
+          normalizeString(blank.placeholder) ||
+          normalizeString(question.questionText) ||
+          `Field ${questionIndex + 1}.${blankIndex + 1}`,
+        field_type: 'text' as const,
+        required: false,
+      }));
+    });
+    return {
+      kind: 'FORM',
+      title,
+      max_score,
+      body: {
+        kind: 'FORM',
+        prompt,
+        fields,
+      },
+    };
+  }
+
+  if (assignmentType === 'QUIZ') {
+    const questions = normalizeArray<Record<string, unknown>>(contents.questions);
+    const question = questions[0] ?? {};
+    const options = normalizeArray<Record<string, unknown>>(question.options);
+    const normalizedOptions = options.map((option, index) => ({
+      id: normalizeString(option.optionUUID, `option_${index}`),
+      text: normalizeString(option.text),
+      is_correct: option.assigned_right_answer === true,
+    }));
+    const correctCount = normalizedOptions.filter((option) => option.is_correct).length;
+    const optionTexts = normalizedOptions.map((option) => option.text.trim().toLowerCase());
+    const isTrueFalse = normalizedOptions.length === 2 && optionTexts.includes('true') && optionTexts.includes('false');
+    return {
+      kind: 'CHOICE',
+      title,
+      max_score,
+      body: {
+        kind: 'CHOICE',
+        prompt: normalizeString(question.questionText, body.description ?? ''),
+        options: normalizedOptions,
+        multiple: correctCount > 1,
+        variant: isTrueFalse ? 'TRUE_FALSE' : correctCount > 1 ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE',
+      },
+    };
+  }
+
+  const prompt = normalizeString(normalizeRecord(contents.body).prompt, body.description ?? '');
+  return {
+    kind: 'OPEN_TEXT',
+    title,
+    max_score,
+    body: {
+      kind: 'OPEN_TEXT',
+      prompt,
+    },
   };
 }
 
@@ -260,10 +372,10 @@ export async function submitAssignmentDraftSubmission(assignmentUUID: string, bo
 // tasks
 
 export async function createAssignmentTask(body: AssignmentTaskMutationPayload, assignmentUUID: string) {
-  const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/assignment/tasks`, {
+  const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/items`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify(taskMutationToAssessmentItemPayload(body)),
   });
   const metadata = await getResponseMetadata(result);
 
@@ -272,14 +384,24 @@ export async function createAssignmentTask(body: AssignmentTaskMutationPayload, 
     revalidateTag(tags.activities, 'max');
   }
 
-  return metadata;
+  return metadata.success && metadata.data
+    ? { ...metadata, data: toAssignmentTask(metadata.data) ?? metadata.data }
+    : metadata;
 }
 
 export async function getAssignmentTask(assignmentUUID: string, assignmentTaskUUID: string) {
-  const result = await apiFetch(
-    `assessments/${normalizeAssignmentUuid(assignmentUUID)}/assignment/tasks/${assignmentTaskUUID}`,
-  );
-  return await getResponseMetadata(result);
+  const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}`);
+  const metadata = await getResponseMetadata(result);
+  if (!metadata.success || !metadata.data) return metadata;
+
+  const assessment = metadata.data as { items?: unknown[] };
+  const item = Array.isArray(assessment.items)
+    ? assessment.items.find((candidate) => (candidate as { item_uuid?: string }).item_uuid === assignmentTaskUUID)
+    : null;
+  return {
+    ...metadata,
+    data: item ? toAssignmentTask(item) ?? item : null,
+  };
 }
 
 export interface UpdateAssignmentTaskParams {
@@ -289,14 +411,11 @@ export interface UpdateAssignmentTaskParams {
 }
 
 export async function updateAssignmentTask({ body, assignmentTaskUUID, assignmentUUID }: UpdateAssignmentTaskParams) {
-  const result = await apiFetch(
-    `assessments/${normalizeAssignmentUuid(assignmentUUID)}/assignment/tasks/${assignmentTaskUUID}`,
-    {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    },
-  );
+  const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/items/${assignmentTaskUUID}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(taskMutationToAssessmentItemPayload(body)),
+  });
   const metadata = await getResponseMetadata(result);
 
   if (metadata.success) {
@@ -304,16 +423,15 @@ export async function updateAssignmentTask({ body, assignmentTaskUUID, assignmen
     revalidateTag(tags.activities, 'max');
   }
 
-  return metadata;
+  return metadata.success && metadata.data
+    ? { ...metadata, data: toAssignmentTask(metadata.data) ?? metadata.data }
+    : metadata;
 }
 
 export async function deleteAssignmentTask(assignmentTaskUUID: string, assignmentUUID: string) {
-  const result = await apiFetch(
-    `assessments/${normalizeAssignmentUuid(assignmentUUID)}/assignment/tasks/${assignmentTaskUUID}`,
-    {
-      method: 'DELETE',
-    },
-  );
+  const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/items/${assignmentTaskUUID}`, {
+    method: 'DELETE',
+  });
   const metadata = await getResponseMetadata(result);
 
   if (metadata.success) {

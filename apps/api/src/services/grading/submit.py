@@ -10,12 +10,14 @@ Each concern is isolated in a private helper so it can be tested independently:
 import logging
 from datetime import UTC, datetime
 from math import ceil
+from typing import Any
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select
 from ulid import ULID
 
 import src.services.integrations.plagiarism
+from src.db.assessments import ITEM_ANSWER_ADAPTER
 from src.db.courses.activities import Activity
 from src.db.gamification import XPSource
 from src.db.grading.entries import GradingEntry
@@ -172,18 +174,26 @@ async def submit_assessment(
 
     violation_exceeded = _check_violations(settings, violation_count)
 
-    # Extract type-specific answer fields
-    user_answers, exam_answers, test_results, code_strategy = _parse_answers(
+    # Prefer canonical answers[item_uuid] grading inputs, fall back to legacy shapes.
+    (
+        answers_by_item_uuid,
+        user_answers,
+        exam_answers,
+        test_results,
+        code_strategy,
+    ) = _parse_answers(
         assessment_type, answers_payload
     )
 
     result = grade_submission(
         assessment_type=assessment_type,
+        items=settings.items,
+        answers_by_item_uuid=answers_by_item_uuid,
         questions=settings.questions,
         user_answers=user_answers,
         exam_answers=exam_answers,
         test_results=test_results,
-        code_strategy=code_strategy,
+        code_strategy=code_strategy or settings.code_strategy,
         attempt_number=draft.attempt_number,
         max_score_penalty_per_attempt=settings.max_score_penalty_per_attempt,
     )
@@ -402,12 +412,28 @@ def _check_violations(settings: AssessmentSettings, violation_count: int) -> boo
 def _parse_answers(
     assessment_type: AssessmentType,
     answers_payload: dict,
-) -> tuple[list[dict], dict[int, dict] | None, list[dict] | None, str]:
+) -> tuple[
+    dict[str, Any],
+    list[dict],
+    dict[int, dict] | None,
+    list[dict] | None,
+    str,
+]:
     """Extract per-type answer fields from the raw payload."""
+    answers_by_item_uuid = _extract_canonical_answers(answers_payload)
     user_answers: list[dict] = answers_payload.get("answers", [])
     exam_answers: dict[int, dict] | None = None
     test_results: list[dict] | None = None
     code_strategy = "BEST_SUBMISSION"
+
+    if answers_by_item_uuid:
+        return (
+            answers_by_item_uuid,
+            user_answers,
+            exam_answers,
+            test_results,
+            code_strategy,
+        )
 
     if assessment_type == AssessmentType.EXAM:
         raw = answers_payload.get("submitted_answers", {})
@@ -418,7 +444,40 @@ def _parse_answers(
         test_results = answers_payload.get("test_results", [])
         code_strategy = answers_payload.get("code_strategy", "BEST_SUBMISSION")
 
-    return user_answers, exam_answers, test_results, code_strategy
+    return answers_by_item_uuid, user_answers, exam_answers, test_results, code_strategy
+
+
+def _extract_canonical_answers(answers_payload: object) -> dict[str, Any]:
+    if not isinstance(answers_payload, dict):
+        return {}
+    raw_answers = answers_payload.get("answers")
+    if isinstance(raw_answers, dict):
+        normalized: dict[str, Any] = {}
+        for item_uuid, raw_answer in raw_answers.items():
+            if not isinstance(item_uuid, str):
+                continue
+            try:
+                normalized[item_uuid] = ITEM_ANSWER_ADAPTER.validate_python(raw_answer)
+            except Exception:
+                if isinstance(raw_answer, dict):
+                    normalized[item_uuid] = raw_answer
+        return normalized
+
+    if isinstance(raw_answers, list):
+        normalized = {}
+        for entry in raw_answers:
+            if not isinstance(entry, dict):
+                continue
+            item_uuid = entry.get("item_uuid")
+            raw_answer = entry.get("answer")
+            if not isinstance(item_uuid, str) or not isinstance(raw_answer, dict):
+                continue
+            try:
+                normalized[item_uuid] = ITEM_ANSWER_ADAPTER.validate_python(raw_answer)
+            except Exception:
+                normalized[item_uuid] = raw_answer
+        return normalized
+    return {}
 
 
 def _extract_file_keys(payload: object) -> list[str]:

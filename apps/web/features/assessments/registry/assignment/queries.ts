@@ -41,9 +41,6 @@ export function assignmentTasksQueryOptions(assignmentUuid: string) {
   return queryOptions({
     queryKey: queryKeys.assignments.tasks(canonicalAssignmentUuid),
     queryFn: async () => {
-      const tasks = await apiFetcher(`${getAPIUrl()}assessments/${canonicalAssignmentUuid}/assignment/tasks`);
-      if (Array.isArray(tasks)) return tasks;
-
       const assessment = await apiFetcher(`${getAPIUrl()}assessments/${canonicalAssignmentUuid}`);
       const items = Array.isArray((assessment as { items?: unknown[] }).items)
         ? ((assessment as { items: Parameters<typeof assessmentItemToAssignmentTask>[0][] }).items ?? [])
