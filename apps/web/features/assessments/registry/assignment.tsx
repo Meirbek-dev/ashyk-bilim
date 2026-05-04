@@ -14,7 +14,7 @@ registerKind('TYPE_ASSIGNMENT', async () => {
   const [
     { NativeItemStudioProvider, NativeItemOutline, NativeItemAuthor },
     { default: AssignmentAttemptContent },
-    { GradingReviewWorkspace },
+    { default: GradingReviewWorkspace },
   ] = await Promise.all([
     import('@/features/assessments/studio/NativeItemStudio'),
     import('./assignment-attempt'),

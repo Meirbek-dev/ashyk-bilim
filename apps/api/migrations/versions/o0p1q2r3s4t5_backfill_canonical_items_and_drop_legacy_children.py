@@ -338,6 +338,19 @@ def _build_code_submission_metadata(
     return metadata
 
 
+def _table_exists(bind: sa.Connection, table_name: str) -> bool:
+    result = bind.execute(
+        sa.text(
+            "SELECT EXISTS ("
+            " SELECT 1 FROM information_schema.tables"
+            " WHERE table_schema = 'public' AND table_name = :name"
+            ")"
+        ),
+        {"name": table_name},
+    ).scalar()
+    return bool(result)
+
+
 def upgrade() -> None:
     bind = op.get_bind()
     now = datetime.now(UTC)
@@ -363,108 +376,106 @@ def upgrade() -> None:
     items_to_insert: list[dict[str, object]] = []
     touched_assessment_ids: set[int] = set()
 
-    assignment_rows = bind.execute(
-        sa
-        .select(
-            assignment_task_table.c.assignment_task_uuid,
-            assignment_task_table.c.order,
-            assignment_task_table.c.assignment_type,
-            assignment_task_table.c.title,
-            assignment_task_table.c.description,
-            assignment_task_table.c.hint,
-            assignment_task_table.c.reference_file,
-            assignment_task_table.c.contents,
-            assignment_task_table.c.max_grade_value,
-            assignment_task_table.c.created_at,
-            assignment_task_table.c.updated_at,
-            assignment_table.c.activity_id,
-        )
-        .select_from(
-            assignment_task_table.join(
-                assignment_table,
-                assignment_task_table.c.assignment_id == assignment_table.c.id,
+    if _table_exists(bind, "assignment_task"):
+        assignment_rows = bind.execute(
+            sa
+            .select(
+                assignment_task_table.c.assignment_task_uuid,
+                assignment_task_table.c.order,
+                assignment_task_table.c.assignment_type,
+                assignment_task_table.c.title,
+                assignment_task_table.c.description,
+                assignment_task_table.c.hint,
+                assignment_task_table.c.reference_file,
+                assignment_task_table.c.contents,
+                assignment_task_table.c.max_grade_value,
+                assignment_task_table.c.created_at,
+                assignment_task_table.c.updated_at,
+                assignment_table.c.activity_id,
             )
-        )
-        .order_by(
-            assignment_table.c.activity_id,
-            assignment_task_table.c.order,
-            assignment_task_table.c.id,
-        )
-    ).all()
-    for row in assignment_rows:
-        if not row.assignment_task_uuid:
-            raise RuntimeError("Assignment task row is missing assignment_task_uuid")
-        assessment = assessments.get(("ASSIGNMENT", int(row.activity_id)))
-        if assessment is None:
-            msg = f"Missing canonical assessment for assignment activity {row.activity_id}"
-            raise RuntimeError(
-                msg
+            .select_from(
+                assignment_task_table.join(
+                    assignment_table,
+                    assignment_task_table.c.assignment_id == assignment_table.c.id,
+                )
             )
-        if row.assignment_task_uuid in existing_item_uuids:
-            continue
-        created_at = _coerce_datetime(row.created_at) or now
-        updated_at = _coerce_datetime(row.updated_at) or created_at
-        items_to_insert.append({
-            "item_uuid": row.assignment_task_uuid,
-            "assessment_id": assessment["id"],
-            "order": int(row.order or 0),
-            "kind": _assignment_item_kind(row.assignment_type),
-            "title": row.title or "",
-            "body_json": _assignment_item_body(row),
-            "max_score": float(row.max_grade_value or 0),
-            "created_at": created_at,
-            "updated_at": updated_at,
-        })
-        existing_item_uuids.add(row.assignment_task_uuid)
-        touched_assessment_ids.add(int(assessment["id"]))
+            .order_by(
+                assignment_table.c.activity_id,
+                assignment_task_table.c.order,
+                assignment_task_table.c.id,
+            )
+        ).all()
+        for row in assignment_rows:
+            if not row.assignment_task_uuid:
+                raise RuntimeError("Assignment task row is missing assignment_task_uuid")
+            assessment = assessments.get(("ASSIGNMENT", int(row.activity_id)))
+            if assessment is None:
+                msg = f"Missing canonical assessment for assignment activity {row.activity_id}"
+                raise RuntimeError(msg)
+            if row.assignment_task_uuid in existing_item_uuids:
+                continue
+            created_at = _coerce_datetime(row.created_at) or now
+            updated_at = _coerce_datetime(row.updated_at) or created_at
+            items_to_insert.append({
+                "item_uuid": row.assignment_task_uuid,
+                "assessment_id": assessment["id"],
+                "order": int(row.order or 0),
+                "kind": _assignment_item_kind(row.assignment_type),
+                "title": row.title or "",
+                "body_json": _assignment_item_body(row),
+                "max_score": float(row.max_grade_value or 0),
+                "created_at": created_at,
+                "updated_at": updated_at,
+            })
+            existing_item_uuids.add(row.assignment_task_uuid)
+            touched_assessment_ids.add(int(assessment["id"]))
 
-    question_rows = bind.execute(
-        sa
-        .select(
-            question_table.c.question_uuid,
-            question_table.c.order_index,
-            question_table.c.question_type,
-            question_table.c.question_text,
-            question_table.c.answer_options,
-            question_table.c.explanation,
-            question_table.c.points,
-            question_table.c.creation_date,
-            question_table.c.update_date,
-            exam_table.c.activity_id,
-        )
-        .select_from(
-            question_table.join(exam_table, question_table.c.exam_id == exam_table.c.id)
-        )
-        .order_by(
-            exam_table.c.activity_id, question_table.c.order_index, question_table.c.id
-        )
-    ).all()
-    for row in question_rows:
-        if not row.question_uuid:
-            raise RuntimeError("Question row is missing question_uuid")
-        assessment = assessments.get(("EXAM", int(row.activity_id)))
-        if assessment is None:
-            msg = f"Missing canonical assessment for exam activity {row.activity_id}"
-            raise RuntimeError(
-                msg
+    if _table_exists(bind, "question"):
+        question_rows = bind.execute(
+            sa
+            .select(
+                question_table.c.question_uuid,
+                question_table.c.order_index,
+                question_table.c.question_type,
+                question_table.c.question_text,
+                question_table.c.answer_options,
+                question_table.c.explanation,
+                question_table.c.points,
+                question_table.c.creation_date,
+                question_table.c.update_date,
+                exam_table.c.activity_id,
             )
-        if row.question_uuid in existing_item_uuids:
-            continue
-        created_at = _coerce_datetime(row.creation_date) or now
-        updated_at = _coerce_datetime(row.update_date) or created_at
-        items_to_insert.append({
-            "item_uuid": row.question_uuid,
-            "assessment_id": assessment["id"],
-            "order": int(row.order_index or 0),
-            "kind": _question_item_kind(row.question_type),
-            "title": row.question_text or "",
-            "body_json": _question_item_body(row),
-            "max_score": float(row.points or 0),
-            "created_at": created_at,
-            "updated_at": updated_at,
-        })
-        existing_item_uuids.add(row.question_uuid)
-        touched_assessment_ids.add(int(assessment["id"]))
+            .select_from(
+                question_table.join(exam_table, question_table.c.exam_id == exam_table.c.id)
+            )
+            .order_by(
+                exam_table.c.activity_id, question_table.c.order_index, question_table.c.id
+            )
+        ).all()
+        for row in question_rows:
+            if not row.question_uuid:
+                raise RuntimeError("Question row is missing question_uuid")
+            assessment = assessments.get(("EXAM", int(row.activity_id)))
+            if assessment is None:
+                msg = f"Missing canonical assessment for exam activity {row.activity_id}"
+                raise RuntimeError(msg)
+            if row.question_uuid in existing_item_uuids:
+                continue
+            created_at = _coerce_datetime(row.creation_date) or now
+            updated_at = _coerce_datetime(row.update_date) or created_at
+            items_to_insert.append({
+                "item_uuid": row.question_uuid,
+                "assessment_id": assessment["id"],
+                "order": int(row.order_index or 0),
+                "kind": _question_item_kind(row.question_type),
+                "title": row.question_text or "",
+                "body_json": _question_item_body(row),
+                "max_score": float(row.points or 0),
+                "created_at": created_at,
+                "updated_at": updated_at,
+            })
+            existing_item_uuids.add(row.question_uuid)
+            touched_assessment_ids.add(int(assessment["id"]))
 
     if items_to_insert:
         bind.execute(sa.insert(assessment_item_table), items_to_insert)
@@ -480,178 +491,175 @@ def upgrade() -> None:
     )
     submissions_to_insert: list[dict[str, object]] = []
 
-    exam_attempt_rows = bind.execute(
-        sa
-        .select(
-            exam_attempt_table.c.id,
-            exam_attempt_table.c.attempt_uuid,
-            exam_attempt_table.c.user_id,
-            exam_attempt_table.c.status,
-            exam_attempt_table.c.score,
-            exam_attempt_table.c.answers,
-            exam_attempt_table.c.violations,
-            exam_attempt_table.c.started_at,
-            exam_attempt_table.c.submitted_at,
-            exam_attempt_table.c.creation_date,
-            exam_attempt_table.c.update_date,
-            exam_table.c.activity_id,
-        )
-        .select_from(
-            exam_attempt_table.join(
-                exam_table, exam_attempt_table.c.exam_id == exam_table.c.id
+    if _table_exists(bind, "exam_attempt"):
+        exam_attempt_rows = bind.execute(
+            sa
+            .select(
+                exam_attempt_table.c.id,
+                exam_attempt_table.c.attempt_uuid,
+                exam_attempt_table.c.user_id,
+                exam_attempt_table.c.status,
+                exam_attempt_table.c.score,
+                exam_attempt_table.c.answers,
+                exam_attempt_table.c.violations,
+                exam_attempt_table.c.started_at,
+                exam_attempt_table.c.submitted_at,
+                exam_attempt_table.c.creation_date,
+                exam_attempt_table.c.update_date,
+                exam_table.c.activity_id,
             )
-        )
-        .order_by(
-            exam_table.c.activity_id,
-            exam_attempt_table.c.user_id,
-            exam_attempt_table.c.creation_date,
-            exam_attempt_table.c.id,
-        )
-    ).all()
-    exam_attempt_numbers: defaultdict[tuple[int, int], int] = defaultdict(int)
-    for row in exam_attempt_rows:
-        if not row.attempt_uuid:
-            raise RuntimeError("Exam attempt row is missing attempt_uuid")
-        key = (int(row.activity_id), int(row.user_id))
-        exam_attempt_numbers[key] += 1
-        submission_uuid = f"submission_{row.attempt_uuid}"
-        if submission_uuid in existing_submission_uuids:
-            continue
-        assessment = assessments.get(("EXAM", int(row.activity_id)))
-        if assessment is None:
-            msg = f"Missing canonical assessment for exam activity {row.activity_id}"
-            raise RuntimeError(
-                msg
+            .select_from(
+                exam_attempt_table.join(
+                    exam_table, exam_attempt_table.c.exam_id == exam_table.c.id
+                )
             )
-        status_value = str(row.status or "")
-        canonical_status = (
-            "GRADED" if status_value in {"SUBMITTED", "AUTO_SUBMITTED"} else "DRAFT"
-        )
-        created_at = (
-            _coerce_datetime(row.creation_date)
-            or _coerce_datetime(row.started_at)
-            or now
-        )
-        updated_at = (
-            _coerce_datetime(row.update_date)
-            or _coerce_datetime(row.submitted_at)
-            or created_at
-        )
-        submitted_at = _coerce_datetime(row.submitted_at)
-        metadata: dict[str, object] = {
-            "exam_attempt_id": row.id,
-            "attempt_uuid": row.attempt_uuid,
-        }
-        if isinstance(row.violations, list) and row.violations:
-            metadata["violations"] = row.violations
-        submissions_to_insert.append({
-            "submission_uuid": submission_uuid,
-            "assessment_type": "EXAM",
-            "activity_id": int(row.activity_id),
-            "assessment_policy_id": assessment["policy_id"],
-            "user_id": int(row.user_id),
-            "auto_score": float(row.score or 0),
-            "final_score": float(row.score)
-            if row.score is not None and canonical_status == "GRADED"
-            else None,
-            "status": canonical_status,
-            "attempt_number": exam_attempt_numbers[key],
-            "is_late": False,
-            "late_penalty_pct": 0.0,
-            "answers_json": _as_dict(row.answers),
-            "grading_json": {},
-            "metadata_json": metadata,
-            "started_at": _coerce_datetime(row.started_at),
-            "submitted_at": submitted_at,
-            "graded_at": submitted_at if canonical_status == "GRADED" else None,
-            "created_at": created_at,
-            "updated_at": updated_at,
-        })
-        existing_submission_uuids.add(submission_uuid)
+            .order_by(
+                exam_table.c.activity_id,
+                exam_attempt_table.c.user_id,
+                exam_attempt_table.c.creation_date,
+                exam_attempt_table.c.id,
+            )
+        ).all()
+        exam_attempt_numbers: defaultdict[tuple[int, int], int] = defaultdict(int)
+        for row in exam_attempt_rows:
+            if not row.attempt_uuid:
+                raise RuntimeError("Exam attempt row is missing attempt_uuid")
+            key = (int(row.activity_id), int(row.user_id))
+            exam_attempt_numbers[key] += 1
+            submission_uuid = f"submission_{row.attempt_uuid}"
+            if submission_uuid in existing_submission_uuids:
+                continue
+            assessment = assessments.get(("EXAM", int(row.activity_id)))
+            if assessment is None:
+                msg = f"Missing canonical assessment for exam activity {row.activity_id}"
+                raise RuntimeError(msg)
+            status_value = str(row.status or "")
+            canonical_status = (
+                "GRADED" if status_value in {"SUBMITTED", "AUTO_SUBMITTED"} else "DRAFT"
+            )
+            created_at = (
+                _coerce_datetime(row.creation_date)
+                or _coerce_datetime(row.started_at)
+                or now
+            )
+            updated_at = (
+                _coerce_datetime(row.update_date)
+                or _coerce_datetime(row.submitted_at)
+                or created_at
+            )
+            submitted_at = _coerce_datetime(row.submitted_at)
+            metadata: dict[str, object] = {
+                "exam_attempt_id": row.id,
+                "attempt_uuid": row.attempt_uuid,
+            }
+            if isinstance(row.violations, list) and row.violations:
+                metadata["violations"] = row.violations
+            submissions_to_insert.append({
+                "submission_uuid": submission_uuid,
+                "assessment_type": "EXAM",
+                "activity_id": int(row.activity_id),
+                "assessment_policy_id": assessment["policy_id"],
+                "user_id": int(row.user_id),
+                "auto_score": float(row.score or 0),
+                "final_score": float(row.score)
+                if row.score is not None and canonical_status == "GRADED"
+                else None,
+                "status": canonical_status,
+                "attempt_number": exam_attempt_numbers[key],
+                "is_late": False,
+                "late_penalty_pct": 0.0,
+                "answers_json": _as_dict(row.answers),
+                "grading_json": {},
+                "metadata_json": metadata,
+                "started_at": _coerce_datetime(row.started_at),
+                "submitted_at": submitted_at,
+                "graded_at": submitted_at if canonical_status == "GRADED" else None,
+                "created_at": created_at,
+                "updated_at": updated_at,
+            })
+            existing_submission_uuids.add(submission_uuid)
 
-    code_submission_rows = bind.execute(
-        sa.select(
-            code_submission_table.c.id,
-            code_submission_table.c.submission_uuid,
-            code_submission_table.c.activity_id,
-            code_submission_table.c.user_id,
-            code_submission_table.c.language_id,
-            code_submission_table.c.language_name,
-            code_submission_table.c.status,
-            code_submission_table.c.score,
-            code_submission_table.c.passed_tests,
-            code_submission_table.c.total_tests,
-            code_submission_table.c.execution_time_ms,
-            code_submission_table.c.memory_kb,
-            code_submission_table.c.test_results,
-            code_submission_table.c.plagiarism_score,
-            code_submission_table.c.created_at,
-            code_submission_table.c.updated_at,
-        ).order_by(
-            code_submission_table.c.activity_id,
-            code_submission_table.c.user_id,
-            code_submission_table.c.created_at,
-            code_submission_table.c.id,
-        )
-    ).all()
-    code_attempt_numbers: defaultdict[tuple[int, int], int] = defaultdict(int)
-    for row in code_submission_rows:
-        if not row.submission_uuid:
-            raise RuntimeError("Code submission row is missing submission_uuid")
-        key = (int(row.activity_id), int(row.user_id))
-        code_attempt_numbers[key] += 1
-        if row.submission_uuid in existing_submission_uuids:
-            continue
-        assessment = assessments.get(("CODE_CHALLENGE", int(row.activity_id)))
-        if assessment is None:
-            msg = f"Missing canonical assessment for code challenge activity {row.activity_id}"
-            raise RuntimeError(
-                msg
+    if _table_exists(bind, "code_submission"):
+        code_submission_rows = bind.execute(
+            sa.select(
+                code_submission_table.c.id,
+                code_submission_table.c.submission_uuid,
+                code_submission_table.c.activity_id,
+                code_submission_table.c.user_id,
+                code_submission_table.c.language_id,
+                code_submission_table.c.language_name,
+                code_submission_table.c.status,
+                code_submission_table.c.score,
+                code_submission_table.c.passed_tests,
+                code_submission_table.c.total_tests,
+                code_submission_table.c.execution_time_ms,
+                code_submission_table.c.memory_kb,
+                code_submission_table.c.test_results,
+                code_submission_table.c.plagiarism_score,
+                code_submission_table.c.created_at,
+                code_submission_table.c.updated_at,
+            ).order_by(
+                code_submission_table.c.activity_id,
+                code_submission_table.c.user_id,
+                code_submission_table.c.created_at,
+                code_submission_table.c.id,
             )
-        status_value = str(row.status or "")
-        canonical_status = (
-            "PENDING"
-            if status_value in {"PENDING", "PROCESSING", "PENDING_JUDGE0"}
-            else "GRADED"
-        )
-        created_at = _coerce_datetime(row.created_at) or now
-        updated_at = _coerce_datetime(row.updated_at) or created_at
-        submitted_at = updated_at if canonical_status != "PENDING" else None
-        submissions_to_insert.append({
-            "submission_uuid": row.submission_uuid,
-            "assessment_type": "CODE_CHALLENGE",
-            "activity_id": int(row.activity_id),
-            "assessment_policy_id": assessment["policy_id"],
-            "user_id": int(row.user_id),
-            "auto_score": float(row.score or 0),
-            "final_score": float(row.score)
-            if row.score is not None and canonical_status == "GRADED"
-            else None,
-            "status": canonical_status,
-            "attempt_number": code_attempt_numbers[key],
-            "is_late": False,
-            "late_penalty_pct": 0.0,
-            "answers_json": {
-                "language_id": int(row.language_id or 0),
-                "language_name": row.language_name or "",
-            },
-            "grading_json": {},
-            "metadata_json": _build_code_submission_metadata(row, updated_at),
-            "started_at": created_at,
-            "submitted_at": submitted_at,
-            "graded_at": updated_at if canonical_status == "GRADED" else None,
-            "created_at": created_at,
-            "updated_at": updated_at,
-        })
-        existing_submission_uuids.add(row.submission_uuid)
+        ).all()
+        code_attempt_numbers: defaultdict[tuple[int, int], int] = defaultdict(int)
+        for row in code_submission_rows:
+            if not row.submission_uuid:
+                raise RuntimeError("Code submission row is missing submission_uuid")
+            key = (int(row.activity_id), int(row.user_id))
+            code_attempt_numbers[key] += 1
+            if row.submission_uuid in existing_submission_uuids:
+                continue
+            assessment = assessments.get(("CODE_CHALLENGE", int(row.activity_id)))
+            if assessment is None:
+                msg = f"Missing canonical assessment for code challenge activity {row.activity_id}"
+                raise RuntimeError(msg)
+            status_value = str(row.status or "")
+            canonical_status = (
+                "PENDING"
+                if status_value in {"PENDING", "PROCESSING", "PENDING_JUDGE0"}
+                else "GRADED"
+            )
+            created_at = _coerce_datetime(row.created_at) or now
+            updated_at = _coerce_datetime(row.updated_at) or created_at
+            submitted_at = updated_at if canonical_status != "PENDING" else None
+            submissions_to_insert.append({
+                "submission_uuid": row.submission_uuid,
+                "assessment_type": "CODE_CHALLENGE",
+                "activity_id": int(row.activity_id),
+                "assessment_policy_id": assessment["policy_id"],
+                "user_id": int(row.user_id),
+                "auto_score": float(row.score or 0),
+                "final_score": float(row.score)
+                if row.score is not None and canonical_status == "GRADED"
+                else None,
+                "status": canonical_status,
+                "attempt_number": code_attempt_numbers[key],
+                "is_late": False,
+                "late_penalty_pct": 0.0,
+                "answers_json": {
+                    "language_id": int(row.language_id or 0),
+                    "language_name": row.language_name or "",
+                },
+                "grading_json": {},
+                "metadata_json": _build_code_submission_metadata(row, updated_at),
+                "started_at": created_at,
+                "submitted_at": submitted_at,
+                "graded_at": updated_at if canonical_status == "GRADED" else None,
+                "created_at": created_at,
+                "updated_at": updated_at,
+            })
+            existing_submission_uuids.add(row.submission_uuid)
 
     if submissions_to_insert:
         bind.execute(sa.insert(submission_table), submissions_to_insert)
 
-    op.drop_table("code_submission")
-    op.drop_table("exam_attempt")
-    op.drop_table("question")
-    op.drop_table("assignment_task")
+    for table_name in ("code_submission", "exam_attempt", "question", "assignment_task"):
+        if _table_exists(bind, table_name):
+            op.drop_table(table_name)
 
 
 def downgrade() -> None:

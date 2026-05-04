@@ -214,6 +214,11 @@ class ActivityAssessmentPolicyRead(SQLModelStrictBaseModel):
     anti_cheat_json: dict[str, object] = Field(default_factory=dict)
     settings_json: dict[str, object] = Field(default_factory=dict)
 
+    @field_validator("late_policy", mode="before")
+    @classmethod
+    def _default_late_policy(cls, value: object) -> object:
+        return LatePolicyNone() if value == {} else value
+
 
 class ActivityReadWithPermissions(ActivityRead):
     """Activity response with permission metadata."""

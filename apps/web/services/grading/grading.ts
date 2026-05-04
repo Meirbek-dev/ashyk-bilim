@@ -16,6 +16,7 @@ import type {
 import { getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { revalidateTag } from 'next/cache';
+import { StaleGradeError } from './errors';
 
 // ── Student endpoints ─────────────────────────────────────────────────────────
 
@@ -110,15 +111,6 @@ export async function getSubmission(submissionUuid: string): Promise<Submission 
   const meta = await getResponseMetadata(res);
   if (!meta.success) return null;
   return meta.data as Submission;
-}
-
-export class StaleGradeError extends Error {
-  public readonly name = 'StaleGradeError';
-  public readonly serverSubmission: Submission;
-  public constructor(serverSubmission: Submission) {
-    super('Grade was updated by another session. Review the latest values before saving.');
-    this.serverSubmission = serverSubmission;
-  }
 }
 
 export async function saveGrade(

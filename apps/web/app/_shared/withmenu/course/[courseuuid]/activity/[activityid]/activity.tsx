@@ -45,6 +45,12 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
     globalThis.dispatchEvent?.(new CustomEvent('focusModeChange', { detail: { isFocusMode: next } }));
   };
 
+  const isAssessable = activity
+    ? activity.activity_type === 'TYPE_ASSIGNMENT' ||
+      activity.activity_type === 'TYPE_EXAM' ||
+      activity.activity_type === 'TYPE_CODE_CHALLENGE'
+    : false;
+
   const body =
     activityid === 'end' ? (
       <CourseEndPanel

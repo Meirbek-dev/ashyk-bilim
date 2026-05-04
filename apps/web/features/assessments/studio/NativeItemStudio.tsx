@@ -750,16 +750,17 @@ function NativeItemBodyEditor({
   }
 
   if (item.body.kind === 'OPEN_TEXT') {
+    const body = item.body;
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="open-text-prompt">Prompt</Label>
           <Textarea
             id="open-text-prompt"
-            value={item.body.prompt}
+            value={body.prompt}
             disabled={disabled}
             className="min-h-32"
-            onChange={(event) => onChange({ ...item, body: { ...item.body, prompt: event.target.value } })}
+            onChange={(event) => onChange({ ...item, body: { ...body, kind: 'OPEN_TEXT', prompt: event.target.value } })}
           />
         </div>
         <div className="grid gap-4 md:grid-cols-[12rem_1fr]">
@@ -769,13 +770,14 @@ function NativeItemBodyEditor({
               id="open-text-min-words"
               type="number"
               min={0}
-              value={item.body.min_words ?? ''}
+              value={body.min_words ?? ''}
               disabled={disabled}
               onChange={(event) =>
                 onChange({
                   ...item,
                   body: {
-                    ...item.body,
+                    ...body,
+                    kind: 'OPEN_TEXT',
                     min_words: event.target.value ? Number(event.target.value) : null,
                   },
                 })
@@ -786,10 +788,10 @@ function NativeItemBodyEditor({
             <Label htmlFor="open-text-rubric">Rubric</Label>
             <Textarea
               id="open-text-rubric"
-              value={item.body.rubric ?? ''}
+              value={body.rubric ?? ''}
               disabled={disabled}
               className="min-h-24"
-              onChange={(event) => onChange({ ...item, body: { ...item.body, rubric: event.target.value || null } })}
+              onChange={(event) => onChange({ ...item, body: { ...body, kind: 'OPEN_TEXT', rubric: event.target.value || null } })}
             />
           </div>
         </div>
@@ -798,11 +800,12 @@ function NativeItemBodyEditor({
   }
 
   if (item.body.kind === 'FILE_UPLOAD') {
+    const body = item.body;
     const constraints: FileUploadConstraints = {
       kind: 'FILE_UPLOAD',
-      allowed_mime_types: item.body.mimes,
-      max_file_size_mb: item.body.max_mb ?? null,
-      max_files: item.body.max_files,
+      allowed_mime_types: body.mimes,
+      max_file_size_mb: body.max_mb ?? null,
+      max_files: body.max_files,
     };
 
     return (
@@ -811,10 +814,10 @@ function NativeItemBodyEditor({
           <Label htmlFor="file-upload-prompt">Prompt</Label>
           <Textarea
             id="file-upload-prompt"
-            value={item.body.prompt}
+            value={body.prompt}
             disabled={disabled}
             className="min-h-24"
-            onChange={(event) => onChange({ ...item, body: { ...item.body, prompt: event.target.value } })}
+            onChange={(event) => onChange({ ...item, body: { ...body, kind: 'FILE_UPLOAD', prompt: event.target.value } })}
           />
         </div>
         <FileUploadConstraintsEditor
@@ -824,7 +827,8 @@ function NativeItemBodyEditor({
             onChange({
               ...item,
               body: {
-                ...item.body,
+                ...body,
+                kind: 'FILE_UPLOAD',
                 max_files: nextConstraints.max_files,
                 max_mb: nextConstraints.max_file_size_mb ?? null,
                 mimes: nextConstraints.allowed_mime_types,
@@ -837,21 +841,22 @@ function NativeItemBodyEditor({
   }
 
   if (item.body.kind === 'FORM') {
+    const body = item.body;
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="form-prompt">Prompt</Label>
           <Textarea
             id="form-prompt"
-            value={item.body.prompt}
+            value={body.prompt}
             disabled={disabled}
             className="min-h-24"
-            onChange={(event) => onChange({ ...item, body: { ...item.body, prompt: event.target.value } })}
+            onChange={(event) => onChange({ ...item, body: { ...body, kind: 'FORM', prompt: event.target.value } })}
           />
         </div>
 
         <div className="space-y-3">
-          {item.body.fields.map((field, index) => (
+          {body.fields.map((field, index) => (
             <div
               key={field.id}
               className="rounded-lg border p-3"
@@ -862,13 +867,14 @@ function NativeItemBodyEditor({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  disabled={disabled || item.body.fields.length <= 1}
+                  disabled={disabled || body.fields.length <= 1}
                   onClick={() =>
                     onChange({
                       ...item,
                       body: {
-                        ...item.body,
-                        fields: item.body.fields.filter((candidate) => candidate.id !== field.id),
+                        ...body,
+                        kind: 'FORM',
+                        fields: body.fields.filter((candidate) => candidate.id !== field.id),
                       },
                     })
                   }
@@ -888,8 +894,9 @@ function NativeItemBodyEditor({
                       onChange({
                         ...item,
                         body: {
-                          ...item.body,
-                          fields: item.body.fields.map((candidate) =>
+                          ...body,
+                          kind: 'FORM',
+                          fields: body.fields.map((candidate) =>
                             candidate.id === field.id ? { ...candidate, label: event.target.value } : candidate,
                           ),
                         },
@@ -908,8 +915,9 @@ function NativeItemBodyEditor({
                       onChange({
                         ...item,
                         body: {
-                          ...item.body,
-                          fields: item.body.fields.map((candidate) =>
+                          ...body,
+                          kind: 'FORM',
+                          fields: body.fields.map((candidate) =>
                             candidate.id === field.id
                               ? {
                                   ...candidate,
@@ -936,8 +944,9 @@ function NativeItemBodyEditor({
                       onChange({
                         ...item,
                         body: {
-                          ...item.body,
-                          fields: item.body.fields.map((candidate) =>
+                          ...body,
+                          kind: 'FORM',
+                          fields: body.fields.map((candidate) =>
                             candidate.id === field.id ? { ...candidate, required: checked } : candidate,
                           ),
                         },
@@ -958,8 +967,9 @@ function NativeItemBodyEditor({
             onChange({
               ...item,
               body: {
-                ...item.body,
-                fields: [...item.body.fields, createFormField()],
+                ...body,
+                kind: 'FORM',
+                fields: [...body.fields, createFormField()],
               },
             })
           }
@@ -1135,7 +1145,7 @@ function toEditableItem(item: AssessmentItem): EditableItem {
   };
 }
 
-function toChoiceAuthorValue(body: EditableItem['body']): ChoiceAuthorValue {
+function toChoiceAuthorValue(body: Extract<EditableItem['body'], { kind: 'CHOICE' | 'MATCHING' }>): ChoiceAuthorValue {
   if (body.kind === 'MATCHING') {
     return {
       kind: 'MATCHING',
