@@ -294,10 +294,18 @@ export function renderCanonicalReviewAnswer(item: AssessmentItem, answer: ItemAn
   if (body.kind === 'OPEN_TEXT') {
     const ReviewDetail = getItemKindModule('OPEN_TEXT').ReviewDetail;
     return (
-      <ReviewDetail
-        item={{ kind: 'OPEN_TEXT', body: { prompt: body.prompt } }}
-        answer={{ text: answer?.kind === 'OPEN_TEXT' ? answer.text : '' }}
-      />
+      <div className="space-y-3">
+        <ReviewDetail
+          item={{ kind: 'OPEN_TEXT', body: { prompt: body.prompt } }}
+          answer={{ text: answer?.kind === 'OPEN_TEXT' ? answer.text : '' }}
+        />
+        {body.rubric ? (
+          <div className="rounded-md border border-sky-200 bg-sky-50/70 p-3 text-xs text-sky-950">
+            <div className="mb-1 font-medium">Rubric guidance</div>
+            <pre className="whitespace-pre-wrap">{body.rubric}</pre>
+          </div>
+        ) : null}
+      </div>
     );
   }
 

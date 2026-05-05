@@ -709,6 +709,7 @@ def build_readiness(
     db_session: Session,
 ) -> AssessmentReadiness:
     issues: list[ReadinessIssue] = []
+    allowed_item_kinds = _allowed_item_kinds_for_assessment(assessment.kind)
     if not assessment.title.strip():
         issues.append(
             ReadinessIssue(code="assessment.title_missing", message="Title is required")
@@ -731,8 +732,57 @@ def build_readiness(
                 message="Assessment policy is missing.",
             )
         )
+    else:
+        if policy.max_attempts is not None and policy.max_attempts < 1:
+            issues.append(
+                ReadinessIssue(
+                    code="policy.max_attempts_invalid",
+                    message="Attempt limit must be at least 1 when set.",
+                )
+            )
+        if policy.time_limit_seconds is not None and policy.time_limit_seconds < 1:
+            issues.append(
+                ReadinessIssue(
+                    code="policy.time_limit_invalid",
+                    message="Time limit must be greater than zero when set.",
+                )
+            )
+        anti_cheat = (
+            policy.anti_cheat_json
+            if isinstance(policy.anti_cheat_json, dict)
+            else {}
+        )
+        if (
+            isinstance(anti_cheat.get("violation_threshold"), int)
+            and anti_cheat["violation_threshold"] < 1
+        ):
+            issues.append(
+                ReadinessIssue(
+                    code="policy.violation_threshold_invalid",
+                    message="Violation threshold must be at least 1 when enabled.",
+                )
+            )
+        if (
+            assessment.scheduled_at is not None
+            and policy.due_at is not None
+            and assessment.scheduled_at >= policy.due_at
+        ):
+            issues.append(
+                ReadinessIssue(
+                    code="schedule.after_due_at",
+                    message="Scheduled publish time must be before the due date.",
+                )
+            )
 
     for item in items:
+        if allowed_item_kinds is not None and item.kind not in allowed_item_kinds:
+            issues.append(
+                ReadinessIssue(
+                    code="item.kind_forbidden",
+                    message=f"{item.kind} items are not allowed for {assessment.kind.lower()} assessments.",
+                    item_uuid=item.item_uuid,
+                )
+            )
         issues.extend(_item_readiness_issues(item))
 
     return AssessmentReadiness(ok=not issues, issues=issues)
@@ -1528,6 +1578,14 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                 item_uuid=item.item_uuid,
             )
         )
+    if item.max_score <= 0:
+        issues.append(
+            ReadinessIssue(
+                code="item.max_score_invalid",
+                message="Item points must be greater than zero.",
+                item_uuid=item.item_uuid,
+            )
+        )
 
     if body.kind == "CHOICE":
         if not body.prompt.strip():
@@ -1543,6 +1601,25 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                 ReadinessIssue(
                     code="choice.options_missing",
                     message="Choice items need at least two options.",
+                    item_uuid=item.item_uuid,
+                )
+            )
+        if any(not option.text.strip() for option in body.options):
+            issues.append(
+                ReadinessIssue(
+                    code="choice.option_text_missing",
+                    message="Every choice option needs visible text.",
+                    item_uuid=item.item_uuid,
+                )
+            )
+        option_texts = [
+            option.text.strip().lower() for option in body.options if option.text.strip()
+        ]
+        if len(set(option_texts)) != len(option_texts):
+            issues.append(
+                ReadinessIssue(
+                    code="choice.option_duplicate",
+                    message="Choice options should be unique.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -1572,7 +1649,23 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                     item_uuid=item.item_uuid,
                 )
             )
+        if body.min_words is not None and body.min_words < 0:
+            issues.append(
+                ReadinessIssue(
+                    code="open_text.min_words_invalid",
+                    message="Minimum words cannot be negative.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     elif body.kind == "FILE_UPLOAD":
+        if not body.prompt.strip():
+            issues.append(
+                ReadinessIssue(
+                    code="item.prompt_missing",
+                    message="File-upload prompt is required.",
+                    item_uuid=item.item_uuid,
+                )
+            )
         if body.max_files < 1:
             issues.append(
                 ReadinessIssue(
@@ -1581,7 +1674,31 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                     item_uuid=item.item_uuid,
                 )
             )
+        if body.max_mb is not None and body.max_mb <= 0:
+            issues.append(
+                ReadinessIssue(
+                    code="file.max_mb_invalid",
+                    message="Maximum file size must be greater than zero when set.",
+                    item_uuid=item.item_uuid,
+                )
+            )
+        if any(not mime.strip() for mime in body.mimes):
+            issues.append(
+                ReadinessIssue(
+                    code="file.mime_invalid",
+                    message="Allowed file types cannot be blank.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     elif body.kind == "FORM":
+        if not body.prompt.strip():
+            issues.append(
+                ReadinessIssue(
+                    code="item.prompt_missing",
+                    message="Form prompt is required.",
+                    item_uuid=item.item_uuid,
+                )
+            )
         if not body.fields:
             issues.append(
                 ReadinessIssue(
@@ -1590,7 +1707,32 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                     item_uuid=item.item_uuid,
                 )
             )
+        if any(not field.label.strip() for field in body.fields):
+            issues.append(
+                ReadinessIssue(
+                    code="form.field_label_missing",
+                    message="Each form field needs a label.",
+                    item_uuid=item.item_uuid,
+                )
+            )
+        field_ids = [field.id.strip().lower() for field in body.fields if field.id.strip()]
+        if len(set(field_ids)) != len(field_ids):
+            issues.append(
+                ReadinessIssue(
+                    code="form.field_id_duplicate",
+                    message="Form fields need unique IDs.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     elif body.kind == "CODE":
+        if not body.prompt.strip():
+            issues.append(
+                ReadinessIssue(
+                    code="item.prompt_missing",
+                    message="Code prompt is required.",
+                    item_uuid=item.item_uuid,
+                )
+            )
         if not body.languages:
             issues.append(
                 ReadinessIssue(
@@ -1607,15 +1749,87 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                     item_uuid=item.item_uuid,
                 )
             )
-    elif body.kind == "MATCHING" and not body.pairs:
-        issues.append(
-            ReadinessIssue(
-                code="matching.pairs_missing",
-                message="Matching items need at least one pair.",
-                item_uuid=item.item_uuid,
+        if any(
+            not test.input.strip() or not test.expected_output.strip()
+            for test in body.tests
+        ):
+            issues.append(
+                ReadinessIssue(
+                    code="code.test_io_missing",
+                    message="Each code test needs input and expected output.",
+                    item_uuid=item.item_uuid,
+                )
             )
-        )
+        if any(test.weight <= 0 for test in body.tests):
+            issues.append(
+                ReadinessIssue(
+                    code="code.test_weight_invalid",
+                    message="Each code test needs a positive weight.",
+                    item_uuid=item.item_uuid,
+                )
+            )
+    elif body.kind == "MATCHING":
+        if not body.prompt.strip():
+            issues.append(
+                ReadinessIssue(
+                    code="item.prompt_missing",
+                    message="Matching prompt is required.",
+                    item_uuid=item.item_uuid,
+                )
+            )
+        if not body.pairs:
+            issues.append(
+                ReadinessIssue(
+                    code="matching.pairs_missing",
+                    message="Matching items need at least one pair.",
+                    item_uuid=item.item_uuid,
+                )
+            )
+        if any(
+            not pair.left.strip() or not pair.right.strip() for pair in body.pairs
+        ):
+            issues.append(
+                ReadinessIssue(
+                    code="matching.pair_value_missing",
+                    message="Every pair needs both left and right values.",
+                    item_uuid=item.item_uuid,
+                )
+            )
+        left_values = [pair.left.strip().lower() for pair in body.pairs if pair.left.strip()]
+        right_values = [pair.right.strip().lower() for pair in body.pairs if pair.right.strip()]
+        if len(set(left_values)) != len(left_values):
+            issues.append(
+                ReadinessIssue(
+                    code="matching.left_duplicate",
+                    message="Left-side prompts should be unique.",
+                    item_uuid=item.item_uuid,
+                )
+            )
+        if len(set(right_values)) != len(right_values):
+            issues.append(
+                ReadinessIssue(
+                    code="matching.right_duplicate",
+                    message="Right-side answers should be unique.",
+                    item_uuid=item.item_uuid,
+                )
+            )
     return issues
+
+
+def _allowed_item_kinds_for_assessment(kind: str) -> set[ItemKind] | None:
+    if kind == AssessmentType.EXAM:
+        return {ItemKind.CHOICE, ItemKind.MATCHING}
+    if kind == AssessmentType.QUIZ:
+        return {ItemKind.CHOICE, ItemKind.MATCHING}
+    if kind == AssessmentType.ASSIGNMENT:
+        return {
+            ItemKind.CHOICE,
+            ItemKind.OPEN_TEXT,
+            ItemKind.FILE_UPLOAD,
+            ItemKind.FORM,
+            ItemKind.MATCHING,
+        }
+    return None
 
 
 def _get_policy_for_assessment(

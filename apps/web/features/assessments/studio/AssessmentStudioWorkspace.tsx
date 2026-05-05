@@ -21,6 +21,7 @@ import type { KindModule } from '@/features/assessments/registry';
 import { useAssessmentStudio } from '@/features/assessments/hooks/useAssessment';
 import type { AssessmentLifecycle } from '@/features/assessments/domain';
 import PolicyInspector from '@/features/assessments/shared/PolicyInspector';
+import { classifyValidationIssue } from '@/features/assessments/domain/readiness';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { apiFetch } from '@/lib/api-client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -97,7 +98,10 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
 
   const { vm: studio } = vm;
   const previewHref = `/assessments/${studio.assessmentUuid}`;
-  const hasIssues = studio.validationIssues.length > 0;
+  const classifiedIssues = studio.validationIssues.map(classifyValidationIssue);
+  const hasIssues = classifiedIssues.length > 0;
+  const assessmentIssues = classifiedIssues.filter((issue) => !issue.itemUuid);
+  const itemIssues = classifiedIssues.filter((issue) => Boolean(issue.itemUuid));
 
   const setLifecycle = (lifecycle: AssessmentLifecycle, nextScheduledAt?: string | null) => {
     startTransition(async () => {
@@ -327,32 +331,61 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                   <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
                     <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
                     <AlertDescription className="text-amber-900 dark:text-amber-200">
-                      <p className="mb-1 text-sm font-medium">
-                        {studio.validationIssues.length}{' '}
-                        {studio.validationIssues.length === 1 ? 'issue blocks' : 'issues block'} publishing:
+                      <p className="mb-2 text-sm font-medium">
+                        {classifiedIssues.length} {classifiedIssues.length === 1 ? 'issue blocks' : 'issues block'} publishing.
                       </p>
-                      <ul className="space-y-1">
-                        {studio.validationIssues.map((issue, idx) => (
-                          <li
-                            key={idx}
-                            className="flex items-start gap-2 text-sm"
-                          >
-                            <span>·</span>
-                            <span className="flex-1">{issue.message}</span>
-                            {issue.itemUuid ? (
-                              <a
-                                href={`#item-${issue.itemUuid}`}
-                                className="shrink-0 text-xs text-amber-700 underline dark:text-amber-300"
+                      {assessmentIssues.length > 0 ? (
+                        <div className="mb-3">
+                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide">Assessment</p>
+                          <ul className="space-y-1">
+                            {assessmentIssues.map((issue, idx) => (
+                              <li
+                                key={`assessment-${idx}`}
+                                className="flex items-start gap-2 text-sm"
                               >
-                                Jump to question
-                              </a>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
+                                <span>·</span>
+                                <span className="flex-1">{issue.message}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                      {itemIssues.length > 0 ? (
+                        <div>
+                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide">Items</p>
+                          <ul className="space-y-1">
+                            {itemIssues.map((issue, idx) => (
+                              <li
+                                key={`item-${idx}`}
+                                className="flex items-start gap-2 text-sm"
+                              >
+                                <span>·</span>
+                                <span className="flex-1">{issue.message}</span>
+                                {issue.itemUuid ? (
+                                  <a
+                                    href={`#item-${issue.itemUuid}`}
+                                    className="shrink-0 text-xs text-amber-700 underline dark:text-amber-300"
+                                  >
+                                    Jump to item
+                                  </a>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
                     </AlertDescription>
                   </Alert>
                 )}
+
+                {assessmentIssues.length > 0 ? (
+                  <Alert>
+                    <AlertTriangle className="size-4" />
+                    <AlertDescription>
+                      Resolve the assessment-level blockers before publishing. Item-level issues remain linked from the list above.
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
 
                 {Inspector ? (
                   <Inspector {...slotProps} />

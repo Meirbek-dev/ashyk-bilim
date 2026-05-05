@@ -20,6 +20,7 @@ import { queryKeys } from '@/lib/react-query/queryKeys';
 import { reportClientError } from '@/services/telemetry/client';
 
 import { isAssessmentEditable, canPublish, canSchedule, canArchive } from '../domain/lifecycle';
+import { classifyValidationIssue } from '../domain/readiness';
 import type { AssessmentLifecycle } from '../domain/lifecycle';
 import { policyFromAssessmentPolicy } from '../domain/policy';
 import type { AssessmentPolicyDTO } from '../domain/policy';
@@ -182,11 +183,13 @@ export function useAssessment(
       policy: policyFromAssessmentPolicy(assessment.assessment_policy),
       items: assessment.items,
       validationIssues:
-        readiness.data?.issues.map((issue) => ({
-          code: issue.code,
-          message: issue.message,
-          itemUuid: issue.item_uuid ?? undefined,
-        })) ?? [],
+        readiness.data?.issues.map((issue) =>
+          classifyValidationIssue({
+            code: issue.code,
+            message: issue.message,
+            itemUuid: issue.item_uuid ?? undefined,
+          }),
+        ) ?? [],
     };
     return { vm: { surface: 'STUDIO', vm, kind }, isLoading: false, error: null };
   }

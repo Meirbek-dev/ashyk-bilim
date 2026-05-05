@@ -33,6 +33,14 @@ import type { KindAuthorProps } from '@/features/assessments/registry';
 import type { AssessmentItem } from '@/features/assessments/domain/items';
 import type { UnifiedItemKind } from '@/features/assessments/domain/items';
 import { isAssessmentEditable } from '@/features/assessments/domain/lifecycle';
+import {
+  classifyValidationIssue,
+  dedupeIssues,
+  issuesForArea,
+  itemIssues as persistedItemIssues,
+  localItemValidationIssues,
+} from '@/features/assessments/domain/readiness';
+import type { ValidationIssue } from '@/features/assessments/domain/view-models';
 import { ChoiceItemAuthor } from '@/features/assessments/items/choice';
 import type { ChoiceAuthorValue } from '@/features/assessments/items/choice';
 import {
@@ -78,6 +86,10 @@ interface AssessmentStudioDetail {
   assessment_policy?: AssessmentPolicyDetail | null;
 }
 
+interface StudioReadinessPayload {
+  issues: Array<{ code: string; message: string; item_uuid?: string | null }>;
+}
+
 interface AssessmentStudioContextValue {
   activityUuid: string;
   assessment: AssessmentStudioDetail;
@@ -87,6 +99,7 @@ interface AssessmentStudioContextValue {
   refresh: () => Promise<void>;
   isEditable: boolean;
   totalPoints: number;
+  validationIssues: ValidationIssue[];
 }
 
 const AssessmentStudioContext = createContext<AssessmentStudioContextValue | null>(null);
@@ -118,6 +131,13 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
   });
 
   const [selectedItemUuid, setSelectedItemUuid] = useState<string | null>(null);
+  const readinessQuery = useQuery({
+    queryKey: queryKeys.assessments.readiness(assessment?.assessment_uuid ?? ''),
+    queryFn: () =>
+      apiFetcher(`${getAPIUrl()}assessments/${assessment?.assessment_uuid}/readiness`) as Promise<StudioReadinessPayload>,
+    enabled: Boolean(assessment?.assessment_uuid),
+    retry: false,
+  });
 
   useEffect(() => {
     if (!assessment?.items?.length) {
@@ -145,6 +165,12 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
   const items = Array.isArray(assessment.items) ? assessment.items : [];
   const totalPoints = items.reduce((sum, item) => sum + (Number(item.max_score) || 0), 0);
   const isEditable = isAssessmentEditable(assessment.lifecycle);
+  const validationIssues =
+    readinessQuery.data?.issues.map((issue) => ({
+      code: issue.code,
+      message: issue.message,
+      itemUuid: issue.item_uuid ?? undefined,
+    })) ?? [];
 
   return (
     <AssessmentStudioContext.Provider
@@ -157,6 +183,7 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
         refresh,
         isEditable,
         totalPoints,
+        validationIssues,
       }}
     >
       {children}
@@ -179,7 +206,7 @@ export function NativeItemOutline({
   allowedKinds: SupportedStudioItemKind[];
   itemNoun: string;
 }) {
-  const { assessment, items, selectedItemUuid, setSelectedItemUuid, refresh, isEditable, totalPoints } =
+  const { assessment, items, selectedItemUuid, setSelectedItemUuid, refresh, isEditable, totalPoints, validationIssues } =
     useAssessmentStudioContext();
   const [isCreating, startTransition] = useTransition();
 
@@ -247,11 +274,15 @@ export function NativeItemOutline({
         <div className="space-y-2">
           {items.map((item, index) => {
             const Icon = KIND_ICONS[item.kind as SupportedStudioItemKind] ?? BookOpen;
-            const issues = getItemIssues(item);
+            const issues = dedupeIssues([
+              ...persistedItemIssues(validationIssues, item.item_uuid),
+              ...localItemValidationIssues(item),
+            ]);
             const selected = item.item_uuid === selectedItemUuid;
             return (
               <button
                 key={item.item_uuid}
+                id={`item-${item.item_uuid}`}
                 type="button"
                 onClick={() => setSelectedItemUuid(item.item_uuid)}
                 className={cn(
@@ -278,7 +309,7 @@ export function NativeItemOutline({
                     <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
                   )}
                 </div>
-                {issues.length > 0 ? <p className="mt-2 text-xs text-amber-700">{issues[0]}</p> : null}
+                {issues.length > 0 ? <p className="mt-2 text-xs text-amber-700">{issues[0].message}</p> : null}
               </button>
             );
           })}
@@ -313,7 +344,7 @@ interface AssessmentEditorState {
 type EditableItem = Pick<AssessmentItem, 'item_uuid' | 'kind' | 'title' | 'max_score' | 'body'>;
 
 export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
-  const { assessment, items, selectedItemUuid, setSelectedItemUuid, refresh, isEditable, totalPoints } =
+  const { assessment, items, selectedItemUuid, setSelectedItemUuid, refresh, isEditable, totalPoints, validationIssues } =
     useAssessmentStudioContext();
   const item = items.find((candidate) => candidate.item_uuid === selectedItemUuid) ?? items[0] ?? null;
   const [assessmentState, setAssessmentState] = useState<AssessmentEditorState>(() =>
@@ -468,7 +499,15 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
     });
   };
 
-  const itemIssues = itemState ? getItemIssues(itemState) : [];
+  const itemIssues = itemState
+    ? dedupeIssues([
+        ...persistedItemIssues(validationIssues, itemState.item_uuid),
+        ...localItemValidationIssues(itemState),
+      ]).map(classifyValidationIssue)
+    : [];
+  const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState).map(classifyValidationIssue);
+  const itemMetadataIssues = itemIssues.filter((issue) => issue.area === 'item-metadata');
+  const itemContentIssues = itemIssues.filter((issue) => issue.area === 'item-content' || issue.area === 'item-kind');
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
@@ -486,6 +525,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           mode={mode}
           state={assessmentState}
           disabled={!isEditable}
+          issues={assessmentIssues}
           onChange={setAssessmentState}
         />
       </section>
@@ -539,7 +579,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           {itemIssues.length > 0 ? (
             <Alert>
               <AlertTriangle className="size-4" />
-              <AlertDescription>{itemIssues.join(' ')}</AlertDescription>
+              <AlertDescription>{itemIssues.map((issue) => issue.message).join(' ')}</AlertDescription>
             </Alert>
           ) : null}
 
@@ -555,6 +595,8 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
                   id="native-item-title"
                   value={itemState.title}
                   disabled={!isEditable}
+                  aria-invalid={itemMetadataIssues.some((issue) => issue.field === 'title')}
+                  className={cn(itemMetadataIssues.some((issue) => issue.field === 'title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
                   onChange={(event) => setItemState({ ...itemState, title: event.target.value })}
                 />
               </div>
@@ -567,6 +609,8 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
                   step={0.5}
                   value={itemState.max_score}
                   disabled={!isEditable}
+                  aria-invalid={itemMetadataIssues.some((issue) => issue.field === 'max_score')}
+                  className={cn(itemMetadataIssues.some((issue) => issue.field === 'max_score') && 'border-amber-500 focus-visible:ring-amber-500/40')}
                   onChange={(event) =>
                     setItemState({
                       ...itemState,
@@ -576,6 +620,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
                 />
               </div>
             </div>
+            {itemMetadataIssues.length > 0 ? <InlineIssueList issues={itemMetadataIssues} /> : null}
           </section>
 
           <section className="bg-card rounded-lg border p-4 md:p-5">
@@ -583,9 +628,11 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
               <h3 className="text-sm font-semibold">{itemNoun} content</h3>
               <p className="text-muted-foreground text-xs">Canonical item authoring.</p>
             </div>
+            {itemContentIssues.length > 0 ? <InlineIssueList issues={itemContentIssues} /> : null}
             <NativeItemBodyEditor
               item={itemState}
               disabled={!isEditable}
+              issues={itemContentIssues}
               onChange={setItemState}
             />
           </section>
@@ -599,13 +646,17 @@ function AssessmentMetadataForm({
   mode,
   state,
   disabled,
+  issues,
   onChange,
 }: {
   mode: StudioMode;
   state: AssessmentEditorState;
   disabled: boolean;
+  issues: Array<ReturnType<typeof classifyValidationIssue>>;
   onChange: (nextState: AssessmentEditorState) => void;
 }) {
+  const hasIssue = (field: string) => issues.some((issue) => issue.field === field);
+
   return (
     <div className="grid gap-6">
       <div className="space-y-2">
@@ -614,6 +665,8 @@ function AssessmentMetadataForm({
           id="assessment-title"
           value={state.title}
           disabled={disabled}
+          aria-invalid={hasIssue('title')}
+          className={cn(hasIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
           onChange={(event) => onChange({ ...state, title: event.target.value })}
         />
       </div>
@@ -637,6 +690,8 @@ function AssessmentMetadataForm({
             type="datetime-local"
             value={state.dueAt}
             disabled={disabled}
+            aria-invalid={hasIssue('dueAt')}
+            className={cn(hasIssue('dueAt') && 'border-amber-500 focus-visible:ring-amber-500/40')}
             onChange={(event) => onChange({ ...state, dueAt: event.target.value })}
           />
         </div>
@@ -674,6 +729,8 @@ function AssessmentMetadataForm({
                   min={1}
                   value={state.maxAttempts}
                   disabled={disabled}
+                  aria-invalid={hasIssue('maxAttempts')}
+                  className={cn(hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40')}
                   onChange={(event) => onChange({ ...state, maxAttempts: event.target.value })}
                 />
               </div>
@@ -685,6 +742,8 @@ function AssessmentMetadataForm({
                   min={1}
                   value={state.timeLimitMinutes}
                   disabled={disabled}
+                  aria-invalid={hasIssue('timeLimitMinutes')}
+                  className={cn(hasIssue('timeLimitMinutes') && 'border-amber-500 focus-visible:ring-amber-500/40')}
                   onChange={(event) => onChange({ ...state, timeLimitMinutes: event.target.value })}
                 />
               </div>
@@ -696,6 +755,8 @@ function AssessmentMetadataForm({
                   min={1}
                   value={state.violationThreshold}
                   disabled={disabled}
+                  aria-invalid={hasIssue('violationThreshold')}
+                  className={cn(hasIssue('violationThreshold') && 'border-amber-500 focus-visible:ring-amber-500/40')}
                   onChange={(event) => onChange({ ...state, violationThreshold: event.target.value })}
                 />
               </div>
@@ -748,6 +809,8 @@ function AssessmentMetadataForm({
           </div>
         </>
       ) : null}
+
+      {issues.length > 0 ? <InlineIssueList issues={issues} /> : null}
     </div>
   );
 }
@@ -778,19 +841,28 @@ function ToggleRow({
 function NativeItemBodyEditor({
   item,
   disabled,
+  issues,
   onChange,
 }: {
   item: EditableItem;
   disabled: boolean;
+  issues: Array<ReturnType<typeof classifyValidationIssue>>;
   onChange: (nextItem: EditableItem) => void;
 }) {
+  const hasIssue = (code: string) => issues.some((issue) => issue.code === code);
+
   if (item.body.kind === 'CHOICE' || item.body.kind === 'MATCHING') {
     return (
-      <ChoiceItemAuthor
-        value={toChoiceAuthorValue(item.body)}
-        disabled={disabled}
-        onChange={(nextValue) => onChange({ ...item, ...fromChoiceAuthorValue(item, nextValue) })}
-      />
+      <div className="space-y-3">
+        {(hasIssue('item.prompt_missing') || hasIssue('choice.options_missing') || hasIssue('choice.option_text_missing') || hasIssue('choice.option_duplicate') || hasIssue('choice.correct_missing') || hasIssue('choice.too_many_correct') || hasIssue('matching.pairs_missing') || hasIssue('matching.pair_value_missing') || hasIssue('matching.left_duplicate') || hasIssue('matching.right_duplicate')) ? (
+          <InlineIssueList issues={issues} />
+        ) : null}
+        <ChoiceItemAuthor
+          value={toChoiceAuthorValue(item.body)}
+          disabled={disabled}
+          onChange={(nextValue) => onChange({ ...item, ...fromChoiceAuthorValue(item, nextValue) })}
+        />
+      </div>
     );
   }
 
@@ -805,6 +877,7 @@ function NativeItemBodyEditor({
             value={body.prompt}
             disabled={disabled}
             className="min-h-32"
+            aria-invalid={hasIssue('item.prompt_missing')}
             onChange={(event) => onChange({ ...item, body: { ...body, kind: 'OPEN_TEXT', prompt: event.target.value } })}
           />
         </div>
@@ -817,6 +890,7 @@ function NativeItemBodyEditor({
               min={0}
               value={body.min_words ?? ''}
               disabled={disabled}
+              aria-invalid={hasIssue('open_text.min_words_invalid')}
               onChange={(event) =>
                 onChange({
                   ...item,
@@ -840,6 +914,7 @@ function NativeItemBodyEditor({
             />
           </div>
         </div>
+        {issues.length > 0 ? <InlineIssueList issues={issues} /> : null}
       </div>
     );
   }
@@ -862,9 +937,11 @@ function NativeItemBodyEditor({
             value={body.prompt}
             disabled={disabled}
             className="min-h-24"
+            aria-invalid={hasIssue('item.prompt_missing')}
             onChange={(event) => onChange({ ...item, body: { ...body, kind: 'FILE_UPLOAD', prompt: event.target.value } })}
           />
         </div>
+        {issues.length > 0 ? <InlineIssueList issues={issues} /> : null}
         <FileUploadConstraintsEditor
           value={constraints}
           disabled={disabled}
@@ -896,9 +973,12 @@ function NativeItemBodyEditor({
             value={body.prompt}
             disabled={disabled}
             className="min-h-24"
+            aria-invalid={hasIssue('item.prompt_missing')}
             onChange={(event) => onChange({ ...item, body: { ...body, kind: 'FORM', prompt: event.target.value } })}
           />
         </div>
+
+        {issues.length > 0 ? <InlineIssueList issues={issues} /> : null}
 
         <div className="space-y-3">
           {body.fields.map((field, index) => (
@@ -935,6 +1015,7 @@ function NativeItemBodyEditor({
                     id={`form-field-label-${field.id}`}
                     value={field.label}
                     disabled={disabled}
+                    aria-invalid={hasIssue('form.field_label_missing')}
                     onChange={(event) =>
                       onChange({
                         ...item,
@@ -1254,41 +1335,47 @@ function fromChoiceAuthorValue(item: EditableItem, value: ChoiceAuthorValue): Pi
   };
 }
 
-function getItemIssues(item: Pick<AssessmentItem, 'title' | 'body'>): string[] {
-  const issues: string[] = [];
-  if (!item.title.trim()) {
-    issues.push('Title is required.');
+function InlineIssueList({
+  issues,
+}: {
+  issues: Array<ReturnType<typeof classifyValidationIssue>>;
+}) {
+  if (issues.length === 0) return null;
+
+  return (
+    <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+      <ul className="space-y-1">
+        {issues.map((issue) => (
+          <li
+            key={`${issue.itemUuid ?? 'assessment'}:${issue.code}:${issue.message}`}
+            className="flex items-start gap-2"
+          >
+            <span>•</span>
+            <span>{issue.message}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function getAssessmentEditorIssues(mode: StudioMode, state: AssessmentEditorState): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (!state.title.trim()) {
+    issues.push({ code: 'assessment.title_missing', message: 'Assessment title is required.' });
   }
 
-  if (item.body.kind === 'CHOICE') {
-    if (!item.body.prompt.trim()) issues.push('Prompt is required.');
-    if (item.body.options.length < 2) issues.push('Add at least two options.');
-    const correctCount = item.body.options.filter((option) => option.is_correct).length;
-    if (correctCount === 0) issues.push('Mark at least one correct option.');
-    if (!item.body.multiple && correctCount > 1) issues.push('Single-choice items can only have one correct option.');
-  }
-
-  if (item.body.kind === 'MATCHING') {
-    if (!item.body.prompt.trim()) issues.push('Prompt is required.');
-    if (!item.body.pairs.length) issues.push('Add at least one pair.');
-    if (item.body.pairs.some((pair) => !pair.left.trim() || !pair.right.trim())) {
-      issues.push('Every pair needs both left and right values.');
+  if (mode === 'exam') {
+    if (state.maxAttempts && Number(state.maxAttempts) < 1) {
+      issues.push({ code: 'policy.max_attempts_invalid', message: 'Attempt limit must be at least 1.', field: 'maxAttempts' });
     }
-  }
-
-  if (item.body.kind === 'OPEN_TEXT' && !item.body.prompt.trim()) {
-    issues.push('Prompt is required.');
-  }
-
-  if (item.body.kind === 'FILE_UPLOAD') {
-    if (!item.body.prompt.trim()) issues.push('Prompt is required.');
-    if (item.body.max_files < 1) issues.push('Allow at least one file.');
-  }
-
-  if (item.body.kind === 'FORM') {
-    if (!item.body.prompt.trim()) issues.push('Prompt is required.');
-    if (!item.body.fields.length) issues.push('Add at least one field.');
-    if (item.body.fields.some((field) => !field.label.trim())) issues.push('Each field needs a label.');
+    if (state.timeLimitMinutes && Number(state.timeLimitMinutes) < 1) {
+      issues.push({ code: 'policy.time_limit_invalid', message: 'Time limit must be greater than zero.', field: 'timeLimitMinutes' });
+    }
+    if (state.violationThreshold && Number(state.violationThreshold) < 1) {
+      issues.push({ code: 'policy.violation_threshold_invalid', message: 'Violation threshold must be at least 1.', field: 'violationThreshold' });
+    }
   }
 
   return issues;

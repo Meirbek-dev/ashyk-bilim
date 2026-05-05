@@ -15,7 +15,13 @@ import {
 import { useEffect, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
-import { canTeacherEditGrade } from '@/features/grading/domain';
+import {
+  canPublishGrade,
+  canReturnSubmission,
+  canTeacherEditGrade,
+  getReleaseState,
+  RELEASE_STATE_LABELS,
+} from '@/features/grading/domain';
 import type { TeacherGradeInput } from '@/features/grading/domain';
 import type { Submission } from '@/features/grading/domain';
 import { saveGrade } from '@/services/grading/grading';
@@ -110,6 +116,9 @@ export default function GradeForm({
   }
 
   const editable = canTeacherEditGrade(submission.status);
+  const canPublishNow = canPublishGrade(submission.status);
+  const canReturnNow = canReturnSubmission(submission.status);
+  const releaseState = getReleaseState(submission.status);
 
   return (
     <aside className="space-y-5 p-4 xl:sticky xl:top-0 xl:h-[calc(100vh-96px)] xl:overflow-y-auto">
@@ -120,6 +129,20 @@ export default function GradeForm({
         </div>
         <p className="text-muted-foreground text-sm">Final score, feedback, and release actions.</p>
       </div>
+
+      <Alert>
+        <Info className="size-4" />
+        <AlertTitle>{RELEASE_STATE_LABELS[releaseState]}</AlertTitle>
+        <AlertDescription>
+          {releaseState === 'HIDDEN'
+            ? 'This submission is still awaiting grading. Students cannot see any result yet.'
+            : releaseState === 'AWAITING_RELEASE'
+              ? 'The grade is saved internally and still hidden from the student until you publish it.'
+              : releaseState === 'VISIBLE'
+                ? 'This grade is already visible to the student.'
+                : 'The submission was returned for revision and that state is visible to the student.'}
+        </AlertDescription>
+      </Alert>
 
       {/* ── OCC stale-grade banner ─────────────────────────────────────── */}
       {staleDraft ? (
@@ -237,21 +260,22 @@ export default function GradeForm({
         </Button>
         <Button
           type="button"
-          disabled={!editable || isSaving}
+          disabled={!editable || isSaving || !canPublishNow}
           onClick={() => save('PUBLISHED')}
         >
           <Send className="size-4" />
-          Release grade
+          Publish to student
         </Button>
         <Button
           type="button"
           variant="outline"
-          disabled={!editable || isSaving}
+          disabled={!editable || isSaving || !canReturnNow}
           onClick={() => save('RETURNED')}
         >
           <RotateCcw className="size-4" />
           Return for revision
         </Button>
+        {!canPublishNow ? <p className="text-muted-foreground text-xs">Save as graded first before publishing student-visible results.</p> : null}
       </div>
 
       {/* ── Keyboard legend ────────────────────────────────────────────── */}

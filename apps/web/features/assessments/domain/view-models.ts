@@ -103,6 +103,9 @@ export interface ValidationIssue {
   message: string;
   /** UUID of the task/question that has the issue, if applicable. */
   itemUuid?: string;
+  severity?: 'blocker' | 'advisory';
+  area?: 'assessment-metadata' | 'assessment-policy' | 'item-metadata' | 'item-content' | 'item-kind';
+  field?: string;
 }
 
 /**

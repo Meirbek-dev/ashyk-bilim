@@ -2,7 +2,13 @@
 
 import { ChevronLeft, ChevronRight, LoaderCircle, Search } from 'lucide-react';
 
-import { getSubmissionDisplayName, needsTeacherAction, SUBMISSION_STATUS_LABELS } from '@/features/grading/domain';
+import {
+  getSubmissionDisplayName,
+  getReleaseState,
+  needsTeacherAction,
+  RELEASE_STATE_LABELS,
+  SUBMISSION_STATUS_LABELS,
+} from '@/features/grading/domain';
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -84,6 +90,7 @@ export default function SubmissionList({
           submissions.map((submission) => {
             const selected = submission.submission_uuid === selectedUuid;
             const displayName = getSubmissionDisplayName(submission);
+            const releaseState = getReleaseState(submission.status);
             return (
               <div
                 key={submission.submission_uuid}
@@ -107,8 +114,14 @@ export default function SubmissionList({
                     <div className="text-muted-foreground truncate text-xs">
                       {submission.user?.email ?? `User #${submission.user_id}`}
                     </div>
+                    <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-2 text-xs">
+                      <span>Attempt #{submission.attempt_number}</span>
+                      <span>{formatDate(submission.submitted_at ?? submission.updated_at)}</span>
+                      {typeof submission.final_score === 'number' ? <span>{Math.round(submission.final_score)}%</span> : null}
+                    </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <SubmissionStatusBadge status={submission.status} />
+                      <Badge variant="outline">{RELEASE_STATE_LABELS[releaseState]}</Badge>
                       {submission.is_late ? <Badge variant="destructive">Late</Badge> : null}
                       {needsTeacherAction(submission.status) ? <Badge variant="warning">Action</Badge> : null}
                     </div>
@@ -145,4 +158,16 @@ export default function SubmissionList({
       ) : null}
     </aside>
   );
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return 'Unsubmitted';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }

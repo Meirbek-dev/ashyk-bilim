@@ -5,6 +5,7 @@ import { LoaderCircle, ShieldAlert } from 'lucide-react';
 
 import { getSubmissionDisplayName } from '@/features/grading/domain';
 import type { Submission } from '@/features/grading/domain';
+import { buildSubmissionReviewViewModel, RELEASE_STATE_LABELS } from '@/features/grading/domain';
 import { getSubmissionViolations } from '@/features/grading/domain/types';
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
 import type { KindReviewDetailProps } from '@/features/assessments/registry';
@@ -50,6 +51,8 @@ export default function SubmissionInspector({
     );
   }
 
+  const reviewVm = buildSubmissionReviewViewModel(current);
+
   return (
     <main className="min-w-0 border-b p-4 lg:border-b-0 xl:border-r">
       <div className="mx-auto max-w-4xl space-y-5">
@@ -63,8 +66,14 @@ export default function SubmissionInspector({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <SubmissionStatusBadge status={current.status} />
+              <Badge variant="outline">{RELEASE_STATE_LABELS[reviewVm.releaseState]}</Badge>
               {current.is_late ? <Badge variant="destructive">Late</Badge> : null}
             </div>
+          </div>
+          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+            <HistoryItem label="Release state" value={RELEASE_STATE_LABELS[reviewVm.releaseState]} />
+            <HistoryItem label="Student visibility" value={reviewVm.releaseState === 'VISIBLE' || reviewVm.releaseState === 'RETURNED_FOR_REVISION' ? 'Visible now' : 'Hidden until release'} />
+            <HistoryItem label="Score" value={typeof current.final_score === 'number' ? `${Math.round(current.final_score)}%` : '--'} />
           </div>
         </div>
 
@@ -244,10 +253,34 @@ export function SubmittedAnswers({
               {item.title || ('prompt' in item.body ? item.body.prompt : `Item ${index + 1}`)}
             </p>
             {renderCanonicalReviewAnswer(item, canonicalAnswers[item.item_uuid])}
+            {item.body.kind === 'OPEN_TEXT' && item.body.rubric ? <RubricSummary rubric={item.body.rubric} /> : null}
           </div>
         ))
       )}
     </section>
+  );
+}
+
+function RubricSummary({ rubric }: { rubric: string }) {
+  const criteria = rubric
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (criteria.length === 0) return null;
+
+  return (
+    <div className="mt-3 rounded-md border border-sky-200 bg-sky-50/70 p-3 text-sm text-sky-950">
+      <div className="mb-2 font-medium">Rubric guidance</div>
+      <ul className="space-y-1 text-xs">
+        {criteria.map((criterion) => (
+          <li key={criterion} className="flex gap-2">
+            <span>•</span>
+            <span>{criterion}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
