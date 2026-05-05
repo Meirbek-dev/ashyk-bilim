@@ -502,7 +502,8 @@ def load_analytics_context(
         assignment_submissions = [
             (sub, assessments_by_activity[sub.activity_id])
             for row in db_session.exec(submission_stmt).all()
-            if (sub := _unwrap_model(row, Submission)).activity_id in assessments_by_activity
+            if (sub := _unwrap_model(row, Submission)).activity_id
+            in assessments_by_activity
         ]
 
     exams = [
@@ -530,7 +531,8 @@ def load_analytics_context(
         exam_attempts = [
             (sub, assessments_by_activity[sub.activity_id])
             for row in db_session.exec(exam_attempt_stmt).all()
-            if (sub := _unwrap_model(row, Submission)).activity_id in assessments_by_activity
+            if (sub := _unwrap_model(row, Submission)).activity_id
+            in assessments_by_activity
         ]
 
     activity_ids = [activity.id for activity in activities if activity.id is not None]

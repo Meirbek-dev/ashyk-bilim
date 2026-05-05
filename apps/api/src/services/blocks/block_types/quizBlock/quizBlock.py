@@ -34,21 +34,25 @@ logger = logging.getLogger(__name__)
 
 def _serialize_quiz_grading(grading_result: dict[str, object]) -> dict[str, object]:
     per_question = grading_result.get("per_question")
-    items = [
-        {
-            "item_id": str(item.get("question_id") or ""),
-            "item_text": str(item.get("question_text") or ""),
-            "score": float(item.get("score") or 0),
-            "max_score": float(item.get("max_score") or 0),
-            "correct": item.get("correct"),
-            "feedback": str(item.get("feedback") or ""),
-            "needs_manual_review": bool(item.get("needs_grading", False)),
-            "user_answer": item.get("user_answer"),
-            "correct_answer": item.get("correct_answers"),
-        }
-        for item in per_question
-        if isinstance(item, dict)
-    ] if isinstance(per_question, list) else []
+    items = (
+        [
+            {
+                "item_id": str(item.get("question_id") or ""),
+                "item_text": str(item.get("question_text") or ""),
+                "score": float(item.get("score") or 0),
+                "max_score": float(item.get("max_score") or 0),
+                "correct": item.get("correct"),
+                "feedback": str(item.get("feedback") or ""),
+                "needs_manual_review": bool(item.get("needs_grading", False)),
+                "user_answer": item.get("user_answer"),
+                "correct_answer": item.get("correct_answers"),
+            }
+            for item in per_question
+            if isinstance(item, dict)
+        ]
+        if isinstance(per_question, list)
+        else []
+    )
     return {
         "items": items,
         "needs_manual_review": any(
@@ -61,7 +65,9 @@ def _serialize_quiz_grading(grading_result: dict[str, object]) -> dict[str, obje
 
 
 def _submission_attempt_uuid(submission: Submission) -> str:
-    metadata = submission.metadata_json if isinstance(submission.metadata_json, dict) else {}
+    metadata = (
+        submission.metadata_json if isinstance(submission.metadata_json, dict) else {}
+    )
     attempt_uuid = metadata.get("attempt_uuid")
     if isinstance(attempt_uuid, str) and attempt_uuid:
         return attempt_uuid
@@ -76,9 +82,17 @@ def _build_quiz_submission_response(
     max_attempts_reached: bool,
     violations_exceeded: bool,
 ) -> QuizSubmissionResponse:
-    grading_json = submission.grading_json if isinstance(submission.grading_json, dict) else {}
-    items = grading_json.get("items") if isinstance(grading_json.get("items"), list) else []
-    score = float(submission.final_score if submission.final_score is not None else submission.auto_score or 0)
+    grading_json = (
+        submission.grading_json if isinstance(submission.grading_json, dict) else {}
+    )
+    items = (
+        grading_json.get("items") if isinstance(grading_json.get("items"), list) else []
+    )
+    score = float(
+        submission.final_score
+        if submission.final_score is not None
+        else submission.auto_score or 0
+    )
     per_question = [
         {
             "question_id": item.get("item_id"),
@@ -175,7 +189,8 @@ async def submit_quiz(
                 item
                 for item in previous_attempts
                 if isinstance(item.metadata_json, dict)
-                and item.metadata_json.get("idempotency_key") == submission.idempotency_key
+                and item.metadata_json.get("idempotency_key")
+                == submission.idempotency_key
             ),
             None,
         )

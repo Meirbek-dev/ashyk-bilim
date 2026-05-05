@@ -610,7 +610,7 @@ def test_quiz_detail_endpoint_uses_canonical_submission_rows(
                     "violations": [
                         {
                             "kind": "TAB_SWITCH",
-                                "occurred_at": "2026-05-05T09:00:00Z",
+                            "occurred_at": "2026-05-05T09:00:00Z",
                             "count": 2,
                         }
                     ],

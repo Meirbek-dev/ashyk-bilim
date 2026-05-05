@@ -190,8 +190,16 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
       options:
         kind === 'TRUE_FALSE'
           ? [
-              { id: 0, text: t('trueLabel'), isCorrect: value.kind !== 'MATCHING' ? value.options[0]?.isCorrect : false },
-              { id: 1, text: t('falseLabel'), isCorrect: value.kind !== 'MATCHING' ? value.options[1]?.isCorrect : false },
+              {
+                id: 0,
+                text: t('trueLabel'),
+                isCorrect: value.kind !== 'MATCHING' ? value.options[0]?.isCorrect : false,
+              },
+              {
+                id: 1,
+                text: t('falseLabel'),
+                isCorrect: value.kind !== 'MATCHING' ? value.options[1]?.isCorrect : false,
+              },
             ]
           : value.kind === 'MATCHING'
             ? value.pairs.map((pair) => ({ id: pair.id, text: pair.left, isCorrect: false }))

@@ -52,9 +52,7 @@ export function MatchingItemAuthor({ value, disabled, onChange }: ItemAuthorProp
     <div className="space-y-4">
       <div className="bg-muted/40 rounded-md border p-4">
         <div className="flex items-center gap-2 text-sm font-semibold">{t('title')}</div>
-        <p className="text-muted-foreground mt-1 text-sm">
-          {t('description')}
-        </p>
+        <p className="text-muted-foreground mt-1 text-sm">{t('description')}</p>
       </div>
 
       <div className="space-y-2">

@@ -269,7 +269,7 @@ export function renderCanonicalReviewAnswer(item: AssessmentItem, answer: ItemAn
 
   if (body.kind === 'CHOICE') {
     const choiceModule = getItemKindModule(body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE');
-    const {ReviewDetail} = choiceModule;
+    const { ReviewDetail } = choiceModule;
     const reviewItem: ChoiceAttemptItem = {
       id: item.item_uuid,
       kind: body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE',
@@ -297,7 +297,7 @@ export function renderCanonicalReviewAnswer(item: AssessmentItem, answer: ItemAn
   }
 
   if (body.kind === 'OPEN_TEXT') {
-    const {ReviewDetail} = getItemKindModule('OPEN_TEXT');
+    const { ReviewDetail } = getItemKindModule('OPEN_TEXT');
     return (
       <div className="space-y-3">
         <ReviewDetail
@@ -315,7 +315,7 @@ export function renderCanonicalReviewAnswer(item: AssessmentItem, answer: ItemAn
   }
 
   if (body.kind === 'FILE_UPLOAD') {
-    const {ReviewDetail} = getItemKindModule('FILE_UPLOAD');
+    const { ReviewDetail } = getItemKindModule('FILE_UPLOAD');
     return (
       <ReviewDetail
         item={{
@@ -334,7 +334,7 @@ export function renderCanonicalReviewAnswer(item: AssessmentItem, answer: ItemAn
   }
 
   if (body.kind === 'FORM') {
-    const {ReviewDetail} = getItemKindModule('FORM');
+    const { ReviewDetail } = getItemKindModule('FORM');
     return (
       <ReviewDetail
         item={normalizeFormItem({
@@ -355,7 +355,7 @@ export function renderCanonicalReviewAnswer(item: AssessmentItem, answer: ItemAn
   }
 
   if (body.kind === 'MATCHING') {
-    const {ReviewDetail} = getItemKindModule('MATCHING');
+    const { ReviewDetail } = getItemKindModule('MATCHING');
     return (
       <ReviewDetail
         item={body}
@@ -365,7 +365,7 @@ export function renderCanonicalReviewAnswer(item: AssessmentItem, answer: ItemAn
   }
 
   if (body.kind === 'CODE') {
-    const {ReviewDetail} = getItemKindModule('CODE');
+    const { ReviewDetail } = getItemKindModule('CODE');
     return <ReviewDetail answer={answer?.kind === 'CODE' ? answer : null} />;
   }
 

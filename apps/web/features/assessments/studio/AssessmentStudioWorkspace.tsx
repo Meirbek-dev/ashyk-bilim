@@ -97,11 +97,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   }
 
   if (error || vm?.surface !== 'STUDIO') {
-    return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-        {t('unavailable')}
-      </div>
-    );
+    return <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('unavailable')}</div>;
   }
 
   const { vm: studio } = vm;

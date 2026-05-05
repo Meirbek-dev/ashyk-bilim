@@ -68,6 +68,7 @@ export default function ReviewLayout({
 }
 
 function StatsGrid({ stats }: { stats?: SubmissionStats | null }) {
+  const t = useTranslations('Features.Grading.Review');
   if (!stats) return null;
 
   return (

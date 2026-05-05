@@ -23,7 +23,9 @@ export function useSubmissionStats(activityId: number | null, assessmentUuid?: s
     error: query.error ?? null,
     mutate: async () => {
       if (activityId === null) return null;
-      await queryClient.invalidateQueries({ queryKey: queryKeys.grading.stats(activityId, assessmentUuid ?? undefined) });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.grading.stats(activityId, assessmentUuid ?? undefined),
+      });
       return queryClient.fetchQuery(submissionStatsQueryOptions(activityId, assessmentUuid ?? undefined));
     },
   };

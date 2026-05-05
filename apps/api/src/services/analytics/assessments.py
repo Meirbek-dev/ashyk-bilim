@@ -399,10 +399,10 @@ def _submission_has_suspicion(submission: Submission) -> bool:
     violations = metadata.get("violations")
     violation_count = metadata.get("violation_count")
     plagiarism = metadata.get("plagiarism")
-    return (isinstance(violations, list) and len(violations) > 0) or (
-        violation_count is not None and int(violation_count) > 0
-    ) or (
-        isinstance(plagiarism, dict) and bool(plagiarism.get("flagged"))
+    return (
+        (isinstance(violations, list) and len(violations) > 0)
+        or (violation_count is not None and int(violation_count) > 0)
+        or (isinstance(plagiarism, dict) and bool(plagiarism.get("flagged")))
     )
 
 
@@ -1122,7 +1122,9 @@ def _build_quiz_rows(
     for course_id, user_id in snapshots:
         eligible_by_course[course_id].add(user_id)
 
-    submissions_by_activity: dict[int, list[tuple[Submission, Activity]]] = defaultdict(list)
+    submissions_by_activity: dict[int, list[tuple[Submission, Activity]]] = defaultdict(
+        list
+    )
     for submission, activity in context.quiz_submissions:
         if not _is_allowed(submission.user_id, allowed_user_ids):
             continue
@@ -1776,7 +1778,12 @@ def get_teacher_assessment_detail(
             quiz_submission_list: list[Submission] = list(attempts)
             ordered_attempts = sorted(
                 quiz_submission_list,
-                key=lambda item: item.submitted_at or item.updated_at or item.created_at or item.started_at,
+                key=lambda item: (
+                    item.submitted_at
+                    or item.updated_at
+                    or item.created_at
+                    or item.started_at
+                ),
             )
             best_score = max(
                 (
@@ -1830,7 +1837,9 @@ def get_teacher_assessment_detail(
         eligible_user_ids = eligible_by_course.get(activity.course_id, set())
         item_analytics = _build_workflow_item_rows(diagnostics)
         for stat in [
-            item for item in context.quiz_question_stats if item.activity_id == assessment_id
+            item
+            for item in context.quiz_question_stats
+            if item.activity_id == assessment_id
         ]:
             accuracy_pct = safe_pct(stat.correct_count, stat.total_attempts)
             signal = (
@@ -1920,7 +1929,8 @@ def get_teacher_assessment_detail(
             ),
             score_distribution=_score_distribution(quiz_scores),
             attempt_distribution=_attempt_distribution({
-                user_id: len(items) for user_id, items in quiz_submissions_by_user.items()
+                user_id: len(items)
+                for user_id, items in quiz_submissions_by_user.items()
             }),
             question_breakdown=sorted(
                 question_breakdown, key=lambda row: row.accuracy_pct or 100
@@ -2033,7 +2043,10 @@ def get_teacher_assessment_detail(
                     population_count=len(records),
                     impacted_count=count,
                     impact_rate=safe_pct(count, len(records)),
-                    signal="critical" if safe_pct(count, len(records)) and safe_pct(count, len(records)) >= 50 else "watch",
+                    signal="critical"
+                    if safe_pct(count, len(records))
+                    and safe_pct(count, len(records)) >= 50
+                    else "watch",
                     note=f"This test failed in {count} submissions.",
                 )
             )

@@ -17,7 +17,10 @@ export function getSubmissionDisplayName(submission: Pick<Submission, 'user' | '
 }
 
 export function buildSubmissionReviewViewModel(submission: Submission): SubmissionReviewViewModel {
-  const releaseState = 'release_state' in submission && submission.release_state ? submission.release_state : getReleaseState(submission.status);
+  const releaseState =
+    'release_state' in submission && submission.release_state
+      ? submission.release_state
+      : getReleaseState(submission.status);
   return {
     surface: 'SUBMISSION_REVIEW',
     submission,

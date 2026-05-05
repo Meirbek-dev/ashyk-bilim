@@ -92,10 +92,20 @@ def build_anomalies(
 
     durations_by_activity: dict[int, list[float]] = defaultdict(list)
     for submission, activity in context.quiz_submissions:
-        metadata = submission.metadata_json if isinstance(submission.metadata_json, dict) else {}
+        metadata = (
+            submission.metadata_json
+            if isinstance(submission.metadata_json, dict)
+            else {}
+        )
         duration_seconds = metadata.get("duration_seconds")
-        if duration_seconds is None and submission.started_at and submission.submitted_at:
-            duration_seconds = (submission.submitted_at - submission.started_at).total_seconds()
+        if (
+            duration_seconds is None
+            and submission.started_at
+            and submission.submitted_at
+        ):
+            duration_seconds = (
+                submission.submitted_at - submission.started_at
+            ).total_seconds()
         if duration_seconds is not None and float(duration_seconds) > 0:
             durations_by_activity[activity.id].append(float(duration_seconds))
     for activity_id, durations in durations_by_activity.items():
@@ -141,7 +151,11 @@ def build_anomalies(
             )
             if completed_at is None:
                 continue
-            score = submission.final_score if submission.final_score is not None else submission.auto_score
+            score = (
+                submission.final_score
+                if submission.final_score is not None
+                else submission.auto_score
+            )
             if score is None:
                 continue
             if completed_at < last_update:

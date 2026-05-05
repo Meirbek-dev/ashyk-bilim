@@ -280,7 +280,8 @@ async def api_get_submission_stats(
 
 
 @router.get(
-    "/{assessment_uuid}/submissions/{submission_uuid}", response_model=TeacherSubmissionRead
+    "/{assessment_uuid}/submissions/{submission_uuid}",
+    response_model=TeacherSubmissionRead,
 )
 async def api_get_submission(
     assessment_uuid: str,
@@ -297,7 +298,8 @@ async def api_get_submission(
 
 
 @router.patch(
-    "/{assessment_uuid}/submissions/{submission_uuid}", response_model=TeacherSubmissionRead
+    "/{assessment_uuid}/submissions/{submission_uuid}",
+    response_model=TeacherSubmissionRead,
 )
 async def api_save_grade(
     assessment_uuid: str,

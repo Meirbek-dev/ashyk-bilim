@@ -182,7 +182,9 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
                 </AlertDescription>
               </Alert>
             ) : null}
-            {latestCompletedSubmission ? <ExamSubmissionStatePanel submission={latestCompletedSubmission as any} /> : null}
+            {latestCompletedSubmission ? (
+              <ExamSubmissionStatePanel submission={latestCompletedSubmission as any} />
+            ) : null}
           </div>
         }
       />

@@ -50,10 +50,7 @@ async function readJsonOrThrow(response: Response) {
   return payload;
 }
 
-export function useAssessmentSubmission(
-  assessmentUuid: string | null | undefined,
-  activityUuid?: string | null,
-) {
+export function useAssessmentSubmission(assessmentUuid: string | null | undefined, activityUuid?: string | null) {
   const queryClient = useQueryClient();
   const [localAnswers, setLocalAnswers] = useState<Record<string, ItemAnswer>>({});
   const [saveState, setSaveState] = useState<AssessmentSaveState>('idle');
@@ -78,26 +75,17 @@ export function useAssessmentSubmission(
     [assessmentUuid],
   );
 
-  const invalidateAssessmentState = useCallback(
-    async () => {
-      if (!assessmentUuid) return;
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: draftQueryOptions.queryKey }),
-        queryClient.invalidateQueries({ queryKey: submissionsQueryKey }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(assessmentUuid) }),
-        normalizedActivityUuid
-          ? queryClient.invalidateQueries({ queryKey: queryKeys.assessments.activity(normalizedActivityUuid) })
-          : Promise.resolve(),
-      ]);
-    },
-    [
-      assessmentUuid,
-      draftQueryOptions.queryKey,
-      normalizedActivityUuid,
-      queryClient,
-      submissionsQueryKey,
-    ],
-  );
+  const invalidateAssessmentState = useCallback(async () => {
+    if (!assessmentUuid) return;
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: draftQueryOptions.queryKey }),
+      queryClient.invalidateQueries({ queryKey: submissionsQueryKey }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(assessmentUuid) }),
+      normalizedActivityUuid
+        ? queryClient.invalidateQueries({ queryKey: queryKeys.assessments.activity(normalizedActivityUuid) })
+        : Promise.resolve(),
+    ]);
+  }, [assessmentUuid, draftQueryOptions.queryKey, normalizedActivityUuid, queryClient, submissionsQueryKey]);
 
   const draftQuery = useQuery({
     ...draftQueryOptions,
@@ -262,7 +250,7 @@ export function useAssessmentSubmission(
   useEffect(() => {
     const loadError = draftQuery.error ?? submissionsQuery.error;
     if (!loadError) return;
-    const {message} = loadError;
+    const { message } = loadError;
     const key = `${assessmentUuid ?? 'missing'}:${message}`;
     if (reportedLoadError === key) return;
     setReportedLoadError(key);
@@ -370,7 +358,5 @@ export function useAssessmentSubmission(
 }
 
 function cloneAnswers(answers: Record<string, ItemAnswer>): Record<string, ItemAnswer> {
-  return typeof structuredClone === 'function'
-    ? structuredClone(answers)
-    : JSON.parse(JSON.stringify(answers));
+  return typeof structuredClone === 'function' ? structuredClone(answers) : JSON.parse(JSON.stringify(answers));
 }

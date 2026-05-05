@@ -97,7 +97,9 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
   const t = useTranslations('TeacherAnalytics');
   const locale = useLocale();
   const [auditSearch, setAuditSearch] = useState('');
-  const [auditSourceFilter, setAuditSourceFilter] = useState<'all' | TeacherAssessmentDetailResponse['audit_history'][number]['source']>('all');
+  const [auditSourceFilter, setAuditSourceFilter] = useState<
+    'all' | TeacherAssessmentDetailResponse['audit_history'][number]['source']
+  >('all');
   const [auditStatusFilter, setAuditStatusFilter] = useState<string>('all');
 
   const diagnosticMetrics = [
@@ -175,7 +177,9 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
       event.affected_count ?? '',
       event.summary,
     ]);
-    const csv = [headers.map(escapeCsvValue).join(','), ...rows.map((row) => row.map(escapeCsvValue).join(','))].join('\n');
+    const csv = [headers.map(escapeCsvValue).join(','), ...rows.map((row) => row.map(escapeCsvValue).join(','))].join(
+      '\n',
+    );
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -271,7 +275,10 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
               {detail.support.alerts.length ? (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {detail.support.alerts.map((alert) => (
-                    <Badge key={alert.code} variant={getSupportAlertBadgeVariant(alert.severity)}>
+                    <Badge
+                      key={alert.code}
+                      variant={getSupportAlertBadgeVariant(alert.severity)}
+                    >
                       {alert.summary}
                     </Badge>
                   ))}
@@ -288,7 +295,10 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
               {detail.support.cutover_blockers.length ? (
                 <div className="mt-2 space-y-2">
                   {detail.support.cutover_blockers.map((blocker) => (
-                    <div key={blocker} className="rounded-2xl border border-slate-200 p-3 text-sm text-slate-700">
+                    <div
+                      key={blocker}
+                      className="rounded-2xl border border-slate-200 p-3 text-sm text-slate-700"
+                    >
                       {blocker}
                     </div>
                   ))}
@@ -371,7 +381,10 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
           {detail.item_analytics.length ? (
             <div className="space-y-3">
               {detail.item_analytics.map((item) => (
-                <div key={`${item.item_type}-${item.item_key}`} className="rounded-2xl border border-slate-200 p-4">
+                <div
+                  key={`${item.item_type}-${item.item_key}`}
+                  className="rounded-2xl border border-slate-200 p-4"
+                >
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline">{itemTypeLabels[item.item_type]}</Badge>
                     <Badge variant={getItemSignalBadgeVariant(item.signal)}>{signalLabels[item.signal]}</Badge>
@@ -406,7 +419,10 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
           {detail.cohort_analytics.length ? (
             <div className="space-y-3">
               {detail.cohort_analytics.map((cohort) => (
-                <div key={cohort.cohort_id} className="rounded-2xl border border-slate-200 p-4">
+                <div
+                  key={cohort.cohort_id}
+                  className="rounded-2xl border border-slate-200 p-4"
+                >
                   <div className="text-sm font-medium text-slate-900">{cohort.cohort_name}</div>
                   <div className="mt-3 grid gap-3 text-sm text-slate-500 sm:grid-cols-3">
                     <span>
@@ -451,11 +467,21 @@ export default function AssessmentOperationsPanel({ detail }: AssessmentOperatio
             </div>
             {detail.audit_history.length ? (
               <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={resetAuditFilters}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={resetAuditFilters}
+                >
                   <RotateCcw className="h-3.5 w-3.5" />
                   {t('pages.assessmentOpsAuditReset')}
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={exportAuditHistory}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={exportAuditHistory}
+                >
                   <Download className="h-3.5 w-3.5" />
                   {t('pages.assessmentOpsAuditExport')}
                 </Button>

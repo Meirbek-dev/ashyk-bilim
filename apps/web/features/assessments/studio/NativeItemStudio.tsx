@@ -381,11 +381,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
     setItemState(nextItem);
     lastSavedItemRef.current = nextItem ? serializeItemState(nextItem) : '';
     setItemSaveState('idle');
-  }, [
-	item?.item_uuid,
-	item?.updated_at,
-	item
-]);
+  }, [item?.item_uuid, item?.updated_at, item]);
 
   const saveAssessment = useCallback(
     async (nextState: AssessmentEditorState) => {
@@ -904,7 +900,7 @@ function NativeItemBodyEditor({
   }
 
   if (item.body.kind === 'OPEN_TEXT') {
-    const {body} = item;
+    const { body } = item;
     return (
       <div className="space-y-4">
         <div className="space-y-2">
@@ -961,7 +957,7 @@ function NativeItemBodyEditor({
   }
 
   if (item.body.kind === 'FILE_UPLOAD') {
-    const {body} = item;
+    const { body } = item;
     const constraints: FileUploadConstraints = {
       kind: 'FILE_UPLOAD',
       allowed_mime_types: body.mimes,
@@ -1006,7 +1002,7 @@ function NativeItemBodyEditor({
   }
 
   if (item.body.kind === 'FORM') {
-    const {body} = item;
+    const { body } = item;
     return (
       <div className="space-y-4">
         <div className="space-y-2">

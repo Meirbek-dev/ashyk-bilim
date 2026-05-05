@@ -757,7 +757,9 @@ async def get_assessment_submissions(
             query = query.where(Submission.status == SubmissionStatus.PENDING)
         else:
             try:
-                query = query.where(Submission.status == SubmissionStatus(status_filter))
+                query = query.where(
+                    Submission.status == SubmissionStatus(status_filter)
+                )
             except ValueError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -844,12 +846,10 @@ async def get_assessment_submission_stats(
     graded_scores = db_session.exec(
         select(Submission.final_score).where(
             Submission.activity_id == activity.id,
-            Submission.status.in_(
-                [
-                    SubmissionStatus.GRADED,
-                    SubmissionStatus.PUBLISHED,
-                ]
-            ),
+            Submission.status.in_([
+                SubmissionStatus.GRADED,
+                SubmissionStatus.PUBLISHED,
+            ]),
             Submission.final_score.is_not(None),
         )
     ).all()
@@ -859,9 +859,7 @@ async def get_assessment_submission_stats(
     )
     passing = [score for score in graded_scores if score >= 50.0]
     pass_rate = (
-        round(len(passing) / len(graded_scores) * 100, 1)
-        if graded_scores
-        else None
+        round(len(passing) / len(graded_scores) * 100, 1) if graded_scores else None
     )
 
     return SubmissionStats(
@@ -1128,7 +1126,9 @@ def _build_assessment_read(
         ),
         review_projection=_build_review_projection(assessment, activity),
         content_version=_content_version(assessment),
-        policy_version=_policy_version(_get_policy_for_assessment(assessment, db_session)),
+        policy_version=_policy_version(
+            _get_policy_for_assessment(assessment, db_session)
+        ),
         created_at=assessment.created_at,
         updated_at=assessment.updated_at,
     )
@@ -1175,7 +1175,9 @@ def _build_attempt_projection(
         due_at=state["due_at"],
         time_remaining_seconds=state["time_remaining_seconds"],
         content_version=_content_version(assessment),
-        policy_version=_policy_version(_get_policy_for_assessment(assessment, db_session)),
+        policy_version=_policy_version(
+            _get_policy_for_assessment(assessment, db_session)
+        ),
     )
 
 
@@ -1220,13 +1222,11 @@ def _build_attempt_state(
     )
     latest = submissions[0] if submissions else None
     active_submission = draft or latest
-    completed_count = len(
-        [
-            submission
-            for submission in submissions
-            if submission.status != SubmissionStatus.DRAFT
-        ]
-    )
+    completed_count = len([
+        submission
+        for submission in submissions
+        if submission.status != SubmissionStatus.DRAFT
+    ])
     max_attempts = policy.max_attempts if policy is not None else None
     if override is not None and override.max_attempts_override is not None:
         max_attempts = override.max_attempts_override
@@ -1263,7 +1263,11 @@ def _build_attempt_state(
     time_remaining_seconds: int | None = None
     timed_close_at: datetime | None = None
     if draft is not None and time_limit_seconds and draft.started_at:
-        started_at = draft.started_at if draft.started_at.tzinfo else draft.started_at.replace(tzinfo=UTC)
+        started_at = (
+            draft.started_at
+            if draft.started_at.tzinfo
+            else draft.started_at.replace(tzinfo=UTC)
+        )
         timed_close_at = started_at + timedelta(seconds=int(time_limit_seconds))
         time_remaining_seconds = max(0, int((timed_close_at - now).total_seconds()))
         if time_remaining_seconds <= 0:
@@ -2428,7 +2432,9 @@ def _build_teacher_submission_read(
         "RETURNED_FOR_REVISION",
     }
     result.content_version = _content_version(assessment)
-    result.policy_version = _policy_version(_get_policy_for_assessment(assessment, db_session))
+    result.policy_version = _policy_version(
+        _get_policy_for_assessment(assessment, db_session)
+    )
     return result
 
 

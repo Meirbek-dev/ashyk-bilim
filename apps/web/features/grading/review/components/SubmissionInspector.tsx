@@ -157,6 +157,7 @@ function getViolationCount(submission: Submission): number {
 }
 
 function ViolationLog({ submission }: { submission: Submission }) {
+  const t = useTranslations('Features.Grading.Review');
   const violations = getSubmissionViolations(submission);
 
   if (violations.length === 0) {
@@ -240,6 +241,7 @@ export function SubmittedAnswers({
   activityUuid?: string;
   answersByItem?: Record<string, ItemAnswer>;
 }) {
+  const t = useTranslations('Features.Grading.Review');
   const { vm } = useAssessmentAttempt(activityUuid ?? null);
   const items = vm?.surface === 'ATTEMPT' ? vm.vm.items : [];
   const canonicalAnswers = answersByItem ?? getCanonicalAnswersByItem(submission);

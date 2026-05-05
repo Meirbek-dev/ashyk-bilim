@@ -305,12 +305,12 @@ export default function ReviewBulkActionBar({
                   label={t('preview.alreadyVisible')}
                   value={String(releaseSummary.visible)}
                 />
-                <p className="text-muted-foreground text-xs">
-                  {t('preview.releaseHiddenDescription')}
-                </p>
+                <p className="text-muted-foreground text-xs">{t('preview.releaseHiddenDescription')}</p>
               </>
             ) : null}
-            {lastSummary ? <p className="text-muted-foreground text-xs">{t('lastResult', { detail: lastSummary.detail })}</p> : null}
+            {lastSummary ? (
+              <p className="text-muted-foreground text-xs">{t('lastResult', { detail: lastSummary.detail })}</p>
+            ) : null}
           </div>
           <DialogFooter>
             <Button
@@ -325,8 +325,12 @@ export default function ReviewBulkActionBar({
             {pendingAction === 'return-selected' ? (
               <Button onClick={() => bulkUpdate('RETURNED')}>{t('confirmReturn')}</Button>
             ) : null}
-            {pendingAction === 'extend-deadline' ? <Button onClick={applyDeadline}>{t('queueExtension')}</Button> : null}
-            {pendingAction === 'release-hidden' ? <Button onClick={releaseHiddenGrades}>{t('releaseGrades')}</Button> : null}
+            {pendingAction === 'extend-deadline' ? (
+              <Button onClick={applyDeadline}>{t('queueExtension')}</Button>
+            ) : null}
+            {pendingAction === 'release-hidden' ? (
+              <Button onClick={releaseHiddenGrades}>{t('releaseGrades')}</Button>
+            ) : null}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -371,7 +375,10 @@ async function saveGradesWithinAssessment(
   };
 }
 
-function getDialogTitle(action: PendingAction, t: ReturnType<typeof useTranslations<'Features.Grading.Review.bulkActions'>>): string {
+function getDialogTitle(
+  action: PendingAction,
+  t: ReturnType<typeof useTranslations<'Features.Grading.Review.bulkActions'>>,
+): string {
   switch (action) {
     case 'publish-selected': {
       return t('dialogs.publishTitle');

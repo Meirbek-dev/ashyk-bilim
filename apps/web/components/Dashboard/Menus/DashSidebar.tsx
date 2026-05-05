@@ -88,8 +88,7 @@ const SidebarSkeleton = () => (
 const useNavigationItems = () => {
   const pathname = usePathname();
   const t = useTranslations('SidebarMenu');
-  const { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } =
-    useNavigationPermissions();
+  const { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } = useNavigationPermissions();
 
   return [
     {

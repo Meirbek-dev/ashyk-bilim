@@ -464,14 +464,12 @@ def seeded_review_data_fixture(db_session_factory):
             created_at=now - timedelta(minutes=30),
             updated_at=now - timedelta(minutes=15),
         )
-        session.add_all(
-            [
-                alice_submission,
-                aaron_submission,
-                bella_submission,
-                drew_submission,
-            ]
-        )
+        session.add_all([
+            alice_submission,
+            aaron_submission,
+            bella_submission,
+            drew_submission,
+        ])
         session.commit()
 
         return {
@@ -524,7 +522,10 @@ def test_assessment_submission_queue_supports_review_filters_and_sorting(
     assert filtered.status_code == 200
     filtered_payload = filtered.json()
     assert filtered_payload["total"] == 1
-    assert filtered_payload["items"][0]["submission_uuid"] == seeded_review_data["alice_submission_uuid"]
+    assert (
+        filtered_payload["items"][0]["submission_uuid"]
+        == seeded_review_data["alice_submission_uuid"]
+    )
     assert filtered_payload["items"][0]["user"]["first_name"] == "Alice"
     assert filtered_payload["items"][0]["status"] == "PENDING"
     assert filtered_payload["items"][0]["is_late"] is True

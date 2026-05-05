@@ -228,9 +228,7 @@ def _seed_base(db_session_factory, *, lifecycle: AssessmentLifecycle):
                 else None
             ),
             archived_at=(
-                datetime.now(UTC)
-                if lifecycle == AssessmentLifecycle.ARCHIVED
-                else None
+                datetime.now(UTC) if lifecycle == AssessmentLifecycle.ARCHIVED else None
             ),
             weight=1.0,
             grading_type=AssessmentGradingType.PERCENTAGE,
@@ -272,7 +270,9 @@ def test_canonical_student_me_masks_unpublished_batch_grade(
             user_id=2,
             status=SubmissionStatus.GRADED,
             attempt_number=1,
-            answers_json={"answers": {"item_phase0": {"kind": "OPEN_TEXT", "text": "A"}}},
+            answers_json={
+                "answers": {"item_phase0": {"kind": "OPEN_TEXT", "text": "A"}}
+            },
             grading_json=GradingBreakdown(feedback="Hidden feedback").model_dump(),
             auto_score=82,
             final_score=82,

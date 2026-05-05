@@ -467,7 +467,6 @@ class AssessmentAttemptProjection(AttemptStateRead):
     """Backward-compatible OpenAPI name for the attempt state contract."""
 
 
-
 class AssessmentReviewProjection(PydanticStrictBaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
@@ -486,14 +485,14 @@ class AssessmentReviewProjection(PydanticStrictBaseModel):
     ] = "NEEDS_GRADING"
     supports_search: bool = True
     supports_late_only: bool = True
-    supported_sorts: list[
-        Literal["submitted_at", "final_score", "attempt_number"]
-    ] = Field(
-        default_factory=lambda: [
-            "submitted_at",
-            "final_score",
-            "attempt_number",
-        ]
+    supported_sorts: list[Literal["submitted_at", "final_score", "attempt_number"]] = (
+        Field(
+            default_factory=lambda: [
+                "submitted_at",
+                "final_score",
+                "attempt_number",
+            ]
+        )
     )
 
 
@@ -529,7 +528,6 @@ class AssessmentDetailRead(PydanticStrictBaseModel):
 
 class AssessmentRead(AssessmentDetailRead):
     """Backward-compatible OpenAPI name for the assessment detail contract."""
-
 
 
 class StudentSubmissionRead(SubmissionRead):
