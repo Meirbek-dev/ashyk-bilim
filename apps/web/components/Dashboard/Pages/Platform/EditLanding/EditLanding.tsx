@@ -897,7 +897,7 @@ const HeroSectionEditor: FC<{
               <Select
                 value={section.background.type}
                 onValueChange={(bgType = 'solid') => {
-                  const safeBgType = bgType as 'solid' | 'gradient' | 'image';
+                  const safeBgType = bgType!;
                   onChange({
                     ...section,
                     background: {

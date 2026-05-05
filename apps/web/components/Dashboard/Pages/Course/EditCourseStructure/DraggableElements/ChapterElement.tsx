@@ -115,7 +115,7 @@ const ChapterElement = ({ chapter, chapterIndex, course_uuid }: ChapterElementPr
 
   const activities = chapter.activities ?? [];
 
-  const activityIds = useMemo(() => activities.map((activity) => activity.activity_uuid), []);
+  const activityIds = useMemo(() => activities.map((activity) => activity.activity_uuid), [activities]);
 
   const publishedCount = activities.filter((activity) => activity.published).length;
   const draftCount = activities.length - publishedCount;

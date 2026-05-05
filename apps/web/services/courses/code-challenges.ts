@@ -228,13 +228,13 @@ function toCodeChallengeSettings(
     typeof body?.time_limit_seconds === 'number'
       ? body.time_limit_seconds
       : typeof settings.time_limit === 'number'
-        ? Number(settings.time_limit)
+        ? settings.time_limit
         : 5;
   const memoryLimit =
     typeof body?.memory_limit_mb === 'number'
       ? body.memory_limit_mb
       : typeof settings.memory_limit === 'number'
-        ? Number(settings.memory_limit)
+        ? settings.memory_limit
         : 256;
 
   return {

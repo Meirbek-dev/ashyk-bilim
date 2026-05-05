@@ -158,7 +158,7 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
   if (isLoading || !assessment) return <PageLoading />;
 
   const items = Array.isArray(assessment.items) ? assessment.items : [];
-  const totalPoints = items.reduce((sum, item) => sum + (Number(item.max_score) || 0), 0);
+  const totalPoints = items.reduce((sum, item) => sum + (item.max_score || 0), 0);
   const isEditable = isAssessmentEditable(assessment.lifecycle);
   const validationIssues =
     readinessQuery.data?.issues.map((issue) => ({
