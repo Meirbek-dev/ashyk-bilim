@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 import {
   canPublishGrade,
@@ -22,8 +23,7 @@ import {
   getReleaseState,
   RELEASE_STATE_LABELS,
 } from '@/features/grading/domain';
-import type { TeacherGradeInput } from '@/features/grading/domain';
-import type { Submission } from '@/features/grading/domain';
+import type { Submission, TeacherGradeInput } from '@/features/grading/domain';
 import { saveGrade } from '@/services/grading/grading';
 import { StaleGradeError } from '@/services/grading/errors';
 import { useGradingPanel } from '@/hooks/useGradingPanel';
@@ -52,6 +52,7 @@ export default function GradeForm({
   navigation: ReviewNavigationState;
 }) {
   const { submission, isLoading, mutate } = useGradingPanel(submissionUuid, assessmentUuid);
+  const t = useTranslations('Features.Grading.Review.Panel');
   const [draft, setDraft] = useState<GradeDraft>({ score: '', feedback: '' });
   const [isSaving, startSaving] = useTransition();
   const [staleDraft, setStaleDraft] = useState<{ server: Submission; local: GradeDraft } | null>(null);
@@ -69,7 +70,7 @@ export default function GradeForm({
     if (!submission) return;
     const score = Number.parseFloat(draft.score);
     if (Number.isNaN(score) || score < 0 || score > 100) {
-      toast.error('Enter a score from 0 to 100.');
+      toast.error(t('invalidScore'));
       return;
     }
 
@@ -87,7 +88,9 @@ export default function GradeForm({
           submission.version,
           assessmentUuid,
         );
-        toast.success(status === 'PUBLISHED' ? 'Grade published' : status === 'RETURNED' ? 'Returned' : 'Grade saved');
+        toast.success(
+          status === 'PUBLISHED' ? t('gradePublished') : status === 'RETURNED' ? t('returned') : t('gradeSaved'),
+        );
         setStaleDraft(null);
         await Promise.all([mutate(), onSaved()]);
       } catch (error) {
@@ -95,43 +98,45 @@ export default function GradeForm({
           setStaleDraft({ server: error.serverSubmission, local: localDraftSnapshot });
           await mutate();
         } else {
-          toast.error(error instanceof Error ? error.message : 'Failed to save grade');
+          toast.error(error instanceof Error ? error.message : t('saveFailed'));
         }
       }
     });
   };
 
   if (!submissionUuid) {
-    return <aside className="text-muted-foreground p-4 text-sm">Select a submission to grade.</aside>;
+    return <aside className="text-muted-foreground p-4 text-sm">{t('selectSubmission')}</aside>;
   }
 
   if (isLoading && !submission) {
     return (
       <aside className="text-muted-foreground flex items-center justify-center p-4 text-sm">
         <LoaderCircle className="mr-2 size-4 animate-spin" />
-        Loading
+        {t('loadingSubmission')}
       </aside>
     );
   }
 
   if (!submission) {
-    return <aside className="text-muted-foreground p-4 text-sm">Grade form unavailable.</aside>;
+    return <aside className="text-muted-foreground p-4 text-sm">{t('formUnavailable')}</aside>;
   }
 
   const editable = canTeacherEditGrade(submission.status);
   const canPublishNow = canPublishGrade(submission.status);
   const canReturnNow = canReturnSubmission(submission.status);
   const releaseState =
-    'release_state' in submission && submission.release_state ? submission.release_state : getReleaseState(submission.status);
+    'release_state' in submission && submission.release_state
+      ? submission.release_state
+      : getReleaseState(submission.status);
 
   return (
     <aside className="space-y-5 p-4 xl:sticky xl:top-0 xl:h-[calc(100vh-96px)] xl:overflow-y-auto">
       <div>
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">Grade</h2>
+          <h2 className="text-lg font-semibold">{t('grade')}</h2>
           <KeyboardHint />
         </div>
-        <p className="text-muted-foreground text-sm">Final score, feedback, and release actions.</p>
+        <p className="text-muted-foreground text-sm">{t('gradeDescription')}</p>
       </div>
 
       <Alert>
@@ -139,12 +144,12 @@ export default function GradeForm({
         <AlertTitle>{RELEASE_STATE_LABELS[releaseState]}</AlertTitle>
         <AlertDescription>
           {releaseState === 'HIDDEN'
-            ? 'This submission is still awaiting grading. Students cannot see any result yet.'
+            ? t('releaseStateHidden')
             : releaseState === 'AWAITING_RELEASE'
-              ? 'The grade is saved internally and still hidden from the student until you publish it.'
+              ? t('releaseStateAwaitingRelease')
               : releaseState === 'VISIBLE'
-                ? 'This grade is already visible to the student.'
-                : 'The submission was returned for revision and that state is visible to the student.'}
+                ? t('releaseStateVisible')
+                : t('releaseStateReturned')}
         </AlertDescription>
       </Alert>
 
@@ -152,11 +157,11 @@ export default function GradeForm({
       {staleDraft ? (
         <Alert className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
           <AlertTriangle className="size-4" />
-          <AlertTitle>Another grader updated this submission</AlertTitle>
+          <AlertTitle>{t('staleDraftTitle')}</AlertTitle>
           <AlertDescription className="mt-1 space-y-1 text-xs">
             <p>
-              Server score: <strong>{staleDraft.server.final_score ?? '—'}</strong>. Your draft:{' '}
-              <strong>{staleDraft.local.score}</strong>.
+              {t('staleDraft.serverScoreLabel')} <strong>{staleDraft.server.final_score ?? '—'}</strong>.{' '}
+              {t('staleDraft.yourDraftLabel')} <strong>{staleDraft.local.score}</strong>.
             </p>
             <div className="flex gap-2">
               <Button
@@ -172,7 +177,7 @@ export default function GradeForm({
                   setStaleDraft(null);
                 }}
               >
-                Use server values
+                {t('useServerValues')}
               </Button>
               <Button
                 size="sm"
@@ -180,7 +185,7 @@ export default function GradeForm({
                 className="h-6 text-xs"
                 onClick={() => setStaleDraft(null)}
               >
-                Keep my draft
+                {t('keepMyDraft')}
               </Button>
             </div>
           </AlertDescription>
@@ -195,7 +200,7 @@ export default function GradeForm({
           onClick={navigation.goPrevious}
         >
           <ChevronLeft className="size-4" />
-          Previous
+          {t('previous')}
         </Button>
         <Button
           variant="outline"
@@ -203,13 +208,13 @@ export default function GradeForm({
           disabled={!navigation.hasNext}
           onClick={navigation.goNext}
         >
-          Next
+          {t('next')}
           <ChevronRight className="size-4" />
         </Button>
       </div>
 
       <div className="space-y-2 border-t pt-4">
-        <Label htmlFor="review-score">Final score</Label>
+        <Label htmlFor="review-score">{t('finalScore')}</Label>
         <div className="flex items-center gap-2">
           <Input
             id="review-score"
@@ -230,7 +235,7 @@ export default function GradeForm({
             className="h-auto p-0 text-xs"
             onClick={() => setDraft((current) => ({ ...current, score: String(submission.auto_score) }))}
           >
-            Use auto score {submission.auto_score}
+            {t('useAutoScore')} {submission.auto_score}
           </Button>
         ) : null}
       </div>
@@ -241,7 +246,7 @@ export default function GradeForm({
           className="flex items-center gap-1.5"
         >
           <MessageSquareText className="size-4" />
-          Final feedback
+          {t('feedback')}
         </Label>
         <Textarea
           id="review-feedback"
@@ -260,7 +265,7 @@ export default function GradeForm({
           onClick={() => save('GRADED')}
         >
           {isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <BookOpenCheck className="size-4" />}
-          Save draft grade
+          {t('saveDraftGrade')}
         </Button>
         <Button
           type="button"
@@ -268,7 +273,7 @@ export default function GradeForm({
           onClick={() => save('PUBLISHED')}
         >
           <Send className="size-4" />
-          Publish to student
+          {t('publishGrade')}
         </Button>
         <Button
           type="button"
@@ -277,21 +282,17 @@ export default function GradeForm({
           onClick={() => save('RETURNED')}
         >
           <RotateCcw className="size-4" />
-          Return for revision
+          {t('returnForRevision')}
         </Button>
-        {!canPublishNow ? (
-          <p className="text-muted-foreground text-xs">
-            Save as graded first before publishing student-visible results.
-          </p>
-        ) : null}
+        {!canPublishNow ? <p className="text-muted-foreground text-xs">{t('publishPrerequisite')}</p> : null}
       </div>
 
       {/* ── Keyboard legend ────────────────────────────────────────────── */}
       <div className="border-t pt-3">
         <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
           <Keyboard className="size-3.5" />
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">j</kbd> next
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">k</kbd> prev
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">j</kbd> {t('keyboardHintForward')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">k</kbd> {t('keyboardHintBackward')}
         </div>
       </div>
     </aside>
@@ -299,6 +300,7 @@ export default function GradeForm({
 }
 
 function KeyboardHint() {
+  const t = useTranslations('Features.Grading.Review.Panel');
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -327,7 +329,7 @@ function KeyboardHint() {
         >
           <Info className="size-4" />
         </TooltipTrigger>
-        <TooltipContent side="bottom">Use j/k or arrow keys to move between submissions.</TooltipContent>
+        <TooltipContent side="bottom">{t('keyboardHint')}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );

@@ -991,6 +991,29 @@
       "label": "Навигация",
       "more": "Көбірек"
     },
+    "PolicyInspector": {
+      "title": "Саясат",
+      "description": "Осы тапсырма үшін кесте, әрекеттер, алаяққа қарсы бақылау, баға және қолжетімділік параметрлері.",
+      "schedule": "Жоспар",
+      "due": "Аяқтау мерзімі",
+      "notSet": "Белгіленбеген",
+      "attempts": "Сынақтар",
+      "maximumAttempts": "Максималды сынақтар",
+      "unlimited": "Шексіз",
+      "latePenalty": "Кешігу айыппұлы",
+      "antiCheat": "Алаяққа қарсы",
+      "scoring": "Бағалау",
+      "access": "Қолжетімділік",
+      "noPolicySections": "Бұл әрекет үшін саясат бөлімдері әлі қосылмаған.",
+      "antiCheatItems": {
+        "copyPasteBlocked": "Көшіру/қою бұғатталған",
+        "tabSwitchesTracked": "Қойыншалар ауысуы бақыланады",
+        "devToolsTracked": "Даму құралдары бақыланады",
+        "rightClickBlocked": "Оң жақ батырма бұғатталған",
+        "fullscreenRequired": "Толық экран режимі талап етіледі"
+      },
+      "autoSubmitThreshold": "Автоматты жіберу шегі"
+    },
     "AiChat": {
       "placeholder": "Ashyk Ai-дан сұраңыз…",
       "sendMessage": "Хабар жіберу",

@@ -1,6 +1,7 @@
 'use client';
 
 import { CalendarClock, Lock, ShieldAlert, SlidersHorizontal, Trophy } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 
 import type { NormalizedScore } from '@/features/assessments/domain/score';
@@ -30,20 +31,22 @@ export default function PolicyInspector({
   score = { percent: null, source: 'none' },
   accessItems = [],
   scheduleItems = [],
-  title = 'Policy',
+  title,
 }: PolicyInspectorProps) {
+  const t = useTranslations('Components.PolicyInspector');
+  const effectiveTitle = title ?? t('title');
   const antiCheatEnabled = isAntiCheatEnabled(policy.antiCheat);
   const possibleSections: (InspectorSection | null)[] = [
     policy.dueAt || scheduleItems.length
       ? {
           value: 'schedule',
-          label: 'Schedule',
+          label: t('schedule'),
           icon: CalendarClock,
           body: (
             <div className="space-y-2 text-sm">
               <PolicyRow
-                label="Due"
-                value={policy.dueAt ? new Date(policy.dueAt).toLocaleString() : 'Not set'}
+                label={t('due')}
+                value={policy.dueAt ? new Date(policy.dueAt).toLocaleString() : t('notSet')}
               />
               {scheduleItems.map((item) => (
                 <div
@@ -60,16 +63,16 @@ export default function PolicyInspector({
     policy.maxAttempts || policy.latePolicy.penaltyPercent
       ? {
           value: 'attempts',
-          label: 'Attempts',
+          label: t('attempts'),
           icon: SlidersHorizontal,
           body: (
             <div className="space-y-2 text-sm">
               <PolicyRow
-                label="Maximum attempts"
-                value={policy.maxAttempts ? String(policy.maxAttempts) : 'Unlimited'}
+                label={t('maximumAttempts')}
+                value={policy.maxAttempts ? String(policy.maxAttempts) : t('unlimited')}
               />
               <PolicyRow
-                label="Late penalty"
+                label={t('latePenalty')}
                 value={`${policy.latePolicy.penaltyPercent}%`}
               />
             </div>
@@ -79,7 +82,7 @@ export default function PolicyInspector({
     antiCheatEnabled
       ? {
           value: 'anti-cheat',
-          label: 'Anti-cheat',
+          label: t('antiCheat'),
           icon: ShieldAlert,
           body: <AntiCheatSummary policy={policy} />,
         }
@@ -87,7 +90,7 @@ export default function PolicyInspector({
     score.percent !== null
       ? {
           value: 'scoring',
-          label: 'Scoring',
+          label: t('scoring'),
           icon: Trophy,
           body: <ScoreSummary score={score} />,
         }
@@ -95,7 +98,7 @@ export default function PolicyInspector({
     accessItems.length
       ? {
           value: 'access',
-          label: 'Access',
+          label: t('access'),
           icon: Lock,
           body: (
             <div className="space-y-2">
@@ -117,8 +120,8 @@ export default function PolicyInspector({
   return (
     <div className="space-y-4 p-4 xl:sticky xl:top-[88px] xl:h-[calc(100vh-88px)] xl:overflow-y-auto">
       <div>
-        <h2 className="text-sm font-semibold">{title}</h2>
-        <p className="text-muted-foreground text-xs">Schedule, attempts, anti-cheat, scoring, and access.</p>
+        <h2 className="text-sm font-semibold">{effectiveTitle}</h2>
+        <p className="text-muted-foreground text-xs">{t('description')}</p>
       </div>
       {sections.length ? (
         <Accordion
@@ -144,9 +147,7 @@ export default function PolicyInspector({
           })}
         </Accordion>
       ) : (
-        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">
-          No policy sections are enabled for this activity.
-        </div>
+        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">{t('noPolicySections')}</div>
       )}
     </div>
   );
@@ -166,12 +167,13 @@ function isInspectorSection(section: InspectorSection | null): section is Inspec
 }
 
 function AntiCheatSummary({ policy }: { policy: PolicyView }) {
+  const t = useTranslations('Components.PolicyInspector');
   const items = [
-    policy.antiCheat.copyPasteProtection ? 'Copy/paste blocked' : null,
-    policy.antiCheat.tabSwitchDetection ? 'Tab switches tracked' : null,
-    policy.antiCheat.devtoolsDetection ? 'DevTools tracked' : null,
-    policy.antiCheat.rightClickDisabled ? 'Right-click blocked' : null,
-    policy.antiCheat.fullscreenEnforced ? 'Fullscreen required' : null,
+    policy.antiCheat.copyPasteProtection ? t('antiCheatItems.copyPasteBlocked') : null,
+    policy.antiCheat.tabSwitchDetection ? t('antiCheatItems.tabSwitchesTracked') : null,
+    policy.antiCheat.devtoolsDetection ? t('antiCheatItems.devToolsTracked') : null,
+    policy.antiCheat.rightClickDisabled ? t('antiCheatItems.rightClickBlocked') : null,
+    policy.antiCheat.fullscreenEnforced ? t('antiCheatItems.fullscreenRequired') : null,
   ].filter(Boolean);
   return (
     <div className="space-y-3">
@@ -186,8 +188,8 @@ function AntiCheatSummary({ policy }: { policy: PolicyView }) {
         ))}
       </div>
       <PolicyRow
-        label="Auto-submit threshold"
-        value={policy.antiCheat.violationThreshold?.toString() ?? 'Not set'}
+        label={t('autoSubmitThreshold')}
+        value={policy.antiCheat.violationThreshold?.toString() ?? t('notSet')}
       />
     </div>
   );

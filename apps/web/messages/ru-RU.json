@@ -992,6 +992,29 @@
       "label": "Навигация",
       "more": "Ещё"
     },
+    "PolicyInspector": {
+      "title": "Политика",
+      "description": "Параметры расписания, попыток, анти‑чит, оценивания и доступа для этой активности.",
+      "schedule": "Расписание",
+      "due": "Срок",
+      "notSet": "Не задано",
+      "attempts": "Попытки",
+      "maximumAttempts": "Максимальное количество попыток",
+      "unlimited": "Неограниченно",
+      "latePenalty": "Штраф за опоздание",
+      "antiCheat": "Античит",
+      "scoring": "Оценивание",
+      "access": "Доступ",
+      "noPolicySections": "Для этой активности не включено ни одной секции политики.",
+      "antiCheatItems": {
+        "copyPasteBlocked": "Копирование/вставка заблокированы",
+        "tabSwitchesTracked": "Переключения вкладок отслеживаются",
+        "devToolsTracked": "DevTools отслеживаются",
+        "rightClickBlocked": "Правая кнопка мыши заблокирована",
+        "fullscreenRequired": "Требуется полноэкранный режим"
+      },
+      "autoSubmitThreshold": "Порог автосдачи"
+    },
     "AiChat": {
       "placeholder": "Спросите Ashyk Ai…",
       "sendMessage": "Отправить сообщение",

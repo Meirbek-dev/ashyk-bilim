@@ -990,6 +990,29 @@
       "label": "Breadcrumb",
       "more": "More"
     },
+    "PolicyInspector": {
+      "title": "Policy",
+      "description": "Schedule, attempts, anti-cheat, scoring, and access settings for this activity.",
+      "schedule": "Schedule",
+      "due": "Due",
+      "notSet": "Not set",
+      "attempts": "Attempts",
+      "maximumAttempts": "Maximum attempts",
+      "unlimited": "Unlimited",
+      "latePenalty": "Late penalty",
+      "antiCheat": "Anti-cheat",
+      "scoring": "Scoring",
+      "access": "Access",
+      "noPolicySections": "No policy sections are enabled for this activity.",
+      "antiCheatItems": {
+        "copyPasteBlocked": "Copy/paste blocked",
+        "tabSwitchesTracked": "Tab switches tracked",
+        "devToolsTracked": "DevTools tracked",
+        "rightClickBlocked": "Right-click blocked",
+        "fullscreenRequired": "Fullscreen required"
+      },
+      "autoSubmitThreshold": "Auto-submit threshold"
+    },
     "AiChat": {
       "placeholder": "Ask Ashyk Ai…",
       "sendMessage": "Send message",

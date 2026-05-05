@@ -2,6 +2,7 @@
 
 import type { ComponentType } from 'react';
 import { LoaderCircle, ShieldAlert } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { getSubmissionDisplayName } from '@/features/grading/domain';
 import type { Submission } from '@/features/grading/domain';
@@ -30,11 +31,14 @@ export default function SubmissionInspector({
   ReviewDetail?: ComponentType<KindReviewDetailProps>;
 }) {
   const { submission, isLoading } = useGradingPanel(selectedUuid, assessmentUuid);
+  const t = useTranslations('Features.Grading.Review');
   const current = submission ?? fallbackSubmission;
 
   if (!selectedUuid) {
     return (
-      <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">Select a submission.</div>
+      <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">
+        {t('submissionInspector.selectSubmission')}
+      </div>
     );
   }
 
@@ -42,14 +46,16 @@ export default function SubmissionInspector({
     return (
       <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">
         <LoaderCircle className="mr-2 size-4 animate-spin" />
-        Loading submission
+        {t('submissionInspector.loadingSubmission')}
       </div>
     );
   }
 
   if (!current) {
     return (
-      <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">Submission unavailable.</div>
+      <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">
+        {t('submissionInspector.unavailable')}
+      </div>
     );
   }
 
@@ -69,24 +75,24 @@ export default function SubmissionInspector({
             <div className="flex flex-wrap items-center gap-2">
               <SubmissionStatusBadge status={current.status} />
               <Badge variant="outline">{RELEASE_STATE_LABELS[reviewVm.releaseState]}</Badge>
-              {current.is_late ? <Badge variant="destructive">Late</Badge> : null}
+              {current.is_late ? <Badge variant="destructive">{t('submissionInspector.late')}</Badge> : null}
             </div>
           </div>
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
             <HistoryItem
-              label="Release state"
+              label={t('submissionInspector.releaseState')}
               value={RELEASE_STATE_LABELS[reviewVm.releaseState]}
             />
             <HistoryItem
-              label="Student visibility"
+              label={t('submissionInspector.studentVisibility')}
               value={
                 reviewVm.releaseState === 'VISIBLE' || reviewVm.releaseState === 'RETURNED_FOR_REVISION'
-                  ? 'Visible now'
-                  : 'Hidden until release'
+                  ? t('submissionInspector.visibleNow')
+                  : t('submissionInspector.hiddenUntilRelease')
               }
             />
             <HistoryItem
-              label="Score"
+              label={t('submissionInspector.score')}
               value={typeof current.final_score === 'number' ? `${Math.round(current.final_score)}%` : '--'}
             />
           </div>
@@ -96,9 +102,9 @@ export default function SubmissionInspector({
 
         <Tabs defaultValue="work">
           <TabsList>
-            <TabsTrigger value="work">Submitted work</TabsTrigger>
+            <TabsTrigger value="work">{t('submissionInspector.submittedWork')}</TabsTrigger>
             <TabsTrigger value="violations">
-              Violations
+              {t('submissionInspector.violations')}
               {getViolationCount(current) > 0 ? (
                 <Badge
                   variant="destructive"
@@ -156,7 +162,7 @@ function ViolationLog({ submission }: { submission: Submission }) {
   if (violations.length === 0) {
     return (
       <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
-        No violations recorded.
+        {t('submissionInspector.noViolations')}
       </div>
     );
   }
@@ -166,7 +172,7 @@ function ViolationLog({ submission }: { submission: Submission }) {
       <div className="mb-3 flex items-center gap-2">
         <ShieldAlert className="size-4 text-amber-500" />
         <h3 className="text-sm font-semibold">
-          {violations.length} violation{violations.length !== 1 ? 's' : ''}
+          {t('submissionInspector.violationCount', { count: violations.length })}
         </h3>
       </div>
       <ul className="space-y-2 text-xs">
@@ -198,24 +204,26 @@ function ViolationLog({ submission }: { submission: Submission }) {
 }
 
 function AttemptHistory({ submission }: { submission: Submission }) {
+  const t = useTranslations('Features.Grading.Review');
+
   return (
     <section className="bg-card rounded-lg border p-4">
-      <h3 className="text-sm font-semibold">Attempt history</h3>
+      <h3 className="text-sm font-semibold">{t('submissionInspector.attemptHistory')}</h3>
       <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <HistoryItem
-          label="Started"
+          label={t('submissionInspector.started')}
           value={formatDate(submission.started_at)}
         />
         <HistoryItem
-          label="Submitted"
+          label={t('submissionInspector.submitted')}
           value={formatDate(submission.submitted_at)}
         />
         <HistoryItem
-          label="Graded"
+          label={t('submissionInspector.graded')}
           value={formatDate(submission.graded_at)}
         />
         <HistoryItem
-          label="Version"
+          label={t('submissionInspector.version')}
           value={`v${submission.version}`}
         />
       </div>
@@ -239,9 +247,9 @@ export function SubmittedAnswers({
   if (items.length === 0) {
     return (
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold">Submitted work</h3>
+        <h3 className="text-sm font-semibold">{t('submissionInspector.submittedWork')}</h3>
         <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
-          No canonical item projection is available for this submission yet.
+          {t('submissionInspector.noCanonicalProjection')}
         </div>
       </section>
     );
@@ -249,10 +257,10 @@ export function SubmittedAnswers({
 
   return (
     <section className="space-y-3">
-      <h3 className="text-sm font-semibold">Submitted work</h3>
+      <h3 className="text-sm font-semibold">{t('submissionInspector.submittedWork')}</h3>
       {items.length === 0 ? (
         <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
-          No answer payload was recorded.
+          {t('submissionInspector.noAnswerPayload')}
         </div>
       ) : (
         items.map((item: AssessmentItem, index) => (
@@ -261,11 +269,12 @@ export function SubmittedAnswers({
             className="bg-card rounded-lg border p-4"
           >
             <div className="mb-2 flex items-center justify-between gap-3">
-              <Badge variant="secondary">Item {index + 1}</Badge>
+              <Badge variant="secondary">{t('submissionInspector.itemLabel', { index: index + 1 })}</Badge>
               <Badge variant="outline">{item.kind}</Badge>
             </div>
             <p className="mb-3 text-sm font-medium">
-              {item.title || ('prompt' in item.body ? item.body.prompt : `Item ${index + 1}`)}
+              {item.title ||
+                ('prompt' in item.body ? item.body.prompt : t('submissionInspector.itemLabel', { index: index + 1 }))}
             </p>
             {renderCanonicalReviewAnswer(item, canonicalAnswers[item.item_uuid])}
             {item.body.kind === 'OPEN_TEXT' && item.body.rubric ? <RubricSummary rubric={item.body.rubric} /> : null}
@@ -277,6 +286,7 @@ export function SubmittedAnswers({
 }
 
 function RubricSummary({ rubric }: { rubric: string }) {
+  const t = useTranslations('Features.Grading.Review');
   const criteria = rubric
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -286,7 +296,7 @@ function RubricSummary({ rubric }: { rubric: string }) {
 
   return (
     <div className="mt-3 rounded-md border border-sky-200 bg-sky-50/70 p-3 text-sm text-sky-950">
-      <div className="mb-2 font-medium">Rubric guidance</div>
+      <div className="mb-2 font-medium">{t('submissionInspector.rubricGuidance')}</div>
       <ul className="space-y-1 text-xs">
         {criteria.map((criterion) => (
           <li

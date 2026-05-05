@@ -1,6 +1,7 @@
 'use client';
 
 import { BookOpenCheck, Clock4, TrendingUp, Users } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 
 import type { Submission } from '@/features/grading/domain';
@@ -33,15 +34,18 @@ export default function ReviewLayout({
   children: ReactNode;
   onBulkRefresh: () => Promise<void>;
 }) {
+  const t = useTranslations('Features.Grading.Review');
+  const pageTitle = title ?? t('layout.title');
+
   return (
     <div className="flex min-h-[calc(100vh-96px)] flex-col">
       <div className="border-b px-4 py-4 lg:px-6">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl font-semibold">{title ?? 'Submission Review'}</h1>
+              <h1 className="text-2xl font-semibold">{pageTitle}</h1>
               <p className="text-muted-foreground text-sm">
-                {stats?.needs_grading_count ?? 0} need grading · {total} in current queue
+                {t('layout.queueDescription', { count: stats?.needs_grading_count ?? 0, total })}
               </p>
             </div>
             <ReviewBulkActionBar
@@ -69,24 +73,24 @@ function StatsGrid({ stats }: { stats?: SubmissionStats | null }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <StatTile
-        label="Total"
+        label={t('layout.stats.total')}
         value={stats.total}
         icon={Users}
       />
       <StatTile
-        label="Needs grading"
+        label={t('layout.stats.needsGrading')}
         value={stats.needs_grading_count}
         icon={Clock4}
         accent="amber"
       />
       <StatTile
-        label="Avg score"
+        label={t('layout.stats.avgScore')}
         value={stats.avg_score !== null ? `${stats.avg_score.toFixed(1)}%` : '--'}
         icon={TrendingUp}
         accent="sky"
       />
       <StatTile
-        label="Pass rate"
+        label={t('layout.stats.passRate')}
         value={stats.pass_rate !== null ? `${stats.pass_rate.toFixed(0)}%` : '--'}
         icon={BookOpenCheck}
         accent="emerald"
