@@ -7182,6 +7182,17 @@
       }
     },
     "Assessments": {
+      "Items": {
+        "Choice": {
+          "selectMatch": "Выберите соответствие",
+          "points": "{count} балл"
+        },
+        "Matching": {
+          "selectMatch": "Выберите соответствие…",
+          "correct": "Правильно",
+          "noAnswer": "Нет ответа"
+        }
+      },
       "Attempt": {
         "Exam": {
           "activityNamePlaceholder": "напр., Итоговый тест",

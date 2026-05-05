@@ -7177,6 +7177,17 @@
       }
     },
     "Assessments": {
+      "Items": {
+        "Choice": {
+          "selectMatch": "Сәйкестікті таңдаңыз",
+          "points": "{count} ұпай"
+        },
+        "Matching": {
+          "selectMatch": "Сәйкестікті таңдаңыз…",
+          "correct": "Дұрыс",
+          "noAnswer": "Жауап жоқ"
+        }
+      },
       "Attempt": {
         "Exam": {
           "activityNamePlaceholder": "мыс., Қорытынды емтихан",

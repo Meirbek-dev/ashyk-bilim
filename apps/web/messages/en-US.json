@@ -462,6 +462,7 @@
       "reviewQuestions": "Review Questions",
       "rightClickDisabled": "Right-click is disabled during the exam",
       "scoreDetails": "{score} of {max} points",
+      "scoreLabel": "Score",
       "scoreProgress": "Score progress: {percentage}%",
       "selectMatch": "Select a match",
       "settings": "Settings",
@@ -7171,6 +7172,17 @@
       }
     },
     "Assessments": {
+      "Items": {
+        "Choice": {
+          "selectMatch": "Select match",
+          "points": "{count} pts"
+        },
+        "Matching": {
+          "selectMatch": "Select match…",
+          "correct": "Correct",
+          "noAnswer": "No answer"
+        }
+      },
       "Attempt": {
         "Exam": {
           "activityNamePlaceholder": "e.g., Final Exam",

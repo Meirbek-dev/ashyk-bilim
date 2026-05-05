@@ -114,6 +114,7 @@ export function MatchingItemAttempt({
   disabled,
   onAnswerChange,
 }: ItemAttemptProps<MatchingBody, MatchingAnswer | null>) {
+  const t = useTranslations('Features.Assessments.Items.Matching');
   const currentMatches: Record<string, string> = {};
   if (answer?.matches) {
     for (const m of answer.matches) {
@@ -156,7 +157,7 @@ export function MatchingItemAttempt({
                   disabled
                   hidden
                 >
-                  Select match…
+                  {t('selectMatch')}
                 </NativeSelectOption>
                 {rightOptions.map((right) => (
                   <NativeSelectOption
@@ -178,6 +179,7 @@ export function MatchingItemAttempt({
 // ── Review ────────────────────────────────────────────────────────────────────
 
 export function MatchingItemReview({ item, answer }: ItemReviewDetailProps<MatchingBody, MatchingAnswer | null>) {
+  const t = useTranslations('Features.Assessments.Items.Matching');
   const matchMap: Record<string, string> = {};
   if (answer?.matches) {
     for (const m of answer.matches) {
@@ -210,7 +212,7 @@ export function MatchingItemReview({ item, answer }: ItemReviewDetailProps<Match
                   !isCorrect && studentAnswer && 'text-destructive line-through',
                 )}
               >
-                {studentAnswer ?? 'No answer'}
+                {studentAnswer ?? t('noAnswer')}
               </span>
               {!isCorrect && (
                 <Badge
@@ -225,7 +227,7 @@ export function MatchingItemReview({ item, answer }: ItemReviewDetailProps<Match
                   variant="outline"
                   className="border-green-500 text-xs text-green-600"
                 >
-                  Correct
+                  {t('correct')}
                 </Badge>
               )}
             </div>

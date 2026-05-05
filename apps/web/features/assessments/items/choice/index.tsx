@@ -71,6 +71,8 @@ export function ChoiceItemAttempt({
   disabled,
   onAnswerChange,
 }: ItemAttemptProps<ChoiceAttemptItem, ChoiceAnswer>) {
+  const t = useTranslations('Features.Assessments.Items.Choice');
+
   if (item.kind === 'MATCHING') {
     const current = answer && typeof answer === 'object' && !Array.isArray(answer) ? answer : {};
     const rightOptions = item.pairs.map((pair) => pair.right);
@@ -94,7 +96,7 @@ export function ChoiceItemAttempt({
                 disabled
                 hidden
               >
-                Select match
+                {t('selectMatch')}
               </NativeSelectOption>
               {rightOptions.map((right) => (
                 <NativeSelectOption
@@ -407,6 +409,8 @@ function MatchingAuthor({
 }
 
 export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<ChoiceAttemptItem, ChoiceAnswer>) {
+  const t = useTranslations('Features.Assessments.Items.Choice');
+
   if (!item) {
     return <pre className="bg-muted rounded-md p-3 text-xs">{JSON.stringify(answer, null, 2)}</pre>;
   }
@@ -430,7 +434,9 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
     <div className="bg-card rounded-md border p-3">
       <div className="mb-2 flex items-center gap-2">
         <Badge variant="outline">{item.kind.replaceAll('_', ' ')}</Badge>
-        {typeof item.points === 'number' ? <Badge variant="secondary">{item.points} pts</Badge> : null}
+        {typeof item.points === 'number' ? (
+          <Badge variant="secondary">{t('points', { count: item.points })}</Badge>
+        ) : null}
       </div>
       <p className="text-sm font-medium">{item.prompt}</p>
       <pre className={cn('mt-2 whitespace-pre-wrap text-sm', item.kind !== 'MATCHING' && 'font-sans')}>
