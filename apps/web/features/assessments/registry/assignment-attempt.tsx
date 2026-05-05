@@ -84,7 +84,7 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
     } finally {
       setIsStarting(false);
     }
-  }, [assessmentUuid, queryClient, submissionsQueryKey, vm?.canEdit, vm?.isReturnedForRevision]);
+  }, [assessmentUuid, queryClient, submissionsQueryKey, t, vm?.canEdit, vm?.isReturnedForRevision]);
 
   const handleItemAnswerChange = useCallback(
     (itemUuid: string, answer: ItemAnswer) => {
@@ -146,7 +146,7 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
           }
         : null,
     }),
-    [canSave, canSubmit, persistence, recoveredAnswers, saveState, showRecoveryDialog, status, submissionState],
+    [canSave, canSubmit, persistence, recoveredAnswers, saveState, showRecoveryDialog, status, submissionState, t],
   );
   useAttemptShellControls(shellControls);
 
@@ -290,6 +290,8 @@ function SubmissionStatePanel({
   } | null;
   releaseState: 'HIDDEN' | 'AWAITING_RELEASE' | 'VISIBLE' | 'RETURNED_FOR_REVISION';
 }) {
+  const t = useTranslations('Activities.AssignmentStudentActivity');
+
   if (!submission || submission.status === 'DRAFT') return null;
 
   if (submission.status === 'PENDING') {
@@ -328,7 +330,7 @@ function SubmissionStatePanel({
       <AlertDescription className="space-y-3">
         {scoreLabel ? (
           <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
-            <Badge variant="secondary">Score</Badge>
+            <Badge variant="secondary">{t('scoreLabel')}</Badge>
             {scoreLabel}
           </span>
         ) : null}
@@ -355,6 +357,8 @@ function AssessmentItemCard({
   assessmentUuid: string;
   onChange: (answer: ItemAnswer) => void;
 }) {
+  const t = useTranslations('Activities.AssignmentStudentActivity');
+
   return (
     <section
       id={`item-${item.item_uuid}`}

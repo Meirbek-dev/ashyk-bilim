@@ -30,7 +30,7 @@ const COMMON_RULES = {
   /* React */
   'react/prop-types': 'off',
   'react/no-unescaped-entities': 'off',
-  'react/jsx-no-literals': 'off',
+  'react/jsx-no-literals': 'warn',
   'react/self-closing-comp': 'warn',
   'react/jsx-boolean-value': ['warn', 'never'],
   'react/no-array-index-key': 'off',

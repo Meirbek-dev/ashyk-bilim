@@ -12,7 +12,7 @@
 ## 🧪 Testing — Frontend
 
 1. **MSW (Mock Service Worker) v2** — Intercept API calls in tests at the network level; your Vitest + Playwright tests share the same handlers
-2. **Playwright component tests** — Test TipTap editor interactions, drag-and-drop (`@hello-pangea/dnd`), and modals in isolation
+2. **Playwright component tests** — Test TipTap editor interactions, drag-and-drop , and modals in isolation
 3. **`@tanstack/query` test utils** — `createQueryClient()` wrapper so React Query cache doesn't bleed between tests
 4. **`next/vitest`** — Use the official Next.js Vitest plugin so RSC and App Router internals are mocked correctly
 5. **Testing hooks in isolation** — Use `renderHook` from `@testing-library/react` for every custom hook; they're often where subtle bugs live
