@@ -1107,12 +1107,16 @@ function toAssessmentEditorState(assessment: AssessmentStudioDetail): Assessment
     maxAttempts:
       typeof assessment.assessment_policy?.max_attempts === 'number'
         ? String(assessment.assessment_policy.max_attempts)
+        : typeof settings.max_attempts === 'number'
+          ? String(settings.max_attempts)
         : typeof settings.attempt_limit === 'number'
           ? String(settings.attempt_limit)
           : '1',
     timeLimitMinutes:
       typeof assessment.assessment_policy?.time_limit_seconds === 'number'
         ? String(Math.max(1, Math.ceil(assessment.assessment_policy.time_limit_seconds / 60)))
+        : typeof settings.time_limit_seconds === 'number'
+          ? String(Math.max(1, Math.ceil(settings.time_limit_seconds / 60)))
         : typeof settings.time_limit === 'number'
           ? String(settings.time_limit)
           : '',

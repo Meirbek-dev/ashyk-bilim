@@ -4,12 +4,13 @@ import { apiFetcher } from '@/lib/api-client';
 import { queryOptions } from '@tanstack/react-query';
 import { getAPIUrl } from '@services/config/config';
 import { queryKeys } from '@/lib/react-query/queryKeys';
+import { normalizeExamPolicySettings } from './policySettings';
 
 function assessmentToExam(assessment: any) {
   return {
     ...assessment,
     exam_uuid: assessment.assessment_uuid,
-    settings: assessment.assessment_policy?.settings_json ?? {},
+    settings: normalizeExamPolicySettings(assessment.assessment_policy?.settings_json ?? {}),
   };
 }
 

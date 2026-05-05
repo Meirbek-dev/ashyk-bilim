@@ -5,23 +5,24 @@ import { courseKeys } from '@/hooks/courses/courseKeys';
 import { mutationOptions } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/react-query/queryKeys';
+import {
+  buildExamAntiCheatSettings,
+  getExamAttemptLimit,
+  getExamTimeLimitSeconds,
+  normalizeExamPolicySettings,
+} from './policySettings';
 
 async function updateExamSettingsRequest(examUuid: string, settings: Record<string, unknown>) {
+  const normalizedSettings = normalizeExamPolicySettings(settings);
   const response = await apiFetch(`assessments/${examUuid}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       policy: {
-        time_limit_seconds: typeof settings.time_limit === 'number' ? Math.max(0, settings.time_limit) * 60 : null,
-        anti_cheat_json: {
-          copy_paste_protection: settings.copy_paste_protection,
-          tab_switch_detection: settings.tab_switch_detection,
-          devtools_detection: settings.devtools_detection,
-          right_click_disable: settings.right_click_disable,
-          fullscreen_enforcement: settings.fullscreen_enforcement,
-          violation_threshold: settings.violation_threshold,
-        },
-        settings_json: settings,
+        max_attempts: getExamAttemptLimit(normalizedSettings),
+        time_limit_seconds: getExamTimeLimitSeconds(normalizedSettings),
+        anti_cheat_json: buildExamAntiCheatSettings(normalizedSettings),
+        settings_json: normalizedSettings,
       },
     }),
   });
@@ -52,6 +53,7 @@ export interface CreateExamWithActivityResponse {
 async function createExamWithActivityRequest(
   input: CreateExamWithActivityInput,
 ): Promise<CreateExamWithActivityResponse> {
+  const normalizedSettings = normalizeExamPolicySettings(input.settings);
   const response = await apiFetch('assessments', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -63,17 +65,10 @@ async function createExamWithActivityRequest(
       chapter_id: input.chapterId,
       grading_type: 'PERCENTAGE',
       policy: {
-        max_attempts: typeof input.settings.attempt_limit === 'number' ? input.settings.attempt_limit : 1,
-        time_limit_seconds: typeof input.settings.time_limit === 'number' ? input.settings.time_limit * 60 : null,
-        anti_cheat_json: {
-          copy_paste_protection: input.settings.copy_paste_protection,
-          tab_switch_detection: input.settings.tab_switch_detection,
-          devtools_detection: input.settings.devtools_detection,
-          right_click_disable: input.settings.right_click_disable,
-          fullscreen_enforcement: input.settings.fullscreen_enforcement,
-          violation_threshold: input.settings.violation_threshold,
-        },
-        settings_json: input.settings,
+        max_attempts: getExamAttemptLimit(normalizedSettings) ?? 1,
+        time_limit_seconds: getExamTimeLimitSeconds(normalizedSettings),
+        anti_cheat_json: buildExamAntiCheatSettings(normalizedSettings),
+        settings_json: normalizedSettings,
       },
     }),
   });

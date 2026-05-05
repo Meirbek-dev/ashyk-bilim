@@ -13,9 +13,11 @@
  */
 
 import { queryOptions, useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { apiFetcher } from '@/lib/api-client';
 import { getAPIUrl } from '@services/config/config';
 import { queryKeys } from '@/lib/react-query/queryKeys';
+import { reportClientError } from '@/services/telemetry/client';
 
 import { isAssessmentEditable, canPublish, canSchedule, canArchive } from '../domain/lifecycle';
 import type { AssessmentLifecycle } from '../domain/lifecycle';
@@ -41,6 +43,34 @@ interface AssessmentDetail {
   archived_at?: string | null;
   items: AssessmentItem[];
   assessment_policy?: AssessmentPolicyDTO | null;
+  attempt_projection?: AttemptProjectionPayload | null;
+  review_projection?: ReviewProjectionPayload | null;
+}
+
+interface AssessmentScoreProjection {
+  percent: number | null;
+  source: 'auto' | 'teacher' | 'none';
+}
+
+interface AttemptProjectionPayload {
+  assessment_uuid: string;
+  submission_uuid?: string | null;
+  submission_status?: 'DRAFT' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED' | null;
+  release_state?: 'HIDDEN' | 'AWAITING_RELEASE' | 'VISIBLE' | 'RETURNED_FOR_REVISION';
+  can_edit: boolean;
+  can_save_draft: boolean;
+  can_submit: boolean;
+  is_returned_for_revision: boolean;
+  is_result_visible: boolean;
+  score?: AssessmentScoreProjection | null;
+}
+
+interface ReviewProjectionPayload {
+  assessment_uuid: string;
+  activity_id: number;
+  activity_uuid: string;
+  title: string;
+  kind: 'ASSIGNMENT' | 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
 }
 
 interface ReadinessPayload {
@@ -103,6 +133,22 @@ export function useAssessment(
     enabled: Boolean(normalizedUuid),
   });
 
+  const reportedErrorRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!error) return;
+    const key = `${options.surface}:${normalizedUuid}:${error.message}`;
+    if (reportedErrorRef.current === key) return;
+    reportedErrorRef.current = key;
+    void reportClientError({
+      scope: 'assessment-flow',
+      phase: 'load-assessment',
+      surface: options.surface,
+      activityUuid: normalizedUuid,
+      error: error.message,
+    }).catch(() => undefined);
+  }, [error, normalizedUuid, options.surface]);
+
   const readiness = useQuery({
     ...readinessQueryOptions(assessment?.assessment_uuid ?? '', options.surface === 'STUDIO' && Boolean(assessment)),
   });
@@ -146,10 +192,15 @@ export function useAssessment(
   }
 
   if (surface === 'REVIEW') {
-    return { vm: { surface: 'REVIEW', kind }, isLoading: false, error: null };
+    const reviewKind = assessmentTypeToKind(assessment.review_projection?.kind ?? assessment.kind);
+    if (!reviewKind) {
+      return { vm: null, isLoading: false, error: null };
+    }
+    return { vm: { surface: 'REVIEW', kind: reviewKind }, isLoading: false, error: null };
   }
 
   // ATTEMPT surface
+  const attemptProjection = assessment.attempt_projection;
   const vm: AttemptViewModel = {
     surface: 'ATTEMPT',
     kind,
@@ -158,16 +209,16 @@ export function useAssessment(
     title: assessment.title,
     description: assessment.description || null,
     dueAt: assessment.assessment_policy?.due_at ?? null,
-    submissionStatus: null,
-    releaseState: 'HIDDEN',
-    score: { percent: null, source: 'none' },
+    submissionStatus: attemptProjection?.submission_status ?? null,
+    releaseState: attemptProjection?.release_state ?? 'HIDDEN',
+    score: attemptProjection?.score ?? { percent: null, source: 'none' },
     policy: policyFromAssessmentPolicy(assessment.assessment_policy),
     items: assessment.items,
-    canEdit: true,
-    canSaveDraft: true,
-    canSubmit: true,
-    isReturnedForRevision: false,
-    isResultVisible: false,
+    canEdit: attemptProjection?.can_edit ?? false,
+    canSaveDraft: attemptProjection?.can_save_draft ?? false,
+    canSubmit: attemptProjection?.can_submit ?? false,
+    isReturnedForRevision: attemptProjection?.is_returned_for_revision ?? false,
+    isResultVisible: attemptProjection?.is_result_visible ?? false,
   };
   return { vm: { surface: 'ATTEMPT', vm, kind }, isLoading: false, error: null };
 }

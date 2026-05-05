@@ -3,9 +3,11 @@
 This module owns the canonical Assessment/AssessmentItem write path.
 """
 
+import logging
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy import desc, func
 from sqlmodel import Session, select
 from ulid import ULID
@@ -14,6 +16,7 @@ from src.db.assessments import (
     ITEM_ANSWER_ADAPTER,
     ITEM_BODY_ADAPTER,
     Assessment,
+    AssessmentAttemptProjection,
     AssessmentCreate,
     AssessmentDraftPatch,
     AssessmentDraftRead,
@@ -28,6 +31,8 @@ from src.db.assessments import (
     AssessmentRead,
     AssessmentReadiness,
     AssessmentReadItem,
+    AssessmentReviewProjection,
+    AssessmentScoreProjection,
     AssessmentUpdate,
     ItemKind,
     ReadinessIssue,
@@ -114,6 +119,9 @@ _ALLOWED_LIFECYCLE_TRANSITIONS: dict[
     AssessmentLifecycle.ARCHIVED: frozenset(),
 }
 
+logger = logging.getLogger(__name__)
+_UNSET = object()
+
 
 # ── Public assessment CRUD ────────────────────────────────────────────────────
 
@@ -180,7 +188,7 @@ async def create_assessment(
     db_session.add(assessment)
     db_session.commit()
     db_session.refresh(assessment)
-    return _build_assessment_read(assessment, db_session)
+    return _build_assessment_read(assessment, db_session, current_user=current_user)
 
 
 async def get_assessment(
@@ -191,7 +199,7 @@ async def get_assessment(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_read(current_user, activity, course, db_session)
-    return _build_assessment_read(assessment, db_session)
+    return _build_assessment_read(assessment, db_session, current_user=current_user)
 
 
 async def get_assessment_by_activity_uuid(
@@ -203,7 +211,7 @@ async def get_assessment_by_activity_uuid(
     course = _get_course_for_activity_or_404(activity, db_session)
     _require_read(current_user, activity, course, db_session)
     assessment = _get_or_project_assessment_for_activity(activity, db_session)
-    return _build_assessment_read(assessment, db_session)
+    return _build_assessment_read(assessment, db_session, current_user=current_user)
 
 
 async def update_assessment(
@@ -241,7 +249,7 @@ async def update_assessment(
     db_session.add(assessment)
     db_session.commit()
     db_session.refresh(assessment)
-    return _build_assessment_read(assessment, db_session)
+    return _build_assessment_read(assessment, db_session, current_user=current_user)
 
 
 async def check_publish_readiness(
@@ -329,7 +337,7 @@ async def transition_assessment_lifecycle(
     db_session.add(activity)
     db_session.commit()
     db_session.refresh(assessment)
-    return _build_assessment_read(assessment, db_session)
+    return _build_assessment_read(assessment, db_session, current_user=current_user)
 
 
 # ── Items ─────────────────────────────────────────────────────────────────────
@@ -470,13 +478,24 @@ async def start_assessment(
 ) -> SubmissionRead:
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
-    _require_submit_access(current_user, activity, course, assessment.kind, db_session)
-    return start_submission_v2(
-        activity_id=activity.id,
-        assessment_type=AssessmentType(assessment.kind),
-        current_user=current_user,
-        db_session=db_session,
-    )
+    _require_submit_access(current_user, activity, course, db_session)
+    try:
+        return start_submission_v2(
+            activity_id=activity.id,
+            assessment_type=AssessmentType(assessment.kind),
+            current_user=current_user,
+            db_session=db_session,
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "ASSESSMENT_SUPPORT_ALERT start_assessment failed assessment_uuid=%s activity_uuid=%s user_id=%s",
+            assessment.assessment_uuid,
+            activity.activity_uuid,
+            current_user.id,
+        )
+        raise
 
 
 async def get_my_assessment_submissions(
@@ -486,7 +505,7 @@ async def get_my_assessment_submissions(
 ) -> list[SubmissionRead]:
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
-    _require_submit_access(current_user, activity, course, assessment.kind, db_session)
+    _require_submit_access(current_user, activity, course, db_session)
     submissions = db_session.exec(
         select(Submission)
         .where(
@@ -505,7 +524,7 @@ async def get_my_assessment_draft(
 ) -> AssessmentDraftRead:
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
-    _require_submit_access(current_user, activity, course, assessment.kind, db_session)
+    _require_submit_access(current_user, activity, course, db_session)
     draft = db_session.exec(
         select(Submission).where(
             Submission.activity_id == activity.id,
@@ -529,37 +548,48 @@ async def save_assessment_draft(
 ) -> SubmissionRead:
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
-    _require_submit_access(current_user, activity, course, assessment.kind, db_session)
+    _require_submit_access(current_user, activity, course, db_session)
 
-    draft = _get_or_create_submission_draft(
-        assessment=assessment,
-        activity=activity,
-        current_user=current_user,
-        db_session=db_session,
-    )
-    _enforce_draft_version(draft, if_match)
+    try:
+        draft = _get_or_create_submission_draft(
+            assessment=assessment,
+            activity=activity,
+            current_user=current_user,
+            db_session=db_session,
+        )
+        _enforce_draft_version(draft, if_match)
 
-    answers = _normalize_answer_patch(assessment, payload, current_user, db_session)
-    current_payload = draft.answers_json if isinstance(draft.answers_json, dict) else {}
-    current_answers = current_payload.get("answers", {})
-    if not isinstance(current_answers, dict):
-        current_answers = {}
+        answers = _normalize_answer_patch(assessment, payload, current_user, db_session)
+        current_payload = draft.answers_json if isinstance(draft.answers_json, dict) else {}
+        current_answers = current_payload.get("answers", {})
+        if not isinstance(current_answers, dict):
+            current_answers = {}
 
-    draft.answers_json = {
-        **current_payload,
-        "answers": {
-            **current_answers,
-            **answers,
-        },
-    }
-    draft.version += 1
-    draft.updated_at = datetime.now(UTC)
+        draft.answers_json = {
+            **current_payload,
+            "answers": {
+                **current_answers,
+                **answers,
+            },
+        }
+        draft.version += 1
+        draft.updated_at = datetime.now(UTC)
 
-    db_session.add(draft)
-    db_session.commit()
-    db_session.refresh(draft)
-    progress_submissions.save_activity_draft(draft, db_session)
-    return SubmissionRead.model_validate(draft)
+        db_session.add(draft)
+        db_session.commit()
+        db_session.refresh(draft)
+        progress_submissions.save_activity_draft(draft, db_session)
+        return SubmissionRead.model_validate(draft)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "ASSESSMENT_SUPPORT_ALERT save_assessment_draft failed assessment_uuid=%s activity_uuid=%s user_id=%s",
+            assessment.assessment_uuid,
+            activity.activity_uuid,
+            current_user.id,
+        )
+        raise
 
 
 async def submit_assessment(
@@ -573,43 +603,54 @@ async def submit_assessment(
 ) -> SubmissionRead:
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
-    _require_submit_access(current_user, activity, course, assessment.kind, db_session)
+    _require_submit_access(current_user, activity, course, db_session)
 
-    if payload is not None:
-        draft = await save_assessment_draft(
-            assessment_uuid,
-            payload,
-            current_user,
-            db_session,
-            if_match=if_match,
+    try:
+        if payload is not None:
+            draft = await save_assessment_draft(
+                assessment_uuid,
+                payload,
+                current_user,
+                db_session,
+                if_match=if_match,
+            )
+            answers_payload = draft.answers_json
+            submission_uuid = draft.submission_uuid
+        else:
+            draft = _get_or_create_submission_draft(
+                assessment=assessment,
+                activity=activity,
+                current_user=current_user,
+                db_session=db_session,
+            )
+            _enforce_draft_version(draft, if_match)
+            answers_payload = draft.answers_json
+            submission_uuid = draft.submission_uuid
+
+        settings = load_activity_settings(
+            activity.id, AssessmentType(assessment.kind), db_session
         )
-        answers_payload = draft.answers_json
-        submission_uuid = draft.submission_uuid
-    else:
-        draft = _get_or_create_submission_draft(
-            assessment=assessment,
-            activity=activity,
+        return await submit_assessment_pipeline(
+            request=None,
+            activity_id=activity.id,
+            assessment_type=AssessmentType(assessment.kind),
+            answers_payload=answers_payload,
+            settings=settings,
             current_user=current_user,
             db_session=db_session,
+            violation_count=violation_count,
+            submission_uuid=submission_uuid,
         )
-        _enforce_draft_version(draft, if_match)
-        answers_payload = draft.answers_json
-        submission_uuid = draft.submission_uuid
-
-    settings = load_activity_settings(
-        activity.id, AssessmentType(assessment.kind), db_session
-    )
-    return await submit_assessment_pipeline(
-        request=None,
-        activity_id=activity.id,
-        assessment_type=AssessmentType(assessment.kind),
-        answers_payload=answers_payload,
-        settings=settings,
-        current_user=current_user,
-        db_session=db_session,
-        violation_count=violation_count,
-        submission_uuid=submission_uuid,
-    )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "ASSESSMENT_SUPPORT_ALERT submit_assessment failed assessment_uuid=%s activity_uuid=%s user_id=%s",
+            assessment.assessment_uuid,
+            activity.activity_uuid,
+            current_user.id,
+        )
+        raise
 
 
 async def get_assessment_submissions(
@@ -751,24 +792,20 @@ def _get_or_project_assessment_for_activity(
 def _build_assessment_read(
     assessment: Assessment,
     db_session: Session,
+    *,
+    current_user: PublicUser | AnonymousUser | None = None,
 ) -> AssessmentRead:
     activity = db_session.get(Activity, assessment.activity_id)
     if activity is None:
         raise HTTPException(status_code=404, detail="Activity not found")
-    course_uuid: str | None = None
-    if activity.course_id is not None:
-        from src.db.courses.courses import Course
-
-        course_row = db_session.get(Course, activity.course_id)
-        if course_row is not None:
-            course_uuid = course_row.course_uuid
+    course = _get_course_for_activity_or_404(activity, db_session)
     return AssessmentRead(
         id=assessment.id or 0,
         assessment_uuid=assessment.assessment_uuid,
         activity_id=assessment.activity_id,
         activity_uuid=activity.activity_uuid,
         course_id=activity.course_id,
-        course_uuid=course_uuid,
+        course_uuid=course.course_uuid,
         chapter_id=activity.chapter_id,
         kind=assessment.kind,
         title=assessment.title,
@@ -784,9 +821,109 @@ def _build_assessment_read(
             _get_policy_for_assessment(assessment, db_session)
         ),
         items=[_build_item_read(item) for item in _get_items(assessment, db_session)],
+        attempt_projection=_build_attempt_projection(
+            assessment,
+            activity,
+            course,
+            current_user,
+            db_session,
+        ),
+        review_projection=_build_review_projection(assessment, activity),
         created_at=assessment.created_at,
         updated_at=assessment.updated_at,
     )
+
+
+def _build_attempt_projection(
+    assessment: Assessment,
+    activity: Activity,
+    course: Course,
+    current_user: PublicUser | AnonymousUser | None,
+    db_session: Session,
+) -> AssessmentAttemptProjection | None:
+    if not _has_submit_access(current_user, activity, course, db_session):
+        return None
+
+    assert isinstance(current_user, PublicUser)
+    submissions = db_session.exec(
+        select(Submission)
+        .where(
+            Submission.activity_id == activity.id,
+            Submission.user_id == current_user.id,
+        )
+        .order_by(desc(Submission.created_at))
+    ).all()
+    draft = next(
+        (submission for submission in submissions if submission.status == SubmissionStatus.DRAFT),
+        None,
+    )
+    active_submission = draft or (submissions[0] if submissions else None)
+    submission_status = (
+        SubmissionStatus(active_submission.status) if active_submission is not None else None
+    )
+    can_edit = active_submission is None or submission_status in {
+        SubmissionStatus.DRAFT,
+        SubmissionStatus.RETURNED,
+    }
+
+    return AssessmentAttemptProjection(
+        assessment_uuid=assessment.assessment_uuid,
+        submission_uuid=active_submission.submission_uuid if active_submission else None,
+        submission_status=submission_status.value if submission_status else None,
+        release_state=_release_state_for_submission(submission_status),
+        can_edit=can_edit,
+        can_save_draft=can_edit,
+        can_submit=can_edit,
+        is_returned_for_revision=submission_status == SubmissionStatus.RETURNED,
+        is_result_visible=submission_status in {
+            SubmissionStatus.PUBLISHED,
+            SubmissionStatus.RETURNED,
+        },
+        score=_score_projection_from_submission(active_submission),
+    )
+
+
+def _build_review_projection(
+    assessment: Assessment,
+    activity: Activity,
+) -> AssessmentReviewProjection:
+    return AssessmentReviewProjection(
+        assessment_uuid=assessment.assessment_uuid,
+        activity_id=activity.id,
+        activity_uuid=activity.activity_uuid,
+        title=assessment.title,
+        kind=assessment.kind,
+    )
+
+
+def _release_state_for_submission(
+    submission_status: SubmissionStatus | None,
+) -> str:
+    if submission_status == SubmissionStatus.GRADED:
+        return "AWAITING_RELEASE"
+    if submission_status == SubmissionStatus.PUBLISHED:
+        return "VISIBLE"
+    if submission_status == SubmissionStatus.RETURNED:
+        return "RETURNED_FOR_REVISION"
+    return "HIDDEN"
+
+
+def _score_projection_from_submission(
+    submission: Submission | None,
+) -> AssessmentScoreProjection:
+    if submission is None:
+        return AssessmentScoreProjection()
+    if submission.final_score is not None:
+        return AssessmentScoreProjection(
+            percent=round(float(submission.final_score), 2),
+            source="teacher",
+        )
+    if submission.auto_score is not None:
+        return AssessmentScoreProjection(
+            percent=round(float(submission.auto_score), 2),
+            source="auto",
+        )
+    return AssessmentScoreProjection()
 
 
 def _build_item_read(item: AssessmentItem) -> AssessmentReadItem:
@@ -945,7 +1082,6 @@ def _require_submit_access(
     user: PublicUser,
     activity: Activity,
     course: Course,
-    kind: AssessmentType,
     db_session: Session,
 ) -> None:
     if not user_has_course_access(user.id, course, db_session):
@@ -962,6 +1098,25 @@ def _require_submit_access(
     ):
         return
     checker.require(
+        user.id,
+        "assessment:submit",
+        resource_owner_id=activity.creator_id,
+        is_assigned=True,
+    )
+
+
+def _has_submit_access(
+    user: PublicUser | AnonymousUser | None,
+    activity: Activity,
+    course: Course,
+    db_session: Session,
+) -> bool:
+    if not isinstance(user, PublicUser):
+        return False
+    if not user_has_course_access(user.id, course, db_session):
+        return False
+    checker = PermissionChecker(db_session)
+    return checker.check(
         user.id,
         "assessment:submit",
         resource_owner_id=activity.creator_id,
@@ -1008,7 +1163,7 @@ def _get_or_create_policy(
         db_session.add(policy)
 
     if patch is not None:
-        for field, value in patch.model_dump(exclude_unset=True).items():
+        for field, value in _normalized_policy_patch(kind, patch).items():
             if field == "late_policy":
                 setattr(policy, "late_policy_json", value)
                 continue
@@ -1016,6 +1171,117 @@ def _get_or_create_policy(
     policy.updated_at = now
     db_session.add(policy)
     return policy
+
+
+def _normalized_policy_patch(
+    kind: AssessmentType,
+    patch: AssessmentPolicyPatch,
+) -> dict[str, object]:
+    payload = patch.model_dump(exclude_unset=True)
+    settings_json = _normalize_policy_settings_json(
+        kind,
+        patch.settings_json if "settings_json" in patch.model_fields_set else None,
+        due_at=patch.due_at if "due_at" in patch.model_fields_set else _UNSET,
+        max_attempts=(
+            patch.max_attempts if "max_attempts" in patch.model_fields_set else _UNSET
+        ),
+        time_limit_seconds=(
+            patch.time_limit_seconds
+            if "time_limit_seconds" in patch.model_fields_set
+            else _UNSET
+        ),
+    )
+    if settings_json is not None:
+        payload["settings_json"] = settings_json
+    return payload
+
+
+def _normalize_policy_settings_json(
+    kind: AssessmentType,
+    settings_json: dict[str, object] | None,
+    *,
+    due_at: datetime | None | object = _UNSET,
+    max_attempts: int | None | object = _UNSET,
+    time_limit_seconds: int | None | object = _UNSET,
+) -> dict[str, object] | None:
+    if (
+        settings_json is None
+        and due_at is _UNSET
+        and max_attempts is _UNSET
+        and time_limit_seconds is _UNSET
+    ):
+        return None
+
+    normalized = dict(settings_json or {})
+
+    normalized_due_at = _first_string_setting(normalized, "due_at", "due_date_iso", "due_date")
+    if due_at is not _UNSET:
+        normalized_due_at = due_at.isoformat() if isinstance(due_at, datetime) else None
+    if due_at is not _UNSET or normalized_due_at is not None:
+        normalized["due_at"] = normalized_due_at
+        if kind in {AssessmentType.EXAM, AssessmentType.QUIZ}:
+            normalized["due_date_iso"] = normalized_due_at
+        if kind == AssessmentType.CODE_CHALLENGE:
+            normalized["due_date"] = normalized_due_at
+
+    normalized_max_attempts = _first_int_setting(normalized, "max_attempts", "attempt_limit")
+    if max_attempts is not _UNSET:
+        normalized_max_attempts = max_attempts if isinstance(max_attempts, int) else None
+    if max_attempts is not _UNSET or normalized_max_attempts is not None:
+        normalized["max_attempts"] = normalized_max_attempts
+        if kind in {
+            AssessmentType.ASSIGNMENT,
+            AssessmentType.EXAM,
+            AssessmentType.QUIZ,
+        }:
+            normalized["attempt_limit"] = normalized_max_attempts
+
+    if kind in {AssessmentType.EXAM, AssessmentType.QUIZ}:
+        normalized_time_limit_seconds = _time_limit_seconds_from_settings(normalized)
+        if time_limit_seconds is not _UNSET:
+            normalized_time_limit_seconds = (
+                time_limit_seconds if isinstance(time_limit_seconds, int) else None
+            )
+        if time_limit_seconds is not _UNSET or normalized_time_limit_seconds is not None:
+            normalized["time_limit_seconds"] = normalized_time_limit_seconds
+            normalized["time_limit"] = (
+                None
+                if normalized_time_limit_seconds is None
+                else max(1, (normalized_time_limit_seconds + 59) // 60)
+            )
+
+    return normalized
+
+
+def _first_int_setting(payload: dict[str, object], *keys: str) -> int | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, int):
+            return value
+        if isinstance(value, float) and value.is_integer():
+            return int(value)
+    return None
+
+
+def _first_string_setting(payload: dict[str, object], *keys: str) -> str | None:
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    return None
+
+
+def _time_limit_seconds_from_settings(payload: dict[str, object]) -> int | None:
+    canonical_seconds = _first_int_setting(payload, "time_limit_seconds")
+    if canonical_seconds is not None:
+        return canonical_seconds
+
+    legacy_minutes = _first_int_setting(payload, "time_limit")
+    if legacy_minutes is None:
+        return None
+    return legacy_minutes * 60
 
 
 def _default_grading_mode(kind: AssessmentType) -> AssessmentGradingMode:
@@ -1138,7 +1404,8 @@ def _validate_file_upload_answer(
     max_bytes = (
         int(max_mb) * 1024 * 1024 if isinstance(max_mb, int) and max_mb > 0 else None
     )
-    uploads = answer.get("uploads") if isinstance(answer.get("uploads"), list) else []
+    uploads_value = answer.get("uploads")
+    uploads: list[object] = uploads_value if isinstance(uploads_value, list) else []
     for file_ref in uploads:
         if not isinstance(file_ref, dict):
             raise HTTPException(status_code=400, detail="Invalid file upload answer")
@@ -1225,11 +1492,11 @@ def _enforce_draft_version(draft: Submission, if_match: str | None) -> None:
     raw = if_match.strip().strip('"')
     try:
         expected = int(raw)
-    except ValueError:
+    except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="If-Match must be the current numeric submission version",
-        )
+        ) from exc
     if draft.version != expected:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -1243,7 +1510,7 @@ def _enforce_draft_version(draft: Submission, if_match: str | None) -> None:
 def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
     try:
         body = ITEM_BODY_ADAPTER.validate_python(item.body_json)
-    except Exception as exc:  # noqa: BLE001
+    except ValidationError as exc:
         return [
             ReadinessIssue(
                 code="item.body_invalid",

@@ -8,7 +8,6 @@ AssessmentSettings object.
 
 from dataclasses import dataclass, field
 
-from fastapi import HTTPException, status
 from sqlalchemy import desc
 from sqlmodel import Session, select
 
@@ -139,9 +138,9 @@ def _load_quiz_settings(activity_id: int, db_session: Session) -> AssessmentSett
     return AssessmentSettings(
         questions=questions,
         max_attempts=qs.max_attempts,
-        time_limit_seconds=qs.time_limit_seconds,
+        time_limit_seconds=_settings_time_limit_seconds(raw_settings) or qs.time_limit_seconds,
         max_score_penalty_per_attempt=qs.max_score_penalty_per_attempt,
-        due_date_iso=raw_settings.get("due_date_iso"),
+        due_date_iso=_settings_due_date_iso(raw_settings),
         track_violations=qs.track_violations,
         block_on_violations=qs.block_on_violations,
         max_violations=qs.max_violations,
@@ -158,8 +157,9 @@ def _load_exam_settings(activity_id: int, db_session: Session) -> AssessmentSett
 
     return AssessmentSettings(
         questions=questions,
-        max_attempts=raw_settings.get("max_attempts"),
-        due_date_iso=raw_settings.get("due_date_iso"),
+        max_attempts=_settings_int(raw_settings, "max_attempts", "attempt_limit"),
+        time_limit_seconds=_settings_time_limit_seconds(raw_settings),
+        due_date_iso=_settings_due_date_iso(raw_settings),
     )
 
 
@@ -171,8 +171,40 @@ def _load_generic_settings(activity_id: int, db_session: Session) -> AssessmentS
 
     raw_settings: dict = block.content.get("settings", {})
     return AssessmentSettings(
-        due_date_iso=raw_settings.get("due_date_iso"),
+        max_attempts=_settings_int(raw_settings, "max_attempts", "attempt_limit"),
+        due_date_iso=_settings_due_date_iso(raw_settings),
     )
+
+
+def _settings_int(raw_settings: dict[str, object], *keys: str) -> int | None:
+    for key in keys:
+        value = raw_settings.get(key)
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, int):
+            return value
+        if isinstance(value, float) and value.is_integer():
+            return int(value)
+    return None
+
+
+def _settings_due_date_iso(raw_settings: dict[str, object]) -> str | None:
+    for key in ("due_date_iso", "due_at", "due_date"):
+        value = raw_settings.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    return None
+
+
+def _settings_time_limit_seconds(raw_settings: dict[str, object]) -> int | None:
+    canonical_seconds = _settings_int(raw_settings, "time_limit_seconds")
+    if canonical_seconds is not None:
+        return canonical_seconds
+
+    legacy_minutes = _settings_int(raw_settings, "time_limit")
+    if legacy_minutes is None:
+        return None
+    return legacy_minutes * 60
 
 
 def _load_canonical_items(

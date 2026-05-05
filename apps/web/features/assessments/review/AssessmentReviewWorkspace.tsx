@@ -7,9 +7,11 @@ import { LoaderCircle } from 'lucide-react';
 import { apiFetcher } from '@/lib/api-client';
 import { getAPIUrl } from '@services/config/config';
 import { queryKeys } from '@/lib/react-query/queryKeys';
+import { assessmentTypeToKind } from '@/features/assessments/domain/view-models';
 import { loadKindModule } from '@/features/assessments/registry';
 import type { KindModule } from '@/features/assessments/registry';
 import GradingReviewWorkspace from '@/features/grading/review/GradingReviewWorkspace';
+import { reportClientError } from '@/services/telemetry/client';
 
 interface AssessmentReviewWorkspaceProps {
   /** Activity UUID — route param (may include "activity_" prefix). */
@@ -18,33 +20,16 @@ interface AssessmentReviewWorkspaceProps {
   initialSubmissionUuid?: string | null;
 }
 
-interface ActivityDetail {
-  id: number;
-  activity_uuid: string;
-  name: string;
-  activity_type: string;
-}
-
-function activityTypeToRegistryKind(
-  activityType: string,
-): 'TYPE_ASSIGNMENT' | 'TYPE_EXAM' | 'TYPE_CODE_CHALLENGE' | 'TYPE_QUIZ' | null {
-  switch (activityType) {
-    case 'TYPE_ASSIGNMENT': {
-      return 'TYPE_ASSIGNMENT';
-    }
-    case 'TYPE_EXAM': {
-      return 'TYPE_EXAM';
-    }
-    case 'TYPE_CODE_CHALLENGE': {
-      return 'TYPE_CODE_CHALLENGE';
-    }
-    case 'TYPE_QUIZ': {
-      return 'TYPE_QUIZ';
-    }
-    default: {
-      return null;
-    }
-  }
+interface AssessmentReviewDetail {
+  assessment_uuid: string;
+  kind: 'ASSIGNMENT' | 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
+  review_projection?: {
+    assessment_uuid: string;
+    activity_id: number;
+    activity_uuid: string;
+    title: string;
+    kind: 'ASSIGNMENT' | 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
+  } | null;
 }
 
 export default function AssessmentReviewWorkspace({
@@ -55,33 +40,40 @@ export default function AssessmentReviewWorkspace({
   const [kindModule, setKindModule] = useState<KindModule | undefined>();
 
   const {
-    data: activity,
+    data: assessment,
     isLoading,
     error,
   } = useQuery(
     queryOptions({
-      queryKey: queryKeys.activities.detail(cleanUuid),
-      queryFn: () => apiFetcher(`${getAPIUrl()}activities/${cleanUuid}`) as Promise<ActivityDetail>,
+      queryKey: queryKeys.assessments.activity(cleanUuid),
+      queryFn: () => apiFetcher(`${getAPIUrl()}assessments/activity/${cleanUuid}`) as Promise<AssessmentReviewDetail>,
       enabled: Boolean(cleanUuid),
     }),
   );
 
   useEffect(() => {
-    if (!activity?.activity_type) return;
-    const kind = activityTypeToRegistryKind(activity.activity_type);
+    const reviewProjection = assessment?.review_projection;
+    if (!reviewProjection) return;
+    const kind = assessmentTypeToKind(reviewProjection.kind);
     if (!kind) return;
     let cancelled = false;
     void loadKindModule(kind)
       .then((mod) => {
         if (!cancelled) setKindModule(mod);
       })
-      .catch(() => {
-        /* generic review rendering remains available */
+      .catch((loadError: unknown) => {
+        void reportClientError({
+          scope: 'assessment-flow',
+          phase: 'load-review-kind-module',
+          activityUuid: cleanUuid,
+          assessmentUuid: assessment?.assessment_uuid,
+          error: loadError instanceof Error ? loadError.message : 'Failed to load review kind module',
+        }).catch(() => undefined);
       });
     return () => {
       cancelled = true;
     };
-  }, [activity?.activity_type]);
+  }, [assessment?.assessment_uuid, assessment?.review_projection, cleanUuid]);
 
   if (isLoading) {
     return (
@@ -92,7 +84,7 @@ export default function AssessmentReviewWorkspace({
     );
   }
 
-  if (error || !activity) {
+  if (error || !assessment?.review_projection) {
     return (
       <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
         Review is unavailable for this activity.
@@ -100,11 +92,13 @@ export default function AssessmentReviewWorkspace({
     );
   }
 
+  const reviewProjection = assessment.review_projection;
+
   return (
     <GradingReviewWorkspace
-      activityId={activity.id}
-      activityUuid={activity.activity_uuid}
-      title={activity.name}
+      activityId={reviewProjection.activity_id}
+      activityUuid={reviewProjection.activity_uuid}
+      title={reviewProjection.title}
       initialSubmissionUuid={initialSubmissionUuid ?? null}
       initialFilter="ALL"
       kindModule={kindModule}

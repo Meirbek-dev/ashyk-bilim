@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { apiFetch } from '@/lib/api-client';
 import { queryKeys } from '@/lib/react-query/queryKeys';
+import { reportClientError } from '@/services/telemetry/client';
 import type { ItemAnswer } from '../domain/items';
 
 export interface AssessmentSubmissionRead {
@@ -60,6 +61,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const queryClient = useQueryClient();
   const [localAnswers, setLocalAnswers] = useState<Record<string, ItemAnswer>>({});
   const [saveState, setSaveState] = useState<AssessmentSaveState>('idle');
+  const [reportedLoadError, setReportedLoadError] = useState<string | null>(null);
   const submissionsQueryKey = useMemo(
     () => ['assessments', 'submissions', 'me', assessmentUuid || 'missing'] as const,
     [assessmentUuid],
@@ -129,6 +131,12 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         return;
       }
       setSaveState('error');
+      void reportClientError({
+        scope: 'assessment-flow',
+        phase: 'save-draft',
+        assessmentUuid,
+        error: error.message || 'Failed to save draft',
+      }).catch(() => undefined);
       toast.error(error.message || 'Failed to save draft');
     },
   });
@@ -171,9 +179,30 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     },
     onError: (error: Error) => {
       setSaveState('error');
+      void reportClientError({
+        scope: 'assessment-flow',
+        phase: 'submit-assessment',
+        assessmentUuid,
+        error: error.message || 'Failed to submit assessment',
+      }).catch(() => undefined);
       toast.error(error.message || 'Failed to submit');
     },
   });
+
+  useEffect(() => {
+    const loadError = draftQuery.error ?? submissionsQuery.error;
+    if (!loadError) return;
+    const message = loadError.message;
+    const key = `${assessmentUuid ?? 'missing'}:${message}`;
+    if (reportedLoadError === key) return;
+    setReportedLoadError(key);
+    void reportClientError({
+      scope: 'assessment-flow',
+      phase: 'load-submission-state',
+      assessmentUuid,
+      error: message,
+    }).catch(() => undefined);
+  }, [assessmentUuid, draftQuery.error, reportedLoadError, submissionsQuery.error]);
 
   useEffect(() => {
     if (!assessmentUuid) {

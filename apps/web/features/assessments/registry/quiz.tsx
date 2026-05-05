@@ -1,11 +1,9 @@
 /**
- * Phase 2 registration for TYPE_QUIZ.
+ * Registry module for TYPE_QUIZ.
  *
- * Quiz attempts already project to Submission; until the quiz author/attempt
- * surfaces move into the shared shells, review uses the generic submitted
- * answer panel from GradingReviewWorkspace.
- *
- * Shell contract: docs/ASSESSMENT_SHELL_CONTRACT.md
+ * Quiz authoring is constrained to canonical auto-gradable item kinds so the
+ * shared studio/attempt shells can run without dropping students into a null
+ * route.
  */
 
 import type { ComponentType } from 'react';
@@ -13,12 +11,23 @@ import { registerKind } from './index';
 import type { KindAuthorProps, KindAttemptProps, KindReviewProps } from './index';
 
 registerKind('TYPE_QUIZ', async () => {
-  const [{ default: GradingReviewWorkspace }] = await Promise.all([
+  const [
+    { NativeItemStudioProvider, NativeItemOutline, NativeItemAuthor },
+    { default: AssignmentAttemptContent },
+    { default: GradingReviewWorkspace },
+  ] = await Promise.all([
+    import('@/features/assessments/studio/NativeItemStudio'),
+    import('./assignment-attempt'),
     import('@/features/grading/review/GradingReviewWorkspace'),
   ]);
 
-  const AuthorPassthrough: ComponentType<KindAuthorProps> = () => null;
-  const AttemptPassthrough: ComponentType<KindAttemptProps> = () => null;
+  const OutlineSlot: ComponentType<KindAuthorProps> = (_props) => (
+    <NativeItemOutline allowedKinds={['CHOICE', 'MATCHING']} itemNoun="Question" />
+  );
+
+  const AuthorSlot: ComponentType<KindAuthorProps> = (_props) => (
+    <NativeItemAuthor mode="assignment" itemNoun="Question" />
+  );
 
   const ReviewPassthrough: ComponentType<KindReviewProps> = ({ activityId, submissionUuid, title }) => {
     return (
@@ -33,8 +42,10 @@ registerKind('TYPE_QUIZ', async () => {
   return {
     label: 'Quiz',
     iconName: 'ListChecks',
-    Author: AuthorPassthrough,
-    Attempt: AttemptPassthrough,
+    Provider: NativeItemStudioProvider,
+    Outline: OutlineSlot,
+    Author: AuthorSlot,
+    Attempt: AssignmentAttemptContent as ComponentType<KindAttemptProps>,
     Review: ReviewPassthrough,
   };
 });

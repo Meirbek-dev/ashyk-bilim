@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "taze": "^19.11.0",
-    "turbo": "^2.9.8"
+    "turbo": "^2.9.9"
   },
   "packageManager": "bun@1.3.13",
   "workspaces": [

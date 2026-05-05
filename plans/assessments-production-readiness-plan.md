@@ -60,7 +60,7 @@
 - Reviewed current API tests list under [apps/api/src/tests](../apps/api/src/tests).
 
 ## High-Level Diagnosis
-
+  
 - The backend domain model is ahead of the product integration.
 - The backend has a clear canonical direction.
 - The frontend is still mid-migration between old kind-specific flows and the new shell-based architecture.

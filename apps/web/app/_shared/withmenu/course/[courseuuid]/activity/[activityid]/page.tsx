@@ -78,6 +78,15 @@ const ActivityPage = async (params: any) => {
   if (!isCourseEnd && activity && ASSESSABLE_TYPES.has(activity.activity_type ?? '')) {
     const assessment = await getAssessmentByActivityUuid(activity.activity_uuid);
     if (assessment) {
+      console.info('[ASSESSMENT_FLOW_ROUTE]', {
+        routeMode: 'legacy',
+        surface: 'activity-redirect',
+        courseUuid: courseuuid,
+        activityUuid: activity.activity_uuid,
+        assessmentUuid: assessment.assessment_uuid,
+        kind: assessment.kind,
+        targetPath: `/assessments/${assessment.assessment_uuid}`,
+      });
       redirect(`/assessments/${assessment.assessment_uuid}`);
     }
   }

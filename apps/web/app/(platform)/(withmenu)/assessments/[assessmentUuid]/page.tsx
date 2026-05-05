@@ -46,6 +46,14 @@ export default async function AssessmentAttemptPage(props: Props) {
     redirect(`/auth/login?callbackUrl=/assessments/${assessmentUuid}`);
   }
 
+  console.info('[ASSESSMENT_FLOW_ROUTE]', {
+    routeMode: 'canonical',
+    surface: 'attempt',
+    assessmentUuid: assessment.assessment_uuid,
+    activityUuid: assessment.activity_uuid,
+    kind: assessment.kind,
+  });
+
   return (
     <div className={jetBrainsMono.variable}>
       <SessionProvider initialSession={initialSession}>

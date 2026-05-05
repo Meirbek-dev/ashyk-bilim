@@ -410,6 +410,41 @@ class AssessmentReadItem(PydanticStrictBaseModel):
     updated_at: datetime
 
 
+class AssessmentScoreProjection(PydanticStrictBaseModel):
+    percent: float | None = None
+    source: Literal["teacher", "auto", "none"] = "none"
+
+
+class AssessmentAttemptProjection(PydanticStrictBaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
+    assessment_uuid: str
+    submission_uuid: str | None = None
+    submission_status: str | None = None
+    release_state: Literal[
+        "HIDDEN",
+        "AWAITING_RELEASE",
+        "VISIBLE",
+        "RETURNED_FOR_REVISION",
+    ] = "HIDDEN"
+    can_edit: bool = False
+    can_save_draft: bool = False
+    can_submit: bool = False
+    is_returned_for_revision: bool = False
+    is_result_visible: bool = False
+    score: AssessmentScoreProjection = Field(default_factory=AssessmentScoreProjection)
+
+
+class AssessmentReviewProjection(PydanticStrictBaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
+    assessment_uuid: str
+    activity_id: int
+    activity_uuid: str
+    title: str
+    kind: AssessmentType
+
+
 class AssessmentRead(PydanticStrictBaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
@@ -432,6 +467,8 @@ class AssessmentRead(PydanticStrictBaseModel):
     policy_id: int | None = None
     assessment_policy: ActivityAssessmentPolicyRead | None = None
     items: list[AssessmentReadItem] = Field(default_factory=list)
+    attempt_projection: AssessmentAttemptProjection | None = None
+    review_projection: AssessmentReviewProjection | None = None
     created_at: datetime
     updated_at: datetime
 
