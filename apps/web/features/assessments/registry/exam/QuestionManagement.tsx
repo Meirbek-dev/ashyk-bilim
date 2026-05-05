@@ -4,7 +4,71 @@ import { apiFetch } from '@/lib/api-client';
 
 import { createInitialEditorState, questionEditorReducer } from './questionEditorReducer';
 import { Download, Edit2, GripVertical, Plus, Trash2, Upload } from 'lucide-react';
-import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableQuestionCard({ question, index, t, handleEditQuestion, promptDeleteQuestion, isDeleting }: any) {
+  const id = question.question_uuid || `temp-${index}`;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+  };
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`transition-shadow ${isDragging ? 'shadow-lg ring-2 ring-primary/20 rotate-1' : 'hover:shadow-md'}`}
+    >
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+        <div className="flex flex-1 items-start gap-3">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-move pt-1 active:cursor-grabbing hover:bg-muted p-1 rounded-md transition-colors"
+          >
+            <GripVertical className="h-5 w-5 text-gray-400" />
+          </div>
+          <div className="flex-1">
+            <CardTitle className="text-base">{t('questionNumber', { number: index + 1 })}</CardTitle>
+            <p className="mt-2 text-sm text-gray-700">{question.question_text}</p>
+            <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
+              <span>{t(question.question_type.toLowerCase())}</span>
+              <span>•</span>
+              <span>{t('pointsValue', { points: question.points })}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleEditQuestion(question)}
+          >
+            <Edit2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              if (question.question_uuid) {
+                promptDeleteQuestion(question.question_uuid);
+              }
+            }}
+            disabled={isDeleting}
+          >
+            <Trash2 className="h-4 w-4 text-red-600" />
+          </Button>
+        </div>
+      </CardHeader>
+    </Card>
+  );
+}
 import type { Question } from './questionEditorReducer';
 import { useTranslations } from 'next-intl';
 import { useReducer, useRef } from 'react';
@@ -34,6 +98,16 @@ export default function QuestionManagement({ examUuid, questions, onQuestionsCha
 
   // Centralized state management with reducer,
   const [state, dispatch] = useReducer(questionEditorReducer, createInitialEditorState());
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
+
   const inlineEditorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,16 +227,21 @@ export default function QuestionManagement({ examUuid, questions, onQuestionsCha
     }
   };
 
-  const handleDragEnd = async (result: any) => {
-    if (!result.destination) return;
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
 
     const items = [...questions];
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    if (!reorderedItem) return;
-    items.splice(result.destination.index, 0, reorderedItem);
+    const oldIndex = items.findIndex((item: any, index: number) => (item.question_uuid || `temp-${index}`) === active.id);
+    const newIndex = items.findIndex((item: any, index: number) => (item.question_uuid || `temp-${index}`) === over.id);
+
+    const reorderedItems = arrayMove(items, oldIndex, newIndex);
 
     // Update order_index for all questions using bulk endpoint,
-    const questionOrder = items.map((question, index) => ({
+    const questionOrder = reorderedItems.map((question: any, index: number) => ({
       question_uuid: question.question_uuid,
       order_index: index,
     }));
@@ -294,107 +373,57 @@ export default function QuestionManagement({ examUuid, questions, onQuestionsCha
           </div>
         </Card>
       ) : (
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="questions">
-            {(provided) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className="space-y-2"
-              >
-                {questions.map((question, index) => (
-                  <Draggable
-                    key={question.question_uuid || index}
-                    draggableId={question.question_uuid || `temp-${index}`}
-                    index={index}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <div className="space-y-2">
+            <SortableContext
+              items={questions.map((question: any, index: number) => question.question_uuid || `temp-${index}`)}
+              strategy={verticalListSortingStrategy}
+            >
+              {questions.map((question: any, index: number) => (
+                <SortableQuestionCard
+                  key={question.question_uuid || `temp-${index}`}
+                  question={question}
+                  index={index}
+                  t={t}
+                  handleEditQuestion={handleEditQuestion}
+                  promptDeleteQuestion={promptDeleteQuestion}
+                  isDeleting={isDeleting}
+                />
+              ))}
+            </SortableContext>
+            {/* Inline add button / editor */}
+            <div className="pt-2">
+              {inlineEditorOpen ? (
+                <Card>
+                  <CardContent ref={inlineEditorRef}>
+                    <QuestionEditor
+                      question={editingQuestion}
+                      examUuid={examUuid}
+                      onSave={() => {
+                        dispatch({ type: 'RESET_TO_IDLE' });
+                        onQuestionsChange();
+                      }}
+                      onCancel={() => {
+                        dispatch({ type: 'CANCEL_EDIT' });
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddQuestion}
                   >
-                    {(provided) => (
-                      <Card
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        className="transition-shadow hover:shadow-md"
-                      >
-                        <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                          <div className="flex flex-1 items-start gap-3">
-                            <div
-                              {...provided.dragHandleProps}
-                              className="cursor-move pt-1"
-                            >
-                              <GripVertical className="h-5 w-5 text-gray-400" />
-                            </div>
-                            <div className="flex-1">
-                              <CardTitle className="text-base">{t('questionNumber', { number: index + 1 })}</CardTitle>
-                              <p className="mt-2 text-sm text-gray-700">{question.question_text}</p>
-                              <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
-                                <span>{t(question.question_type.toLowerCase())}</span>
-                                <span>•</span>
-                                <span>{t('pointsValue', { points: question.points })}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditQuestion(question)}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                if (question.question_uuid) {
-                                  promptDeleteQuestion(question.question_uuid);
-                                }
-                              }}
-                              disabled={isDeleting}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </CardHeader>
-                      </Card>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-
-                {/* Inline add button / editor */}
-                <div className="pt-2">
-                  {inlineEditorOpen ? (
-                    <Card>
-                      <CardContent ref={inlineEditorRef}>
-                        <QuestionEditor
-                          question={editingQuestion}
-                          examUuid={examUuid}
-                          onSave={() => {
-                            dispatch({ type: 'RESET_TO_IDLE' });
-                            onQuestionsChange();
-                          }}
-                          onCancel={() => {
-                            dispatch({ type: 'CANCEL_EDIT' });
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <div className="flex justify-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleAddQuestion}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        {t('addQuestion')}
-                      </Button>
-                    </div>
-                  )}
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t('addQuestion')}
+                  </Button>
                 </div>
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+              )}
+            </div>
+          </div>
+        </DndContext>
       )}
     </div>
   );

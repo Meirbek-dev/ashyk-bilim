@@ -19,7 +19,100 @@ import {
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import { updateLanding, uploadLandingContent } from '@/services/platform/platform';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
-import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableLandingSection({ section, index, t, SECTION_TYPES, selectedSection, setSelectedSection, deleteSection, getSectionDisplayName }: any) {
+  const id = section._id || `section-${index}`;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={() => setSelectedSection(index)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          setSelectedSection(index);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      className={`bg-background/80 cursor-pointer rounded-lg border p-4 backdrop-blur-xs ${
+        selectedSection === index
+          ? 'border-primary bg-primary/10 ring-primary/20 shadow-xs ring-2'
+          : 'border-border hover:border-border hover:bg-muted/50 hover:shadow-xs'
+      } ${isDragging ? 'ring-primary/20 rotate-2 shadow-lg ring-2' : ''}`}
+    >
+      <div className="group flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div
+            {...attributes}
+            {...listeners}
+            className={`cursor-grab active:cursor-grabbing rounded-md p-1.5 transition-colors duration-200 ${
+              selectedSection === index
+                ? 'bg-primary/20/50 text-primary'
+                : 'text-muted-foreground hover:bg-muted hover:text-muted-foreground'
+            }`}
+          >
+            <GripVertical size={16} />
+          </div>
+          <div
+            className={`rounded-md p-1.5 ${
+              selectedSection === index
+                ? 'bg-primary/20/50 text-primary'
+                : 'bg-muted/50 text-muted-foreground'
+            }`}
+          >
+            {createElement(SECTION_TYPES[section.type].icon, {
+              size: 16,
+            })}
+          </div>
+          <span
+            className={`truncate text-sm font-medium capitalize ${
+              selectedSection === index ? 'text-primary' : 'text-foreground'
+            }`}
+          >
+            {getSectionDisplayName(t, section)}
+          </span>
+        </div>
+        <div className="flex space-x-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedSection(index);
+            }}
+            className={`rounded-md p-1.5 transition-colors duration-200 ${
+              selectedSection === index
+                ? 'text-primary hover:bg-primary/20'
+                : 'text-muted-foreground hover:bg-muted hover:text-muted-foreground'
+            }`}
+          >
+            <Edit size={14} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              deleteSection(index);
+            }}
+            className="rounded-md p-1.5 text-red-400 transition-colors duration-200 hover:bg-red-50 hover:text-red-500"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 import { createElement, useEffect, useState, useTransition } from 'react';
 import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { getLandingMediaDirectory } from '@services/media/media';
@@ -368,6 +461,15 @@ const EditLanding = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
+
   // Initialize landing data from platform config
   useEffect(() => {
     if (platform?.landing) {
@@ -408,20 +510,24 @@ const EditLanding = () => {
     setSelectedSection(null);
   };
 
-  const onDragEnd = (result: any) => {
-    if (!result.destination) return;
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
 
     const items = [...landingData.sections];
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    if (reorderedItem) {
-      items.splice(result.destination.index, 0, reorderedItem);
-    }
+    const oldIndex = items.findIndex((item: any, index: number) => (item._id || `section-${index}`) === active.id);
+    const newIndex = items.findIndex((item: any, index: number) => (item._id || `section-${index}`) === over.id);
+
+    const reorderedItems = arrayMove(items, oldIndex, newIndex);
 
     setLandingData((prev: LandingObject) => ({
       ...prev,
-      sections: items,
+      sections: reorderedItems,
     }));
-    setSelectedSection(result.destination.index);
+    setSelectedSection(newIndex);
   };
 
   const handleSave = async () => {
@@ -481,106 +587,28 @@ const EditLanding = () => {
               {/* Sections Panel */}
               <div className="col-span-1 border-r pr-4">
                 <h3 className="mb-4 font-medium">{t('SectionsPanel.title')}</h3>
-                <DragDropContext onDragEnd={onDragEnd}>
-                  <Droppable droppableId="sections">
-                    {(provided) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="space-y-2"
-                      >
-                        {landingData.sections.map((section: LandingSection, index: number) => (
-                          <Draggable
-                            key={`section-${index}`}
-                            draggableId={`section-${index}`}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                onClick={() => {
-                                  setSelectedSection(index);
-                                }}
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter' || event.key === ' ') {
-                                    event.preventDefault();
-                                    setSelectedSection(index);
-                                  }
-                                }}
-                                role="button"
-                                tabIndex={0}
-                                className={`bg-background/80 cursor-pointer rounded-lg border p-4 backdrop-blur-xs ${
-                                  selectedSection === index
-                                    ? 'border-primary bg-primary/10 ring-primary/20 shadow-xs ring-2'
-                                    : 'border-border hover:border-border hover:bg-muted/50 hover:shadow-xs'
-                                } ${snapshot.isDragging ? 'ring-primary/20 rotate-2 shadow-lg ring-2' : ''}`}
-                              >
-                                <div className="group flex items-center justify-between">
-                                  <div className="flex items-center space-x-3">
-                                    <div
-                                      {...provided.dragHandleProps}
-                                      className={`rounded-md p-1.5 transition-colors duration-200 ${
-                                        selectedSection === index
-                                          ? 'bg-primary/20/50 text-primary'
-                                          : 'text-muted-foreground hover:bg-muted hover:text-muted-foreground'
-                                      }`}
-                                    >
-                                      <GripVertical size={16} />
-                                    </div>
-                                    <div
-                                      className={`rounded-md p-1.5 ${
-                                        selectedSection === index
-                                          ? 'bg-primary/20/50 text-primary'
-                                          : 'bg-muted/50 text-muted-foreground'
-                                      }`}
-                                    >
-                                      {createElement(SECTION_TYPES[section.type].icon, {
-                                        size: 16,
-                                      })}
-                                    </div>
-                                    <span
-                                      className={`truncate text-sm font-medium capitalize ${
-                                        selectedSection === index ? 'text-primary' : 'text-foreground'
-                                      }`}
-                                    >
-                                      {getSectionDisplayName(t, section)}
-                                    </span>
-                                  </div>
-                                  <div className="flex space-x-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedSection(index);
-                                      }}
-                                      className={`rounded-md p-1.5 transition-colors duration-200 ${
-                                        selectedSection === index
-                                          ? 'text-primary hover:bg-primary/20'
-                                          : 'text-muted-foreground hover:bg-muted hover:text-muted-foreground'
-                                      }`}
-                                    >
-                                      <Edit size={14} />
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        deleteSection(index);
-                                      }}
-                                      className="rounded-md p-1.5 text-red-400 transition-colors duration-200 hover:bg-red-50 hover:text-red-500"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </DragDropContext>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                  <div className="space-y-2">
+                    <SortableContext
+                      items={landingData.sections.map((section: any, index: number) => section._id || `section-${index}`)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {landingData.sections.map((section: LandingSection, index: number) => (
+                        <SortableLandingSection
+                          key={(section as any)._id || `section-${index}`}
+                          section={section}
+                          index={index}
+                          t={t}
+                          SECTION_TYPES={SECTION_TYPES}
+                          selectedSection={selectedSection}
+                          setSelectedSection={setSelectedSection}
+                          deleteSection={deleteSection}
+                          getSectionDisplayName={getSectionDisplayName}
+                        />
+                      ))}
+                    </SortableContext>
+                  </div>
+                </DndContext>
 
                 <div className="pt-4">
                   <Select

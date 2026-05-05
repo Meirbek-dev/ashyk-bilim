@@ -14,12 +14,14 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@components/ui/dialog';
 import { GripVertical, ImageIcon, Images, Info, Plus, StarIcon, UploadCloud, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
-import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { SiLoom, SiYoutube } from '@icons-pack/react-simple-icons';
 import { constructAcceptValue } from '@/lib/constants';
 import type { ChangeEvent, MouseEvent } from 'react';
-import type { DropResult } from '@hello-pangea/dnd';
 import NextImage from '@components/ui/NextImage';
 import { useState, useTransition } from 'react';
 import { Button } from '@components/ui/button';
@@ -42,6 +44,88 @@ interface Preview {
 
 // Update the height constant
 const PREVIEW_HEIGHT = 'h-28'; // Reduced height
+
+function SortablePreviewItem({ preview, removePreview, getPreviewMediaDirectory }: any) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: preview.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'group relative shrink-0',
+        'inline-block w-auto',
+        isDragging ? 'scale-105' : 'hover:scale-102',
+      )}
+    >
+      <button
+        onClick={() => removePreview(preview.id)}
+        className={cn(
+          '-right-2 -top-2 absolute rounded-full bg-red-500 p-1.5 text-white hover:bg-red-600',
+          'z-10 opacity-0 shadow-xs group-hover:opacity-100',
+          'transition-opacity duration-200',
+        )}
+      >
+        <X size={14} />
+      </button>
+      <div
+        {...attributes}
+        {...listeners}
+        className={cn(
+          '-left-2 -top-2 absolute rounded-full bg-gray-600 p-1.5 text-white hover:bg-gray-700',
+          'z-10 cursor-grab opacity-0 shadow-xs active:cursor-grabbing group-hover:opacity-100',
+          'transition-opacity duration-200',
+        )}
+      >
+        <GripVertical size={14} />
+      </div>
+      {preview.type === 'image' ? (
+        <div
+          className={cn(
+            'relative h-28 w-48 rounded-xl bg-white',
+            isDragging ? 'shadow-lg' : 'shadow-xs hover:shadow-md',
+          )}
+        >
+          <NextImage
+            src={getPreviewMediaDirectory(preview.id)}
+            alt={`Preview ${preview.id}`}
+            fill
+            className="rounded-xl object-contain"
+            sizes="100vw"
+          />
+        </div>
+      ) : (
+        <div
+          className={cn(
+            `w-48 ${PREVIEW_HEIGHT} relative overflow-hidden rounded-xl`,
+            'border border-gray-200 transition-colors duration-200 hover:border-gray-300',
+            isDragging ? 'shadow-lg' : 'shadow-xs hover:shadow-md',
+          )}
+        >
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${preview.thumbnailUrl})`,
+            }}
+          />
+          <div className="bg-opacity-40 absolute inset-0 flex items-center justify-center bg-black backdrop-blur-[2px]">
+            {preview.type === 'youtube' ? (
+              <SiYoutube className="h-10 w-10 text-red-500" />
+            ) : (
+              <SiLoom className="h-10 w-10 text-blue-500" />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Add this type for the video service selection
 type VideoService = 'youtube' | 'loom' | null;
@@ -325,17 +409,18 @@ export default function EditImages() {
     }
   };
 
-  const handleDragEnd = async (result: DropResult) => {
-    if (!result.destination) return;
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
 
-    const items = [...previews];
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    if (reorderedItem) {
-      items.splice(result.destination.index, 0, reorderedItem);
+    if (!over || active.id === over.id) {
+      return;
     }
 
-    // Update order numbers
-    const reorderedItems = items.map((item, index) => Object.assign(item, { order: index }));
+    const items = [...previews];
+    const oldIndex = items.findIndex((item) => item.id === active.id);
+    const newIndex = items.findIndex((item) => item.id === over.id);
+
+    const reorderedItems = arrayMove(items, oldIndex, newIndex).map((item, index) => Object.assign(item, { order: index }));
 
     setPreviews(reorderedItems);
 
@@ -376,6 +461,15 @@ export default function EditImages() {
     setSelectedService(null);
     setVideoUrl('');
   };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
 
   return (
     <div className="bg-background mx-0 mb-16 rounded-3xl sm:mx-10 sm:mb-0">
@@ -555,99 +649,26 @@ export default function EditImages() {
           <div className="flex w-full flex-col space-y-5">
             <div className="bg-muted/20 w-full rounded-3xl py-6 transition-all duration-300">
               <div className="flex flex-col items-center justify-center space-y-6">
-                <DragDropContext onDragEnd={handleDragEnd}>
-                  <Droppable
-                    droppableId="previews"
-                    direction="horizontal"
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <div
+                    className={cn(
+                      'flex w-full max-w-5xl gap-4 overflow-x-auto p-4 pb-6',
+                      previews.length === 0 && 'justify-center',
+                    )}
                   >
-                    {(provided) => (
-                      <div
-                        className={cn(
-                          'flex w-full max-w-5xl gap-4 overflow-x-auto p-4 pb-6',
-                          previews.length === 0 && 'justify-center',
-                        )}
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                      >
-                        {previews.map((preview, index) => (
-                          <Draggable
-                            key={preview.id}
-                            draggableId={preview.id}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={cn(
-                                  'group relative shrink-0',
-                                  'inline-block w-auto',
-                                  snapshot.isDragging ? 'z-50 scale-105' : 'hover:scale-102',
-                                )}
-                              >
-                                <button
-                                  onClick={() => removePreview(preview.id)}
-                                  className={cn(
-                                    '-right-2 -top-2 absolute rounded-full bg-red-500 p-1.5 text-white hover:bg-red-600',
-                                    'z-10 opacity-0 shadow-xs group-hover:opacity-100',
-                                    'transition-opacity duration-200',
-                                  )}
-                                >
-                                  <X size={14} />
-                                </button>
-                                <div
-                                  {...provided.dragHandleProps}
-                                  className={cn(
-                                    '-left-2 -top-2 absolute rounded-full bg-gray-600 p-1.5 text-white hover:bg-gray-700',
-                                    'z-10 cursor-grab opacity-0 shadow-xs active:cursor-grabbing group-hover:opacity-100',
-                                    'transition-opacity duration-200',
-                                  )}
-                                >
-                                  <GripVertical size={14} />
-                                </div>
-                                {preview.type === 'image' ? (
-                                  <div
-                                    className={cn(
-                                      'relative h-28 w-48 rounded-xl bg-white',
-                                      snapshot.isDragging ? 'shadow-lg' : 'shadow-xs hover:shadow-md',
-                                    )}
-                                  >
-                                    <NextImage
-                                      src={getPreviewMediaDirectory(preview.id)}
-                                      alt={`Preview ${preview.id}`}
-                                      fill
-                                      className="rounded-xl object-contain"
-                                      sizes="100vw"
-                                    />
-                                  </div>
-                                ) : (
-                                  <div
-                                    className={cn(
-                                      `w-48 ${PREVIEW_HEIGHT} relative overflow-hidden rounded-xl`,
-                                      'border border-gray-200 transition-colors duration-200 hover:border-gray-300',
-                                      snapshot.isDragging ? 'shadow-lg' : 'shadow-xs hover:shadow-md',
-                                    )}
-                                  >
-                                    <div
-                                      className="absolute inset-0 bg-cover bg-center"
-                                      style={{
-                                        backgroundImage: `url(${preview.thumbnailUrl})`,
-                                      }}
-                                    />
-                                    <div className="bg-opacity-40 absolute inset-0 flex items-center justify-center bg-black backdrop-blur-[2px]">
-                                      {preview.type === 'youtube' ? (
-                                        <SiYoutube className="h-10 w-10 text-red-500" />
-                                      ) : (
-                                        <SiLoom className="h-10 w-10 text-blue-500" />
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
+                    <SortableContext
+                      items={previews.map((preview) => preview.id)}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {previews.map((preview) => (
+                        <SortablePreviewItem
+                          key={preview.id}
+                          preview={preview}
+                          removePreview={removePreview}
+                          getPreviewMediaDirectory={getPreviewMediaDirectory}
+                        />
+                      ))}
+                    </SortableContext>
                         {previews.length < 4 && (
                           <div className={cn('w-48 shrink-0', previews.length === 0 && 'm-0')}>
                             <Dialog
@@ -799,10 +820,8 @@ export default function EditImages() {
                             </Dialog>
                           </div>
                         )}
-                      </div>
-                    )}
-                  </Droppable>
-                </DragDropContext>
+                  </div>
+                </DndContext>
 
                 <div className="flex items-center space-x-2 rounded-full bg-gray-50 px-4 py-2 text-gray-600">
                   <Info size={14} />

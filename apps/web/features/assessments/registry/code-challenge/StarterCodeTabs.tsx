@@ -2,6 +2,7 @@
 
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import { JUDGE0_LANGUAGES } from '@/components/features/courses/code-challenges/
 import type { CodeChallengeSettingsForm } from './CodeChallengeStudio';
 
 export default function StarterCodeTabs() {
+  const t = useTranslations('CodeChallenges.form');
   const form = useFormContext<CodeChallengeSettingsForm>();
   const watchedLanguages = useWatch({ control: form.control, name: 'allowed_languages' });
   const languages = useMemo(
@@ -22,8 +24,8 @@ export default function StarterCodeTabs() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Starter code</CardTitle>
-        <CardDescription>Templates students see when they open the challenge.</CardDescription>
+        <CardTitle>{t('starterCode')}</CardTitle>
+        <CardDescription>{t('starterCodeHint')}</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue={String(languages[0]?.id)}>

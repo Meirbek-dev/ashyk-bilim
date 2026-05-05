@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AnomalyItem } from '@/types/analytics';
@@ -10,14 +11,16 @@ interface AnomalyPanelProps {
 }
 
 export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
+  const t = useTranslations('Components.AnomalyPanel');
+
   return (
     <Card className="shadow-sm">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          <CardTitle>Anomalies</CardTitle>
+          <CardTitle>{t('title')}</CardTitle>
         </div>
-        <CardDescription>Abnormal engagement, submissions, quiz timing, and score distribution shifts.</CardDescription>
+        <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {anomalies.slice(0, 8).map((item) => (
@@ -31,7 +34,7 @@ export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
                   item.severity === 'critical' ? 'destructive' : item.severity === 'warning' ? 'warning' : 'outline'
                 }
               >
-                {item.severity}
+                {t(`severity.${item.severity}`)}
               </Badge>
               <span className="text-muted-foreground text-xs tracking-wider uppercase">
                 {item.type.replaceAll('_', ' ')}

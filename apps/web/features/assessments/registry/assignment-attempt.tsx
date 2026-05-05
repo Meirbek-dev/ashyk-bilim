@@ -3,6 +3,7 @@
 import { Clock, FileText, InfinityIcon, RotateCcw, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import PageLoading from '@components/Objects/Loaders/PageLoading';
@@ -21,6 +22,7 @@ import { queryKeys } from '@/lib/react-query/queryKeys';
 import type { KindAttemptProps } from './index';
 
 export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
+  const t = useTranslations('Activities.AssignmentStudentActivity');
   const queryClient = useQueryClient();
   const assessmentUuid = vm?.assessmentUuid ?? null;
   const submissionsQueryKey = useMemo(
@@ -69,16 +71,16 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.detail || 'Failed to start assessment');
+        throw new Error(payload.detail || t('failedToStartAssessment'));
       }
-      toast.success(vm.isReturnedForRevision ? 'Revision draft created' : 'Assessment started');
+      toast.success(vm.isReturnedForRevision ? t('revisionDraftCreated') : t('assessmentStarted'));
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.assessments.draft(assessmentUuid) }),
         queryClient.invalidateQueries({ queryKey: submissionsQueryKey }),
         queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(assessmentUuid) }),
       ]);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to start assessment');
+      toast.error(error instanceof Error ? error.message : t('failedToStartAssessment'));
     } finally {
       setIsStarting(false);
     }
@@ -123,7 +125,7 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
               }
               setShowRecoveryDialog(false);
               setRecoveredAnswers(null);
-              toast.success('Recovered locally saved answers');
+              toast.success(t('recoveredSavedAnswers'));
             },
             onReject: () => {
               persistence.clearSavedAnswers();
@@ -155,14 +157,14 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
   if (!assessmentUuid) {
     return (
       <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-        No assessment found.
+        {t('noAssessmentFound')}
       </div>
     );
   }
 
   const attemptHistory = submissionState.submissions.map((submission, index) => ({
     id: submission.submission_uuid,
-    label: index === 0 ? 'Latest submission' : `Attempt ${submissionState.submissions.length - index}`,
+    label: index === 0 ? t('latestSubmission') : t('attemptNumber', { number: submissionState.submissions.length - index }),
     submittedAt: submission.submitted_at ?? submission.updated_at,
     status: submission.status,
     scoreLabel:
@@ -177,35 +179,35 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
         title={vm.title}
         description={vm.description}
         metrics={[
-          { icon: FileText, label: 'Items', value: String(vm.items.length) },
+          { icon: FileText, label: t('itemsLabel'), value: String(vm.items.length) },
           {
             icon: Clock,
-            label: 'Time limit',
+            label: t('timeLimit'),
             value:
               typeof vm.policy.timeLimitSeconds === 'number'
-                ? `${Math.max(1, Math.ceil(vm.policy.timeLimitSeconds / 60))} min`
-                : 'Unlimited',
+                ? `${Math.max(1, Math.ceil(vm.policy.timeLimitSeconds / 60))} ${t('minutesShort')}`
+                : t('unlimited'),
           },
           {
             icon: vm.policy.maxAttempts ? Users : InfinityIcon,
-            label: 'Attempts',
+            label: t('attemptsLabel'),
             value:
               typeof vm.policy.maxAttempts === 'number'
-                ? `${Math.max(vm.policy.maxAttempts - attemptHistory.length, 0)} left`
-                : 'Unlimited',
+                ? t('attemptsRemaining', { remaining: Math.max(vm.policy.maxAttempts - attemptHistory.length, 0) })
+                : t('unlimited'),
           },
         ]}
         historyItems={attemptHistory}
-        actionTitle={vm.isReturnedForRevision ? 'Ready to revise' : 'Ready to begin'}
+        actionTitle={vm.isReturnedForRevision ? t('readyToRevise') : t('readyToBegin')}
         actionDescription={
           vm.isReturnedForRevision
-            ? 'Start a new revision draft from the returned submission.'
-            : 'Create a draft, answer each item, and submit when you are ready.'
+            ? t('readyToReviseDescription')
+            : t('readyToBeginDescription')
         }
-        actionLabel={vm.canEdit ? (vm.isReturnedForRevision ? 'Start revision' : 'Start assessment') : undefined}
+        actionLabel={vm.canEdit ? (vm.isReturnedForRevision ? t('startRevision') : t('startAssessment')) : undefined}
         actionDisabled={!vm.canEdit}
         actionPending={isStarting}
-        blockedMessage={!vm.canEdit ? 'There is no editable draft available for this assessment right now.' : null}
+        blockedMessage={!vm.canEdit ? t('noEditableDraft') : null}
         onAction={vm.canEdit ? handleStart : undefined}
         notices={
           latestCompletedSubmission ? (
@@ -223,9 +225,9 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
     <div className="space-y-6">
       <Alert>
         <RotateCcw className="size-4" />
-        <AlertTitle>Resumed draft</AlertTitle>
+        <AlertTitle>{t('resumedDraft')}</AlertTitle>
         <AlertDescription>
-          Last saved {formatDateTime(draft.updated_at)}. Changes continue saving automatically while you work.
+          {t('resumedDraftDescription', { time: formatDateTime(draft.updated_at) })}
         </AlertDescription>
       </Alert>
 
@@ -291,13 +293,14 @@ function SubmissionStatePanel({
   if (!submission || submission.status === 'DRAFT') return null;
 
   if (submission.status === 'PENDING') {
+    const submittedDescription = submission.submitted_at
+      ? t('submissionReceivedWithDateDescription', { date: formatDateTime(submission.submitted_at) })
+      : t('submissionReceivedDescription');
+
     return (
       <Alert>
-        <AlertTitle>Submission received</AlertTitle>
-        <AlertDescription>
-          Submitted{submission.submitted_at ? ` on ${formatDateTime(submission.submitted_at)}` : ''}. Your teacher will
-          release the grade when review is complete.
-        </AlertDescription>
+        <AlertTitle>{t('submissionReceivedTitle')}</AlertTitle>
+        <AlertDescription>{submittedDescription}</AlertDescription>
       </Alert>
     );
   }
@@ -305,10 +308,8 @@ function SubmissionStatePanel({
   if (submission.status === 'GRADED' || releaseState === 'AWAITING_RELEASE') {
     return (
       <Alert>
-        <AlertTitle>Results are waiting for release</AlertTitle>
-        <AlertDescription>
-          Your latest submission has been graded. Scores and feedback will appear after your teacher releases them.
-        </AlertDescription>
+        <AlertTitle>{t('resultsWaitingForReleaseTitle')}</AlertTitle>
+        <AlertDescription>{t('resultsWaitingForReleaseDescription')}</AlertDescription>
       </Alert>
     );
   }
@@ -321,7 +322,9 @@ function SubmissionStatePanel({
 
   return (
     <Alert>
-      <AlertTitle>{submission.status === 'RETURNED' ? 'Returned for revision' : 'Result available'}</AlertTitle>
+      <AlertTitle>
+        {submission.status === 'RETURNED' ? t('returnedForRevision') : t('resultAvailable')}
+      </AlertTitle>
       <AlertDescription className="space-y-3">
         {scoreLabel ? (
           <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
@@ -359,10 +362,10 @@ function AssessmentItemCard({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-muted-foreground text-xs font-medium uppercase">Question {index + 1}</div>
-          <h2 className="mt-1 text-base font-semibold">{item.title || `Item ${index + 1}`}</h2>
+          <div className="text-muted-foreground text-xs font-medium uppercase">{t('questionLabel', { index: index + 1 })}</div>
+          <h2 className="mt-1 text-base font-semibold">{item.title || t('questionLabel', { index: index + 1 })}</h2>
         </div>
-        <Badge variant="outline">{item.max_score} pts</Badge>
+        <Badge variant="outline">{item.max_score} {t('pointsShort')}</Badge>
       </div>
 
       <ItemAttemptRenderer

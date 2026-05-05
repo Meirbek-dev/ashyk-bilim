@@ -77,7 +77,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     .filter((submission) => submission.status !== 'DRAFT')
     .map((submission, index) => ({
       id: submission.submission_uuid,
-      label: index === 0 ? 'Latest submission' : `Attempt ${submissionState.submissions.length - index}`,
+      label: index === 0 ? t('latestSubmission') : t('attemptNumber', { number: submissionState.submissions.length - index }),
       submittedAt: submission.submitted_at ?? submission.updated_at,
       status: submission.status,
       scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
@@ -93,9 +93,9 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.detail || 'Failed to start exam');
+        throw new Error(payload.detail || t('errorStartingExam'));
       }
-      toast.success(vm.isReturnedForRevision ? 'Revision draft created' : t('examStarted'));
+      toast.success(vm.isReturnedForRevision ? t('revisionDraftCreated') : t('examStarted'));
       await handleComplete();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('errorStartingExam'));
@@ -129,16 +129,16 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
           },
         ]}
         historyItems={historyItems}
-        actionTitle={vm.isReturnedForRevision ? 'Ready to revise' : t('readyToStart')}
+        actionTitle={vm.isReturnedForRevision ? t('readyToRevise') : t('readyToStart')}
         actionDescription={
           vm.isReturnedForRevision
-            ? 'Start a new revision draft from the returned submission.'
+            ? t('readyToReviseDescription')
             : t('readyToStartSubtitle')
         }
-        actionLabel={vm.canEdit ? (vm.isReturnedForRevision ? 'Start revision' : t('startExam')) : undefined}
+        actionLabel={vm.canEdit ? (vm.isReturnedForRevision ? t('startRevision') : t('startExam')) : undefined}
         actionDisabled={!vm.canEdit}
         actionPending={isStarting}
-        blockedMessage={!vm.canEdit ? 'There is no editable draft available for this exam right now.' : null}
+        blockedMessage={!vm.canEdit ? t('noEditableDraft') : null}
         onAction={vm.canEdit ? handleStartExam : undefined}
         notices={
           <div className="space-y-4">
@@ -441,7 +441,8 @@ function ExamTakingContent({
   if (!currentQuestion) {
     return (
       <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-        {title ? `${title}: ` : ''}No questions.
+        {title ? `${title}: ` : ''}
+        {t('noQuestions')}
       </div>
     );
   }
@@ -450,9 +451,9 @@ function ExamTakingContent({
     <div className="space-y-6">
       <Alert>
         <RotateCcw className="size-4" />
-        <AlertTitle>Resumed draft</AlertTitle>
+        <AlertTitle>{t('resumedDraft')}</AlertTitle>
         <AlertDescription>
-          Last saved {formatDateTime(attempt.updated_at)}. Changes continue saving automatically while you work.
+          {t('resumedDraftDescription', { time: formatDateTime(attempt.updated_at) })}
         </AlertDescription>
       </Alert>
 

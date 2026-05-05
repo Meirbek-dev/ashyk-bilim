@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 
 import { CodeItemAttempt, CodeItemLoading, useCodeSubmitControl } from '@/features/assessments/items/code';
 import { useCodeChallengeSettings } from './hooks';
@@ -34,6 +35,7 @@ interface CodeChallengeActivitySettings {
 }
 
 export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAttemptProps) {
+  const t = useTranslations('CodeChallenges');
   const normalizedActivityUuid = activityUuid.replace(/^activity_/, '');
   const queryClient = useQueryClient();
   const { data: settings, isLoading } = useCodeChallengeSettings<CodeChallengeActivitySettings>(normalizedActivityUuid);
@@ -88,9 +90,9 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   if (!settings || !isConfigured) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
-        <h3 className="text-lg font-semibold">Code challenge is not configured</h3>
+        <h3 className="text-lg font-semibold">{t('notConfigured')}</h3>
         <p className="text-muted-foreground mt-2 max-w-md text-sm">
-          The challenge needs at least one allowed language before students can submit.
+          {t('notConfiguredDescription')}
         </p>
       </div>
     );

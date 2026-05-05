@@ -22,7 +22,96 @@ import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover'
 import { updateProfile } from '@/lib/users/client';
 import { createElement, useEffect, useEffectEvent, useState } from 'react';
 import { useSession } from '@/hooks/useSession';
-import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableProfileSection({ section, index, t, getSectionTypesConfig, selectedSection, setSelectedSection, deleteSection }: any) {
+  const id = section.id;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={() => {
+        setSelectedSection(index);
+      }}
+      className={`group cursor-pointer rounded-lg border p-4 transition-all ${
+        selectedSection === index
+          ? 'border-primary bg-primary/5 ring-primary/20 shadow-sm ring-1'
+          : 'bg-card/50 hover:bg-accent border-border hover:border-accent-foreground/20 hover:shadow-xs'
+      } ${isDragging ? 'ring-primary/20 rotate-2 shadow-lg ring-2' : ''}`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div
+            {...attributes}
+            {...listeners}
+            className={`cursor-grab active:cursor-grabbing rounded-md p-1.5 transition-colors duration-200 ${
+              selectedSection === index
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+            }`}
+          >
+            <GripVertical size={16} />
+          </div>
+          <div
+            className={`rounded-md p-1.5 ${
+              selectedSection === index
+                ? 'bg-primary/10 text-primary'
+                : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            {createElement(getSectionTypesConfig(t)[section.type].icon, {
+              size: 16,
+            })}
+          </div>
+          <span
+            className={`truncate text-sm font-medium ${
+              selectedSection === index ? 'text-primary' : 'text-foreground'
+            }`}
+          >
+            {section.title}
+          </span>
+        </div>
+        <div className="flex space-x-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedSection(index);
+            }}
+            className={`rounded-md p-1.5 transition-colors duration-200 ${
+              selectedSection === index
+                ? 'text-primary hover:bg-primary/10'
+                : 'text-muted-foreground hover:bg-accent'
+            }`}
+          >
+            <Edit size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              deleteSection(index);
+            }}
+            className="text-destructive hover:bg-destructive/10 rounded-md p-1.5 transition-colors duration-200"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 import { de, enUS, es, fr, ru } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -236,6 +325,16 @@ const UserProfileBuilder = () => {
   const me = currentUser;
   const tNotify = useTranslations('DashPage.Notifications');
   const t = useTranslations('DashPage.UserProfileBuilder');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
+
   const [profileData, setProfileData] = useState<ProfileData>({
     sections: [],
   });
@@ -388,20 +487,24 @@ const UserProfileBuilder = () => {
     setSelectedSection(null);
   };
 
-  const onDragEnd = (result: any) => {
-    if (!result.destination) return;
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
 
     const items = [...profileData.sections];
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    if (reorderedItem) {
-      items.splice(result.destination.index, 0, reorderedItem);
-    }
+    const oldIndex = items.findIndex((item) => item.id === active.id);
+    const newIndex = items.findIndex((item) => item.id === over.id);
+
+    const reorderedItems = arrayMove(items, oldIndex, newIndex);
 
     setProfileData((prev) => ({
       ...prev,
-      sections: items,
+      sections: reorderedItems,
     }));
-    setSelectedSection(result.destination.index);
+    setSelectedSection(newIndex);
   };
 
   const handleSave = async () => {
@@ -475,100 +578,27 @@ const UserProfileBuilder = () => {
           {/* Sections Panel */}
           <div className="col-span-1 border-r pr-4 max-lg:border-r-0 max-lg:border-b max-lg:pr-0 max-lg:pb-6">
             <h3 className="mb-4 font-medium">{t('SectionsPanel.title')}</h3>
-            <DragDropContext onDragEnd={onDragEnd}>
-              <Droppable droppableId="sections">
-                {(provided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className="space-y-2"
-                  >
-                    {profileData.sections.map((section, index) => (
-                      <Draggable
-                        key={section.id}
-                        draggableId={section.id}
-                        index={index}
-                      >
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            onClick={() => {
-                              setSelectedSection(index);
-                            }}
-                            className={`group cursor-pointer rounded-lg border p-4 transition-all ${
-                              selectedSection === index
-                                ? 'border-primary bg-primary/5 ring-primary/20 shadow-sm ring-1'
-                                : 'bg-card/50 hover:bg-accent border-border hover:border-accent-foreground/20 hover:shadow-xs'
-                            } ${snapshot.isDragging ? 'ring-primary/20 rotate-2 shadow-lg ring-2' : ''}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-3">
-                                <div
-                                  {...provided.dragHandleProps}
-                                  className={`rounded-md p-1.5 transition-colors duration-200 ${
-                                    selectedSection === index
-                                      ? 'bg-primary/10 text-primary'
-                                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                                  }`}
-                                >
-                                  <GripVertical size={16} />
-                                </div>
-                                <div
-                                  className={`rounded-md p-1.5 ${
-                                    selectedSection === index
-                                      ? 'bg-primary/10 text-primary'
-                                      : 'bg-muted text-muted-foreground'
-                                  }`}
-                                >
-                                  {createElement(getSectionTypesConfig(t)[section.type].icon, {
-                                    size: 16,
-                                  })}
-                                </div>
-                                <span
-                                  className={`truncate text-sm font-medium ${
-                                    selectedSection === index ? 'text-primary' : 'text-foreground'
-                                  }`}
-                                >
-                                  {section.title}
-                                </span>
-                              </div>
-                              <div className="flex space-x-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedSection(index);
-                                  }}
-                                  className={`rounded-md p-1.5 transition-colors duration-200 ${
-                                    selectedSection === index
-                                      ? 'text-primary hover:bg-primary/10'
-                                      : 'text-muted-foreground hover:bg-accent'
-                                  }`}
-                                >
-                                  <Edit size={14} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteSection(index);
-                                  }}
-                                  className="text-destructive hover:bg-destructive/10 rounded-md p-1.5 transition-colors duration-200"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+              <div className="space-y-2">
+                <SortableContext
+                  items={profileData.sections.map((section) => section.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {profileData.sections.map((section, index) => (
+                    <SortableProfileSection
+                      key={section.id}
+                      section={section}
+                      index={index}
+                      t={t}
+                      getSectionTypesConfig={getSectionTypesConfig}
+                      selectedSection={selectedSection}
+                      setSelectedSection={setSelectedSection}
+                      deleteSection={deleteSection}
+                    />
+                  ))}
+                </SortableContext>
+              </div>
+            </DndContext>
 
             <div className="pt-4">
               <Select

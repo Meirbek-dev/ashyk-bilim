@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { LoaderCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { apiFetcher } from '@/lib/api-client';
 import { getAPIUrl } from '@services/config/config';
@@ -37,6 +38,7 @@ export default function AssessmentReviewWorkspace({
   activityUuid,
   initialSubmissionUuid,
 }: AssessmentReviewWorkspaceProps) {
+  const t = useTranslations('Features.Assessments.ReviewWorkspace');
   const cleanUuid = activityUuid.replace(/^activity_/, '');
   const [kindModule, setKindModule] = useState<KindModule | undefined>();
 
@@ -80,7 +82,7 @@ export default function AssessmentReviewWorkspace({
     return (
       <div className="text-muted-foreground flex min-h-[420px] items-center justify-center text-sm">
         <LoaderCircle className="mr-2 size-4 animate-spin" />
-        Loading review
+        {t('loading')}
       </div>
     );
   }
@@ -88,7 +90,7 @@ export default function AssessmentReviewWorkspace({
   if (error || !assessment?.review_projection) {
     return (
       <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-        Review is unavailable for this activity.
+        {t('reviewUnavailable')}
       </div>
     );
   }

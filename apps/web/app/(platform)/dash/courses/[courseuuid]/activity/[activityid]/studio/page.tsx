@@ -3,12 +3,14 @@ import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderC
 import { getActivity } from '@services/courses/activities';
 import { getCourseMetadata } from '@services/courses/courses';
 import EditorWrapper from '@/components/Objects/Editor/EditorWrapper';
+import { getTranslations } from 'next-intl/server';
 
 const ASSESSABLE_TYPES = new Set(['TYPE_ASSIGNMENT', 'TYPE_EXAM', 'TYPE_CODE_CHALLENGE', 'TYPE_QUIZ']);
 
 export default async function PlatformAssessmentStudioPage(props: {
   params: Promise<{ courseuuid: string; activityid: string }>;
 }) {
+  const t = await getTranslations('Features.Assessments.Studio');
   const { courseuuid, activityid } = await props.params;
 
   const [activity, course] = await Promise.all([
@@ -41,8 +43,9 @@ export default async function PlatformAssessmentStudioPage(props: {
       </div>
     ) : (
       <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-        Studio is not yet available for {activity.activity_type?.replace('TYPE_', '').toLowerCase() || 'this'}{' '}
-        activities.
+        {t('studioNotAvailableForType', {
+          type: activity.activity_type?.replace('TYPE_', '').toLowerCase() || 'this',
+        })}
       </div>
     ),
   });
