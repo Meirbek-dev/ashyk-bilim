@@ -505,7 +505,7 @@ const EditCourseCertification = () => {
                                       variant="secondary"
                                       className="absolute -top-2 -right-2"
                                     >
-                                      ✓
+                                      {t('selectedIcon')}
                                     </Badge>
                                   )}
                                 </Label>

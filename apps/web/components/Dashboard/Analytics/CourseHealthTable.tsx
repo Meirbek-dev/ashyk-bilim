@@ -47,7 +47,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
             <div>{course.completion_rate}%</div>
             <div className="text-muted-foreground text-[11px]">
               {course.teacher_completion_delta_pct !== null && course.teacher_completion_delta_pct !== undefined
-                ? `${course.teacher_completion_delta_pct > 0 ? '+' : ''}${course.teacher_completion_delta_pct} vs teacher avg`
+                ? `${course.teacher_completion_delta_pct > 0 ? '+' : ''}${course.teacher_completion_delta_pct} ${t('courseHealth.vsTeacherAvg')}`
                 : ''}
             </div>
           </div>
@@ -71,7 +71,7 @@ export default function CourseHealthTable({ rows, storageKey, serverPaginated }:
               course.historical_completion_delta_pct !== undefined && (
                 <div className="text-muted-foreground text-[11px]">
                   {course.historical_completion_delta_pct > 0 ? '+' : ''}
-                  {course.historical_completion_delta_pct} vs history
+                  {course.historical_completion_delta_pct} {t('courseHealth.vsHistory')}
                 </div>
               )}
           </div>

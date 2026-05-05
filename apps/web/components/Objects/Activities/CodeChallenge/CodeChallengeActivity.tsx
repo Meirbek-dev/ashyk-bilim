@@ -67,7 +67,7 @@ export default function CodeChallengeActivity({ activity }: CodeChallengeActivit
   if (!settings || !isConfigured) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="mb-4 text-4xl">🛠️</div>
+        <div className="mb-4 text-4xl">{t('underConstructionIcon')}</div>
         <h3 className="text-lg font-semibold">{t('notConfigured')}</h3>
         <p className="text-muted-foreground mt-2 max-w-md text-sm">{t('notConfiguredDescription')}</p>
       </div>
@@ -108,10 +108,12 @@ export default function CodeChallengeActivity({ activity }: CodeChallengeActivit
           </div>
           <div className="text-muted-foreground flex items-center gap-4 text-sm">
             <div>
-              <span className="font-medium">{t('timeLimit')}:</span> {settings.time_limit_ms}ms
+              <span className="font-medium">{t('timeLimit')}</span>:{' '}
+              {t('timeLimitValue', { value: settings.time_limit_ms })}
             </div>
             <div>
-              <span className="font-medium">{t('memoryLimit')}:</span> {Math.round(settings.memory_limit_kb / 1024)}MB
+              <span className="font-medium">{t('memoryLimit')}</span>:{' '}
+              {t('memoryLimitValue', { value: Math.round(settings.memory_limit_kb / 1024) })}
             </div>
           </div>
         </div>

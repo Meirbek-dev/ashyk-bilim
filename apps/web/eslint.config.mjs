@@ -1,6 +1,6 @@
 // eslint.config.mjs
 // @ts-check
-
+import i18next from 'eslint-plugin-i18next';
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import js from '@eslint/js';
@@ -30,7 +30,14 @@ const COMMON_RULES = {
   /* React */
   'react/prop-types': 'off',
   'react/no-unescaped-entities': 'off',
-  'react/jsx-no-literals': 'warn',
+  'i18next/no-literal-string': [
+    'warn',
+    {
+      markupOnly: true,
+      ignore: ['/', '%', '(', ')', '@', '#', ':', '+', ',', '…', '✓', '•', '🛠️', '🏆'],
+      onlyAttribute: [''], // This prevents it from checking every single prop
+    },
+  ],
   'react/self-closing-comp': 'warn',
   'react/jsx-boolean-value': ['warn', 'never'],
   'react/no-array-index-key': 'off',
@@ -111,6 +118,7 @@ export default defineConfig(
       '@next/next': next,
       'unused-imports': unusedImports,
       'jsx-a11y': /** @type {any} */ (jsxA11y),
+      i18next,
     },
 
     languageOptions: {

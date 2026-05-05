@@ -45,7 +45,7 @@ export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
           </div>
         ))}
         {!anomalies.length ? (
-          <div className="text-muted-foreground text-sm">No anomalies detected for this filter.</div>
+          <div className="text-muted-foreground text-sm">{t('noAnomalies')}</div>
         ) : null}
       </CardContent>
     </Card>

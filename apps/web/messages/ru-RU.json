@@ -499,6 +499,7 @@
   },
   "ActivityPage": {
     "activityCompleted": "Активность выполнена",
+    "unsupportedActivityType": "Неподдерживаемый тип активности: {type}",
     "activityCounter": "{current} из {total}",
     "activityNotPublished": "Эта активность еще не опубликована",
     "activityTypes": {
@@ -705,8 +706,9 @@
       "viewCertificate": "Просмотреть сертификат"
     },
     "CertificatePage": {
-      "awarded": "Присвоен",
+      "awarded": "Выдан",
       "backToHome": "Вернуться к курсу",
+      "badgeCheckIcon": "✓",
       "certificate": "Сертификат",
       "certificateFileName": "Сертификат",
       "certificateFor": "Сертификат для",
@@ -816,6 +818,7 @@
       "authRequired": "Для просмотра сертификата необходима авторизация",
       "backToCourse": "Вернуться к курсу",
       "backToDashboard": "Вернуться в панель",
+      "badgeCheckIcon": "✓",
       "certificate": "Сертификат",
       "certificateCanBeVerified": "Этот сертификат можно проверить на",
       "certificateId": "ID сертификата",
@@ -933,7 +936,8 @@
       "noCertificationConfigured": "Сертификация не настроена",
       "noCertificationDescription": "Включите сертификацию, чтобы студенты могли получать сертификаты после завершения курса.",
       "previewCertificate": "Предпросмотр сертификата",
-      "saveCertification": "Сохранить сертификат",
+      "saveCertification": "Сохранить сертификацию",
+      "selectedIcon": "✓",
       "validationRequiredFields": "Название и описание сертификации обязательны при включенной сертификации"
     },
     "UserCertificates": {
@@ -989,7 +993,17 @@
       "close": "Закрыть",
       "confirm": "Подтвердить",
       "ok": "ОК",
-      "title": "Внимание"
+      "title": "Уведомление"
+    },
+    "AnomalyPanel": {
+      "title": "Аномалии",
+      "description": "Обнаружены необычные паттерны в ваших курсах.",
+      "noAnomalies": "Аномалии для этого фильтра не обнаружены.",
+      "severity": {
+        "critical": "Критическая",
+        "warning": "Предупреждение",
+        "info": "Инфо"
+      }
     },
     "AuthorsDisplay": {
       "authorTooltip": "{firstName} {lastName} - {authorship}",
@@ -1293,6 +1307,16 @@
       "defaultMessage": "Что-то пошло не так",
       "homeButton": "Главная",
       "retryButton": "Повторить"
+    },
+    "GlobalError": {
+      "title": "Что-то пошло не так",
+      "description": "Произошла непредвиденная ошибка при загрузке страницы",
+      "errorAlertTitle": "Ошибка",
+      "errorId": "Идентификатор ошибки:",
+      "updateMessage": "Ошибка может быть связана с обновлением приложения или временной недоступностью ресурсов. Полная перезагрузка страницы обычно решает проблему.",
+      "devDetails": "Детали ошибки (dev)",
+      "retry": "Повторить",
+      "defaultErrorMessage": "Не удалось корректно обработать запрос. Попробуйте повторить попытку."
     },
     "ExamSettings": {
       "accessControl": "Контроль доступа",
@@ -1711,6 +1735,7 @@
       "allPermissionsDescription": "Список всех доступных разрешений в системе.",
       "allPermissionsTitle": "Все разрешения",
       "scopeHierarchy": "Иерархия областей",
+      "scopeHierarchyValue": "all → platform → assigned → own",
       "assignRole": "Назначить роль",
       "assignRoleDescription": "Выберите пользователя и роль для назначения.",
       "assignRoleTitle": "Назначить роль пользователю",
@@ -4154,7 +4179,13 @@
         "selectTemplate": "Выберите шаблон для вставки",
         "squareRoot": "Квадратный корень:",
         "subscripts": "Нижние индексы:",
+        "subscript": "индекс",
         "summation": "Суммирование:",
+        "upper": "верх",
+        "lower": "нижн",
+        "power": "степень",
+        "numerator": "числитель",
+        "denominator": "знаменатель",
         "supportedFunctions": "для поддерживаемых функций TeX",
         "symbols": "Символы",
         "templateBinomial": "Бином",
@@ -5373,7 +5404,8 @@
           "title": "Ваш профиль обучения"
         },
         "progress": {
-          "dailyXP": "ОП сегодня",
+          "dailyXP": "XP за сегодня",
+          "dailyXPValue": "{earned} / {cap}",
           "levelProgress": "Прогресс уровня",
           "levelShort": "Ур.",
           "levelTransition": "Уровень {current} → {next}",
@@ -6467,8 +6499,9 @@
     "enterImageUrl": "Введите URL изображения, которое хотите встроить.",
     "enterUrlToLink": "Введите URL, на который хотите сослаться.",
     "enterVideoUrl": "Введите URL YouTube или ссылку на видео.",
-    "imagePlaceholder": "https://example.com/image.jpg",
-    "imageUrl": "URL изображения",
+    "h2": "H2",
+    "h3": "H3",
+    "imagePlaceholder": "https://example.com/image.jpg",    "imageUrl": "URL изображения",
     "uploadFile": "Загрузить файл",
     "url": "URL",
     "urlPlaceholder": "https://example.com",
@@ -6791,6 +6824,8 @@
       "colHealth": "Здоровье",
       "colTopAlert": "Главное уведомление",
       "noAlert": "Нет уведомлений",
+      "vsTeacherAvg": "ср. по преп.",
+      "vsHistory": "с историей",
       "searchPlaceholder": "Поиск по курсам...",
       "emptyMessage": "Нет курсов, соответствующих текущему охвату аналитики."
     },
@@ -7398,6 +7433,9 @@
           "noVisibleTestCases": "Нет видимых тестовых случаев. Отправьте решение для запуска скрытых тестов.",
           "notConfigured": "Задача не настроена",
           "notConfiguredDescription": "Эта задача ещё не настроена. Обратитесь к преподавателю.",
+          "underConstructionIcon": "🛠️",
+          "timeLimitValue": "{value} мс",
+          "memoryLimitValue": "{value} МБ",
           "otherLanguages": "Другие языки",
           "output": "Вывод",
           "partialCredit": "Частичный зачёт",

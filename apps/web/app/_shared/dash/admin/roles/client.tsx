@@ -823,7 +823,7 @@ export default function RBACAdminClient() {
               <CardTitle>{t('allPermissionsTitle')}</CardTitle>
               <CardDescription>{t('allPermissionsDescription')}</CardDescription>
               <div className="bg-muted text-muted-foreground rounded-md border p-3 text-sm">
-                {t('scopeHierarchy')}: <span className="font-medium">all → platform → assigned → own</span>
+                {t('scopeHierarchy')}: <span className="font-medium">{t('scopeHierarchyValue')}</span>
               </div>
             </CardHeader>
             <CardContent>

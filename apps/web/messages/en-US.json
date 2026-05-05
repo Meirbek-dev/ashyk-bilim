@@ -263,6 +263,9 @@
       "noVisibleTestCases": "No visible test cases. Submit your solution to run against hidden tests.",
       "notConfigured": "Challenge Not Configured",
       "notConfiguredDescription": "This code challenge hasn't been set up yet. Please contact your instructor.",
+      "underConstructionIcon": "🛠️",
+      "timeLimitValue": "{value}ms",
+      "memoryLimitValue": "{value}MB",
       "otherLanguages": "Other Languages",
       "output": "Output",
       "partialCredit": "Partial Credit",
@@ -510,6 +513,7 @@
   },
   "ActivityPage": {
     "activityCompleted": "Activity completed",
+    "unsupportedActivityType": "Unsupported activity type: {type}",
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",
     "activityTypes": {
@@ -717,6 +721,7 @@
     "CertificatePage": {
       "awarded": "Awarded",
       "backToHome": "Back to Course",
+      "badgeCheckIcon": "✓",
       "certificate": "Certificate",
       "certificateFileName": "Certificate",
       "certificateFor": "Certificate for",
@@ -826,6 +831,7 @@
       "authRequired": "Authentication required to view certificate",
       "backToCourse": "Back to Course",
       "backToDashboard": "Back to Dashboard",
+      "badgeCheckIcon": "✓",
       "certificate": "Certificate",
       "certificateCanBeVerified": "This certificate can be verified at",
       "certificateId": "Certificate ID",
@@ -944,6 +950,7 @@
       "noCertificationDescription": "Enable certification to provide students with certificates upon course completion.",
       "previewCertificate": "Certificate Preview",
       "saveCertification": "Save Certification",
+      "selectedIcon": "✓",
       "validationRequiredFields": "Certification name and description are required when certification is enabled"
     },
     "UserCertificates": {
@@ -1000,6 +1007,16 @@
       "confirm": "Confirm",
       "ok": "OK",
       "title": "Notice"
+    },
+    "AnomalyPanel": {
+      "title": "Anomalies",
+      "description": "Unusual patterns detected in your courses.",
+      "noAnomalies": "No anomalies detected for this filter.",
+      "severity": {
+        "critical": "Critical",
+        "warning": "Warning",
+        "info": "Info"
+      }
     },
     "AuthorsDisplay": {
       "authorTooltip": "{firstName} {lastName} - {authorship}",
@@ -1319,6 +1336,16 @@
       "defaultMessage": "Something went wrong",
       "homeButton": "Home",
       "retryButton": "Retry"
+    },
+    "GlobalError": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred while loading the page",
+      "errorAlertTitle": "Error",
+      "errorId": "Error ID:",
+      "updateMessage": "The error might be related to an application update or temporary unavailability of resources. A full page reload usually solves the problem.",
+      "devDetails": "Error details (dev)",
+      "retry": "Retry",
+      "defaultErrorMessage": "Failed to correctly process the request. Please try again."
     },
     "ExamSettings": {
       "accessControl": "Access Control",
@@ -1780,6 +1807,7 @@
       "allPermissionsTitle": "All Permissions",
       "allPermissionsDescription": "A list of all permissions available in the system.",
       "scopeHierarchy": "Scope hierarchy",
+      "scopeHierarchyValue": "all → platform → assigned → own",
       "managePermissionsTitle": "Manage Permissions",
       "managePermissionsDescription": "Select a resource type to manage granular permissions.",
       "fieldName": "Name",
@@ -4155,7 +4183,13 @@
         "selectTemplate": "Select a template to insert",
         "squareRoot": "Square root:",
         "subscripts": "Subscripts:",
+        "subscript": "subscript",
         "summation": "Summation:",
+        "upper": "upper",
+        "lower": "lower",
+        "power": "power",
+        "numerator": "numerator",
+        "denominator": "denominator",
         "supportedFunctions": "for supported TeX functions",
         "symbols": "Symbols",
         "templateBinomial": "Binomial",
@@ -5375,6 +5409,7 @@
         },
         "progress": {
           "dailyXP": "Today's XP",
+          "dailyXPValue": "{earned} / {cap}",
           "levelProgress": "Level Progress",
           "levelShort": "Lvl",
           "levelTransition": "Level {current} → {next}",
@@ -6463,8 +6498,9 @@
     "enterImageUrl": "Enter the URL of the image you want to embed.",
     "enterUrlToLink": "Enter the URL you want to link to.",
     "enterVideoUrl": "Enter a YouTube URL or video link.",
-    "imagePlaceholder": "https://example.com/image.jpg",
-    "imageUrl": "Image URL",
+    "h2": "H2",
+    "h3": "H3",
+    "imagePlaceholder": "https://example.com/image.jpg",    "imageUrl": "Image URL",
     "uploadFile": "Upload file",
     "url": "URL",
     "urlPlaceholder": "https://example.com",
@@ -6777,6 +6813,8 @@
       "colHealth": "Health",
       "colTopAlert": "Top alert",
       "noAlert": "No alert",
+      "vsTeacherAvg": "vs teacher avg",
+      "vsHistory": "vs history",
       "searchPlaceholder": "Search courses...",
       "emptyMessage": "No courses match the current analytics scope."
     },

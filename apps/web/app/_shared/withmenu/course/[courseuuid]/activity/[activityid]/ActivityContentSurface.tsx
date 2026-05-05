@@ -78,7 +78,11 @@ export function ActivityContent({ activity, course }: { activity: Activity; cour
       );
     }
     default: {
-      return <div className="text-muted-foreground text-sm">Unsupported activity type: {activity.activity_type}</div>;
+      return (
+        <div className="text-muted-foreground text-sm">
+          {t('unsupportedActivityType', { type: activity.activity_type })}
+        </div>
+      );
     }
   }
 }

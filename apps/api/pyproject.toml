@@ -16,10 +16,8 @@ dependencies = [
   "alembic-postgresql-enum>=1.10.0",
   "logfire[fastapi,sqlalchemy]>=4.32.1",
   "python-ulid>=3.1.0",
-  "argon2-cffi>=25.1.0",
   "cachetools>=7.1.0",
   "slowapi>=0.1.9",
-  "langgraph>=1.1.10",
   "pydantic-settings>=2.14.0",
   "selectolax>=0.4.7",
   "pydantic-ai-slim[logfire,evals,openai]>=1.89.1",
@@ -27,7 +25,6 @@ dependencies = [
   "pgvector>=0.4.2",
   "cryptography>=47.0.0",
   "fastapi-users[sqlalchemy]>=15.0.5",
-  "passlib[argon2]>=1.7.4",
   "PyJWT>=2.12.1",
 ]
 

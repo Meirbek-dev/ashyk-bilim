@@ -526,7 +526,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({ courseid, qrCodeLink 
               {/* Icon and badge */}
               <View style={styles.iconBadgeSection}>
                 <View style={styles.badge}>
-                  <Text style={styles.badgeCheck}>✓</Text>
+                  <Text style={styles.badgeCheck}>{t('badgeCheckIcon')}</Text>
                   <Text style={styles.badgeText}>
                     {getCertificationTypeLabel(userCertificate.certification.config.certification_type)}
                   </Text>

@@ -178,13 +178,13 @@ export function TestCaseCard({
             {result.time_ms && (
               <div className="text-muted-foreground flex items-center gap-1 text-sm">
                 <Clock className="h-4 w-4" />
-                {result.time_ms.toFixed(0)}ms
+                {t('timeLimitValue', { value: result.time_ms.toFixed(0) })}
               </div>
             )}
             {result.memory_kb && (
               <div className="text-muted-foreground flex items-center gap-1 text-sm">
                 <MemoryStick className="h-4 w-4" />
-                {(result.memory_kb / 1024).toFixed(1)}MB
+                {t('memoryLimitValue', { value: (result.memory_kb / 1024).toFixed(1) })}
               </div>
             )}
             <Badge variant={result.passed ? 'success' : 'destructive'}>{config.label}</Badge>

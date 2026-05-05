@@ -252,7 +252,7 @@ export function DiscussionEditor({
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           className={cn('h-8 px-2 text-sm', editor.isActive('heading', { level: 2 }) && 'bg-muted')}
         >
-          H2
+          {t('h2')}
         </Button>
         <Button
           type="button"
@@ -261,7 +261,7 @@ export function DiscussionEditor({
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           className={cn('h-8 px-2 text-sm', editor.isActive('heading', { level: 3 }) && 'bg-muted')}
         >
-          H3
+          {t('h3')}
         </Button>
 
         <div className="bg-border mx-1 h-6 w-px" />

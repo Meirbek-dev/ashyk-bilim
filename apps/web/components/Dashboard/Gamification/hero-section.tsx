@@ -174,7 +174,10 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
                   {t('progress.dailyXP')}
                 </span>
                 <span className="text-muted-foreground text-xs tabular-nums">
-                  {formatNumber(profile.daily_xp_earned || 0)} / 500
+                  {t('progress.dailyXPValue', {
+                    earned: formatNumber(profile.daily_xp_earned || 0),
+                    cap: dailyCap,
+                  })}
                   {dailyXpProgress >= 100 && (
                     <span className="text-foreground ml-1.5 font-medium">{t('dailyCapReached')}</span>
                   )}

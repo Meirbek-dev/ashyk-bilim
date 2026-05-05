@@ -499,6 +499,7 @@
   },
   "ActivityPage": {
     "activityCompleted": "Әрекет аяқталды",
+    "unsupportedActivityType": "Қолдау көрсетілмейтін әрекет түрі: {type}",
     "activityCounter": "{current} / {total}",
     "activityNotPublished": "Бұл белсенділік әлі жарияланған жоқ",
     "activityTypes": {
@@ -706,6 +707,7 @@
     "CertificatePage": {
       "awarded": "Берілді",
       "backToHome": "Курсқа оралу",
+      "badgeCheckIcon": "✓",
       "certificate": "Сертификат",
       "certificateFileName": "Сертификат",
       "certificateFor": "Сертификат",
@@ -815,6 +817,7 @@
       "authRequired": "Сертификатты көру үшін аутентификация қажет",
       "backToCourse": "Курсқа оралу",
       "backToDashboard": "Басты бетке оралу",
+      "badgeCheckIcon": "✓",
       "certificate": "Сертификат",
       "certificateCanBeVerified": "Бұл сертификатты мына мекенжайда тексеруге болады",
       "certificateId": "Сертификат ID",
@@ -932,7 +935,8 @@
       "noCertificationConfigured": "Сертификат бапталмаған",
       "noCertificationDescription": "Сертификаттарды қосу арқылы студенттерге курс аяқталғаны жөнінде дәлел беріңіз.",
       "previewCertificate": "Сертификатты алдын ала қарау",
-      "saveCertification": "Сертификатты сақтау",
+      "saveCertification": "Сертификаттауды сақтау",
+      "selectedIcon": "✓",
       "validationRequiredFields": "Сертификаттау қосылған кезде сертификаттың атауы мен сипаттамасы міндетті"
     },
     "UserCertificates": {
@@ -984,11 +988,21 @@
       "toastSuccess": "Жаңа топ жасалды"
     },
     "AlertDialog": {
-      "cancel": "Болдырмау",
+      "cancel": "Бас тарту",
       "close": "Жабу",
       "confirm": "Растау",
       "ok": "ОК",
-      "title": "Хабарлама"
+      "title": "Ескерту"
+    },
+    "AnomalyPanel": {
+      "title": "Аномалиялар",
+      "description": "Курстарыңызда әдеттен тыс заңдылықтар анықталды.",
+      "noAnomalies": "Бұл сүзгі үшін аномалиялар табылған жоқ.",
+      "severity": {
+        "critical": "Маңызды",
+        "warning": "Ескерту",
+        "info": "Ақпарат"
+      }
     },
     "AuthorsDisplay": {
       "authorTooltip": "{FirstName} {LastName} - {Авторлық}",
@@ -1292,6 +1306,16 @@
       "defaultMessage": "Бірдеңе дұрыс болмады",
       "homeButton": "Басты бет",
       "retryButton": "Қайталау"
+    },
+    "GlobalError": {
+      "title": "Бірдеңе дұрыс болмады",
+      "description": "Бетті жүктеу кезінде күтпеген қате орын алды",
+      "errorAlertTitle": "Қате",
+      "errorId": "Қате идентификаторы:",
+      "updateMessage": "Қате қолданбаның жаңартылуына немесе ресурстардың уақытша қолжетімсіздігіне байланысты болуы мүмкін. Бетті толық қайта жүктеу әдетте мәселені шешеді.",
+      "devDetails": "Қате туралы мәліметтер (dev)",
+      "retry": "Қайталау",
+      "defaultErrorMessage": "Сұранысты дұрыс өңдеу мүмкін болмады. Қайталап көріңіз."
     },
     "ExamSettings": {
       "accessControl": "Қол жеткізу бақылауы",
@@ -1710,6 +1734,7 @@
       "allPermissionsDescription": "Жүйеде қолжетімді барлық рұқсаттардың тізімі.",
       "allPermissionsTitle": "Барлық рұқсаттар",
       "scopeHierarchy": "Қамту иерархиясы",
+      "scopeHierarchyValue": "all → platform → assigned → own",
       "assignRole": "Рөл тағайындау",
       "assignRoleDescription": "Пайдаланушы мен рольді таңдап, тағайындаңыз.",
       "assignRoleTitle": "Пайдаланушыға рөл тағайындау",
@@ -4150,7 +4175,13 @@
         "selectTemplate": "Қосу үшін үлгіні таңдаңыз",
         "squareRoot": "Квадрат түбірі:",
         "subscripts": "Төменгі индекстер:",
+        "subscript": "индекс",
         "summation": "Қосу:",
+        "upper": "жоғарғы",
+        "lower": "төменгі",
+        "power": "дәреже",
+        "numerator": "алымы",
+        "denominator": "бөлімі",
         "supportedFunctions": "қолдау көрсетілетін TeX функциялары үшін",
         "symbols": "Таңбалар",
         "templateBinomial": "Бином",
@@ -5369,7 +5400,8 @@
           "title": "Сіздің оқу профиліңіз"
         },
         "progress": {
-          "dailyXP": "Бүгінгі ТӨ",
+          "dailyXP": "Бүгінгі XP",
+          "dailyXPValue": "{earned} / {cap}",
           "levelProgress": "Деңгей прогресі",
           "levelShort": "Дең.",
           "levelTransition": "Деңгей {current} → {next}",
@@ -6462,8 +6494,9 @@
     "enterImageUrl": "Енгізгіңіз келетін суреттің URL мекенжайын енгізіңіз.",
     "enterUrlToLink": "Сілтеме жасағыңыз келетін URL мекенжайын енгізіңіз.",
     "enterVideoUrl": "YouTube URL немесе бейне сілтемесін енгізіңіз.",
-    "imagePlaceholder": "https://example.com/image.jpg",
-    "imageUrl": "Сурет URL",
+    "h2": "H2",
+    "h3": "H3",
+    "imagePlaceholder": "https://example.com/image.jpg",    "imageUrl": "Сурет URL",
     "uploadFile": "Файлды жүктеу",
     "url": "URL",
     "urlPlaceholder": "https://example.com",
@@ -6786,6 +6819,8 @@
       "colHealth": "Күй",
       "colTopAlert": "Негізгі ескерту",
       "noAlert": "Ескерту жоқ",
+      "vsTeacherAvg": "оқытушы орташа",
+      "vsHistory": "тарих",
       "searchPlaceholder": "Курстар бойынша іздеу...",
       "emptyMessage": "Ағымдағы аналитика аумағына сәйкес курстар жоқ."
     },
@@ -7393,6 +7428,9 @@
           "noVisibleTestCases": "Көрінетін тест-кейстер жоқ. Жасырын тесттерді тексеру үшін шешімді жіберіңіз.",
           "notConfigured": "Тапсырма бапталмаған",
           "notConfiguredDescription": "Бұл код тапсырмасы әлі бапталмаған. Оқытушыңызға хабарласыңыз.",
+          "underConstructionIcon": "🛠️",
+          "timeLimitValue": "{value} мс",
+          "memoryLimitValue": "{value} МБ",
           "otherLanguages": "Басқа тілдер",
           "output": "Шығару",
           "partialCredit": "Ішінара несие",
