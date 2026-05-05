@@ -16,7 +16,6 @@ dependencies = [
   "alembic-postgresql-enum>=1.10.0",
   "logfire[fastapi,sqlalchemy]>=4.32.1",
   "python-ulid>=3.1.0",
-  "cachetools>=7.1.0",
   "slowapi>=0.1.9",
   "pydantic-settings>=2.14.0",
   "selectolax>=0.4.7",
@@ -24,7 +23,8 @@ dependencies = [
   "tiktoken>=0.12.0",
   "pgvector>=0.4.2",
   "cryptography>=47.0.0",
-  "fastapi-users[sqlalchemy]>=15.0.5"
+  "fastapi-users[sqlalchemy]>=15.0.5",
+  "cachebox>=5.2.3",
 ]
 
 [dependency-groups]

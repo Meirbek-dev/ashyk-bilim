@@ -2,7 +2,6 @@ import secrets
 import string
 
 from fastapi_users.password import PasswordHelper
-from passlib.context import CryptContext
 
 # 🔒 Secure Random Generation #############################################
 
@@ -19,9 +18,7 @@ def generate_secure_code(length: int = 8) -> str:
 
 # 🔒 Password Hashing #####################################################
 
-# passlib CryptContext with argon2 — compatible with existing argon2-cffi hashes
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
-password_helper = PasswordHelper(pwd_context)
+password_helper = PasswordHelper()
 
 
 def security_hash_password(password: str) -> str:
