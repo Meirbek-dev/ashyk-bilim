@@ -1,6 +1,7 @@
 'use client';
 
 import { History } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
 import type { SubmissionStatus } from '@/features/grading/domain';
@@ -27,19 +28,22 @@ interface AttemptHistoryListProps {
 
 export default function AttemptHistoryList({
   items,
-  title = 'Attempt history',
-  emptyLabel = 'No attempts yet',
+  title,
+  emptyLabel,
   compact = false,
   className,
 }: AttemptHistoryListProps) {
+  const t = useTranslations('Components.AttemptHistoryList');
+  const resolvedTitle = title ?? t('attemptHistory');
+  const resolvedEmptyLabel = emptyLabel ?? t('noAttemptsYet');
   return (
     <section className={cn('space-y-3', className)}>
       <div className="flex items-center gap-2">
         <History className="text-muted-foreground size-4" />
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h3 className="text-sm font-semibold">{resolvedTitle}</h3>
       </div>
       {items.length === 0 ? (
-        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">{emptyLabel}</div>
+        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">{resolvedEmptyLabel}</div>
       ) : (
         <div className="space-y-2">
           {items.map((item) => (
@@ -67,7 +71,7 @@ export default function AttemptHistoryList({
                       className="mt-2"
                       onClick={item.onReview}
                     >
-                      Review
+                      {t('review')}
                     </Button>
                   ) : null}
                 </div>

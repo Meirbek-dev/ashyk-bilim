@@ -13,8 +13,9 @@ import {
   TextCursorInput,
   Trash2,
 } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useQuery, useQueryClient, queryOptions } from '@tanstack/react-query';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { apiFetch, apiFetcher } from '@/lib/api-client';
@@ -27,7 +28,6 @@ import { isAssessmentEditable } from '@/features/assessments/domain/lifecycle';
 import {
   classifyValidationIssue,
   dedupeIssues,
-  issuesForArea,
   itemIssues as persistedItemIssues,
   localItemValidationIssues,
 } from '@/features/assessments/domain/readiness';
@@ -116,15 +116,15 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
     data: assessment,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery(queryOptions({
     queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
     queryFn: () =>
       apiFetcher(`${getAPIUrl()}assessments/activity/${normalizedActivityUuid}`) as Promise<AssessmentStudioDetail>,
     enabled: Boolean(normalizedActivityUuid),
-  });
+  }));
 
   const [selectedItemUuid, setSelectedItemUuid] = useState<string | null>(null);
-  const readinessQuery = useQuery({
+  const readinessQuery = useQuery(queryOptions({
     queryKey: queryKeys.assessments.readiness(assessment?.assessment_uuid ?? ''),
     queryFn: () =>
       apiFetcher(
@@ -132,7 +132,7 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
       ) as Promise<StudioReadinessPayload>,
     enabled: Boolean(assessment?.assessment_uuid),
     retry: false,
-  });
+  }));
 
   useEffect(() => {
     if (!assessment?.items?.length) {
@@ -154,7 +154,9 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
     ]);
   }, [assessment, normalizedActivityUuid, queryClient]);
 
-  if (error) return <ErrorUI message="Unable to load assessment studio." />;
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
+
+  if (error) return <ErrorUI message={t('errorLoading')} />;
   if (isLoading || !assessment) return <PageLoading />;
 
   const items = Array.isArray(assessment.items) ? assessment.items : [];
@@ -211,6 +213,14 @@ export function NativeItemOutline({
     totalPoints,
     validationIssues,
   } = useAssessmentStudioContext();
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
+  const kindLabels: Record<SupportedStudioItemKind, string> = {
+    CHOICE: t('kindLabels.choice'),
+    OPEN_TEXT: t('kindLabels.openText'),
+    FILE_UPLOAD: t('kindLabels.fileUpload'),
+    FORM: t('kindLabels.form'),
+    MATCHING: t('kindLabels.matching'),
+  };
   const [isCreating, startTransition] = useTransition();
 
   const createItem = (kind: SupportedStudioItemKind) => {
@@ -223,17 +233,17 @@ export function NativeItemOutline({
         });
 
         if (!response.ok) {
-          throw new Error(await responseError(response, `Failed to create ${itemNoun.toLowerCase()}`));
+          throw new Error(await responseError(response, t('createFailed', { itemNoun: itemNoun.toLowerCase() })));
         }
 
         const created = (await response.json()) as { item_uuid?: string };
-        toast.success(`${itemNoun} created`);
+        toast.success(t('itemCreated', { itemNoun }));
         await refresh();
         if (typeof created.item_uuid === 'string') {
           setSelectedItemUuid(created.item_uuid);
         }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : `Failed to create ${itemNoun.toLowerCase()}`);
+        toast.error(error instanceof Error ? error.message : t('createFailed', { itemNoun: itemNoun.toLowerCase() }));
       }
     });
   };
@@ -242,8 +252,8 @@ export function NativeItemOutline({
     <aside className="bg-muted/20 p-4 lg:sticky lg:top-[88px] lg:h-[calc(100vh-88px)] lg:overflow-y-auto">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">{itemNoun} outline</h2>
-          <p className="text-muted-foreground text-xs">{totalPoints} total points</p>
+          <h2 className="text-sm font-semibold">{t('outlineTitle', { itemNoun })}</h2>
+          <p className="text-muted-foreground text-xs">{t('outlinePoints', { points: totalPoints })}</p>
         </div>
       </div>
 
@@ -260,7 +270,7 @@ export function NativeItemOutline({
                 disabled={isCreating}
                 className="h-10 px-2"
                 onClick={() => createItem(kind)}
-                title={`Add ${KIND_LABELS[kind]}`}
+                title={t('addKind', { kind: kindLabels[kind] })}
               >
                 {isCreating ? <LoaderCircle className="size-4 animate-spin" /> : <Icon className="size-4" />}
               </Button>
@@ -271,7 +281,7 @@ export function NativeItemOutline({
 
       {items.length === 0 ? (
         <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
-          Add a {itemNoun.toLowerCase()} to begin.
+          {t('outlineEmptyMessage', { itemNoun: itemNoun.toLowerCase() })}
         </div>
       ) : (
         <div className="space-y-2">
@@ -298,12 +308,12 @@ export function NativeItemOutline({
                     <div className="flex items-center gap-2">
                       <Icon className="text-muted-foreground size-4 shrink-0" />
                       <span className="truncate text-sm font-medium">
-                        {index + 1}. {item.title || `Untitled ${itemNoun.toLowerCase()}`}
+                        {index + 1}. {item.title || t('untitledItem', { itemNoun: itemNoun.toLowerCase() })}
                       </span>
                     </div>
                     <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-2 text-xs">
-                      <span>{item.max_score || 0} pts</span>
-                      <span>{KIND_LABELS[item.kind as SupportedStudioItemKind] ?? item.kind}</span>
+                      <span>{item.max_score || 0} {t('pointsAbbreviation')}</span>
+                      <span>{kindLabels[item.kind as SupportedStudioItemKind] ?? item.kind}</span>
                     </div>
                   </div>
                   {issues.length > 0 ? (
@@ -357,6 +367,14 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
     totalPoints,
     validationIssues,
   } = useAssessmentStudioContext();
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
+  const kindLabels: Record<SupportedStudioItemKind, string> = {
+    CHOICE: t('kindLabels.choice'),
+    OPEN_TEXT: t('kindLabels.openText'),
+    FILE_UPLOAD: t('kindLabels.fileUpload'),
+    FORM: t('kindLabels.form'),
+    MATCHING: t('kindLabels.matching'),
+  };
   const item = items.find((candidate) => candidate.item_uuid === selectedItemUuid) ?? items[0] ?? null;
   const [assessmentState, setAssessmentState] = useState<AssessmentEditorState>(() =>
     toAssessmentEditorState(assessment),
@@ -468,13 +486,13 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           method: 'DELETE',
         });
         if (!response.ok) {
-          throw new Error(await responseError(response, `Failed to delete ${itemNoun.toLowerCase()}`));
+          throw new Error(await responseError(response, t('deleteFailed', { itemNoun: itemNoun.toLowerCase() })));
         }
-        toast.success(`${itemNoun} deleted`);
+        toast.success(t('itemDeleted', { itemNoun }));
         setSelectedItemUuid(null);
         await refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : `Failed to delete ${itemNoun.toLowerCase()}`);
+        toast.error(error instanceof Error ? error.message : t('deleteFailed', { itemNoun: itemNoun.toLowerCase() }));
       }
     });
   };
@@ -488,24 +506,24 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             kind: itemState.kind,
-            title: itemState.title ? `${itemState.title} copy` : `Copy of ${itemNoun}`,
+            title: itemState.title ? `${itemState.title} copy` : t('copyOfItem', { itemNoun }),
             max_score: itemState.max_score,
             body: structuredClone(itemState.body),
           }),
         });
 
         if (!response.ok) {
-          throw new Error(await responseError(response, `Failed to duplicate ${itemNoun.toLowerCase()}`));
+          throw new Error(await responseError(response, t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() })));
         }
 
         const created = (await response.json()) as { item_uuid?: string };
-        toast.success(`${itemNoun} duplicated`);
+        toast.success(t('itemDuplicated', { itemNoun }));
         await refresh();
         if (typeof created.item_uuid === 'string') {
           setSelectedItemUuid(created.item_uuid);
         }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : `Failed to duplicate ${itemNoun.toLowerCase()}`);
+        toast.error(error instanceof Error ? error.message : t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() }));
       }
     });
   };
@@ -525,9 +543,9 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
       <section className="bg-card rounded-lg border p-4 md:p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold">Assessment details</h3>
+            <h3 className="text-sm font-semibold">{t('assessmentDetailsTitle')}</h3>
             <p className="text-muted-foreground text-xs">
-              Title, instructions, schedule, and {mode === 'exam' ? 'exam policy' : 'grading settings'}.
+              {t(mode === 'exam' ? 'assessmentDetailsExamDescription' : 'assessmentDetailsAssignmentDescription')}
             </p>
           </div>
           <SaveStateBadge state={assessmentSaveState} />
@@ -545,9 +563,9 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
         <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-dashed p-8">
           <div className="max-w-sm text-center">
             <BookOpen className="text-muted-foreground mx-auto size-10" />
-            <h2 className="mt-3 text-lg font-semibold">No {itemNoun.toLowerCase()} selected</h2>
+            <h2 className="mt-3 text-lg font-semibold">{t('noItemSelectedTitle', { itemNoun: itemNoun.toLowerCase() })}</h2>
             <p className="text-muted-foreground mt-1 text-sm">
-              Create or select a {itemNoun.toLowerCase()} from the outline.
+              {t('noItemSelectedDescription', { itemNoun: itemNoun.toLowerCase() })}
             </p>
           </div>
         </div>
@@ -557,15 +575,17 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline">
-                  {KIND_LABELS[itemState.kind as SupportedStudioItemKind] ?? itemState.kind}
+                  {kindLabels[itemState.kind as SupportedStudioItemKind] ?? itemState.kind}
                 </Badge>
                 <SaveStateBadge state={itemSaveState} />
-                {!isEditable ? <Badge variant="secondary">Read only</Badge> : null}
+                {!isEditable ? <Badge variant="secondary">{t('readOnlyBadge')}</Badge> : null}
               </div>
-              <h2 className="mt-2 text-xl font-semibold">{itemState.title || `Untitled ${itemNoun.toLowerCase()}`}</h2>
+              <h2 className="mt-2 text-xl font-semibold">
+                {itemState.title || t('untitledItem', { itemNoun: itemNoun.toLowerCase() })}
+              </h2>
               <p className="text-muted-foreground text-sm">
-                {itemState.max_score || 0} pts ·{' '}
-                {totalPoints > 0 ? Math.round((itemState.max_score / totalPoints) * 100) : 0}% weight
+                {itemState.max_score || 0} {t('pointsAbbreviation')} ·{' '}
+                {totalPoints > 0 ? Math.round((itemState.max_score / totalPoints) * 100) : 0}% {t('weightLabel')}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -577,7 +597,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
                 onClick={handleDuplicate}
               >
                 {isDuplicating ? <LoaderCircle className="size-4 animate-spin" /> : <Copy className="size-4" />}
-                Duplicate
+                {t('duplicate')}
               </Button>
               <Button
                 type="button"
@@ -587,7 +607,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
                 onClick={handleDelete}
               >
                 {isDeleting ? <LoaderCircle className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
-                Delete
+                {t('delete')}
               </Button>
             </div>
           </div>
@@ -601,12 +621,12 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
 
           <section className="bg-card rounded-lg border p-4 md:p-5">
             <div className="mb-4">
-              <h3 className="text-sm font-semibold">{itemNoun} metadata</h3>
-              <p className="text-muted-foreground text-xs">Shared title, prompt, and point value.</p>
+              <h3 className="text-sm font-semibold">{t('itemMetadataTitle')}</h3>
+              <p className="text-muted-foreground text-xs">{t('itemMetadataDescription')}</p>
             </div>
             <div className="grid gap-4">
               <div className="space-y-2">
-                <Label htmlFor="native-item-title">Title</Label>
+                <Label htmlFor="native-item-title">{t('titleLabel')}</Label>
                 <Input
                   id="native-item-title"
                   value={itemState.title}
@@ -620,7 +640,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
                 />
               </div>
               <div className="max-w-48 space-y-2">
-                <Label htmlFor="native-item-points">Points</Label>
+                <Label htmlFor="native-item-points">{t('pointsLabel')}</Label>
                 <Input
                   id="native-item-points"
                   type="number"
@@ -647,8 +667,8 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
 
           <section className="bg-card rounded-lg border p-4 md:p-5">
             <div className="mb-4">
-              <h3 className="text-sm font-semibold">{itemNoun} content</h3>
-              <p className="text-muted-foreground text-xs">Canonical item authoring.</p>
+              <h3 className="text-sm font-semibold">{t('itemContentTitle')}</h3>
+              <p className="text-muted-foreground text-xs">{t('itemContentDescription')}</p>
             </div>
             {itemContentIssues.length > 0 ? <InlineIssueList issues={itemContentIssues} /> : null}
             <NativeItemBodyEditor
@@ -677,12 +697,13 @@ function AssessmentMetadataForm({
   issues: ReturnType<typeof classifyValidationIssue>[];
   onChange: (nextState: AssessmentEditorState) => void;
 }) {
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
   const hasIssue = (field: string) => issues.some((issue) => issue.field === field);
 
   return (
     <div className="grid gap-6">
       <div className="space-y-2">
-        <Label htmlFor="assessment-title">Title</Label>
+        <Label htmlFor="assessment-title">{t('titleLabel')}</Label>
         <Input
           id="assessment-title"
           value={state.title}
@@ -694,7 +715,7 @@ function AssessmentMetadataForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="assessment-description">Description</Label>
+        <Label htmlFor="assessment-description">{t('descriptionLabel')}</Label>
         <Textarea
           id="assessment-description"
           value={state.description}
@@ -706,7 +727,7 @@ function AssessmentMetadataForm({
 
       <div className={cn('grid gap-4', mode === 'assignment' ? 'md:grid-cols-[1fr_12rem]' : 'md:grid-cols-2')}>
         <div className="space-y-2">
-          <Label htmlFor="assessment-due-at">Due date</Label>
+          <Label htmlFor="assessment-due-at">{t('dueDateLabel')}</Label>
           <Input
             id="assessment-due-at"
             type="datetime-local"
@@ -720,7 +741,7 @@ function AssessmentMetadataForm({
 
         {mode === 'assignment' ? (
           <div className="space-y-2">
-            <Label htmlFor="assessment-grading-type">Grading mode</Label>
+            <Label htmlFor="assessment-grading-type">{t('gradingModeLabel')}</Label>
             <NativeSelect
               id="assessment-grading-type"
               value={state.gradingType}
@@ -730,8 +751,8 @@ function AssessmentMetadataForm({
                 onChange({ ...state, gradingType: event.target.value as AssessmentEditorState['gradingType'] })
               }
             >
-              <NativeSelectOption value="NUMERIC">Numeric</NativeSelectOption>
-              <NativeSelectOption value="PERCENTAGE">Percentage</NativeSelectOption>
+              <NativeSelectOption value="NUMERIC">{t('gradingModeNumeric')}</NativeSelectOption>
+              <NativeSelectOption value="PERCENTAGE">{t('gradingModePercentage')}</NativeSelectOption>
             </NativeSelect>
           </div>
         ) : null}
@@ -742,11 +763,11 @@ function AssessmentMetadataForm({
           <div className="rounded-lg border p-4">
             <div className="mb-4 flex items-center gap-2">
               <ShieldAlert className="size-4" />
-              <h4 className="text-sm font-semibold">Exam policy</h4>
+              <h4 className="text-sm font-semibold">{t('examPolicyTitle')}</h4>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="exam-max-attempts">Attempt limit</Label>
+                <Label htmlFor="exam-max-attempts">{t('attemptLimitLabel')}</Label>
                 <Input
                   id="exam-max-attempts"
                   type="number"
@@ -759,7 +780,7 @@ function AssessmentMetadataForm({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="exam-time-limit">Time limit, minutes</Label>
+                <Label htmlFor="exam-time-limit">{t('timeLimitLabel')}</Label>
                 <Input
                   id="exam-time-limit"
                   type="number"
@@ -772,7 +793,7 @@ function AssessmentMetadataForm({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="exam-violation-threshold">Violation threshold</Label>
+                <Label htmlFor="exam-violation-threshold">{t('violationThresholdLabel')}</Label>
                 <Input
                   id="exam-violation-threshold"
                   type="number"
@@ -789,43 +810,43 @@ function AssessmentMetadataForm({
 
           <div className="grid gap-3 md:grid-cols-2">
             <ToggleRow
-              label="Copy/paste protection"
+              label={t('copyPasteProtectionLabel')}
               checked={state.copyPasteProtection}
               disabled={disabled}
               onChange={(checked) => onChange({ ...state, copyPasteProtection: checked })}
             />
             <ToggleRow
-              label="Tab switch detection"
+              label={t('tabSwitchDetectionLabel')}
               checked={state.tabSwitchDetection}
               disabled={disabled}
               onChange={(checked) => onChange({ ...state, tabSwitchDetection: checked })}
             />
             <ToggleRow
-              label="DevTools detection"
+              label={t('devtoolsDetectionLabel')}
               checked={state.devtoolsDetection}
               disabled={disabled}
               onChange={(checked) => onChange({ ...state, devtoolsDetection: checked })}
             />
             <ToggleRow
-              label="Right-click disabled"
+              label={t('rightClickDisabledLabel')}
               checked={state.rightClickDisable}
               disabled={disabled}
               onChange={(checked) => onChange({ ...state, rightClickDisable: checked })}
             />
             <ToggleRow
-              label="Fullscreen enforcement"
+              label={t('fullscreenEnforcementLabel')}
               checked={state.fullscreenEnforcement}
               disabled={disabled}
               onChange={(checked) => onChange({ ...state, fullscreenEnforcement: checked })}
             />
             <ToggleRow
-              label="Allow result review"
+              label={t('allowResultReviewLabel')}
               checked={state.allowResultReview}
               disabled={disabled}
               onChange={(checked) => onChange({ ...state, allowResultReview: checked })}
             />
             <ToggleRow
-              label="Show correct answers"
+              label={t('showCorrectAnswersLabel')}
               checked={state.showCorrectAnswers}
               disabled={disabled}
               onChange={(checked) => onChange({ ...state, showCorrectAnswers: checked })}

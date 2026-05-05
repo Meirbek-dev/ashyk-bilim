@@ -2,7 +2,7 @@
 
 import { AlertCircle, CheckCircle, Clock, FileText, InfinityIcon, ShieldAlert, Users, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, queryOptions } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -58,7 +58,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
 
     await Promise.allSettled([
       queryClient.invalidateQueries({ queryKey: queryKeys.assessments.draft(assessmentUuid) }),
-      queryClient.invalidateQueries({ queryKey: ['assessments', 'submissions', 'me', assessmentUuid] }),
+      queryClient.invalidateQueries(queryOptions({ queryKey: ['assessments', 'submissions', 'me', assessmentUuid] })),
       queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(assessmentUuid) }),
     ]);
   }, [assessmentUuid, courseUuid, queryClient]);

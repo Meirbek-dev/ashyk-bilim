@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
+import { useTranslations } from 'next-intl';
 import { AlertTriangle, LoaderCircle, Maximize2 } from 'lucide-react';
 
 import {
@@ -18,6 +19,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import type { AttemptConflictState } from './AssessmentActionBar';
 import { DEFAULT_POLICY_VIEW, isAntiCheatEnabled } from '@/features/assessments/domain/policy';
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
 import { useAssessmentAttempt as useAssessmentAttemptData } from '@/features/assessments/hooks/useAssessment';
@@ -67,6 +69,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
   const [focusMode, setFocusMode] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const { controls, contextValue } = useActionBarState();
+  const t = useTranslations('Features.Assessments.Attempt.Exam');
 
   // ── Load kind module ───────────────────────────────────────────────────────
 
@@ -197,10 +200,9 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
           {!isOnline ? (
             <Alert>
               <AlertTriangle className="size-4" />
-              <AlertTitle>Connection lost</AlertTitle>
+              <AlertTitle>{t('connectionLostTitle')}</AlertTitle>
               <AlertDescription>
-                Keep working. Your in-progress answers stay in this browser and will save again after the connection
-                returns.
+                {t('connectionLostDescription')}
               </AlertDescription>
             </Alert>
           ) : null}
@@ -230,6 +232,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
 // ── Recovery dialog ───────────────────────────────────────────────────────────
 
 function RecoveryDialog({ recovery }: { recovery: AttemptRecoveryState | null }) {
+  const t = useTranslations('Features.Assessments.Attempt.Exam');
   return (
     <AlertDialog open={Boolean(recovery?.open)}>
       <AlertDialogContent>
@@ -237,23 +240,24 @@ function RecoveryDialog({ recovery }: { recovery: AttemptRecoveryState | null })
           <AlertDialogMedia>
             <AlertTriangle className="size-6 text-orange-500" />
           </AlertDialogMedia>
-          <AlertDialogTitle>Recover previous answers?</AlertDialogTitle>
+          <AlertDialogTitle>{t('recoverPreviousAnswers')}</AlertDialogTitle>
           <AlertDialogDescription>
             {recovery?.lastSavedAt
-              ? `A local draft from ${formatDate(recovery.lastSavedAt)} is available.`
-              : 'A local draft is available for this attempt.'}
+              ? t('recoverLocalDraftWithTime', { time: formatDate(recovery.lastSavedAt) })
+              : t('recoverLocalDraft')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={recovery?.onReject}>Start fresh</AlertDialogCancel>
-          <AlertDialogAction onClick={recovery?.onAccept}>Recover answers</AlertDialogAction>
+          <AlertDialogCancel onClick={recovery?.onReject}>{t('startFresh')}</AlertDialogCancel>
+          <AlertDialogAction onClick={recovery?.onAccept}>{t('recoverAnswers')}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
 
-function ConflictDialog({ conflict }: { conflict: import('./AssessmentActionBar').AttemptConflictState | null }) {
+function ConflictDialog({ conflict }: { conflict: AttemptConflictState | null }) {
+  const t = useTranslations('Features.Assessments.Attempt.Exam');
   return (
     <AlertDialog open={Boolean(conflict?.open)}>
       <AlertDialogContent>
@@ -261,23 +265,27 @@ function ConflictDialog({ conflict }: { conflict: import('./AssessmentActionBar'
           <AlertDialogMedia>
             <AlertTriangle className="size-6 text-orange-500" />
           </AlertDialogMedia>
-          <AlertDialogTitle>Resolve draft conflict</AlertDialogTitle>
+          <AlertDialogTitle>{t('resolveDraftConflict')}</AlertDialogTitle>
           <AlertDialogDescription>
             {conflict
-              ? `A newer draft version (${conflict.latestVersion}) was saved${conflict.latestSavedAt ? ` at ${formatDate(conflict.latestSavedAt)}` : ''}.`
-              : 'A newer draft version is available.'}
+              ? t('draftConflictDescription', {
+                  latestVersion: conflict.latestVersion,
+                  latestSavedAt: conflict.latestSavedAt ? formatDate(conflict.latestSavedAt) : '',
+                })
+              : t('draftConflictAvailable')}
           </AlertDialogDescription>
           {conflict ? (
             <AlertDialogDescription>
-              Your local draft has {conflict.localAnswerCount} answered item{conflict.localAnswerCount === 1 ? '' : 's'}
-              . The latest server draft has {conflict.serverAnswerCount} answered item
-              {conflict.serverAnswerCount === 1 ? '' : 's'}.
+              {t('draftConflictAnswerCounts', {
+                localCount: conflict.localAnswerCount,
+                serverCount: conflict.serverAnswerCount,
+              })}
             </AlertDialogDescription>
           ) : null}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={conflict?.onKeepLocalVersion}>Keep my local version</AlertDialogCancel>
-          <AlertDialogAction onClick={conflict?.onUseServerVersion}>Use latest saved version</AlertDialogAction>
+          <AlertDialogCancel onClick={conflict?.onKeepLocalVersion}>{t('keepMyLocalVersion')}</AlertDialogCancel>
+          <AlertDialogAction onClick={conflict?.onUseServerVersion}>{t('useLatestSavedVersion')}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

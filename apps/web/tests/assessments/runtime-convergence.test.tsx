@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   useAssessmentSubmissionMock: vi.fn(),
   useAssessmentAttemptPersistenceMock: vi.fn(),
   keepLocalMock: vi.fn(),
-  useServerMock: vi.fn(),
+  applyServerMock: vi.fn(),
 }));
 
 vi.mock('sonner', () => ({
@@ -32,8 +32,10 @@ vi.mock('next-intl', () => ({
   useLocale: () => 'en',
 }));
 
-vi.mock('@/lib/api-client', async () => {
-  const actual = await vi.importActual<typeof import('@/lib/api-client')>('@/lib/api-client');
+import type * as ApiClient from '@/lib/api-client';
+
+vi.mock('@/lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof ApiClient>();
   return {
     ...actual,
     apiFetch: mocks.apiFetchMock,
@@ -85,7 +87,7 @@ function DummyAttempt() {
       localAnswerCount: 3,
       serverAnswerCount: 5,
       onKeepLocalVersion: mocks.keepLocalMock,
-      onUseServerVersion: mocks.useServerMock,
+      onUseServerVersion: mocks.applyServerMock,
     },
   });
 
@@ -203,7 +205,7 @@ describe('assessment runtime convergence', () => {
     expect(mocks.keepLocalMock).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole('button', { name: 'Use latest saved version' }));
-    expect(mocks.useServerMock).toHaveBeenCalledTimes(1);
+    expect(mocks.applyServerMock).toHaveBeenCalledTimes(1);
   });
 
   it('renders returned resubmission entry flow and starts a revision draft', async () => {

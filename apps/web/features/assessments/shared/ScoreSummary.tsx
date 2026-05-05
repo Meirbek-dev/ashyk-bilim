@@ -1,6 +1,7 @@
 'use client';
 
 import { Info } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { formatPercent } from '@/features/assessments/domain/score';
 import type { NormalizedScore } from '@/features/assessments/domain/score';
@@ -14,18 +15,19 @@ interface ScoreSummaryProps {
   className?: string;
 }
 
-const SOURCE_LABELS: Record<NormalizedScore['source'], string> = {
-  auto: 'Auto-graded',
-  teacher: 'Teacher grade',
-  none: 'Not graded',
+const SOURCE_LABEL_KEYS: Record<NormalizedScore['source'], string> = {
+  auto: 'autoGraded',
+  teacher: 'teacherGrade',
+  none: 'notGraded',
 };
 
 export default function ScoreSummary({ score, rawScore, maxScore, className }: ScoreSummaryProps) {
+  const t = useTranslations('Components.ScoreSummary');
   const percent = formatPercent(score.percent);
   const hasRaw =
     rawScore !== null && rawScore !== undefined && maxScore !== null && maxScore !== undefined && maxScore > 0;
-  const sourceLabel = SOURCE_LABELS[score.source];
-  const detail = hasRaw ? `${rawScore}/${maxScore} points · ${percent}` : `${sourceLabel} · ${percent}`;
+  const sourceLabel = t(SOURCE_LABEL_KEYS[score.source]);
+  const detail = hasRaw ? `${rawScore}/${maxScore} ${t('points')} · ${percent}` : `${sourceLabel} · ${percent}`;
 
   return (
     <div className={cn('rounded-md border bg-card p-3', className)}>
@@ -38,7 +40,7 @@ export default function ScoreSummary({ score, rawScore, maxScore, className }: S
           <Tooltip>
             <TooltipTrigger render={<Info className="text-muted-foreground size-4" />} />
             <TooltipContent>
-              Scores are normalized to a 0-100 percent scale. Teacher grades take priority over auto scores.
+              {t('scoreTooltip')}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

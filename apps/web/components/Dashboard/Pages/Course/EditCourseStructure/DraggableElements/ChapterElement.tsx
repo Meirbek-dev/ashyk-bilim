@@ -113,7 +113,7 @@ const ChapterElement = ({ chapter, chapterIndex, course_uuid }: ChapterElementPr
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeletingChapter, setIsDeletingChapter] = useState(false);
 
-  const activities = chapter.activities ?? [];
+  const activities = useMemo(() => chapter.activities ?? [], [chapter.activities]);
 
   const activityIds = useMemo(() => activities.map((activity) => activity.activity_uuid), [activities]);
 

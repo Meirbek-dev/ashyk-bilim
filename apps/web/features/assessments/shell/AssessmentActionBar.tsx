@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { CheckCircle2, ChevronLeft, ChevronRight, LoaderCircle, RotateCcw, Save, SendHorizonal } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -141,6 +142,7 @@ interface AssessmentActionBarProps {
  * This is the ONLY place `SaveStateBadge` is rendered — no duplicate in the header.
  */
 export function AssessmentActionBar({ controls, returned }: AssessmentActionBarProps) {
+  const t = useTranslations('Features.Assessments.Attempt.Exam');
   const { navigation } = controls;
 
   return (
@@ -171,7 +173,7 @@ export function AssessmentActionBar({ controls, returned }: AssessmentActionBarP
                 onClick={navigation.onPrevious}
               >
                 <ChevronLeft className="size-4" />
-                Previous
+                {t('previous')}
               </Button>
               <Button
                 type="button"
@@ -179,7 +181,7 @@ export function AssessmentActionBar({ controls, returned }: AssessmentActionBarP
                 disabled={!navigation.canNext}
                 onClick={navigation.onNext}
               >
-                Next
+                {t('next')}
                 <ChevronRight className="size-4" />
               </Button>
             </>
@@ -193,7 +195,7 @@ export function AssessmentActionBar({ controls, returned }: AssessmentActionBarP
               onClick={controls.onSave}
             >
               {controls.isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />}
-              Save draft
+              {t('save')}
             </Button>
           ) : null}
 
@@ -207,7 +209,7 @@ export function AssessmentActionBar({ controls, returned }: AssessmentActionBarP
             ) : (
               <SendHorizonal className="size-4" />
             )}
-            {returned ? 'Submit again' : 'Submit'}
+            {returned ? t('submitAgain') : t('submit')}
           </Button>
         </div>
       </div>
@@ -222,20 +224,22 @@ export function AssessmentActionBar({ controls, returned }: AssessmentActionBarP
  * but the canonical placement is AssessmentActionBar (bottom bar only).
  */
 export function SaveStateBadge({ state, status }: { state: AttemptSaveState; status: SubmissionStatus | null }) {
+  const t = useTranslations('Features.Assessments.Attempt.Exam');
+
   if (state === 'saving')
     return (
       <Badge variant="secondary">
         <LoaderCircle className="size-3 animate-spin" />
-        Saving
+        {t('saveStateSaving')}
       </Badge>
     );
-  if (state === 'unsaved') return <Badge variant="warning">Unsaved</Badge>;
-  if (state === 'error') return <Badge variant="destructive">Save failed</Badge>;
+  if (state === 'unsaved') return <Badge variant="warning">{t('saveStateUnsaved')}</Badge>;
+  if (state === 'error') return <Badge variant="destructive">{t('saveStateError')}</Badge>;
   if (state === 'returned')
     return (
       <Badge variant="warning">
         <RotateCcw className="size-3" />
-        Returned
+        {t('saveStateReturned')}
       </Badge>
     );
   if (state === 'submitted' || status === 'PENDING') return <SubmissionStatusBadge status="PENDING" />;
@@ -244,7 +248,7 @@ export function SaveStateBadge({ state, status }: { state: AttemptSaveState; sta
   return (
     <Badge variant="success">
       <CheckCircle2 className="size-3" />
-      Saved
+      {t('saveStateSaved')}
     </Badge>
   );
 }

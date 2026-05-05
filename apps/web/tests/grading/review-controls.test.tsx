@@ -197,7 +197,7 @@ describe('teacher review controls', () => {
               first_name: 'A',
               last_name: 'Student',
               email: 'a@example.test',
-            } as Submission['user'],
+            },
           }),
           createSubmission({
             submission_uuid: 'submission_two',
@@ -208,13 +208,13 @@ describe('teacher review controls', () => {
               first_name: 'B',
               last_name: 'Student',
               email: 'b@example.test',
-            } as Submission['user'],
+            },
           }),
         ]}
       />,
     );
 
-    const dueAtInput = document.querySelector('input[type="datetime-local"]') as HTMLInputElement | null;
+    const dueAtInput = document.querySelector('input[type="datetime-local"]');
     expect(dueAtInput).not.toBeNull();
     fireEvent.change(dueAtInput!, { target: { value: '2026-05-10T14:30' } });
     fireEvent.change(screen.getByPlaceholderText('Reason'), { target: { value: 'Medical extension' } });

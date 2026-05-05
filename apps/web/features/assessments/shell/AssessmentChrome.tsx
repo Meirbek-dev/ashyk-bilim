@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 import type { PolicyView } from '@/features/assessments/domain/policy';
 import type { ReleaseState } from '@/features/assessments/domain/release';
 import type { SubmissionStatus } from '@/features/assessments/domain/submission-status';
@@ -66,6 +67,7 @@ export function AssessmentChrome({
   isResultVisible = false,
   className,
 }: AssessmentChromeProps) {
+  const t = useTranslations('Features.Assessments.Attempt.Exam');
   const releaseNotice = getReleaseNotice({ releaseState, submissionStatus, returned, isResultVisible });
 
   return (
@@ -84,7 +86,7 @@ export function AssessmentChrome({
             {dueAt ? (
               <Badge variant="outline">
                 <Clock className="size-3" />
-                Due {formatDate(dueAt)}
+                {t('dueLabel')} {formatDate(dueAt)}
               </Badge>
             ) : null}
             <Button
@@ -94,7 +96,7 @@ export function AssessmentChrome({
               onClick={onToggleFocusMode}
             >
               <Focus className="size-4" />
-              {focusMode ? 'Exit focus' : 'Focus'}
+              {focusMode ? t('exitFocus') : t('focus')}
             </Button>
           </div>
         </div>
@@ -104,8 +106,8 @@ export function AssessmentChrome({
       {returned ? (
         <Alert>
           <RotateCcw className="size-4" />
-          <AlertTitle>Returned for revision</AlertTitle>
-          <AlertDescription>Review the feedback, update your work, and submit again.</AlertDescription>
+          <AlertTitle>{t('returnedForRevisionTitle')}</AlertTitle>
+          <AlertDescription>{t('returnedForRevisionDescription')}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -121,10 +123,10 @@ export function AssessmentChrome({
       {antiCheatEnabled ? (
         <Alert variant={violationCount > 0 ? 'destructive' : 'default'}>
           <AlertTriangle className="size-4" />
-          <AlertTitle>Attempt integrity checks are active</AlertTitle>
+          <AlertTitle>{t('attemptIntegrityChecksActive')}</AlertTitle>
           <AlertDescription>
             {describeAntiCheat(policy)}
-            {violationCount > 0 ? ` Violations recorded: ${violationCount}.` : ''}
+            {violationCount > 0 ? ' ' + t('violationsRecorded', { count: violationCount }) : ''}
           </AlertDescription>
         </Alert>
       ) : null}

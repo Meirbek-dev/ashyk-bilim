@@ -21,6 +21,7 @@ from src.db.users import User
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     AnalyticsContext,
+    ProgressSnapshot,
     assessment_pass_threshold,
     assignment_graded_at,
     assignment_is_graded,
@@ -35,7 +36,6 @@ from src.services.analytics.queries import (
     median_or_none,
     parse_timestamp,
     percentile,
-    ProgressSnapshot,
     progress_snapshots,
     safe_pct,
     to_iso,
@@ -50,11 +50,11 @@ from src.services.analytics.rollups import (
 from src.services.analytics.schemas import (
     AnalyticsFilterOption,
     AssessmentAuditEventRow,
-    AssessmentDiagnosticsSnapshot,
     AssessmentCohortRow,
+    AssessmentDiagnosticsSnapshot,
+    AssessmentItemAnalyticsRow,
     AssessmentLearnerRow,
     AssessmentMigrationStatus,
-    AssessmentItemAnalyticsRow,
     AssessmentOutlierRow,
     AssessmentSloSnapshot,
     AssessmentSupportAlertRow,
