@@ -448,6 +448,7 @@
       "reviewQuestions": "Сұрақтарды қарау",
       "rightClickDisabled": "Емтихан кезінде оң жақты басу өшірілген",
       "scoreDetails": "{score} / {max} ұпай",
+      "scoreLabel": "Ұпай",
       "scoreProgress": "Прогресс: {percentage}%",
       "selectMatch": "Сәйкестікті таңдаңыз",
       "settings": "Параметрлер",
@@ -7231,8 +7232,9 @@
           "flagged": "Белгіленген",
           "flaggedForReview": "Қарау үшін белгіленген",
           "fullscreenExited": "Толық экраннан шығу - бұзушылық тіркелді",
-          "fullscreenRequiredDescription": "Бұл емтихан толық экран режимін қажет етеді. Браузер толық экранға кіруге рұқсат беруі үшін төмендегі батырманы басыңыз.",
-          "fullscreenRequiredTitle": "Жалғастыру үшін толық экранға өтіңіз",
+          "fullscreenRequired": "Толық экран қажет",
+          "fullscreenRequiredDescription": "Бұл әрекет толық экран режимін қажет етеді. Жалғастыру үшін толық экранға өтіңіз.",
+          "fullscreenRequiredTitle": "Толық экранға өту",
           "enterFullscreen": "Толық экранға өту",
           "fullscreenNotSupported": "Толық экран режимі браузеріңізде қолдау көрсетілмейді",
           "fullscreenRecommended": "Бұл емтихан үшін толық экран режимі ұсынылады",
@@ -7591,7 +7593,15 @@
         "archive": "Мұрағаттау",
         "hideInspector": "Инспекторды жасыру",
         "showInspector": "Инспекторды көрсету",
-        "Assignment": {
+        "publishNow": "Қазір жариялау",
+        "issueBlocks": "{count} мәселе жариялауды блоктап тұр",
+        "assessmentLabel": "Бағалау",
+        "itemsLabel": "Элементтер",
+        "jumpToItem": "Элементке өту",
+        "blockerAlertDescription": "Жарияламас бұрын бағалау деңгейіндегі бұғаттаушыларды шешіңіз. Элемент деңгейіндегі мәселелер жоғарыдағы тізімде қалады.",
+        "loadingEditor": "Редактор жүктелуде"
+      },
+      "Assignment": {
           "AssignmentPage": {
             "assignmentTools": "Тапсырмаларға арналған құралдар",
             "desktopOnlyMessage1": "Бұл бет тек жұмыс үстелі құрылғысында қол жетімді.",

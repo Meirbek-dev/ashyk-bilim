@@ -7226,7 +7226,8 @@
           "flagged": "Flagged",
           "flaggedForReview": "Flagged for review",
           "fullscreenExited": "Fullscreen exited - violation recorded",
-          "fullscreenRequiredDescription": "This exam requires fullscreen mode. Use the button below so the browser can grant fullscreen access.",
+          "fullscreenRequired": "Fullscreen required",
+          "fullscreenRequiredDescription": "This attempt requires fullscreen mode. Enter fullscreen to continue.",
           "fullscreenRequiredTitle": "Enter fullscreen to continue",
           "enterFullscreen": "Enter fullscreen",
           "fullscreenNotSupported": "Fullscreen mode not supported by your browser",
@@ -7850,7 +7851,14 @@
         "moreOptions": "More options",
         "archive": "Archive",
         "hideInspector": "Hide inspector",
-        "showInspector": "Show inspector"
+        "showInspector": "Show inspector",
+        "publishNow": "Publish now",
+        "issueBlocks": "{count} {count, plural, =1 {issue blocks} other {issues block}} publishing.",
+        "assessmentLabel": "Assessment",
+        "itemsLabel": "Items",
+        "jumpToItem": "Jump to item",
+        "blockerAlertDescription": "Resolve the assessment-level blockers before publishing. Item-level issues remain linked from the list above.",
+        "loadingEditor": "Loading editor"
       },
       "Items": {
         "Choice": {
@@ -7874,6 +7882,7 @@
           }
         },
         "FileUpload": {
+          "prompt": "Prompt",
           "maxFiles": "Max files",
           "maxSizeMb": "Max size, MB",
           "noLimit": "No limit",
@@ -7898,6 +7907,18 @@
         "Form": {
           "title": "Form item",
           "description": "Create fill-in fields with optional correct answers.",
+          "prompt": "Prompt",
+          "fieldHeader": "Field {number}",
+          "fieldLabel": "Label",
+          "fieldType": "Type",
+          "fieldTypes": {
+            "text": "Text",
+            "textarea": "Textarea",
+            "number": "Number",
+            "date": "Date"
+          },
+          "addField": "Add field",
+          "unsupportedKind": "Unsupported item kind.",
           "questionBadge": "Q{number}",
           "questionPlaceholder": "Question or prompt",
           "fieldLabelPlaceholder": "Student field label",
@@ -7922,7 +7943,10 @@
         "OpenText": {
           "title": "Open text item",
           "description": "Prompt for a manually graded written response.",
+          "prompt": "Prompt",
           "promptPlaceholder": "Prompt",
+          "minWords": "Minimum words",
+          "rubric": "Rubric",
           "noTextRecorded": "No text recorded"
         }
       },

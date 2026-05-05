@@ -574,13 +574,15 @@ function ExamSubmissionStatePanel({
     submitted_at?: string | null;
   };
 }) {
+  const t = useTranslations('Activities.ExamActivity');
   if (submission.status === 'PENDING') {
     return (
       <Alert>
-        <AlertTitle>Submission received</AlertTitle>
+        <AlertTitle>{t('submissionReceivedTitle')}</AlertTitle>
         <AlertDescription>
-          Submitted{submission.submitted_at ? ` on ${formatDateTime(submission.submitted_at)}` : ''}. Results stay
-          hidden until review is complete.
+          {submission.submitted_at
+            ? t('submissionReceivedWithDateDescription', { date: formatDateTime(submission.submitted_at) })
+            : t('submissionReceivedDescription')}
         </AlertDescription>
       </Alert>
     );
@@ -589,19 +591,19 @@ function ExamSubmissionStatePanel({
   if (submission.status === 'GRADED') {
     return (
       <Alert>
-        <AlertTitle>Results are waiting for release</AlertTitle>
-        <AlertDescription>Your latest exam has been graded and will appear after release.</AlertDescription>
+        <AlertTitle>{t('resultsWaitingForReleaseTitle')}</AlertTitle>
+        <AlertDescription>{t('resultsWaitingForReleaseDescription')}</AlertDescription>
       </Alert>
     );
   }
 
   return (
     <Alert>
-      <AlertTitle>{submission.status === 'RETURNED' ? 'Returned for revision' : 'Result available'}</AlertTitle>
+      <AlertTitle>{submission.status === 'RETURNED' ? t('returnedForRevision') : t('resultAvailable')}</AlertTitle>
       <AlertDescription className="space-y-3">
         {typeof submission.final_score === 'number' ? (
           <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
-            <span className="bg-muted rounded px-2 py-0.5 text-xs font-medium">Score</span>
+            <span className="bg-muted rounded px-2 py-0.5 text-xs font-medium">{t('scoreLabel')}</span>
             {Math.round(submission.final_score)}%
           </span>
         ) : null}

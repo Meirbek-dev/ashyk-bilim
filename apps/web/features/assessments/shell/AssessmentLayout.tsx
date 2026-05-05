@@ -157,11 +157,9 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
           <div className="bg-card w-full max-w-md rounded-lg border p-6 shadow-lg">
             <div className="flex items-center gap-3 text-lg font-semibold">
               <Maximize2 className="size-5" />
-              Fullscreen required
+              {t('fullscreenRequired')}
             </div>
-            <p className="text-muted-foreground mt-2 text-sm">
-              This attempt requires fullscreen mode. Enter fullscreen to continue.
-            </p>
+            <p className="text-muted-foreground mt-2 text-sm">{t('fullscreenRequiredDescription')}</p>
             {guard.fullscreenError ? (
               <p className="text-muted-foreground mt-3 text-sm">{guard.fullscreenError}</p>
             ) : null}
@@ -171,7 +169,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
               onClick={guard.requestFullscreen}
             >
               <Maximize2 className="size-4" />
-              Enter fullscreen
+              {t('enterFullscreen')}
             </Button>
           </div>
         </div>

@@ -216,7 +216,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                 className="rounded-r-none"
               >
                 <Send className="size-4" />
-                Publish now
+                {t('publishNow')}
               </Button>
               <Popover
                 open={scheduleOpen}
@@ -335,13 +335,10 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                   <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
                     <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
                     <AlertDescription className="text-amber-900 dark:text-amber-200">
-                      <p className="mb-2 text-sm font-medium">
-                        {classifiedIssues.length} {classifiedIssues.length === 1 ? 'issue blocks' : 'issues block'}{' '}
-                        publishing.
-                      </p>
+                      <p className="mb-2 text-sm font-medium">{t('issueBlocks', { count: classifiedIssues.length })}</p>
                       {assessmentIssues.length > 0 ? (
                         <div className="mb-3">
-                          <p className="mb-1 text-xs font-semibold tracking-wide uppercase">Assessment</p>
+                          <p className="mb-1 text-xs font-semibold tracking-wide uppercase">{t('assessmentLabel')}</p>
                           <ul className="space-y-1">
                             {assessmentIssues.map((issue, idx) => (
                               <li
@@ -357,7 +354,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                       ) : null}
                       {itemIssues.length > 0 ? (
                         <div>
-                          <p className="mb-1 text-xs font-semibold tracking-wide uppercase">Items</p>
+                          <p className="mb-1 text-xs font-semibold tracking-wide uppercase">{t('itemsLabel')}</p>
                           <ul className="space-y-1">
                             {itemIssues.map((issue, idx) => (
                               <li
@@ -371,7 +368,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                                     href={`#item-${issue.itemUuid}`}
                                     className="shrink-0 text-xs text-amber-700 underline dark:text-amber-300"
                                   >
-                                    Jump to item
+                                    {t('jumpToItem')}
                                   </a>
                                 ) : null}
                               </li>
@@ -386,10 +383,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                 {assessmentIssues.length > 0 ? (
                   <Alert>
                     <AlertTriangle className="size-4" />
-                    <AlertDescription>
-                      Resolve the assessment-level blockers before publishing. Item-level issues remain linked from the
-                      list above.
-                    </AlertDescription>
+                    <AlertDescription>{t('blockerAlertDescription')}</AlertDescription>
                   </Alert>
                 ) : null}
 
@@ -408,7 +402,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
       ) : (
         <div className="text-muted-foreground flex min-h-[360px] items-center justify-center text-sm">
           <LoaderCircle className="mr-2 size-4 animate-spin" />
-          Loading editor
+          {t('loadingEditor')}
         </div>
       )}
     </div>
