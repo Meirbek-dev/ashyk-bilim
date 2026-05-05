@@ -9,8 +9,9 @@ from typing import Any
 from urllib.parse import urlencode
 
 import httpx
-import jwt as pyjwt
+import jwt
 from fastapi import HTTPException
+from fastapi_users.jwt import decode_jwt, generate_jwt
 
 from src.security.keys import get_jwt_secret
 from src.services.cache.redis_client import get_async_redis_client
@@ -35,6 +36,7 @@ _RETRYABLE_HTTP_ERRORS = (
 )
 _TOKEN_REQUEST_ATTEMPTS = 3
 _GOOGLE_ISSUERS = {"https://accounts.google.com", "accounts.google.com"}
+_GOOGLE_STATE_AUDIENCE = "ashyq-bilim:google-oauth-state"
 _REQUIRED_METADATA_KEYS = (
     "authorization_endpoint",
     "token_endpoint",
@@ -73,7 +75,7 @@ def _claims_from_google_id_token(
         return None
 
     try:
-        claims = pyjwt.decode(
+        claims = jwt.decode(
             id_token,
             options={
                 "verify_signature": False,
@@ -84,7 +86,7 @@ def _claims_from_google_id_token(
             },
             algorithms=["RS256", "HS256", "ES256"],
         )
-    except pyjwt.PyJWTError as exc:
+    except jwt.PyJWTError as exc:
         logger.warning("Failed to decode Google id_token", exc_info=exc)
         return None
 
@@ -144,28 +146,27 @@ def _encode_state(callback: str) -> tuple[str, str]:
     """Return (state_token, jti)."""
     jti = str(uuid.uuid4())
     payload = {
+        "aud": _GOOGLE_STATE_AUDIENCE,
         "callback": callback,
         "type": "google_state",
         "jti": jti,
-        "exp": int(time.time()) + 600,
         "iat": int(time.time()),
     }
-    token = pyjwt.encode(payload, get_jwt_secret(), algorithm="HS256")
+    token = generate_jwt(payload, get_jwt_secret(), PKCE_TTL)
     return token, jti
 
 
 def _decode_state(state: str) -> tuple[str, str]:
     """Return (callback_url, state_jti)."""
     try:
-        payload = pyjwt.decode(
+        payload = decode_jwt(
             state,
             get_jwt_secret(),
-            algorithms=["HS256"],
-            options={"verify_aud": False},
+            [_GOOGLE_STATE_AUDIENCE],
         )
-    except pyjwt.ExpiredSignatureError as exc:
+    except jwt.ExpiredSignatureError as exc:
         raise HTTPException(status_code=400, detail="OAuth state expired") from exc
-    except pyjwt.PyJWTError as exc:
+    except jwt.PyJWTError as exc:
         raise HTTPException(status_code=400, detail="Invalid OAuth state") from exc
 
     if payload.get("type") != "google_state":
