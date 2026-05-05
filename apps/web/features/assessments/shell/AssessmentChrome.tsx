@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { PolicyView } from '@/features/assessments/domain/policy';
+import type { ReleaseState } from '@/features/assessments/domain/release';
+import type { SubmissionStatus } from '@/features/assessments/domain/submission-status';
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -30,6 +32,9 @@ export interface AssessmentChromeProps {
   violationCount?: number;
   /** Full policy view, used to describe which checks are active. */
   policy?: PolicyView | null;
+  releaseState?: ReleaseState;
+  submissionStatus?: SubmissionStatus | null;
+  isResultVisible?: boolean;
   className?: string;
 }
 
@@ -56,8 +61,13 @@ export function AssessmentChrome({
   antiCheatEnabled = false,
   violationCount = 0,
   policy,
+  releaseState,
+  submissionStatus = null,
+  isResultVisible = false,
   className,
 }: AssessmentChromeProps) {
+  const releaseNotice = getReleaseNotice({ releaseState, submissionStatus, returned, isResultVisible });
+
   return (
     <div className={cn('flex flex-col gap-4', className)}>
       {/* ── Title card ────────────────────────────────────────────────────── */}
@@ -96,6 +106,14 @@ export function AssessmentChrome({
           <RotateCcw className="size-4" />
           <AlertTitle>Returned for revision</AlertTitle>
           <AlertDescription>Review the feedback, update your work, and submit again.</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {releaseNotice ? (
+        <Alert>
+          <Clock className="size-4" />
+          <AlertTitle>{releaseNotice.title}</AlertTitle>
+          <AlertDescription>{releaseNotice.description}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -142,6 +160,45 @@ function describeAntiCheat(policy: PolicyView | null | undefined): string {
     policy.antiCheat.fullscreenEnforced ? 'fullscreen enforcement' : null,
   ].filter(Boolean);
   return enabled.length ? `Active checks: ${enabled.join(', ')}.` : 'Attempt checks are active.';
+}
+
+function getReleaseNotice({
+  releaseState,
+  submissionStatus,
+  returned,
+  isResultVisible,
+}: {
+  releaseState?: ReleaseState;
+  submissionStatus: SubmissionStatus | null;
+  returned: boolean;
+  isResultVisible: boolean;
+}): { title: string; description: string } | null {
+  if (returned || !submissionStatus) {
+    return null;
+  }
+
+  if (releaseState === 'AWAITING_RELEASE' || submissionStatus === 'GRADED') {
+    return {
+      title: 'Results are waiting for release',
+      description: 'Your work has been graded, but the score and feedback remain hidden until your teacher releases them.',
+    };
+  }
+
+  if (releaseState === 'HIDDEN' && submissionStatus === 'PENDING') {
+    return {
+      title: 'Submission received',
+      description: 'Your answers were submitted successfully. Results stay hidden until review is complete.',
+    };
+  }
+
+  if (releaseState === 'VISIBLE' && isResultVisible) {
+    return {
+      title: 'Results are available',
+      description: 'Released scores and feedback for your latest submission are visible below.',
+    };
+  }
+
+  return null;
 }
 
 function formatDuration(seconds: number): string {

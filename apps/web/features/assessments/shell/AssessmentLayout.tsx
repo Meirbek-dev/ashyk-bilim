@@ -64,6 +64,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
 
   const [kindModule, setKindModule] = useState<KindModule | null>(null);
   const [focusMode, setFocusMode] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
   const { controls, contextValue } = useActionBarState();
 
   // ── Load kind module ───────────────────────────────────────────────────────
@@ -84,6 +85,18 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
   useEffect(() => {
     const stored = globalThis.localStorage?.getItem('activity-focus-mode');
     setFocusMode(stored === 'true');
+  }, []);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return;
+    const update = () => setIsOnline(navigator.onLine);
+    update();
+    globalThis.addEventListener('online', update);
+    globalThis.addEventListener('offline', update);
+    return () => {
+      globalThis.removeEventListener('online', update);
+      globalThis.removeEventListener('offline', update);
+    };
   }, []);
 
   const toggleFocusMode = useCallback(() => {
@@ -175,7 +188,20 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
             antiCheatEnabled={antiCheatEnabled}
             violationCount={guard.violationCount}
             policy={policy}
+            releaseState={vm.releaseState}
+            submissionStatus={controls.status ?? vm.submissionStatus}
+            isResultVisible={vm.isResultVisible}
           />
+
+          {!isOnline ? (
+            <Alert>
+              <AlertTriangle className="size-4" />
+              <AlertTitle>Connection lost</AlertTitle>
+              <AlertDescription>
+                Keep working. Your in-progress answers stay in this browser and will save again after the connection returns.
+              </AlertDescription>
+            </Alert>
+          ) : null}
 
           <main className="min-h-[420px]">
             <AttemptContent
@@ -194,6 +220,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
 
       {/* ── Recovery dialog (driven by kind controls) ───────────────────── */}
       <RecoveryDialog recovery={controls.recovery ?? null} />
+      <ConflictDialog conflict={controls.conflict ?? null} />
     </ActionBarContext.Provider>
   );
 }
@@ -218,6 +245,40 @@ function RecoveryDialog({ recovery }: { recovery: AttemptRecoveryState | null })
         <AlertDialogFooter>
           <AlertDialogCancel onClick={recovery?.onReject}>Start fresh</AlertDialogCancel>
           <AlertDialogAction onClick={recovery?.onAccept}>Recover answers</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function ConflictDialog({
+  conflict,
+}: {
+  conflict: import('./AssessmentActionBar').AttemptConflictState | null;
+}) {
+  return (
+    <AlertDialog open={Boolean(conflict?.open)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogMedia>
+            <AlertTriangle className="size-6 text-orange-500" />
+          </AlertDialogMedia>
+          <AlertDialogTitle>Resolve draft conflict</AlertDialogTitle>
+          <AlertDialogDescription>
+            {conflict
+              ? `A newer draft version (${conflict.latestVersion}) was saved${conflict.latestSavedAt ? ` at ${formatDate(conflict.latestSavedAt)}` : ''}.`
+              : 'A newer draft version is available.'}
+          </AlertDialogDescription>
+          {conflict ? (
+            <AlertDialogDescription>
+              Your local draft has {conflict.localAnswerCount} answered item{conflict.localAnswerCount === 1 ? '' : 's'}.
+              The latest server draft has {conflict.serverAnswerCount} answered item{conflict.serverAnswerCount === 1 ? '' : 's'}.
+            </AlertDialogDescription>
+          ) : null}
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={conflict?.onKeepLocalVersion}>Keep my local version</AlertDialogCancel>
+          <AlertDialogAction onClick={conflict?.onUseServerVersion}>Use latest saved version</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

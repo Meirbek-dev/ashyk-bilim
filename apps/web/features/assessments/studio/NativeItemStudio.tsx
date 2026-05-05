@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   BookOpen,
   CheckCircle2,
+  Copy,
   FileUp,
   GitCompareArrows,
   ListTodo,
@@ -321,6 +322,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
   const [itemState, setItemState] = useState<EditableItem | null>(item ? toEditableItem(item) : null);
   const [assessmentSaveState, setAssessmentSaveState] = useState<SaveState>('idle');
   const [itemSaveState, setItemSaveState] = useState<SaveState>('idle');
+  const [isDuplicating, startDuplicateTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const lastSavedAssessmentRef = useRef('');
   const lastSavedItemRef = useRef('');
@@ -435,6 +437,37 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
     });
   };
 
+  const handleDuplicate = () => {
+    if (!itemState) return;
+    startDuplicateTransition(async () => {
+      try {
+        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kind: itemState.kind,
+            title: itemState.title ? `${itemState.title} copy` : `Copy of ${itemNoun}`,
+            max_score: itemState.max_score,
+            body: structuredClone(itemState.body),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(await responseError(response, `Failed to duplicate ${itemNoun.toLowerCase()}`));
+        }
+
+        const created = (await response.json()) as { item_uuid?: string };
+        toast.success(`${itemNoun} duplicated`);
+        await refresh();
+        if (typeof created.item_uuid === 'string') {
+          setSelectedItemUuid(created.item_uuid);
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : `Failed to duplicate ${itemNoun.toLowerCase()}`);
+      }
+    });
+  };
+
   const itemIssues = itemState ? getItemIssues(itemState) : [];
 
   return (
@@ -479,16 +512,28 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
                 {itemState.max_score || 0} pts · {totalPoints > 0 ? Math.round((itemState.max_score / totalPoints) * 100) : 0}% weight
               </p>
             </div>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={!isEditable || isDeleting}
-              onClick={handleDelete}
-            >
-              {isDeleting ? <LoaderCircle className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
-              Delete
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!isEditable || isDuplicating}
+                onClick={handleDuplicate}
+              >
+                {isDuplicating ? <LoaderCircle className="size-4 animate-spin" /> : <Copy className="size-4" />}
+                Duplicate
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={!isEditable || isDeleting}
+                onClick={handleDelete}
+              >
+                {isDeleting ? <LoaderCircle className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                Delete
+              </Button>
+            </div>
           </div>
 
           {itemIssues.length > 0 ? (

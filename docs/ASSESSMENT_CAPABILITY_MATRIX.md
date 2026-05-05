@@ -5,7 +5,7 @@ This matrix documents the current canonical assessment surface coverage after th
 | Kind | Studio Surface | Attempt Surface | Review Surface | Current Authoring Scope | Projection Source |
 | --- | --- | --- | --- | --- | --- |
 | Assignment | Shared native-item studio shell | Shared canonical item attempt shell | Generic grading review workspace | `CHOICE`, `OPEN_TEXT`, `FILE_UPLOAD`, `FORM`, `MATCHING` | `AssessmentRead` + `attempt_projection` + `review_projection` |
-| Exam | Exam-specific authoring flow | Exam-specific canonical attempt flow | Generic grading review workspace with exam review detail | Exam author flow | `AssessmentRead` + `attempt_projection` + `review_projection` |
+| Exam | Shared native-item studio shell | Exam-specific canonical attempt flow | Generic grading review workspace with exam review detail | `CHOICE`, `MATCHING` only | `AssessmentRead` + `attempt_projection` + `review_projection` |
 | Quiz | Shared native-item studio shell | Shared canonical item attempt shell | Generic grading review workspace | `CHOICE`, `MATCHING` only | `AssessmentRead` + `attempt_projection` + `review_projection` |
 | Code Challenge | Code-challenge-specific authoring flow | Code-challenge-specific attempt flow | Generic grading review workspace | Code item flow | `AssessmentRead` + `attempt_projection` + `review_projection` |
 

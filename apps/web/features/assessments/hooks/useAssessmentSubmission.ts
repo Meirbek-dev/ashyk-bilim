@@ -33,6 +33,11 @@ interface SubmitOptions {
   violationCount?: number;
 }
 
+interface ConflictState {
+  latest: AssessmentSubmissionRead;
+  localAnswers: Record<string, ItemAnswer>;
+}
+
 export type AssessmentSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'conflict' | 'error';
 
 function answersFromSubmission(submission: AssessmentSubmissionRead | null | undefined): Record<string, ItemAnswer> {
@@ -61,7 +66,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const queryClient = useQueryClient();
   const [localAnswers, setLocalAnswers] = useState<Record<string, ItemAnswer>>({});
   const [saveState, setSaveState] = useState<AssessmentSaveState>('idle');
+  const [conflictState, setConflictState] = useState<ConflictState | null>(null);
   const [reportedLoadError, setReportedLoadError] = useState<string | null>(null);
+  const localAnswersRef = useRef<Record<string, ItemAnswer>>({});
   const submissionsQueryKey = useMemo(
     () => ['assessments', 'submissions', 'me', assessmentUuid || 'missing'] as const,
     [assessmentUuid],
@@ -99,6 +106,50 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const submission = draft ?? submissionsQuery.data?.[0] ?? null;
   const version = submission?.version;
 
+  useEffect(() => {
+    localAnswersRef.current = localAnswers;
+  }, [localAnswers]);
+
+  const syncLatestSubmission = useCallback(
+    (latest: AssessmentSubmissionRead) => {
+      if (!assessmentUuid) return;
+
+      queryClient.setQueryData(draftQueryOptions.queryKey, {
+        assessment_uuid: assessmentUuid,
+        submission: latest.status === 'DRAFT' ? latest : null,
+      } satisfies DraftRead);
+
+      queryClient.setQueryData(submissionsQueryKey, (current: AssessmentSubmissionRead[] | undefined) => {
+        const next = [...(current ?? [])];
+        const existingIndex = next.findIndex((candidate) => candidate.submission_uuid === latest.submission_uuid);
+        if (existingIndex >= 0) {
+          next[existingIndex] = latest;
+        } else {
+          next.unshift(latest);
+        }
+        next.sort((left, right) => {
+          const leftTime = new Date(left.created_at ?? left.updated_at).getTime();
+          const rightTime = new Date(right.created_at ?? right.updated_at).getTime();
+          return rightTime - leftTime;
+        });
+        return next;
+      });
+    },
+    [assessmentUuid, draftQueryOptions.queryKey, queryClient, submissionsQueryKey],
+  );
+
+  const openConflict = useCallback(
+    (latest: AssessmentSubmissionRead) => {
+      syncLatestSubmission(latest);
+      setConflictState({
+        latest,
+        localAnswers: cloneAnswers(localAnswersRef.current),
+      });
+      setSaveState('conflict');
+    },
+    [syncLatestSubmission],
+  );
+
   const saveMutation = useMutation({
     mutationFn: async (answers: Record<string, ItemAnswer>) => {
       if (!assessmentUuid) throw new Error('Assessment is not ready');
@@ -116,6 +167,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     },
     onMutate: () => setSaveState('saving'),
     onSuccess: async () => {
+      setConflictState(null);
       setSaveState('saved');
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: draftQueryOptions.queryKey }),
@@ -124,10 +176,11 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     },
     onError: (error: Error & { status?: number; payload?: any }) => {
       if (error.status === 409) {
-         const latest = error.payload?.detail?.latest as AssessmentSubmissionRead | undefined;
-        if (latest) setLocalAnswers(answersFromSubmission(latest));
-        setSaveState('conflict');
-        toast.error('Your draft changed in another tab. Review the latest saved version.');
+        const latest = error.payload?.detail?.latest as AssessmentSubmissionRead | undefined;
+        if (latest) {
+          openConflict(latest);
+        }
+        toast.error('Your draft changed in another tab. Choose whether to keep your local version or load the latest saved draft.');
         return;
       }
       setSaveState('error');
@@ -168,6 +221,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       return (await readJsonOrThrow(response)) as AssessmentSubmissionRead;
     },
     onSuccess: async () => {
+      setConflictState(null);
       setSaveState('saved');
       if (assessmentUuid) {
         await Promise.all([
@@ -177,7 +231,15 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         ]);
       }
     },
-    onError: (error: Error) => {
+    onError: (error: Error & { status?: number; payload?: any }) => {
+      if (error.status === 409) {
+        const latest = error.payload?.detail?.latest as AssessmentSubmissionRead | undefined;
+        if (latest) {
+          openConflict(latest);
+        }
+        toast.error('Your draft changed in another tab. Resolve the conflict before submitting.');
+        return;
+      }
       setSaveState('error');
       void reportClientError({
         scope: 'assessment-flow',
@@ -208,10 +270,11 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     if (!assessmentUuid) {
       setLocalAnswers({});
       setSaveState('idle');
+      setConflictState(null);
       return;
     }
     if (draftQuery.isLoading || submissionsQuery.isLoading) return;
-    if (saveState === 'dirty' || saveMutation.isPending || submitMutation.isPending) return;
+    if (saveState === 'dirty' || saveState === 'conflict' || saveMutation.isPending || submitMutation.isPending) return;
     setLocalAnswers(answersFromSubmission(submission));
     if (saveState === 'idle' || saveState === 'saved') {
       setSaveState(submission ? 'saved' : 'idle');
@@ -231,6 +294,18 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     setSaveState('dirty');
   }, []);
 
+  const keepLocalVersion = useCallback(() => {
+    setConflictState(null);
+    setSaveState('dirty');
+  }, []);
+
+  const useServerVersion = useCallback(() => {
+    if (!conflictState) return;
+    setLocalAnswers(answersFromSubmission(conflictState.latest));
+    setConflictState(null);
+    setSaveState(conflictState.latest.status === 'DRAFT' ? 'saved' : 'idle');
+  }, [conflictState]);
+
   const { mutateAsync: saveMutateAsync, isPending: isSaving } = saveMutation;
   const { mutateAsync: submitMutateAsync, isPending: isSubmitting } = submitMutation;
 
@@ -247,6 +322,17 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       status: submission?.status ?? null,
       version,
       saveState,
+      conflict:
+        conflictState !== null
+          ? {
+              latestVersion: conflictState.latest.version,
+              latestSavedAt: conflictState.latest.updated_at,
+              localAnswerCount: Object.keys(conflictState.localAnswers).length,
+              serverAnswerCount: Object.keys(answersFromSubmission(conflictState.latest)).length,
+              onKeepLocalVersion: keepLocalVersion,
+              onUseServerVersion: useServerVersion,
+            }
+          : null,
       isLoading: draftQuery.isLoading || submissionsQuery.isLoading,
       isSaving,
       isSubmitting,
@@ -256,6 +342,8 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       draft,
       draftQuery.error,
       draftQuery.isLoading,
+      conflictState,
+      keepLocalVersion,
       localAnswers,
       saveMutateAsync,
       isSaving,
@@ -265,9 +353,16 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       submissionsQuery.error,
       submissionsQuery.isLoading,
       submission,
+      useServerVersion,
       submitMutateAsync,
       isSubmitting,
       version,
     ],
   );
+}
+
+function cloneAnswers(answers: Record<string, ItemAnswer>): Record<string, ItemAnswer> {
+  return typeof structuredClone === 'function'
+    ? structuredClone(answers)
+    : (JSON.parse(JSON.stringify(answers)) as Record<string, ItemAnswer>);
 }

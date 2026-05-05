@@ -41,6 +41,16 @@ export interface AttemptRecoveryState {
   onReject: () => void;
 }
 
+export interface AttemptConflictState {
+  open: boolean;
+  latestVersion: number;
+  latestSavedAt?: string | null;
+  localAnswerCount: number;
+  serverAnswerCount: number;
+  onKeepLocalVersion: () => void;
+  onUseServerVersion: () => void;
+}
+
 import type { AttemptTimerConfig } from '@/features/assessments/shared/hooks/useAttemptGuard';
 import type { PolicyView } from '@/features/assessments/domain/policy';
 
@@ -65,6 +75,7 @@ export interface AttemptShellRegistration {
   onViolation?: (type: string, count: number) => void | Promise<void>;
   onGuardAutoSubmit?: (type: string, count: number) => void;
   recovery?: AttemptRecoveryState | null;
+  conflict?: AttemptConflictState | null;
 }
 
 // ── Context & registration hook ───────────────────────────────────────────────

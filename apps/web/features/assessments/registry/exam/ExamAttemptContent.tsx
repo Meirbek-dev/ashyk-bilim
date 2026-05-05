@@ -1,16 +1,20 @@
 'use client';
 
+import { AlertCircle, CheckCircle, Clock, FileText, InfinityIcon, ShieldAlert, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { courseKeys } from '@/hooks/courses/courseKeys';
 import { useContributorStatus } from '@/hooks/useContributorStatus';
 import { DEFAULT_POLICY_VIEW } from '@/features/assessments/domain/policy';
 import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items';
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items';
+import AttemptEntryPanel from '@/features/assessments/shared/AttemptEntryPanel';
+import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList';
 import { useAttemptShellControls } from '@/features/assessments/shell';
 import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAssessmentAttempt';
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
@@ -20,7 +24,6 @@ import { getOrderedExamQuestions } from './questionOrder';
 import { Progress } from '@components/ui/progress';
 import type { KindAttemptProps } from '../index';
 import ExamQuestionCard from './ExamQuestionCard';
-import ExamStartPanel from './ExamStartPanel';
 import ExamSubmitDialog from './ExamSubmitDialog';
 
 interface QuestionData {
@@ -38,6 +41,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
   const queryClient = useQueryClient();
   const { contributorStatus } = useContributorStatus(courseUuid);
   const submissionState = useAssessmentSubmission(vm?.assessmentUuid ?? null);
+  const [isStarting, setIsStarting] = useState(false);
   const policy = vm?.policy ?? DEFAULT_POLICY_VIEW;
   const assessmentUuid = vm?.assessmentUuid ?? null;
   const questions = useMemo(() => buildExamQuestions(vm?.items ?? []), [vm?.items]);
@@ -65,23 +69,122 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     return <div className="text-destructive rounded-lg border p-6 text-sm">{t('errorLoadingExam')}</div>;
   }
 
+  const latestCompletedSubmission = submissionState.submissions.find((submission) => submission.status !== 'DRAFT') ?? null;
+  const historyItems = submissionState.submissions
+    .filter((submission) => submission.status !== 'DRAFT')
+    .map((submission, index) => ({
+      id: submission.submission_uuid,
+      label: index === 0 ? 'Latest submission' : `Attempt ${submissionState.submissions.length - index}`,
+      submittedAt: submission.submitted_at ?? submission.updated_at,
+      status: submission.status,
+      scoreLabel:
+        typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
+    }));
+
+  const handleStartExam = async () => {
+    if (!assessmentUuid || !vm.canEdit) return;
+    setIsStarting(true);
+    try {
+      const response = await apiFetch(`assessments/${assessmentUuid}/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.detail || 'Failed to start exam');
+      }
+      toast.success(vm.isReturnedForRevision ? 'Revision draft created' : t('examStarted'));
+      await handleComplete();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('errorStartingExam'));
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
   if (!submissionState.draft) {
     return (
-      <ExamStartPanel
-        assessmentUuid={assessmentUuid}
+      <AttemptEntryPanel
         title={vm.title}
         description={vm.description}
-        questionCount={questions.length}
-        userAttempts={submissionState.submissions.filter((submission) => submission.status !== 'DRAFT')}
-        attemptLimit={policy.maxAttempts}
-        timeLimitMinutes={
-          typeof policy.timeLimitSeconds === 'number' ? Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)) : null
+        metrics={[
+          { icon: FileText, label: t('totalQuestions'), value: String(questions.length) },
+          {
+            icon: Clock,
+            label: t('timeLimit'),
+            value:
+              typeof policy.timeLimitSeconds === 'number'
+                ? t('minutes', { count: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)) })
+                : t('unlimited'),
+          },
+          {
+            icon: contributorStatus === 'ACTIVE' ? InfinityIcon : Users,
+            label: contributorStatus === 'ACTIVE' ? t('teacherPreview') : t('attemptsRemaining'),
+            value:
+              contributorStatus === 'ACTIVE' || policy.maxAttempts === null
+                ? t('unlimited')
+                : String(Math.max(policy.maxAttempts - historyItems.length, 0)),
+          },
+        ]}
+        historyItems={historyItems}
+        actionTitle={vm.isReturnedForRevision ? 'Ready to revise' : t('readyToStart')}
+        actionDescription={
+          vm.isReturnedForRevision
+            ? 'Start a new revision draft from the returned submission.'
+            : t('readyToStartSubtitle')
         }
-        onStartExam={() => {
-          void handleComplete();
-        }}
-        isTeacher={contributorStatus === 'ACTIVE'}
-        policy={policy}
+        actionLabel={vm.canEdit ? (vm.isReturnedForRevision ? 'Start revision' : t('startExam')) : undefined}
+        actionDisabled={!vm.canEdit}
+        actionPending={isStarting}
+        blockedMessage={!vm.canEdit ? 'There is no editable draft available for this exam right now.' : null}
+        onAction={vm.canEdit ? handleStartExam : undefined}
+        notices={
+          <div className="space-y-4">
+            <div className="bg-muted/30 rounded-md border p-4">
+              <h3 className="mb-3 text-sm font-semibold">{t('instructions')}</h3>
+              <ul className="space-y-2 text-sm">
+                <Instruction
+                  icon={CheckCircle}
+                  label={t('instruction1')}
+                />
+                {policy.timeLimitSeconds ? (
+                  <Instruction
+                    icon={CheckCircle}
+                    label={t('instruction3', { minutes: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)) })}
+                  />
+                ) : null}
+                <Instruction
+                  icon={AlertCircle}
+                  label={t('instruction2')}
+                />
+                {policy.antiCheat.tabSwitchDetection ? (
+                  <Instruction
+                    icon={AlertCircle}
+                    label={t('instruction4')}
+                  />
+                ) : null}
+                {policy.antiCheat.copyPasteProtection ? (
+                  <Instruction
+                    icon={AlertCircle}
+                    label={t('instruction5')}
+                  />
+                ) : null}
+              </ul>
+            </div>
+            {isAntiCheatWarningVisible(policy) ? (
+              <Alert className="border-red-200 bg-red-50/80 text-red-900">
+                <ShieldAlert className="size-4" />
+                <AlertTitle>{t('antiCheatingEnabled')}</AlertTitle>
+                <AlertDescription>
+                  {t('antiCheatingDescription', { threshold: policy.antiCheat.violationThreshold || t('notSet') })}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            {latestCompletedSubmission ? (
+              <ExamSubmissionStatePanel submission={latestCompletedSubmission} />
+            ) : null}
+          </div>
+        }
       />
     );
   }
@@ -94,6 +197,10 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       attempt={submissionState.draft}
       policy={policy}
       onComplete={handleComplete}
+      canSaveDraft={vm.canSaveDraft}
+      canSubmit={vm.canSubmit}
+      latestCompletedSubmission={latestCompletedSubmission}
+      historyItems={historyItems}
     />
   );
 }
@@ -105,6 +212,10 @@ function ExamTakingContent({
   attempt,
   policy,
   onComplete,
+  canSaveDraft,
+  canSubmit,
+  latestCompletedSubmission,
+  historyItems,
 }: {
   title: string;
   questions: QuestionData[];
@@ -112,6 +223,16 @@ function ExamTakingContent({
   attempt: NonNullable<ReturnType<typeof useAssessmentSubmission>['draft']>;
   policy: typeof DEFAULT_POLICY_VIEW;
   onComplete: () => void | Promise<void>;
+  canSaveDraft: boolean;
+  canSubmit: boolean;
+  latestCompletedSubmission: ReturnType<typeof useAssessmentSubmission>['submission'];
+  historyItems: Array<{
+    id: string;
+    label: string;
+    submittedAt: string | null | undefined;
+    status: 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED';
+    scoreLabel: string | null;
+  }>;
 }) {
   const t = useTranslations('Activities.ExamActivity');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -220,6 +341,8 @@ function ExamTakingContent({
         ? ('saving' as const)
         : submissionState.status === 'PENDING'
           ? ('submitted' as const)
+          : submissionState.status === 'RETURNED'
+            ? ('returned' as const)
           : submissionState.saveState === 'dirty'
             ? ('unsaved' as const)
             : submissionState.saveState === 'saving'
@@ -228,11 +351,12 @@ function ExamTakingContent({
                 ? ('error' as const)
                 : ('saved' as const),
       status: submissionState.status,
-      canSave: false,
-      canSubmit: true,
+      canSave: canSaveDraft && submissionState.saveState === 'dirty',
+      canSubmit,
       isSaving: submissionState.isSaving,
       isSubmitting: submissionState.isSubmitting,
-      onSubmit: handleOpenSubmitConfirmation,
+      onSave: canSaveDraft && submissionState.saveState === 'dirty' ? () => void submissionState.save() : undefined,
+      onSubmit: canSubmit ? handleOpenSubmitConfirmation : undefined,
       navigation: {
         current: currentIndex + 1,
         total: orderedQuestions.length,
@@ -279,8 +403,21 @@ function ExamTakingContent({
             },
           }
         : null,
+      conflict: submissionState.conflict
+        ? {
+            open: true,
+            latestVersion: submissionState.conflict.latestVersion,
+            latestSavedAt: submissionState.conflict.latestSavedAt,
+            localAnswerCount: submissionState.conflict.localAnswerCount,
+            serverAnswerCount: submissionState.conflict.serverAnswerCount,
+            onKeepLocalVersion: submissionState.conflict.onKeepLocalVersion,
+            onUseServerVersion: submissionState.conflict.onUseServerVersion,
+          }
+        : null,
     }),
     [
+      canSaveDraft,
+      canSubmit,
       answeredCount,
       attempt.created_at,
       currentIndex,
@@ -309,6 +446,18 @@ function ExamTakingContent({
 
   return (
     <div className="space-y-6">
+      <Alert>
+        <RotateCcw className="size-4" />
+        <AlertTitle>Resumed draft</AlertTitle>
+        <AlertDescription>
+          Last saved {formatDateTime(attempt.updated_at)}. Changes continue saving automatically while you work.
+        </AlertDescription>
+      </Alert>
+
+      {historyItems.length ? <AttemptHistoryList items={historyItems} /> : null}
+
+      {latestCompletedSubmission ? <ExamSubmissionStatePanel submission={latestCompletedSubmission} /> : null}
+
       <Progress
         value={progress}
         className="h-2 transition-all duration-500 ease-out"
@@ -410,6 +559,75 @@ function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
 
     return questions;
   }, []);
+}
+
+function ExamSubmissionStatePanel({
+  submission,
+}: {
+  submission: {
+    status: 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED';
+    final_score?: number | null;
+    grading_json?: { feedback?: string } | null;
+    submitted_at?: string | null;
+  };
+}) {
+  if (submission.status === 'PENDING') {
+    return (
+      <Alert>
+        <AlertTitle>Submission received</AlertTitle>
+        <AlertDescription>
+          Submitted{submission.submitted_at ? ` on ${formatDateTime(submission.submitted_at)}` : ''}. Results stay hidden until review is complete.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (submission.status === 'GRADED') {
+    return (
+      <Alert>
+        <AlertTitle>Results are waiting for release</AlertTitle>
+        <AlertDescription>Your latest exam has been graded and will appear after release.</AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <Alert>
+      <AlertTitle>{submission.status === 'RETURNED' ? 'Returned for revision' : 'Result available'}</AlertTitle>
+      <AlertDescription className="space-y-3">
+        {typeof submission.final_score === 'number' ? (
+          <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
+            <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium">Score</span>
+            {Math.round(submission.final_score)}%
+          </span>
+        ) : null}
+        {submission.grading_json?.feedback ? <p className="whitespace-pre-wrap">{submission.grading_json.feedback}</p> : null}
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+function Instruction({ icon: Icon, label }: { icon: any; label: string }) {
+  return (
+    <li className="flex gap-2">
+      <Icon className="mt-0.5 size-4 shrink-0" />
+      <span>{label}</span>
+    </li>
+  );
+}
+
+function isAntiCheatWarningVisible(policy: typeof DEFAULT_POLICY_VIEW): boolean {
+  return (
+    policy.antiCheat.tabSwitchDetection ||
+    policy.antiCheat.copyPasteProtection ||
+    policy.antiCheat.devtoolsDetection
+  );
+}
+
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
 function toExamAnswer(question: QuestionData, answer: ItemAnswer): unknown {
