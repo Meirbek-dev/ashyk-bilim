@@ -2,6 +2,7 @@
 
 import { ActivityAIChatProvider } from '@components/Contexts/AI/ActivityAIChatContext';
 import { CourseProvider } from '@components/Contexts/CourseContext';
+import EditorOptionsProvider from '@components/Contexts/Editor/EditorContext';
 import { EditorContent } from '@tiptap/react';
 import { useEditorInstance } from '@components/Objects/Editor/core';
 import type { ActivityRef } from '@components/Objects/Editor/core/editor-types';
@@ -60,47 +61,49 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
     >
       <CourseProvider courseuuid={props.course.course_uuid}>
         <ActivityAIChatProvider activityUuid={props.activity.activity_uuid}>
-          <EditorShell>
-            {/* Header */}
-            <EditorHeader
-              courseName={props.course.name}
-              activityName={props.activity.name ?? ''}
-              courseUuid={courseUuid}
-              activityUuid={activityUuid}
-              saveState={props.saveState}
-              onSave={handleContentSave}
-            />
+          <EditorOptionsProvider options={{ isEditable: true, mode: 'authoring' }}>
+            <EditorShell>
+              {/* Header */}
+              <EditorHeader
+                courseName={props.course.name}
+                activityName={props.activity.name ?? ''}
+                courseUuid={courseUuid}
+                activityUuid={activityUuid}
+                saveState={props.saveState}
+                onSave={handleContentSave}
+              />
 
-            {/* Sticky toolbar */}
-            <div className="border-border bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
-              <div className="px-3">
-                <EditorToolbar
-                  editor={editor}
-                  onAIToggle={() => setIsAIOpen((prev) => !prev)}
-                />
+              {/* Sticky toolbar */}
+              <div className="border-border bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
+                <div className="px-3">
+                  <EditorToolbar
+                    editor={editor}
+                    onAIToggle={() => setIsAIOpen((prev) => !prev)}
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Content area */}
-            <div className="prosemirror-authoring bg-background flex-1 overflow-y-auto">
-              <div className="py-6">
-                {editor ? (
-                  <>
-                    <BubbleToolbar editor={editor} />
-                    <FloatingPlusButton editor={editor} />
-                    <AIEditorToolkit
-                      activity={props.activity}
-                      editor={editor}
-                      isOpen={isAIOpen}
-                      onClose={() => setIsAIOpen(false)}
-                    />
-                    <SlashCommandMenu editor={editor} />
-                  </>
-                ) : null}
-                <EditorContent editor={editor} />
+              {/* Content area */}
+              <div className="prosemirror-authoring bg-background flex-1 overflow-y-auto">
+                <div className="py-6">
+                  {editor ? (
+                    <>
+                      <BubbleToolbar editor={editor} />
+                      <FloatingPlusButton editor={editor} />
+                      <AIEditorToolkit
+                        activity={props.activity}
+                        editor={editor}
+                        isOpen={isAIOpen}
+                        onClose={() => setIsAIOpen(false)}
+                      />
+                      <SlashCommandMenu editor={editor} />
+                    </>
+                  ) : null}
+                  <EditorContent editor={editor} />
+                </div>
               </div>
-            </div>
-          </EditorShell>
+            </EditorShell>
+          </EditorOptionsProvider>
         </ActivityAIChatProvider>
       </CourseProvider>
     </DesktopOnlyGuard>

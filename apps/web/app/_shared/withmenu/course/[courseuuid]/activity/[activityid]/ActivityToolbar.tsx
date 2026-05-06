@@ -81,7 +81,6 @@ export default function ActivityToolbar({
         ) : null}
         {contributorStatus === 'ACTIVE' && activity.activity_type === 'TYPE_DYNAMIC' ? (
           <Link
-            prefetch={false}
             href={`${getAbsoluteUrl('')}/course/${courseuuid}/activity/${activityid}/edit`}
             className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
           >

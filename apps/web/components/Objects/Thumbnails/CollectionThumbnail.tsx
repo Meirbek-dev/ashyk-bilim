@@ -129,7 +129,6 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
   return (
     <div className="group border-border bg-card hover:border-primary/20 relative flex h-full flex-col overflow-hidden rounded-xl border shadow-sm transition-all hover:shadow-md">
       <Link
-        prefetch={false}
         href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid)}`)}
         className="border-border/50 relative block aspect-[16/9] w-full overflow-hidden border-b"
       >
@@ -148,7 +147,6 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
       <div className="flex flex-1 flex-col p-4">
         <div className="mb-2 flex items-start justify-between gap-2">
           <Link
-            prefetch={false}
             href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid)}`)}
             className="text-foreground hover:text-primary line-clamp-2 text-base font-semibold transition-colors"
           >

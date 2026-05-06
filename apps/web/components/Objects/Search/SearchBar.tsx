@@ -191,7 +191,6 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
       <div className="space-y-1">
         {searchTerms.map(({ term, type, icon }) => (
           <Link
-            prefetch={false}
             key={`${term}-${type}`}
             href={getAbsoluteUrl(`/search?q=${encodeURIComponent(term)}`)}
             className="group hover:bg-accent flex items-center rounded-lg px-3 py-2 transition-colors"
@@ -231,7 +230,6 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
             </div>
             {searchResults.courses.map((course) => (
               <Link
-                prefetch={false}
                 key={course.course_uuid}
                 href={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
                 className="hover:bg-accent flex items-center gap-3 rounded-lg p-2 transition-colors"
@@ -282,7 +280,6 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
             </div>
             {searchResults.collections.map((collection) => (
               <Link
-                prefetch={false}
                 key={collection.collection_uuid}
                 href={getAbsoluteUrl(`/collection/${collection.collection_uuid}`)}
                 className="hover:bg-accent flex items-center gap-3 rounded-lg p-2 transition-colors"
@@ -315,7 +312,6 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
             </div>
             {searchResults.users.map((user) => (
               <Link
-                prefetch={false}
                 key={user.user_uuid}
                 href={getAbsoluteUrl(`/user/${user.username}`)}
                 className="hover:bg-accent flex items-center gap-3 rounded-lg p-2 transition-colors"
@@ -402,7 +398,6 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
                     searchResults.users.length > 0 ||
                     searchQuery.trim()) && (
                     <Link
-                      prefetch={false}
                       href={getAbsoluteUrl(`/search?q=${encodeURIComponent(searchQuery)}`)}
                       className="text-muted-foreground hover:bg-accent hover:text-foreground flex items-center justify-between px-4 py-2.5 text-xs transition-colors"
                     >

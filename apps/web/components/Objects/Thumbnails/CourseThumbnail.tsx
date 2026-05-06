@@ -135,7 +135,6 @@ const CourseImage: FC<CourseImageProps> = ({
   priority = false,
 }) => (
   <Link
-    prefetch={false}
     href={courseUrl}
     className="relative block overflow-hidden"
     aria-label={t('openCourse', { course: courseName })}

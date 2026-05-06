@@ -122,7 +122,6 @@ export const HeaderProfileBox = () => {
           <ul className="flex items-center space-x-3">
             <li>
               <Link
-                prefetch={false}
                 href={getAbsoluteUrl('/login')}
               >
                 <Button
@@ -135,7 +134,6 @@ export const HeaderProfileBox = () => {
             </li>
             <li>
               <Link
-                prefetch={false}
                 href={getAbsoluteUrl('/signup')}
               >
                 <Button size="sm">{t('signUp')}</Button>
@@ -234,7 +232,6 @@ export const HeaderProfileBox = () => {
                     nativeButton={false}
                     render={
                       <Link
-                        prefetch={false}
                         href="/dash"
                       />
                     }
