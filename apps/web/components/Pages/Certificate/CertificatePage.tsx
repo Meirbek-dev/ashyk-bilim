@@ -2,6 +2,11 @@
 
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview';
 import { useUserCertificateByCourse } from '@/features/certifications/hooks/useCertifications';
+import {
+  downloadPdfBlob,
+  generateCertificatePdfBlob,
+  sanitizePdfFileName,
+} from '@/features/certifications/utils/pdfmeCertificate';
 import SimpleAlertDialog from '@/components/ui/alert-dialog-simple';
 import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import { getAbsoluteUrl } from '@services/config/config';
@@ -9,7 +14,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import Link from '@components/ui/AppLink';
 import type React from 'react';
-import QRCode from 'qrcode';
 
 interface CertificatePageProps {
   courseid: string;
@@ -31,574 +35,49 @@ const CertificatePage: React.FC<CertificatePageProps> = ({ courseid, qrCodeLink 
       ? t('noCertificate')
       : null;
 
-  // Certificate type translation helper
   const getCertificationTypeLabel = (type: string): string => {
-    const typeKey = type as keyof typeof t;
-    return t(typeKey) || t('completion');
+    switch (type) {
+      case 'completion': {
+        return t('completion');
+      }
+      default: {
+        return t('completion');
+      }
+    }
   };
 
-  // Generate PDF using @react-pdf/renderer
   const downloadCertificate = async () => {
     if (!userCertificate) return;
 
     try {
-      const { Document, Font, Image, Page, StyleSheet, Text, View, pdf } = await import('@react-pdf/renderer');
-
-      // Register font for Cyrillic/Russian support
-      Font.register({
-        family: 'Roboto',
-        fonts: [
-          {
-            src: 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf',
-            fontWeight: 400,
-          },
-          {
-            src: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlvAx05IsDqlA.ttf',
-            fontWeight: 700,
-          },
-          {
-            src: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmEU9vAx05IsDqlA.ttf',
-            fontWeight: 600,
-          },
-        ],
+      const certificateId = userCertificate.certificate_user.user_certification_uuid;
+      const certificationName = userCertificate.certification.config.certification_name;
+      const blob = await generateCertificatePdfBlob({
+        awardedDate: new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        certificateId,
+        certificationDescription:
+          userCertificate.certification.config.certification_description || t('certificationDefaultDescription'),
+        certificationName,
+        certificationTypeLabel: getCertificationTypeLabel(userCertificate.certification.config.certification_type),
+        instructor: userCertificate.certification.config.certificate_instructor,
+        labels: {
+          authenticityGuaranteed: t('verifyOnline'),
+          awarded: t('awarded'),
+          badgeCheckIcon: t('badgeCheckIcon'),
+          certificate: t('certificate'),
+          certificateId: t('certificateId'),
+          instructor: t('instructor'),
+          verificationNote: t('verificationNote'),
+        },
+        pattern: userCertificate.certification.config.certificate_pattern,
+        verificationUrl: qrCodeLink,
       });
 
-      // Get theme colors based on pattern
-      const getPatternTheme = (pattern: string) => {
-        switch (pattern) {
-          case 'royal': {
-            return {
-              primary: '#b45309',
-              secondary: '#d97706',
-              icon: '#d97706',
-              iconLight: 'rgba(217, 119, 6, 0.2)',
-              iconMedium: 'rgba(217, 119, 6, 0.4)',
-              iconBorder: 'rgba(217, 119, 6, 0.2)',
-            };
-          }
-          case 'tech': {
-            return {
-              primary: '#0e7490',
-              secondary: '#0891b2',
-              icon: '#0891b2',
-              iconLight: 'rgba(8, 145, 178, 0.2)',
-              iconMedium: 'rgba(8, 145, 178, 0.4)',
-              iconBorder: 'rgba(8, 145, 178, 0.2)',
-            };
-          }
-          case 'nature': {
-            return {
-              primary: '#15803d',
-              secondary: '#16a34a',
-              icon: '#16a34a',
-              iconLight: 'rgba(22, 163, 74, 0.2)',
-              iconMedium: 'rgba(22, 163, 74, 0.4)',
-              iconBorder: 'rgba(22, 163, 74, 0.2)',
-            };
-          }
-          case 'geometric': {
-            return {
-              primary: '#7c3aed',
-              secondary: '#9333ea',
-              icon: '#9333ea',
-              iconLight: 'rgba(147, 51, 234, 0.2)',
-              iconMedium: 'rgba(147, 51, 234, 0.4)',
-              iconBorder: 'rgba(147, 51, 234, 0.2)',
-            };
-          }
-          case 'vintage': {
-            return {
-              primary: '#c2410c',
-              secondary: '#ea580c',
-              icon: '#ea580c',
-              iconLight: 'rgba(234, 88, 12, 0.2)',
-              iconMedium: 'rgba(234, 88, 12, 0.4)',
-              iconBorder: 'rgba(234, 88, 12, 0.2)',
-            };
-          }
-          case 'waves': {
-            return {
-              primary: '#1d4ed8',
-              secondary: '#2563eb',
-              icon: '#2563eb',
-              iconLight: 'rgba(37, 99, 235, 0.2)',
-              iconMedium: 'rgba(37, 99, 235, 0.4)',
-              iconBorder: 'rgba(37, 99, 235, 0.2)',
-            };
-          }
-          case 'minimal': {
-            return {
-              primary: '#374151',
-              secondary: '#4b5563',
-              icon: '#4b5563',
-              iconLight: 'rgba(75, 85, 99, 0.2)',
-              iconMedium: 'rgba(75, 85, 99, 0.4)',
-              iconBorder: 'rgba(75, 85, 99, 0.2)',
-            };
-          }
-          case 'professional': {
-            return {
-              primary: '#334155',
-              secondary: '#475569',
-              icon: '#475569',
-              iconLight: 'rgba(71, 85, 105, 0.2)',
-              iconMedium: 'rgba(71, 85, 105, 0.4)',
-              iconBorder: 'rgba(71, 85, 105, 0.2)',
-            };
-          }
-          case 'academic': {
-            return {
-              primary: '#3730a3',
-              secondary: '#4338ca',
-              icon: '#4338ca',
-              iconLight: 'rgba(67, 56, 202, 0.2)',
-              iconMedium: 'rgba(67, 56, 202, 0.4)',
-              iconBorder: 'rgba(67, 56, 202, 0.2)',
-            };
-          }
-          case 'modern': {
-            return {
-              primary: '#1d4ed8',
-              secondary: '#2563eb',
-              icon: '#2563eb',
-              iconLight: 'rgba(37, 99, 235, 0.2)',
-              iconMedium: 'rgba(37, 99, 235, 0.4)',
-              iconBorder: 'rgba(37, 99, 235, 0.2)',
-            };
-          }
-          default: {
-            return {
-              primary: '#374151',
-              secondary: '#4b5563',
-              icon: '#4b5563',
-              iconLight: 'rgba(75, 85, 99, 0.2)',
-              iconMedium: 'rgba(75, 85, 99, 0.4)',
-              iconBorder: 'rgba(75, 85, 99, 0.2)',
-            };
-          }
-        }
-      };
-
-      const theme = getPatternTheme(userCertificate.certification.config.certificate_pattern);
-      const certificateUUID = userCertificate.certificate_user.user_certification_uuid;
-      const qrCodeData = qrCodeLink;
-
-      // Generate QR code
-      const qrCodeDataUrl = await QRCode.toDataURL(qrCodeData, {
-        width: 240,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
-        errorCorrectionLevel: 'M',
-        type: 'image/png',
-      });
-
-      // PDF styles - Modern and Beautiful Layout
-      const styles = StyleSheet.create({
-        page: {
-          flexDirection: 'column',
-          backgroundColor: '#ffffff',
-          padding: 0,
-          position: 'relative',
-          fontFamily: 'Roboto',
-        },
-        // Decorative corner accents
-        cornerTopLeft: {
-          position: 'absolute',
-          top: 30,
-          left: 30,
-          width: 80,
-          height: 80,
-          borderLeft: `3px solid ${theme.secondary}`,
-          borderTop: `3px solid ${theme.secondary}`,
-        },
-        cornerTopRight: {
-          position: 'absolute',
-          top: 30,
-          right: 30,
-          width: 80,
-          height: 80,
-          borderRight: `3px solid ${theme.secondary}`,
-          borderTop: `3px solid ${theme.secondary}`,
-        },
-        cornerBottomLeft: {
-          position: 'absolute',
-          bottom: 30,
-          left: 30,
-          width: 80,
-          height: 80,
-          borderLeft: `3px solid ${theme.secondary}`,
-          borderBottom: `3px solid ${theme.secondary}`,
-        },
-        cornerBottomRight: {
-          position: 'absolute',
-          bottom: 30,
-          right: 30,
-          width: 80,
-          height: 80,
-          borderRight: `3px solid ${theme.secondary}`,
-          borderBottom: `3px solid ${theme.secondary}`,
-        },
-        // Main content container
-        contentWrapper: {
-          padding: '30px 60px 20px',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100%',
-        },
-        // Top section with ID and QR
-        topSection: {
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          width: '100%',
-          marginBottom: 15,
-        },
-        idContainer: {
-          flexDirection: 'column',
-        },
-        idLabel: {
-          fontSize: 8,
-          color: '#9ca3af',
-          textTransform: 'uppercase',
-          letterSpacing: 1,
-          marginBottom: 4,
-          fontFamily: 'Roboto',
-        },
-        idText: {
-          fontSize: 10,
-          color: theme.secondary,
-          fontWeight: 600,
-          fontFamily: 'Roboto',
-        },
-        qrWrapper: {
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 8,
-        },
-        qrContainer: {
-          width: 80,
-          height: 80,
-          padding: 6,
-          border: `2px solid ${theme.secondary}`,
-          borderRadius: 8,
-          backgroundColor: '#ffffff',
-        },
-        qrImage: {
-          width: '100%',
-          height: '100%',
-        },
-        qrLabel: {
-          fontSize: 7,
-          color: '#9ca3af',
-          textTransform: 'uppercase',
-          letterSpacing: 0.5,
-          fontFamily: 'Roboto',
-        },
-        // Header with decorative lines
-        headerSection: {
-          flexDirection: 'column',
-          alignItems: 'center',
-          marginBottom: 12,
-          width: '100%',
-        },
-        headerDeco: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 12,
-        },
-        headerLine: {
-          width: 60,
-          height: 2,
-          backgroundColor: theme.secondary,
-        },
-        headerDiamond: {
-          width: 8,
-          height: 8,
-          backgroundColor: theme.primary,
-          transform: 'rotate(45deg)',
-        },
-        headerText: {
-          fontSize: 14,
-          color: theme.secondary,
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: 3,
-          fontFamily: 'Roboto',
-        },
-        // Icon and badge section
-        iconBadgeSection: {
-          flexDirection: 'column',
-          alignItems: 'center',
-          marginBottom: 10,
-        },
-        iconContainer: {
-          width: 60,
-          height: 60,
-          backgroundColor: theme.iconLight,
-          borderRadius: 30,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 10,
-          border: `2px solid ${theme.iconBorder}`,
-        },
-        icon: {
-          fontSize: 30,
-          fontFamily: 'Roboto',
-        },
-        badge: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          paddingHorizontal: 24,
-          paddingVertical: 10,
-          backgroundColor: theme.iconLight,
-          borderRadius: 20,
-          border: `2px solid ${theme.secondary}`,
-        },
-        badgeCheck: {
-          fontSize: 16,
-          color: theme.primary,
-          fontWeight: 'bold',
-          fontFamily: 'Roboto',
-        },
-        badgeText: {
-          fontSize: 12,
-          color: theme.primary,
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: 1,
-          fontFamily: 'Roboto',
-        },
-        // Title and description
-        titleSection: {
-          flexDirection: 'column',
-          alignItems: 'center',
-          marginBottom: 10,
-          width: '100%',
-        },
-        title: {
-          fontSize: 24,
-          fontWeight: 'bold',
-          color: theme.primary,
-          marginBottom: 10,
-          textAlign: 'center',
-          lineHeight: 1.2,
-          maxWidth: '80%',
-          fontFamily: 'Roboto',
-        },
-        description: {
-          fontSize: 10,
-          color: '#6b7280',
-          textAlign: 'center',
-          lineHeight: 1.3,
-          maxWidth: '70%',
-          fontFamily: 'Roboto',
-        },
-        // Decorative divider
-        dividerSection: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          marginVertical: 10,
-        },
-        dividerLine: {
-          width: 40,
-          height: 2,
-          backgroundColor: theme.secondary,
-          opacity: 0.4,
-        },
-        dividerCircle: {
-          width: 6,
-          height: 6,
-          backgroundColor: theme.primary,
-          borderRadius: 3,
-          opacity: 0.7,
-        },
-        // Information box
-        infoSection: {
-          flexDirection: 'column',
-          alignItems: 'center',
-          width: '100%',
-          marginTop: 5,
-        },
-        infoBox: {
-          padding: 12,
-          backgroundColor: '#fafbfc',
-          borderRadius: 6,
-          border: `1px solid ${theme.iconBorder}`,
-          width: '65%',
-        },
-        infoRow: {
-          flexDirection: 'row',
-          marginVertical: 4,
-          alignItems: 'flex-start',
-        },
-        infoLabel: {
-          fontSize: 11,
-          fontWeight: 'bold',
-          color: theme.primary,
-          width: 120,
-          textTransform: 'uppercase',
-          letterSpacing: 0.5,
-          fontFamily: 'Roboto',
-        },
-        infoValue: {
-          fontSize: 11,
-          color: '#374151',
-          flex: 1,
-          lineHeight: 1.4,
-          fontFamily: 'Roboto',
-        },
-        // Footer
-        footerSection: {
-          position: 'absolute',
-          bottom: 20,
-          left: 0,
-          right: 0,
-          flexDirection: 'column',
-          alignItems: 'center',
-        },
-        footerLine: {
-          width: 120,
-          height: 1,
-          backgroundColor: theme.secondary,
-          opacity: 0.3,
-          marginBottom: 6,
-        },
-        footer: {
-          fontSize: 7,
-          color: '#9ca3af',
-          textAlign: 'center',
-          maxWidth: '70%',
-          lineHeight: 1.3,
-          fontFamily: 'Roboto',
-        },
-      });
-
-      // Create PDF Document with Modern Layout
-      const CertificateDocument = (
-        <Document>
-          <Page
-            size="A4"
-            orientation="landscape"
-            style={styles.page}
-          >
-            {/* Decorative corner borders */}
-            <View style={styles.cornerTopLeft} />
-            <View style={styles.cornerTopRight} />
-            <View style={styles.cornerBottomLeft} />
-            <View style={styles.cornerBottomRight} />
-
-            {/* Main content wrapper */}
-            <View style={styles.contentWrapper}>
-              {/* Top section with ID and QR code */}
-              <View style={styles.topSection}>
-                <View style={styles.idContainer}>
-                  <Text style={styles.idLabel}>{t('certificateId')}</Text>
-                  <Text style={styles.idText}>{certificateUUID}</Text>
-                </View>
-                <View style={styles.qrWrapper}>
-                  <View style={styles.qrContainer}>
-                    <Image
-                      src={qrCodeDataUrl}
-                      style={styles.qrImage}
-                    />
-                  </View>
-                  <Text style={styles.qrLabel}>{t('authenticityGuaranteed')}</Text>
-                </View>
-              </View>
-
-              {/* Header section */}
-              <View style={styles.headerSection}>
-                <View style={styles.headerDeco}>
-                  <View style={styles.headerLine} />
-                  <View style={styles.headerDiamond} />
-                  <View style={styles.headerLine} />
-                </View>
-                <Text style={styles.headerText}>{t('certificate')}</Text>
-              </View>
-
-              {/* Icon and badge */}
-              <View style={styles.iconBadgeSection}>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeCheck}>{t('badgeCheckIcon')}</Text>
-                  <Text style={styles.badgeText}>
-                    {getCertificationTypeLabel(userCertificate.certification.config.certification_type)}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Title and description */}
-              <View style={styles.titleSection}>
-                <Text style={styles.title}>{userCertificate.certification.config.certification_name}</Text>
-                <Text style={styles.description}>
-                  {userCertificate.certification.config.certification_description ||
-                    t('certificationDefaultDescription')}
-                </Text>
-              </View>
-
-              {/* Decorative divider */}
-              <View style={styles.dividerSection}>
-                <View style={styles.dividerLine} />
-                <View style={styles.dividerCircle} />
-                <View style={styles.dividerLine} />
-                <View style={styles.dividerCircle} />
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Information box */}
-              <View style={styles.infoSection}>
-                <View style={styles.infoBox}>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>{t('awarded')}</Text>
-                    <Text style={styles.infoValue}>
-                      {new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </Text>
-                  </View>
-                  {userCertificate.certification.config.certificate_instructor && (
-                    <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>{t('instructor')}</Text>
-                      <Text style={styles.infoValue}>
-                        {userCertificate.certification.config.certificate_instructor}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>{t('certificateId')}</Text>
-                    <Text style={styles.infoValue}>{certificateUUID}</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Footer */}
-            <View style={styles.footerSection}>
-              <View style={styles.footerLine} />
-              <Text style={styles.footer}>
-                {`${t('verificationNote')}:`} {qrCodeData.replace('https://', '').replace('http://', '')}
-              </Text>
-            </View>
-          </Page>
-        </Document>
-      );
-
-      // Generate and download PDF
-      const blob = await pdf(CertificateDocument).toBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${userCertificate.certification.config.certification_name.replaceAll(/[^\dA-Za-z]/g, '_')}_${t('certificateFileName')}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
+      downloadPdfBlob(blob, `${sanitizePdfFileName(certificationName)}_${t('certificateFileName')}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       setDialogAlertMessage(t('errorGeneratingPDF'));
