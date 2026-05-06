@@ -8,16 +8,6 @@
 
 ---
 
-### 🔴 CRITICAL: Redundancies & Issues
-
-#### `marked` ⚠️ redundant with `react-markdown`
-
-You have two full markdown pipelines. `react-markdown` uses the unified/remark ecosystem (which you already depend on via `remark-gfm`) and is the correct React-native solution. `marked` appears to be dead weight — likely a legacy import.
-
-**Action:** Remove `marked`. If you need raw HTML string output (outside React), inline a tiny `unified().use(remarkParse).use(remarkHtml)` call.
-
----
-
 ### 🟡 WORTH RECONSIDERING
 
 #### `@react-pdf/renderer` ^4.5.1
@@ -57,39 +47,19 @@ Old CommonJS package with a large dependency tree.
 
 ### 🟢 FINE — alternatives for awareness only
 
-| Package              | Status | Alternatives                                   |
-| -------------------- | ------ | ---------------------------------------------- |
-| `katex`              | Keep   | `temml` (lighter, MathML output)               |
-| `react-markdown` v10 | Keep   | `mdx-js/mdx` (if you need MDX execution)       |
+| Package              | Status | Alternatives                             |
+| -------------------- | ------ | ---------------------------------------- |
+| `react-markdown` v10 | Keep   | `mdx-js/mdx` (if you need MDX execution) |
 
 ---
-
-## PART 2 — BACKEND (`pyproject.toml`)
-
----
-
-### 🟡 WORTH RECONSIDERING
-
----
-
-### Dev Dependencies
-
-| Package          | Status                | Alternatives                                                                                            |
-| ---------------- | --------------------- | ------------------------------------------------------------------------------------------------------- |
-| `mypy`           | 🟡 Consider replacing | **`pyright`** (10-100x faster, better inference, used by Pylance) or **`basedpyright`** (stricter fork) |
 
 ---
 
 ## SUMMARY: Priority Actions
 
-### Do immediately (low risk, high value)
-
-1. **Remove `marked`** — redundant with `react-markdown`
-
 ### Evaluate this sprint
 
 1. **Replace `artplayer`** → `vidstack` — better maintained, better accessibility
-2. **Replace `mypy`** → `pyright` or `basedpyright` — dramatically faster type checking
 
 ### Evaluate next quarter
 

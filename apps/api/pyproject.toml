@@ -45,17 +45,17 @@ preview = true
 lint.fixable = ["ALL"]
 lint.ignore = [
   "F401",
-  "COM812",  # missing trailing comma (stylistic, optional)
-  "DTZ005",  # datetime.now() used without tzinfo (not always relevant)
-  "T20",     # flake8-print (allow print statements for debugging/logging)
-  "TC002",   # type checking import block placement
-  "TC001",   # type checking import not at top of file
-  "TC003",   # type checking import formatting
+  "COM812", # missing trailing comma (stylistic, optional)
+  "DTZ005", # datetime.now() used without tzinfo (not always relevant)
+  "T20", # flake8-print (allow print statements for debugging/logging)
+  "TC002", # type checking import block placement
+  "TC001", # type checking import not at top of file
+  "TC003", # type checking import formatting
   "PLR2004", # magic value used in comparison (often acceptable)
-  "D",       # all docstring-related rules disabled
-  "D100",    # missing docstring in public module
-  "S101",    # Use of `assert` detected
-  "TD002",   # Missing author in TODO;
+  "D", # all docstring-related rules disabled
+  "D100", # missing docstring in public module
+  "S101", # Use of `assert` detected
+  "TD002", # Missing author in TODO;
   "S106",
   "TD003",
   "S105",
@@ -89,3 +89,30 @@ disallow_any_generics = true
 warn_return_any = true
 mypy_path = ".."
 explicit_package_bases = true
+
+[tool.pyright]
+# Target the specific Python version from your project requirements
+pythonVersion = "3.14"
+typeCheckingMode = "strict"
+
+# Source folders to include
+include = ["."]
+exclude = ["**/node_modules", "**/__pycache__", "**/.venv", "**/venv", "**/tests", "**/alembic"]
+
+# Rule Overrides
+# ------------------
+# Often necessary because some libraries in your list (like selectolax or resend)
+# might not have perfect type stubs.
+reportMissingTypeStubs = false
+
+# FastAPI/SQLModel frequently use "Any" or dynamic types for dependency
+# injection and database models. Strict can be too aggressive here.
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+
+# Allow "assert" statements (which you already allow in Ruff)
+reportAssertAlwaysTrue = "warning"
+
+# Ensure Pyright respects your environment
+executionEnvironments = [{ root = "." }]

@@ -25,7 +25,10 @@ import type { Editor } from '@tiptap/react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/components/providers/theme-provider';
 import { cn } from '@/lib/utils';
-import { marked } from 'marked';
+import remarkGfm from 'remark-gfm';
+import remarkHtml from 'remark-html';
+import remarkParse from 'remark-parse';
+import { unified } from 'unified';
 import Image from 'next/image';
 import { toast } from 'sonner';
 
@@ -123,7 +126,7 @@ function useEditorOperations(editor: Editor) {
         editor.chain().focus().deleteSelection().run();
       }
 
-      const html = await marked.parse(text);
+      const html = String(await unified().use(remarkParse).use(remarkGfm).use(remarkHtml).process(text));
       editor.chain().focus().insertContent(html).run();
     },
     [editor],
