@@ -116,7 +116,6 @@ const SignUpClient = () => {
   return (
     <AuthCard className="max-w-md">
       <Link
-        prefetch={false}
         href={getAbsoluteUrl('/')}
       >
         <AuthLogo />
@@ -225,7 +224,6 @@ const SignUpClient = () => {
       <p className="mt-5 text-center text-sm">
         {t('alreadyHaveAccount')}
         <Link
-          prefetch={false}
           href={getAbsoluteUrl('/login')}
           className="text-muted-foreground ml-1 underline"
         >

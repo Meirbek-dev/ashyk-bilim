@@ -92,7 +92,6 @@ const LoginClient = () => {
   return (
     <AuthCard>
       <Link
-        prefetch={false}
         href={getAbsoluteUrl('/')}
       >
         <AuthLogo />
@@ -157,7 +156,6 @@ const LoginClient = () => {
 
         <div className="flex justify-end">
           <Link
-            prefetch={false}
             href={getAbsoluteUrl('/forgot')}
             className="text-muted-foreground text-xs underline"
           >
@@ -175,7 +173,6 @@ const LoginClient = () => {
       <p className="mt-5 text-center text-sm">
         {t('noAccount')}
         <Link
-          prefetch={false}
           href={getAbsoluteUrl('/signup')}
           className="text-muted-foreground ml-1 underline"
         >

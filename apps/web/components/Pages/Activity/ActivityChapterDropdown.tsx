@@ -175,7 +175,6 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
                           <Link
                             key={activity.id}
                             href={`${getAbsoluteUrl('')}/course/${cleanCourseUuid}/activity/${activity.cleanUuid}`}
-                            prefetch={false}
                             onClick={() => {
                               setIsOpen(false);
                             }}

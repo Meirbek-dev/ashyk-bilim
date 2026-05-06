@@ -245,7 +245,6 @@ export const HeaderProfileBox = () => {
                   nativeButton={false}
                   render={
                     <Link
-                      prefetch={false}
                       href="/dash/user-account/settings/general"
                     />
                   }

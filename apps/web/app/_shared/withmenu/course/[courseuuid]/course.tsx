@@ -439,7 +439,6 @@ const CourseClient = (props: any) => {
                                     key={activity.activity_uuid}
                                     href={`${getAbsoluteUrl('')}/course/${courseuuid}/activity/${activity.activity_uuid.replace('activity_', '')}`}
                                     rel="noopener noreferrer"
-                                    prefetch={false}
                                     className={cn(
                                       'group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-muted/30',
                                       actIdx > 0 && 'border-t border-border/60',

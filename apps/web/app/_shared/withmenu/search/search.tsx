@@ -350,7 +350,6 @@ const SearchPage = () => {
                   <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
                     {searchResults.courses.map((course) => (
                       <Link
-                        prefetch={false}
                         key={course.course_uuid}
                         href={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
                         className="soft-shadow group border-border bg-card text-card-foreground overflow-hidden rounded-xl border transition-all hover:shadow-md"
@@ -418,7 +417,6 @@ const SearchPage = () => {
                   <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
                     {searchResults.collections.map((collection) => (
                       <Link
-                        prefetch={false}
                         key={collection.collection_uuid}
                         href={getAbsoluteUrl(`/collection/${collection.collection_uuid.replace('collection_', '')}`)}
                         className="soft-shadow border-border bg-card text-card-foreground flex items-start gap-4 rounded-xl border p-4 transition-all hover:shadow-md"
@@ -455,7 +453,6 @@ const SearchPage = () => {
                   <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
                     {searchResults.users.map((user) => (
                       <Link
-                        prefetch={false}
                         key={user.user_uuid}
                         href={getAbsoluteUrl(`/user/${user.username}`)}
                         className="soft-shadow border-border bg-card text-card-foreground flex items-center gap-4 rounded-xl border p-4 transition-all hover:shadow-md"

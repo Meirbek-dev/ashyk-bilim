@@ -76,7 +76,6 @@ export default async function PlatformCollectionPage(props: { params: Promise<{ 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {col.courses.map((course: any) => (
           <Link
-            prefetch={false}
             href={getAbsoluteUrl(`/course/${course.course_uuid.replace('course_', '')}`)}
             key={course.course_uuid}
             className="group border-border bg-card text-card-foreground hover:border-primary/20 flex flex-col overflow-hidden rounded-xl border shadow-sm transition-all hover:shadow-md"

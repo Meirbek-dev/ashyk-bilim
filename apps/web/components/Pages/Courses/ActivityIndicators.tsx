@@ -299,7 +299,6 @@ const CertificationBadge = ({ courseid, isCompleted }: { courseid: string; isCom
     >
       <Link
         href={`${getAbsoluteUrl('')}/course/${courseid}/activity/end`}
-        prefetch={false}
         className={`ml-1 flex items-center focus:outline-none ${
           isCompleted ? 'opacity-100' : 'pointer-events-none opacity-30'
         }`}
@@ -427,7 +426,6 @@ const ActivityIndicators = (props: Props) => {
                 {chapterLinkHref ? (
                   <Link
                     href={chapterLinkHref}
-                    prefetch={false}
                     className="group flex shrink-0 items-center justify-center focus:outline-none"
                   >
                     <div
@@ -480,7 +478,6 @@ const ActivityIndicators = (props: Props) => {
                       key={activity.activity_uuid}
                     >
                       <Link
-                        prefetch={false}
                         href={`${getAbsoluteUrl('')}/course/${courseid}/activity/${activity.cleanUuid}`}
                         className="group relative flex flex-1 py-1.5"
                       >

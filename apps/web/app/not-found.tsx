@@ -40,7 +40,6 @@ export default async function NotFound() {
           <Link
             className="flex items-center gap-2"
             href="/"
-            prefetch={false}
           >
             {t('button')}
             <ArrowRight className="ml-1 tracking-tight transition-transform duration-150 ease-in-out group-hover:translate-x-0.5" />

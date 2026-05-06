@@ -41,7 +41,6 @@ const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
     <div className="border-border bg-card flex gap-4 rounded-xl border p-4 transition-shadow hover:shadow-md">
       {/* Thumbnail */}
       <Link
-        prefetch={false}
         href={getAbsoluteUrl(`/course/${courseid}`)}
         className="shrink-0"
       >
@@ -64,7 +63,6 @@ const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
               {t('courseLabel')}
             </p>
             <Link
-              prefetch={false}
               href={getAbsoluteUrl(`/course/${courseid}`)}
             >
               <h3 className="text-foreground hover:text-primary truncate text-base leading-snug font-semibold transition-colors">
@@ -109,7 +107,6 @@ const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
               </span>
             ) : courseCertificate ? (
               <Link
-                prefetch={false}
                 href={getAbsoluteUrl(
                   `/certificates/${courseCertificate.certificate_user.user_certification_uuid}/verify`,
                 )}

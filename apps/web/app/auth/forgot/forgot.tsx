@@ -50,7 +50,6 @@ const ForgotPasswordClient = () => {
   return (
     <AuthCard>
       <Link
-        prefetch={false}
         href={getAbsoluteUrl('/')}
       >
         <AuthLogo />
@@ -95,7 +94,6 @@ const ForgotPasswordClient = () => {
       </form>
 
       <Link
-        prefetch={false}
         href={getAbsoluteUrl('/login')}
         className="text-muted-foreground mt-5 flex items-center gap-1 text-sm underline"
       >

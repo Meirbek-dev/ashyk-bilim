@@ -36,7 +36,6 @@ const GoogleCallbackPage = () => {
   return (
     <AuthCard>
       <Link
-        prefetch={false}
         href={getAbsoluteUrl('/')}
       >
         <AuthLogo />
@@ -50,7 +49,6 @@ const GoogleCallbackPage = () => {
               <span className="text-sm font-semibold">{error}</span>
             </div>
             <Link
-              prefetch={false}
               href={getAbsoluteUrl('/login')}
               className="text-muted-foreground text-sm underline"
             >

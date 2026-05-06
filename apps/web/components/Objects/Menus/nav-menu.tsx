@@ -153,7 +153,6 @@ const DesktopNavLink = ({ def, label }: NavLinkProps) => {
   return (
     <NavigationMenuItem className="list-none">
       <Link
-        prefetch={false}
         href={getAbsoluteUrl(href)}
         aria-current={isActive ? 'page' : undefined}
         className={cn(
@@ -186,7 +185,6 @@ const MobileNavLink = ({ def, label, onNavigate }: NavLinkProps) => {
 
   return (
     <Link
-      prefetch={false}
       href={getAbsoluteUrl(href)}
       onClick={onNavigate}
       aria-current={isActive ? 'page' : undefined}

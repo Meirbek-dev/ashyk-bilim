@@ -408,7 +408,6 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
                   <span>{t('downloadCertificate')}</span>
                 </button>
                 <Link
-                  prefetch={false}
                   href={getAbsoluteUrl(
                     `/certificates/${userCertificate.certificate_user.user_certification_uuid}/verify`,
                   )}
@@ -429,7 +428,6 @@ const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbna
 
           <div className="pt-6">
             <Link
-              prefetch={false}
               href={getAbsoluteUrl(`/course/${courseUuid.replace('course_', '')}`)}
               className="inline-flex items-center space-x-2 rounded-full bg-gray-800 px-6 py-3 text-white transition duration-200 hover:bg-gray-700"
             >

@@ -356,7 +356,6 @@ const CourseActions: FC<CourseActionsProps> = ({
           nativeButton={false}
           render={
             <Link
-              prefetch={false}
               href={courseUrl}
             />
           }
@@ -378,7 +377,6 @@ const CourseActions: FC<CourseActionsProps> = ({
       nativeButton={false}
       render={
         <Link
-          prefetch={false}
           href={courseUrl}
         />
       }
@@ -629,7 +627,6 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
       <CardContent className="flex flex-1 flex-col gap-1.5 px-4 pt-3 pb-2">
         <div className="flex-1 space-y-1">
           <Link
-            prefetch={false}
             href={courseUrl}
             className="group-hover:text-primary block transition-colors duration-150"
             aria-label={t('openCourse', { course: course.name })}

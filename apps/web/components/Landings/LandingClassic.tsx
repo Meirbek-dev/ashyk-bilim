@@ -155,7 +155,6 @@ const LandingClassic = async ({ courses, totalCourses, collections, gamification
                     scope={Scopes.PLATFORM}
                   >
                     <Link
-                      prefetch={false}
                       href={getAbsoluteUrl('/collections/new')}
                       className="focus:ring-primary inline-block rounded transition-transform duration-200 hover:scale-105 focus:scale-105 focus:ring-2 focus:ring-offset-2 focus:outline-none"
                     >
