@@ -1,4 +1,4 @@
-import rawThemeRegistry from './theme-registry.generated.json';
+import rawThemeRegistry from './theme-store.json';
 import { loadThemeFonts } from './theme-fonts';
 
 export type ThemeMode = 'light' | 'dark';
