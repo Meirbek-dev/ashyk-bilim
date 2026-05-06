@@ -218,6 +218,7 @@ export function MatchingItemReview({ item, answer }: ItemReviewDetailProps<Match
                 <Badge
                   variant="outline"
                   className="text-xs"
+                // eslint-disable-next-line i18next/no-literal-string
                 >
                   ✓ {pair.right}
                 </Badge>

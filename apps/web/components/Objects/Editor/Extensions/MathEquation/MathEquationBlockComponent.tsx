@@ -319,6 +319,7 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
                           {'}'}
                         </div>
                         <div>
+                          // eslint-disable-next-line i18next/no-literal-string
                           <span className="font-medium">{t('squareRoot')}</span> {'\\sqrt{'}x{'}'}
                         </div>
                         <div>

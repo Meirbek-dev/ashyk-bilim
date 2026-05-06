@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
-import { connection } from 'next/server';
 import type { Metadata } from 'next';
+import { cache } from 'react';
 
 import { getSession } from '@/lib/auth/session';
 import { SessionProvider } from '@/components/providers/session-provider';
@@ -10,13 +10,13 @@ import AssessmentAttemptClient from './AssessmentAttemptClient';
 
 interface Props {
   params: Promise<{ assessmentUuid: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
+const fetchAssessment = cache((assessmentUuid: string) => getAssessmentByUuid(assessmentUuid));
+
 export async function generateMetadata(props: Props): Promise<Metadata> {
-  await connection();
   const { assessmentUuid } = await props.params;
-  const assessment = await getAssessmentByUuid(assessmentUuid);
+  const assessment = await fetchAssessment(assessmentUuid);
   if (!assessment) {
     return { title: 'Assessment not found' };
   }
@@ -32,10 +32,9 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 }
 
 export default async function AssessmentAttemptPage(props: Props) {
-  await connection();
   const { assessmentUuid } = await props.params;
 
-  const [assessment, initialSession] = await Promise.all([getAssessmentByUuid(assessmentUuid), getSession()]);
+  const [assessment, initialSession] = await Promise.all([fetchAssessment(assessmentUuid), getSession()]);
 
   if (!assessment) {
     notFound();

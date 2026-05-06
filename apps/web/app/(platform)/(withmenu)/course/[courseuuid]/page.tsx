@@ -1,19 +1,19 @@
 import { getCourseThumbnailMediaDirectory } from '@services/media/media';
 import { getCourseMetadata } from '@services/courses/courses';
 import { getSession } from '@/lib/auth/session';
+import { cache } from 'react';
 import type { Metadata } from 'next';
 
 import CourseClient from '@/app/_shared/withmenu/course/[courseuuid]/course';
 
 interface MetadataProps {
   params: Promise<{ courseuuid: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-async function fetchCourseMetadata(courseuuid: string) {
+const fetchCourseMetadata = cache(async (courseuuid: string) => {
   const session = await getSession();
   return await getCourseMetadata(courseuuid, undefined, !!session);
-}
+});
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
   const params = await props.params;

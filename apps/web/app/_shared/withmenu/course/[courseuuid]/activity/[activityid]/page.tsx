@@ -3,9 +3,9 @@ import { getAssessmentByActivityUuid } from '@services/assessments/assessments';
 import { getCourseMetadata } from '@services/courses/courses';
 import { getTranslations } from 'next-intl/server';
 import { redirect } from 'next/navigation';
-import { connection } from 'next/server';
 import { jetBrainsMono } from '@/lib/fonts';
 import type { Metadata } from 'next';
+import { cache } from 'react';
 
 import ActivityClient from './activity';
 import { getSession } from '@/lib/auth/session';
@@ -14,17 +14,17 @@ const ASSESSABLE_TYPES = new Set(['TYPE_ASSIGNMENT', 'TYPE_EXAM', 'TYPE_CODE_CHA
 
 interface MetadataProps {
   params: Promise<{ courseuuid: string; activityid: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 // Add this function at the top level to avoid duplicate fetches
-async function fetchCourseMetadata(courseuuid: string) {
+const fetchCourseMetadata = cache(async (courseuuid: string) => {
   const session = await getSession();
   return await getCourseMetadata(courseuuid, undefined, !!session);
-}
+});
+
+const fetchActivity = cache(async (activityid: string) => getActivity(activityid));
 
 export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
-  await connection();
   const { courseuuid, activityid } = await props.params;
   const t = await getTranslations('General');
 
@@ -32,7 +32,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
 
   // Don't fetch activity if it's the end page
   const isCourseEnd = activityid === 'end';
-  const activity = isCourseEnd ? null : await getActivity(activityid);
+  const activity = isCourseEnd ? null : await fetchActivity(activityid);
 
   // Localized page title
   const pageTitle = isCourseEnd
@@ -64,7 +64,6 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
 }
 
 const ActivityPage = async (params: any) => {
-  await connection();
   const { courseuuid, activityid } = await params.params;
 
   // Don't fetch activity if it's the end page
@@ -72,7 +71,7 @@ const ActivityPage = async (params: any) => {
 
   const [course_meta, activity] = await Promise.all([
     fetchCourseMetadata(courseuuid),
-    isCourseEnd ? Promise.resolve(null) : getActivity(activityid),
+    isCourseEnd ? Promise.resolve(null) : fetchActivity(activityid),
   ]);
 
   if (!isCourseEnd && activity && ASSESSABLE_TYPES.has(activity.activity_type ?? '')) {
