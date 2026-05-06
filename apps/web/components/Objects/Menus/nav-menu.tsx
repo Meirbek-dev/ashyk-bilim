@@ -23,7 +23,12 @@ import { HeaderProfileBox } from '@/components/Security/HeaderProfileBox';
 // Hooks & Config
 import { useSession } from '@/hooks/useSession';
 import { getAbsoluteUrl } from '@/services/config/config';
-import { NAVBAR_HEIGHT } from '@/lib/constants';
+import {
+  ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY,
+  COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY,
+  FOCUS_MODE_CHANGE_EVENT,
+  NAVBAR_HEIGHT,
+} from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 // Assets
@@ -65,18 +70,18 @@ function useIsActive(href: string): boolean {
 // ----------------------------------------------------------------------
 // Focus mode — SSR-safe, reads localStorage only after mount
 // ----------------------------------------------------------------------
-function useFocusMode(enabled: boolean): boolean {
+function useFocusMode(enabled: boolean, storageKey: string | null): boolean {
   const [isFocusMode, setIsFocusMode] = useState(false);
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !storageKey) {
       setIsFocusMode(false);
       return;
     }
 
     const read = (): boolean => {
       try {
-        return localStorage.getItem('globalFocusMode') === 'true';
+        return localStorage.getItem(storageKey) === 'true';
       } catch {
         return false;
       }
@@ -86,17 +91,17 @@ function useFocusMode(enabled: boolean): boolean {
 
     const sync = () => setIsFocusMode(read());
     const onStorage = (e: StorageEvent) => {
-      if (e.key === 'globalFocusMode') sync();
+      if (e.key === storageKey) sync();
     };
 
     globalThis.addEventListener('storage', onStorage);
-    globalThis.addEventListener('focusModeChange', sync);
+    globalThis.addEventListener(FOCUS_MODE_CHANGE_EVENT, sync);
 
     return () => {
       globalThis.removeEventListener('storage', onStorage);
-      globalThis.removeEventListener('focusModeChange', sync);
+      globalThis.removeEventListener(FOCUS_MODE_CHANGE_EVENT, sync);
     };
-  }, [enabled]);
+  }, [enabled, storageKey]);
 
   return isFocusMode;
 }
@@ -224,7 +229,12 @@ export default function NavBar() {
   const logoSrc = resolvedTheme === 'dark' ? platformLogoLightFull : platformLogoFull;
 
   const isOnActivityPage = pathname?.includes('/activity/') ?? false;
-  const isFocusMode = useFocusMode(isOnActivityPage);
+  const isOnAssessmentAttemptPage = pathname?.startsWith('/assessments/') ?? false;
+  const focusModeStorageKey = isOnAssessmentAttemptPage
+    ? ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY
+    : COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY;
+  const focusModeEligible = isOnActivityPage || isOnAssessmentAttemptPage;
+  const isFocusMode = useFocusMode(focusModeEligible, focusModeStorageKey);
   const isScrolled = useScrollElevation();
 
   const visibleLinks = useMemo(() => NAV_LINKS.filter((l) => !l.authRequired || isAuthenticated), [isAuthenticated]);
@@ -236,7 +246,7 @@ export default function NavBar() {
 
   const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
-  if (isOnActivityPage && isFocusMode) return null;
+  if (focusModeEligible && isFocusMode) return null;
 
   return (
     <header

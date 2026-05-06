@@ -35,6 +35,9 @@ export const PLATFORM_DESCRIPTION = 'Образовательная платфо
 export const PLATFORM_LABEL = 'ashyq-bilim';
 export const PLATFORM_THUMBNAIL_IMAGE_PATH = '/platform_logo_full.svg';
 export const NAVBAR_HEIGHT = 60;
+export const COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY = 'globalFocusMode';
+export const ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY = 'activity-focus-mode';
+export const FOCUS_MODE_CHANGE_EVENT = 'focusModeChange';
 
 /**
  * Constructs the 'accept' attribute value for an input element.

@@ -11,6 +11,7 @@ import FixedActivitySecondaryBar from '@components/Pages/Activity/FixedActivityS
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
 import { CourseBreadcrumbs } from '@/components/ui/app-breadcrumbs';
 import { useContributorStatus } from '@/hooks/useContributorStatus';
+import { COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY, FOCUS_MODE_CHANGE_EVENT } from '@/lib/constants';
 import { buildCourseActivityIndex, normalizeActivityUuid } from '@/lib/course-activity-index';
 import { ActivityContent, CourseEndPanel, FocusActivityView, LoadingFallback } from './ActivityContentSurface';
 import ActivityToolbar from './ActivityToolbar';
@@ -35,14 +36,14 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
     : null;
 
   useEffect(() => {
-    const saved = globalThis.localStorage?.getItem('globalFocusMode');
+    const saved = globalThis.localStorage?.getItem(COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY);
     setIsFocusMode(saved === 'true');
   }, []);
 
   const setFocusMode = (next: boolean) => {
     setIsFocusMode(next);
-    globalThis.localStorage?.setItem('globalFocusMode', String(next));
-    globalThis.dispatchEvent?.(new CustomEvent('focusModeChange', { detail: { isFocusMode: next } }));
+    globalThis.localStorage?.setItem(COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY, String(next));
+    globalThis.dispatchEvent?.(new CustomEvent(FOCUS_MODE_CHANGE_EVENT, { detail: { isFocusMode: next } }));
   };
 
   const isAssessable = activity
