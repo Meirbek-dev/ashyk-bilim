@@ -1,7 +1,7 @@
 'use client';
 
 import { useCourseEditorBundle } from '@/hooks/courses/useCourseEditorBundle';
-import { createContext, use, useCallback, useEffect, useMemo } from 'react';
+import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react';
 import { createEmptyCourseEditorBundle } from '@services/courses/editor';
 import { useCourseStructure } from '@/hooks/courses/useCourseStructure';
 import { getCourseReadinessSummary } from '@/lib/course-management';
@@ -92,6 +92,11 @@ export const CourseProvider = ({
   const t = useTranslations('Contexts.Course');
   const openEditor = useCourseEditorStore((state) => state.openEditor);
   const dirtySections = useCourseEditorStore((state) => state.dirtySections);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const {
     courseStructure: courseStructureData,
@@ -136,7 +141,7 @@ export const CourseProvider = ({
   );
 
   if (error) return <ErrorUI message={t('loadError')} />;
-  if (isLoading) return <PageLoading />;
+  if (isLoading || !isMounted) return <PageLoading />;
 
   if (courseStructureData) {
     const value: CourseContextValue = {

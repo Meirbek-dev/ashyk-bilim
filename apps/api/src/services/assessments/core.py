@@ -230,24 +230,9 @@ async def get_assessment_by_activity_uuid(
     activity = _get_activity_by_uuid_or_404(activity_uuid, db_session)
     course = _get_course_for_activity_or_404(activity, db_session)
     _require_read(current_user, activity, course, db_session)
-    assessment = db_session.exec(
-        select(Assessment).where(Assessment.activity_id == activity.id)
-    ).first()
-    if assessment is None:
-        logger.warning(
-            "ASSESSMENT_FLOW_BLOCKED reason=MIGRATION_REQUIRED activity_uuid=%s activity_type=%s",
-            activity.activity_uuid,
-            activity.activity_type,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "MIGRATION_REQUIRED",
-                "message": "Assessment has not been migrated to the canonical model.",
-            },
-        )
-    return _build_assessment_read(assessment, db_session, current_user=current_user)
 
+    assessment = _get_or_project_assessment_for_activity(activity, db_session)
+    return _build_assessment_read(assessment, db_session, current_user=current_user)
 
 async def update_assessment(
     assessment_uuid: str,

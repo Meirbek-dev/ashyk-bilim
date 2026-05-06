@@ -63,11 +63,17 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   const { vm, isLoading, error } = useAssessmentStudio(activityUuid);
   const [kindModule, setKindModule] = useState<KindModule | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isMounted, setIsMounted] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduledAt, setScheduledAt] = useState('');
   const scheduleInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const lifecycleLabels: Record<AssessmentLifecycle, string> = {
     DRAFT: t('lifecycle.draft'),
     SCHEDULED: t('lifecycle.scheduled'),
@@ -87,7 +93,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
     };
   }, [vm?.kind]);
 
-  if (isLoading) {
+  if (!isMounted || isLoading) {
     return (
       <div className="text-muted-foreground flex min-h-[420px] items-center justify-center text-sm">
         <LoaderCircle className="mr-2 size-4 animate-spin" />
