@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from src.db.analytics import AnalyticsSavedView
 from src.services.analytics.queries import to_iso

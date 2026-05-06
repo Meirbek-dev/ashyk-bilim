@@ -7092,6 +7092,16 @@
         }
       },
       "Review": {
+        "layout": {
+          "title": "Жұмыстарды тексеру",
+          "queueDescription": "{total} жұмыстың ішінен {count} жұмыс тексеруді қажет етеді",
+          "stats": {
+            "total": "Барлығы",
+            "needsGrading": "Тексерілуде",
+            "avgScore": "Орташа балл",
+            "passRate": "Өту көрсеткіші"
+          }
+        },
         "submissionList": {
           "searchLearner": "Білім алушыны іздеу",
           "statusFilter": "Мәртебе сүзгісі",
@@ -7226,6 +7236,10 @@
       }
     },
     "Assessments": {
+      "ReviewWorkspace": {
+        "loading": "Тексеру жұмыс кеңістігі жүктелуде...",
+        "reviewUnavailable": "Бұл тапсырма үшін тексеру қолжетімді емес."
+      },
       "Items": {
         "Choice": {
           "selectMatch": "Сәйкестікті таңдаңыз",

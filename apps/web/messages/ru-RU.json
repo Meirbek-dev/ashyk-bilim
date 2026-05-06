@@ -7120,6 +7120,16 @@
         }
       },
       "Review": {
+        "layout": {
+          "title": "Проверка работ",
+          "queueDescription": "{count} {count, plural, one {работа требует} few {работы требуют} other {работ требуют}} проверки из {total} всего",
+          "stats": {
+            "total": "Всего",
+            "needsGrading": "На проверке",
+            "avgScore": "Средний балл",
+            "passRate": "Процент сдачи"
+          }
+        },
         "submissionList": {
           "searchLearner": "Поиск студента",
           "statusFilter": "Фильтр статуса",
@@ -7303,6 +7313,10 @@
       }
     },
     "Assessments": {
+      "ReviewWorkspace": {
+        "loading": "Загрузка рабочего пространства проверки...",
+        "reviewUnavailable": "Проверка недоступна для этой активности."
+      },
       "Items": {
         "Choice": {
           "prompt": "Формулировка",

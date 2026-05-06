@@ -7109,6 +7109,16 @@
         }
       },
       "Review": {
+        "layout": {
+          "title": "Review Submissions",
+          "queueDescription": "{count} submissions need grading out of {total} total",
+          "stats": {
+            "total": "Total",
+            "needsGrading": "Needs Grading",
+            "avgScore": "Avg Score",
+            "passRate": "Pass Rate"
+          }
+        },
         "submissionList": {
           "searchLearner": "Search learner",
           "statusFilter": "Status filter",
@@ -7292,6 +7302,10 @@
       }
     },
     "Assessments": {
+      "ReviewWorkspace": {
+        "loading": "Loading review workspace...",
+        "reviewUnavailable": "Review is unavailable for this activity."
+      },
       "Items": {
         "Choice": {
           "prompt": "Prompt",
