@@ -62,13 +62,11 @@ async def moderate_text_input(text: str, *, stage: ModerationStage = "input") ->
     if not flagged_results:
         return
 
-    categories = sorted(
-        {
-            category
-            for result in flagged_results
-            for category in _flagged_categories(result)
-        }
-    )
+    categories = sorted({
+        category
+        for result in flagged_results
+        for category in _flagged_categories(result)
+    })
     category_scores = {
         category: score
         for result in flagged_results

@@ -121,9 +121,7 @@ export const HeaderProfileBox = () => {
         <div className="text-foreground flex grow rounded-lg p-1.5 px-2 text-sm font-bold">
           <ul className="flex items-center space-x-3">
             <li>
-              <Link
-                href={getAbsoluteUrl('/login')}
-              >
+              <Link href={getAbsoluteUrl('/login')}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -133,9 +131,7 @@ export const HeaderProfileBox = () => {
               </Link>
             </li>
             <li>
-              <Link
-                href={getAbsoluteUrl('/signup')}
-              >
+              <Link href={getAbsoluteUrl('/signup')}>
                 <Button size="sm">{t('signUp')}</Button>
               </Link>
             </li>
@@ -230,11 +226,7 @@ export const HeaderProfileBox = () => {
                 {canAccessDashboard && (
                   <DropdownMenuItem
                     nativeButton={false}
-                    render={
-                      <Link
-                        href="/dash"
-                      />
-                    }
+                    render={<Link href="/dash" />}
                     className="flex items-center space-x-2"
                   >
                     <Shield size={16} />
@@ -243,11 +235,7 @@ export const HeaderProfileBox = () => {
                 )}
                 <DropdownMenuItem
                   nativeButton={false}
-                  render={
-                    <Link
-                      href="/dash/user-account/settings/general"
-                    />
-                  }
+                  render={<Link href="/dash/user-account/settings/general" />}
                   className="flex items-center space-x-2"
                 >
                   <UserIcon size={16} />

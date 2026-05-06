@@ -62,9 +62,7 @@ const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
             <p className="text-muted-foreground mb-0.5 text-[11px] font-medium tracking-wider uppercase">
               {t('courseLabel')}
             </p>
-            <Link
-              href={getAbsoluteUrl(`/course/${courseid}`)}
-            >
+            <Link href={getAbsoluteUrl(`/course/${courseid}`)}>
               <h3 className="text-foreground hover:text-primary truncate text-base leading-snug font-semibold transition-colors">
                 {course.name}
               </h3>

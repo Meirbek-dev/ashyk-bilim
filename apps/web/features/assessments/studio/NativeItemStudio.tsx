@@ -116,23 +116,27 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
     data: assessment,
     isLoading,
     error,
-  } = useQuery(queryOptions({
-    queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
-    queryFn: () =>
-      apiFetcher(`${getAPIUrl()}assessments/activity/${normalizedActivityUuid}`) as Promise<AssessmentStudioDetail>,
-    enabled: Boolean(normalizedActivityUuid),
-  }));
+  } = useQuery(
+    queryOptions({
+      queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
+      queryFn: () =>
+        apiFetcher(`${getAPIUrl()}assessments/activity/${normalizedActivityUuid}`) as Promise<AssessmentStudioDetail>,
+      enabled: Boolean(normalizedActivityUuid),
+    }),
+  );
 
   const [selectedItemUuid, setSelectedItemUuid] = useState<string | null>(null);
-  const readinessQuery = useQuery(queryOptions({
-    queryKey: queryKeys.assessments.readiness(assessment?.assessment_uuid ?? ''),
-    queryFn: () =>
-      apiFetcher(
-        `${getAPIUrl()}assessments/${assessment?.assessment_uuid}/readiness`,
-      ) as Promise<StudioReadinessPayload>,
-    enabled: Boolean(assessment?.assessment_uuid),
-    retry: false,
-  }));
+  const readinessQuery = useQuery(
+    queryOptions({
+      queryKey: queryKeys.assessments.readiness(assessment?.assessment_uuid ?? ''),
+      queryFn: () =>
+        apiFetcher(
+          `${getAPIUrl()}assessments/${assessment?.assessment_uuid}/readiness`,
+        ) as Promise<StudioReadinessPayload>,
+      enabled: Boolean(assessment?.assessment_uuid),
+      retry: false,
+    }),
+  );
 
   useEffect(() => {
     if (!assessment?.items?.length) {
@@ -312,7 +316,9 @@ export function NativeItemOutline({
                       </span>
                     </div>
                     <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-2 text-xs">
-                      <span>{item.max_score || 0} {t('pointsAbbreviation')}</span>
+                      <span>
+                        {item.max_score || 0} {t('pointsAbbreviation')}
+                      </span>
                       <span>{kindLabels[item.kind as SupportedStudioItemKind] ?? item.kind}</span>
                     </div>
                   </div>
@@ -523,7 +529,9 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           setSelectedItemUuid(created.item_uuid);
         }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() }));
+        toast.error(
+          error instanceof Error ? error.message : t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() }),
+        );
       }
     });
   };
@@ -563,7 +571,9 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
         <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-dashed p-8">
           <div className="max-w-sm text-center">
             <BookOpen className="text-muted-foreground mx-auto size-10" />
-            <h2 className="mt-3 text-lg font-semibold">{t('noItemSelectedTitle', { itemNoun: itemNoun.toLowerCase() })}</h2>
+            <h2 className="mt-3 text-lg font-semibold">
+              {t('noItemSelectedTitle', { itemNoun: itemNoun.toLowerCase() })}
+            </h2>
             <p className="text-muted-foreground mt-1 text-sm">
               {t('noItemSelectedDescription', { itemNoun: itemNoun.toLowerCase() })}
             </p>

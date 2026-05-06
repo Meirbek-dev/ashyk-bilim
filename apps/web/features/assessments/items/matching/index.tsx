@@ -219,7 +219,7 @@ export function MatchingItemReview({ item, answer }: ItemReviewDetailProps<Match
                   variant="outline"
                   className="text-xs"
                 >
-                  {'✓'} {pair.right}
+                  ✓ {pair.right}
                 </Badge>
               )}
               {isCorrect && (

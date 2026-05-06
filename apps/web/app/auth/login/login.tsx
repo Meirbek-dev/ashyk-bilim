@@ -91,9 +91,7 @@ const LoginClient = () => {
 
   return (
     <AuthCard>
-      <Link
-        href={getAbsoluteUrl('/')}
-      >
+      <Link href={getAbsoluteUrl('/')}>
         <AuthLogo />
       </Link>
 

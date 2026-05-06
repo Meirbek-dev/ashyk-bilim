@@ -291,8 +291,10 @@ export default function GradeForm({
       <div className="border-t pt-3">
         <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
           <Keyboard className="size-3.5" />
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintNextKey')}</kbd> {t('keyboardHintForward')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintPrevKey')}</kbd> {t('keyboardHintBackward')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintNextKey')}</kbd>{' '}
+          {t('keyboardHintForward')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintPrevKey')}</kbd>{' '}
+          {t('keyboardHintBackward')}
         </div>
       </div>
     </aside>

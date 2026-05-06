@@ -69,7 +69,8 @@ export default function SubmissionInspector({
             <div>
               <h2 className="text-xl font-semibold">{getSubmissionDisplayName(current)}</h2>
               <p className="text-muted-foreground text-sm">
-                {t('submissionInspector.attemptNumber', { number: current.attempt_number })} · {formatDate(current.submitted_at)}
+                {t('submissionInspector.attemptNumber', { number: current.attempt_number })} ·{' '}
+                {formatDate(current.submitted_at)}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">

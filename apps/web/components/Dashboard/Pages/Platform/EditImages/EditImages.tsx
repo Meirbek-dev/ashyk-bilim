@@ -58,11 +58,7 @@ function SortablePreviewItem({ preview, removePreview, getPreviewMediaDirectory 
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(
-        'group relative shrink-0',
-        'inline-block w-auto',
-        isDragging ? 'scale-105' : 'hover:scale-102',
-      )}
+      className={cn('group relative shrink-0', 'inline-block w-auto', isDragging ? 'scale-105' : 'hover:scale-102')}
     >
       <button
         onClick={() => removePreview(preview.id)}
@@ -420,7 +416,9 @@ export default function EditImages() {
     const oldIndex = items.findIndex((item) => item.id === active.id);
     const newIndex = items.findIndex((item) => item.id === over.id);
 
-    const reorderedItems = arrayMove(items, oldIndex, newIndex).map((item, index) => Object.assign(item, { order: index }));
+    const reorderedItems = arrayMove(items, oldIndex, newIndex).map((item, index) =>
+      Object.assign(item, { order: index }),
+    );
 
     setPreviews(reorderedItems);
 
@@ -468,7 +466,7 @@ export default function EditImages() {
         distance: 5,
       },
     }),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor),
   );
 
   return (
@@ -649,7 +647,11 @@ export default function EditImages() {
           <div className="flex w-full flex-col space-y-5">
             <div className="bg-muted/20 w-full rounded-3xl py-6 transition-all duration-300">
               <div className="flex flex-col items-center justify-center space-y-6">
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
                   <div
                     className={cn(
                       'flex w-full max-w-5xl gap-4 overflow-x-auto p-4 pb-6',
@@ -669,157 +671,157 @@ export default function EditImages() {
                         />
                       ))}
                     </SortableContext>
-                        {previews.length < 4 && (
-                          <div className={cn('w-48 shrink-0', previews.length === 0 && 'm-0')}>
-                            <Dialog
-                              open={videoDialogOpen}
-                              onOpenChange={(open) => {
-                                setVideoDialogOpen(open);
-                                if (!open) resetVideoDialog();
-                              }}
-                            >
-                              <DialogTrigger
-                                render={
-                                  <button
-                                    className={cn(
-                                      `w-full ${PREVIEW_HEIGHT}`,
-                                      'rounded-xl border-2 border-gray-200 border-dashed',
-                                      'transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/50',
-                                      'group flex flex-col items-center justify-center space-y-2',
-                                    )}
-                                  />
-                                }
-                              >
-                                <div className="rounded-full bg-blue-50 p-2 transition-colors duration-200 group-hover:bg-blue-100">
-                                  <Plus
-                                    size={20}
-                                    className="text-blue-500"
-                                  />
-                                </div>
-                                <span className="text-sm font-medium text-gray-600">{t('Buttons.addPreview')}</span>
-                              </DialogTrigger>
-                              <DialogContent
-                                className="sm:max-w-[600px]"
-                                aria-describedby={undefined}
-                              >
-                                <DialogHeader>
-                                  <DialogTitle>{t('Dialog.AddPreview.title')}</DialogTitle>
-                                </DialogHeader>
-                                <div className={cn('p-6', selectedService ? 'space-y-4' : 'grid grid-cols-3 gap-6')}>
-                                  {!selectedService ? (
-                                    <>
-                                      {getAddPreviewOptions(t, isPreviewUploading, setSelectedService).map((option) => (
-                                        <button
-                                          key={option.id}
-                                          onClick={option.onClick}
-                                          className={cn(
-                                            'aspect-square w-full rounded-2xl border-2 border-dashed',
-                                            `hover:border-${option.color}-300 hover:bg-${option.color}-50/50`,
-                                            'transition-all duration-200',
-                                            'flex flex-col items-center justify-center space-y-4',
-                                            option.disabled && 'cursor-not-allowed opacity-50',
-                                          )}
-                                          disabled={option.disabled}
-                                        >
-                                          <div
-                                            className={cn(
-                                              DIALOG_ICON_SIZE,
-                                              `rounded-full bg-${option.color}-50`,
-                                              'flex items-center justify-center',
-                                            )}
-                                          >
-                                            <option.icon className={`text- h-8 w-8${option.color}-500`} />
-                                          </div>
-                                          <div className="text-center">
-                                            <p className="font-medium text-gray-700">{option.title}</p>
-                                            <p className="mt-1 text-sm text-gray-500">{option.description}</p>
-                                          </div>
-                                        </button>
-                                      ))}
-                                      <input
-                                        type="file"
-                                        id="previewInput"
-                                        accept={SUPPORTED_FILES}
-                                        className="hidden"
-                                        onChange={handlePreviewUpload}
-                                        multiple
-                                        aria-label={t('Buttons.ariaLabelPreview')}
-                                        title={t('Buttons.selectPreviewFile')}
-                                      />
-                                    </>
-                                  ) : (
-                                    <div className="space-y-4">
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-3">
-                                          <div
-                                            className={cn(
-                                              'flex h-10 w-10 items-center justify-center rounded-full',
-                                              selectedService === 'youtube' ? 'bg-red-50' : 'bg-blue-50',
-                                            )}
-                                          >
-                                            {selectedService === 'youtube' ? (
-                                              <SiYoutube className="h-5 w-5 text-red-500" />
-                                            ) : (
-                                              <SiLoom className="h-5 w-5 text-blue-500" />
-                                            )}
-                                          </div>
-                                          <div>
-                                            <h3 className="font-medium text-gray-900">
-                                              {selectedService === 'youtube'
-                                                ? t('Dialog.AddVideo.youtubeTitle')
-                                                : t('Dialog.AddVideo.loomTitle')}
-                                            </h3>
-                                            <p className="text-sm text-gray-500">
-                                              {selectedService === 'youtube'
-                                                ? t('Dialog.AddVideo.youtubeDescription')
-                                                : t('Dialog.AddVideo.loomDescription')}
-                                            </p>
-                                          </div>
-                                        </div>
-                                        <button
-                                          onClick={() => {
-                                            setSelectedService(null);
-                                          }}
-                                          className="text-gray-400 transition-colors hover:text-gray-500"
-                                        >
-                                          <X size={20} />
-                                        </button>
+                    {previews.length < 4 && (
+                      <div className={cn('w-48 shrink-0', previews.length === 0 && 'm-0')}>
+                        <Dialog
+                          open={videoDialogOpen}
+                          onOpenChange={(open) => {
+                            setVideoDialogOpen(open);
+                            if (!open) resetVideoDialog();
+                          }}
+                        >
+                          <DialogTrigger
+                            render={
+                              <button
+                                className={cn(
+                                  `w-full ${PREVIEW_HEIGHT}`,
+                                  'rounded-xl border-2 border-gray-200 border-dashed',
+                                  'transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/50',
+                                  'group flex flex-col items-center justify-center space-y-2',
+                                )}
+                              />
+                            }
+                          >
+                            <div className="rounded-full bg-blue-50 p-2 transition-colors duration-200 group-hover:bg-blue-100">
+                              <Plus
+                                size={20}
+                                className="text-blue-500"
+                              />
+                            </div>
+                            <span className="text-sm font-medium text-gray-600">{t('Buttons.addPreview')}</span>
+                          </DialogTrigger>
+                          <DialogContent
+                            className="sm:max-w-[600px]"
+                            aria-describedby={undefined}
+                          >
+                            <DialogHeader>
+                              <DialogTitle>{t('Dialog.AddPreview.title')}</DialogTitle>
+                            </DialogHeader>
+                            <div className={cn('p-6', selectedService ? 'space-y-4' : 'grid grid-cols-3 gap-6')}>
+                              {!selectedService ? (
+                                <>
+                                  {getAddPreviewOptions(t, isPreviewUploading, setSelectedService).map((option) => (
+                                    <button
+                                      key={option.id}
+                                      onClick={option.onClick}
+                                      className={cn(
+                                        'aspect-square w-full rounded-2xl border-2 border-dashed',
+                                        `hover:border-${option.color}-300 hover:bg-${option.color}-50/50`,
+                                        'transition-all duration-200',
+                                        'flex flex-col items-center justify-center space-y-4',
+                                        option.disabled && 'cursor-not-allowed opacity-50',
+                                      )}
+                                      disabled={option.disabled}
+                                    >
+                                      <div
+                                        className={cn(
+                                          DIALOG_ICON_SIZE,
+                                          `rounded-full bg-${option.color}-50`,
+                                          'flex items-center justify-center',
+                                        )}
+                                      >
+                                        <option.icon className={`text- h-8 w-8${option.color}-500`} />
                                       </div>
-
-                                      <div className="space-y-3">
-                                        <Input
-                                          id="videoUrlInput"
-                                          placeholder={
-                                            selectedService === 'youtube'
-                                              ? t('Dialog.AddVideo.youtubePlaceholder')
-                                              : t('Dialog.AddVideo.loomPlaceholder')
-                                          }
-                                          value={videoUrl}
-                                          onChange={(e) => {
-                                            setVideoUrl(e.target.value);
-                                          }}
-                                          className="w-full"
-                                        />
-                                        <Button
-                                          onClick={() => handleVideoSubmit(selectedService)}
-                                          className={cn(
-                                            'w-full',
-                                            selectedService === 'youtube'
-                                              ? 'bg-red-500 hover:bg-red-600'
-                                              : 'bg-blue-500 hover:bg-blue-600',
-                                          )}
-                                          disabled={!videoUrl}
-                                        >
-                                          {t('Dialog.AddVideo.addButton')}
-                                        </Button>
+                                      <div className="text-center">
+                                        <p className="font-medium text-gray-700">{option.title}</p>
+                                        <p className="mt-1 text-sm text-gray-500">{option.description}</p>
+                                      </div>
+                                    </button>
+                                  ))}
+                                  <input
+                                    type="file"
+                                    id="previewInput"
+                                    accept={SUPPORTED_FILES}
+                                    className="hidden"
+                                    onChange={handlePreviewUpload}
+                                    multiple
+                                    aria-label={t('Buttons.ariaLabelPreview')}
+                                    title={t('Buttons.selectPreviewFile')}
+                                  />
+                                </>
+                              ) : (
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                      <div
+                                        className={cn(
+                                          'flex h-10 w-10 items-center justify-center rounded-full',
+                                          selectedService === 'youtube' ? 'bg-red-50' : 'bg-blue-50',
+                                        )}
+                                      >
+                                        {selectedService === 'youtube' ? (
+                                          <SiYoutube className="h-5 w-5 text-red-500" />
+                                        ) : (
+                                          <SiLoom className="h-5 w-5 text-blue-500" />
+                                        )}
+                                      </div>
+                                      <div>
+                                        <h3 className="font-medium text-gray-900">
+                                          {selectedService === 'youtube'
+                                            ? t('Dialog.AddVideo.youtubeTitle')
+                                            : t('Dialog.AddVideo.loomTitle')}
+                                        </h3>
+                                        <p className="text-sm text-gray-500">
+                                          {selectedService === 'youtube'
+                                            ? t('Dialog.AddVideo.youtubeDescription')
+                                            : t('Dialog.AddVideo.loomDescription')}
+                                        </p>
                                       </div>
                                     </div>
-                                  )}
+                                    <button
+                                      onClick={() => {
+                                        setSelectedService(null);
+                                      }}
+                                      className="text-gray-400 transition-colors hover:text-gray-500"
+                                    >
+                                      <X size={20} />
+                                    </button>
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    <Input
+                                      id="videoUrlInput"
+                                      placeholder={
+                                        selectedService === 'youtube'
+                                          ? t('Dialog.AddVideo.youtubePlaceholder')
+                                          : t('Dialog.AddVideo.loomPlaceholder')
+                                      }
+                                      value={videoUrl}
+                                      onChange={(e) => {
+                                        setVideoUrl(e.target.value);
+                                      }}
+                                      className="w-full"
+                                    />
+                                    <Button
+                                      onClick={() => handleVideoSubmit(selectedService)}
+                                      className={cn(
+                                        'w-full',
+                                        selectedService === 'youtube'
+                                          ? 'bg-red-500 hover:bg-red-600'
+                                          : 'bg-blue-500 hover:bg-blue-600',
+                                      )}
+                                      disabled={!videoUrl}
+                                    >
+                                      {t('Dialog.AddVideo.addButton')}
+                                    </Button>
+                                  </div>
                                 </div>
-                              </DialogContent>
-                            </Dialog>
-                          </div>
-                        )}
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    )}
                   </div>
                 </DndContext>
 

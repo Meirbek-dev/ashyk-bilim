@@ -39,9 +39,7 @@ export default function ScoreSummary({ score, rawScore, maxScore, className }: S
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger render={<Info className="text-muted-foreground size-4" />} />
-            <TooltipContent>
-              {t('scoreTooltip')}
-            </TooltipContent>
+            <TooltipContent>{t('scoreTooltip')}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>

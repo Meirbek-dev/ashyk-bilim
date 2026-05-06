@@ -89,9 +89,7 @@ export default function AssessmentReviewWorkspace({
 
   if (error || !assessment?.review_projection) {
     return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-        {t('reviewUnavailable')}
-      </div>
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('reviewUnavailable')}</div>
     );
   }
 

@@ -24,7 +24,16 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-function SortableLandingSection({ section, index, t, SECTION_TYPES, selectedSection, setSelectedSection, deleteSection, getSectionDisplayName }: any) {
+function SortableLandingSection({
+  section,
+  index,
+  t,
+  SECTION_TYPES,
+  selectedSection,
+  setSelectedSection,
+  deleteSection,
+  getSectionDisplayName,
+}: any) {
   const id = section._id || `section-${index}`;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
@@ -58,7 +67,7 @@ function SortableLandingSection({ section, index, t, SECTION_TYPES, selectedSect
           <div
             {...attributes}
             {...listeners}
-            className={`cursor-grab active:cursor-grabbing rounded-md p-1.5 transition-colors duration-200 ${
+            className={`cursor-grab rounded-md p-1.5 transition-colors duration-200 active:cursor-grabbing ${
               selectedSection === index
                 ? 'bg-primary/20/50 text-primary'
                 : 'text-muted-foreground hover:bg-muted hover:text-muted-foreground'
@@ -68,9 +77,7 @@ function SortableLandingSection({ section, index, t, SECTION_TYPES, selectedSect
           </div>
           <div
             className={`rounded-md p-1.5 ${
-              selectedSection === index
-                ? 'bg-primary/20/50 text-primary'
-                : 'bg-muted/50 text-muted-foreground'
+              selectedSection === index ? 'bg-primary/20/50 text-primary' : 'bg-muted/50 text-muted-foreground'
             }`}
           >
             {createElement(SECTION_TYPES[section.type].icon, {
@@ -467,7 +474,7 @@ const EditLanding = () => {
         distance: 5,
       },
     }),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor),
   );
 
   // Initialize landing data from platform config
@@ -587,10 +594,16 @@ const EditLanding = () => {
               {/* Sections Panel */}
               <div className="col-span-1 border-r pr-4">
                 <h3 className="mb-4 font-medium">{t('SectionsPanel.title')}</h3>
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={onDragEnd}
+                >
                   <div className="space-y-2">
                     <SortableContext
-                      items={landingData.sections.map((section: any, index: number) => section._id || `section-${index}`)}
+                      items={landingData.sections.map(
+                        (section: any, index: number) => section._id || `section-${index}`,
+                      )}
                       strategy={verticalListSortingStrategy}
                     >
                       {landingData.sections.map((section: LandingSection, index: number) => (

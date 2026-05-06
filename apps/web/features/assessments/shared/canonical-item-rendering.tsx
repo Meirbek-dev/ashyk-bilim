@@ -263,7 +263,9 @@ export function CanonicalAttemptItem({
     );
   }
 
-  return <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">{t('unsupportedItem')}</div>;
+  return (
+    <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">{t('unsupportedItem')}</div>
+  );
 }
 
 export function CanonicalReviewAnswer({

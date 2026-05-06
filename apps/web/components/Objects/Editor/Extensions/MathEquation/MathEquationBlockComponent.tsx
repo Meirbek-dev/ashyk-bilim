@@ -301,22 +301,39 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
                       <div className="border-b p-2 text-xs font-medium text-zinc-700">{t('quickReference')}</div>
                       <div className="space-y-2 p-3 text-xs">
                         <div>
-                          <span className="font-medium">{t('fractions')}</span> {'\\frac{'}{t('numerator')}{'}'}{'{'}{t('denominator')}{'}'}
+                          <span className="font-medium">{t('fractions')}</span> {'\\frac{'}
+                          {t('numerator')}
+                          {'}'}
+                          {'{'}
+                          {t('denominator')}
+                          {'}'}
                         </div>
                         <div>
-                          <span className="font-medium">{t('exponents')}</span> {'x^{'}{t('power')}{'}'}
+                          <span className="font-medium">{t('exponents')}</span> {'x^{'}
+                          {t('power')}
+                          {'}'}
                         </div>
                         <div>
-                          <span className="font-medium">{t('subscripts')}</span> {'x_{'}{t('subscript')}{'}'}
+                          <span className="font-medium">{t('subscripts')}</span> {'x_{'}
+                          {t('subscript')}
+                          {'}'}
                         </div>
                         <div>
-                          <span className="font-medium">{t('squareRoot')}</span> {'\\sqrt{'}{'x'}{'}'}
+                          <span className="font-medium">{t('squareRoot')}</span> {'\\sqrt{'}x{'}'}
                         </div>
                         <div>
-                          <span className="font-medium">{t('summation')}</span> {'\\sum_{'}{t('lower')}{'}'}^{'{'}{t('upper')}{'}'}
+                          <span className="font-medium">{t('summation')}</span> {'\\sum_{'}
+                          {t('lower')}
+                          {'}'}^{'{'}
+                          {t('upper')}
+                          {'}'}
                         </div>
                         <div>
-                          <span className="font-medium">{t('integral')}</span> {'\\int_{'}{t('lower')}{'}'}^{'{'}{t('upper')}{'}'}
+                          <span className="font-medium">{t('integral')}</span> {'\\int_{'}
+                          {t('lower')}
+                          {'}'}^{'{'}
+                          {t('upper')}
+                          {'}'}
                         </div>
                         <div className="border-t pt-1">
                           <Link

@@ -200,9 +200,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
             <Alert>
               <AlertTriangle className="size-4" />
               <AlertTitle>{t('connectionLostTitle')}</AlertTitle>
-              <AlertDescription>
-                {t('connectionLostDescription')}
-              </AlertDescription>
+              <AlertDescription>{t('connectionLostDescription')}</AlertDescription>
             </Alert>
           ) : null}
 

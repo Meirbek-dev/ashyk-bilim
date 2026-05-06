@@ -234,6 +234,7 @@ async def get_assessment_by_activity_uuid(
     assessment = _get_or_project_assessment_for_activity(activity, db_session)
     return _build_assessment_read(assessment, db_session, current_user=current_user)
 
+
 async def update_assessment(
     assessment_uuid: str,
     payload: AssessmentUpdate,

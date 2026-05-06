@@ -27,8 +27,16 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-function SortableProfileSection({ section, index, t, getSectionTypesConfig, selectedSection, setSelectedSection, deleteSection }: any) {
-  const id = section.id;
+function SortableProfileSection({
+  section,
+  index,
+  t,
+  getSectionTypesConfig,
+  selectedSection,
+  setSelectedSection,
+  deleteSection,
+}: any) {
+  const { id } = section;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const style = {
@@ -55,7 +63,7 @@ function SortableProfileSection({ section, index, t, getSectionTypesConfig, sele
           <div
             {...attributes}
             {...listeners}
-            className={`cursor-grab active:cursor-grabbing rounded-md p-1.5 transition-colors duration-200 ${
+            className={`cursor-grab rounded-md p-1.5 transition-colors duration-200 active:cursor-grabbing ${
               selectedSection === index
                 ? 'bg-primary/10 text-primary'
                 : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -65,9 +73,7 @@ function SortableProfileSection({ section, index, t, getSectionTypesConfig, sele
           </div>
           <div
             className={`rounded-md p-1.5 ${
-              selectedSection === index
-                ? 'bg-primary/10 text-primary'
-                : 'bg-muted text-muted-foreground'
+              selectedSection === index ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
             }`}
           >
             {createElement(getSectionTypesConfig(t)[section.type].icon, {
@@ -75,9 +81,7 @@ function SortableProfileSection({ section, index, t, getSectionTypesConfig, sele
             })}
           </div>
           <span
-            className={`truncate text-sm font-medium ${
-              selectedSection === index ? 'text-primary' : 'text-foreground'
-            }`}
+            className={`truncate text-sm font-medium ${selectedSection === index ? 'text-primary' : 'text-foreground'}`}
           >
             {section.title}
           </span>
@@ -90,9 +94,7 @@ function SortableProfileSection({ section, index, t, getSectionTypesConfig, sele
               setSelectedSection(index);
             }}
             className={`rounded-md p-1.5 transition-colors duration-200 ${
-              selectedSection === index
-                ? 'text-primary hover:bg-primary/10'
-                : 'text-muted-foreground hover:bg-accent'
+              selectedSection === index ? 'text-primary hover:bg-primary/10' : 'text-muted-foreground hover:bg-accent'
             }`}
           >
             <Edit size={14} />
@@ -332,7 +334,7 @@ const UserProfileBuilder = () => {
         distance: 5,
       },
     }),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor),
   );
 
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -578,7 +580,11 @@ const UserProfileBuilder = () => {
           {/* Sections Panel */}
           <div className="col-span-1 border-r pr-4 max-lg:border-r-0 max-lg:border-b max-lg:pr-0 max-lg:pb-6">
             <h3 className="mb-4 font-medium">{t('SectionsPanel.title')}</h3>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={onDragEnd}
+            >
               <div className="space-y-2">
                 <SortableContext
                   items={profileData.sections.map((section) => section.id)}

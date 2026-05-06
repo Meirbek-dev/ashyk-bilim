@@ -115,9 +115,7 @@ const SignUpClient = () => {
 
   return (
     <AuthCard className="max-w-md">
-      <Link
-        href={getAbsoluteUrl('/')}
-      >
+      <Link href={getAbsoluteUrl('/')}>
         <AuthLogo />
       </Link>
       <p className="mt-4 text-xl font-semibold tracking-tight">{t('title')}</p>

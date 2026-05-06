@@ -77,7 +77,10 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     .filter((submission) => submission.status !== 'DRAFT')
     .map((submission, index) => ({
       id: submission.submission_uuid,
-      label: index === 0 ? t('latestSubmission') : t('attemptNumber', { number: submissionState.submissions.length - index }),
+      label:
+        index === 0
+          ? t('latestSubmission')
+          : t('attemptNumber', { number: submissionState.submissions.length - index }),
       submittedAt: submission.submitted_at ?? submission.updated_at,
       status: submission.status,
       scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
@@ -130,11 +133,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
         ]}
         historyItems={historyItems}
         actionTitle={vm.isReturnedForRevision ? t('readyToRevise') : t('readyToStart')}
-        actionDescription={
-          vm.isReturnedForRevision
-            ? t('readyToReviseDescription')
-            : t('readyToStartSubtitle')
-        }
+        actionDescription={vm.isReturnedForRevision ? t('readyToReviseDescription') : t('readyToStartSubtitle')}
         actionLabel={vm.canEdit ? (vm.isReturnedForRevision ? t('startRevision') : t('startExam')) : undefined}
         actionDisabled={!vm.canEdit}
         actionPending={isStarting}

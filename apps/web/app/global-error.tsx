@@ -53,7 +53,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   const [locale, setLocale] = useState<SupportedLocale>('ru-RU');
 
   useEffect(() => {
-    const match = document.cookie.match(/NEXT_LOCALE=([^;]+)/);
+    const match = /NEXT_LOCALE=([^;]+)/.exec(document.cookie);
     const cookieLocale = match?.[1] as SupportedLocale;
     if (cookieLocale && MESSAGES[cookieLocale]) {
       setLocale(cookieLocale);

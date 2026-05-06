@@ -354,11 +354,7 @@ const CourseActions: FC<CourseActionsProps> = ({
         />
         <Button
           nativeButton={false}
-          render={
-            <Link
-              href={courseUrl}
-            />
-          }
+          render={<Link href={courseUrl} />}
           aria-label={t('continueLearning', {
             defaultValue: 'Continue Learning',
           })}
@@ -375,11 +371,7 @@ const CourseActions: FC<CourseActionsProps> = ({
   return (
     <Button
       nativeButton={false}
-      render={
-        <Link
-          href={courseUrl}
-        />
-      }
+      render={<Link href={courseUrl} />}
       aria-label={t('startLearning')}
       size="sm"
       variant="outline"

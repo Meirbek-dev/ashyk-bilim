@@ -91,9 +91,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
         <h3 className="text-lg font-semibold">{t('notConfigured')}</h3>
-        <p className="text-muted-foreground mt-2 max-w-md text-sm">
-          {t('notConfiguredDescription')}
-        </p>
+        <p className="text-muted-foreground mt-2 max-w-md text-sm">{t('notConfiguredDescription')}</p>
       </div>
     );
   }

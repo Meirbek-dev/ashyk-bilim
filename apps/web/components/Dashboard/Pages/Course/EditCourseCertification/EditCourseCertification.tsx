@@ -319,7 +319,12 @@ const EditCourseCertification = () => {
     );
   });
 
-  if (!mounted || isLoading || !courseStructure || (course.isEditorDataLoading && editorData.certifications.data === null)) {
+  if (
+    !mounted ||
+    isLoading ||
+    !courseStructure ||
+    (course.isEditorDataLoading && editorData.certifications.data === null)
+  ) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="text-muted-foreground flex items-center gap-2">

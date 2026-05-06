@@ -23,14 +23,14 @@ function SortableQuestionCard({ question, index, t, handleEditQuestion, promptDe
     <Card
       ref={setNodeRef}
       style={style}
-      className={`transition-shadow ${isDragging ? 'shadow-lg ring-2 ring-primary/20 rotate-1' : 'hover:shadow-md'}`}
+      className={`transition-shadow ${isDragging ? 'ring-primary/20 rotate-1 shadow-lg ring-2' : 'hover:shadow-md'}`}
     >
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div className="flex flex-1 items-start gap-3">
           <div
             {...attributes}
             {...listeners}
-            className="cursor-move pt-1 active:cursor-grabbing hover:bg-muted p-1 rounded-md transition-colors"
+            className="hover:bg-muted cursor-move rounded-md p-1 pt-1 transition-colors active:cursor-grabbing"
           >
             <GripVertical className="h-5 w-5 text-gray-400" />
           </div>
@@ -105,7 +105,7 @@ export default function QuestionManagement({ examUuid, questions, onQuestionsCha
         distance: 5,
       },
     }),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor),
   );
 
   const inlineEditorRef = useRef<HTMLDivElement>(null);
@@ -235,7 +235,9 @@ export default function QuestionManagement({ examUuid, questions, onQuestionsCha
     }
 
     const items = [...questions];
-    const oldIndex = items.findIndex((item: any, index: number) => (item.question_uuid || `temp-${index}`) === active.id);
+    const oldIndex = items.findIndex(
+      (item: any, index: number) => (item.question_uuid || `temp-${index}`) === active.id,
+    );
     const newIndex = items.findIndex((item: any, index: number) => (item.question_uuid || `temp-${index}`) === over.id);
 
     const reorderedItems = arrayMove(items, oldIndex, newIndex);
@@ -373,7 +375,11 @@ export default function QuestionManagement({ examUuid, questions, onQuestionsCha
           </div>
         </Card>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
           <div className="space-y-2">
             <SortableContext
               items={questions.map((question: any, index: number) => question.question_uuid || `temp-${index}`)}

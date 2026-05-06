@@ -164,7 +164,8 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
 
   const attemptHistory = submissionState.submissions.map((submission, index) => ({
     id: submission.submission_uuid,
-    label: index === 0 ? t('latestSubmission') : t('attemptNumber', { number: submissionState.submissions.length - index }),
+    label:
+      index === 0 ? t('latestSubmission') : t('attemptNumber', { number: submissionState.submissions.length - index }),
     submittedAt: submission.submitted_at ?? submission.updated_at,
     status: submission.status,
     scoreLabel:
@@ -199,11 +200,7 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
         ]}
         historyItems={attemptHistory}
         actionTitle={vm.isReturnedForRevision ? t('readyToRevise') : t('readyToBegin')}
-        actionDescription={
-          vm.isReturnedForRevision
-            ? t('readyToReviseDescription')
-            : t('readyToBeginDescription')
-        }
+        actionDescription={vm.isReturnedForRevision ? t('readyToReviseDescription') : t('readyToBeginDescription')}
         actionLabel={vm.canEdit ? (vm.isReturnedForRevision ? t('startRevision') : t('startAssessment')) : undefined}
         actionDisabled={!vm.canEdit}
         actionPending={isStarting}
@@ -226,9 +223,7 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
       <Alert>
         <RotateCcw className="size-4" />
         <AlertTitle>{t('resumedDraft')}</AlertTitle>
-        <AlertDescription>
-          {t('resumedDraftDescription', { time: formatDateTime(draft.updated_at) })}
-        </AlertDescription>
+        <AlertDescription>{t('resumedDraftDescription', { time: formatDateTime(draft.updated_at) })}</AlertDescription>
       </Alert>
 
       {attemptHistory.length ? <AttemptHistoryList items={attemptHistory} /> : null}
@@ -324,9 +319,7 @@ function SubmissionStatePanel({
 
   return (
     <Alert>
-      <AlertTitle>
-        {submission.status === 'RETURNED' ? t('returnedForRevision') : t('resultAvailable')}
-      </AlertTitle>
+      <AlertTitle>{submission.status === 'RETURNED' ? t('returnedForRevision') : t('resultAvailable')}</AlertTitle>
       <AlertDescription className="space-y-3">
         {scoreLabel ? (
           <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
@@ -366,10 +359,14 @@ function AssessmentItemCard({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-muted-foreground text-xs font-medium uppercase">{t('questionLabel', { index: index + 1 })}</div>
+          <div className="text-muted-foreground text-xs font-medium uppercase">
+            {t('questionLabel', { index: index + 1 })}
+          </div>
           <h2 className="mt-1 text-base font-semibold">{item.title || t('questionLabel', { index: index + 1 })}</h2>
         </div>
-        <Badge variant="outline">{item.max_score} {t('pointsShort')}</Badge>
+        <Badge variant="outline">
+          {item.max_score} {t('pointsShort')}
+        </Badge>
       </div>
 
       <ItemAttemptRenderer
