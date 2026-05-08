@@ -129,8 +129,13 @@ _ALLOWED_LIFECYCLE_TRANSITIONS: dict[
         AssessmentLifecycle.PUBLISHED,
         AssessmentLifecycle.ARCHIVED,
     }),
-    AssessmentLifecycle.PUBLISHED: frozenset({AssessmentLifecycle.ARCHIVED}),
-    AssessmentLifecycle.ARCHIVED: frozenset(),
+    AssessmentLifecycle.PUBLISHED: frozenset({
+        AssessmentLifecycle.DRAFT,
+        AssessmentLifecycle.ARCHIVED,
+    }),
+    AssessmentLifecycle.ARCHIVED: frozenset({
+        AssessmentLifecycle.DRAFT,
+    }),
 }
 
 logger = logging.getLogger(__name__)

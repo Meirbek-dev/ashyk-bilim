@@ -233,6 +233,9 @@ def _ensure_course_activity_progress_rows(
     if not activities:
         return
 
+    # Flush any newly created ActivityProgress rows so they appear in existing_activity_ids
+    db_session.flush()
+
     existing_activity_ids = set(
         db_session.exec(
             select(ActivityProgress.activity_id).where(

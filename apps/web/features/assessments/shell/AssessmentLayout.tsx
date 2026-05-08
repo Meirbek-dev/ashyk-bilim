@@ -105,13 +105,11 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
   }, []);
 
   const toggleFocusMode = useCallback(() => {
-    setFocusMode((prev) => {
-      const next = !prev;
-      globalThis.localStorage?.setItem(ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY, String(next));
-      globalThis.dispatchEvent?.(new CustomEvent(FOCUS_MODE_CHANGE_EVENT, { detail: { enabled: next } }));
-      return next;
-    });
-  }, []);
+    const next = !focusMode;
+    setFocusMode(next);
+    globalThis.localStorage?.setItem(ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY, String(next));
+    globalThis.dispatchEvent?.(new CustomEvent(FOCUS_MODE_CHANGE_EVENT, { detail: { enabled: next } }));
+  }, [focusMode]);
 
   // ── Policy / guard ─────────────────────────────────────────────────────────
 

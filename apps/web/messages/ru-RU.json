@@ -340,6 +340,10 @@
       },
       "visibleTestCases": "Видимые тестовые сценарии",
       "visibleTestCasesDescription": "Тесты, которые студенты могут видеть и запускать",
+      "difficultyLabel": "Сложность",
+      "executionModeLabel": "Режим выполнения",
+      "fastFeedback": "Быстрая обратная связь",
+      "completeFeedback": "Полная обратная связь",
       "hintsPanel": {
         "title": "Подсказки",
         "description": "Необязательная помощь, которую студенты могут открыть во время попытки.",
@@ -7855,12 +7859,36 @@
             "titleRequired": "Название обязательно.",
             "maxAttemptsRange": "Лимит попыток должен быть не менее 1.",
             "timeLimitRange": "Ограничение по времени должно быть больше нуля.",
-            "violationThresholdRange": "Порог нарушений должен быть не менее 1."
+            "violationThresholdRange": "Порог нарушений должен быть не менее 1.",
+            "item_title_missing": "Название элемента обязательно.",
+            "item_max_score_invalid": "Баллы элемента должны быть больше нуля.",
+            "choice_prompt_missing": "Требуется формулировка вопроса выбора.",
+            "choice_options_missing": "Вопрос выбора должен содержать не менее двух вариантов.",
+            "choice_option_text_missing": "Каждый вариант должен содержать видимый текст.",
+            "choice_option_duplicate": "Варианты ответа должны быть уникальными.",
+            "choice_correct_missing": "Отметьте хотя бы один правильный ответ.",
+            "choice_too_many_correct": "В вопросе с одним ответом может быть только 1 правильный вариант.",
+            "matching_prompt_missing": "Требуется формулировка вопроса сопоставления.",
+            "matching_pairs_missing": "Вопрос сопоставления должен содержать не менее одной пары.",
+            "matching_pair_value_missing": "Каждая пара должна содержать значение слева и справа.",
+            "matching_left_duplicate": "Левые значения должны быть уникальными.",
+            "matching_right_duplicate": "Правые ответы должны быть уникальными.",
+            "open_text_prompt_missing": "Требуется формулировка вопроса свободного ответа.",
+            "open_text_min_words_invalid": "Минимальное количество слов не может быть отрицательным.",
+            "file_prompt_missing": "Требуется формулировка вопроса загрузки файла.",
+            "file_max_files_invalid": "Задание загрузки файлов должно разрешать загрузку хотя бы одного файла.",
+            "file_max_mb_invalid": "Максимальный размер файла должен быть больше нуля.",
+            "file_mime_invalid": "Допустимые типы файлов не могут быть пустыми.",
+            "form_prompt_missing": "Требуется формулировка вопроса формы.",
+            "form_fields_missing": "Форма должна содержать хотя бы одно поле.",
+            "form_field_label_missing": "Каждое поле формы должно иметь метку.",
+            "form_field_id_duplicate": "Поля формы должны иметь уникальные идентификаторы."
           },
           "duplicate": "Дублировать",
           "delete": "Удалить",
           "descriptionLabel": "Описание",
           "failedToSaveSettings": "Не удалось сохранить параметры задания",
+          "failedToSaveItem": "Не удалось сохранить {itemNoun}",
           "defaultItemTitle": "Элемент без названия",
           "copyOf": "Копия {title}",
           "Form": {
@@ -7897,7 +7925,33 @@
         "itemsLabel": "Элементы",
         "jumpToItem": "Перейти к элементу",
         "blockerAlertDescription": "Устраните блокировщики на уровне оценивания перед публикацией. Проблемы на уровне элементов остаются доступными по ссылкам в списке выше.",
-        "loadingEditor": "Загрузка редактора"
+        "loadingEditor": "Загрузка редактора",
+        "Items": {
+          "OpenText": {
+            "prompt": "Вопрос",
+            "minWords": "Минимальное количество слов",
+            "rubric": "Рубрика"
+          },
+          "FileUpload": {
+            "prompt": "Вопрос"
+          },
+          "Form": {
+            "prompt": "Вопрос",
+            "fieldHeader": "Поле {number}",
+            "fieldLabel": "Название поля",
+            "fieldType": "Тип",
+            "fieldTypes": {
+              "text": "Текст",
+              "textarea": "Текстовая область",
+              "number": "Число",
+              "date": "Дата"
+            },
+            "requiredLabel": "Обязательно",
+            "addField": "Добавить поле",
+            "unsupportedKind": "Неподдерживаемый тип элемента."
+          }
+        },
+        "policyTitle": "Политика {kind}"
       },
       "Review": {
         "Gradebook": {

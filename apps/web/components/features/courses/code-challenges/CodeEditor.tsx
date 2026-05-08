@@ -75,31 +75,9 @@ export function CodeEditor({
   const handleMount: OnMount = useCallback(
     (editor, monaco) => {
       editorRef.current = editor;
-
-      // Configure editor settings
-      editor.updateOptions({
-        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-        fontSize: 14,
-        lineHeight: 1.6,
-        minimap: { enabled: true },
-        scrollBeyondLastLine: false,
-        automaticLayout: true,
-        tabSize: 4,
-        insertSpaces: true,
-        wordWrap: 'on',
-        folding: true,
-        lineNumbers: 'on',
-        renderLineHighlight: 'line',
-        cursorBlinking: 'smooth',
-        cursorSmoothCaretAnimation: 'on',
-        smoothScrolling: true,
-        padding: { top: 16, bottom: 16 },
-        ...options,
-      });
-
       onMount?.(editor, monaco);
     },
-    [onMount, options],
+    [onMount],
   );
 
   const handleChange: OnChange = useCallback(
@@ -119,9 +97,25 @@ export function CodeEditor({
         onMount={handleMount}
         theme={resolvedTheme === 'dark' ? 'vs-dark' : 'light'}
         options={{
+          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+          fontSize: 14,
+          lineHeight: 1.6,
+          minimap: { enabled: true },
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          tabSize: 4,
+          insertSpaces: true,
+          wordWrap: 'on',
+          folding: true,
+          lineNumbers: 'on',
+          renderLineHighlight: 'line',
+          cursorBlinking: 'smooth',
+          cursorSmoothCaretAnimation: 'on',
+          smoothScrolling: true,
+          padding: { top: 16, bottom: 16 },
           readOnly,
           domReadOnly: readOnly,
-          automaticLayout: true,
+          ...options,
         }}
         loading={
           <div

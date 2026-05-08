@@ -340,6 +340,10 @@
       },
       "visibleTestCases": "Көрінетін сынақ жағдайлары",
       "visibleTestCasesDescription": "Оқушылар көре алатын және орындай алатын тесттер",
+      "difficultyLabel": "Қиындық деңгейі",
+      "executionModeLabel": "Орындау режимі",
+      "fastFeedback": "Жылдам кері байланыс",
+      "completeFeedback": "Толық кері байланыс",
       "hintsPanel": {
         "title": "Кеңестер",
         "description": "Студенттер әрекет кезінде аша алатын қосымша көмек.",
@@ -7858,12 +7862,36 @@
             "titleRequired": "Атауы міндетті.",
             "maxAttemptsRange": "Талпыныс шегі 1-ден кем болмауы керек.",
             "timeLimitRange": "Уақыт шегі нөлден көп болуы керек.",
-            "violationThresholdRange": "Бұзушылық шегі 1-ден кем болмауы керек."
+            "violationThresholdRange": "Бұзушылық шегі 1-ден кем болмауы керек.",
+            "item_title_missing": "Элемент атауы міндетті.",
+            "item_max_score_invalid": "Элемент баллы нөлден көп болуы керек.",
+            "choice_prompt_missing": "Таңдау тапсырмасының сұрағы міндетті.",
+            "choice_options_missing": "Таңдау тапсырмасында кем дегенде екі нұсқа болуы керек.",
+            "choice_option_text_missing": "Әр нұсқаның мәтіні болуы керек.",
+            "choice_option_duplicate": "Таңдау нұсқалары бірегей болуы керек.",
+            "choice_correct_missing": "Кем дегенде бір дұрыс жауапты белгілеңіз.",
+            "choice_too_many_correct": "Жалғыз таңдаулы тапсырмаларда тек бір дұрыс жауап болуы мүмкін.",
+            "matching_prompt_missing": "Сәйкестендіру тапсырмасының сұрағы міндетті.",
+            "matching_pairs_missing": "Сәйкестендіру тапсырмасында кем дегенде бір жұп болуы керек.",
+            "matching_pair_value_missing": "Әр жұптың сол және оң мәні болуы керек.",
+            "matching_left_duplicate": "Сол жақ сұрақтар бірегей болуы керек.",
+            "matching_right_duplicate": "Оң жақ жауаптар бірегей болуы керек.",
+            "open_text_prompt_missing": "Ашық мәтін тапсырмасының сұрағы міндетті.",
+            "open_text_min_words_invalid": "Сөздердің минималды саны теріс болмауы керек.",
+            "file_prompt_missing": "Файл жүктеу тапсырмасының сұрағы міндетті.",
+            "file_max_files_invalid": "Файл жүктеу тапсырмасы кем дегенде бір файлға рұқсат беруі керек.",
+            "file_max_mb_invalid": "Орнатылған максималды файл өлшемі нөлден көп болуы керек.",
+            "file_mime_invalid": "Рұқсат етілген файл түрлері бос болмауы керек.",
+            "form_prompt_missing": "Форма тапсырмасының сұрағы міндетті.",
+            "form_fields_missing": "Форма тапсырмасында кем дегенде бір өріс болуы керек.",
+            "form_field_label_missing": "Әр форма өрісінің жазбасы болуы керек.",
+            "form_field_id_duplicate": "Форма өрістерінің бірегей идентификаторлары болуы керек."
           },
           "duplicate": "Көшірмесін жасау",
           "delete": "Жою",
           "descriptionLabel": "Сипаттамасы",
           "failedToSaveSettings": "Бағалау параметрлерін сақтау сәтсіз аяқталды",
+          "failedToSaveItem": "{itemNoun} сақтау сәтсіз аяқталды",
           "defaultItemTitle": "Тақырыпсыз элемент",
           "copyOf": "{title} көшірмесі",
           "Form": {
@@ -7900,7 +7928,33 @@
         "itemsLabel": "Элементтер",
         "jumpToItem": "Элементке өту",
         "blockerAlertDescription": "Жарияламас бұрын бағалау деңгейіндегі бұғаттаушыларды шешіңіз. Элемент деңгейіндегі мәселелер жоғарыдағы тізімде қалады.",
-        "loadingEditor": "Редактор жүктелуде"
+        "loadingEditor": "Редактор жүктелуде",
+        "Items": {
+          "OpenText": {
+            "prompt": "Сұрақ",
+            "minWords": "Сөздердің минималды саны",
+            "rubric": "Бағалау рубрикасы"
+          },
+          "FileUpload": {
+            "prompt": "Сұрақ"
+          },
+          "Form": {
+            "prompt": "Сұрақ",
+            "fieldHeader": "{number}-өріс",
+            "fieldLabel": "Жазба",
+            "fieldType": "Түрі",
+            "fieldTypes": {
+              "text": "Мәтін",
+              "textarea": "Көп жолды мәтін",
+              "number": "Сан",
+              "date": "Күн"
+            },
+            "requiredLabel": "Міндетті",
+            "addField": "Өріс қосу",
+            "unsupportedKind": "Элемент түрі қолданылмайды."
+          }
+        },
+        "policyTitle": "{kind} саясаты"
       },
       "Assignment": {
         "AssignmentPage": {

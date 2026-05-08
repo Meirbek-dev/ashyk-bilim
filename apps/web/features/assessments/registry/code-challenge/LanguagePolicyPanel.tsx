@@ -87,7 +87,7 @@ export default function LanguagePolicyPanel() {
         <div className="grid gap-4 md:grid-cols-3">
           <SelectField
             name="difficulty"
-            label="Difficulty"
+            label={t('difficultyLabel')}
             options={[
               ['EASY', t('difficulty.easy')],
               ['MEDIUM', t('difficulty.medium')],
@@ -106,10 +106,10 @@ export default function LanguagePolicyPanel() {
           />
           <SelectField
             name="execution_mode"
-            label="Execution mode"
+            label={t('executionModeLabel')}
             options={[
-              ['FAST_FEEDBACK', 'Fast feedback'],
-              ['COMPLETE_FEEDBACK', 'Complete feedback'],
+              ['FAST_FEEDBACK', t('fastFeedback')],
+              ['COMPLETE_FEEDBACK', t('completeFeedback')],
             ]}
           />
         </div>

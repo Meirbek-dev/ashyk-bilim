@@ -43,7 +43,7 @@ export default function ActivityClient({ activityid, courseuuid, activity, cours
   const setFocusMode = (next: boolean) => {
     setIsFocusMode(next);
     globalThis.localStorage?.setItem(COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY, String(next));
-    globalThis.dispatchEvent?.(new CustomEvent(FOCUS_MODE_CHANGE_EVENT, { detail: { isFocusMode: next } }));
+    globalThis.dispatchEvent?.(new CustomEvent(FOCUS_MODE_CHANGE_EVENT, { detail: { enabled: next } }));
   };
 
   const isAssessable = activity
