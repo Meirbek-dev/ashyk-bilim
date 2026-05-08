@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, FileText, InfinityIcon, RotateCcw, Users } from 'lucide-react';
+import { CheckCircle2, Clock, FileText, InfinityIcon, ListChecks, RotateCcw, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
@@ -15,11 +15,13 @@ import { useAttemptShellControls } from '@/features/assessments/shell';
 import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAssessmentAttempt';
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items';
+import { isAnswered as isItemAnswered } from '@/features/assessments/domain/items';
 import type { AttemptSaveState } from '@/features/assessments/shell';
 import { CanonicalAttemptItem } from '@/features/assessments/shared/canonical-item-rendering';
 import { apiFetch } from '@/lib/api-client';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import type { KindAttemptProps } from './index';
+import { Progress } from '@components/ui/progress';
 
 export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
   const t = useTranslations('Activities.AssignmentStudentActivity');
@@ -40,6 +42,16 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
   const canSubmit = Boolean(vm?.canSubmit);
   const latestCompletedSubmission =
     submissionState.submissions.find((submission) => submission.status !== 'DRAFT') ?? null;
+  const answeredItemUuids = useMemo(
+    () =>
+      new Set(
+        vm?.items
+          .filter((item) => isItemAnswered(submissionState.answers[item.item_uuid]))
+          .map((item) => item.item_uuid) ?? [],
+      ),
+    [submissionState.answers, vm?.items],
+  );
+  const answeredCount = answeredItemUuids.size;
 
   const persistence = useAssessmentAttempt<Record<string, ItemAnswer>>({
     attemptUuid: draft?.submission_uuid ?? `entry_${assessmentUuid ?? 'missing'}`,
@@ -233,18 +245,30 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
         releaseState={vm.releaseState}
       />
 
-      <div className="space-y-4">
-        {vm.items.map((item, index) => (
-          <AssessmentItemCard
-            key={item.item_uuid}
-            index={index}
-            item={item}
-            answer={submissionState.answers[item.item_uuid]}
-            disabled={!canEdit || submissionState.isSaving || submissionState.isSubmitting}
-            assessmentUuid={assessmentUuid}
-            onChange={(answer) => handleItemAnswerChange(item.item_uuid, answer)}
-          />
-        ))}
+      <AssignmentProgressSummary
+        answeredCount={answeredCount}
+        totalCount={vm.items.length}
+      />
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="space-y-4">
+          {vm.items.map((item, index) => (
+            <AssessmentItemCard
+              key={item.item_uuid}
+              index={index}
+              item={item}
+              answer={submissionState.answers[item.item_uuid]}
+              disabled={!canEdit || submissionState.isSaving || submissionState.isSubmitting}
+              assessmentUuid={assessmentUuid}
+              onChange={(answer) => handleItemAnswerChange(item.item_uuid, answer)}
+            />
+          ))}
+        </div>
+
+        <AssignmentAttemptNavigator
+          items={vm.items}
+          answeredItemUuids={answeredItemUuids}
+        />
       </div>
     </div>
   );
@@ -377,6 +401,72 @@ function AssessmentItemCard({
         onChange={onChange}
       />
     </section>
+  );
+}
+
+function AssignmentProgressSummary({ answeredCount, totalCount }: { answeredCount: number; totalCount: number }) {
+  const t = useTranslations('Activities.AssignmentStudentActivity');
+  const progress = totalCount > 0 ? (answeredCount / totalCount) * 100 : 0;
+
+  return (
+    <section className="bg-card rounded-lg border p-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <ListChecks className="size-4" />
+            {t('workProgressTitle')}
+          </div>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {t('answeredProgress', { answered: answeredCount, total: totalCount })}
+          </p>
+        </div>
+        <div className="text-muted-foreground text-sm">
+          {t('unansweredProgress', { count: Math.max(totalCount - answeredCount, 0) })}
+        </div>
+      </div>
+      <Progress
+        value={progress}
+        className="mt-3 h-2"
+        aria-label={t('answeredProgress', { answered: answeredCount, total: totalCount })}
+      />
+    </section>
+  );
+}
+
+function AssignmentAttemptNavigator({
+  items,
+  answeredItemUuids,
+}: {
+  items: AssessmentItem[];
+  answeredItemUuids: Set<string>;
+}) {
+  const t = useTranslations('Activities.AssignmentStudentActivity');
+
+  return (
+    <aside className="hidden lg:block">
+      <div className="bg-card sticky top-24 rounded-lg border p-4">
+        <h3 className="text-sm font-semibold">{t('taskNavigatorTitle')}</h3>
+        <div className="mt-3 space-y-2">
+          {items.map((item, index) => {
+            const answered = answeredItemUuids.has(item.item_uuid);
+            return (
+              <a
+                key={item.item_uuid}
+                href={`#item-${item.item_uuid}`}
+                className="hover:bg-muted/70 flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm transition"
+              >
+                <span className="min-w-0 truncate">{item.title || t('questionLabel', { index: index + 1 })}</span>
+                {answered ? (
+                  <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                ) : (
+                  <span className="bg-muted-foreground/50 size-2 shrink-0 rounded-full" />
+                )}
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </aside>
   );
 }
 

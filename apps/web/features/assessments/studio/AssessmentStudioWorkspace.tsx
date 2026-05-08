@@ -160,7 +160,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
     <div className="bg-background min-h-screen">
       {/* ── Topbar ──────────────────────────────────────────────────────── */}
       <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur">
-        <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-6">
+        <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-6">
           {/* Left: breadcrumb + title + lifecycle badge */}
           <div className="min-w-0">
             <div className="text-muted-foreground flex flex-wrap items-center gap-1 text-xs">
@@ -191,7 +191,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
           </div>
 
           {/* Right: action buttons */}
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0 lg:justify-end">
             <Button
               variant="ghost"
               size="sm"
@@ -208,7 +208,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
             </Button>
 
             {/* Publish + schedule dropdown */}
-            <div className="flex items-center">
+            <div className="flex min-w-0 items-center">
               <Button
                 size="sm"
                 disabled={isPending || !studio.canPublish || hasIssues}
@@ -323,7 +323,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
             </main>
 
             {inspectorOpen && (
-              <aside className="space-y-4 border-l p-4">
+              <aside className="bg-muted/20 space-y-4 border-l p-4 xl:sticky xl:top-[73px] xl:h-[calc(100vh-73px)] xl:overflow-y-auto">
                 {Outline ? (
                   <section>
                     <Outline {...slotProps} />
@@ -346,9 +346,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                                 className="flex items-start gap-2 text-sm"
                               >
                                 <span>·</span>
-                                <span className="flex-1">
-                                  {tValidation(issue.code.replace('.', '_') as Parameters<typeof tValidation>[0])}
-                                </span>
+                                <span className="flex-1">{tValidation(issue.code.replace('.', '_'))}</span>
                               </li>
                             ))}
                           </ul>
@@ -364,9 +362,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                                 className="flex items-start gap-2 text-sm"
                               >
                                 <span>·</span>
-                                <span className="flex-1">
-                                  {tValidation(issue.code.replace('.', '_') as Parameters<typeof tValidation>[0])}
-                                </span>
+                                <span className="flex-1">{tValidation(issue.code.replace('.', '_'))}</span>
                                 {issue.itemUuid ? (
                                   <a
                                     href={`#item-${issue.itemUuid}`}

@@ -3,13 +3,16 @@
 import {
   AlertTriangle,
   BookOpen,
+  CalendarClock,
   CheckCircle2,
   Copy,
   FileUp,
   GitCompareArrows,
   ListTodo,
   LoaderCircle,
+  Rows3,
   ShieldAlert,
+  Sparkles,
   TextCursorInput,
   Trash2,
 } from 'lucide-react';
@@ -99,14 +102,6 @@ const KIND_ICONS: Record<SupportedStudioItemKind, typeof ListTodo> = {
   FILE_UPLOAD: FileUp,
   FORM: TextCursorInput,
   MATCHING: GitCompareArrows,
-};
-
-const KIND_LABELS: Record<SupportedStudioItemKind, string> = {
-  CHOICE: 'Choice',
-  OPEN_TEXT: 'Open text',
-  FILE_UPLOAD: 'File upload',
-  FORM: 'Form',
-  MATCHING: 'Matching',
 };
 
 export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorProps & { children: React.ReactNode }) {
@@ -253,7 +248,7 @@ export function NativeItemOutline({
   };
 
   return (
-    <aside className="bg-muted/20 p-4 lg:sticky lg:top-[88px] lg:h-[calc(100vh-88px)] lg:overflow-y-auto">
+    <div className="bg-card rounded-lg border p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">{t('outlineTitle', { itemNoun })}</h2>
@@ -262,7 +257,7 @@ export function NativeItemOutline({
       </div>
 
       {isEditable ? (
-        <div className="mb-4 grid grid-cols-3 gap-2">
+        <div className="mb-4 space-y-2">
           {allowedKinds.map((kind) => {
             const Icon = KIND_ICONS[kind];
             return (
@@ -272,11 +267,12 @@ export function NativeItemOutline({
                 variant="outline"
                 size="sm"
                 disabled={isCreating}
-                className="h-10 px-2"
+                className="h-auto w-full justify-start px-3 py-2 text-left"
                 onClick={() => createItem(kind)}
                 title={t('addKind', { kind: kindLabels[kind] })}
               >
                 {isCreating ? <LoaderCircle className="size-4 animate-spin" /> : <Icon className="size-4" />}
+                <span className="min-w-0 truncate">{t('addKind', { kind: kindLabels[kind] })}</span>
               </Button>
             );
           })}
@@ -338,7 +334,7 @@ export function NativeItemOutline({
           })}
         </div>
       )}
-    </aside>
+    </div>
   );
 }
 
@@ -433,7 +429,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
         toast.error(error instanceof Error ? error.message : t('failedToSaveSettings'));
       }
     },
-    [assessment, mode, refresh],
+    [assessment, mode, refresh, t],
   );
 
   const saveItem = useCallback(
@@ -460,10 +456,12 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
         await refresh();
       } catch (error) {
         setItemSaveState('error');
-        toast.error(error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: itemNoun.toLowerCase() }));
+        toast.error(
+          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: itemNoun.toLowerCase() }),
+        );
       }
     },
-    [assessment.assessment_uuid, itemNoun, refresh],
+    [assessment.assessment_uuid, itemNoun, refresh, t],
   );
 
   useEffect(() => {
@@ -549,19 +547,27 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
   const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState, t).map(classifyValidationIssue);
   const itemMetadataIssues = itemIssues.filter((issue) => issue.area === 'item-metadata');
   const itemContentIssues = itemIssues.filter((issue) => issue.area === 'item-content' || issue.area === 'item-kind');
+  const readinessIssueCount = dedupeIssues([...validationIssues, ...assessmentIssues]).length;
+  const readyForPublish = items.length > 0 && readinessIssueCount === 0;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
-      <section className="bg-card rounded-lg border p-4 md:p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold">{t('assessmentDetailsTitle')}</h3>
-            <p className="text-muted-foreground text-xs">
-              {t(mode === 'exam' ? 'assessmentDetailsExamDescription' : 'assessmentDetailsAssignmentDescription')}
-            </p>
-          </div>
-          <SaveStateBadge state={assessmentSaveState} />
-        </div>
+      <StudioOverviewPanel
+        mode={mode}
+        itemNoun={itemNoun}
+        itemCount={items.length}
+        totalPoints={totalPoints}
+        dueAt={assessmentState.dueAt}
+        lifecycle={assessment.lifecycle}
+        readyForPublish={readyForPublish}
+        issueCount={readinessIssueCount}
+      />
+
+      <EditorSection
+        title={t('assessmentDetailsTitle')}
+        description={t(mode === 'exam' ? 'assessmentDetailsExamDescription' : 'assessmentDetailsAssignmentDescription')}
+        actions={<SaveStateBadge state={assessmentSaveState} />}
+      >
         <AssessmentMetadataForm
           mode={mode}
           state={assessmentState}
@@ -569,7 +575,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           issues={assessmentIssues}
           onChange={setAssessmentState}
         />
-      </section>
+      </EditorSection>
 
       {!itemState ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-dashed p-8">
@@ -635,12 +641,11 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
             </Alert>
           ) : null}
 
-          <section className="bg-card rounded-lg border p-4 md:p-5">
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold">{t('itemMetadataTitle', { itemNoun })}</h3>
-              <p className="text-muted-foreground text-xs">{t('itemMetadataDescription')}</p>
-            </div>
-            <div className="grid gap-4">
+          <EditorSection
+            title={t('itemMetadataTitle', { itemNoun })}
+            description={t('itemMetadataDescription')}
+          >
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem]">
               <div className="space-y-2">
                 <Label htmlFor="native-item-title">{t('titleLabel')}</Label>
                 <Input
@@ -655,7 +660,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
                   onChange={(event) => setItemState({ ...itemState, title: event.target.value })}
                 />
               </div>
-              <div className="max-w-48 space-y-2">
+              <div className="space-y-2">
                 <Label htmlFor="native-item-points">{t('pointsLabel')}</Label>
                 <Input
                   id="native-item-points"
@@ -679,13 +684,12 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
               </div>
             </div>
             {itemMetadataIssues.length > 0 ? <InlineIssueList issues={itemMetadataIssues} /> : null}
-          </section>
+          </EditorSection>
 
-          <section className="bg-card rounded-lg border p-4 md:p-5">
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold">{t('itemContentTitle', { itemNoun })}</h3>
-              <p className="text-muted-foreground text-xs">{t('itemContentDescription')}</p>
-            </div>
+          <EditorSection
+            title={t('itemContentTitle', { itemNoun })}
+            description={t('itemContentDescription')}
+          >
             {itemContentIssues.length > 0 ? <InlineIssueList issues={itemContentIssues} /> : null}
             <NativeItemBodyEditor
               item={itemState}
@@ -693,10 +697,165 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
               issues={itemContentIssues}
               onChange={setItemState}
             />
-          </section>
+          </EditorSection>
         </>
       )}
     </div>
+  );
+}
+
+function StudioOverviewPanel({
+  mode,
+  itemNoun,
+  itemCount,
+  totalPoints,
+  dueAt,
+  lifecycle,
+  readyForPublish,
+  issueCount,
+}: {
+  mode: StudioMode;
+  itemNoun: string;
+  itemCount: number;
+  totalPoints: number;
+  dueAt: string;
+  lifecycle: AssessmentStudioDetail['lifecycle'];
+  readyForPublish: boolean;
+  issueCount: number;
+}) {
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
+  const dueDateLabel = dueAt ? formatStudioDate(dueAt) : t('noDueDate');
+
+  return (
+    <section className="bg-card rounded-lg border p-4 md:p-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={readyForPublish ? 'success' : 'warning'}>
+              {readyForPublish ? <CheckCircle2 className="size-3" /> : <AlertTriangle className="size-3" />}
+              {readyForPublish ? t('readyToPublish') : t('needsWork')}
+            </Badge>
+            <Badge variant="outline">{mode === 'exam' ? t('examPolicyTitle') : t('gradingModeLabel')}</Badge>
+          </div>
+          <h2 className="mt-3 text-lg font-semibold">{t('workflowTitle', { itemNoun: itemNoun.toLowerCase() })}</h2>
+          <p className="text-muted-foreground mt-1 max-w-2xl text-sm">{t('workflowDescription')}</p>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2 lg:min-w-[26rem]">
+          <StudioMetric
+            icon={Rows3}
+            label={t('itemsMetricLabel', { itemNoun })}
+            value={String(itemCount)}
+          />
+          <StudioMetric
+            icon={Sparkles}
+            label={t('pointsMetricLabel')}
+            value={String(totalPoints)}
+          />
+          <StudioMetric
+            icon={CalendarClock}
+            label={t('dueDateLabel')}
+            value={dueDateLabel}
+          />
+          <StudioMetric
+            icon={readyForPublish ? CheckCircle2 : AlertTriangle}
+            label={t('publishReadinessLabel')}
+            value={readyForPublish ? t('readyToPublish') : t('issuesMetricValue', { count: issueCount })}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 md:grid-cols-3">
+        <WorkflowStep
+          active
+          complete={itemCount > 0}
+          label={t('setupStepLabel')}
+          description={t('setupStepDescription')}
+        />
+        <WorkflowStep
+          active={itemCount > 0}
+          complete={readyForPublish}
+          label={t('contentStepLabel')}
+          description={t('contentStepDescription')}
+        />
+        <WorkflowStep
+          active={readyForPublish || lifecycle === 'PUBLISHED' || lifecycle === 'SCHEDULED'}
+          complete={lifecycle === 'PUBLISHED' || lifecycle === 'SCHEDULED'}
+          label={t('releaseStepLabel')}
+          description={t('releaseStepDescription')}
+        />
+      </div>
+    </section>
+  );
+}
+
+function StudioMetric({ icon: Icon, label, value }: { icon: typeof Rows3; label: string; value: string }) {
+  return (
+    <div className="bg-background rounded-md border px-3 py-2">
+      <div className="text-muted-foreground flex items-center gap-2 text-xs">
+        <Icon className="size-3.5" />
+        <span className="truncate">{label}</span>
+      </div>
+      <div className="mt-1 truncate text-sm font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function WorkflowStep({
+  active,
+  complete,
+  label,
+  description,
+}: {
+  active: boolean;
+  complete: boolean;
+  label: string;
+  description: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-md border p-3',
+        active ? 'bg-background' : 'bg-muted/30 text-muted-foreground',
+        complete &&
+          'border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100',
+      )}
+    >
+      <div className="flex items-center gap-2 text-sm font-medium">
+        {complete ? (
+          <CheckCircle2 className="size-4" />
+        ) : (
+          <span className="bg-muted-foreground/60 size-2 rounded-full" />
+        )}
+        <span>{label}</span>
+      </div>
+      <p className="text-muted-foreground mt-1 text-xs">{description}</p>
+    </div>
+  );
+}
+
+function EditorSection({
+  title,
+  description,
+  actions,
+  children,
+}: {
+  title: string;
+  description: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="bg-card rounded-lg border p-4 md:p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold">{title}</h3>
+          <p className="text-muted-foreground text-xs">{description}</p>
+        </div>
+        {actions ? <div className="shrink-0">{actions}</div> : null}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -943,7 +1102,7 @@ function NativeItemBodyEditor({
     return (
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="open-text-prompt">{t('OpenText.prompt')}</Label>
+          <Label htmlFor="open-text-prompt">{t('Items.OpenText.prompt')}</Label>
           <Textarea
             id="open-text-prompt"
             value={body.prompt}
@@ -957,7 +1116,7 @@ function NativeItemBodyEditor({
         </div>
         <div className="grid gap-4 md:grid-cols-[12rem_1fr]">
           <div className="space-y-2">
-            <Label htmlFor="open-text-min-words">{t('OpenText.minWords')}</Label>
+            <Label htmlFor="open-text-min-words">{t('Items.OpenText.minWords')}</Label>
             <Input
               id="open-text-min-words"
               type="number"
@@ -978,7 +1137,7 @@ function NativeItemBodyEditor({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="open-text-rubric">{t('OpenText.rubric')}</Label>
+            <Label htmlFor="open-text-rubric">{t('Items.OpenText.rubric')}</Label>
             <Textarea
               id="open-text-rubric"
               value={body.rubric ?? ''}
@@ -1007,7 +1166,7 @@ function NativeItemBodyEditor({
     return (
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="file-upload-prompt">{t('FileUpload.prompt')}</Label>
+          <Label htmlFor="file-upload-prompt">{t('Items.FileUpload.prompt')}</Label>
           <Textarea
             id="file-upload-prompt"
             value={body.prompt}
@@ -1045,7 +1204,7 @@ function NativeItemBodyEditor({
     return (
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="form-prompt">{t('Form.prompt')}</Label>
+          <Label htmlFor="form-prompt">{t('Items.Form.prompt')}</Label>
           <Textarea
             id="form-prompt"
             value={body.prompt}
@@ -1065,7 +1224,7 @@ function NativeItemBodyEditor({
               className="rounded-lg border p-3"
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">{t('Form.fieldHeader', { number: index + 1 })}</span>
+                <span className="text-sm font-medium">{t('Items.Form.fieldHeader', { number: index + 1 })}</span>
                 <Button
                   type="button"
                   variant="ghost"
@@ -1088,7 +1247,7 @@ function NativeItemBodyEditor({
 
               <div className="grid gap-4 md:grid-cols-[1fr_12rem_auto]">
                 <div className="space-y-1.5">
-                  <Label htmlFor={`form-field-label-${field.id}`}>{t('Form.fieldLabel')}</Label>
+                  <Label htmlFor={`form-field-label-${field.id}`}>{t('Items.Form.fieldLabel')}</Label>
                   <Input
                     id={`form-field-label-${field.id}`}
                     value={field.label}
@@ -1109,7 +1268,7 @@ function NativeItemBodyEditor({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor={`form-field-type-${field.id}`}>{t('Form.fieldType')}</Label>
+                  <Label htmlFor={`form-field-type-${field.id}`}>{t('Items.Form.fieldType')}</Label>
                   <NativeSelect
                     id={`form-field-type-${field.id}`}
                     value={field.field_type}
@@ -1133,15 +1292,15 @@ function NativeItemBodyEditor({
                       })
                     }
                   >
-                    <NativeSelectOption value="text">{t('Form.fieldTypes.text')}</NativeSelectOption>
-                    <NativeSelectOption value="textarea">{t('Form.fieldTypes.textarea')}</NativeSelectOption>
-                    <NativeSelectOption value="number">{t('Form.fieldTypes.number')}</NativeSelectOption>
-                    <NativeSelectOption value="date">{t('Form.fieldTypes.date')}</NativeSelectOption>
+                    <NativeSelectOption value="text">{t('Items.Form.fieldTypes.text')}</NativeSelectOption>
+                    <NativeSelectOption value="textarea">{t('Items.Form.fieldTypes.textarea')}</NativeSelectOption>
+                    <NativeSelectOption value="number">{t('Items.Form.fieldTypes.number')}</NativeSelectOption>
+                    <NativeSelectOption value="date">{t('Items.Form.fieldTypes.date')}</NativeSelectOption>
                   </NativeSelect>
                 </div>
                 <div className="flex items-end">
                   <ToggleRow
-                    label={t('Form.requiredLabel')}
+                    label={t('Items.Form.requiredLabel')}
                     checked={field.required}
                     disabled={disabled}
                     onChange={(checked) =>
@@ -1178,13 +1337,13 @@ function NativeItemBodyEditor({
             })
           }
         >
-          {t('Form.addField')}
+          {t('Items.Form.addField')}
         </Button>
       </div>
     );
   }
 
-  return <div className="text-muted-foreground text-sm">{t('Form.unsupportedKind')}</div>;
+  return <div className="text-muted-foreground text-sm">{t('Items.Form.unsupportedKind')}</div>;
 }
 
 function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTitle: string) {
@@ -1433,7 +1592,9 @@ function InlineIssueList({ issues }: { issues: ReturnType<typeof classifyValidat
             className="flex items-start gap-2"
           >
             <span>•</span>
-            <span><InlineIssueMessage issue={issue} /></span>
+            <span>
+              <InlineIssueMessage issue={issue} />
+            </span>
           </li>
         ))}
       </ul>
@@ -1521,6 +1682,12 @@ function toDateTimeLocal(value: string | null | undefined) {
   if (Number.isNaN(date.getTime())) return '';
   const offsetMs = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+function formatStudioDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
 async function responseError(response: Response, fallback: string) {

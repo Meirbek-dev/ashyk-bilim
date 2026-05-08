@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CheckCircle2, ChevronLeft, ChevronRight, LoaderCircle, RotateCcw, Save, SendHorizonal } from 'lucide-react';
 
@@ -104,10 +104,11 @@ const DEFAULT_CONTROLS: Required<
  */
 export function useAttemptShellControls(controls: AttemptShellRegistration): void {
   const context = useContext(ActionBarContext);
+  const stableControls = useStableAttemptShellRegistration(controls);
   useEffect(() => {
     if (!context) return;
-    return context.registerControls(controls);
-  }, [context, controls]);
+    return context.registerControls(stableControls);
+  }, [context, stableControls]);
 }
 
 /** Returns the current registered controls. For use inside AssessmentLayout only. */
@@ -251,4 +252,47 @@ export function SaveStateBadge({ state, status }: { state: AttemptSaveState; sta
       {t('saveStateSaved')}
     </Badge>
   );
+}
+
+function useStableAttemptShellRegistration(controls: AttemptShellRegistration): AttemptShellRegistration {
+  const stableRef = useRef(controls);
+
+  if (!areAttemptShellRegistrationsEqual(stableRef.current, controls)) {
+    stableRef.current = controls;
+  }
+
+  return stableRef.current;
+}
+
+function areAttemptShellRegistrationsEqual(left: AttemptShellRegistration, right: AttemptShellRegistration): boolean {
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]) as Set<keyof AttemptShellRegistration>;
+
+  for (const key of keys) {
+    if (!areShellRegistrationValuesEqual(left[key], right[key])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function areShellRegistrationValuesEqual(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true;
+
+  if (!isPlainRecord(left) || !isPlainRecord(right)) {
+    return false;
+  }
+
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  for (const key of keys) {
+    if (!Object.is(left[key], right[key])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
