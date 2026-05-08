@@ -12,6 +12,7 @@ from typing import Annotated, Literal, Self
 from pydantic import ConfigDict, Field, TypeAdapter, field_validator, model_validator
 from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Index, Integer, String
 from sqlmodel import Field as SQLField
+from ulid import ULID
 
 from src.db.courses.activities import ActivityAssessmentPolicyRead
 from src.db.grading.progress import GradeReleaseMode, LatePolicy, LatePolicyNone
@@ -48,7 +49,7 @@ class AssessmentGradingType(StrEnum):
 
 
 class ChoiceOption(PydanticStrictBaseModel):
-    id: str
+    id: str = Field(default_factory=lambda: str(ULID()))
     text: str = ""
     is_correct: bool = False
 
@@ -78,7 +79,7 @@ class FileUploadItemBody(PydanticStrictBaseModel):
 
 
 class FormField(PydanticStrictBaseModel):
-    id: str
+    id: str = Field(default_factory=lambda: str(ULID()))
     label: str = ""
     field_type: Literal["text", "textarea", "number", "date"] = "text"
     required: bool = False
@@ -91,7 +92,7 @@ class FormItemBody(PydanticStrictBaseModel):
 
 
 class CodeTestCase(PydanticStrictBaseModel):
-    id: str
+    id: str = Field(default_factory=lambda: str(ULID()))
     input: str = ""
     expected_output: str = ""
     is_visible: bool = True
