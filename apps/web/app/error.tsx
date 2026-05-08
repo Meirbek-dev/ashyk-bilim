@@ -44,7 +44,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           </p>
         )}
 
-        {process.env.NODE_ENV !== 'production' && (
+        {typeof process !== 'undefined' && process?.env?.NODE_ENV !== 'production' && (
           <details className="mb-4 text-left">
             <summary className="cursor-pointer font-semibold">{t('technicalDetails')}</summary>
             <div className="bg-destructive/10 dark:bg-destructive/20 mt-2 rounded p-4">

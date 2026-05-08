@@ -129,7 +129,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
 
               {isChunkError && <p className="text-muted-foreground text-sm">{t.updateInfo}</p>}
 
-              {process.env.NODE_ENV !== 'production' && error.stack && (
+              {typeof process !== 'undefined' && process?.env?.NODE_ENV !== 'production' && error.stack && (
                 <>
                   <Separator />
                   <details className="group bg-muted/50 rounded-md border p-3">
