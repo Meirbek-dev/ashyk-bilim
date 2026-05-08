@@ -44,13 +44,6 @@ interface AssessmentStudioWorkspaceProps {
   activityUuid: string;
 }
 
-const LIFECYCLE_LABELS: Record<AssessmentLifecycle, string> = {
-  DRAFT: 'Draft',
-  SCHEDULED: 'Scheduled',
-  PUBLISHED: 'Published',
-  ARCHIVED: 'Archived',
-};
-
 const LIFECYCLE_BADGE_VARIANT: Record<AssessmentLifecycle, 'default' | 'secondary' | 'outline' | 'destructive'> = {
   DRAFT: 'secondary',
   SCHEDULED: 'outline',
@@ -60,6 +53,7 @@ const LIFECYCLE_BADGE_VARIANT: Record<AssessmentLifecycle, 'default' | 'secondar
 
 export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: AssessmentStudioWorkspaceProps) {
   const t = useTranslations('Features.Assessments.Studio');
+  const tValidation = useTranslations('Features.Assessments.Studio.NativeItemStudio.validation');
   const { vm, isLoading, error } = useAssessmentStudio(activityUuid);
   const [kindModule, setKindModule] = useState<KindModule | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -352,7 +346,9 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                                 className="flex items-start gap-2 text-sm"
                               >
                                 <span>·</span>
-                                <span className="flex-1">{issue.message}</span>
+                                <span className="flex-1">
+                                  {tValidation(issue.code.replace('.', '_') as Parameters<typeof tValidation>[0])}
+                                </span>
                               </li>
                             ))}
                           </ul>
@@ -368,7 +364,9 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                                 className="flex items-start gap-2 text-sm"
                               >
                                 <span>·</span>
-                                <span className="flex-1">{issue.message}</span>
+                                <span className="flex-1">
+                                  {tValidation(issue.code.replace('.', '_') as Parameters<typeof tValidation>[0])}
+                                </span>
                                 {issue.itemUuid ? (
                                   <a
                                     href={`#item-${issue.itemUuid}`}
@@ -398,7 +396,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                 ) : (
                   <PolicyInspector
                     policy={studio.policy}
-                    title={`${kindModule?.label ?? 'Assessment'} policy`}
+                    title={t('policyTitle', { kind: kindModule?.label ?? t('assessmentLabel') })}
                   />
                 )}
               </aside>

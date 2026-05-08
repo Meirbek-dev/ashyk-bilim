@@ -328,7 +328,11 @@ export function NativeItemOutline({
                     <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
                   )}
                 </div>
-                {issues.length > 0 ? <p className="mt-2 text-xs text-amber-700">{issues[0]?.message}</p> : null}
+                {issues.length > 0 ? (
+                  <p className="mt-2 text-xs text-amber-700">
+                    <InlineIssueMessage issue={issues[0]!} />
+                  </p>
+                ) : null}
               </button>
             );
           })}
@@ -448,7 +452,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
         });
 
         if (!response.ok) {
-          throw new Error(await responseError(response, `Failed to save ${itemNoun.toLowerCase()}`));
+          throw new Error(await responseError(response, t('failedToSaveItem', { itemNoun: itemNoun.toLowerCase() })));
         }
 
         lastSavedItemRef.current = serializeItemState(nextItem);
@@ -456,7 +460,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
         await refresh();
       } catch (error) {
         setItemSaveState('error');
-        toast.error(error instanceof Error ? error.message : `Failed to save ${itemNoun.toLowerCase()}`);
+        toast.error(error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: itemNoun.toLowerCase() }));
       }
     },
     [assessment.assessment_uuid, itemNoun, refresh],
@@ -625,7 +629,9 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           {itemIssues.length > 0 ? (
             <Alert>
               <AlertTriangle className="size-4" />
-              <AlertDescription>{itemIssues.map((issue) => issue.message).join(' ')}</AlertDescription>
+              <AlertDescription>
+                <InlineIssueList issues={itemIssues} />
+              </AlertDescription>
             </Alert>
           ) : null}
 
@@ -910,7 +916,8 @@ function NativeItemBodyEditor({
   if (item.body.kind === 'CHOICE' || item.body.kind === 'MATCHING') {
     return (
       <div className="space-y-3">
-        {hasIssue('item.prompt_missing') ||
+        {hasIssue('choice.prompt_missing') ||
+        hasIssue('matching.prompt_missing') ||
         hasIssue('choice.options_missing') ||
         hasIssue('choice.option_text_missing') ||
         hasIssue('choice.option_duplicate') ||
@@ -942,7 +949,7 @@ function NativeItemBodyEditor({
             value={body.prompt}
             disabled={disabled}
             className="min-h-32"
-            aria-invalid={hasIssue('item.prompt_missing')}
+            aria-invalid={hasIssue('open_text.prompt_missing')}
             onChange={(event) =>
               onChange({ ...item, body: { ...body, kind: 'OPEN_TEXT', prompt: event.target.value } })
             }
@@ -1006,7 +1013,7 @@ function NativeItemBodyEditor({
             value={body.prompt}
             disabled={disabled}
             className="min-h-24"
-            aria-invalid={hasIssue('item.prompt_missing')}
+            aria-invalid={hasIssue('file.prompt_missing')}
             onChange={(event) =>
               onChange({ ...item, body: { ...body, kind: 'FILE_UPLOAD', prompt: event.target.value } })
             }
@@ -1044,7 +1051,7 @@ function NativeItemBodyEditor({
             value={body.prompt}
             disabled={disabled}
             className="min-h-24"
-            aria-invalid={hasIssue('item.prompt_missing')}
+            aria-invalid={hasIssue('form.prompt_missing')}
             onChange={(event) => onChange({ ...item, body: { ...body, kind: 'FORM', prompt: event.target.value } })}
           />
         </div>
@@ -1405,6 +1412,15 @@ function fromChoiceAuthorValue(item: EditableItem, value: ChoiceAuthorValue): Pi
   };
 }
 
+function useIssueMessage(issue: ValidationIssue): string {
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio.validation');
+  return t(issue.code.replace('.', '_') as any);
+}
+
+function InlineIssueMessage({ issue }: { issue: ValidationIssue }) {
+  return <>{useIssueMessage(issue)}</>;
+}
+
 function InlineIssueList({ issues }: { issues: ReturnType<typeof classifyValidationIssue>[] }) {
   if (issues.length === 0) return null;
 
@@ -1417,7 +1433,7 @@ function InlineIssueList({ issues }: { issues: ReturnType<typeof classifyValidat
             className="flex items-start gap-2"
           >
             <span>•</span>
-            <span>{issue.message}</span>
+            <span><InlineIssueMessage issue={issue} /></span>
           </li>
         ))}
       </ul>
@@ -1433,28 +1449,28 @@ function getAssessmentEditorIssues(
   const issues: ValidationIssue[] = [];
 
   if (!state.title.trim()) {
-    issues.push({ code: 'assessment.title_missing', message: t('validation.titleRequired') });
+    issues.push({ code: 'assessment.title_missing', message: t('validation.assessment_title_missing') });
   }
 
   if (mode === 'exam') {
     if (state.maxAttempts && Number(state.maxAttempts) < 1) {
       issues.push({
         code: 'policy.max_attempts_invalid',
-        message: t('validation.maxAttemptsRange'),
+        message: t('validation.policy_max_attempts_invalid'),
         field: 'maxAttempts',
       });
     }
     if (state.timeLimitMinutes && Number(state.timeLimitMinutes) < 1) {
       issues.push({
         code: 'policy.time_limit_invalid',
-        message: t('validation.timeLimitRange'),
+        message: t('validation.policy_time_limit_invalid'),
         field: 'timeLimitMinutes',
       });
     }
     if (state.violationThreshold && Number(state.violationThreshold) < 1) {
       issues.push({
         code: 'policy.violation_threshold_invalid',
-        message: t('validation.violationThresholdRange'),
+        message: t('validation.policy_violation_threshold_invalid'),
         field: 'violationThreshold',
       });
     }
