@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 
 import { getSubmissionDisplayName } from '@/features/grading/domain';
 import type { Submission } from '@/features/grading/domain';
-import { buildSubmissionReviewViewModel, RELEASE_STATE_LABELS } from '@/features/grading/domain';
+import { buildSubmissionReviewViewModel } from '@/features/grading/domain';
 import { getSubmissionViolations } from '@/features/grading/domain/types';
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
 import type { KindReviewDetailProps } from '@/features/assessments/registry';
@@ -75,14 +75,30 @@ export default function SubmissionInspector({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <SubmissionStatusBadge status={current.status} />
-              <Badge variant="outline">{RELEASE_STATE_LABELS[reviewVm.releaseState]}</Badge>
+              <Badge variant="outline">
+                {reviewVm.releaseState === 'HIDDEN'
+                  ? t('releaseStateHidden')
+                  : reviewVm.releaseState === 'AWAITING_RELEASE'
+                    ? t('releaseStateAwaitingRelease')
+                    : reviewVm.releaseState === 'VISIBLE'
+                      ? t('releaseStateVisible')
+                      : t('releaseStateReturned')}
+              </Badge>
               {current.is_late ? <Badge variant="destructive">{t('submissionInspector.late')}</Badge> : null}
             </div>
           </div>
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
             <HistoryItem
               label={t('submissionInspector.releaseState')}
-              value={RELEASE_STATE_LABELS[reviewVm.releaseState]}
+              value={
+                reviewVm.releaseState === 'HIDDEN'
+                  ? t('releaseStateHidden')
+                  : reviewVm.releaseState === 'AWAITING_RELEASE'
+                    ? t('releaseStateAwaitingRelease')
+                    : reviewVm.releaseState === 'VISIBLE'
+                      ? t('releaseStateVisible')
+                      : t('releaseStateReturned')
+              }
             />
             <HistoryItem
               label={t('submissionInspector.studentVisibility')}

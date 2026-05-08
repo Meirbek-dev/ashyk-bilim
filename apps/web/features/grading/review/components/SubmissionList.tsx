@@ -7,7 +7,6 @@ import {
   getSubmissionDisplayName,
   getReleaseState,
   needsTeacherAction,
-  RELEASE_STATE_LABELS,
   SUBMISSION_STATUS_LABELS,
 } from '@/features/grading/domain';
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
@@ -38,6 +37,7 @@ export default function SubmissionList({
   onToggleSelected,
 }: SubmissionListProps) {
   const t = useTranslations('Features.Grading.Review.submissionList');
+  const tReview = useTranslations('Features.Grading.Review');
   const locale = useLocale();
 
   return (
@@ -127,7 +127,15 @@ export default function SubmissionList({
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <SubmissionStatusBadge status={submission.status} />
-                      <Badge variant="outline">{RELEASE_STATE_LABELS[releaseState]}</Badge>
+                      <Badge variant="outline">
+                        {releaseState === 'HIDDEN'
+                          ? tReview('releaseStateHidden')
+                          : releaseState === 'AWAITING_RELEASE'
+                            ? tReview('releaseStateAwaitingRelease')
+                            : releaseState === 'VISIBLE'
+                              ? tReview('releaseStateVisible')
+                              : tReview('releaseStateReturned')}
+                      </Badge>
                       {submission.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
                       {needsTeacherAction(submission.status) ? <Badge variant="warning">{t('action')}</Badge> : null}
                     </div>

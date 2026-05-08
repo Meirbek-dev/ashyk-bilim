@@ -7156,7 +7156,11 @@
           "attemptNumber": "Attempt #{number}",
           "late": "Late",
           "action": "Action",
-          "unsubmitted": "Unsubmitted"
+          "unsubmitted": "Unsubmitted",
+          "releaseStateHidden": "Hidden",
+          "releaseStateAwaitingRelease": "Awaiting release",
+          "releaseStateVisible": "Visible",
+          "releaseStateReturned": "Returned"
         },
         "submissionInspector": {
           "selectSubmission": "Select a submission to begin reviewing.",
@@ -7312,7 +7316,11 @@
           "keyboardHint": "Keyboard shortcuts",
           "loadingSubmission": "Loading submission...",
           "formUnavailable": "Grading form is unavailable."
-        }
+        },
+        "releaseStateHidden": "Hidden",
+        "releaseStateAwaitingRelease": "Awaiting release",
+        "releaseStateVisible": "Visible",
+        "releaseStateReturned": "Returned"
       }
     },
     "Assessments": {
@@ -7816,7 +7824,13 @@
           },
           "duplicate": "Duplicate",
           "delete": "Delete",
-          "descriptionLabel": "Description"
+          "descriptionLabel": "Description",
+          "failedToSaveSettings": "Failed to save assessment settings",
+          "defaultItemTitle": "Untitled item",
+          "copyOf": "{title} copy",
+          "Form": {
+            "requiredLabel": "Required"
+          }
         },
         "loading": "Loading studio",
         "unavailable": "Studio is unavailable for this activity.",

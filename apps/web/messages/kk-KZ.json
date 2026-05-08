@@ -148,7 +148,16 @@
       "unlimited": "Шектеусіз",
       "attemptsLabel": "Талпыныстар",
       "readyToBegin": "Бастауға дайын",
-      "noEditableDraft": "Өңдеуге болатын жоба жоқ"
+      "noEditableDraft": "Өңдеуге болатын жоба жоқ",
+      "minutesShort": "мин",
+      "attemptsRemaining": "{remaining} қалды",
+      "submissionReceivedTitle": "Жіберілім қабылданды",
+      "submissionReceivedDescription": "Жіберілді. Ұстаз тексерген соң бағаны ашады.",
+      "submissionReceivedWithDateDescription": "{date} жіберілді. Ұстаз тексерген соң бағаны ашады.",
+      "resultsWaitingForReleaseTitle": "Нәтижелер жарияланған жоқ",
+      "resultsWaitingForReleaseDescription": "Соңғы жіберіліміңіз тексерілді. Ұстаз жарияласа, баға мен пікір көрсетіледі.",
+      "returnedForRevision": "Қайта өңдеуге қайтарылды",
+      "resultAvailable": "Нәтиже қолжетімді"
     },
     "CodeChallenges": {
       "actualOutput": "Сіздің шығаруыңыз",
@@ -340,7 +349,10 @@
         "content": "Мазмұн",
         "contentPlaceholder": "Шешімді толық ашпай, пайдалы бір бағытты түсіндіріңіз.",
         "xpPenalty": "XP айыбы"
-      }
+      },
+      "underConstructionIcon": "🛠️",
+      "timeLimitValue": "{value}мс",
+      "memoryLimitValue": "{value}МБ"
     },
     "DocumentPdf": {
       "viewerTitle": "PDF құжаттарды қарау құралы"
@@ -2450,7 +2462,9 @@
       "selectItemHintDescription": "Белсенділік түрін таңдап, мәліметтерді толтырыңыз. Өзгерістер бірден сақталады.",
       "emptyStateTitle": "Оқу бағдарламасын жасаңыз",
       "emptyStateDescription": "Сабақтар мен тапсырмаларды ұйымдастыру үшін бірінші тарауды қосыңыз.",
-      "emptyStateAction": "Бірінші тарауды қосу"
+      "emptyStateAction": "Бірінші тарауды қосу",
+      "activity": "Сабақ",
+      "chapter": "Тарау"
     },
     "Conflict": {
       "title": "Бұл курс басқа редакторда өзгертілді",
@@ -2490,7 +2504,8 @@
     "deleteChapterConfirmationBreakdown": "Бұл тарауды және оның {count, plural, =0 {0 сабақты} one {# сабақты} other {# сабақты}} ({published} жарияланған, {drafts} жоба) біржола жояды.",
     "noActivitiesHint": "Төменде бірінші тапсырманы қосыңыз",
     "save": "Сақтау",
-    "cancel": "Болдырмау"
+    "cancel": "Болдырмау",
+    "dragChapter": "Тарауды қайта реттеу үшін сүйреңіз"
   },
   "CourseEndView": {
     "backToCourse": "Курсқа оралу",
@@ -3586,7 +3601,12 @@
           "status": "Күйі",
           "structureSummary": "{chapters} тарау · {activities} белсенділік",
           "unknownDate": "Белгісіз",
-          "updated": "Жаңартылған"
+          "updated": "Жаңартылған",
+          "selectAll": "Осы беттегі барлық жіберімдерді таңдау",
+          "selectSubmission": "{student} студентінің жіберімін таңдау",
+          "selectedCount": "{count} жіберім таңдалды",
+          "clearSelection": "Таңдауды жою",
+          "batchGrade": "Топтық баға"
         },
         "toasts": {
           "deleteFailed": "{count} таңдалған курсты жою мүмкін болмады.",
@@ -3814,7 +3834,8 @@
           "content": "Мазмұн",
           "details": "Мәліметтер",
           "publish": "Тексеру және жариялау",
-          "settings": "Баптаулар"
+          "settings": "Баптаулар",
+          "gradebook": "Баға кітабы"
         },
         "untitledCourse": "Атаусыз курс",
         "unsavedDialogLeave": "Жұмыс кеңістігінен шығу",
@@ -6318,7 +6339,31 @@
       "itemScore": "Баға",
       "itemFeedback": "Пікір",
       "itemFeedbackPlaceholder": "Тапсырма бойынша пікір қосыңыз...",
-      "correctAnswer": "Дұрыс жауап"
+      "correctAnswer": "Дұрыс жауап",
+      "title": "Бағалау панелі",
+      "grade": "Баға",
+      "gradeDescription": "Соңғы балл қойып, кері байланыс беріңіз.",
+      "releaseStateHidden": "Жасырын",
+      "releaseStateAwaitingRelease": "Жарияланым күтуде",
+      "releaseStateVisible": "Студентке көрінеді",
+      "releaseStateReturned": "Қайтарылды",
+      "staleDraftTitle": "Сақталмаған жергілікті жоба",
+      "staleDraft": {
+        "serverScoreLabel": "Сервер баллы:",
+        "yourDraftLabel": "Сіздің жобаңыз:"
+      },
+      "useServerValues": "Сервер мәндерін пайдалану",
+      "keepMyDraft": "Жобамды сақтау",
+      "saveDraftGrade": "Жоба ретінде сақтау",
+      "returnForRevision": "Қайта өңдеуге қайтару",
+      "publishPrerequisite": "Жариялау алдында кем дегенде бір элементке баға қойылуы керек.",
+      "keyboardHintNextKey": "j",
+      "keyboardHintPrevKey": "k",
+      "keyboardHintForward": "Келесі студент",
+      "keyboardHintBackward": "Алдыңғы студент",
+      "keyboardHint": "Пернелер тіркесімі",
+      "loadingSubmission": "Жіберім жүктелуде...",
+      "formUnavailable": "Бағалау формасы қолжетімді емес."
     },
     "Batch": {
       "title": "Топпен бағалау ({count} жұмыс)",
@@ -7142,7 +7187,11 @@
           "attemptNumber": "Әрекет №{number}",
           "late": "Кеш",
           "action": "Әрекет",
-          "unsubmitted": "Тапсырылмаған"
+          "unsubmitted": "Тапсырылмаған",
+          "releaseStateHidden": "Жасырын",
+          "releaseStateAwaitingRelease": "Жарияланым күтуде",
+          "releaseStateVisible": "Студентке көрінеді",
+          "releaseStateReturned": "Қайтарылды"
         },
         "bulkActions": {
           "selectedCount": "{count} таңдалды",
@@ -7248,8 +7297,61 @@
           "itemScore": "Баға",
           "itemFeedback": "Пікір",
           "itemFeedbackPlaceholder": "Тапсырма бойынша пікір қосыңыз...",
-          "correctAnswer": "Дұрыс жауап"
-        }
+          "correctAnswer": "Дұрыс жауап",
+          "title": "Бағалау панелі",
+          "grade": "Баға",
+          "gradeDescription": "Соңғы балл қойып, кері байланыс беріңіз.",
+          "releaseStateHidden": "Жасырын",
+          "releaseStateAwaitingRelease": "Жарияланым күтуде",
+          "releaseStateVisible": "Студентке көрінеді",
+          "releaseStateReturned": "Қайтарылды",
+          "staleDraftTitle": "Сақталмаған жергілікті жоба",
+          "staleDraft": {
+            "serverScoreLabel": "Сервер баллы:",
+            "yourDraftLabel": "Сіздің жобаңыз:"
+          },
+          "useServerValues": "Сервер мәндерін пайдалану",
+          "keepMyDraft": "Жобамды сақтау",
+          "saveDraftGrade": "Жоба ретінде сақтау",
+          "returnForRevision": "Қайта өңдеуге қайтару",
+          "publishPrerequisite": "Жариялау алдында кем дегенде бір элементке баға қойылуы керек.",
+          "keyboardHintNextKey": "j",
+          "keyboardHintPrevKey": "k",
+          "keyboardHintForward": "Келесі студент",
+          "keyboardHintBackward": "Алдыңғы студент",
+          "keyboardHint": "Пернелер тіркесімі",
+          "loadingSubmission": "Жіберім жүктелуде...",
+          "formUnavailable": "Бағалау формасы қолжетімді емес."
+        },
+        "submissionInspector": {
+          "selectSubmission": "Тексеруді бастау үшін жіберімді таңдаңыз.",
+          "loadingSubmission": "Жіберім жүктелуде...",
+          "unavailable": "Жіберім деректері қолжетімді емес.",
+          "attemptNumber": "#{number} әрекет",
+          "late": "Кешіктірілген",
+          "releaseState": "Жарияланым күйі",
+          "studentVisibility": "Студентке көрінуі",
+          "visibleNow": "Қазір көрінеді",
+          "hiddenUntilRelease": "Жарияланғанға дейін жасырын",
+          "score": "Балл",
+          "submittedWork": "Жіберілген жұмыс",
+          "violations": "Бұзушылықтар",
+          "noViolations": "Тіркелген бұзушылықтар жоқ.",
+          "violationCount": "{count} бұзушылық",
+          "attemptHistory": "Әрекеттер тарихы",
+          "started": "Басталды",
+          "submitted": "Жіберілді",
+          "graded": "Бағаланды",
+          "version": "Нұсқа",
+          "noCanonicalProjection": "Бұл элемент үшін деректер жоқ.",
+          "noAnswerPayload": "Жауаптар тіркелмеген.",
+          "itemLabel": "{index}-элемент",
+          "rubricGuidance": "Рубрика нұсқаулығы"
+        },
+        "releaseStateHidden": "Жасырын",
+        "releaseStateAwaitingRelease": "Жарияланым күтуде",
+        "releaseStateVisible": "Студентке көрінеді",
+        "releaseStateReturned": "Қайтарылды"
       }
     },
     "Assessments": {
@@ -7260,13 +7362,104 @@
       "Items": {
         "Choice": {
           "selectMatch": "Сәйкестікті таңдаңыз",
-          "points": "{count} ұпай"
+          "points": "{count} ұпай",
+          "prompt": "Сұрақ",
+          "type": "Түрі",
+          "trueLabel": "Дұрыс",
+          "falseLabel": "Бұрыс",
+          "kinds": {
+            "single": "Бір дұрыс жауап",
+            "multiple": "Бірнеше дұрыс жауап",
+            "trueFalse": "Иә/Жоқ",
+            "matching": "Сәйкестендіру"
+          },
+          "toggleCorrectAnswer": "Дұрыс жауапты белгілеу",
+          "optionPlaceholder": "{label} нұсқасы",
+          "addOption": "Нұсқа қосу",
+          "matching": {
+            "left": "Сол",
+            "right": "Оң",
+            "addPair": "Жұп қосу"
+          }
         },
         "Matching": {
           "selectMatch": "Сәйкестікті таңдаңыз…",
           "correct": "Дұрыс",
-          "noAnswer": "Жауап жоқ"
-        }
+          "noAnswer": "Жауап жоқ",
+          "title": "Сәйкестендіру элементі",
+          "description": "Студенттер оң жақ мәнді сол жақ терминмен сәйкестендіреді.",
+          "leftLabel": "Сол (термин)",
+          "rightLabel": "Оң (сәйкес)",
+          "termPlaceholder": "{number}-термин",
+          "matchPlaceholder": "{number}-сәйкес",
+          "removePair": "Жұпты жою",
+          "addPair": "Жұп қосу"
+        },
+        "FileUpload": {
+          "prompt": "Сұрақ",
+          "maxFiles": "Максималды файл саны",
+          "maxSizeMb": "Максималды өлшем, МБ",
+          "noLimit": "Шектеусіз",
+          "allowedMimeTypes": "Рұқсат етілген MIME түрлері",
+          "mimePlaceholder": "application/pdf, image/png",
+          "referenceFile": "Анықтамалық файл",
+          "currentFile": "Ағымдағы файл",
+          "verifiedBeforeAttach": "Файл жобаға тіркелмес бұрын тексеріледі.",
+          "uploadedFile": "Жүктелген файл",
+          "noFileRecorded": "Файл тіркелмеген",
+          "toasts": {
+            "attached": "Файл жобаға тіркелді."
+          },
+          "errors": {
+            "fileTooLarge": "Файл {size} МБ-тан асып кетті",
+            "fileTypeNotAllowed": "Файл түрі бұл элемент үшін рұқсат етілмеген",
+            "uploadCreate": "Жүктеуді жасау мүмкін болмады",
+            "uploadFailed": "Жүктеу сәтсіз аяқталды",
+            "uploadFinalizeFailed": "Жүктеуді аяқтау сәтсіз аяқталды"
+          }
+        },
+        "Form": {
+          "title": "Форма элементі",
+          "description": "Дұрыс жауаптары бар толтыру өрістерін жасаңыз.",
+          "prompt": "Сұрақ",
+          "fieldHeader": "{number}-өріс",
+          "fieldLabel": "Белгі",
+          "fieldType": "Түрі",
+          "fieldTypes": {
+            "text": "Мәтін",
+            "textarea": "Мәтін аймағы",
+            "number": "Сан",
+            "date": "Күн"
+          },
+          "addField": "Өріс қосу",
+          "unsupportedKind": "Қолданылмайтын элемент түрі.",
+          "questionBadge": "C{number}",
+          "questionPlaceholder": "Сұрақ немесе нұсқаулық",
+          "fieldLabelPlaceholder": "Студент өрісінің белгісі",
+          "correctAnswerPlaceholder": "Дұрыс жауап",
+          "hintPlaceholder": "Кеңес",
+          "addBlank": "Бос өріс қосу",
+          "addQuestion": "Сұрақ қосу",
+          "noFields": "Форма өрістері жоқ.",
+          "promptFallback": "Сұрақ",
+          "answerLabel": "{number}-жауап"
+        },
+        "OpenText": {
+          "title": "Ашық мәтін элементі",
+          "description": "Қолмен бағаланатын жазбаша жауапқа нұсқаулық.",
+          "prompt": "Сұрақ",
+          "promptPlaceholder": "Сұрақ",
+          "minWords": "Ең аз сөздер саны",
+          "rubric": "Рубрика",
+          "rubricGuidance": "Рубрика нұсқаулығы",
+          "noTextRecorded": "Мәтін тіркелмеген"
+        },
+        "Code": {
+          "language": "Тіл",
+          "languageValue": "{language} тілі"
+        },
+        "unsupportedItem": "Қолданылмайтын элемент.",
+        "unsupported": "Қолданылмайды"
       },
       "Attempt": {
         "Exam": {
@@ -7669,7 +7862,13 @@
           },
           "duplicate": "Көшірмесін жасау",
           "delete": "Жою",
-          "descriptionLabel": "Сипаттамасы"
+          "descriptionLabel": "Сипаттамасы",
+          "failedToSaveSettings": "Бағалау параметрлерін сақтау сәтсіз аяқталды",
+          "defaultItemTitle": "Тақырыпсыз элемент",
+          "copyOf": "{title} көшірмесі",
+          "Form": {
+            "requiredLabel": "Міндетті"
+          }
         },
         "loading": "Студия жүктелуде",
         "unavailable": "Бұл әрекет үшін студия қолжетімсіз.",
@@ -7968,6 +8167,73 @@
         "tasks": "Тапсырмалар",
         "title": "Тапсырмалар",
         "submissionsTitle": "Студенттердің жұмыстары"
+      },
+      "Review": {
+        "Gradebook": {
+          "title": "Курс үлгерімі",
+          "loading": "Баға кітабы жүктелуде...",
+          "loadError": "Баға кітабын жүктеу сәтсіз аяқталды.",
+          "unavailable": "Баға кітабы қолжетімді емес.",
+          "backToGradebook": "Баға кітабына оралу",
+          "submissionReview": "Жіберілімді тексеру",
+          "searchLearner": "Оқушыны іздеу",
+          "activityType": "Сабақ түрі",
+          "allActivityTypes": "Барлық сабақ түрлері",
+          "learner": "Оқушы",
+          "email": "Электрондық пошта",
+          "selectCell": "Үлгерім ұяшығын таңдау",
+          "actionRequired": "Әрекет",
+          "late": "Кешіктірілген",
+          "attempts": "{count, plural, =0 {# әрекет} one {# әрекет} few {# әрекет} many {# әрекет} other {# әрекет}}",
+          "refresh": "Жаңарту",
+          "export": "Экспорт",
+          "noScore": "Баға әлі жоқ",
+          "averageScore": "Орташа {score}%",
+          "defaultCohort": "Курс тізімі",
+          "summary": {
+            "learners": "Оқушылар",
+            "activities": "Сабақтар",
+            "needsGrading": "Бағалауды күтеді",
+            "overdue": "Мерзімі өткен",
+            "notStarted": "Басталмаған",
+            "selected": "Таңдалды"
+          },
+          "savedFilters": {
+            "all": "Барлығы",
+            "needs_grading": "Бағалауды күтеді",
+            "overdue": "Мерзімі өткен",
+            "returned": "Қайтарылды",
+            "failed": "Сәтсіз",
+            "not_started": "Басталмаған"
+          },
+          "states": {
+            "not_started": "Басталмаған",
+            "in_progress": "Орындалуда",
+            "submitted": "Баға күтуде",
+            "needs_grading": "Бағалауды күтеді",
+            "returned": "Қайтарылды",
+            "graded": "Бағаланды",
+            "passed": "Өтті",
+            "failed": "Сәтсіз",
+            "completed": "Аяқталды"
+          },
+          "rollups": {
+            "title": "Үлгерім жиынтықтары",
+            "description": "Топ, когорта, оқушы немесе сабақ бойынша курс үлгерімін салыстыру.",
+            "assignment_group": "Топтар",
+            "cohort": "Когорталар",
+            "learner": "Оқушылар",
+            "activity": "Сабақтар"
+          },
+          "activityTypes": {
+            "assignment": "Тапсырма",
+            "exam": "Емтихан",
+            "codeChallenge": "Код тапсырмасы",
+            "quiz": "Тест",
+            "form": "Форма",
+            "file": "Файл"
+          }
+        }
       }
     },
     "Items": {

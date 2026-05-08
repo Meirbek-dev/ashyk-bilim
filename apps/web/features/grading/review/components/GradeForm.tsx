@@ -21,7 +21,6 @@ import {
   canReturnSubmission,
   canTeacherEditGrade,
   getReleaseState,
-  RELEASE_STATE_LABELS,
 } from '@/features/grading/domain';
 import type { Submission, TeacherGradeInput } from '@/features/grading/domain';
 import { saveGrade } from '@/services/grading/grading';
@@ -141,8 +140,7 @@ export default function GradeForm({
 
       <Alert>
         <Info className="size-4" />
-        <AlertTitle>{RELEASE_STATE_LABELS[releaseState]}</AlertTitle>
-        <AlertDescription>
+        <AlertTitle>
           {releaseState === 'HIDDEN'
             ? t('releaseStateHidden')
             : releaseState === 'AWAITING_RELEASE'
@@ -150,7 +148,7 @@ export default function GradeForm({
               : releaseState === 'VISIBLE'
                 ? t('releaseStateVisible')
                 : t('releaseStateReturned')}
-        </AlertDescription>
+        </AlertTitle>
       </Alert>
 
       {/* ── OCC stale-grade banner ─────────────────────────────────────── */}

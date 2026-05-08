@@ -148,7 +148,16 @@
       "unlimited": "Неограниченно",
       "attemptsLabel": "Попытки",
       "readyToBegin": "Готовы начать",
-      "noEditableDraft": "Нет доступного для редактирования черновика"
+      "noEditableDraft": "Нет доступного для редактирования черновика",
+      "minutesShort": "мин",
+      "attemptsRemaining": "осталось {remaining}",
+      "submissionReceivedTitle": "Ответ принят",
+      "submissionReceivedDescription": "Отправлено. Преподаватель опубликует оценку после проверки.",
+      "submissionReceivedWithDateDescription": "Отправлено {date}. Преподаватель опубликует оценку после проверки.",
+      "resultsWaitingForReleaseTitle": "Результаты ожидают публикации",
+      "resultsWaitingForReleaseDescription": "Ваш последний ответ проверен. Оценка и комментарии появятся после публикации преподавателем.",
+      "returnedForRevision": "Возвращено на доработку",
+      "resultAvailable": "Результат доступен"
     },
     "CodeChallenges": {
       "actualOutput": "Ваш вывод",
@@ -340,7 +349,10 @@
         "content": "Содержимое",
         "contentPlaceholder": "Опишите полезное направление, не раскрывая полное решение.",
         "xpPenalty": "Штраф XP"
-      }
+      },
+      "underConstructionIcon": "🛠️",
+      "timeLimitValue": "{value}мс",
+      "memoryLimitValue": "{value}МБ"
     },
     "DocumentPdf": {
       "viewerTitle": "PDF Document Viewer"
@@ -2713,7 +2725,8 @@
       "startingCourse": "Начинаем курс...",
       "submittingContributorApplication": "Отправка заявки на участие...",
       "youAreAContributor": "Вы являетесь автором",
-      "youAreContributor": "Вы являетесь автором"
+      "youAreContributor": "Вы являетесь автором",
+      "startError": "Не удалось начать курс. Попробуйте ещё раз."
     },
     "access": "Доступ",
     "content": "Содержимое",
@@ -3589,7 +3602,12 @@
           "status": "Статус",
           "structureSummary": "{chapters} глав · {activities} активностей",
           "unknownDate": "Неизвестно",
-          "updated": "Обновлено"
+          "updated": "Обновлено",
+          "selectAll": "Выбрать все работы на этой странице",
+          "selectSubmission": "Выбрать работу для {student}",
+          "selectedCount": "{count} работ выбрано",
+          "clearSelection": "Снять выбор",
+          "batchGrade": "Пакетная оценка"
         },
         "toasts": {
           "deleteFailed": "{count, plural, one {# выбранный курс не удалось удалить.} few {# выбранных курса не удалось удалить.} many {# выбранных курсов не удалось удалить.} other {# выбранных курсов не удалось удалить.}}",
@@ -7170,7 +7188,11 @@
           "attemptNumber": "Попытка #{number}",
           "late": "Просрочено",
           "action": "Действие",
-          "unsubmitted": "Не отправлено"
+          "unsubmitted": "Не отправлено",
+          "releaseStateHidden": "Скрыто",
+          "releaseStateAwaitingRelease": "Ожидает публикации",
+          "releaseStateVisible": "Видно",
+          "releaseStateReturned": "Возвращено"
         },
         "submissionInspector": {
           "selectSubmission": "Выберите работу, чтобы начать проверку.",
@@ -7326,7 +7348,11 @@
           "keyboardHint": "Горячие клавиши",
           "loadingSubmission": "Загрузка работы...",
           "formUnavailable": "Форма оценивания недоступна."
-        }
+        },
+        "releaseStateHidden": "Скрыто",
+        "releaseStateAwaitingRelease": "Ожидает публикации",
+        "releaseStateVisible": "Видно",
+        "releaseStateReturned": "Возвращено"
       }
     },
     "Assessments": {
@@ -7833,7 +7859,13 @@
           },
           "duplicate": "Дублировать",
           "delete": "Удалить",
-          "descriptionLabel": "Описание"
+          "descriptionLabel": "Описание",
+          "failedToSaveSettings": "Не удалось сохранить параметры задания",
+          "defaultItemTitle": "Элемент без названия",
+          "copyOf": "Копия {title}",
+          "Form": {
+            "requiredLabel": "Обязательно"
+          }
         },
         "loading": "Загрузка студии",
         "unavailable": "Студия недоступна для этой активности.",
@@ -8340,6 +8372,10 @@
     "zen": {
       "description": "Спокойная тема с натуральными серыми и тёплыми бежевыми тонами.",
       "name": "Zen"
+    },
+    "darkBeta": {
+      "name": "Тёмная (Бета)",
+      "description": "Экспериментальная тёмная тема с глубокими контрастами и тонкими акцентами для комфортного использования в тёмное время суток"
     }
   },
   "ToastMessages": {

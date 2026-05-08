@@ -233,7 +233,7 @@ export function NativeItemOutline({
         const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildDefaultItemPayload(kind)),
+          body: JSON.stringify(buildDefaultItemPayload(kind, t('defaultItemTitle'))),
         });
 
         if (!response.ok) {
@@ -426,7 +426,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
         await refresh();
       } catch (error) {
         setAssessmentSaveState('error');
-        toast.error(error instanceof Error ? error.message : 'Failed to save assessment settings');
+        toast.error(error instanceof Error ? error.message : t('failedToSaveSettings'));
       }
     },
     [assessment, mode, refresh],
@@ -512,7 +512,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             kind: itemState.kind,
-            title: itemState.title ? `${itemState.title} copy` : t('copyOfItem', { itemNoun }),
+            title: itemState.title ? t('copyOf', { title: itemState.title }) : t('copyOfItem', { itemNoun }),
             max_score: itemState.max_score,
             body: structuredClone(itemState.body),
           }),
@@ -1134,7 +1134,7 @@ function NativeItemBodyEditor({
                 </div>
                 <div className="flex items-end">
                   <ToggleRow
-                    label="Required"
+                    label={t('Form.requiredLabel')}
                     checked={field.required}
                     disabled={disabled}
                     onChange={(checked) =>
@@ -1180,11 +1180,11 @@ function NativeItemBodyEditor({
   return <div className="text-muted-foreground text-sm">{t('Form.unsupportedKind')}</div>;
 }
 
-function buildDefaultItemPayload(kind: SupportedStudioItemKind) {
+function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTitle: string) {
   if (kind === 'CHOICE') {
     return {
       kind,
-      title: 'Untitled item',
+      title: defaultTitle,
       max_score: 1,
       body: {
         kind,
@@ -1199,7 +1199,7 @@ function buildDefaultItemPayload(kind: SupportedStudioItemKind) {
   if (kind === 'MATCHING') {
     return {
       kind,
-      title: 'Untitled item',
+      title: defaultTitle,
       max_score: 1,
       body: {
         kind,
@@ -1212,7 +1212,7 @@ function buildDefaultItemPayload(kind: SupportedStudioItemKind) {
   if (kind === 'FILE_UPLOAD') {
     return {
       kind,
-      title: 'Untitled item',
+      title: defaultTitle,
       max_score: 1,
       body: {
         kind,
@@ -1227,7 +1227,7 @@ function buildDefaultItemPayload(kind: SupportedStudioItemKind) {
   if (kind === 'FORM') {
     return {
       kind,
-      title: 'Untitled item',
+      title: defaultTitle,
       max_score: 1,
       body: {
         kind,
@@ -1239,7 +1239,7 @@ function buildDefaultItemPayload(kind: SupportedStudioItemKind) {
 
   return {
     kind,
-    title: 'Untitled item',
+    title: defaultTitle,
     max_score: 1,
     body: {
       kind,
