@@ -1,4 +1,5 @@
 'use server';
+import { requireSession } from '@/lib/auth/session';
 
 import { errorHandling, getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
@@ -34,12 +35,14 @@ async function fetchPlatform(): Promise<PlatformRead | null> {
 }
 
 export async function getPlatform() {
+  await requireSession();
   return fetchPlatform();
 }
 
 export async function updateLanding(
   landing_object: Record<string, unknown>,
 ): Promise<ResponseMetadata<PlatformDetailResponse>> {
+  await requireSession();
   const result = await apiFetch('landing', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -58,6 +61,7 @@ export async function updateLanding(
 export async function uploadLandingContent(
   content_file: File,
 ): Promise<ResponseMetadata<PlatformLandingUploadResponse>> {
+  await requireSession();
   const formData = new FormData();
   formData.append('content_file', content_file);
 
@@ -66,6 +70,7 @@ export async function uploadLandingContent(
 }
 
 export async function removeUser(user_id: number): Promise<ResponseMetadata<PlatformDetailResponse>> {
+  await requireSession();
   const result = await apiFetch(`members/${user_id}`, { method: 'DELETE' });
   const metadata = await getTypedResponseMetadata<PlatformDetailResponse>(result);
 

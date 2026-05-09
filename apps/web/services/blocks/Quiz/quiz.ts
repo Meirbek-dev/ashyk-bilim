@@ -1,4 +1,5 @@
 'use server';
+import { requireSession } from '@/lib/auth/session';
 
 import { apiFetch } from '@/lib/api-client';
 import { tags } from '@/lib/cacheTags';
@@ -13,6 +14,7 @@ interface QuizSubmissionPayload {
 }
 
 export async function submitQuizBlock(activity_id: number, data: QuizSubmissionPayload) {
+  await requireSession();
   try {
     const result = await apiFetch(`blocks/quiz/${activity_id}`, {
       method: 'POST',

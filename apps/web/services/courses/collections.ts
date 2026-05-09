@@ -1,4 +1,5 @@
 'use server';
+import { requireSession } from '@/lib/auth/session';
 
 import { errorHandling } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
@@ -11,6 +12,7 @@ import { getAPIUrl } from '../config/config';
 */
 
 export async function deleteCollection(collection_uuid: string) {
+  await requireSession();
   const result = await apiFetch(`collections/${collection_uuid}`, { method: 'DELETE' });
   const data_result = await errorHandling(result);
 
@@ -23,6 +25,7 @@ export async function deleteCollection(collection_uuid: string) {
 }
 
 export async function createCollection(collection: any) {
+  await requireSession();
   const result = await apiFetch('collections/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -49,6 +52,7 @@ async function fetchCollectionById(collection_uuid: string) {
 }
 
 export async function getCollectionById(collection_uuid: string, _next?: any) {
+  await requireSession();
   return fetchCollectionById(collection_uuid);
 }
 
@@ -66,5 +70,6 @@ async function fetchCollections() {
 }
 
 export async function getCollections(_next?: any) {
+  await requireSession();
   return fetchCollections();
 }

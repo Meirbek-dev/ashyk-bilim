@@ -1,4 +1,5 @@
 'use server';
+import { requireSession } from '@/lib/auth/session';
 
 import { errorHandling } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
@@ -10,6 +11,7 @@ import { tags, courseTag } from '@/lib/cacheTags';
 */
 
 export async function updateChapter(chapterUuid: string, data: any) {
+  await requireSession();
   const result = await apiFetch(`chapters/${chapterUuid}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -24,6 +26,7 @@ export async function updateChapter(chapterUuid: string, data: any) {
 }
 
 export async function updateCourseOrderStructure(course_uuid: string, data: CourseOrderPayload) {
+  await requireSession();
   const result = await apiFetch(`chapters/course/${course_uuid}/order`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -39,6 +42,7 @@ export async function updateCourseOrderStructure(course_uuid: string, data: Cour
 }
 
 export async function createChapter(data: any) {
+  await requireSession();
   const result = await apiFetch('chapters', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -53,6 +57,7 @@ export async function createChapter(data: any) {
 }
 
 export async function deleteChapter(chapterUuid: string) {
+  await requireSession();
   const result = await apiFetch(`chapters/${chapterUuid}`, { method: 'DELETE' });
   const response = await errorHandling(result);
 

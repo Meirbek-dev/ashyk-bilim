@@ -1,4 +1,5 @@
 'use server';
+import { requireSession } from '@/lib/auth/session';
 
 /**
  * Client-side assessment API functions for the new unified endpoints.
@@ -173,6 +174,7 @@ export interface CodeRunRequest {
  * Drive all student action gating from this single call.
  */
 export async function getAttemptState(assessmentUuid: string): Promise<AttemptProjection | null> {
+  await requireSession();
   const res = await apiFetch(`assessments/${assessmentUuid}/attempt-state`, {
     method: 'GET',
     next: { tags: ['attempt-state', `assessment-${assessmentUuid}`] },
@@ -185,6 +187,7 @@ export async function getAttemptState(assessmentUuid: string): Promise<AttemptPr
 // ── Policy preset ─────────────────────────────────────────────────────────────
 
 export async function getPolicyPreset(kind: string): Promise<PolicyPreset | null> {
+  await requireSession();
   const res = await apiFetch(`assessments/policy-preset/${encodeURIComponent(kind)}`, {
     method: 'GET',
     next: { tags: ['policy-presets'] },
@@ -199,6 +202,7 @@ export async function getPolicyPreset(kind: string): Promise<PolicyPreset | null
 export async function listStudentPolicyOverrides(
   assessmentUuid: string,
 ): Promise<StudentPolicyOverride[]> {
+  await requireSession();
   const res = await apiFetch(`assessments/${assessmentUuid}/overrides`, {
     method: 'GET',
     next: { tags: ['overrides', `assessment-${assessmentUuid}`] },
@@ -212,6 +216,7 @@ export async function createStudentPolicyOverride(
   assessmentUuid: string,
   payload: StudentPolicyOverrideCreate,
 ): Promise<StudentPolicyOverride> {
+  await requireSession();
   const res = await apiFetch(`assessments/${assessmentUuid}/overrides`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -228,6 +233,7 @@ export async function updateStudentPolicyOverride(
   userId: number,
   payload: StudentPolicyOverrideUpdate,
 ): Promise<StudentPolicyOverride> {
+  await requireSession();
   const res = await apiFetch(`assessments/${assessmentUuid}/overrides/${userId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -243,6 +249,7 @@ export async function deleteStudentPolicyOverride(
   assessmentUuid: string,
   userId: number,
 ): Promise<void> {
+  await requireSession();
   const res = await apiFetch(`assessments/${assessmentUuid}/overrides/${userId}`, {
     method: 'DELETE',
   });
@@ -260,6 +267,7 @@ export async function saveGradingDraft(
   /** Optimistic-concurrency version from the last-fetched submission */
   version?: number,
 ): Promise<unknown> {
+  await requireSession();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (version !== undefined) {
     headers['If-Match'] = String(version);
@@ -295,6 +303,7 @@ export async function runCodeItem(
   itemUuid: string,
   payload: CodeRunRequest,
 ): Promise<CodeRunResponse> {
+  await requireSession();
   const res = await apiFetch(`assessments/${assessmentUuid}/items/${itemUuid}/runs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
