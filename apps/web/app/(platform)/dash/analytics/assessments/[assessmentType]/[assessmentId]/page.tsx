@@ -26,10 +26,13 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
   params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { assessmentType, assessmentId } = await props.params;
-  const query = normalizeAnalyticsQuery(await props.searchParams);
-  const locale = await getLocale();
-  const t = await getTranslations('TeacherAnalytics');
+  const [{ assessmentType, assessmentId }, searchParams, locale, t] = await Promise.all([
+    props.params,
+    props.searchParams,
+    getLocale(),
+    getTranslations('TeacherAnalytics'),
+  ]);
+  const query = normalizeAnalyticsQuery(searchParams);
 
   try {
     const detail = await getTeacherAssessmentDetail({

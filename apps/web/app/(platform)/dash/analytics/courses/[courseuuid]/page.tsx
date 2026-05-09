@@ -26,9 +26,12 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
   params: Promise<{ courseuuid: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { courseuuid } = await props.params;
-  const query = normalizeAnalyticsQuery(await props.searchParams);
-  const t = await getTranslations('TeacherAnalytics');
+  const [{ courseuuid }, searchParams, t] = await Promise.all([
+    props.params,
+    props.searchParams,
+    getTranslations('TeacherAnalytics'),
+  ]);
+  const query = normalizeAnalyticsQuery(searchParams);
 
   try {
     const detail = await getTeacherCourseDetailByUuid(courseuuid, query);

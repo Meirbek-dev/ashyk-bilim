@@ -5,8 +5,10 @@ export default async function PlatformAssessmentReviewPage(props: {
   params: Promise<{ courseuuid: string; activityid: string }>;
   searchParams: Promise<{ submission?: string }>;
 }) {
-  const { courseuuid, activityid } = await props.params;
-  const { submission } = await props.searchParams;
+  const [{ courseuuid, activityid }, { submission }] = await Promise.all([
+    props.params,
+    props.searchParams,
+  ]);
 
   return renderCourseWorkspacePage({
     courseuuid,

@@ -1,5 +1,6 @@
 'use server';
 import { requireSession } from '@/lib/auth/session';
+import { after } from 'next/server';
 
 import { errorHandling, getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
@@ -282,7 +283,7 @@ export async function createFileActivity(
 
   if (type === 'video') {
     if (shouldUseChunkedUpload(file.size)) {
-      console.log('Using chunked upload for video activity');
+      after(() => console.log('Using chunked upload for video activity'));
       result = await createVideoActivityChunked(file, data, chapterId, options, onProgress);
     } else {
       result = await createVideoActivityStandard(file, data, chapterId, options, onProgress);
