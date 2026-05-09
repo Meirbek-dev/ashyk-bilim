@@ -291,7 +291,9 @@ async def api_get_platform_courses(
                     if ims_dt >= latest:
                         return Response(status_code=304)
                 except Exception:
-                    logger.debug("Failed to parse If-Modified-Since header", exc_info=True)
+                    logger.debug(
+                        "Failed to parse If-Modified-Since header", exc_info=True
+                    )
     except Exception:
         logger.debug("Failed to set Last-Modified header", exc_info=True)
 

@@ -44,7 +44,8 @@ def upgrade() -> None:
         if isinstance(metadata_json, str):
             try:
                 metadata_json = json.loads(metadata_json)
-            except Exception:
+            except Exception:  # noqa: S112
+                # Skip invalid JSON data in migration
                 continue
 
         if not isinstance(metadata_json, dict):

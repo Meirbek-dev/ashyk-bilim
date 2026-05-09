@@ -69,6 +69,7 @@ lint.ignore = [
   "TRY003",
   "EM101",
   "BLE001",
+  "S110",
 ]
 
 [tool.ruff.format]

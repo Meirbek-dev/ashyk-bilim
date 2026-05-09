@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Literal
 
+from pydantic import Field
+
 from src.db.strict_base_model import PydanticStrictBaseModel
 
 
@@ -138,7 +140,7 @@ class InsightFeedItem(PydanticStrictBaseModel):
 class SavedAnalyticsViewCreate(PydanticStrictBaseModel):
     name: str
     view_type: str = "overview"
-    query: dict[str, object] = {}  # noqa: RUF012
+    query: dict[str, object] = Field(default_factory=dict)
 
 
 class SavedAnalyticsViewRow(PydanticStrictBaseModel):
@@ -161,7 +163,7 @@ class DrillThroughResponse(PydanticStrictBaseModel):
     generated_at: str
     metric: Literal["active_learners", "completion_rate", "pass_rate", "backlog"]
     total: int = 0
-    items: list[dict[str, object]] = []  # noqa: RUF012
+    items: list[dict[str, object]] = Field(default_factory=list)
 
 
 class DataQualityIssue(PydanticStrictBaseModel):
@@ -288,7 +290,7 @@ class TeacherInterventionCreate(PydanticStrictBaseModel):
     status: Literal["planned", "completed", "resolved"] = "completed"
     outcome: str | None = None
     notes: str | None = None
-    payload: dict[str, object] = {}  # noqa: RUF012
+    payload: dict[str, object] = Field(default_factory=dict)
 
 
 class TeacherInterventionRow(PydanticStrictBaseModel):
@@ -327,7 +329,7 @@ class AtRiskLearnerRow(PydanticStrictBaseModel):
     missing_required_assessments: int
     risk_score: float
     risk_level: Literal["low", "medium", "high"]
-    risk_components: dict[str, float] = {}  # noqa: RUF012
+    risk_components: dict[str, float] = Field(default_factory=dict)
     reason_codes: list[str]
     risk_trend: Literal[
         "newly_at_risk", "worsening", "improving", "recovered", "stable"
@@ -389,8 +391,8 @@ class TeacherOverviewResponse(PydanticStrictBaseModel):
     course_total: int = 0
     assessment_total: int = 0
     at_risk_total: int = 0
-    course_options: list[AnalyticsFilterOption] = []  # noqa: RUF012
-    cohort_options: list[AnalyticsFilterOption] = []  # noqa: RUF012
+    course_options: list[AnalyticsFilterOption] = Field(default_factory=list)
+    cohort_options: list[AnalyticsFilterOption] = Field(default_factory=list)
 
 
 class TeacherCourseRow(PydanticStrictBaseModel):
@@ -418,8 +420,8 @@ class TeacherCourseListResponse(PydanticStrictBaseModel):
     page: int = 1
     page_size: int = 25
     items: list[TeacherCourseRow]
-    course_options: list[AnalyticsFilterOption] = []  # noqa: RUF012
-    cohort_options: list[AnalyticsFilterOption] = []  # noqa: RUF012
+    course_options: list[AnalyticsFilterOption] = Field(default_factory=list)
+    cohort_options: list[AnalyticsFilterOption] = Field(default_factory=list)
 
 
 class FunnelStep(PydanticStrictBaseModel):
@@ -497,8 +499,8 @@ class TeacherAssessmentListResponse(PydanticStrictBaseModel):
     page: int = 1
     page_size: int = 25
     items: list[AssessmentOutlierRow]
-    course_options: list[AnalyticsFilterOption] = []  # noqa: RUF012
-    cohort_options: list[AnalyticsFilterOption] = []  # noqa: RUF012
+    course_options: list[AnalyticsFilterOption] = Field(default_factory=list)
+    cohort_options: list[AnalyticsFilterOption] = Field(default_factory=list)
 
 
 class HistogramBucket(PydanticStrictBaseModel):
@@ -669,5 +671,5 @@ class AtRiskLearnersResponse(PydanticStrictBaseModel):
     page: int = 1
     page_size: int = 25
     items: list[AtRiskLearnerRow]
-    course_options: list[AnalyticsFilterOption] = []  # noqa: RUF012
-    cohort_options: list[AnalyticsFilterOption] = []  # noqa: RUF012
+    course_options: list[AnalyticsFilterOption] = Field(default_factory=list)
+    cohort_options: list[AnalyticsFilterOption] = Field(default_factory=list)

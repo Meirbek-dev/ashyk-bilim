@@ -47,7 +47,5 @@ async def upload_subtitle(
         return {"success": True, "filename": f"subtitle.{language}.{subtitle_format}"}
 
     except Exception as e:
-        logger.warning(
-            "Error uploading subtitle for activity %s: %s", activity_uuid, e
-        )
+        logger.warning("Error uploading subtitle for activity %s: %s", activity_uuid, e)
         return {"success": False, "message": f"Error uploading subtitle: {e!s}"}
