@@ -1,5 +1,4 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 
 import { errorHandling } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
@@ -10,7 +9,6 @@ import { tags } from '@/lib/cacheTags';
 */
 
 export async function updatePlatform(data: any) {
-  await requireSession();
   const result = await apiFetch('platform', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -23,7 +21,6 @@ export async function updatePlatform(data: any) {
 }
 
 export async function uploadPlatformLogo(logo_file: any) {
-  await requireSession();
   const formData = new FormData();
   formData.append('logo_file', logo_file);
   const result = await apiFetch('logo', { method: 'PUT', body: formData });
@@ -34,7 +31,6 @@ export async function uploadPlatformLogo(logo_file: any) {
 }
 
 export async function uploadPlatformThumbnail(thumbnail_file: any) {
-  await requireSession();
   const formData = new FormData();
   formData.append('thumbnail_file', thumbnail_file);
   const result = await apiFetch('thumbnail', { method: 'PUT', body: formData });
@@ -45,7 +41,6 @@ export async function uploadPlatformThumbnail(thumbnail_file: any) {
 }
 
 export const uploadPlatformPreview = async (file: File) => {
-  await requireSession();
   const formData = new FormData();
   formData.append('preview_file', file);
   const result = await apiFetch('preview', { method: 'PUT', body: formData });

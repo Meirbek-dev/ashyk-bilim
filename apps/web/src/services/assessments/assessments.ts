@@ -1,5 +1,4 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 
 import { apiFetch, errorHandling } from '@/lib/api-client';
 import { getAPIUrl } from '@services/config/config';
@@ -26,7 +25,6 @@ export interface AssessmentSummary {
  * Returns null on 404 rather than throwing.
  */
 export async function getAssessmentByUuid(assessmentUuid: string): Promise<AssessmentSummary | null> {
-  await requireSession();
   try {
     const result = await apiFetch(`assessments/${assessmentUuid}`, {
       method: 'GET',
@@ -45,7 +43,6 @@ export async function getAssessmentByUuid(assessmentUuid: string): Promise<Asses
  * Returns null on 404 rather than throwing.
  */
 export async function getAssessmentByActivityUuid(activityUuid: string): Promise<AssessmentSummary | null> {
-  await requireSession();
   try {
     const result = await apiFetch(`assessments/activity/${activityUuid}`, {
       method: 'GET',

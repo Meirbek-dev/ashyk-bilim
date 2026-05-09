@@ -1,5 +1,4 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 
 import { errorHandling } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
@@ -52,7 +51,6 @@ export interface Discussion {
 }
 
 export async function createDiscussion(course_uuid: string, discussion: DiscussionCreate): Promise<Discussion> {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/discussions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -73,7 +71,6 @@ export async function updateDiscussion(
   discussion_uuid: string,
   discussion: DiscussionUpdate,
 ): Promise<Discussion> {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/discussions/${discussion_uuid}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -89,8 +86,7 @@ export async function updateDiscussion(
   return data;
 }
 
-export async function deleteDiscussion(course_uuid: string, discussion_uuid: string): Promise<{
-  await requireSession(); message: string }> {
+export async function deleteDiscussion(course_uuid: string, discussion_uuid: string): Promise<{ message: string }> {
   const result = await apiFetch(`courses/${course_uuid}/discussions/${discussion_uuid}`, {
     method: 'DELETE',
   });
@@ -105,7 +101,6 @@ export async function deleteDiscussion(course_uuid: string, discussion_uuid: str
 }
 
 export async function likeDiscussion(course_uuid: string, discussion_uuid: string): Promise<any> {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/discussions/${discussion_uuid}/like`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -124,7 +119,6 @@ export async function toggleDiscussionLike(
   course_uuid: string,
   discussion_uuid: string,
 ): Promise<{
-  await requireSession();
   message: string;
   is_liked: boolean;
   is_disliked: boolean;
@@ -149,7 +143,6 @@ export async function toggleDiscussionDislike(
   course_uuid: string,
   discussion_uuid: string,
 ): Promise<{
-  await requireSession();
   message: string;
   is_liked: boolean;
   is_disliked: boolean;

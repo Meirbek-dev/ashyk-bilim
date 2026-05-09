@@ -1,18 +1,15 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 
 import { getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { courseTag, tags } from '@/lib/cacheTags';
 
 export async function getUserGroups() {
-  await requireSession();
   const result = await apiFetch('usergroups');
   return await getResponseMetadata(result);
 }
 
 export async function createUserGroup(body: any) {
-  await requireSession();
   const result = await apiFetch('usergroups/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -29,7 +26,6 @@ export async function createUserGroup(body: any) {
 }
 
 export async function linkUserToUserGroup(usergroup_id: number, user_id: number) {
-  await requireSession();
   const result = await apiFetch(`usergroups/${usergroup_id}/add_users?user_ids=${user_id}`, { method: 'POST' });
   const metadata = await getResponseMetadata(result);
 
@@ -43,7 +39,6 @@ export async function linkUserToUserGroup(usergroup_id: number, user_id: number)
 }
 
 export async function unLinkUserToUserGroup(usergroup_id: number, user_id: number) {
-  await requireSession();
   const result = await apiFetch(`usergroups/${usergroup_id}/remove_users?user_ids=${user_id}`, { method: 'DELETE' });
   const metadata = await getResponseMetadata(result);
 
@@ -57,7 +52,6 @@ export async function unLinkUserToUserGroup(usergroup_id: number, user_id: numbe
 }
 
 export async function updateUserGroup(usergroup_id: number, data: any) {
-  await requireSession();
   const result = await apiFetch(`usergroups/${usergroup_id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -74,7 +68,6 @@ export async function updateUserGroup(usergroup_id: number, data: any) {
 }
 
 export async function deleteUserGroup(usergroup_id: number) {
-  await requireSession();
   const result = await apiFetch(`usergroups/${usergroup_id}`, { method: 'DELETE' });
   const metadata = await getResponseMetadata(result);
 
@@ -111,7 +104,6 @@ export async function linkResourcesToUserGroup(
   resource_uuids: any,
   options?: UserGroupCourseInvalidationOptions,
 ) {
-  await requireSession();
   const result = await apiFetch(`usergroups/${usergroup_id}/add_resources?resource_uuids=${resource_uuids}`, {
     method: 'POST',
   });
@@ -129,7 +121,6 @@ export async function unLinkResourcesToUserGroup(
   resource_uuids: any,
   options?: UserGroupCourseInvalidationOptions,
 ) {
-  await requireSession();
   const result = await apiFetch(`usergroups/${usergroup_id}/remove_resources?resource_uuids=${resource_uuids}`, {
     method: 'DELETE',
   });

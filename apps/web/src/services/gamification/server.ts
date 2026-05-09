@@ -1,5 +1,4 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 
 // Server-only data fetchers with Next.js cacheComponents
 
@@ -164,7 +163,6 @@ async function getUnifiedServerData(): Promise<ApiDashboardResponse | null> {
 }
 
 export async function getServerGamificationProfile(): Promise<UserGamificationProfile | null> {
-  await requireSession();
   const json = await getUnifiedServerData();
 
   // Return null if no data (unauthorized or error)
@@ -176,7 +174,6 @@ export async function getServerGamificationProfile(): Promise<UserGamificationPr
 }
 
 export async function getServerGamificationDashboard(): Promise<DashboardData | null> {
-  await requireSession();
   const json = await getUnifiedServerData();
 
   // Return null if no data (unauthorized or error)
@@ -207,7 +204,6 @@ export async function getServerGamificationDashboard(): Promise<DashboardData | 
  * Returns null if user is not authenticated or if fetch fails
  */
 export async function getServerLeaderboard(limit = 20): Promise<PlatformLeaderboard | null> {
-  await requireSession();
   const json = await fetchLeaderboardData(limit);
   return normalizeLeaderboard(json);
 }
@@ -239,7 +235,6 @@ const normalizeStreakUpdate = (payload: ApiStreakUpdateResponse): StreakUpdate =
 
 // Server-only revalidation utility after successful mutations
 export async function revalidateGamificationTags() {
-  await requireSession();
   for (const tag of gamificationTags()) {
     revalidateTag(tag, 'max');
   }
@@ -247,7 +242,6 @@ export async function revalidateGamificationTags() {
 
 // Server-side mutation helpers
 export async function awardXPOnServer(payload: XPAwardRequest): Promise<XPAwardResponse> {
-  await requireSession();
   const body: ApiXPAwardRequest = {
     source: payload.source,
     source_id: payload.source_id,
@@ -266,7 +260,6 @@ export async function awardXPOnServer(payload: XPAwardRequest): Promise<XPAwardR
 }
 
 export async function updateStreakOnServer(type: 'login' | 'learning'): Promise<StreakUpdate> {
-  await requireSession();
   const res = await apiFetch(`gamification/streaks/${encodeURIComponent(type)}`, { method: 'POST' });
   if (!res.ok) throw new Error(`Failed to update streak: ${res.status}`);
   const json = (await res.json()) as ApiStreakUpdateResponse;
@@ -275,7 +268,6 @@ export async function updateStreakOnServer(type: 'login' | 'learning'): Promise<
 }
 
 export async function updatePreferencesOnServer(preferences: Record<string, any>) {
-  await requireSession();
   const res = await apiFetch('gamification/preferences', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },

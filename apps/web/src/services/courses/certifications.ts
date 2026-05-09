@@ -1,12 +1,10 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 
 import { errorHandling, getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { tags, courseTag } from '@/lib/cacheTags';
 
 export async function getCourseCertifications(course_uuid: string, next?: any) {
-  await requireSession();
   const result = await apiFetch(`certifications/course/${course_uuid}`, next ? { next } : {});
   return await getResponseMetadata(result);
 }
@@ -24,7 +22,6 @@ export interface CreateCertificationParams {
 }
 
 export async function createCertification({ course_id, config, options }: CreateCertificationParams) {
-  await requireSession();
   const result = await apiFetch('certifications/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -50,7 +47,6 @@ export interface UpdateCertificationParams {
 }
 
 export async function updateCertification({ certification_uuid, config, options }: UpdateCertificationParams) {
-  await requireSession();
   const result = await apiFetch(`certifications/${certification_uuid}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -66,7 +62,6 @@ export async function updateCertification({ certification_uuid, config, options 
 }
 
 export async function deleteCertification(certification_uuid: string, options?: CertificationInvalidationOptions) {
-  await requireSession();
   const query = new URLSearchParams();
   if (options?.lastKnownUpdateDate) query.set('last_known_update_date', options.lastKnownUpdateDate);
 
@@ -83,13 +78,11 @@ export async function deleteCertification(certification_uuid: string, options?: 
 }
 
 export async function getUserCertificates(course_uuid: string) {
-  await requireSession();
   const result = await apiFetch(`certifications/user/course/${course_uuid}`);
   return getResponseMetadata(result);
 }
 
 export async function getCertificateByUuid(user_certification_uuid: string) {
-  await requireSession();
   const result = await fetch(
     `${(await import('@services/config/config')).getAPIUrl()}certifications/certificate/${user_certification_uuid}`,
     { method: 'GET', headers: { 'Content-Type': 'application/json' } },
@@ -98,7 +91,6 @@ export async function getCertificateByUuid(user_certification_uuid: string) {
 }
 
 export async function getAllUserCertificates() {
-  await requireSession();
   const result = await apiFetch('certifications/user/all');
   return getResponseMetadata(result);
 }

@@ -1,5 +1,4 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 
 import { errorHandling } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
@@ -10,7 +9,6 @@ import { tags } from '@/lib/cacheTags';
 */
 
 export async function startCourse(course_uuid: string) {
-  await requireSession();
   const result = await apiFetch(`trail/add_course/${course_uuid}`, { method: 'POST' });
   const data_result = await errorHandling(result);
 
@@ -23,7 +21,6 @@ export async function startCourse(course_uuid: string) {
 }
 
 export async function removeCourse(course_uuid: string) {
-  await requireSession();
   const result = await apiFetch(`trail/remove_course/${course_uuid}`, { method: 'DELETE' });
   const data_result = await errorHandling(result);
 
@@ -36,7 +33,6 @@ export async function removeCourse(course_uuid: string) {
 }
 
 export async function markActivityAsComplete(activity_uuid: string) {
-  await requireSession();
   const result = await apiFetch(`trail/add_activity/${activity_uuid}`, { method: 'POST' });
   const data_result = await errorHandling(result);
 
@@ -49,7 +45,6 @@ export async function markActivityAsComplete(activity_uuid: string) {
 }
 
 export async function unmarkActivityAsComplete(activity_uuid: string) {
-  await requireSession();
   const result = await apiFetch(`trail/remove_activity/${activity_uuid}`, { method: 'DELETE' });
   const data_result = await errorHandling(result);
 

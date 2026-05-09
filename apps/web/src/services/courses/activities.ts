@@ -1,5 +1,4 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 import { after } from 'next/server';
 
 import { errorHandling, getResponseMetadata } from '@/lib/api-client';
@@ -51,7 +50,6 @@ async function invalidateActivityCache(courseUuid?: string) {
 }
 
 export async function createActivity(data: any, chapter_id: number, options?: ActivityInvalidationOptions) {
-  await requireSession();
   if (!data || typeof data !== 'object') {
     throw new Error('Activity payload is required');
   }
@@ -278,7 +276,6 @@ export async function createFileActivity(
   options?: ActivityInvalidationOptions,
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<ActivityRead> {
-  await requireSession();
   let result: ActivityRead;
 
   if (type === 'video') {
@@ -305,7 +302,6 @@ export async function createExternalVideoActivity(
   chapter_id: number,
   options?: ActivityInvalidationOptions,
 ) {
-  await requireSession();
   data.chapter_id = chapter_id;
   data.activity_id = activity.id;
 
@@ -356,12 +352,10 @@ async function fetchActivity(activity_uuid: string): Promise<ActivityReadWithPer
 }
 
 export async function getActivity(activity_uuid: string, _next?: any) {
-  await requireSession();
   return fetchActivity(activity_uuid);
 }
 
 export async function deleteActivity(activity_uuid: string) {
-  await requireSession();
   const result = await apiFetch(`activities/${activity_uuid}`, { method: 'DELETE' });
   const metadata = await getTypedResponseMetadata<ActivityDetailResponse>(result);
 
@@ -375,7 +369,6 @@ export async function deleteActivity(activity_uuid: string) {
 }
 
 export async function updateActivity(data: Record<string, unknown>, activity_uuid: string) {
-  await requireSession();
   const result = await apiFetch(`activities/${activity_uuid}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -392,7 +385,6 @@ export async function updateActivity(data: Record<string, unknown>, activity_uui
 }
 
 export async function getUrlPreview(url: string): Promise<UrlPreviewResponse> {
-  await requireSession();
   const result = await apiFetch(`utils/link-preview?url=${url}`);
   return (await result.json()) as UrlPreviewResponse;
 }

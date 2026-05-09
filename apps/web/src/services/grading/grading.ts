@@ -1,5 +1,4 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 
 import type {
   AssessmentType,
@@ -22,7 +21,6 @@ import { StaleGradeError } from './errors';
 // ── Student endpoints ─────────────────────────────────────────────────────────
 
 export async function startSubmission(activityId: number, assessmentType: AssessmentType): Promise<Submission> {
-  await requireSession();
   const res = await apiFetch(`grading/start/v2/${activityId}?assessment_type=${assessmentType}`, { method: 'POST' });
   const meta = await getResponseMetadata(res);
   if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to start submission');
@@ -35,7 +33,6 @@ export async function submitAssessment(
   answersPayload: Record<string, unknown>,
   violationCount = 0,
 ): Promise<Submission> {
-  await requireSession();
   const res = await apiFetch(
     `grading/submit/${activityId}?assessment_type=${assessmentType}&violation_count=${violationCount}`,
     {
@@ -52,7 +49,6 @@ export async function submitAssessment(
 }
 
 export async function getMySubmissions(activityId: number): Promise<Submission[]> {
-  await requireSession();
   const res = await apiFetch(`grading/submissions/me?activity_id=${activityId}`, {
     next: { tags: ['submissions'] },
   });
@@ -62,7 +58,6 @@ export async function getMySubmissions(activityId: number): Promise<Submission[]
 }
 
 export async function getMySubmissionResult(submissionUuid: string): Promise<Submission | null> {
-  await requireSession();
   const res = await apiFetch(`grading/submissions/me/${submissionUuid}`, {
     next: { tags: ['submissions'] },
   });
@@ -84,7 +79,6 @@ export async function getSubmissionsForActivity(
     pageSize?: number;
   } = {},
 ): Promise<SubmissionsPage> {
-  await requireSession();
   const params = new URLSearchParams({ activity_id: String(activityId) });
   if (options.status) params.set('status', options.status);
   if (options.search) params.set('search', options.search);
@@ -102,7 +96,6 @@ export async function getSubmissionsForActivity(
 }
 
 export async function getSubmissionStats(activityId: number): Promise<SubmissionStats | null> {
-  await requireSession();
   const res = await apiFetch(`grading/submissions/stats?activity_id=${activityId}`, {
     next: { tags: ['submissions'] },
   });
@@ -112,7 +105,6 @@ export async function getSubmissionStats(activityId: number): Promise<Submission
 }
 
 export async function getSubmission(submissionUuid: string): Promise<Submission | null> {
-  await requireSession();
   const res = await apiFetch(`grading/submissions/${submissionUuid}`, {
     next: { tags: ['submissions'] },
   });
@@ -125,7 +117,6 @@ export async function getAssessmentSubmission(
   assessmentUuid: string,
   submissionUuid: string,
 ): Promise<Submission | null> {
-  await requireSession();
   const res = await apiFetch(`assessments/${assessmentUuid}/submissions/${submissionUuid}`, {
     next: { tags: ['submissions'] },
   });
@@ -141,7 +132,6 @@ export async function saveGrade(
   version?: number,
   assessmentUuid?: string,
 ): Promise<Submission> {
-  await requireSession();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (version !== undefined) {
     headers['If-Match'] = String(version);
@@ -172,7 +162,6 @@ export async function saveGrade(
 }
 
 export async function batchGradeSubmissions(grades: BatchGradeItem[]): Promise<BatchGradeResponse> {
-  await requireSession();
   const res = await apiFetch('grading/submissions/batch', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -189,7 +178,6 @@ export async function extendDeadline(
   activityId: number,
   input: { user_uuids: string[]; new_due_at: string; reason?: string },
 ): Promise<BulkAction> {
-  await requireSession();
   const res = await apiFetch(`grading/activities/${activityId}/extend-deadline`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -203,7 +191,6 @@ export async function extendDeadline(
 }
 
 export async function publishActivityGrades(activityId: number): Promise<BulkPublishGradesResponse> {
-  await requireSession();
   const res = await apiFetch(`grading/activities/${activityId}/publish-grades`, { method: 'POST' });
   const meta = await getResponseMetadata(res);
   if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to publish grades');
@@ -213,7 +200,6 @@ export async function publishActivityGrades(activityId: number): Promise<BulkPub
 }
 
 export async function publishAssessmentGrades(assessmentUuid: string): Promise<BulkPublishGradesResponse> {
-  await requireSession();
   const res = await apiFetch(`assessments/${assessmentUuid}/publish-grades`, { method: 'POST' });
   const meta = await getResponseMetadata(res);
   if (!meta.success) throw new Error(meta.data?.detail ?? 'Failed to publish grades');
@@ -223,7 +209,6 @@ export async function publishAssessmentGrades(assessmentUuid: string): Promise<B
 }
 
 export async function getInlineFeedback(submissionUuid: string): Promise<InlineItemFeedback[]> {
-  await requireSession();
   const res = await apiFetch(`grading/submissions/${submissionUuid}/feedback`, {
     next: { tags: ['submissions'] },
   });
@@ -236,7 +221,6 @@ export async function createInlineFeedback(
   submissionUuid: string,
   feedback: InlineItemFeedbackInput,
 ): Promise<InlineItemFeedback> {
-  await requireSession();
   const res = await apiFetch(`grading/submissions/${submissionUuid}/feedback`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -252,7 +236,6 @@ export async function updateInlineFeedback(
   feedbackId: number,
   feedback: Partial<InlineItemFeedbackInput>,
 ): Promise<InlineItemFeedback> {
-  await requireSession();
   const res = await apiFetch(`grading/feedback/${feedbackId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -265,14 +248,12 @@ export async function updateInlineFeedback(
 }
 
 export async function deleteInlineFeedback(feedbackId: number): Promise<void> {
-  await requireSession();
   const res = await apiFetch(`grading/feedback/${feedbackId}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete feedback');
   revalidateTag('submissions', 'max');
 }
 
 export async function exportGradesCSV(activityId: number): Promise<string> {
-  await requireSession();
   const res = await apiFetch(`grading/submissions/export?activity_id=${activityId}`);
   if (!res.ok) return '';
   return res.text();

@@ -1,5 +1,4 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 
 import { errorHandling, getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
@@ -217,7 +216,6 @@ async function fetchCourses(
 }
 
 export async function getCourses(_next?: any, page = 1, limit = 20) {
-  await requireSession();
   return fetchCourses(page, limit);
 }
 
@@ -285,18 +283,15 @@ async function fetchEditableCourses(
 }
 
 export async function getEditableCourses(page = 1, limit = 20, query = '', sortBy = 'updated', preset = '') {
-  await requireSession();
   return fetchEditableCourses(page, limit, query, sortBy, preset);
 }
 
 export async function getCourseUserRights(course_uuid: string) {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/rights`);
   return (await errorHandling(result)) as CourseUserRightsResponse;
 }
 
 export async function searchCourses(query: string, page = 1, limit = 20, next: any) {
-  await requireSession();
   const result = await apiFetch(`courses/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
   return ((await errorHandling(result)) as CourseRead[]).map((course) => normalizeCourse(course));
 }
@@ -322,7 +317,6 @@ async function fetchCourseMetadata(
 }
 
 export async function getCourseMetadata(course_uuid: string, _next?: any, withUnpublishedActivities = false) {
-  await requireSession();
   return fetchCourseMetadata(course_uuid, withUnpublishedActivities);
 }
 
@@ -343,7 +337,6 @@ const toCourseMetadataPayload = (data: any, options?: CourseWriteOptions) => ({
 });
 
 export async function updateCourseMetadata(course_uuid: string, data: any, options?: CourseWriteOptions) {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/metadata`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -363,7 +356,6 @@ export async function updateCourseMetadata(course_uuid: string, data: any, optio
 }
 
 export async function updateCourseAccess(course_uuid: string, data: any, options?: CourseWriteOptions) {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/access`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -400,12 +392,10 @@ async function fetchCourse(course_uuid: string): Promise<NormalizedCourse> {
 }
 
 export async function getCourse(course_uuid: string, _next?: any) {
-  await requireSession();
   return fetchCourse(course_uuid);
 }
 
 export async function updateCourseThumbnail(course_uuid: string, formData: FormData, options?: CourseWriteOptions) {
-  await requireSession();
   if (options?.lastKnownUpdateDate) {
     formData.set('last_known_update_date', options.lastKnownUpdateDate);
   }
@@ -432,7 +422,6 @@ export async function createNewCourse(
   thumbnail: any,
   options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
-  await requireSession();
   // Send file thumbnail as form data
   const formData = new FormData();
   formData.append('name', course_body.name);
@@ -470,7 +459,6 @@ export async function createNewCourse(
  * Not cached — used for interactive search.
  */
 export async function searchEditableCourses(query: string, limit = 20) {
-  await requireSession();
   const result = await apiFetch(
     `courses/editable/page/1/limit/${limit}?query=${encodeURIComponent(query)}&sort_by=updated`,
   );
@@ -485,7 +473,6 @@ export async function deleteCourseFromBackend(
   course_uuid: string,
   options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}`, { method: 'DELETE' });
   const data = (await errorHandling(result)) as CourseDetailResponse;
   const deletionSucceeded =
@@ -505,7 +492,6 @@ export async function deleteCourseFromBackend(
 }
 
 export async function getCourseContributors(course_uuid: string) {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/contributors`);
   return await getResponseMetadata(result);
 }
@@ -517,7 +503,6 @@ export async function editContributor(
   authorship_status: any,
   options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
-  await requireSession();
   const result = await apiFetch(
     `courses/${course_uuid}/contributors/${contributor_id}?authorship=${authorship}&authorship_status=${authorship_status}`,
     { method: 'PUT' },
@@ -534,7 +519,6 @@ export async function editContributor(
 }
 
 export async function applyForContributor(course_uuid: string, data: any) {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/apply-contributor`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -556,7 +540,6 @@ export async function bulkAddContributors(
   data: any,
   options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/bulk-add-contributors`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -578,7 +561,6 @@ export async function bulkRemoveContributors(
   data: any,
   options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/bulk-remove-contributors`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
@@ -596,7 +578,6 @@ export async function bulkRemoveContributors(
 }
 
 export async function getCourseRights(course_uuid: string) {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/rights`);
   return (await errorHandling(result)) as CourseUserRightsResponse;
 }

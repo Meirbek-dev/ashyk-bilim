@@ -1,12 +1,10 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 
 import { getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { tags } from '@/lib/cacheTags';
 
 export async function createCourseUpdate(body: any) {
-  await requireSession();
   const result = await apiFetch(`courses/${body.course_uuid}/updates`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -23,7 +21,6 @@ export async function createCourseUpdate(body: any) {
 }
 
 export async function deleteCourseUpdate(course_uuid: string, update_uuid: number) {
-  await requireSession();
   const result = await apiFetch(`courses/${course_uuid}/update/${update_uuid}`, {
     method: 'DELETE',
   });

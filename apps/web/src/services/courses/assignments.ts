@@ -1,5 +1,4 @@
 'use server';
-import { requireSession } from '@/lib/auth/session';
 
 import { getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
@@ -253,7 +252,6 @@ function taskMutationToAssessmentItemPayload(body: AssignmentTaskMutationPayload
 }
 
 export async function updateAssignment(body: AssignmentMutationPayload, assignmentUUID: string) {
-  await requireSession();
   const payload: Record<string, unknown> = {};
   if (body.title !== undefined) payload.title = body.title;
   if (body.description !== undefined) payload.description = body.description;
@@ -276,7 +274,6 @@ export async function updateAssignment(body: AssignmentMutationPayload, assignme
 }
 
 export async function publishAssignment(assignmentUUID: string, scheduledAt?: string | null) {
-  await requireSession();
   const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/lifecycle`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -295,7 +292,6 @@ export async function publishAssignment(assignmentUUID: string, scheduledAt?: st
 }
 
 export async function archiveAssignment(assignmentUUID: string) {
-  await requireSession();
   const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/lifecycle`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -314,7 +310,6 @@ export async function archiveAssignment(assignmentUUID: string) {
 }
 
 export async function cancelAssignmentSchedule(assignmentUUID: string) {
-  await requireSession();
   const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/lifecycle`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -333,7 +328,6 @@ export async function cancelAssignmentSchedule(assignmentUUID: string) {
 }
 
 export async function getAssignmentFromActivityUUID(activityUUID: string) {
-  await requireSession();
   const result = await apiFetch(`assessments/activity/${activityUUID}`);
   const metadata = await getResponseMetadata(result);
 
@@ -348,7 +342,6 @@ export async function getAssignmentFromActivityUUID(activityUUID: string) {
 }
 
 export async function getAssignmentDraftSubmission(assignmentUUID: string) {
-  await requireSession();
   const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/draft`);
   const metadata = await getResponseMetadata(result);
   if (!metadata.success || !metadata.data) return metadata;
@@ -362,7 +355,6 @@ export async function getAssignmentDraftSubmission(assignmentUUID: string) {
 }
 
 export async function saveAssignmentDraftSubmission(assignmentUUID: string, body: AssignmentDraftPatch) {
-  await requireSession();
   const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/draft`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -380,7 +372,6 @@ export async function saveAssignmentDraftSubmission(assignmentUUID: string, body
 }
 
 export async function submitAssignmentDraftSubmission(assignmentUUID: string, body?: AssignmentDraftPatch) {
-  await requireSession();
   const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -400,7 +391,6 @@ export async function submitAssignmentDraftSubmission(assignmentUUID: string, bo
 // tasks
 
 export async function createAssignmentTask(body: AssignmentTaskMutationPayload, assignmentUUID: string) {
-  await requireSession();
   const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/items`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -419,7 +409,6 @@ export async function createAssignmentTask(body: AssignmentTaskMutationPayload, 
 }
 
 export async function getAssignmentTask(assignmentUUID: string, assignmentTaskUUID: string) {
-  await requireSession();
   const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}`);
   const metadata = await getResponseMetadata(result);
   if (!metadata.success || !metadata.data) return metadata;
@@ -441,7 +430,6 @@ export interface UpdateAssignmentTaskParams {
 }
 
 export async function updateAssignmentTask({ body, assignmentTaskUUID, assignmentUUID }: UpdateAssignmentTaskParams) {
-  await requireSession();
   const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/items/${assignmentTaskUUID}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -460,7 +448,6 @@ export async function updateAssignmentTask({ body, assignmentTaskUUID, assignmen
 }
 
 export async function deleteAssignmentTask(assignmentTaskUUID: string, assignmentUUID: string) {
-  await requireSession();
   const result = await apiFetch(`assessments/${normalizeAssignmentUuid(assignmentUUID)}/items/${assignmentTaskUUID}`, {
     method: 'DELETE',
   });
@@ -496,7 +483,6 @@ export async function createAssignmentWithActivity({
   chapterId: _chapterId,
   activityName: _activityName,
 }: CreateAssignmentWithActivityParams) {
-  await requireSession();
   const result = await apiFetch('assessments', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
