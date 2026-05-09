@@ -7782,7 +7782,11 @@
           "ASSIGNMENT": "Assignment",
           "EXAM": "Exam",
           "CODE_CHALLENGE": "Code Challenge",
-          "QUIZ": "Quiz"
+          "QUIZ": "Quiz",
+          "TYPE_ASSIGNMENT": "Assignment",
+          "TYPE_EXAM": "Exam",
+          "TYPE_CODE_CHALLENGE": "Code Challenge",
+          "TYPE_QUIZ": "Quiz"
         },
         "NativeItemStudio": {
           "outlineTitle": "{itemNoun} outline",
@@ -7856,6 +7860,7 @@
             "policy_time_limit_invalid": "Time limit must be greater than zero.",
             "policy_violation_threshold_invalid": "Violation threshold must be at least 1.",
             "item_title_missing": "Item title is required.",
+            "item_prompt_missing": "Item prompt is required.",
             "item_max_score_invalid": "Item points must be greater than zero.",
             "choice_prompt_missing": "Choice prompt is required.",
             "choice_options_missing": "Choice items need at least two options.",
@@ -7908,7 +7913,11 @@
           "ASSIGNMENT": "Assignment",
           "EXAM": "Exam",
           "CODE_CHALLENGE": "Code Challenge",
-          "QUIZ": "Quiz"
+          "QUIZ": "Quiz",
+          "TYPE_ASSIGNMENT": "Assignment",
+          "TYPE_EXAM": "Exam",
+          "TYPE_CODE_CHALLENGE": "Code Challenge",
+          "TYPE_QUIZ": "Quiz"
         },
         "issueCount": "{count} issues",
         "preview": "Preview",

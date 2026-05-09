@@ -53,7 +53,6 @@ from src.infra.settings import get_settings
 from src.routers.assessments.unified import router
 from src.services.assessments import core
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 TEACHER_ID = 10

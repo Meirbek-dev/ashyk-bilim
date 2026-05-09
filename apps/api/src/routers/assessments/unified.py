@@ -6,11 +6,10 @@ teacher submission lists.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlmodel import Session
 
 from src.auth.users import get_optional_public_user, get_public_user
-from fastapi import HTTPException
 from src.db.assessments import (
     AssessmentAttemptProjection,
     AssessmentCreate,

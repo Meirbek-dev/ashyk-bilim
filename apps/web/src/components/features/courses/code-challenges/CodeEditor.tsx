@@ -1,22 +1,21 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import type { OnChange, OnMount } from '@monaco-editor/react';
+import { loader } from '@monaco-editor/react';
 import dynamic from 'next/dynamic';
 
 import { useTheme } from '@/components/providers/theme-provider';
 import { cn } from '@/lib/utils';
 
+loader.config({
+  paths: {
+    vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs',
+  },
+});
+
 const MonacoEditor = dynamic(
-  () =>
-    import('@monaco-editor/react').then(({ Editor, loader }) => {
-      loader.config({
-        paths: {
-          vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.55.0/min/vs',
-        },
-      });
-      return { default: Editor };
-    }),
+  () => import('@monaco-editor/react').then((mod) => mod.Editor),
   { ssr: false },
 );
 
@@ -59,6 +58,8 @@ interface CodeEditorProps {
   options?: Record<string, unknown>;
 }
 
+const DEFAULT_OPTIONS = {};
+
 export function CodeEditor({
   value,
   onChange,
@@ -67,7 +68,7 @@ export function CodeEditor({
   height = '400px',
   className,
   onMount,
-  options = {},
+  options = DEFAULT_OPTIONS,
 }: CodeEditorProps) {
   const { resolvedTheme } = useTheme();
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
@@ -87,6 +88,31 @@ export function CodeEditor({
     [onChange],
   );
 
+  const editorOptions = useMemo(
+    () => ({
+      fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
+      fontSize: 14,
+      lineHeight: 1.6,
+      minimap: { enabled: true },
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
+      tabSize: 4,
+      insertSpaces: true,
+      wordWrap: 'on' as const,
+      folding: true,
+      lineNumbers: 'on' as const,
+      renderLineHighlight: 'line' as const,
+      cursorBlinking: 'smooth' as const,
+      cursorSmoothCaretAnimation: 'on' as const,
+      smoothScrolling: true,
+      padding: { top: 16, bottom: 16 },
+      readOnly,
+      domReadOnly: readOnly,
+      ...options,
+    }),
+    [readOnly, options],
+  );
+
   return (
     <div className={cn('overflow-hidden rounded-lg border', className)}>
       <MonacoEditor
@@ -96,27 +122,7 @@ export function CodeEditor({
         onChange={handleChange}
         onMount={handleMount}
         theme={resolvedTheme === 'dark' ? 'vs-dark' : 'light'}
-        options={{
-          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-          fontSize: 14,
-          lineHeight: 1.6,
-          minimap: { enabled: true },
-          scrollBeyondLastLine: false,
-          automaticLayout: true,
-          tabSize: 4,
-          insertSpaces: true,
-          wordWrap: 'on',
-          folding: true,
-          lineNumbers: 'on',
-          renderLineHighlight: 'line',
-          cursorBlinking: 'smooth',
-          cursorSmoothCaretAnimation: 'on',
-          smoothScrolling: true,
-          padding: { top: 16, bottom: 16 },
-          readOnly,
-          domReadOnly: readOnly,
-          ...options,
-        }}
+        options={editorOptions}
         loading={
           <div
             className="bg-muted flex animate-pulse items-center justify-center rounded-lg"

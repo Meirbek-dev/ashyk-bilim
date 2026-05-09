@@ -472,7 +472,10 @@ async def reorder_assessment_items(
     if missing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"message": "Неизвестные элементы оценивания", "item_uuids": missing},
+            detail={
+                "message": "Неизвестные элементы оценивания",
+                "item_uuids": missing,
+            },
         )
 
     now = datetime.now(UTC)
@@ -1343,7 +1346,9 @@ async def run_code_item(
 
     body = ITEM_BODY_ADAPTER.validate_python(item.body_json)
     if body.kind != "CODE":
-        raise HTTPException(status_code=400, detail="Тело элемента не является типом CODE")
+        raise HTTPException(
+            status_code=400, detail="Тело элемента не является типом CODE"
+        )
 
     # Validate language
     if payload.language not in body.languages:
@@ -1469,7 +1474,9 @@ def build_readiness(
     allowed_item_kinds = _allowed_item_kinds_for_assessment(assessment.kind)
     if not assessment.title.strip():
         issues.append(
-            ReadinessIssue(code="assessment.title_missing", message="Название обязательно")
+            ReadinessIssue(
+                code="assessment.title_missing", message="Название обязательно"
+            )
         )
 
     items = _get_items(assessment, db_session)
@@ -2493,7 +2500,9 @@ def _validate_file_upload_answer(
     uploads: list[object] = uploads_value if isinstance(uploads_value, list) else []
     for file_ref in uploads:
         if not isinstance(file_ref, dict):
-            raise HTTPException(status_code=400, detail="Некорректный ответ с загрузкой файла")
+            raise HTTPException(
+                status_code=400, detail="Некорректный ответ с загрузкой файла"
+            )
         upload_id = file_ref.get("upload_uuid")
         upload = db_session.exec(
             select(Upload).where(Upload.upload_uuid == upload_id)

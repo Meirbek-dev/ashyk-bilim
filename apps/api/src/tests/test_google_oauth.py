@@ -6,8 +6,8 @@ from fastapi_users.jwt import generate_jwt
 
 from src.security.keys import get_jwt_secret, reload_key_cache
 from src.services.auth.google_oauth import (
-    PKCE_TTL,
     _GOOGLE_STATE_AUDIENCE,
+    PKCE_TTL,
     _decode_state,
     _encode_state,
     get_frontend_callback_from_state,

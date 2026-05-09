@@ -378,6 +378,7 @@
       "appealLinkText": "Шағым беру немесе мұғаліммен байланысу",
       "attemptNumber": "Әрекет #{number}",
       "attemptsRemaining": "Қалған әрекеттер",
+      "noEditableDraft": "Өңделетін жоба қолжетімді емес",
       "autoSubmitting": "Емтиханды автоматты тапсыру: {reason}",
       "autoSubmittingReason": {
         "timeExpired": "Уақыт аяқталды",
@@ -7815,6 +7816,16 @@
         }
       },
       "Studio": {
+        "kinds": {
+          "ASSIGNMENT": "Тапсырма",
+          "EXAM": "Емтихан",
+          "CODE_CHALLENGE": "Код тапсырмасы",
+          "QUIZ": "Тест",
+          "TYPE_ASSIGNMENT": "Тапсырма",
+          "TYPE_EXAM": "Емтихан",
+          "TYPE_CODE_CHALLENGE": "Код тапсырмасы",
+          "TYPE_QUIZ": "Тест"
+        },
         "NativeItemStudio": {
           "outlineTitle": "{itemNoun} құрылымы",
           "outlinePoints": "Барлығы: {points} балл",
@@ -7886,6 +7897,7 @@
             "policy_time_limit_invalid": "Уақыт шегі нөлден көп болуы керек.",
             "policy_violation_threshold_invalid": "Бұзушылық шегі 1-ден кем болмауы керек.",
             "item_title_missing": "Элемент атауы міндетті.",
+            "item_prompt_missing": "Элемент сұрағы міндетті.",
             "item_max_score_invalid": "Элемент баллы нөлден көп болуы керек.",
             "choice_prompt_missing": "Таңдау тапсырмасының сұрағы міндетті.",
             "choice_options_missing": "Таңдау тапсырмасында кем дегенде екі нұсқа болуы керек.",
@@ -7933,6 +7945,16 @@
         "breadcrumb": {
           "curriculum": "Оқу жоспары",
           "studio": "Студия"
+        },
+        "kinds": {
+          "ASSIGNMENT": "Тапсырма",
+          "EXAM": "Емтихан",
+          "CODE_CHALLENGE": "Код тапсырмасы",
+          "QUIZ": "Тест",
+          "TYPE_ASSIGNMENT": "Тапсырма",
+          "TYPE_EXAM": "Емтихан",
+          "TYPE_CODE_CHALLENGE": "Код тапсырмасы",
+          "TYPE_QUIZ": "Тест"
         },
         "issueCount": "{count} мәселе",
         "preview": "Алдын ала қарау",

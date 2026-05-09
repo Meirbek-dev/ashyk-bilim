@@ -379,6 +379,7 @@
       "appealLinkText": "Подайте апелляцию или свяжитесь со своим учителем",
       "attemptNumber": "Попытка #{number}",
       "attemptsRemaining": "Осталось попыток",
+      "noEditableDraft": "Нет доступного для редактирования черновика",
       "autoSubmitting": "Автоматическая отправка теста: {reason}",
       "autoSubmittingReason": {
         "timeExpired": "время истекло",
@@ -7812,6 +7813,16 @@
         }
       },
       "Studio": {
+        "kinds": {
+          "ASSIGNMENT": "Задание",
+          "EXAM": "Тест",
+          "CODE_CHALLENGE": "Код задача",
+          "QUIZ": "Квиз",
+          "TYPE_ASSIGNMENT": "Задание",
+          "TYPE_EXAM": "Тест",
+          "TYPE_CODE_CHALLENGE": "Код задача",
+          "TYPE_QUIZ": "Квиз"
+        },
         "NativeItemStudio": {
           "outlineTitle": "Структура {itemNoun}",
           "outlinePoints": "Всего баллов: {points}",
@@ -7884,6 +7895,7 @@
             "policy_time_limit_invalid": "Ограничение по времени должно быть больше нуля.",
             "policy_violation_threshold_invalid": "Порог нарушений должен быть не менее 1.",
             "item_title_missing": "Название элемента обязательно.",
+            "item_prompt_missing": "Требуется формулировка вопроса.",
             "item_max_score_invalid": "Баллы элемента должны быть больше нуля.",
             "choice_prompt_missing": "Требуется формулировка вопроса выбора.",
             "choice_options_missing": "Вопрос выбора должен содержать не менее двух вариантов.",
@@ -7936,7 +7948,11 @@
           "ASSIGNMENT": "Задание",
           "EXAM": "Тест",
           "CODE_CHALLENGE": "Код задача",
-          "QUIZ": "Квиз"
+          "QUIZ": "Квиз",
+          "TYPE_ASSIGNMENT": "Задание",
+          "TYPE_EXAM": "Тест",
+          "TYPE_CODE_CHALLENGE": "Код задача",
+          "TYPE_QUIZ": "Квиз"
         },
         "issueCount": "{count} проблем",
         "preview": "Предпросмотр",
