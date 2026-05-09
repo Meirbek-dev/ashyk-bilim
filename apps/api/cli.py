@@ -290,7 +290,7 @@ async def _migrate_legacy_assessments_task(*, dry_run: bool) -> None:
     engine = build_engine(settings)
     factory = build_session_factory(engine)
 
-    _assessment_kinds = {
+    assessment_kinds = {
         ActivityType.ASSIGNMENT,
         ActivityType.EXAM,
         ActivityType.QUIZ,
@@ -304,7 +304,7 @@ async def _migrate_legacy_assessments_task(*, dry_run: bool) -> None:
             print("=" * 80)
 
             activities = db_session.exec(
-                select(Activity).where(Activity.type.in_(_assessment_kinds))  # type: ignore[attr-defined]
+                select(Activity).where(Activity.type.in_(assessment_kinds))  # type: ignore[attr-defined]
             ).all()
             print(f"Found {len(activities)} assessment-type activities")
 

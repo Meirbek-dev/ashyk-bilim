@@ -76,9 +76,8 @@ async def _submit_single(
         raise Judge0DegradedError("Judge0 request timed out") from exc
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code >= 500:
-            raise Judge0DegradedError(
-                f"Judge0 returned {exc.response.status_code}"
-            ) from exc
+            msg = f"Judge0 returned {exc.response.status_code}"
+            raise Judge0DegradedError(msg) from exc
         raise
 
 
@@ -163,7 +162,8 @@ async def run_code(
         if isinstance(result, Judge0DegradedError):
             raise result
         if isinstance(result, Exception):
-            raise Judge0DegradedError(f"Unexpected runner error: {result}") from result
+            msg = f"Unexpected runner error: {result}"
+            raise Judge0DegradedError(msg) from result
 
         desc = _extract_status_description(result)
         co = result.get("compile_output") or ""

@@ -307,7 +307,7 @@ async def _get_activity_data(
     cached_pair = cache_manager.db_cache.get(cache_key)
     if cached_pair:
         logger.info("Activity data cache HIT: %s", activity_uuid)
-        return cast(tuple[ActivityRead, CourseRead], cached_pair)
+        return cast("tuple[ActivityRead, CourseRead]", cached_pair)
 
     try:
         activity = db_session.exec(
@@ -323,7 +323,7 @@ async def _get_activity_data(
             )
 
         cache_manager.db_cache.set(cache_key, (activity, course))
-        return cast(ActivityRead, activity), cast(CourseRead, course)
+        return cast("ActivityRead", activity), cast("CourseRead", course)
     except ActivityNotFoundError, RetrievalError:
         raise
     except Exception as exc:

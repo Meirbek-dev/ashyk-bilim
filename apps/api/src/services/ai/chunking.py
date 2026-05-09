@@ -122,18 +122,17 @@ def chunk_documents(documents: list[str], model_name: str) -> list[DocumentChunk
                                 chunk_overlap=chunk_overlap,
                             )
                         )
+                    # Buffer sentences so we don't get tiny chunks
+                    elif (
+                        sentence_buffer
+                        and sentence_buffer_tokens + sentence_tokens > chunk_size
+                    ):
+                        packed_chunks.append(" ".join(sentence_buffer))
+                        sentence_buffer = [sentence]
+                        sentence_buffer_tokens = sentence_tokens
                     else:
-                        # Buffer sentences so we don't get tiny chunks
-                        if (
-                            sentence_buffer
-                            and sentence_buffer_tokens + sentence_tokens > chunk_size
-                        ):
-                            packed_chunks.append(" ".join(sentence_buffer))
-                            sentence_buffer = [sentence]
-                            sentence_buffer_tokens = sentence_tokens
-                        else:
-                            sentence_buffer.append(sentence)
-                            sentence_buffer_tokens += sentence_tokens
+                        sentence_buffer.append(sentence)
+                        sentence_buffer_tokens += sentence_tokens
 
                 # Flush any remaining sentences from this paragraph
                 if sentence_buffer:

@@ -841,7 +841,7 @@ async def get_assessment_submission_stats(
         .group_by(Submission.status)
     ).all()
 
-    status_counts = {status_value: count for status_value, count in status_rows}
+    status_counts = dict(status_rows)
     total = sum(status_counts.values())
     pending_count = status_counts.get(SubmissionStatus.PENDING, 0)
     graded_count = status_counts.get(SubmissionStatus.GRADED, 0) + status_counts.get(

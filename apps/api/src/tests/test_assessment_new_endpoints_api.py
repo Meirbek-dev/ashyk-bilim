@@ -319,7 +319,7 @@ class TestPolicyPreset:
     def test_404_for_unknown_kind(self, db_session_factory, teacher_user, monkeypatch):
         client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
         resp = client.get("/assessments/policy-preset/UNKNOWN_KIND")
-        assert resp.status_code in (400, 404)
+        assert resp.status_code in {400, 404}
 
 
 # ── student overrides CRUD ────────────────────────────────────────────────────
