@@ -26,6 +26,11 @@
       },
       "ActivityAssessmentPolicyRead": {
         "properties": {
+          "allow_late": {
+            "default": true,
+            "title": "Allow Late",
+            "type": "boolean"
+          },
           "anti_cheat_json": {
             "additionalProperties": true,
             "title": "Anti Cheat Json",
@@ -33,6 +38,11 @@
           },
           "assessment_type": {
             "title": "Assessment Type",
+            "type": "string"
+          },
+          "completion_rule": {
+            "default": "GRADED",
+            "title": "Completion Rule",
             "type": "string"
           },
           "due_at": {
@@ -46,6 +56,16 @@
               }
             ],
             "title": "Due At"
+          },
+          "grade_release_mode": {
+            "default": "IMMEDIATE",
+            "title": "Grade Release Mode",
+            "type": "string"
+          },
+          "grading_mode": {
+            "default": "MANUAL",
+            "title": "Grading Mode",
+            "type": "string"
           },
           "id": {
             "title": "Id",
@@ -65,8 +85,18 @@
             ],
             "title": "Max Attempts"
           },
+          "passing_score": {
+            "default": 60.0,
+            "title": "Passing Score",
+            "type": "number"
+          },
           "policy_uuid": {
             "title": "Policy Uuid",
+            "type": "string"
+          },
+          "review_visibility": {
+            "default": "FULL",
+            "title": "Review Visibility",
             "type": "string"
           },
           "settings_json": {
@@ -1333,6 +1363,11 @@
             ],
             "title": "Available At"
           },
+          "can_continue": {
+            "default": false,
+            "title": "Can Continue",
+            "type": "boolean"
+          },
           "can_edit": {
             "default": false,
             "title": "Can Edit",
@@ -1343,9 +1378,24 @@
             "title": "Can Save Draft",
             "type": "boolean"
           },
+          "can_start": {
+            "default": false,
+            "title": "Can Start",
+            "type": "boolean"
+          },
+          "can_start_revision": {
+            "default": false,
+            "title": "Can Start Revision",
+            "type": "boolean"
+          },
           "can_submit": {
             "default": false,
             "title": "Can Submit",
+            "type": "boolean"
+          },
+          "can_view_result": {
+            "default": false,
+            "title": "Can View Result",
             "type": "boolean"
           },
           "closes_at": {
@@ -1402,6 +1452,25 @@
             "title": "Policy Version",
             "type": "integer"
           },
+          "primary_button_label_key": {
+            "default": "noAction",
+            "title": "Primary Button Label Key",
+            "type": "string"
+          },
+          "recommended_action": {
+            "default": "NO_ACTION",
+            "enum": [
+              "START",
+              "CONTINUE_DRAFT",
+              "SUBMIT",
+              "WAIT_FOR_RELEASE",
+              "VIEW_RESULT",
+              "START_REVISION",
+              "NO_ACTION"
+            ],
+            "title": "Recommended Action",
+            "type": "string"
+          },
           "release_state": {
             "default": "HIDDEN",
             "enum": [
@@ -1427,6 +1496,18 @@
               }
             ],
             "title": "Server Now"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
           },
           "submission_status": {
             "anyOf": [
@@ -1460,6 +1541,30 @@
               }
             ],
             "title": "Time Remaining Seconds"
+          },
+          "timer_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timer Expires At"
+          },
+          "timer_started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timer Started At"
           }
         },
         "required": [
@@ -1646,6 +1751,17 @@
         ],
         "title": "AssessmentCohortRow",
         "type": "object"
+      },
+      "AssessmentCompletionRule": {
+        "enum": [
+          "VIEWED",
+          "SUBMITTED",
+          "GRADED",
+          "PASSED",
+          "TEACHER_VERIFIED"
+        ],
+        "title": "AssessmentCompletionRule",
+        "type": "string"
       },
       "AssessmentCreate": {
         "properties": {
@@ -1885,6 +2001,15 @@
         },
         "title": "AssessmentEffectivePolicy",
         "type": "object"
+      },
+      "AssessmentGradingMode": {
+        "enum": [
+          "AUTO",
+          "MANUAL",
+          "AUTO_THEN_MANUAL"
+        ],
+        "title": "AssessmentGradingMode",
+        "type": "string"
       },
       "AssessmentGradingType": {
         "enum": [
@@ -2427,6 +2552,16 @@
             ],
             "title": "Anti Cheat Json"
           },
+          "completion_rule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssessmentCompletionRule"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "due_at": {
             "anyOf": [
               {
@@ -2438,6 +2573,26 @@
               }
             ],
             "title": "Due At"
+          },
+          "grade_release_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GradeReleaseMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "grading_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssessmentGradingMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "late_policy": {
             "anyOf": [
@@ -2459,6 +2614,44 @@
               }
             ],
             "title": "Max Attempts"
+          },
+          "passing_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passing Score"
+          },
+          "required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required"
+          },
+          "review_visibility": {
+            "anyOf": [
+              {
+                "enum": [
+                  "NONE",
+                  "SCORE_ONLY",
+                  "FULL"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Visibility"
           },
           "settings_json": {
             "anyOf": [
@@ -2485,6 +2678,75 @@
           }
         },
         "title": "AssessmentPolicyPatch",
+        "type": "object"
+      },
+      "AssessmentPolicyPreset": {
+        "description": "Default policy settings for a given assessment kind.",
+        "properties": {
+          "allow_late": {
+            "title": "Allow Late",
+            "type": "boolean"
+          },
+          "anti_cheat_enabled": {
+            "title": "Anti Cheat Enabled",
+            "type": "boolean"
+          },
+          "completion_rule": {
+            "$ref": "#/components/schemas/AssessmentCompletionRule"
+          },
+          "grade_release_mode": {
+            "$ref": "#/components/schemas/GradeReleaseMode"
+          },
+          "grading_mode": {
+            "$ref": "#/components/schemas/AssessmentGradingMode"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AssessmentType"
+          },
+          "max_attempts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts"
+          },
+          "passing_score": {
+            "title": "Passing Score",
+            "type": "number"
+          },
+          "review_visibility": {
+            "title": "Review Visibility",
+            "type": "string"
+          },
+          "time_limit_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit Seconds"
+          }
+        },
+        "required": [
+          "kind",
+          "grade_release_mode",
+          "grading_mode",
+          "completion_rule",
+          "passing_score",
+          "max_attempts",
+          "time_limit_seconds",
+          "allow_late",
+          "anti_cheat_enabled",
+          "review_visibility"
+        ],
+        "title": "AssessmentPolicyPreset",
         "type": "object"
       },
       "AssessmentRead": {
@@ -4743,9 +5005,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "id"
-        ],
         "title": "ChoiceOption",
         "type": "object"
       },
@@ -4965,6 +5224,165 @@
         "title": "CodeItemBody",
         "type": "object"
       },
+      "CodeRunRequest": {
+        "description": "Request body for POST /assessments/{uuid}/items/{item_uuid}/runs.",
+        "properties": {
+          "custom_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Input"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "language": {
+            "title": "Language",
+            "type": "integer"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "language",
+          "source"
+        ],
+        "title": "CodeRunRequest",
+        "type": "object"
+      },
+      "CodeRunResponse": {
+        "description": "Response body for POST /assessments/{uuid}/items/{item_uuid}/runs.",
+        "properties": {
+          "compile_output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compile Output"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "is_retryable": {
+            "default": false,
+            "title": "Is Retryable",
+            "type": "boolean"
+          },
+          "memory": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory"
+          },
+          "passed": {
+            "default": 0,
+            "title": "Passed",
+            "type": "integer"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stderr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stderr"
+          },
+          "stdout": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stdout"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
+          },
+          "visible_results": {
+            "items": {
+              "$ref": "#/components/schemas/CodeRunTestResult"
+            },
+            "title": "Visible Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "run_id",
+          "status"
+        ],
+        "title": "CodeRunResponse",
+        "type": "object"
+      },
       "CodeRunResult": {
         "properties": {
           "details": {
@@ -4995,6 +5413,84 @@
           }
         },
         "title": "CodeRunResult",
+        "type": "object"
+      },
+      "CodeRunTestResult": {
+        "properties": {
+          "actual": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual"
+          },
+          "expected": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          },
+          "is_visible": {
+            "default": true,
+            "title": "Is Visible",
+            "type": "boolean"
+          },
+          "memory": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "stdin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stdin"
+          },
+          "test_id": {
+            "title": "Test Id",
+            "type": "string"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          }
+        },
+        "required": [
+          "test_id",
+          "passed"
+        ],
+        "title": "CodeRunTestResult",
         "type": "object"
       },
       "CodeTestCase": {
@@ -5035,9 +5531,6 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id"
-        ],
         "title": "CodeTestCase",
         "type": "object"
       },
@@ -7038,9 +7531,6 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "id"
-        ],
         "title": "FormField",
         "type": "object"
       },
@@ -7573,6 +8063,57 @@
           }
         },
         "title": "GradingBreakdown",
+        "type": "object"
+      },
+      "GradingDraftSave": {
+        "description": "Body for saving a grading draft before publishing.",
+        "properties": {
+          "final_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Score"
+          },
+          "item_grades": {
+            "items": {
+              "$ref": "#/components/schemas/ItemGradeEntry"
+            },
+            "title": "Item Grades",
+            "type": "array"
+          },
+          "overall_feedback": {
+            "default": "",
+            "title": "Overall Feedback",
+            "type": "string"
+          },
+          "override_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Reason"
+          },
+          "override_score": {
+            "default": false,
+            "title": "Override Score",
+            "type": "boolean"
+          },
+          "status": {
+            "default": "GRADED",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "GradingDraftSave",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -8134,6 +8675,47 @@
           }
         },
         "title": "ItemFeedbackUpdate",
+        "type": "object"
+      },
+      "ItemGradeEntry": {
+        "properties": {
+          "feedback": {
+            "default": "",
+            "title": "Feedback",
+            "type": "string"
+          },
+          "is_manual": {
+            "default": false,
+            "title": "Is Manual",
+            "type": "boolean"
+          },
+          "item_uuid": {
+            "title": "Item Uuid",
+            "type": "string"
+          },
+          "rubric_criteria": {
+            "items": {
+              "$ref": "#/components/schemas/RubricCriterion"
+            },
+            "title": "Rubric Criteria",
+            "type": "array"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          }
+        },
+        "required": [
+          "item_uuid"
+        ],
+        "title": "ItemGradeEntry",
         "type": "object"
       },
       "ItemKind": {
@@ -9732,6 +10314,39 @@
         "title": "RoleUpdate",
         "type": "object"
       },
+      "RubricCriterion": {
+        "properties": {
+          "criterion_id": {
+            "title": "Criterion Id",
+            "type": "string"
+          },
+          "label": {
+            "default": "",
+            "title": "Label",
+            "type": "string"
+          },
+          "max_score": {
+            "default": 0.0,
+            "title": "Max Score",
+            "type": "number"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "score": {
+            "default": 0.0,
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "criterion_id"
+        ],
+        "title": "RubricCriterion",
+        "type": "object"
+      },
       "SavedAnalyticsViewCreate": {
         "properties": {
           "name": {
@@ -9949,6 +10564,239 @@
           "is_new_record"
         ],
         "title": "StreakUpdateRead",
+        "type": "object"
+      },
+      "StudentPolicyOverrideCreate": {
+        "properties": {
+          "due_at_override": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At Override"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "max_attempts_override": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts Override"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "time_limit_override_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit Override Seconds"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "waive_late_penalty": {
+            "default": false,
+            "title": "Waive Late Penalty",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "title": "StudentPolicyOverrideCreate",
+        "type": "object"
+      },
+      "StudentPolicyOverrideRead": {
+        "properties": {
+          "due_at_override": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At Override"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "granted_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Granted By"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "max_attempts_override": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts Override"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "policy_id": {
+            "title": "Policy Id",
+            "type": "integer"
+          },
+          "time_limit_override_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit Override Seconds"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "waive_late_penalty": {
+            "default": false,
+            "title": "Waive Late Penalty",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "policy_id"
+        ],
+        "title": "StudentPolicyOverrideRead",
+        "type": "object"
+      },
+      "StudentPolicyOverrideUpdate": {
+        "properties": {
+          "due_at_override": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At Override"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "max_attempts_override": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts Override"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "time_limit_override_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit Override Seconds"
+          },
+          "waive_late_penalty": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waive Late Penalty"
+          }
+        },
+        "title": "StudentPolicyOverrideUpdate",
         "type": "object"
       },
       "StudentSubmissionRead": {
@@ -17876,6 +18724,54 @@
         ]
       }
     },
+    "/api/v1/assessments/policy-preset/{kind}": {
+      "get": {
+        "description": "Return default policy settings for a given assessment kind.",
+        "operationId": "api_get_policy_preset_api_v1_assessments_policy_preset__kind__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentPolicyPreset"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Policy Preset",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
     "/api/v1/assessments/{assessment_uuid}": {
       "get": {
         "operationId": "api_get_assessment_api_v1_assessments__assessment_uuid__get",
@@ -17973,6 +18869,54 @@
           }
         ],
         "summary": "Api Update Assessment",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v1/assessments/{assessment_uuid}/attempt-state": {
+      "get": {
+        "description": "Return the authoritative attempt state for the current student.",
+        "operationId": "api_get_attempt_state_api_v1_assessments__assessment_uuid__attempt_state_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentAttemptProjection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Attempt State",
         "tags": [
           "assessments"
         ]
@@ -18277,6 +19221,73 @@
         ]
       }
     },
+    "/api/v1/assessments/{assessment_uuid}/items/{item_uuid}/runs": {
+      "post": {
+        "description": "Run student code against visible test cases (does not affect grade).",
+        "operationId": "api_run_code_item_api_v1_assessments__assessment_uuid__items__item_uuid__runs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_uuid",
+            "required": true,
+            "schema": {
+              "title": "Item Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodeRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Run Code Item",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
     "/api/v1/assessments/{assessment_uuid}/items:reorder": {
       "post": {
         "operationId": "api_reorder_items_api_v1_assessments__assessment_uuid__items_reorder_post",
@@ -18441,6 +19452,238 @@
           }
         ],
         "summary": "Api Get My Submissions",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v1/assessments/{assessment_uuid}/overrides": {
+      "get": {
+        "description": "List per-student policy overrides for this assessment.",
+        "operationId": "api_list_overrides_api_v1_assessments__assessment_uuid__overrides_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StudentPolicyOverrideRead"
+                  },
+                  "title": "Response Api List Overrides Api V1 Assessments  Assessment Uuid  Overrides Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api List Overrides",
+        "tags": [
+          "assessments"
+        ]
+      },
+      "post": {
+        "description": "Create a per-student policy exception (due date extension, attempt limit, etc.).",
+        "operationId": "api_create_override_api_v1_assessments__assessment_uuid__overrides_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentPolicyOverrideCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentPolicyOverrideRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Create Override",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v1/assessments/{assessment_uuid}/overrides/{user_id}": {
+      "delete": {
+        "operationId": "api_delete_override_api_v1_assessments__assessment_uuid__overrides__user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Api Delete Override Api V1 Assessments  Assessment Uuid  Overrides  User Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Delete Override",
+        "tags": [
+          "assessments"
+        ]
+      },
+      "patch": {
+        "operationId": "api_update_override_api_v1_assessments__assessment_uuid__overrides__user_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentPolicyOverrideUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentPolicyOverrideRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Update Override",
         "tags": [
           "assessments"
         ]
@@ -18897,6 +20140,89 @@
           }
         ],
         "summary": "Api Save Grade",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v1/assessments/{assessment_uuid}/submissions/{submission_uuid}/grade": {
+      "patch": {
+        "description": "Save an item-level grading draft. Final score is computed from item scores.",
+        "operationId": "api_save_grading_draft_api_v1_assessments__assessment_uuid__submissions__submission_uuid__grade_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "Submission Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GradingDraftSave"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherSubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Save Grading Draft",
         "tags": [
           "assessments"
         ]

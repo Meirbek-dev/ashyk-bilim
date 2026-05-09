@@ -8996,5 +8996,84 @@
   "seconds": "Секунд",
   "selectDeadline": "Тапсырманы аяқтау үшін мерзімді таңдаңыз",
   "touUniversity": "Торайғыров университеті",
-  "webPreview": "Веб алдын ала қарау"
+  "webPreview": "Веб алдын ала қарау",
+  "AttemptActions": {
+    "start": "Бастау",
+    "continueDraft": "Жалғастыру",
+    "submit": "Тапсыру",
+    "waitForRelease": "Баға шығарылуын күту",
+    "viewResult": "Нәтижені қарау",
+    "startRevision": "Қайта орындауды бастау",
+    "noAction": "Іс-әрекет қолжетімсіз",
+    "blocked": "Қол жеткізу бұғатталды",
+    "blockedReasons": {
+      "NOT_PUBLISHED": "Тапсырма әлі жарияланмаған.",
+      "BEFORE_WINDOW": "Тапсырма әлі қолжетімді емес.",
+      "AFTER_WINDOW": "Тапсыру терезесі жабылды.",
+      "MAX_ATTEMPTS_REACHED": "Сіз барлық мүмкіндіктерді пайдаландыңыз.",
+      "NOT_ENROLLED": "Сіз бұл курсқа жазылмаған.",
+      "AWAITING_GRADE": "Жұмысыңыз тексерілуде.",
+      "UNKNOWN": "Іс-әрекет қолжетімсіз."
+    }
+  },
+  "Overrides": {
+    "title": "Жеке параметрлер",
+    "description": "Жекелеген студенттерге ұзартулар, қосымша мүмкіндіктер немесе уақыт жеңілдіктерін беріңіз.",
+    "addOverride": "Параметр қосу",
+    "editOverride": "Өңдеу",
+    "deleteOverride": "Жою",
+    "student": "Студент",
+    "maxAttempts": "Макс. мүмкіндіктер",
+    "dueAt": "Ұзартылған мерзім",
+    "timeLimitSeconds": "Қосымша уақыт (секунд)",
+    "waiveLatePenalty": "Кешіктіру айыбын алып тастау",
+    "note": "Ескертпе",
+    "expiresAt": "Жарамдылық мерзімі",
+    "grantedBy": "Берген адам",
+    "noOverrides": "Параметрлер жоқ.",
+    "deleteConfirmTitle": "Параметрді жою?",
+    "deleteConfirmDesc": "Бұл студенттің барлық жеңілдіктерін жояды.",
+    "cancel": "Болдырмау",
+    "confirm": "Жою",
+    "toasts": {
+      "created": "Параметр жасалды",
+      "updated": "Параметр жаңартылды",
+      "deleted": "Параметр жойылды",
+      "failed": "Параметрді сақтау сәтсіз болды"
+    }
+  },
+  "PolicyPreset": {
+    "title": "Саясат үлгісі",
+    "description": "Бұл тапсырма түріне ұсынылған конфигурацияны қолдану.",
+    "apply": "Үлгіні қолдану",
+    "applied": "Үлгі қолданылды",
+    "failed": "Үлгіні қолдану сәтсіз болды"
+  },
+  "ItemGrading": {
+    "title": "Элемент бойынша бағалау",
+    "description": "Әр элементті жеке бағалаңыз. Қорытынды балл автоматты есептеледі.",
+    "overrideScore": "Баллды ауыстыру",
+    "overrideScoreDescription": "Есептелген орнына өз қорытынды балыңызды орнату.",
+    "finalScore": "Қорытынды балл",
+    "overrideReason": "Ауыстыру себебі",
+    "overallFeedback": "Жалпы пікір",
+    "itemScore": "Балл",
+    "itemFeedback": "Пікір",
+    "rubricCriterion": "Критерий",
+    "rubricScore": "Балл",
+    "rubricMaxScore": "Макс. балл",
+    "rubricComment": "Пікір",
+    "saveDraft": "Жоба сақтау",
+    "publish": "Бағаны жариялау",
+    "returnForRevision": "Қайта өңдеуге қайтару",
+    "scoreSummary": "{earned} / {possible} ({percentage}%)",
+    "latePenalty": "Кешіктіру айыбы: -{penalty}%",
+    "noItems": "Бағаланатын элементтер жоқ.",
+    "toasts": {
+      "saved": "Бағалау жобасы сақталды",
+      "published": "Баға жарияланды",
+      "returned": "Қайта өңдеуге қайтарылды",
+      "failed": "Бағалауды сақтау сәтсіз болды"
+    }
+  }
 }

@@ -20,6 +20,8 @@ type FullscreenDocument = Document & {
 export interface AttemptTimerConfig {
   startedAt: string | null;
   timeLimitMinutes?: number | null;
+  /** ISO datetime when the timer expires (server-authoritative). Takes precedence over startedAt + timeLimitMinutes. */
+  expiresAt?: string | null;
   onExpire?: () => void;
 }
 
@@ -185,19 +187,24 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
   }, [getFullscreenElement]);
 
   useEffect(() => {
+    const expiresAt = options.timer?.expiresAt;
     const startedAt = options.timer?.startedAt;
     const timeLimitMinutes = options.timer?.timeLimitMinutes;
 
-    if (!startedAt || !timeLimitMinutes) {
+    // Prefer server-authoritative expiresAt if available
+    const endTs = expiresAt
+      ? new Date(expiresAt).getTime()
+      : startedAt && timeLimitMinutes
+        ? new Date(startedAt).getTime() + timeLimitMinutes * 60 * 1000
+        : null;
+
+    if (!endTs) {
       setRemainingSeconds(null);
       expiredRef.current = false;
       return;
     }
 
     expiredRef.current = false;
-    const startTs = new Date(startedAt).getTime();
-    const endTs = startTs + timeLimitMinutes * 60 * 1000;
-
     const update = () => {
       const remainingMs = Math.max(0, endTs - Date.now());
       setRemainingSeconds(Math.floor(remainingMs / 1000));
@@ -211,7 +218,7 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [options.timer?.startedAt, options.timer?.timeLimitMinutes]);
+  }, [options.timer?.startedAt, options.timer?.timeLimitMinutes, options.timer?.expiresAt]);
 
   const fullscreenGateOpen = useMemo(
     () => enabled && antiCheat.fullscreenEnforced && !isFullscreen && !fullscreenRequestFailed,

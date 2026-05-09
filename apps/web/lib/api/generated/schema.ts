@@ -547,6 +547,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assessments/policy-preset/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get Policy Preset
+         * @description Return default policy settings for a given assessment kind.
+         */
+        get: operations["api_get_policy_preset_api_v1_assessments_policy_preset__kind__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/assessments/{assessment_uuid}": {
         parameters: {
             query?: never;
@@ -563,6 +583,26 @@ export interface paths {
         head?: never;
         /** Api Update Assessment */
         patch: operations["api_update_assessment_api_v1_assessments__assessment_uuid__patch"];
+        trace?: never;
+    };
+    "/api/v1/assessments/{assessment_uuid}/attempt-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get Attempt State
+         * @description Return the authoritative attempt state for the current student.
+         */
+        get: operations["api_get_attempt_state_api_v1_assessments__assessment_uuid__attempt_state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/assessments/{assessment_uuid}/draft": {
@@ -618,6 +658,26 @@ export interface paths {
         patch: operations["api_update_item_api_v1_assessments__assessment_uuid__items__item_uuid__patch"];
         trace?: never;
     };
+    "/api/v1/assessments/{assessment_uuid}/items/{item_uuid}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Run Code Item
+         * @description Run student code against visible test cases (does not affect grade).
+         */
+        post: operations["api_run_code_item_api_v1_assessments__assessment_uuid__items__item_uuid__runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/assessments/{assessment_uuid}/items:reorder": {
         parameters: {
             query?: never;
@@ -667,6 +727,48 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/{assessment_uuid}/overrides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api List Overrides
+         * @description List per-student policy overrides for this assessment.
+         */
+        get: operations["api_list_overrides_api_v1_assessments__assessment_uuid__overrides_get"];
+        put?: never;
+        /**
+         * Api Create Override
+         * @description Create a per-student policy exception (due date extension, attempt limit, etc.).
+         */
+        post: operations["api_create_override_api_v1_assessments__assessment_uuid__overrides_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/{assessment_uuid}/overrides/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Api Delete Override */
+        delete: operations["api_delete_override_api_v1_assessments__assessment_uuid__overrides__user_id__delete"];
+        options?: never;
+        head?: never;
+        /** Api Update Override */
+        patch: operations["api_update_override_api_v1_assessments__assessment_uuid__overrides__user_id__patch"];
         trace?: never;
     };
     "/api/v1/assessments/{assessment_uuid}/publish-grades": {
@@ -770,6 +872,26 @@ export interface paths {
         head?: never;
         /** Api Save Grade */
         patch: operations["api_save_grade_api_v1_assessments__assessment_uuid__submissions__submission_uuid__patch"];
+        trace?: never;
+    };
+    "/api/v1/assessments/{assessment_uuid}/submissions/{submission_uuid}/grade": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Api Save Grading Draft
+         * @description Save an item-level grading draft. Final score is computed from item scores.
+         */
+        patch: operations["api_save_grading_draft_api_v1_assessments__assessment_uuid__submissions__submission_uuid__grade_patch"];
         trace?: never;
     };
     "/api/v1/assessments/{assessment_uuid}/submit": {
@@ -3765,21 +3887,51 @@ export interface components {
         };
         /** ActivityAssessmentPolicyRead */
         ActivityAssessmentPolicyRead: {
+            /**
+             * Allow Late
+             * @default true
+             */
+            allow_late: boolean;
             /** Anti Cheat Json */
             anti_cheat_json?: {
                 [key: string]: unknown;
             };
             /** Assessment Type */
             assessment_type: string;
+            /**
+             * Completion Rule
+             * @default GRADED
+             */
+            completion_rule: string;
             /** Due At */
             due_at?: string | null;
+            /**
+             * Grade Release Mode
+             * @default IMMEDIATE
+             */
+            grade_release_mode: string;
+            /**
+             * Grading Mode
+             * @default MANUAL
+             */
+            grading_mode: string;
             /** Id */
             id: number;
             late_policy?: components["schemas"]["LatePolicy"];
             /** Max Attempts */
             max_attempts?: number | null;
+            /**
+             * Passing Score
+             * @default 60
+             */
+            passing_score: number;
             /** Policy Uuid */
             policy_uuid: string;
+            /**
+             * Review Visibility
+             * @default FULL
+             */
+            review_visibility: string;
             /** Settings Json */
             settings_json?: {
                 [key: string]: unknown;
@@ -4239,6 +4391,11 @@ export interface components {
             /** Available At */
             available_at?: string | null;
             /**
+             * Can Continue
+             * @default false
+             */
+            can_continue: boolean;
+            /**
              * Can Edit
              * @default false
              */
@@ -4249,10 +4406,25 @@ export interface components {
              */
             can_save_draft: boolean;
             /**
+             * Can Start
+             * @default false
+             */
+            can_start: boolean;
+            /**
+             * Can Start Revision
+             * @default false
+             */
+            can_start_revision: boolean;
+            /**
              * Can Submit
              * @default false
              */
             can_submit: boolean;
+            /**
+             * Can View Result
+             * @default false
+             */
+            can_view_result: boolean;
             /** Closes At */
             closes_at?: string | null;
             /**
@@ -4281,6 +4453,17 @@ export interface components {
              */
             policy_version: number;
             /**
+             * Primary Button Label Key
+             * @default noAction
+             */
+            primary_button_label_key: string;
+            /**
+             * Recommended Action
+             * @default NO_ACTION
+             * @enum {string}
+             */
+            recommended_action: "START" | "CONTINUE_DRAFT" | "SUBMIT" | "WAIT_FOR_RELEASE" | "VIEW_RESULT" | "START_REVISION" | "NO_ACTION";
+            /**
              * Release State
              * @default HIDDEN
              * @enum {string}
@@ -4289,12 +4472,18 @@ export interface components {
             score?: components["schemas"]["AssessmentScoreProjection"];
             /** Server Now */
             server_now?: string | null;
+            /** Started At */
+            started_at?: string | null;
             /** Submission Status */
             submission_status?: string | null;
             /** Submission Uuid */
             submission_uuid?: string | null;
             /** Time Remaining Seconds */
             time_remaining_seconds?: number | null;
+            /** Timer Expires At */
+            timer_expires_at?: string | null;
+            /** Timer Started At */
+            timer_started_at?: string | null;
         };
         /** AssessmentAuditEventRow */
         AssessmentAuditEventRow: {
@@ -4362,6 +4551,11 @@ export interface components {
              */
             submitted_learners: number;
         };
+        /**
+         * AssessmentCompletionRule
+         * @enum {string}
+         */
+        AssessmentCompletionRule: "VIEWED" | "SUBMITTED" | "GRADED" | "PASSED" | "TEACHER_VERIFIED";
         /** AssessmentCreate */
         AssessmentCreate: {
             /** Chapter Id */
@@ -4491,6 +4685,11 @@ export interface components {
             /** Time Limit Seconds */
             time_limit_seconds?: number | null;
         };
+        /**
+         * AssessmentGradingMode
+         * @enum {string}
+         */
+        AssessmentGradingMode: "AUTO" | "MANUAL" | "AUTO_THEN_MANUAL";
         /**
          * AssessmentGradingType
          * @enum {string}
@@ -4664,17 +4863,48 @@ export interface components {
             anti_cheat_json?: {
                 [key: string]: unknown;
             } | null;
+            completion_rule?: components["schemas"]["AssessmentCompletionRule"] | null;
             /** Due At */
             due_at?: string | null;
+            grade_release_mode?: components["schemas"]["GradeReleaseMode"] | null;
+            grading_mode?: components["schemas"]["AssessmentGradingMode"] | null;
             late_policy?: components["schemas"]["LatePolicy"] | null;
             /** Max Attempts */
             max_attempts?: number | null;
+            /** Passing Score */
+            passing_score?: number | null;
+            /** Required */
+            required?: boolean | null;
+            /** Review Visibility */
+            review_visibility?: ("NONE" | "SCORE_ONLY" | "FULL") | null;
             /** Settings Json */
             settings_json?: {
                 [key: string]: unknown;
             } | null;
             /** Time Limit Seconds */
             time_limit_seconds?: number | null;
+        };
+        /**
+         * AssessmentPolicyPreset
+         * @description Default policy settings for a given assessment kind.
+         */
+        AssessmentPolicyPreset: {
+            /** Allow Late */
+            allow_late: boolean;
+            /** Anti Cheat Enabled */
+            anti_cheat_enabled: boolean;
+            completion_rule: components["schemas"]["AssessmentCompletionRule"];
+            grade_release_mode: components["schemas"]["GradeReleaseMode"];
+            grading_mode: components["schemas"]["AssessmentGradingMode"];
+            kind: components["schemas"]["AssessmentType"];
+            /** Max Attempts */
+            max_attempts: number | null;
+            /** Passing Score */
+            passing_score: number;
+            /** Review Visibility */
+            review_visibility: string;
+            /** Time Limit Seconds */
+            time_limit_seconds: number | null;
         };
         /**
          * AssessmentRead
@@ -5549,7 +5779,7 @@ export interface components {
         /** ChoiceOption */
         ChoiceOption: {
             /** Id */
-            id: string;
+            id?: string;
             /**
              * Is Correct
              * @default false
@@ -5650,6 +5880,61 @@ export interface components {
             /** Time Limit Seconds */
             time_limit_seconds?: number | null;
         };
+        /**
+         * CodeRunRequest
+         * @description Request body for POST /assessments/{uuid}/items/{item_uuid}/runs.
+         */
+        CodeRunRequest: {
+            /** Custom Input */
+            custom_input?: string | null;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+            /** Language */
+            language: number;
+            /** Source */
+            source: string;
+        };
+        /**
+         * CodeRunResponse
+         * @description Response body for POST /assessments/{uuid}/items/{item_uuid}/runs.
+         */
+        CodeRunResponse: {
+            /** Compile Output */
+            compile_output?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /**
+             * Is Retryable
+             * @default false
+             */
+            is_retryable: boolean;
+            /** Memory */
+            memory?: number | null;
+            /**
+             * Passed
+             * @default 0
+             */
+            passed: number;
+            /** Run Id */
+            run_id: string;
+            /** Score */
+            score?: number | null;
+            /** Status */
+            status: string;
+            /** Stderr */
+            stderr?: string | null;
+            /** Stdout */
+            stdout?: string | null;
+            /** Time */
+            time?: number | null;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+            /** Visible Results */
+            visible_results?: components["schemas"]["CodeRunTestResult"][];
+        };
         /** CodeRunResult */
         CodeRunResult: {
             /** Details */
@@ -5669,6 +5954,28 @@ export interface components {
              */
             total: number;
         };
+        /** CodeRunTestResult */
+        CodeRunTestResult: {
+            /** Actual */
+            actual?: string | null;
+            /** Expected */
+            expected?: string | null;
+            /**
+             * Is Visible
+             * @default true
+             */
+            is_visible: boolean;
+            /** Memory */
+            memory?: number | null;
+            /** Passed */
+            passed: boolean;
+            /** Stdin */
+            stdin?: string | null;
+            /** Test Id */
+            test_id: string;
+            /** Time */
+            time?: number | null;
+        };
         /** CodeTestCase */
         CodeTestCase: {
             /** Description */
@@ -5679,7 +5986,7 @@ export interface components {
              */
             expected_output: string;
             /** Id */
-            id: string;
+            id?: string;
             /**
              * Input
              * @default
@@ -6438,7 +6745,7 @@ export interface components {
              */
             field_type: "text" | "textarea" | "number" | "date";
             /** Id */
-            id: string;
+            id?: string;
             /**
              * Label
              * @default
@@ -6673,6 +6980,33 @@ export interface components {
              */
             needs_manual_review: boolean;
         };
+        /**
+         * GradingDraftSave
+         * @description Body for saving a grading draft before publishing.
+         */
+        GradingDraftSave: {
+            /** Final Score */
+            final_score?: number | null;
+            /** Item Grades */
+            item_grades?: components["schemas"]["ItemGradeEntry"][];
+            /**
+             * Overall Feedback
+             * @default
+             */
+            overall_feedback: string;
+            /** Override Reason */
+            override_reason?: string | null;
+            /**
+             * Override Score
+             * @default false
+             */
+            override_score: boolean;
+            /**
+             * Status
+             * @default GRADED
+             */
+            status: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -6836,6 +7170,25 @@ export interface components {
             score?: number | null;
             /** Task Id */
             task_id?: number | null;
+        };
+        /** ItemGradeEntry */
+        ItemGradeEntry: {
+            /**
+             * Feedback
+             * @default
+             */
+            feedback: string;
+            /**
+             * Is Manual
+             * @default false
+             */
+            is_manual: boolean;
+            /** Item Uuid */
+            item_uuid: string;
+            /** Rubric Criteria */
+            rubric_criteria?: components["schemas"]["RubricCriterion"][];
+            /** Score */
+            score?: number | null;
         };
         /**
          * ItemKind
@@ -7477,6 +7830,31 @@ export interface components {
             /** Priority */
             priority?: number | null;
         };
+        /** RubricCriterion */
+        RubricCriterion: {
+            /** Criterion Id */
+            criterion_id: string;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /**
+             * Max Score
+             * @default 0
+             */
+            max_score: number;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Score
+             * @default 0
+             */
+            score: number;
+        };
         /** SavedAnalyticsViewCreate */
         SavedAnalyticsViewCreate: {
             /** Name */
@@ -7574,6 +7952,73 @@ export interface components {
             longest_count: number;
             /** Streak Type */
             streak_type: string;
+        };
+        /** StudentPolicyOverrideCreate */
+        StudentPolicyOverrideCreate: {
+            /** Due At Override */
+            due_at_override?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Max Attempts Override */
+            max_attempts_override?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Time Limit Override Seconds */
+            time_limit_override_seconds?: number | null;
+            /** User Id */
+            user_id: number;
+            /**
+             * Waive Late Penalty
+             * @default false
+             */
+            waive_late_penalty: boolean;
+        };
+        /** StudentPolicyOverrideRead */
+        StudentPolicyOverrideRead: {
+            /** Due At Override */
+            due_at_override?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Granted By */
+            granted_by?: number | null;
+            /** Id */
+            id: number;
+            /** Max Attempts Override */
+            max_attempts_override?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Policy Id */
+            policy_id: number;
+            /** Time Limit Override Seconds */
+            time_limit_override_seconds?: number | null;
+            /** User Id */
+            user_id: number;
+            /**
+             * Waive Late Penalty
+             * @default false
+             */
+            waive_late_penalty: boolean;
+        };
+        /** StudentPolicyOverrideUpdate */
+        StudentPolicyOverrideUpdate: {
+            /** Due At Override */
+            due_at_override?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Max Attempts Override */
+            max_attempts_override?: number | null;
+            /** Note */
+            note?: string | null;
+            /** Time Limit Override Seconds */
+            time_limit_override_seconds?: number | null;
+            /** Waive Late Penalty */
+            waive_late_penalty?: boolean | null;
         };
         /** StudentSubmissionRead */
         StudentSubmissionRead: {
@@ -10117,6 +10562,37 @@ export interface operations {
             };
         };
     };
+    api_get_policy_preset_api_v1_assessments_policy_preset__kind__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentPolicyPreset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     api_get_assessment_api_v1_assessments__assessment_uuid__get: {
         parameters: {
             query?: never;
@@ -10170,6 +10646,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssessmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_attempt_state_api_v1_assessments__assessment_uuid__attempt_state_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assessment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentAttemptProjection"];
                 };
             };
             /** @description Validation Error */
@@ -10356,6 +10863,42 @@ export interface operations {
             };
         };
     };
+    api_run_code_item_api_v1_assessments__assessment_uuid__items__item_uuid__runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assessment_uuid: string;
+                item_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     api_reorder_items_api_v1_assessments__assessment_uuid__items_reorder_post: {
         parameters: {
             query?: never;
@@ -10444,6 +10987,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentSubmissionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_list_overrides_api_v1_assessments__assessment_uuid__overrides_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assessment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentPolicyOverrideRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_create_override_api_v1_assessments__assessment_uuid__overrides_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assessment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudentPolicyOverrideCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentPolicyOverrideRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_delete_override_api_v1_assessments__assessment_uuid__overrides__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assessment_uuid: string;
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_update_override_api_v1_assessments__assessment_uuid__overrides__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assessment_uuid: string;
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudentPolicyOverrideUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentPolicyOverrideRead"];
                 };
             };
             /** @description Validation Error */
@@ -10667,6 +11346,44 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["TeacherGradeInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherSubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_save_grading_draft_api_v1_assessments__assessment_uuid__submissions__submission_uuid__grade_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                assessment_uuid: string;
+                submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GradingDraftSave"];
             };
         };
         responses: {

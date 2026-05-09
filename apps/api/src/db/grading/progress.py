@@ -177,6 +177,10 @@ class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
             nullable=False,
         ),
     )
+    policy_version: int = Field(
+        default=1,
+        sa_column=Column(Integer, nullable=False, server_default="1"),
+    )
 
     @field_validator("assessment_type", mode="before")
     @classmethod

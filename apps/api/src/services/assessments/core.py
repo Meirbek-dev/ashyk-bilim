@@ -29,15 +29,25 @@ from src.db.assessments import (
     AssessmentLifecycle,
     AssessmentLifecycleTransition,
     AssessmentPolicyPatch,
+    AssessmentPolicyPreset,
     AssessmentRead,
     AssessmentReadiness,
     AssessmentReadItem,
     AssessmentReviewProjection,
     AssessmentScoreProjection,
     AssessmentUpdate,
+    CodeRunRequest,
+    CodeRunResponse,
+    CodeRunTestResult,
+    GradingDraftSave,
+    ItemGradeEntry,
     ItemKind,
     ReadinessIssue,
     ReviewQueueRead,
+    RubricCriterion,
+    StudentPolicyOverrideCreate,
+    StudentPolicyOverrideRead,
+    StudentPolicyOverrideUpdate,
     StudentSubmissionRead,
     TeacherSubmissionRead,
 )
@@ -398,6 +408,7 @@ async def create_assessment_item(
         updated_at=now,
     )
     assessment.updated_at = now
+    assessment.content_version = _content_version(assessment) + 1
     db_session.add(item)
     db_session.add(assessment)
     db_session.commit()
@@ -432,6 +443,7 @@ async def update_assessment_item(
     now = datetime.now(UTC)
     item.updated_at = now
     assessment.updated_at = now
+    assessment.content_version = _content_version(assessment) + 1
     db_session.add(item)
     db_session.add(assessment)
     db_session.commit()
@@ -471,6 +483,7 @@ async def reorder_assessment_items(
         db_session.add(item)
 
     assessment.updated_at = now
+    assessment.content_version = _content_version(assessment) + 1
     db_session.add(assessment)
     db_session.commit()
     return [_build_item_read(item) for item in sorted(items, key=lambda i: i.order)]
@@ -488,7 +501,9 @@ async def delete_assessment_item(
     _ensure_authorable(assessment, db_session)
     item = _get_item_or_404(assessment, item_uuid, db_session)
     db_session.delete(item)
-    assessment.updated_at = datetime.now(UTC)
+    now = datetime.now(UTC)
+    assessment.updated_at = now
+    assessment.content_version = _content_version(assessment) + 1
     db_session.add(assessment)
     db_session.commit()
     return {"detail": "Assessment item deleted"}
@@ -708,6 +723,10 @@ async def submit_assessment(
         ).first()
         if submission is None:
             raise HTTPException(status_code=500, detail="Submission was not saved")
+
+        # Phase 3: Snapshot items and policy at submit time
+        _snapshot_submission(submission, assessment, db_session)
+
         return _build_student_submission_read(submission, db_session)
     except HTTPException:
         raise
@@ -940,6 +959,536 @@ async def publish_assessment_grades(
     return await bulk_publish_grades(activity.id, current_user, db_session)
 
 
+async def get_attempt_state(
+    assessment_uuid: str,
+    current_user: PublicUser,
+    db_session: Session,
+) -> AssessmentAttemptProjection:
+    """Return the canonical attempt state for the current user.
+
+    This is the authoritative single-call contract for student UI rendering.
+    Every start/save/submit action should be driven from the flags returned here.
+    """
+    assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
+    activity, course = _get_activity_and_course(assessment, db_session)
+    _require_submit_access(current_user, activity, course, db_session)
+
+    state = _build_attempt_state(assessment, activity, current_user, db_session)
+    active_submission = state["active_submission"]
+    submission_status = (
+        SubmissionStatus(active_submission.status)
+        if active_submission is not None
+        else None
+    )
+    return AssessmentAttemptProjection(
+        assessment_uuid=assessment.assessment_uuid,
+        submission_uuid=active_submission.submission_uuid if active_submission else None,
+        submission_status=submission_status.value if submission_status else None,
+        release_state=_release_state_for_submission(active_submission, db_session),
+        can_edit=bool(state["can_edit"]),
+        can_save_draft=bool(state["can_save_draft"]),
+        can_submit=bool(state["can_submit"]),
+        can_start=bool(state["can_start"]),
+        can_continue=bool(state["can_continue"]),
+        can_view_result=bool(state["can_view_result"]),
+        can_start_revision=bool(state["can_start_revision"]),
+        recommended_action=str(state["recommended_action"]),
+        primary_button_label_key=str(state["primary_button_label_key"]),
+        is_returned_for_revision=submission_status == SubmissionStatus.RETURNED,
+        is_result_visible=_is_result_visible(active_submission, db_session),
+        score=_score_projection_from_submission(active_submission, db_session),
+        disabled_action_reasons=list(state["disabled_action_reasons"]),
+        effective_policy=state["effective_policy"],
+        server_now=state["server_now"],
+        started_at=state["started_at"],
+        timer_started_at=state["timer_started_at"],
+        timer_expires_at=state["timer_expires_at"],
+        available_at=state["available_at"],
+        closes_at=state["closes_at"],
+        due_at=state["due_at"],
+        time_remaining_seconds=state["time_remaining_seconds"],
+        content_version=_content_version(assessment),
+        policy_version=_policy_version(_get_policy_for_assessment(assessment, db_session)),
+    )
+
+
+# ── Phase 2: Policy presets ───────────────────────────────────────────────────
+
+
+def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
+    """Return kind-appropriate default policy settings."""
+    from src.db.grading.progress import (
+        AssessmentCompletionRule,
+        AssessmentGradingMode,
+        GradeReleaseMode,
+    )
+
+    presets: dict[AssessmentType, AssessmentPolicyPreset] = {
+        AssessmentType.ASSIGNMENT: AssessmentPolicyPreset(
+            kind=AssessmentType.ASSIGNMENT,
+            grade_release_mode=GradeReleaseMode.IMMEDIATE,
+            grading_mode=AssessmentGradingMode.MANUAL,
+            completion_rule=AssessmentCompletionRule.SUBMITTED,
+            passing_score=60.0,
+            max_attempts=None,
+            time_limit_seconds=None,
+            allow_late=True,
+            anti_cheat_enabled=False,
+            review_visibility="FULL",
+        ),
+        AssessmentType.EXAM: AssessmentPolicyPreset(
+            kind=AssessmentType.EXAM,
+            grade_release_mode=GradeReleaseMode.BATCH,
+            grading_mode=AssessmentGradingMode.AUTO_THEN_MANUAL,
+            completion_rule=AssessmentCompletionRule.PASSED,
+            passing_score=60.0,
+            max_attempts=1,
+            time_limit_seconds=3600,
+            allow_late=False,
+            anti_cheat_enabled=True,
+            review_visibility="SCORE_ONLY",
+        ),
+        AssessmentType.QUIZ: AssessmentPolicyPreset(
+            kind=AssessmentType.QUIZ,
+            grade_release_mode=GradeReleaseMode.IMMEDIATE,
+            grading_mode=AssessmentGradingMode.AUTO,
+            completion_rule=AssessmentCompletionRule.PASSED,
+            passing_score=60.0,
+            max_attempts=None,
+            time_limit_seconds=None,
+            allow_late=True,
+            anti_cheat_enabled=False,
+            review_visibility="FULL",
+        ),
+        AssessmentType.CODE_CHALLENGE: AssessmentPolicyPreset(
+            kind=AssessmentType.CODE_CHALLENGE,
+            grade_release_mode=GradeReleaseMode.IMMEDIATE,
+            grading_mode=AssessmentGradingMode.AUTO,
+            completion_rule=AssessmentCompletionRule.PASSED,
+            passing_score=60.0,
+            max_attempts=None,
+            time_limit_seconds=None,
+            allow_late=True,
+            anti_cheat_enabled=False,
+            review_visibility="SCORE_ONLY",
+        ),
+    }
+    return presets[kind]
+
+
+# ── Phase 2: Student policy override management ───────────────────────────────
+
+
+async def list_student_policy_overrides(
+    assessment_uuid: str,
+    current_user: PublicUser,
+    db_session: Session,
+) -> list[StudentPolicyOverrideRead]:
+    assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
+    _activity, course = _get_activity_and_course(assessment, db_session)
+    _require_grade(current_user, course, db_session)
+    policy = _get_policy_for_assessment(assessment, db_session)
+    if policy is None:
+        return []
+    overrides = db_session.exec(
+        select(StudentPolicyOverride).where(
+            StudentPolicyOverride.policy_id == policy.id
+        )
+    ).all()
+    return [_build_override_read(o) for o in overrides]
+
+
+async def create_student_policy_override(
+    assessment_uuid: str,
+    payload: StudentPolicyOverrideCreate,
+    current_user: PublicUser,
+    db_session: Session,
+) -> StudentPolicyOverrideRead:
+    assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
+    _activity, course = _get_activity_and_course(assessment, db_session)
+    _require_grade(current_user, course, db_session)
+    policy = _get_policy_for_assessment(assessment, db_session)
+    if policy is None or policy.id is None:
+        raise HTTPException(status_code=404, detail="Assessment policy not found")
+
+    existing = db_session.exec(
+        select(StudentPolicyOverride).where(
+            StudentPolicyOverride.policy_id == policy.id,
+            StudentPolicyOverride.user_id == payload.user_id,
+        )
+    ).first()
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An override already exists for this student. Use PATCH to update it.",
+        )
+
+    override = StudentPolicyOverride(
+        policy_id=policy.id,
+        user_id=payload.user_id,
+        max_attempts_override=payload.max_attempts_override,
+        due_at_override=payload.due_at_override,
+        waive_late_penalty=payload.waive_late_penalty,
+        note=payload.note,
+        expires_at=payload.expires_at,
+        granted_by=current_user.id,
+    )
+    db_session.add(override)
+    db_session.commit()
+    db_session.refresh(override)
+    return _build_override_read(override)
+
+
+async def update_student_policy_override(
+    assessment_uuid: str,
+    user_id: int,
+    payload: StudentPolicyOverrideUpdate,
+    current_user: PublicUser,
+    db_session: Session,
+) -> StudentPolicyOverrideRead:
+    assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
+    _activity, course = _get_activity_and_course(assessment, db_session)
+    _require_grade(current_user, course, db_session)
+    policy = _get_policy_for_assessment(assessment, db_session)
+    if policy is None or policy.id is None:
+        raise HTTPException(status_code=404, detail="Assessment policy not found")
+
+    override = db_session.exec(
+        select(StudentPolicyOverride).where(
+            StudentPolicyOverride.policy_id == policy.id,
+            StudentPolicyOverride.user_id == user_id,
+        )
+    ).first()
+    if override is None:
+        raise HTTPException(status_code=404, detail="Override not found")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(override, field, value)
+    override.granted_by = current_user.id
+    db_session.add(override)
+    db_session.commit()
+    db_session.refresh(override)
+    return _build_override_read(override)
+
+
+async def delete_student_policy_override(
+    assessment_uuid: str,
+    user_id: int,
+    current_user: PublicUser,
+    db_session: Session,
+) -> dict[str, str]:
+    assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
+    _activity, course = _get_activity_and_course(assessment, db_session)
+    _require_grade(current_user, course, db_session)
+    policy = _get_policy_for_assessment(assessment, db_session)
+    if policy is None or policy.id is None:
+        raise HTTPException(status_code=404, detail="Assessment policy not found")
+
+    override = db_session.exec(
+        select(StudentPolicyOverride).where(
+            StudentPolicyOverride.policy_id == policy.id,
+            StudentPolicyOverride.user_id == user_id,
+        )
+    ).first()
+    if override is None:
+        raise HTTPException(status_code=404, detail="Override not found")
+    db_session.delete(override)
+    db_session.commit()
+    return {"detail": "Override deleted"}
+
+
+def _build_override_read(override: StudentPolicyOverride) -> StudentPolicyOverrideRead:
+    return StudentPolicyOverrideRead(
+        id=override.id or 0,
+        user_id=override.user_id,
+        policy_id=override.policy_id,
+        max_attempts_override=override.max_attempts_override,
+        due_at_override=override.due_at_override,
+        time_limit_override_seconds=None,
+        waive_late_penalty=override.waive_late_penalty,
+        note=override.note or "",
+        expires_at=override.expires_at,
+        granted_by=override.granted_by,
+    )
+
+
+# ── Phase 4: Item-level grading ────────────────────────────────────────────────
+
+
+async def save_grading_draft(
+    assessment_uuid: str,
+    submission_uuid: str,
+    payload: GradingDraftSave,
+    current_user: PublicUser,
+    db_session: Session,
+    *,
+    if_match: str | None = None,
+) -> TeacherSubmissionRead:
+    """Save an item-level grading draft for a submission.
+
+    When override_score is False, final_score is calculated as the sum of
+    item scores divided by the sum of max_scores. When override_score is True,
+    the caller-provided final_score is stored directly with override_reason.
+    """
+    assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
+    activity, course = _get_activity_and_course(assessment, db_session)
+    _require_grade(current_user, course, db_session)
+
+    submission = _get_assessment_submission_or_404(
+        activity_id=activity.id,
+        submission_uuid=submission_uuid,
+        db_session=db_session,
+    )
+
+    # Build item-level grade breakdown
+    items = {item.item_uuid: item for item in _get_items(assessment, db_session)}
+    graded_items = []
+    total_earned = 0.0
+    total_possible = 0.0
+
+    for entry in payload.item_grades:
+        item = items.get(entry.item_uuid)
+        if item is None:
+            continue
+        score = entry.score if entry.score is not None else 0.0
+        max_score = item.max_score if item.max_score > 0 else 1.0
+        total_earned += score
+        total_possible += max_score
+
+        graded_items.append({
+            "item_id": entry.item_uuid,
+            "item_text": item.title,
+            "score": score,
+            "max_score": max_score,
+            "correct": None,
+            "feedback": entry.feedback,
+            "needs_manual_review": entry.is_manual,
+            "rubric_criteria": [c.model_dump() for c in entry.rubric_criteria],
+        })
+
+    # Calculate final score (0–100 percentage)
+    if payload.override_score and payload.final_score is not None:
+        calculated_score = payload.final_score
+    elif total_possible > 0:
+        calculated_score = round((total_earned / total_possible) * 100, 2)
+    else:
+        calculated_score = 0.0
+
+    # Apply late penalty
+    late_penalty_pct = float(submission.late_penalty_pct or 0.0)
+    final_score = round(calculated_score * (1 - late_penalty_pct / 100), 2)
+
+    # Build TeacherGradeInput for the existing grade save pipeline
+    from src.db.grading.submissions import ItemFeedback, TeacherGradeInput
+    grade_input = TeacherGradeInput(
+        final_score=final_score,
+        feedback=payload.overall_feedback,
+        status=payload.status,
+        item_feedback=[
+            ItemFeedback(item_id=g["item_id"], score=g["score"], feedback=g["feedback"])
+            for g in graded_items
+        ],
+    )
+
+    expected_version = _parse_if_match_version(if_match)
+    saved = _save_teacher_grade(
+        submission=submission,
+        grade_input=grade_input,
+        submission_uuid=submission_uuid,
+        current_user=current_user,
+        db_session=db_session,
+        expected_version=expected_version,
+    )
+    refreshed = db_session.exec(
+        select(Submission).where(Submission.submission_uuid == saved.submission_uuid)
+    ).first()
+    if refreshed is None:
+        raise HTTPException(status_code=500, detail="Submission was not saved")
+    result = _build_teacher_submission_read(refreshed, assessment, db_session)
+    result.grading_json = build_effective_grading_breakdown(refreshed, db_session)
+    return result
+
+
+# ── Phase 5: Code challenge runtime ───────────────────────────────────────────
+
+
+async def run_code_item(
+    assessment_uuid: str,
+    item_uuid: str,
+    payload: CodeRunRequest,
+    current_user: PublicUser,
+    db_session: Session,
+) -> CodeRunResponse:
+    """Execute code against the visible test cases for an assessment item.
+
+    This endpoint stores the visible run result in the active draft's metadata
+    but does NOT affect the final submission grade. Hidden tests are only
+    evaluated at final submit time.
+    """
+    assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
+    activity, course = _get_activity_and_course(assessment, db_session)
+    _require_submit_access(current_user, activity, course, db_session)
+
+    item = _get_item_or_404(assessment, item_uuid, db_session)
+    if item.kind != ItemKind.CODE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This endpoint is only available for CODE items",
+        )
+
+    body = ITEM_BODY_ADAPTER.validate_python(item.body_json)
+    if body.kind != "CODE":
+        raise HTTPException(status_code=400, detail="Item body is not CODE kind")
+
+    # Validate language
+    if payload.language not in body.languages:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "LANGUAGE_NOT_ALLOWED",
+                "message": f"Language {payload.language} is not allowed for this item.",
+                "allowed_languages": body.languages,
+            },
+        )
+
+    # Collect visible test cases
+    visible_tests = [t for t in body.tests if t.is_visible]
+
+    # Run against Judge0
+    from src.services.code_challenges import judge0
+    run_id = f"run_{ULID()}"
+    try:
+        run_result = await judge0.run_code(
+            language_id=payload.language,
+            source_code=payload.source,
+            test_cases=[
+                {"input": t.input, "expected_output": t.expected_output, "id": t.id}
+                for t in visible_tests
+            ],
+            custom_input=payload.custom_input,
+            time_limit=body.time_limit_seconds,
+            memory_limit=body.memory_limit_mb,
+            idempotency_key=payload.idempotency_key,
+        )
+    except judge0.Judge0DegradedError as exc:
+        logger.warning(
+            "ASSESSMENT_SUPPORT_ALERT Judge0 degraded assessment_uuid=%s item_uuid=%s: %s",
+            assessment_uuid,
+            item_uuid,
+            exc,
+        )
+        return CodeRunResponse(
+            run_id=run_id,
+            status="DEGRADED",
+            error_message=str(exc),
+            is_retryable=True,
+        )
+    except Exception:
+        logger.exception(
+            "ASSESSMENT_SUPPORT_ALERT code run failed assessment_uuid=%s item_uuid=%s",
+            assessment_uuid,
+            item_uuid,
+        )
+        raise
+
+    # Persist run in draft metadata
+    draft = db_session.exec(
+        select(Submission).where(
+            Submission.activity_id == activity.id,
+            Submission.user_id == current_user.id,
+            Submission.status == SubmissionStatus.DRAFT,
+        )
+    ).first()
+    if draft is not None:
+        from src.db.grading.submissions import CodeRunRecord, merge_submission_metadata
+        record = CodeRunRecord(
+            run_id=run_id,
+            language_id=payload.language,
+            status=run_result.get("status", "DONE"),
+            passed=run_result.get("passed", 0),
+            total=run_result.get("total", len(visible_tests)),
+            score=run_result.get("score"),
+            stdout=run_result.get("stdout"),
+            stderr=run_result.get("stderr"),
+            time=run_result.get("time"),
+            memory=run_result.get("memory"),
+            details=run_result.get("details", []),
+            created_at=datetime.now(UTC),
+        )
+        draft.metadata_json = merge_submission_metadata(
+            draft.metadata_json,
+            latest_run=record.model_dump(mode="json"),
+        )
+        db_session.add(draft)
+        db_session.commit()
+
+    visible_results = [
+        CodeRunTestResult(
+            test_id=t.id,
+            passed=r.get("passed", False),
+            stdin=t.input,
+            expected=t.expected_output,
+            actual=r.get("actual"),
+            is_visible=True,
+            time=r.get("time"),
+            memory=r.get("memory"),
+        )
+        for t, r in zip(visible_tests, run_result.get("details", []), strict=False)
+    ]
+
+    return CodeRunResponse(
+        run_id=run_id,
+        status=str(run_result.get("status", "DONE")),
+        passed=int(run_result.get("passed", 0)),
+        total=int(run_result.get("total", len(visible_tests))),
+        score=run_result.get("score"),
+        stdout=run_result.get("stdout"),
+        stderr=run_result.get("stderr"),
+        compile_output=run_result.get("compile_output"),
+        time=run_result.get("time"),
+        memory=run_result.get("memory"),
+        visible_results=visible_results,
+    )
+
+    state = _build_attempt_state(assessment, activity, current_user, db_session)
+    active_submission = state["active_submission"]
+    submission_status = (
+        SubmissionStatus(active_submission.status)
+        if active_submission is not None
+        else None
+    )
+    return AssessmentAttemptProjection(
+        assessment_uuid=assessment.assessment_uuid,
+        submission_uuid=active_submission.submission_uuid if active_submission else None,
+        submission_status=submission_status.value if submission_status else None,
+        release_state=_release_state_for_submission(active_submission, db_session),
+        can_edit=bool(state["can_edit"]),
+        can_save_draft=bool(state["can_save_draft"]),
+        can_submit=bool(state["can_submit"]),
+        can_start=bool(state["can_start"]),
+        can_continue=bool(state["can_continue"]),
+        can_view_result=bool(state["can_view_result"]),
+        can_start_revision=bool(state["can_start_revision"]),
+        recommended_action=str(state["recommended_action"]),
+        primary_button_label_key=str(state["primary_button_label_key"]),
+        is_returned_for_revision=submission_status == SubmissionStatus.RETURNED,
+        is_result_visible=_is_result_visible(active_submission, db_session),
+        score=_score_projection_from_submission(active_submission, db_session),
+        disabled_action_reasons=list(state["disabled_action_reasons"]),
+        effective_policy=state["effective_policy"],
+        server_now=state["server_now"],
+        started_at=state["started_at"],
+        timer_started_at=state["timer_started_at"],
+        timer_expires_at=state["timer_expires_at"],
+        available_at=state["available_at"],
+        closes_at=state["closes_at"],
+        due_at=state["due_at"],
+        time_remaining_seconds=state["time_remaining_seconds"],
+        content_version=_content_version(assessment),
+        policy_version=_policy_version(_get_policy_for_assessment(assessment, db_session)),
+    )
+
+
 # ── Readiness ─────────────────────────────────────────────────────────────────
 
 
@@ -1032,44 +1581,28 @@ def _get_or_project_assessment_for_activity(
     activity: Activity,
     db_session: Session,
 ) -> Assessment:
+    """Return the canonical Assessment row for an activity.
+
+    This is a pure read operation. It never creates Assessment or
+    AssessmentPolicy rows. Activities that pre-date the canonical model
+    must be migrated via the ``migrate-legacy-assessments`` CLI command.
+    """
     existing = db_session.exec(
         select(Assessment).where(Assessment.activity_id == activity.id)
     ).first()
     if existing is not None:
         return existing
 
-    if activity.activity_type in _ACTIVITY_TO_KIND:
-        kind = _ACTIVITY_TO_KIND[activity.activity_type]
-        now = datetime.now(UTC)
-        policy = _get_or_create_policy(
-            activity_id=activity.id,
-            kind=kind,
-            patch=None,
-            db_session=db_session,
-            now=now,
-        )
-        db_session.flush()
-        assessment = Assessment(
-            assessment_uuid=f"assessment_{ULID()}",
-            activity_id=activity.id,
-            kind=kind,
-            title=activity.name,
-            description="",
-            lifecycle=AssessmentLifecycle.DRAFT,
-            weight=1.0,
-            grading_type=AssessmentGradingType.PERCENTAGE,
-            policy_id=policy.id,
-            created_at=now,
-            updated_at=now,
-        )
-        db_session.add(assessment)
-        db_session.commit()
-        db_session.refresh(assessment)
-        return assessment
-
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail="Assessment not found for activity",
+        detail={
+            "code": "MIGRATION_REQUIRED",
+            "message": (
+                "This activity does not have a canonical assessment row. "
+                "Run 'python cli.py migrate-legacy-assessments' to backfill "
+                "canonical Assessment rows for legacy activities."
+            ),
+        },
     )
 
 
@@ -1155,12 +1688,21 @@ def _build_attempt_projection(
         can_edit=can_edit,
         can_save_draft=bool(state["can_save_draft"]),
         can_submit=bool(state["can_submit"]),
+        can_start=bool(state["can_start"]),
+        can_continue=bool(state["can_continue"]),
+        can_view_result=bool(state["can_view_result"]),
+        can_start_revision=bool(state["can_start_revision"]),
+        recommended_action=str(state["recommended_action"]),
+        primary_button_label_key=str(state["primary_button_label_key"]),
         is_returned_for_revision=submission_status == SubmissionStatus.RETURNED,
         is_result_visible=_is_result_visible(active_submission, db_session),
         score=_score_projection_from_submission(active_submission, db_session),
         disabled_action_reasons=list(state["disabled_action_reasons"]),
         effective_policy=state["effective_policy"],
         server_now=state["server_now"],
+        started_at=state["started_at"],
+        timer_started_at=state["timer_started_at"],
+        timer_expires_at=state["timer_expires_at"],
         available_at=state["available_at"],
         closes_at=state["closes_at"],
         due_at=state["due_at"],
@@ -1273,11 +1815,65 @@ def _build_attempt_state(
     )
     can_edit = active_status in editable_statuses and not reasons
 
+    # Fine-grained action flags
+    has_draft = draft is not None
+    has_submitted = latest is not None and active_status != SubmissionStatus.DRAFT
+    can_start = not has_draft and not has_submitted and not reasons
+    can_continue = has_draft and not reasons
+    can_submit = can_edit
+    can_view_result = _is_result_visible(active_submission, db_session)
+    can_start_revision = (
+        active_status == SubmissionStatus.RETURNED and not reasons
+    )
+
+    # Recommended action and label key for the primary button
+    if reasons:
+        recommended_action = "NO_ACTION"
+        primary_button_label_key = "blocked"
+    elif can_start_revision:
+        recommended_action = "START_REVISION"
+        primary_button_label_key = "startRevision"
+    elif can_view_result:
+        recommended_action = "VIEW_RESULT"
+        primary_button_label_key = "viewResult"
+    elif can_continue:
+        recommended_action = "CONTINUE_DRAFT"
+        primary_button_label_key = "continueDraft"
+    elif can_start:
+        recommended_action = "START"
+        primary_button_label_key = "start"
+    elif has_submitted and not can_view_result:
+        recommended_action = "WAIT_FOR_RELEASE"
+        primary_button_label_key = "waitForRelease"
+    else:
+        recommended_action = "NO_ACTION"
+        primary_button_label_key = "noAction"
+
+    # Server timestamps for the active draft/submission
+    started_at: datetime | None = None
+    timer_started_at: datetime | None = None
+    timer_expires_at: datetime | None = None
+    if draft is not None and draft.started_at:
+        raw_started = draft.started_at
+        started_at = raw_started if raw_started.tzinfo else raw_started.replace(tzinfo=UTC)
+        if time_limit_seconds:
+            timer_started_at = started_at
+            timer_expires_at = started_at + timedelta(seconds=int(time_limit_seconds))
+    elif latest is not None and latest.started_at:
+        raw_started = latest.started_at
+        started_at = raw_started if raw_started.tzinfo else raw_started.replace(tzinfo=UTC)
+
     return {
         "active_submission": active_submission,
         "can_edit": can_edit,
         "can_save_draft": can_edit,
         "can_submit": can_edit,
+        "can_start": can_start,
+        "can_continue": can_continue,
+        "can_view_result": can_view_result,
+        "can_start_revision": can_start_revision,
+        "recommended_action": recommended_action,
+        "primary_button_label_key": primary_button_label_key,
         "disabled_action_reasons": sorted(set(reasons)),
         "effective_policy": AssessmentEffectivePolicy(
             max_attempts=max_attempts,
@@ -1296,6 +1892,9 @@ def _build_attempt_state(
             settings_json=policy.settings_json if policy is not None else {},
         ),
         "server_now": now,
+        "started_at": started_at,
+        "timer_started_at": timer_started_at,
+        "timer_expires_at": timer_expires_at,
         "available_at": available_at,
         "closes_at": closes_at,
         "due_at": due_at,
@@ -1649,10 +2248,12 @@ def _get_or_create_policy(
 
     if patch is not None:
         for field, value in _normalized_policy_patch(kind, patch).items():
-            if field == "late_policy":
+            if field == "late_policy_json":
                 policy.late_policy_json = value
                 continue
-            setattr(policy, field, value)
+            if hasattr(policy, field):
+                setattr(policy, field, value)
+        policy.policy_version = _policy_version(policy) + 1
     policy.updated_at = now
     db_session.add(policy)
     return policy
@@ -1663,6 +2264,19 @@ def _normalized_policy_patch(
     patch: AssessmentPolicyPatch,
 ) -> dict[str, object]:
     payload = patch.model_dump(exclude_unset=True)
+
+    # Map `late_policy` → `late_policy_json` for the ORM
+    if "late_policy" in payload:
+        lp = payload.pop("late_policy")
+        payload["late_policy_json"] = lp
+
+    # Map policy fields that live in settings_json
+    settings_overrides: dict[str, object] = {}
+    if "required" in payload:
+        settings_overrides["required"] = payload.pop("required")
+    if "review_visibility" in payload:
+        settings_overrides["review_visibility"] = payload.pop("review_visibility")
+
     settings_json = _normalize_policy_settings_json(
         kind,
         patch.settings_json if "settings_json" in patch.model_fields_set else None,
@@ -1676,8 +2290,15 @@ def _normalized_policy_patch(
             else _UNSET
         ),
     )
-    if settings_json is not None:
-        payload["settings_json"] = settings_json
+    if settings_json is not None or settings_overrides:
+        merged = dict(settings_json or {})
+        merged.update(settings_overrides)
+        payload["settings_json"] = merged
+    elif "settings_json" in payload:
+        existing = dict(payload["settings_json"] or {})
+        existing.update(settings_overrides)
+        payload["settings_json"] = existing
+
     return payload
 
 
@@ -2322,7 +2943,15 @@ def _build_policy_read(
         max_attempts=policy.max_attempts,
         time_limit_seconds=policy.time_limit_seconds,
         due_at=policy.due_at,
+        allow_late=policy.allow_late,
         late_policy=policy.late_policy_json,
+        grade_release_mode=str(policy.grade_release_mode),
+        grading_mode=str(policy.grading_mode),
+        completion_rule=str(policy.completion_rule),
+        passing_score=policy.passing_score,
+        review_visibility=str(
+            (policy.settings_json or {}).get("review_visibility", "FULL")
+        ),
         anti_cheat_json=policy.anti_cheat_json,
         settings_json=policy.settings_json,
     )
@@ -2430,11 +3059,59 @@ def _build_teacher_submission_read(
 
 
 def _content_version(assessment: Assessment) -> int:
-    return 1
+    return int(getattr(assessment, "content_version", 1) or 1)
 
 
 def _policy_version(policy: AssessmentPolicy | None) -> int:
-    return 1 if policy is not None else 0
+    if policy is None:
+        return 0
+    return int(getattr(policy, "policy_version", 1) or 1)
+
+
+def _snapshot_submission(
+    submission: Submission,
+    assessment: Assessment,
+    db_session: Session,
+) -> None:
+    """Snapshot items and policy into the submission row at submit time."""
+    items = _get_items(assessment, db_session)
+    policy = _get_policy_for_assessment(assessment, db_session)
+
+    changed = False
+    if getattr(submission, "items_snapshot", None) is None:
+        submission.items_snapshot = [
+            {
+                "item_uuid": item.item_uuid,
+                "kind": str(item.kind),
+                "title": item.title,
+                "body_json": item.body_json,
+                "max_score": item.max_score,
+                "order": item.order,
+            }
+            for item in items
+        ]
+        submission.content_version = _content_version(assessment)
+        changed = True
+
+    if getattr(submission, "policy_snapshot", None) is None and policy is not None:
+        submission.policy_snapshot = {
+            "max_attempts": policy.max_attempts,
+            "time_limit_seconds": policy.time_limit_seconds,
+            "due_at": policy.due_at.isoformat() if policy.due_at else None,
+            "allow_late": policy.allow_late,
+            "late_policy_json": policy.late_policy_json,
+            "passing_score": policy.passing_score,
+            "grading_mode": str(policy.grading_mode),
+            "completion_rule": str(policy.completion_rule),
+            "grade_release_mode": str(policy.grade_release_mode),
+            "settings_json": policy.settings_json,
+        }
+        submission.policy_version = _policy_version(policy)
+        changed = True
+
+    if changed:
+        db_session.add(submission)
+        db_session.commit()
 
 
 def _coerce_datetime(value: object) -> datetime | None:

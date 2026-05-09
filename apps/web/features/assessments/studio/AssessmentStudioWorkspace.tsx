@@ -22,6 +22,7 @@ import type { KindModule } from '@/features/assessments/registry';
 import { useAssessmentStudio } from '@/features/assessments/hooks/useAssessment';
 import type { AssessmentLifecycle } from '@/features/assessments/domain';
 import PolicyInspector from '@/features/assessments/shared/PolicyInspector';
+import StudentOverridesPanel from '@/features/assessments/studio/StudentOverridesPanel';
 import { classifyValidationIssue } from '@/features/assessments/domain/readiness';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { apiFetch } from '@/lib/api-client';
@@ -394,6 +395,13 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                     policy={studio.policy}
                     title={t('policyTitle', { kind: kindModule?.label ?? t('assessmentLabel') })}
                   />
+                )}
+
+                {/* Student overrides */}
+                {studio.lifecycle !== 'ARCHIVED' && (
+                  <section className="border-t pt-4">
+                    <StudentOverridesPanel assessmentUuid={studio.assessmentUuid} />
+                  </section>
                 )}
               </aside>
             )}

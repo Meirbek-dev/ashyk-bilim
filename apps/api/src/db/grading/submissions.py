@@ -430,6 +430,28 @@ class Submission(SubmissionBase, table=True):
         sa_column=Column("version", Integer, nullable=False, server_default="1"),
     )
 
+    # Phase 3: Versioning — snapshot at submit time
+    content_version: int = SQLField(
+        default=1,
+        sa_column=Column(
+            "content_version", Integer, nullable=False, server_default="1"
+        ),
+    )
+    policy_version: int = SQLField(
+        default=1,
+        sa_column=Column(
+            "policy_version", Integer, nullable=False, server_default="1"
+        ),
+    )
+    items_snapshot: dict | None = SQLField(
+        default=None,
+        sa_column=Column("items_snapshot", JSON, nullable=True),
+    )
+    policy_snapshot: dict | None = SQLField(
+        default=None,
+        sa_column=Column("policy_snapshot", JSON, nullable=True),
+    )
+
     @field_validator("metadata_json", mode="before")
     @classmethod
     def validate_metadata_json(cls, value: object) -> object:

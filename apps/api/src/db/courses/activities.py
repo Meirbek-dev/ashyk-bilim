@@ -214,7 +214,13 @@ class ActivityAssessmentPolicyRead(SQLModelStrictBaseModel):
     max_attempts: int | None = None
     time_limit_seconds: int | None = None
     due_at: datetime | None = None
+    allow_late: bool = True
     late_policy: LatePolicy = Field(default_factory=LatePolicyNone)
+    grade_release_mode: str = "IMMEDIATE"
+    grading_mode: str = "MANUAL"
+    completion_rule: str = "GRADED"
+    passing_score: float = 60.0
+    review_visibility: str = "FULL"
     anti_cheat_json: dict[str, object] = Field(default_factory=dict)
     settings_json: dict[str, object] = Field(default_factory=dict)
 

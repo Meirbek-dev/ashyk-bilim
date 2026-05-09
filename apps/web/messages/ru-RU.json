@@ -8571,5 +8571,84 @@
   "seconds": "Секунды",
   "selectDeadline": "Выберите дедлайн для выполнения задачи",
   "touUniversity": "Торайгыров Университет",
-  "webPreview": "Веб-предпросмотр"
+  "webPreview": "Веб-предпросмотр",
+  "AttemptActions": {
+    "start": "Начать",
+    "continueDraft": "Продолжить",
+    "submit": "Отправить",
+    "waitForRelease": "Ожидание оценки",
+    "viewResult": "Посмотреть результат",
+    "startRevision": "Начать доработку",
+    "noAction": "Действие недоступно",
+    "blocked": "Доступ заблокирован",
+    "blockedReasons": {
+      "NOT_PUBLISHED": "Задание ещё не опубликовано.",
+      "BEFORE_WINDOW": "Задание ещё не доступно.",
+      "AFTER_WINDOW": "Окно сдачи закрыто.",
+      "MAX_ATTEMPTS_REACHED": "Вы использовали все попытки.",
+      "NOT_ENROLLED": "Вы не записаны на этот курс.",
+      "AWAITING_GRADE": "Ваша работа проверяется.",
+      "UNKNOWN": "Действие недоступно."
+    }
+  },
+  "Overrides": {
+    "title": "Индивидуальные настройки",
+    "description": "Предоставьте отдельным студентам расширения, дополнительные попытки или дополнительное время.",
+    "addOverride": "Добавить настройку",
+    "editOverride": "Редактировать",
+    "deleteOverride": "Удалить",
+    "student": "Студент",
+    "maxAttempts": "Макс. попыток",
+    "dueAt": "Расширенный срок",
+    "timeLimitSeconds": "Доп. время (секунды)",
+    "waiveLatePenalty": "Отменить штраф за опоздание",
+    "note": "Заметка",
+    "expiresAt": "Действует до",
+    "grantedBy": "Выдано",
+    "noOverrides": "Нет настроек.",
+    "deleteConfirmTitle": "Удалить настройку?",
+    "deleteConfirmDesc": "Это удалит все льготы для этого студента.",
+    "cancel": "Отмена",
+    "confirm": "Удалить",
+    "toasts": {
+      "created": "Настройка создана",
+      "updated": "Настройка обновлена",
+      "deleted": "Настройка удалена",
+      "failed": "Не удалось сохранить настройку"
+    }
+  },
+  "PolicyPreset": {
+    "title": "Шаблон политики",
+    "description": "Применить рекомендуемую конфигурацию для данного типа задания.",
+    "apply": "Применить шаблон",
+    "applied": "Шаблон применён",
+    "failed": "Не удалось применить шаблон"
+  },
+  "ItemGrading": {
+    "title": "Оценка по элементам",
+    "description": "Оцените каждый элемент отдельно. Итоговый балл рассчитывается автоматически.",
+    "overrideScore": "Переопределить балл",
+    "overrideScoreDescription": "Установить собственный итоговый балл вместо рассчитанного.",
+    "finalScore": "Итоговый балл",
+    "overrideReason": "Причина переопределения",
+    "overallFeedback": "Общий отзыв",
+    "itemScore": "Балл",
+    "itemFeedback": "Отзыв",
+    "rubricCriterion": "Критерий",
+    "rubricScore": "Балл",
+    "rubricMaxScore": "Макс. балл",
+    "rubricComment": "Комментарий",
+    "saveDraft": "Сохранить черновик",
+    "publish": "Опубликовать оценку",
+    "returnForRevision": "Вернуть на доработку",
+    "scoreSummary": "{earned} / {possible} ({percentage}%)",
+    "latePenalty": "Штраф за опоздание: -{penalty}%",
+    "noItems": "Нет оцениваемых элементов.",
+    "toasts": {
+      "saved": "Черновик оценки сохранён",
+      "published": "Оценка опубликована",
+      "returned": "Возвращено на доработку",
+      "failed": "Не удалось сохранить оценку"
+    }
+  }
 }

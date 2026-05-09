@@ -214,6 +214,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
         <AssessmentActionBar
           controls={controls}
           returned={returned}
+          primaryButtonLabelKey={controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null}
         />
       </div>
 

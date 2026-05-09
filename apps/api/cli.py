@@ -261,5 +261,103 @@ async def _migrate_users_to_platform_task() -> None:
         engine.dispose()
 
 
+@cli.command()
+def migrate_legacy_assessments(
+    dry_run: Annotated[
+        bool,
+        typer.Option(help="Print what would be migrated without writing to DB"),
+    ] = False,
+) -> None:
+    """Create canonical Assessment + AssessmentPolicy rows for activities missing them.
+
+    Before the Phase-0 fix, assessments were lazily created on first student
+    view. Run this once after deploying the new code so every existing activity
+    already has a canonical row and the MIGRATION_REQUIRED error is never
+    surfaced to real users.
+    """
+    import asyncio
+
+    asyncio.run(_migrate_legacy_assessments_task(dry_run=dry_run))
+
+
+async def _migrate_legacy_assessments_task(*, dry_run: bool) -> None:
+    from sqlmodel import Session
+
+    from src.db.assessments import Assessment, AssessmentPolicy
+    from src.db.courses.activities import Activity, ActivityType
+
+    settings = get_settings()
+    engine = build_engine(settings)
+    factory = build_session_factory(engine)
+
+    _assessment_kinds = {
+        ActivityType.ASSIGNMENT,
+        ActivityType.EXAM,
+        ActivityType.QUIZ,
+        ActivityType.CODE_CHALLENGE,
+    }
+
+    try:
+        with session_scope(factory) as db_session:
+            print("=" * 80)
+            print("Legacy Assessment Migration" + (" (DRY RUN)" if dry_run else ""))
+            print("=" * 80)
+
+            activities = db_session.exec(
+                select(Activity).where(Activity.type.in_(_assessment_kinds))  # type: ignore[attr-defined]
+            ).all()
+            print(f"Found {len(activities)} assessment-type activities")
+
+            migrated = 0
+            skipped = 0
+
+            for activity in activities:
+                existing = db_session.exec(
+                    select(Assessment).where(
+                        Assessment.activity_id == activity.id
+                    )
+                ).first()
+                if existing is not None:
+                    skipped += 1
+                    continue
+
+                print(
+                    f"  Migrating activity {activity.activity_uuid} "
+                    f"(type={activity.type}) …"
+                )
+                if not dry_run:
+                    from python_ulid import ULID
+
+                    assessment = Assessment(
+                        assessment_uuid=str(ULID()),
+                        activity_id=activity.id,
+                        kind=activity.type,
+                        title=activity.title or "",
+                        settings_json={},
+                    )
+                    db_session.add(assessment)
+                    db_session.flush()
+
+                    policy = AssessmentPolicy(assessment_id=assessment.id)
+                    db_session.add(policy)
+
+                migrated += 1
+
+            if not dry_run:
+                db_session.commit()
+
+            print()
+            print("=" * 80)
+            if dry_run:
+                print(f"DRY RUN: would migrate {migrated} activities, skip {skipped}")
+            else:
+                print(
+                    f"Done: migrated {migrated} activities, skipped {skipped} (already had rows)"
+                )
+            print("=" * 80)
+    finally:
+        engine.dispose()
+
+
 if __name__ == "__main__":
     cli()

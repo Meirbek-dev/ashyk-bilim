@@ -190,6 +190,16 @@ export function useAssessment(
     timeRemainingSeconds: attemptProjection?.time_remaining_seconds ?? null,
     contentVersion: attemptProjection?.content_version ?? assessment.content_version ?? 1,
     policyVersion: attemptProjection?.policy_version ?? assessment.policy_version ?? 1,
+    // Phase 1 — server-driven action state
+    canStart: attemptProjection?.can_start ?? false,
+    canContinue: attemptProjection?.can_continue ?? false,
+    canViewResult: attemptProjection?.can_view_result ?? false,
+    canStartRevision: attemptProjection?.can_start_revision ?? false,
+    recommendedAction: (attemptProjection?.recommended_action as AttemptViewModel['recommendedAction']) ?? 'noAction',
+    primaryButtonLabelKey: attemptProjection?.primary_button_label_key ?? 'noAction',
+    startedAt: attemptProjection?.started_at ?? null,
+    timerStartedAt: attemptProjection?.timer_started_at ?? null,
+    timerExpiresAt: attemptProjection?.timer_expires_at ?? null,
   };
   return { vm: { surface: 'ATTEMPT', vm, kind }, isLoading: false, error: null };
 }

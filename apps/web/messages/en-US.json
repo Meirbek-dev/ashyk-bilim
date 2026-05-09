@@ -8535,5 +8535,84 @@
   "seconds": "Seconds",
   "selectDeadline": "Select a deadline for completing the task",
   "touUniversity": "Toraighyrov University",
-  "webPreview": "Web Preview"
+  "webPreview": "Web Preview",
+  "AttemptActions": {
+    "start": "Start",
+    "continueDraft": "Continue",
+    "submit": "Submit",
+    "waitForRelease": "Awaiting grade release",
+    "viewResult": "View result",
+    "startRevision": "Start revision",
+    "noAction": "No action available",
+    "blocked": "Access blocked",
+    "blockedReasons": {
+      "NOT_PUBLISHED": "This assessment is not yet published.",
+      "BEFORE_WINDOW": "This assessment is not yet available.",
+      "AFTER_WINDOW": "The submission window has closed.",
+      "MAX_ATTEMPTS_REACHED": "You have used all your allowed attempts.",
+      "NOT_ENROLLED": "You are not enrolled in this course.",
+      "AWAITING_GRADE": "Your submission is being graded. Please check back later.",
+      "UNKNOWN": "Action unavailable."
+    }
+  },
+  "Overrides": {
+    "title": "Student overrides",
+    "description": "Grant individual extensions, extra attempts, or time accommodations.",
+    "addOverride": "Add override",
+    "editOverride": "Edit override",
+    "deleteOverride": "Remove override",
+    "student": "Student",
+    "maxAttempts": "Max attempts",
+    "dueAt": "Extended deadline",
+    "timeLimitSeconds": "Extra time (seconds)",
+    "waiveLatePenalty": "Waive late penalty",
+    "note": "Note",
+    "expiresAt": "Expires at",
+    "grantedBy": "Granted by",
+    "noOverrides": "No overrides configured.",
+    "deleteConfirmTitle": "Remove override?",
+    "deleteConfirmDesc": "This will remove all accommodations for this student.",
+    "cancel": "Cancel",
+    "confirm": "Remove",
+    "toasts": {
+      "created": "Override created",
+      "updated": "Override updated",
+      "deleted": "Override removed",
+      "failed": "Failed to save override"
+    }
+  },
+  "PolicyPreset": {
+    "title": "Policy preset",
+    "description": "Apply a recommended policy configuration for this assessment type.",
+    "apply": "Apply preset",
+    "applied": "Preset applied",
+    "failed": "Failed to apply preset"
+  },
+  "ItemGrading": {
+    "title": "Item grading",
+    "description": "Grade each item individually. The final score is calculated automatically.",
+    "overrideScore": "Override score",
+    "overrideScoreDescription": "Set a custom final score instead of the calculated total.",
+    "finalScore": "Final score",
+    "overrideReason": "Override reason",
+    "overallFeedback": "Overall feedback",
+    "itemScore": "Score",
+    "itemFeedback": "Feedback",
+    "rubricCriterion": "Criterion",
+    "rubricScore": "Score",
+    "rubricMaxScore": "Max score",
+    "rubricComment": "Comment",
+    "saveDraft": "Save draft",
+    "publish": "Publish grade",
+    "returnForRevision": "Return for revision",
+    "scoreSummary": "{earned} / {possible} ({percentage}%)",
+    "latePenalty": "Late penalty: -{penalty}%",
+    "noItems": "No gradeable items.",
+    "toasts": {
+      "saved": "Grading draft saved",
+      "published": "Grade published",
+      "returned": "Returned for revision",
+      "failed": "Failed to save grading"
+    }
+  }
 }

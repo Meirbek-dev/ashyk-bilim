@@ -15,7 +15,13 @@ from sqlmodel import Field as SQLField
 from ulid import ULID
 
 from src.db.courses.activities import ActivityAssessmentPolicyRead
-from src.db.grading.progress import GradeReleaseMode, LatePolicy, LatePolicyNone
+from src.db.grading.progress import (
+    AssessmentCompletionRule,
+    AssessmentGradingMode,
+    GradeReleaseMode,
+    LatePolicy,
+    LatePolicyNone,
+)
 from src.db.grading.submissions import (
     AssessmentType,
     SubmissionListResponse,
@@ -278,6 +284,10 @@ class Assessment(SQLModelStrictBaseModel, table=True):
         default_factory=lambda: datetime.now(UTC),
         sa_column=Column(DateTime(timezone=True), nullable=False),
     )
+    content_version: int = SQLField(
+        default=1,
+        sa_column=Column(Integer, nullable=False, server_default="1"),
+    )
 
     @field_validator("kind", mode="before")
     @classmethod
@@ -349,12 +359,25 @@ class AssessmentItem(SQLModelStrictBaseModel, table=True):
 
 
 class AssessmentPolicyPatch(PydanticStrictBaseModel):
+    # Attempt policy
     max_attempts: int | None = None
     time_limit_seconds: int | None = None
+    # Scheduling / availability
     due_at: datetime | None = None
     allow_late: bool | None = None
     late_policy: LatePolicy | None = None
+    # Grading policy
+    grade_release_mode: GradeReleaseMode | None = None
+    grading_mode: AssessmentGradingMode | None = None
+    completion_rule: AssessmentCompletionRule | None = None
+    passing_score: float | None = None
+    # Required flag (stored in settings_json)
+    required: bool | None = None
+    # Review visibility: what students see after release
+    review_visibility: Literal["NONE", "SCORE_ONLY", "FULL"] | None = None
+    # Anti-cheat
     anti_cheat_json: dict[str, object] | None = None
+    # Arbitrary extension fields
     settings_json: dict[str, object] | None = None
 
     @field_validator("late_policy", mode="before")
@@ -363,6 +386,21 @@ class AssessmentPolicyPatch(PydanticStrictBaseModel):
         if value is None:
             return None
         return LatePolicyNone() if value == {} else value
+
+    @field_validator("grade_release_mode", mode="before")
+    @classmethod
+    def validate_grade_release_mode(cls, value: object) -> object:
+        return GradeReleaseMode(value) if isinstance(value, str) else value
+
+    @field_validator("grading_mode", mode="before")
+    @classmethod
+    def validate_grading_mode(cls, value: object) -> object:
+        return AssessmentGradingMode(value) if isinstance(value, str) else value
+
+    @field_validator("completion_rule", mode="before")
+    @classmethod
+    def validate_completion_rule(cls, value: object) -> object:
+        return AssessmentCompletionRule(value) if isinstance(value, str) else value
 
 
 class AssessmentCreate(PydanticStrictBaseModel):
@@ -445,9 +483,27 @@ class AttemptStateRead(PydanticStrictBaseModel):
         "VISIBLE",
         "RETURNED_FOR_REVISION",
     ] = "HIDDEN"
+    # Legacy capability flags (kept for backward compat)
     can_edit: bool = False
     can_save_draft: bool = False
     can_submit: bool = False
+    # Fine-grained action flags
+    can_start: bool = False
+    can_continue: bool = False
+    can_view_result: bool = False
+    can_start_revision: bool = False
+    # Machine-readable next action for UI rendering
+    recommended_action: Literal[
+        "START",
+        "CONTINUE_DRAFT",
+        "SUBMIT",
+        "WAIT_FOR_RELEASE",
+        "VIEW_RESULT",
+        "START_REVISION",
+        "NO_ACTION",
+    ] = "NO_ACTION"
+    # i18n key the frontend looks up to label the primary button
+    primary_button_label_key: str = "noAction"
     is_returned_for_revision: bool = False
     is_result_visible: bool = False
     score: AssessmentScoreProjection = Field(default_factory=AssessmentScoreProjection)
@@ -455,7 +511,11 @@ class AttemptStateRead(PydanticStrictBaseModel):
     effective_policy: AssessmentEffectivePolicy = Field(
         default_factory=AssessmentEffectivePolicy
     )
+    # Authoritative server timestamps
     server_now: datetime | None = None
+    started_at: datetime | None = None
+    timer_started_at: datetime | None = None
+    timer_expires_at: datetime | None = None
     available_at: datetime | None = None
     closes_at: datetime | None = None
     due_at: datetime | None = None
@@ -638,3 +698,129 @@ class AssessmentDraftPatch(PydanticStrictBaseModel):
 class AssessmentDraftRead(PydanticStrictBaseModel):
     assessment_uuid: str
     submission: StudentSubmissionRead | None = None
+
+
+# ── Student policy overrides ──────────────────────────────────────────────────
+
+
+class StudentPolicyOverrideCreate(PydanticStrictBaseModel):
+    user_id: int
+    max_attempts_override: int | None = None
+    due_at_override: datetime | None = None
+    time_limit_override_seconds: int | None = None
+    waive_late_penalty: bool = False
+    note: str = ""
+    expires_at: datetime | None = None
+
+
+class StudentPolicyOverrideUpdate(PydanticStrictBaseModel):
+    max_attempts_override: int | None = None
+    due_at_override: datetime | None = None
+    time_limit_override_seconds: int | None = None
+    waive_late_penalty: bool | None = None
+    note: str | None = None
+    expires_at: datetime | None = None
+
+
+class StudentPolicyOverrideRead(PydanticStrictBaseModel):
+    id: int
+    user_id: int
+    policy_id: int
+    max_attempts_override: int | None = None
+    due_at_override: datetime | None = None
+    time_limit_override_seconds: int | None = None
+    waive_late_penalty: bool = False
+    note: str = ""
+    expires_at: datetime | None = None
+    granted_by: int | None = None
+
+
+# ── Code challenge runtime ────────────────────────────────────────────────────
+
+
+class CodeRunRequest(PydanticStrictBaseModel):
+    """Request body for POST /assessments/{uuid}/items/{item_uuid}/runs."""
+
+    language: int
+    source: str
+    custom_input: str | None = None
+    # Client-provided idempotency key — the same key always returns the same job
+    idempotency_key: str | None = None
+
+
+class CodeRunTestResult(PydanticStrictBaseModel):
+    test_id: str
+    passed: bool
+    stdin: str | None = None
+    expected: str | None = None
+    actual: str | None = None
+    is_visible: bool = True
+    time: float | None = None
+    memory: int | None = None
+
+
+class CodeRunResponse(PydanticStrictBaseModel):
+    """Response body for POST /assessments/{uuid}/items/{item_uuid}/runs."""
+
+    run_id: str
+    # QUEUED | RUNNING | DONE | COMPILE_ERROR | RUNTIME_ERROR | TIMEOUT | DEGRADED
+    status: str
+    passed: int = 0
+    total: int = 0
+    score: float | None = None
+    stdout: str | None = None
+    stderr: str | None = None
+    compile_output: str | None = None
+    time: float | None = None
+    memory: int | None = None
+    visible_results: list[CodeRunTestResult] = Field(default_factory=list)
+    error_message: str | None = None
+    # True when the runner is unavailable and the client should retry
+    is_retryable: bool = False
+
+
+# ── Item-level grading ────────────────────────────────────────────────────────
+
+
+class RubricCriterion(PydanticStrictBaseModel):
+    criterion_id: str
+    label: str = ""
+    score: float = 0.0
+    max_score: float = 0.0
+    note: str = ""
+
+
+class ItemGradeEntry(PydanticStrictBaseModel):
+    item_uuid: str
+    score: float | None = None
+    feedback: str = ""
+    rubric_criteria: list[RubricCriterion] = Field(default_factory=list)
+    is_manual: bool = False
+
+
+class GradingDraftSave(PydanticStrictBaseModel):
+    """Body for saving a grading draft before publishing."""
+
+    item_grades: list[ItemGradeEntry] = Field(default_factory=list)
+    overall_feedback: str = ""
+    # If true, override calculated score with final_score
+    override_score: bool = False
+    final_score: float | None = None
+    override_reason: str | None = None
+    # GRADED = save (teacher-only); PUBLISHED = publish to student; RETURNED = revise
+    status: str = "GRADED"
+
+
+class AssessmentPolicyPreset(PydanticStrictBaseModel):
+    """Default policy settings for a given assessment kind."""
+
+    kind: AssessmentType
+    grade_release_mode: GradeReleaseMode
+    grading_mode: AssessmentGradingMode
+    completion_rule: AssessmentCompletionRule
+    passing_score: float
+    max_attempts: int | None
+    time_limit_seconds: int | None
+    allow_late: bool
+    anti_cheat_enabled: bool
+    review_visibility: str

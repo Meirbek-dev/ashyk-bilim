@@ -102,6 +102,36 @@ export interface AttemptViewModel {
   timeRemainingSeconds: number | null;
   contentVersion: number;
   policyVersion: number;
+
+  // Phase 1 — server-driven action state
+  /** Student can start a new attempt. */
+  canStart: boolean;
+  /** Student can continue an in-progress draft. */
+  canContinue: boolean;
+  /** Student can view their result. */
+  canViewResult: boolean;
+  /** Student can start a revision (returned attempt). */
+  canStartRevision: boolean;
+  /**
+   * Backend-recommended primary action for this student right now.
+   * Drive the primary CTA from this value.
+   */
+  recommendedAction:
+    | 'start'
+    | 'continueDraft'
+    | 'submit'
+    | 'waitForRelease'
+    | 'viewResult'
+    | 'startRevision'
+    | 'noAction'
+    | 'blocked';
+  /** i18n key for the primary CTA label. */
+  primaryButtonLabelKey: string;
+  /** Server-authoritative timer start (use instead of client Date.now()). */
+  startedAt: string | null;
+  timerStartedAt: string | null;
+  /** Server-authoritative timer expiry — derive time remaining from this. */
+  timerExpiresAt: string | null;
 }
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────

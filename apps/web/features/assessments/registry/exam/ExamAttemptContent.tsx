@@ -371,6 +371,7 @@ function ExamTakingContent({
         ? {
             startedAt: attempt.created_at,
             timeLimitMinutes: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)),
+            expiresAt: vm?.timerExpiresAt ?? null,
             onExpire: () => {
               toast.error(t('autoSubmitting', { reason: t('autoSubmittingReason.timeExpired') }));
               void handleSubmit(true);

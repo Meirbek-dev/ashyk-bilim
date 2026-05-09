@@ -77,6 +77,8 @@ export interface AttemptShellRegistration {
   onGuardAutoSubmit?: (type: string, count: number) => void;
   recovery?: AttemptRecoveryState | null;
   conflict?: AttemptConflictState | null;
+  /** i18n key for the primary CTA button label. Falls back to 'submit'. */
+  primaryButtonLabelKey?: string | null;
 }
 
 // ── Context & registration hook ───────────────────────────────────────────────
@@ -132,6 +134,7 @@ export function useActionBarState() {
 interface AssessmentActionBarProps {
   controls: AttemptShellRegistration;
   returned: boolean;
+  primaryButtonLabelKey?: string | null;
 }
 
 /**
@@ -142,8 +145,9 @@ interface AssessmentActionBarProps {
  *
  * This is the ONLY place `SaveStateBadge` is rendered — no duplicate in the header.
  */
-export function AssessmentActionBar({ controls, returned }: AssessmentActionBarProps) {
+export function AssessmentActionBar({ controls, returned, primaryButtonLabelKey }: AssessmentActionBarProps) {
   const t = useTranslations('Features.Assessments.Attempt.Exam');
+  const tAttemptActions = useTranslations('AttemptActions');
   const { navigation } = controls;
 
   return (
@@ -210,7 +214,11 @@ export function AssessmentActionBar({ controls, returned }: AssessmentActionBarP
             ) : (
               <SendHorizonal className="size-4" />
             )}
-            {returned ? t('submitAgain') : t('submit')}
+            {primaryButtonLabelKey
+              ? tAttemptActions(primaryButtonLabelKey as Parameters<typeof tAttemptActions>[0])
+              : returned
+                ? t('submitAgain')
+                : t('submit')}
           </Button>
         </div>
       </div>

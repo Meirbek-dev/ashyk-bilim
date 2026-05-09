@@ -10,7 +10,9 @@ from fastapi import APIRouter, Depends, Header, Query
 from sqlmodel import Session
 
 from src.auth.users import get_optional_public_user, get_public_user
+from fastapi import HTTPException
 from src.db.assessments import (
+    AssessmentAttemptProjection,
     AssessmentCreate,
     AssessmentDraftPatch,
     AssessmentDraftRead,
@@ -18,16 +20,24 @@ from src.db.assessments import (
     AssessmentItemReorder,
     AssessmentItemUpdate,
     AssessmentLifecycleTransition,
+    AssessmentPolicyPreset,
     AssessmentRead,
     AssessmentReadiness,
     AssessmentReadItem,
     AssessmentUpdate,
+    CodeRunRequest,
+    CodeRunResponse,
+    GradingDraftSave,
     ReviewQueueRead,
+    StudentPolicyOverrideCreate,
+    StudentPolicyOverrideRead,
+    StudentPolicyOverrideUpdate,
     StudentSubmissionRead,
     TeacherSubmissionRead,
 )
 from src.db.grading.schemas import BulkPublishGradesResponse
 from src.db.grading.submissions import (
+    AssessmentType,
     SubmissionStats,
     TeacherGradeInput,
 )
@@ -37,23 +47,31 @@ from src.services.assessments.core import (
     check_publish_readiness,
     create_assessment,
     create_assessment_item,
+    create_student_policy_override,
     delete_assessment_item,
+    delete_student_policy_override,
     get_assessment,
     get_assessment_by_activity_uuid,
     get_assessment_submission,
     get_assessment_submission_stats,
     get_assessment_submissions,
+    get_attempt_state,
     get_my_assessment_draft,
     get_my_assessment_submissions,
+    get_policy_preset,
+    list_student_policy_overrides,
     publish_assessment_grades,
     reorder_assessment_items,
+    run_code_item,
     save_assessment_draft,
     save_assessment_grade,
+    save_grading_draft,
     start_assessment,
     submit_assessment,
     transition_assessment_lifecycle,
     update_assessment,
     update_assessment_item,
+    update_student_policy_override,
 )
 
 router = APIRouter()
@@ -331,4 +349,150 @@ async def api_publish_grades(
         assessment_uuid,
         current_user,
         db_session,
+    )
+
+
+# ── Item-level grading draft ───────────────────────────────────────────────────
+
+
+@router.patch(
+    "/{assessment_uuid}/submissions/{submission_uuid}/grade",
+    response_model=TeacherSubmissionRead,
+)
+async def api_save_grading_draft(
+    assessment_uuid: str,
+    submission_uuid: str,
+    payload: GradingDraftSave,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+    if_match: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> TeacherSubmissionRead:
+    """Save an item-level grading draft. Final score is computed from item scores."""
+    return await save_grading_draft(
+        assessment_uuid,
+        submission_uuid,
+        payload,
+        current_user,
+        db_session,
+        if_match=if_match,
+    )
+
+
+# ── Code challenge runtime ─────────────────────────────────────────────────────
+
+
+@router.post(
+    "/{assessment_uuid}/items/{item_uuid}/runs",
+    response_model=CodeRunResponse,
+)
+async def api_run_code_item(
+    assessment_uuid: str,
+    item_uuid: str,
+    payload: CodeRunRequest,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> CodeRunResponse:
+    """Run student code against visible test cases (does not affect grade)."""
+    return await run_code_item(
+        assessment_uuid, item_uuid, payload, current_user, db_session
+    )
+
+
+# ── Attempt state ──────────────────────────────────────────────────────────────
+
+
+@router.get(
+    "/{assessment_uuid}/attempt-state",
+    response_model=AssessmentAttemptProjection,
+)
+async def api_get_attempt_state(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AssessmentAttemptProjection:
+    """Return the authoritative attempt state for the current student."""
+    return await get_attempt_state(assessment_uuid, current_user, db_session)
+
+
+# ── Policy preset ──────────────────────────────────────────────────────────────
+
+
+@router.get(
+    "/policy-preset/{kind}",
+    response_model=AssessmentPolicyPreset,
+)
+async def api_get_policy_preset(
+    kind: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+) -> AssessmentPolicyPreset:
+    """Return default policy settings for a given assessment kind."""
+    try:
+        assessment_kind = AssessmentType(kind)
+    except ValueError:
+        raise HTTPException(
+            status_code=400, detail=f"Unknown assessment kind: {kind!r}"
+        )
+    return get_policy_preset(assessment_kind)
+
+
+# ── Student policy overrides ───────────────────────────────────────────────────
+
+
+@router.get(
+    "/{assessment_uuid}/overrides",
+    response_model=list[StudentPolicyOverrideRead],
+)
+async def api_list_overrides(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> list[StudentPolicyOverrideRead]:
+    """List per-student policy overrides for this assessment."""
+    return await list_student_policy_overrides(
+        assessment_uuid, current_user, db_session
+    )
+
+
+@router.post(
+    "/{assessment_uuid}/overrides",
+    response_model=StudentPolicyOverrideRead,
+    status_code=201,
+)
+async def api_create_override(
+    assessment_uuid: str,
+    payload: StudentPolicyOverrideCreate,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> StudentPolicyOverrideRead:
+    """Create a per-student policy exception (due date extension, attempt limit, etc.)."""
+    return await create_student_policy_override(
+        assessment_uuid, payload, current_user, db_session
+    )
+
+
+@router.patch(
+    "/{assessment_uuid}/overrides/{user_id}",
+    response_model=StudentPolicyOverrideRead,
+)
+async def api_update_override(
+    assessment_uuid: str,
+    user_id: int,
+    payload: StudentPolicyOverrideUpdate,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> StudentPolicyOverrideRead:
+    return await update_student_policy_override(
+        assessment_uuid, user_id, payload, current_user, db_session
+    )
+
+
+@router.delete("/{assessment_uuid}/overrides/{user_id}")
+async def api_delete_override(
+    assessment_uuid: str,
+    user_id: int,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> dict[str, str]:
+    return await delete_student_policy_override(
+        assessment_uuid, user_id, current_user, db_session
     )
