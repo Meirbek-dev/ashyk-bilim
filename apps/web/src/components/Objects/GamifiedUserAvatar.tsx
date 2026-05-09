@@ -5,6 +5,7 @@ import { useSession } from '@/hooks/useSession';
 import { useUserByUsername } from '@/lib/users/client';
 import { getBackendUrl, getAbsoluteUrl } from '@services/config/config';
 import { getUserAvatarMediaDirectory } from '@services/media/media';
+import { isExternalUrl, normalizeAvatarUrl } from '@services/media/avatar';
 import type { UserGamificationProfile } from '@/types/gamification';
 import { AVATAR_UNLOCKS } from '@/lib/gamification/levels';
 import { useTranslations } from 'next-intl';
@@ -68,13 +69,6 @@ const levelIndicatorSizes = {
 // See: docs/gamification/AVATAR_CUSTOMIZATION.md
 const ENABLE_AVATAR_CUSTOMIZATION = false;
 
-const isExternalUrl = (url: string) => url.startsWith('http://') || url.startsWith('https://');
-
-const extractExternalUrl = (url: string): string | null => {
-  const matches = /avatars\/(https?:\/\/[^/]+.*$)/.exec(url);
-  return matches?.[1] ?? null;
-};
-
 const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
   const t = useTranslations('Components.UserAvatar');
   const { user: currentUser } = useSession();
@@ -107,16 +101,15 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
     if (predefined_avatar) return getAbsoluteUrl('/empty_avatar.avif');
 
     if (avatar_url) {
-      const extracted = extractExternalUrl(avatar_url);
-      if (extracted) return extracted;
-      if (isExternalUrl(avatar_url)) return avatar_url;
+      const normalizedUrl = normalizeAvatarUrl(avatar_url);
+      if (normalizedUrl !== avatar_url || isExternalUrl(avatar_url)) return normalizedUrl;
       if (avatar_url.startsWith('content/')) return `${getBackendUrl()}${avatar_url}`;
       return avatar_url;
     }
 
     if (userData?.avatar_image) {
       const url = userData.avatar_image;
-      return isExternalUrl(url) ? url : getUserAvatarMediaDirectory(userData.user_uuid, url);
+      return isExternalUrl(url) ? normalizeAvatarUrl(url) : getUserAvatarMediaDirectory(userData.user_uuid, url);
     }
 
     // Username given but no data yet — show empty rather than falling through to session user.
@@ -125,7 +118,7 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
     // No username — show the current session user's avatar.
     if (currentUser?.avatar_image) {
       const url = currentUser.avatar_image;
-      return isExternalUrl(url) ? url : getUserAvatarMediaDirectory(currentUser.user_uuid, url);
+      return isExternalUrl(url) ? normalizeAvatarUrl(url) : getUserAvatarMediaDirectory(currentUser.user_uuid, url);
     }
 
     return getAbsoluteUrl('/empty_avatar.avif');

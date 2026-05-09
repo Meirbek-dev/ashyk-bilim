@@ -5,6 +5,7 @@ import { useSession } from '@/hooks/useSession';
 import { useUserByUsername } from '@/lib/users/client';
 import { getUserAvatarMediaDirectory } from '@services/media/media';
 import { getAbsoluteUrl } from '@services/config/config';
+import { isExternalUrl, normalizeAvatarUrl } from '@services/media/avatar';
 import { useTranslations } from 'next-intl';
 import { User } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -43,13 +44,6 @@ const variantStyles = {
   ghost: 'border-0',
 };
 
-const isExternalUrl = (url: string) => url.startsWith('http://') || url.startsWith('https://');
-
-const extractExternalUrl = (url: string): string | null => {
-  const matches = /avatars\/(https?:\/\/[^/]+.*$)/.exec(url);
-  return matches?.[1] ?? null;
-};
-
 const UserAvatar = (props: UserAvatarProps) => {
   const t = useTranslations('Components.UserAvatar');
   const { user: currentUser } = useSession();
@@ -76,12 +70,12 @@ const UserAvatar = (props: UserAvatarProps) => {
     }
 
     if (avatar_url) {
-      return extractExternalUrl(avatar_url) ?? (isExternalUrl(avatar_url) ? avatar_url : avatar_url);
+      return normalizeAvatarUrl(avatar_url);
     }
 
     if (userData?.avatar_image) {
       const url = userData.avatar_image;
-      return isExternalUrl(url) ? url : getUserAvatarMediaDirectory(userData.user_uuid, url);
+      return isExternalUrl(url) ? normalizeAvatarUrl(url) : getUserAvatarMediaDirectory(userData.user_uuid, url);
     }
 
     // Username given but no data yet — show empty rather than falling through to session user.
@@ -90,7 +84,7 @@ const UserAvatar = (props: UserAvatarProps) => {
     // No username — show the current session user's avatar.
     if (currentUser?.avatar_image) {
       const url = currentUser.avatar_image;
-      return isExternalUrl(url) ? url : getUserAvatarMediaDirectory(currentUser.user_uuid, url);
+      return isExternalUrl(url) ? normalizeAvatarUrl(url) : getUserAvatarMediaDirectory(currentUser.user_uuid, url);
     }
 
     return getAbsoluteUrl('/empty_avatar.avif');

@@ -271,6 +271,7 @@ export default function NavBar() {
               width={120}
               height={36}
               className="h-9 w-auto object-contain"
+              style={{ width: 'auto' }}
               priority
             />
           </Link>
@@ -343,7 +344,7 @@ export default function NavBar() {
                   width={163}
                   height={60}
                   className="h-8 w-auto object-contain"
-                  style={{ width: 'auto', height: 'auto' }}
+                  style={{ width: 'auto' }}
                 />
               </SheetHeader>
 
