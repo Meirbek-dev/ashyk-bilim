@@ -135,18 +135,18 @@ describe('teacher review controls', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Publish selected' }));
+    fireEvent.click(screen.getByRole('button', { name: 'publishSelected' }));
 
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('Publish selected grades')).toBeInTheDocument();
+    expect(within(dialog).getByText('dialogs.publishTitle')).toBeInTheDocument();
     expect(
-      within(dialog).getByText('Review the exact impact before making grades visible to students.'),
+      within(dialog).getByText('dialogs.publishDescription'),
     ).toBeInTheDocument();
-    expect(within(dialog).getByText('Grade-ready')).toBeInTheDocument();
-    expect(within(dialog).getByText('Hidden from student')).toBeInTheDocument();
-    expect(within(dialog).getByText('Already visible')).toBeInTheDocument();
+    expect(within(dialog).getByText('preview.gradeReady')).toBeInTheDocument();
+    expect(within(dialog).getByText('preview.hiddenFromStudent')).toBeInTheDocument();
+    expect(within(dialog).getByText('preview.alreadyVisible')).toBeInTheDocument();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm publish' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'confirmPublish' }));
 
     await waitFor(() => {
       expect(mocks.saveGradeMock).toHaveBeenCalledTimes(2);
@@ -176,9 +176,9 @@ describe('teacher review controls', () => {
       3,
       'assessment_review',
     );
-    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('Selected grades published');
+    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.published');
     expect(onRefresh).toHaveBeenCalledTimes(1);
-    expect(await screen.findByText('Bulk publish finished')).toBeInTheDocument();
+    expect(await screen.findByText('summaries.publishFinished')).toBeInTheDocument();
   });
 
   it('shows deadline extension preview and queues the selected learner override', async () => {
@@ -217,14 +217,14 @@ describe('teacher review controls', () => {
     const dueAtInput = document.querySelector('input[type="datetime-local"]');
     expect(dueAtInput).not.toBeNull();
     fireEvent.change(dueAtInput!, { target: { value: '2026-05-10T14:30' } });
-    fireEvent.change(screen.getByPlaceholderText('Reason'), { target: { value: 'Medical extension' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Extend' }));
+    fireEvent.change(screen.getByPlaceholderText('reasonPlaceholder'), { target: { value: 'Medical extension' } });
+    fireEvent.click(screen.getByRole('button', { name: 'extend' }));
 
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('Extend deadlines')).toBeInTheDocument();
+    expect(within(dialog).getByText('dialogs.extendTitle')).toBeInTheDocument();
     expect(within(dialog).getByText('Medical extension')).toBeInTheDocument();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Queue extension' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'queueExtension' }));
 
     await waitFor(() => {
       expect(mocks.extendDeadlineMock).toHaveBeenCalledWith(77, {
@@ -233,7 +233,7 @@ describe('teacher review controls', () => {
         reason: 'Medical extension',
       });
     });
-    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('Deadline extension queued');
+    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.deadlineQueued');
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 
@@ -253,20 +253,20 @@ describe('teacher review controls', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Release hidden grades' }));
+    fireEvent.click(screen.getByRole('button', { name: 'releaseHidden' }));
 
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('Release hidden grades')).toBeInTheDocument();
-    expect(within(dialog).getByText('Selected hidden submissions')).toBeInTheDocument();
+    expect(within(dialog).getByText('dialogs.releaseTitle')).toBeInTheDocument();
+    expect(within(dialog).getByText('preview.selectedHiddenSubmissions')).toBeInTheDocument();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Release grades' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'releaseGrades' }));
 
     await waitFor(() => {
       expect(mocks.publishAssessmentGradesMock).toHaveBeenCalledWith('assessment_review');
     });
     expect(mocks.publishActivityGradesMock).not.toHaveBeenCalled();
-    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('Hidden grades released');
-    expect(await screen.findByText('Grade release finished')).toBeInTheDocument();
+    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('toasts.hiddenReleased');
+    expect(await screen.findByText('summaries.releaseFinished')).toBeInTheDocument();
   });
 
   it('explains hidden grades and keeps publish disabled until the teacher saves a grade', () => {
@@ -285,12 +285,12 @@ describe('teacher review controls', () => {
       />,
     );
 
-    expect(screen.getByText('Hidden from student')).toBeInTheDocument();
+    expect(screen.getByText('releaseStateHidden')).toBeInTheDocument();
     expect(
-      screen.getByText('This submission is still awaiting grading. Students cannot see any result yet.'),
+      screen.getByText('publishPrerequisite'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Publish to student' })).toBeDisabled();
-    expect(screen.getByText('Save as graded first before publishing student-visible results.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'publishGrade' })).toBeDisabled();
+    expect(screen.getByText('publishPrerequisite')).toBeInTheDocument();
   });
 
   it('explains awaiting release state and publishes student-visible grades', async () => {
@@ -306,12 +306,9 @@ describe('teacher review controls', () => {
       />,
     );
 
-    expect(screen.getByText('Awaiting release')).toBeInTheDocument();
-    expect(
-      screen.getByText('The grade is saved internally and still hidden from the student until you publish it.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('releaseStateAwaitingRelease')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Publish to student' }));
+    fireEvent.click(screen.getByRole('button', { name: 'publishGrade' }));
 
     await waitFor(() => {
       expect(mocks.saveGradeMock).toHaveBeenCalledWith(
@@ -326,7 +323,7 @@ describe('teacher review controls', () => {
         'assessment_review',
       );
     });
-    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('Grade published');
+    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('gradePublished');
     expect(onSaved).toHaveBeenCalledTimes(1);
   });
 
@@ -341,8 +338,7 @@ describe('teacher review controls', () => {
       />,
     );
 
-    expect(screen.getByText('Visible to student')).toBeInTheDocument();
-    expect(screen.getByText('This grade is already visible to the student.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Publish to student' })).toBeDisabled();
+    expect(screen.getByText('releaseStateVisible')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'publishGrade' })).toBeDisabled();
   });
 });

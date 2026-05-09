@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, Download, File, LoaderCircle, UploadCloud } from 'lucide-react';
+import { AlertCircle, Download, File, LoaderCircle, UploadCloud, X } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -8,7 +8,9 @@ import { toast } from 'sonner';
 
 import { getTaskFileSubmissionDir, getTaskRefFileDir } from '@services/media/media';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from '@components/ui/AppLink';
@@ -38,6 +40,50 @@ export interface FileUploadAnswer {
   uploads?: { upload_uuid: string; filename?: string }[];
 }
 
+const MIME_TYPE_PRESETS = [
+  {
+    id: 'pdf',
+    mimes: ['application/pdf'],
+  },
+  {
+    id: 'images',
+    mimes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+  },
+  {
+    id: 'documents',
+    mimes: [
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.oasis.opendocument.text',
+    ],
+  },
+  {
+    id: 'spreadsheets',
+    mimes: [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ],
+  },
+  {
+    id: 'presentations',
+    mimes: [
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    ],
+  },
+  {
+    id: 'archives',
+    mimes: ['application/zip', 'application/x-zip-compressed', 'application/x-rar-compressed'],
+  },
+  {
+    id: 'text',
+    mimes: ['text/plain', 'text/markdown', 'application/json'],
+  },
+] as const;
+
+const PRESET_MIME_TYPES: ReadonlySet<string> = new Set(MIME_TYPE_PRESETS.flatMap((preset) => preset.mimes));
+
 async function sha256(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
   const digest = await crypto.subtle.digest('SHA-256', buffer);
@@ -66,7 +112,36 @@ export function normalizeFileUploadConstraints(raw: Record<string, unknown> | nu
 
 export function FileUploadConstraintsEditor({ value, disabled, onChange }: ItemAuthorProps<FileUploadConstraints>) {
   const t = useTranslations('Features.Assessments.Items.FileUpload');
-  const mimeText = value.allowed_mime_types.join(', ');
+  const [customMimeInput, setCustomMimeInput] = useState('');
+  const selectedMimeTypes = new Set(value.allowed_mime_types);
+  const customMimeTypes = value.allowed_mime_types.filter((mime) => !PRESET_MIME_TYPES.has(mime));
+
+  const updateMimeTypes = (mimes: string[]) => {
+    onChange({
+      ...value,
+      allowed_mime_types: normalizeMimeTypes(mimes),
+    });
+  };
+
+  const togglePreset = (mimes: readonly string[], checked: boolean) => {
+    const next = new Set(value.allowed_mime_types);
+    for (const mime of mimes) {
+      if (checked) {
+        next.add(mime);
+      } else {
+        next.delete(mime);
+      }
+    }
+    updateMimeTypes([...next]);
+  };
+
+  const addCustomMimeTypes = () => {
+    const additions = normalizeMimeTypes(customMimeInput.split(/[\s,]+/));
+    if (!additions.length) return;
+    updateMimeTypes([...value.allowed_mime_types, ...additions]);
+    setCustomMimeInput('');
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -100,23 +175,110 @@ export function FileUploadConstraintsEditor({ value, disabled, onChange }: ItemA
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="file-mime-types">{t('allowedMimeTypes')}</Label>
-        <Input
-          id="file-mime-types"
-          value={mimeText}
-          placeholder={t('mimePlaceholder')}
-          disabled={disabled}
-          onChange={(event) =>
-            onChange({
-              ...value,
-              allowed_mime_types: event.target.value
-                .split(',')
-                .map((item) => item.trim())
-                .filter(Boolean),
-            })
-          }
-        />
+      <div className="space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <Label>{t('allowedFileTypes')}</Label>
+            <p className="text-muted-foreground text-xs">{t('fileTypeHint')}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={disabled || value.allowed_mime_types.length === 0}
+            onClick={() => updateMimeTypes([])}
+          >
+            {t('allowAnyFileType')}
+          </Button>
+        </div>
+
+        <div className="grid gap-2 md:grid-cols-2">
+          {MIME_TYPE_PRESETS.map((preset) => {
+            const checked = preset.mimes.every((mime) => selectedMimeTypes.has(mime));
+            return (
+              <label
+                key={preset.id}
+                className="hover:bg-muted/60 flex cursor-pointer items-start gap-3 rounded-md border p-3 transition has-disabled:cursor-not-allowed has-disabled:opacity-60"
+              >
+                <Checkbox
+                  checked={checked}
+                  disabled={disabled}
+                  onCheckedChange={(nextChecked) => togglePreset(preset.mimes, nextChecked === true)}
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">{t(`presets.${preset.id}.label` as any)}</span>
+                  <span className="text-muted-foreground block text-xs">
+                    {t(`presets.${preset.id}.description` as any)}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="file-mime-types">{t('customMimeLabel')}</Label>
+          <div className="flex gap-2">
+            <Input
+              id="file-mime-types"
+              value={customMimeInput}
+              placeholder={t('mimePlaceholder')}
+              disabled={disabled}
+              onChange={(event) => setCustomMimeInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                addCustomMimeTypes();
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={disabled || !customMimeInput.trim()}
+              onClick={addCustomMimeTypes}
+            >
+              {t('addMimeType')}
+            </Button>
+          </div>
+        </div>
+
+        <div className="bg-muted/30 rounded-md border p-3">
+          <div className="text-muted-foreground mb-2 text-xs font-medium">{t('selectedTypes')}</div>
+          {value.allowed_mime_types.length === 0 ? (
+            <p className="text-sm">{t('noTypeRestrictions')}</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {customMimeTypes.map((mime) => (
+                <Badge
+                  key={mime}
+                  variant="secondary"
+                  className="gap-1 pr-1"
+                >
+                  {mime}
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    className="hover:bg-background/80 rounded-full p-0.5 disabled:opacity-50"
+                    aria-label={t('removeMimeType', { mime })}
+                    onClick={() => updateMimeTypes(value.allowed_mime_types.filter((item) => item !== mime))}
+                  >
+                    <X className="size-3" />
+                  </button>
+                </Badge>
+              ))}
+              {MIME_TYPE_PRESETS.filter((preset) => preset.mimes.every((mime) => selectedMimeTypes.has(mime))).map(
+                (preset) => (
+                  <Badge
+                    key={preset.id}
+                    variant="outline"
+                  >
+                    {t(`presets.${preset.id}.label` as any)}
+                  </Badge>
+                ),
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -294,3 +456,15 @@ registerItemKind({
   Attempt: FileUploadAttempt,
   ReviewDetail: FileUploadReviewDetail,
 });
+
+function normalizeMimeTypes(mimes: string[]): string[] {
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+  for (const mime of mimes) {
+    const value = mime.trim().toLowerCase();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    normalized.push(value);
+  }
+  return normalized;
+}

@@ -1073,8 +1073,11 @@ function NativeItemBodyEditor({
   issues: ReturnType<typeof classifyValidationIssue>[];
   onChange: (nextItem: EditableItem) => void;
 }) {
-  const t = useTranslations('Features.Assessments.Studio.Items');
-  const hasIssue = (code: string) => issues.some((issue) => issue.code === code);
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
+  const hasIssue = (code: string) =>
+    issues.some(
+      (issue) => issue.code === code || (code.endsWith('.prompt_missing') && issue.code === 'item.prompt_missing'),
+    );
 
   if (item.body.kind === 'CHOICE' || item.body.kind === 'MATCHING') {
     return (

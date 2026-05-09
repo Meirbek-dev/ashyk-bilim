@@ -360,6 +360,7 @@ export function CodeChallengeEditor({
               onChange={updateCode}
               languageId={selectedLanguageId}
               readOnly={disabled}
+              readOnlyMessage={disabled ? t('editorReadOnly') : undefined}
               className="flex-1"
             />
 

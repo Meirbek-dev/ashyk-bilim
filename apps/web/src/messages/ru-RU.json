@@ -264,6 +264,7 @@
       "memoryLimitDescription": "Максимальное использование памяти в МБ",
       "noCodeToRun": "Сначала напишите код",
       "noCodeToSubmit": "Напишите код для отправки",
+      "editorReadOnly": "Редактирование недоступно для этой попытки.",
       "noHiddenTestCases": "Нет скрытых тестов. Добавьте их для валидации.",
       "noInput": "(нет ввода)",
       "noLanguageFound": "Язык не найден",
@@ -506,7 +507,11 @@
       "violationWarning": "Нарушения: {count}/{max}. Осталось {remaining} до автоматической отправки.",
       "violationsRecorded": "Зафиксировано {count} нарушений во время теста",
       "yourAnswer": "Ваш ответ",
-      "latestSubmission": "Последняя отправка"
+      "latestSubmission": "Последняя отправка",
+      "resumedDraft": "Черновик восстановлен",
+      "resumedDraftDescription": "Мы нашли ваш предыдущий черновик и восстановили ваши ответы.",
+      "resultsWaitingForReleaseTitle": "Результаты ожидают публикации",
+      "resultsWaitingForReleaseDescription": "Ваш тест проверен, но результаты будут доступны после того, как преподаватель их опубликует."
     }
   },
   "ActivityIndicators": {
@@ -7386,6 +7391,7 @@
           "toggleCorrectAnswer": "Переключить правильный ответ",
           "optionPlaceholder": "Вариант {label}",
           "addOption": "Добавить вариант",
+          "selectMatch": "Выберите соответствие",
           "matching": {
             "left": "Левая часть",
             "right": "Правая часть",
@@ -7398,7 +7404,45 @@
           "maxSizeMb": "Макс. размер, МБ",
           "noLimit": "Без ограничений",
           "allowedMimeTypes": "Разрешённые MIME-типы",
-          "mimePlaceholder": "application/pdf, image/png",
+          "allowedFileTypes": "Разрешённые типы файлов",
+          "fileTypeHint": "Оставьте пустым, чтобы принимать любые файлы. Выберите распространённые форматы здесь; MIME-тип добавляйте только для редких требований.",
+          "allowAnyFileType": "Разрешить любой тип файла",
+          "selectedTypes": "Выбранные типы",
+          "noTypeRestrictions": "Принимается любой тип файла.",
+          "customMimeLabel": "Дополнительный MIME-тип",
+          "mimePlaceholder": "application/pdf",
+          "addMimeType": "Добавить",
+          "removeMimeType": "Удалить {mime}",
+          "presets": {
+            "pdf": {
+              "label": "PDF",
+              "description": "PDF-раздатки и экспортированные документы"
+            },
+            "images": {
+              "label": "Изображения",
+              "description": "JPG, PNG, WebP и GIF"
+            },
+            "documents": {
+              "label": "Документы",
+              "description": "Word и текстовые OpenDocument-файлы"
+            },
+            "spreadsheets": {
+              "label": "Таблицы",
+              "description": "CSV, XLS и XLSX"
+            },
+            "presentations": {
+              "label": "Презентации",
+              "description": "Презентации PowerPoint"
+            },
+            "archives": {
+              "label": "Архивы",
+              "description": "ZIP и RAR-архивы"
+            },
+            "text": {
+              "label": "Текст и код",
+              "description": "Обычный текст, Markdown и JSON"
+            }
+          },
           "referenceFile": "Справочный файл",
           "currentFile": "Текущий файл",
           "verifiedBeforeAttach": "Файл проверяется перед прикреплением к этому черновику.",
@@ -7520,8 +7564,28 @@
           "enterFullscreen": "Перейти в полноэкранный режим",
           "fullscreenNotSupported": "Полноэкранный режим не поддерживается вашим браузером",
           "fullscreenRecommended": "Для этого теста рекомендуется полноэкранный режим",
-          "dueLabel": "Due",
-          "grade": "Оценка {оценка}",
+          "dueLabel": "Срок",
+          "save": "Сохранить",
+          "exitFocus": "Выйти из режима фокуса",
+          "focus": "Режим фокуса",
+          "returnedForRevisionTitle": "Возвращено на доработку",
+          "returnedForRevisionDescription": "Преподаватель вернул вашу работу для внесения исправлений. Пожалуйста, ознакомьтесь с комментариями и отправьте работу повторно.",
+          "violationsRecorded": "{count, plural, =1 {Зафиксировано # нарушение} few {Зафиксировано # нарушения} other {Зафиксировано # нарушений}}",
+          "antiCheatDefaultNotice": "Могут применяться меры защиты от копирования, навигации и полноэкранного режима.",
+          "antiCheatCopyPaste": "блокировка копирования и вставки",
+          "antiCheatTabSwitch": "отслеживание переключения вкладок",
+          "antiCheatDevTools": "обнаружение инструментов разработчика",
+          "antiCheatRightClick": "блокировка правой кнопки мыши",
+          "antiCheatFullscreen": "принудительный полноэкранный режим",
+          "antiCheatActiveChecks": "Активные проверки: {checks}.",
+          "antiCheatActiveNotice": "Проверки попытки активны.",
+          "resultsAwaitingReleaseTitle": "Результаты ожидают публикации",
+          "resultsAwaitingReleaseDescription": "Ваша работа оценена, но баллы и отзыв скрыты до тех пор, пока преподаватель их не опубликует.",
+          "submissionReceivedTitle": "Ответ принят",
+          "submissionReceivedDescription": "Ваши ответы успешно отправлены. Результаты будут скрыты до завершения проверки.",
+          "resultsAvailableTitle": "Результаты доступны",
+          "resultsAvailableDescription": "Опубликованные баллы и отзыв по вашей последней попытке видны ниже.",
+          "grade": "Оценка {score}",
           "incorrect": "Неправильно",
           "instruction1": "Внимательно прочитайте каждый вопрос перед ответом",
           "instruction2": "Использование контекстного меню или инструментов разработчика запрещено",

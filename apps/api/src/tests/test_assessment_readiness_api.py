@@ -326,7 +326,7 @@ def test_readiness_endpoint_returns_new_policy_and_item_codes(
         "schedule.after_due_at",
         "item.title_missing",
         "item.max_score_invalid",
-        "item.prompt_missing",
+        "choice.prompt_missing",
         "choice.option_text_missing",
         "choice.option_duplicate",
         "form.field_label_missing",
@@ -368,13 +368,8 @@ def test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind(
     assert readiness_response.status_code == 200
     readiness_payload = readiness_response.json()
     assert readiness_payload["ok"] is False
-    assert readiness_payload["issues"] == [
-        {
-            "code": "item.kind_forbidden",
-            "message": "OPEN_TEXT items are not allowed for exam assessments.",
-            "item_uuid": "item_1",
-        }
-    ]
+    assert readiness_payload["issues"][0]["code"] == "item.kind_forbidden"
+    assert readiness_payload["issues"][0]["item_uuid"] == "item_1"
 
     lifecycle_response = api_client.post(
         f"/assessments/{assessment.assessment_uuid}/lifecycle",

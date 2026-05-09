@@ -263,6 +263,7 @@
       "memoryLimitDescription": "Maximum memory usage in MB",
       "noCodeToRun": "Please write some code first",
       "noCodeToSubmit": "Please write some code to submit",
+      "editorReadOnly": "Editing is unavailable for this attempt.",
       "noHiddenTestCases": "No hidden test cases. Add some for validation.",
       "noInput": "(no input)",
       "noLanguageFound": "No language found",
@@ -7366,7 +7367,45 @@
           "maxSizeMb": "Max size, MB",
           "noLimit": "No limit",
           "allowedMimeTypes": "Allowed MIME types",
-          "mimePlaceholder": "application/pdf, image/png",
+          "allowedFileTypes": "Allowed file types",
+          "fileTypeHint": "Leave empty to accept any file type. Choose common formats here; add a MIME type only for unusual requirements.",
+          "allowAnyFileType": "Allow any file type",
+          "selectedTypes": "Selected types",
+          "noTypeRestrictions": "Any file type is accepted.",
+          "customMimeLabel": "Advanced MIME type",
+          "mimePlaceholder": "application/pdf",
+          "addMimeType": "Add",
+          "removeMimeType": "Remove {mime}",
+          "presets": {
+            "pdf": {
+              "label": "PDF",
+              "description": "PDF handouts and exported documents"
+            },
+            "images": {
+              "label": "Images",
+              "description": "JPG, PNG, WebP, and GIF"
+            },
+            "documents": {
+              "label": "Documents",
+              "description": "Word and OpenDocument text files"
+            },
+            "spreadsheets": {
+              "label": "Spreadsheets",
+              "description": "CSV, XLS, and XLSX"
+            },
+            "presentations": {
+              "label": "Presentations",
+              "description": "PowerPoint presentations"
+            },
+            "archives": {
+              "label": "Archives",
+              "description": "ZIP and RAR bundles"
+            },
+            "text": {
+              "label": "Text and code",
+              "description": "Plain text, Markdown, and JSON"
+            }
+          },
           "referenceFile": "Reference file",
           "currentFile": "Current file",
           "verifiedBeforeAttach": "File is verified before it is attached to this draft.",

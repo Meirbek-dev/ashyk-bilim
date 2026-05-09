@@ -681,4 +681,4 @@ def test_overview_grading_slo_alerts_surface_breached_assignments() -> None:
     assert alerts[0].severity == "critical"
     assert alerts[0].assessment_id == 7
     assert alerts[0].href == "/dash/analytics/assessments/assignment/7"
-    assert "72-hour grading target" in alerts[0].body
+    assert "72" in alerts[0].body

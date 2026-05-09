@@ -2648,7 +2648,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
         if not body.prompt.strip():
             issues.append(
                 ReadinessIssue(
-                    code="item.prompt_missing",
+                    code="choice.prompt_missing",
                     message="Текст вопроса (промпт) обязателен.",
                     item_uuid=item.item_uuid,
                 )
@@ -2703,7 +2703,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
         if not body.prompt.strip():
             issues.append(
                 ReadinessIssue(
-                    code="item.prompt_missing",
+                    code="open_text.prompt_missing",
                     message="Текст открытого вопроса (промпт) обязателен.",
                     item_uuid=item.item_uuid,
                 )
@@ -2720,7 +2720,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
         if not body.prompt.strip():
             issues.append(
                 ReadinessIssue(
-                    code="item.prompt_missing",
+                    code="file.prompt_missing",
                     message="Текст задания загрузки файла (промпт) обязателен.",
                     item_uuid=item.item_uuid,
                 )
@@ -2753,7 +2753,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
         if not body.prompt.strip():
             issues.append(
                 ReadinessIssue(
-                    code="item.prompt_missing",
+                    code="form.prompt_missing",
                     message="Текст формы (промпт) обязателен.",
                     item_uuid=item.item_uuid,
                 )
@@ -2789,7 +2789,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
         if not body.prompt.strip():
             issues.append(
                 ReadinessIssue(
-                    code="item.prompt_missing",
+                    code="code.prompt_missing",
                     message="Текст задания по коду (промпт) обязателен.",
                     item_uuid=item.item_uuid,
                 )
@@ -2833,7 +2833,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
         if not body.prompt.strip():
             issues.append(
                 ReadinessIssue(
-                    code="item.prompt_missing",
+                    code="matching.prompt_missing",
                     message="Текст задания на соответствие обязателен.",
                     item_uuid=item.item_uuid,
                 )

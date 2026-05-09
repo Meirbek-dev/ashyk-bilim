@@ -68,7 +68,7 @@ export function AssessmentChrome({
   className,
 }: AssessmentChromeProps) {
   const t = useTranslations('Features.Assessments.Attempt.Exam');
-  const releaseNotice = getReleaseNotice({ releaseState, submissionStatus, returned, isResultVisible });
+  const releaseNotice = getReleaseNotice({ releaseState, submissionStatus, returned, isResultVisible, t });
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
@@ -125,7 +125,7 @@ export function AssessmentChrome({
           <AlertTriangle className="size-4" />
           <AlertTitle>{t('attemptIntegrityChecksActive')}</AlertTitle>
           <AlertDescription>
-            {describeAntiCheat(policy)}
+            {describeAntiCheat(policy, t)}
             {violationCount > 0 ? ' ' + t('violationsRecorded', { count: violationCount }) : ''}
           </AlertDescription>
         </Alert>
@@ -152,16 +152,16 @@ function TimerBadge({ remainingSeconds }: { remainingSeconds: number }) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function describeAntiCheat(policy: PolicyView | null | undefined): string {
-  if (!policy) return 'Copy, navigation, and fullscreen protections may be enforced.';
+function describeAntiCheat(policy: PolicyView | null | undefined, t: (key: string, values?: any) => string): string {
+  if (!policy) return t('antiCheatDefaultNotice');
   const enabled = [
-    policy.antiCheat.copyPasteProtection ? 'copy and paste blocking' : null,
-    policy.antiCheat.tabSwitchDetection ? 'tab switch detection' : null,
-    policy.antiCheat.devtoolsDetection ? 'developer tools detection' : null,
-    policy.antiCheat.rightClickDisabled ? 'right-click blocking' : null,
-    policy.antiCheat.fullscreenEnforced ? 'fullscreen enforcement' : null,
+    policy.antiCheat.copyPasteProtection ? t('antiCheatCopyPaste') : null,
+    policy.antiCheat.tabSwitchDetection ? t('antiCheatTabSwitch') : null,
+    policy.antiCheat.devtoolsDetection ? t('antiCheatDevTools') : null,
+    policy.antiCheat.rightClickDisabled ? t('antiCheatRightClick') : null,
+    policy.antiCheat.fullscreenEnforced ? t('antiCheatFullscreen') : null,
   ].filter(Boolean);
-  return enabled.length ? `Active checks: ${enabled.join(', ')}.` : 'Attempt checks are active.';
+  return enabled.length ? t('antiCheatActiveChecks', { checks: enabled.join(', ') }) : t('antiCheatActiveNotice');
 }
 
 function getReleaseNotice({
@@ -169,11 +169,13 @@ function getReleaseNotice({
   submissionStatus,
   returned,
   isResultVisible,
+  t,
 }: {
   releaseState?: ReleaseState;
   submissionStatus: SubmissionStatus | null;
   returned: boolean;
   isResultVisible: boolean;
+  t: (key: string) => string;
 }): { title: string; description: string } | null {
   if (returned || !submissionStatus) {
     return null;
@@ -181,23 +183,22 @@ function getReleaseNotice({
 
   if (releaseState === 'AWAITING_RELEASE' || submissionStatus === 'GRADED') {
     return {
-      title: 'Results are waiting for release',
-      description:
-        'Your work has been graded, but the score and feedback remain hidden until your teacher releases them.',
+      title: t('resultsAwaitingReleaseTitle'),
+      description: t('resultsAwaitingReleaseDescription'),
     };
   }
 
   if (releaseState === 'HIDDEN' && submissionStatus === 'PENDING') {
     return {
-      title: 'Submission received',
-      description: 'Your answers were submitted successfully. Results stay hidden until review is complete.',
+      title: t('submissionReceivedTitle'),
+      description: t('submissionReceivedDescription'),
     };
   }
 
   if (releaseState === 'VISIBLE' && isResultVisible) {
     return {
-      title: 'Results are available',
-      description: 'Released scores and feedback for your latest submission are visible below.',
+      title: t('resultsAvailableTitle'),
+      description: t('resultsAvailableDescription'),
     };
   }
 

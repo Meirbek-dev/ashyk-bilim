@@ -263,6 +263,7 @@
       "memoryLimitDescription": "Мбайттағы ең көп жадты пайдалану",
       "noCodeToRun": "Алдымен код жазыңыз",
       "noCodeToSubmit": "Жіберу үшін код жазыңыз",
+      "editorReadOnly": "Бұл әрекет үшін өңдеу қолжетімді емес.",
       "noHiddenTestCases": "Жасырын сынақтар жоқ. Оларды тексеру үшін қосыңыз.",
       "noInput": "(енгізу жоқ)",
       "noLanguageFound": "Тіл табылмады",
@@ -7411,7 +7412,45 @@
           "maxSizeMb": "Максималды өлшем, МБ",
           "noLimit": "Шектеусіз",
           "allowedMimeTypes": "Рұқсат етілген MIME түрлері",
-          "mimePlaceholder": "application/pdf, image/png",
+          "allowedFileTypes": "Рұқсат етілген файл түрлері",
+          "fileTypeHint": "Кез келген файл түрін қабылдау үшін бос қалдырыңыз. Жиі қолданылатын форматтарды осы жерден таңдаңыз; MIME түрін ерекше талап болғанда ғана қосыңыз.",
+          "allowAnyFileType": "Кез келген файл түріне рұқсат беру",
+          "selectedTypes": "Таңдалған түрлер",
+          "noTypeRestrictions": "Кез келген файл түрі қабылданады.",
+          "customMimeLabel": "Қосымша MIME түрі",
+          "mimePlaceholder": "application/pdf",
+          "addMimeType": "Қосу",
+          "removeMimeType": "{mime} жою",
+          "presets": {
+            "pdf": {
+              "label": "PDF",
+              "description": "PDF материалдары және экспортталған құжаттар"
+            },
+            "images": {
+              "label": "Суреттер",
+              "description": "JPG, PNG, WebP және GIF"
+            },
+            "documents": {
+              "label": "Құжаттар",
+              "description": "Word және OpenDocument мәтін файлдары"
+            },
+            "spreadsheets": {
+              "label": "Кестелер",
+              "description": "CSV, XLS және XLSX"
+            },
+            "presentations": {
+              "label": "Презентациялар",
+              "description": "PowerPoint презентациялары"
+            },
+            "archives": {
+              "label": "Архивтер",
+              "description": "ZIP және RAR жинақтары"
+            },
+            "text": {
+              "label": "Мәтін және код",
+              "description": "Қарапайым мәтін, Markdown және JSON"
+            }
+          },
           "referenceFile": "Анықтамалық файл",
           "currentFile": "Ағымдағы файл",
           "verifiedBeforeAttach": "Файл жобаға тіркелмес бұрын тексеріледі.",

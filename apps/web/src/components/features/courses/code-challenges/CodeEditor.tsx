@@ -14,10 +14,7 @@ loader.config({
   },
 });
 
-const MonacoEditor = dynamic(
-  () => import('@monaco-editor/react').then((mod) => mod.Editor),
-  { ssr: false },
-);
+const MonacoEditor = dynamic(() => import('@monaco-editor/react').then((mod) => mod.Editor), { ssr: false });
 
 export interface Language {
   id: number;
@@ -56,6 +53,7 @@ interface CodeEditorProps {
   className?: string;
   onMount?: OnMount;
   options?: Record<string, unknown>;
+  readOnlyMessage?: string;
 }
 
 const DEFAULT_OPTIONS = {};
@@ -69,6 +67,7 @@ export function CodeEditor({
   className,
   onMount,
   options = DEFAULT_OPTIONS,
+  readOnlyMessage,
 }: CodeEditorProps) {
   const { resolvedTheme } = useTheme();
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
@@ -108,13 +107,19 @@ export function CodeEditor({
       padding: { top: 16, bottom: 16 },
       readOnly,
       domReadOnly: readOnly,
+      readOnlyMessage: readOnlyMessage ? { value: readOnlyMessage } : undefined,
       ...options,
     }),
-    [readOnly, options],
+    [readOnly, options, readOnlyMessage],
   );
 
   return (
-    <div className={cn('overflow-hidden rounded-lg border', className)}>
+    <div className={cn('relative overflow-hidden rounded-lg border', className)}>
+      {readOnly && readOnlyMessage ? (
+        <div className="bg-background/95 text-muted-foreground absolute top-2 right-2 z-10 rounded-md border px-2 py-1 text-xs shadow-sm">
+          {readOnlyMessage}
+        </div>
+      ) : null}
       <MonacoEditor
         height={height}
         language={getMonacoLanguage(languageId)}
