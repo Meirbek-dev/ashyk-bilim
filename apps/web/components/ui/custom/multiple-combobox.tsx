@@ -73,6 +73,7 @@ export default function MultiSelectCombobox<T>({
               variant="outline"
               role="combobox"
               aria-expanded={open}
+              aria-controls={`${id}-listbox`}
               className="h-auto min-h-8 w-full justify-between hover:bg-transparent"
             >
               <div className="flex flex-wrap items-center gap-1 pe-2.5">

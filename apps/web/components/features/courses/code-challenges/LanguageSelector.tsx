@@ -82,6 +82,8 @@ export function LanguageSelector({
             {...triggerProps}
             variant="outline"
             role="combobox"
+            aria-controls={triggerProps['aria-controls'] || "language-listbox"}
+            aria-expanded={open}
             disabled={disabled}
             className={cn('w-[200px] justify-between', className)}
           >

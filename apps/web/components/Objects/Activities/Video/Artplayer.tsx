@@ -117,26 +117,32 @@ export default function ArtPlayer({
       getInstance(art);
     }
 
-    art.on('ready', () => {
+    const handleReady = () => {
       if (startTime && art.duration >= startTime) {
         art.seek = startTime;
       }
       if (onPlayerReady) {
         onPlayerReady(art);
       }
-    });
+    };
+    art.on('ready', handleReady);
 
+    let handleTimeUpdate: (() => void) | undefined;
     if (endTime) {
-      const handleTimeUpdate = () => {
+      handleTimeUpdate = () => {
         if (art.currentTime >= endTime) {
           art.pause();
-          art.off('timeupdate', handleTimeUpdate);
+          if (handleTimeUpdate) art.off('timeupdate', handleTimeUpdate);
         }
       };
       art.on('timeupdate', handleTimeUpdate);
     }
 
     return () => {
+      art.off('ready', handleReady);
+      if (handleTimeUpdate) {
+        art.off('timeupdate', handleTimeUpdate);
+      }
       if (art?.destroy) {
         art.destroy(false);
       }

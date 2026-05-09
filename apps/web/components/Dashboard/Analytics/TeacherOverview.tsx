@@ -30,6 +30,12 @@ const TeacherWorkloadPanel = lazy(() => import('./TeacherWorkloadPanel'));
 const TeacherKpiCharts = lazy(() => import('./TeacherKpiCharts'));
 const TeacherKpiCards = lazy(() => import('./TeacherKpiCards'));
 
+const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
+  <Card className="shadow-sm">
+    <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
+  </Card>
+);
+
 interface TeacherOverviewProps {
   query: AnalyticsQuery;
   data: TeacherOverviewResponse;
@@ -179,12 +185,6 @@ export default function TeacherOverview({
       router.push(`/dash/analytics/courses?${params.toString()}`);
     }
   };
-
-  const SectionFallback = ({ height = 'h-[280px]' }: { height?: string }) => (
-    <Card className="shadow-sm">
-      <CardContent className={`${height} bg-muted animate-pulse rounded-lg`} />
-    </Card>
-  );
 
   return (
     <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-6 xl:px-8">
