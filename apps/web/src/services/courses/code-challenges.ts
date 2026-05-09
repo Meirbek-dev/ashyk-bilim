@@ -292,12 +292,16 @@ function toCodeItemBody(
   settings: Partial<CodeChallengeSettings>,
 ): CodeAssessmentItemBody {
   const existingBody = codeItem?.body;
+  const prompt =
+    typeof existingBody?.prompt === 'string' && existingBody.prompt.trim().length > 0
+      ? existingBody.prompt
+      : assessment.description?.trim() || assessment.title;
   const visibleTests = Array.isArray(settings.visible_tests) ? settings.visible_tests : [];
   const hiddenTests = Array.isArray(settings.hidden_tests) ? settings.hidden_tests : [];
 
   return {
     kind: 'CODE',
-    prompt: existingBody?.prompt ?? assessment.description ?? assessment.title,
+    prompt,
     languages: settings.allowed_languages ?? existingBody?.languages ?? [],
     starter_code: settings.starter_code ?? existingBody?.starter_code ?? {},
     tests: [

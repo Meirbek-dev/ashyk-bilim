@@ -172,16 +172,20 @@ def _seed_assessment(
         session.add(chapter)
         session.flush()
 
-        activity_type = (
-            ActivityTypeEnum.TYPE_EXAM
-            if kind == AssessmentType.EXAM
-            else ActivityTypeEnum.TYPE_ASSIGNMENT
-        )
-        activity_sub_type = (
-            ActivitySubTypeEnum.SUBTYPE_EXAM_STANDARD
-            if kind == AssessmentType.EXAM
-            else ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY
-        )
+        activity_type_by_kind = {
+            AssessmentType.ASSIGNMENT: ActivityTypeEnum.TYPE_ASSIGNMENT,
+            AssessmentType.EXAM: ActivityTypeEnum.TYPE_EXAM,
+            AssessmentType.QUIZ: ActivityTypeEnum.TYPE_QUIZ,
+            AssessmentType.CODE_CHALLENGE: ActivityTypeEnum.TYPE_CODE_CHALLENGE,
+        }
+        activity_sub_type_by_kind = {
+            AssessmentType.ASSIGNMENT: ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY,
+            AssessmentType.EXAM: ActivitySubTypeEnum.SUBTYPE_EXAM_STANDARD,
+            AssessmentType.QUIZ: ActivitySubTypeEnum.SUBTYPE_QUIZ_STANDARD,
+            AssessmentType.CODE_CHALLENGE: ActivitySubTypeEnum.SUBTYPE_CODE_GENERAL,
+        }
+        activity_type = activity_type_by_kind[kind]
+        activity_sub_type = activity_sub_type_by_kind[kind]
         activity = Activity(
             name="Assessment Activity",
             activity_type=activity_type,
@@ -332,6 +336,49 @@ def test_readiness_endpoint_returns_new_policy_and_item_codes(
         "form.field_label_missing",
         "form.field_id_duplicate",
     } <= issue_codes
+
+
+def test_code_challenge_readiness_accepts_title_as_legacy_blank_prompt_fallback(
+    api_client: TestClient,
+    db_session_factory,
+) -> None:
+    assessment = _seed_assessment(
+        db_session_factory,
+        kind=AssessmentType.CODE_CHALLENGE,
+        title="FizzBuzz",
+        scheduled_at=None,
+        items=[
+            {
+                "kind": ItemKind.CODE,
+                "title": "Write FizzBuzz",
+                "max_score": 100,
+                "body_json": {
+                    "kind": "CODE",
+                    "prompt": "",
+                    "languages": [71],
+                    "starter_code": {"71": "print('')"},
+                    "tests": [
+                        {
+                            "id": "sample",
+                            "input": "3",
+                            "expected_output": "Fizz",
+                            "is_visible": True,
+                            "weight": 1,
+                        },
+                    ],
+                    "time_limit_seconds": 5,
+                    "memory_limit_mb": 256,
+                },
+            }
+        ],
+    )
+
+    response = api_client.get(f"/assessments/{assessment.assessment_uuid}/readiness")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["issues"] == []
 
 
 def test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind(

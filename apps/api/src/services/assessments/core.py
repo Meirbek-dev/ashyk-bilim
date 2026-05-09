@@ -2786,7 +2786,12 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                 )
             )
     elif body.kind == "CODE":
-        if not body.prompt.strip():
+        # Older code-challenge saves could persist an empty body prompt while the
+        # item title still held the task text. Treat the title as the prompt
+        # fallback so configured challenges are not blocked only by that legacy
+        # blank field.
+        prompt_text = body.prompt.strip() or item.title.strip()
+        if not prompt_text:
             issues.append(
                 ReadinessIssue(
                     code="code.prompt_missing",
