@@ -55,7 +55,10 @@ function ChartContainer({
 
   React.useEffect(() => {
     setIsMounted(true);
-    if (!containerRef.current) return;
+  }, []);
+
+  React.useEffect(() => {
+    if (!isMounted || !containerRef.current) return;
 
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
@@ -69,7 +72,7 @@ function ChartContainer({
 
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [isMounted]);
 
   if (!isMounted) {
     return (
@@ -97,12 +100,17 @@ function ChartContainer({
           config={config}
         />
         {dimensions ? (
-          <RechartsPrimitive.ResponsiveContainer
-            width={dimensions.width}
-            height={dimensions.height}
-          >
-            {children}
-          </RechartsPrimitive.ResponsiveContainer>
+          <div style={{ width: dimensions.width, height: dimensions.height }}>
+            {React.Children.map(children, (child) => {
+              if (React.isValidElement(child)) {
+                return React.cloneElement(child as React.ReactElement<any>, {
+                  width: dimensions.width,
+                  height: dimensions.height,
+                });
+              }
+              return child;
+            })}
+          </div>
         ) : null}
       </div>
     </ChartContext.Provider>
