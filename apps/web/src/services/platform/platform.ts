@@ -39,7 +39,6 @@ async function fetchPlatform(): Promise<PlatformRead | null> {
  * This is a PUBLIC endpoint used for bootstrapping the UI.
  */
 export async function getPlatform() {
-  console.log('[DEBUG] getPlatform called');
   return fetchPlatform();
 }
 
