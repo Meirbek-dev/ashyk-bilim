@@ -76,7 +76,7 @@ export default function DataTable<TData>({
   data,
   className,
   pageSize = 20,
-  pageSizeOptions = [10, 20, 50, 100],
+  pageSizeOptions = [20, 50, 100, 250],
   storageKey,
   serverPaginated = false,
   labels,

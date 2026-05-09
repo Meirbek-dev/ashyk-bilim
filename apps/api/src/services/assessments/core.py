@@ -171,7 +171,7 @@ async def create_assessment(
     if chapter.course_id != course.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Chapter does not belong to the selected course",
+            detail="Глава не принадлежит выбранному курсу",
         )
 
     _require_author(current_user, course, db_session)
@@ -316,8 +316,8 @@ async def transition_assessment_lifecycle(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                f"Cannot transition assessment from {current.value} to "
-                f"{target.value}. Allowed: {[state.value for state in allowed]}"
+                f"Невозможно перевести оценивание из {current.value} в "
+                f"{target.value}. Разрешено: {[state.value for state in allowed]}"
             ),
         )
 
@@ -337,7 +337,7 @@ async def transition_assessment_lifecycle(
         if scheduled_at is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="scheduled_at is required when scheduling",
+                detail="Параметр scheduled_at обязателен при планировании",
             )
         scheduled_at = (
             scheduled_at if scheduled_at.tzinfo else scheduled_at.replace(tzinfo=UTC)
@@ -345,7 +345,7 @@ async def transition_assessment_lifecycle(
         if scheduled_at <= now:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="scheduled_at must be in the future",
+                detail="Время публикации (scheduled_at) должно быть в будущем",
             )
         assessment.scheduled_at = scheduled_at
         assessment.published_at = None
@@ -472,7 +472,7 @@ async def reorder_assessment_items(
     if missing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"message": "Unknown assessment items", "item_uuids": missing},
+            detail={"message": "Неизвестные элементы оценивания", "item_uuids": missing},
         )
 
     now = datetime.now(UTC)
@@ -506,7 +506,7 @@ async def delete_assessment_item(
     assessment.content_version = _content_version(assessment) + 1
     db_session.add(assessment)
     db_session.commit()
-    return {"detail": "Assessment item deleted"}
+    return {"detail": "Элемент оценивания удален"}
 
 
 # ── Student submissions ───────────────────────────────────────────────────────
@@ -540,7 +540,7 @@ async def start_assessment(
             )
         ).first()
         if submission is None:
-            raise HTTPException(status_code=500, detail="Submission was not created")
+            raise HTTPException(status_code=500, detail="Отправка не была создана")
         return _build_student_submission_read(submission, db_session)
     except HTTPException:
         raise
@@ -722,7 +722,7 @@ async def submit_assessment(
             )
         ).first()
         if submission is None:
-            raise HTTPException(status_code=500, detail="Submission was not saved")
+            raise HTTPException(status_code=500, detail="Отправка не была сохранена")
 
         # Phase 3: Snapshot items and policy at submit time
         _snapshot_submission(submission, assessment, db_session)
@@ -773,7 +773,7 @@ async def get_assessment_submissions(
             except ValueError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid status '{status_filter}'",
+                    detail=f"Недопустимый статус '{status_filter}'",
                 ) from exc
 
     if late_only:
@@ -901,7 +901,7 @@ async def get_assessment_submission(
     if submission is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
 
     result = _build_teacher_submission_read(submission, assessment, db_session)
@@ -944,7 +944,7 @@ async def save_assessment_grade(
         select(Submission).where(Submission.submission_uuid == saved.submission_uuid)
     ).first()
     if refreshed is None:
-        raise HTTPException(status_code=500, detail="Submission was not saved")
+        raise HTTPException(status_code=500, detail="Отправка не была сохранена")
     return _build_teacher_submission_read(refreshed, assessment, db_session)
 
 
@@ -1113,7 +1113,7 @@ async def create_student_policy_override(
     _require_grade(current_user, course, db_session)
     policy = _get_policy_for_assessment(assessment, db_session)
     if policy is None or policy.id is None:
-        raise HTTPException(status_code=404, detail="Assessment policy not found")
+        raise HTTPException(status_code=404, detail="Политика оценивания не найдена")
 
     existing = db_session.exec(
         select(StudentPolicyOverride).where(
@@ -1124,7 +1124,7 @@ async def create_student_policy_override(
     if existing is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="An override already exists for this student. Use PATCH to update it.",
+            detail="Исключение для этого студента уже существует. Используйте PATCH для обновления.",
         )
 
     override = StudentPolicyOverride(
@@ -1155,7 +1155,7 @@ async def update_student_policy_override(
     _require_grade(current_user, course, db_session)
     policy = _get_policy_for_assessment(assessment, db_session)
     if policy is None or policy.id is None:
-        raise HTTPException(status_code=404, detail="Assessment policy not found")
+        raise HTTPException(status_code=404, detail="Политика оценивания не найдена")
 
     override = db_session.exec(
         select(StudentPolicyOverride).where(
@@ -1164,7 +1164,7 @@ async def update_student_policy_override(
         )
     ).first()
     if override is None:
-        raise HTTPException(status_code=404, detail="Override not found")
+        raise HTTPException(status_code=404, detail="Исключение не найдено")
 
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(override, field, value)
@@ -1186,7 +1186,7 @@ async def delete_student_policy_override(
     _require_grade(current_user, course, db_session)
     policy = _get_policy_for_assessment(assessment, db_session)
     if policy is None or policy.id is None:
-        raise HTTPException(status_code=404, detail="Assessment policy not found")
+        raise HTTPException(status_code=404, detail="Политика оценивания не найдена")
 
     override = db_session.exec(
         select(StudentPolicyOverride).where(
@@ -1195,10 +1195,10 @@ async def delete_student_policy_override(
         )
     ).first()
     if override is None:
-        raise HTTPException(status_code=404, detail="Override not found")
+        raise HTTPException(status_code=404, detail="Исключение не найдено")
     db_session.delete(override)
     db_session.commit()
-    return {"detail": "Override deleted"}
+    return {"detail": "Исключение удалено"}
 
 
 def _build_override_read(override: StudentPolicyOverride) -> StudentPolicyOverrideRead:
@@ -1308,7 +1308,7 @@ async def save_grading_draft(
         select(Submission).where(Submission.submission_uuid == saved.submission_uuid)
     ).first()
     if refreshed is None:
-        raise HTTPException(status_code=500, detail="Submission was not saved")
+        raise HTTPException(status_code=500, detail="Отправка не была сохранена")
     result = _build_teacher_submission_read(refreshed, assessment, db_session)
     result.grading_json = build_effective_grading_breakdown(refreshed, db_session)
     return result
@@ -1338,12 +1338,12 @@ async def run_code_item(
     if item.kind != ItemKind.CODE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This endpoint is only available for CODE items",
+            detail="Этот эндпоинт доступен только для элементов типа CODE",
         )
 
     body = ITEM_BODY_ADAPTER.validate_python(item.body_json)
     if body.kind != "CODE":
-        raise HTTPException(status_code=400, detail="Item body is not CODE kind")
+        raise HTTPException(status_code=400, detail="Тело элемента не является типом CODE")
 
     # Validate language
     if payload.language not in body.languages:
@@ -1351,7 +1351,7 @@ async def run_code_item(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
                 "code": "LANGUAGE_NOT_ALLOWED",
-                "message": f"Language {payload.language} is not allowed for this item.",
+                "message": f"Язык {payload.language} не разрешен для этого элемента.",
                 "allowed_languages": body.languages,
             },
         )
@@ -1469,7 +1469,7 @@ def build_readiness(
     allowed_item_kinds = _allowed_item_kinds_for_assessment(assessment.kind)
     if not assessment.title.strip():
         issues.append(
-            ReadinessIssue(code="assessment.title_missing", message="Title is required")
+            ReadinessIssue(code="assessment.title_missing", message="Название обязательно")
         )
 
     items = _get_items(assessment, db_session)
@@ -1477,7 +1477,7 @@ def build_readiness(
         issues.append(
             ReadinessIssue(
                 code="assessment.empty",
-                message="Add at least one item before publishing.",
+                message="Добавьте хотя бы один элемент перед публикацией.",
             )
         )
 
@@ -1486,7 +1486,7 @@ def build_readiness(
         issues.append(
             ReadinessIssue(
                 code="policy.missing",
-                message="Assessment policy is missing.",
+                message="Политика оценивания отсутствует.",
             )
         )
     else:
@@ -1494,14 +1494,14 @@ def build_readiness(
             issues.append(
                 ReadinessIssue(
                     code="policy.max_attempts_invalid",
-                    message="Attempt limit must be at least 1 when set.",
+                    message="Лимит попыток должен быть не менее 1.",
                 )
             )
         if policy.time_limit_seconds is not None and policy.time_limit_seconds < 1:
             issues.append(
                 ReadinessIssue(
                     code="policy.time_limit_invalid",
-                    message="Time limit must be greater than zero when set.",
+                    message="Ограничение по времени должно быть больше нуля.",
                 )
             )
         anti_cheat = (
@@ -1514,7 +1514,7 @@ def build_readiness(
             issues.append(
                 ReadinessIssue(
                     code="policy.violation_threshold_invalid",
-                    message="Violation threshold must be at least 1 when enabled.",
+                    message="Порог нарушений должен быть не менее 1.",
                 )
             )
         if (
@@ -1525,7 +1525,7 @@ def build_readiness(
             issues.append(
                 ReadinessIssue(
                     code="schedule.after_due_at",
-                    message="Scheduled publish time must be before the due date.",
+                    message="Запланированное время публикации должно быть раньше срока сдачи.",
                 )
             )
 
@@ -1534,7 +1534,7 @@ def build_readiness(
             issues.append(
                 ReadinessIssue(
                     code="item.kind_forbidden",
-                    message=f"{item.kind} items are not allowed for {assessment.kind.lower()} assessments.",
+                    message=f"Элементы типа {item.kind} не разрешены для {assessment.kind.lower()} оцениваний.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -1567,9 +1567,9 @@ def _get_or_project_assessment_for_activity(
         detail={
             "code": "MIGRATION_REQUIRED",
             "message": (
-                "This activity does not have a canonical assessment row. "
-                "Run 'python cli.py migrate-legacy-assessments' to backfill "
-                "canonical Assessment rows for legacy activities."
+                "У этой активности нет канонической записи оценивания. "
+                "Запустите 'python cli.py migrate-legacy-assessments' для заполнения "
+                "канонических записей для устаревших активностей."
             ),
         },
     )
@@ -1586,7 +1586,7 @@ def _build_assessment_read(
 ) -> AssessmentRead:
     activity = db_session.get(Activity, assessment.activity_id)
     if activity is None:
-        raise HTTPException(status_code=404, detail="Activity not found")
+        raise HTTPException(status_code=404, detail="Активность не найдена")
     course = _get_course_for_activity_or_404(activity, db_session)
     return AssessmentRead(
         id=assessment.id or 0,
@@ -1983,7 +1983,7 @@ def _get_item_or_404(
         )
     ).first()
     if item is None:
-        raise HTTPException(status_code=404, detail="Assessment item not found")
+        raise HTTPException(status_code=404, detail="Элемент оценивания не найден")
     return item
 
 
@@ -1995,7 +1995,7 @@ def _get_assessment_by_uuid_or_404(
         select(Assessment).where(Assessment.assessment_uuid == assessment_uuid)
     ).first()
     if assessment is None:
-        raise HTTPException(status_code=404, detail="Assessment not found")
+        raise HTTPException(status_code=404, detail="Оценивание не найдено")
     return assessment
 
 
@@ -2009,7 +2009,7 @@ def _get_activity_by_uuid_or_404(activity_uuid: str, db_session: Session) -> Act
         select(Activity).where(Activity.activity_uuid == normalized)
     ).first()
     if activity is None:
-        raise HTTPException(status_code=404, detail="Activity not found")
+        raise HTTPException(status_code=404, detail="Активность не найдена")
     return activity
 
 
@@ -2019,7 +2019,7 @@ def _get_activity_and_course(
 ) -> tuple[Activity, Course]:
     activity = db_session.get(Activity, assessment.activity_id)
     if activity is None:
-        raise HTTPException(status_code=404, detail="Activity not found")
+        raise HTTPException(status_code=404, detail="Активность не найдена")
     return activity, _get_course_for_activity_or_404(activity, db_session)
 
 
@@ -2038,7 +2038,7 @@ def _get_assessment_submission_or_404(
     if submission is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
     return submission
 
@@ -2053,20 +2053,20 @@ def _get_course_for_activity_or_404(activity: Activity, db_session: Session) -> 
         course = db_session.get(Course, chapter.course_id)
         if course is not None:
             return course
-    raise HTTPException(status_code=404, detail="Course not found")
+    raise HTTPException(status_code=404, detail="Курс не найден")
 
 
 def _get_course_or_404(course_id: int, db_session: Session) -> Course:
     course = db_session.get(Course, course_id)
     if course is None:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
     return course
 
 
 def _get_chapter_or_404(chapter_id: int, db_session: Session) -> Chapter:
     chapter = db_session.get(Chapter, chapter_id)
     if chapter is None:
-        raise HTTPException(status_code=404, detail="Chapter not found")
+        raise HTTPException(status_code=404, detail="Глава не найдена")
     return chapter
 
 
@@ -2126,7 +2126,7 @@ def _require_submit_access(
     if not user_has_course_access(user.id, course, db_session):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You must be enrolled in this course to submit assessments",
+            detail="Вы должны быть зачислены на этот курс, чтобы отправлять работы",
         )
     checker = PermissionChecker(db_session)
     if checker.check(
@@ -2167,7 +2167,7 @@ def _ensure_authorable(assessment: Assessment, db_session: Session) -> None:
     if AssessmentLifecycle(assessment.lifecycle) == AssessmentLifecycle.ARCHIVED:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Archived assessments are read-only",
+            detail="Архивные оценивания доступны только для чтения",
         )
     if AssessmentLifecycle(assessment.lifecycle) == AssessmentLifecycle.PUBLISHED:
         existing_submissions = db_session.exec(
@@ -2179,8 +2179,8 @@ def _ensure_authorable(assessment: Assessment, db_session: Session) -> None:
                 detail={
                     "code": "PUBLISHED_ASSESSMENT_HAS_SUBMISSIONS",
                     "message": (
-                        "Published assessments with submissions cannot be edited "
-                        "until assessment versioning is available."
+                        "Опубликованные оценивания с отправленными работами нельзя редактировать "
+                        "до появления системы версионирования."
                     ),
                 },
             )
@@ -2459,7 +2459,7 @@ def _normalize_answer_patch(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
-                "message": "Invalid assessment answers",
+                "message": "Некорректные ответы оценивания",
                 "unknown_item_uuids": invalid,
                 "kind_mismatch_item_uuids": mismatched,
             },
@@ -2493,7 +2493,7 @@ def _validate_file_upload_answer(
     uploads: list[object] = uploads_value if isinstance(uploads_value, list) else []
     for file_ref in uploads:
         if not isinstance(file_ref, dict):
-            raise HTTPException(status_code=400, detail="Invalid file upload answer")
+            raise HTTPException(status_code=400, detail="Некорректный ответ с загрузкой файла")
         upload_id = file_ref.get("upload_uuid")
         upload = db_session.exec(
             select(Upload).where(Upload.upload_uuid == upload_id)
@@ -2506,7 +2506,7 @@ def _validate_file_upload_answer(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail={
-                    "message": "File upload is not finalized for this user",
+                    "message": "Загрузка файла не завершена для этого пользователя",
                     "upload_uuid": upload_id,
                     "item_uuid": item.item_uuid,
                 },
@@ -2515,7 +2515,7 @@ def _validate_file_upload_answer(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail={
-                    "message": "File content type is not allowed",
+                    "message": "Тип контента файла не разрешен",
                     "upload_uuid": upload_id,
                     "item_uuid": item.item_uuid,
                 },
@@ -2528,7 +2528,7 @@ def _validate_file_upload_answer(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail={
-                    "message": "File is larger than this item allows",
+                    "message": "Файл больше, чем разрешено для этого элемента",
                     "upload_uuid": upload_id,
                     "item_uuid": item.item_uuid,
                 },
@@ -2567,7 +2567,7 @@ def _get_or_create_submission_draft(
         select(Submission).where(Submission.submission_uuid == read.submission_uuid)
     ).first()
     if draft is None:
-        raise HTTPException(status_code=500, detail="Draft submission was not created")
+        raise HTTPException(status_code=500, detail="Черновик отправки не был создан")
     return draft
 
 
@@ -2580,13 +2580,13 @@ def _enforce_draft_version(draft: Submission, if_match: str | None) -> None:
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="If-Match must be the current numeric submission version",
+            detail="Заголовок If-Match должен содержать текущую числовую версию отправки",
         ) from exc
     if draft.version != expected:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
-                "message": "Draft version conflict",
+                "message": "Конфликт версий черновика",
                 "latest": SubmissionRead.model_validate(draft).model_dump(mode="json"),
             },
         )
@@ -2601,7 +2601,7 @@ def _parse_if_match_version(if_match: str | None) -> int | None:
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="If-Match must be the current numeric submission version",
+            detail="Заголовок If-Match должен содержать текущую числовую версию отправки",
         ) from exc
 
 
@@ -2612,7 +2612,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
         return [
             ReadinessIssue(
                 code="item.body_invalid",
-                message=f"Item body is invalid: {exc}",
+                message=f"Тело элемента некорректно: {exc}",
                 item_uuid=item.item_uuid,
             )
         ]
@@ -2622,7 +2622,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
         issues.append(
             ReadinessIssue(
                 code="item.title_missing",
-                message="Item title is required.",
+                message="Название элемента обязательно.",
                 item_uuid=item.item_uuid,
             )
         )
@@ -2630,7 +2630,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
         issues.append(
             ReadinessIssue(
                 code="item.max_score_invalid",
-                message="Item points must be greater than zero.",
+                message="Баллы за элемент должны быть больше нуля.",
                 item_uuid=item.item_uuid,
             )
         )
@@ -2640,7 +2640,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="item.prompt_missing",
-                    message="Choice prompt is required.",
+                    message="Текст вопроса (промпт) обязателен.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2648,7 +2648,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="choice.options_missing",
-                    message="Choice items need at least two options.",
+                    message="Для элементов с выбором нужно как минимум два варианта.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2656,7 +2656,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="choice.option_text_missing",
-                    message="Every choice option needs visible text.",
+                    message="Каждый вариант выбора должен содержать видимый текст.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2669,7 +2669,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="choice.option_duplicate",
-                    message="Choice options should be unique.",
+                    message="Варианты выбора должны быть уникальными.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2678,7 +2678,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="choice.correct_missing",
-                    message="Mark at least one correct choice.",
+                    message="Отметьте хотя бы один правильный вариант.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2686,7 +2686,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="choice.too_many_correct",
-                    message="Single-choice items can only have one correct option.",
+                    message="В вопросах с одиночным выбором может быть только один правильный вариант.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2695,7 +2695,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="item.prompt_missing",
-                    message="Open-text prompt is required.",
+                    message="Текст открытого вопроса (промпт) обязателен.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2703,7 +2703,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="open_text.min_words_invalid",
-                    message="Minimum words cannot be negative.",
+                    message="Минимальное количество слов не может быть отрицательным.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2712,7 +2712,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="item.prompt_missing",
-                    message="File-upload prompt is required.",
+                    message="Текст задания загрузки файла (промпт) обязателен.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2720,7 +2720,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="file.max_files_invalid",
-                    message="File upload items must allow at least one file.",
+                    message="Элементы с загрузкой файлов должны разрешать хотя бы один файл.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2728,7 +2728,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="file.max_mb_invalid",
-                    message="Maximum file size must be greater than zero when set.",
+                    message="Максимальный размер файла должен быть больше нуля.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2736,7 +2736,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="file.mime_invalid",
-                    message="Allowed file types cannot be blank.",
+                    message="Разрешенные типы файлов не могут быть пустыми.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2745,7 +2745,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="item.prompt_missing",
-                    message="Form prompt is required.",
+                    message="Текст формы (промпт) обязателен.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2753,7 +2753,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="form.fields_missing",
-                    message="Form items need at least one field.",
+                    message="Элементы формы должны содержать хотя бы одно поле.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2761,7 +2761,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="form.field_label_missing",
-                    message="Each form field needs a label.",
+                    message="Каждое поле формы должно иметь метку.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2772,7 +2772,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="form.field_id_duplicate",
-                    message="Form fields need unique IDs.",
+                    message="Поля формы должны иметь уникальные идентификаторы.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2781,7 +2781,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="item.prompt_missing",
-                    message="Code prompt is required.",
+                    message="Текст задания по коду (промпт) обязателен.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2789,7 +2789,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="code.languages_missing",
-                    message="Code items need at least one allowed language.",
+                    message="В задачах по коду должен быть разрешен хотя бы один язык.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2797,7 +2797,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="code.tests_missing",
-                    message="Code items need at least one test case.",
+                    message="В задачах по коду должен быть хотя бы один тест-кейс.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2808,7 +2808,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="code.test_io_missing",
-                    message="Each code test needs input and expected output.",
+                    message="Каждый тест кода должен иметь входные данные и ожидаемый результат.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2816,7 +2816,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="code.test_weight_invalid",
-                    message="Each code test needs a positive weight.",
+                    message="Каждый тест кода должен иметь положительный вес.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2825,7 +2825,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="item.prompt_missing",
-                    message="Matching prompt is required.",
+                    message="Текст задания на соответствие обязателен.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2833,7 +2833,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="matching.pairs_missing",
-                    message="Matching items need at least one pair.",
+                    message="В заданиях на соответствие должна быть хотя бы одна пара.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2841,7 +2841,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="matching.pair_value_missing",
-                    message="Every pair needs both left and right values.",
+                    message="Каждая пара должна иметь значения слева и справа.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2855,7 +2855,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="matching.left_duplicate",
-                    message="Left-side prompts should be unique.",
+                    message="Значения слева должны быть уникальными.",
                     item_uuid=item.item_uuid,
                 )
             )
@@ -2863,7 +2863,7 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
             issues.append(
                 ReadinessIssue(
                     code="matching.right_duplicate",
-                    message="Right-side answers should be unique.",
+                    message="Значения справа (ответы) должны быть уникальными.",
                     item_uuid=item.item_uuid,
                 )
             )

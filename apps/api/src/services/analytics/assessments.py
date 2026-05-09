@@ -1867,7 +1867,9 @@ def get_teacher_assessment_detail(
                         else "Точность пока недоступна."
                     ),
                 )
-            )        item_analytics.sort(
+            )
+
+        item_analytics.sort(
             key=lambda item: (
                 item.impact_rate if item.impact_rate is not None else -1,
                 item.impacted_count,
