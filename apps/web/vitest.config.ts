@@ -10,9 +10,9 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    setupFiles: ['./tests/setup.ts'],
+    setupFiles: ['./src/tests/setup.ts'],
     environment: 'jsdom',
-    include: ['tests/**/*.test.{ts,tsx}'],
+    include: ['src/tests/**/*.test.{ts,tsx}'],
 
     browser: {
       enabled: false,
