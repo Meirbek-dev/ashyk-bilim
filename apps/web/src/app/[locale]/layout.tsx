@@ -9,10 +9,10 @@ import { setRequestLocale } from 'next-intl/server';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 
-type LocaleLayoutProps = {
+interface LocaleLayoutProps {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
-};
+}
 
 function getInitialThemeMode(rawMode: string | undefined): ThemeMode {
   return rawMode === 'dark' ? 'dark' : DEFAULT_THEME_MODE;

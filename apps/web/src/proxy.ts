@@ -108,7 +108,7 @@ function applyRequestHeaders(response: NextResponse, req: NextRequest, requestId
   });
 
   if (overrideHeaders.size > 0) {
-    response.headers.set('x-middleware-override-headers', Array.from(overrideHeaders).join(','));
+    response.headers.set('x-middleware-override-headers', [...overrideHeaders].join(','));
   }
 
   return withRequestId(response, requestId);

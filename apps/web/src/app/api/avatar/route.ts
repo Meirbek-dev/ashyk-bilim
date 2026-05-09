@@ -1,4 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 const GOOGLE_AVATAR_HOSTS = new Set([
   'lh3.googleusercontent.com',
@@ -42,11 +43,11 @@ export async function GET(request: NextRequest) {
   try {
     const upstreamResponse = await fetch(avatarUrl, {
       headers: {
-        Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
         'User-Agent': 'AshyqBilim/1.0 AvatarProxy',
       },
       next: {
-        revalidate: 604800,
+        revalidate: 604_800,
       },
     });
 

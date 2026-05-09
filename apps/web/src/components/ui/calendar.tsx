@@ -1,7 +1,7 @@
 'use client';
 
-import { DayPicker, getDefaultClassNames } from 'react-day-picker';
-import type { DayButton, Locale } from 'react-day-picker';
+import { DayPicker, getDefaultClassNames } from '@daypicker/react';
+import type { DayButtonProps, Locale } from '@daypicker/react';
 import * as React from 'react';
 
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from 'lucide-react';
@@ -85,7 +85,8 @@ function Calendar({
             : 'flex items-center gap-1 rounded-(--cell-radius) text-sm [&>svg]:size-3.5 [&>svg]:text-muted-foreground',
           defaultClassNames.caption_label,
         ),
-        table: 'w-full border-collapse',
+        // UPDATED: 'table' is deprecated in v10, changed to 'month_grid'
+        month_grid: 'w-full border-collapse',
         weekdays: cn('flex', defaultClassNames.weekdays),
         weekday: cn(
           'flex-1 rounded-(--cell-radius) text-[0.8rem] font-normal text-muted-foreground select-none',
@@ -185,7 +186,7 @@ function CalendarDayButton({
   modifiers,
   locale,
   ...props
-}: React.ComponentProps<typeof DayButton> & { locale?: Partial<Locale> }) {
+}: DayButtonProps & { locale?: Partial<Locale> }) {
   const defaultClassNames = getDefaultClassNames();
 
   const ref = React.useRef<HTMLButtonElement>(null);
@@ -195,6 +196,7 @@ function CalendarDayButton({
 
   return (
     <Button
+      ref={ref}
       variant="ghost"
       size="icon"
       data-day={day.date.toLocaleDateString(locale?.code)}

@@ -47,7 +47,7 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
       new Set(
         vm?.items
           .filter((item) => isItemAnswered(submissionState.answers[item.item_uuid]))
-          .map((item) => item.item_uuid) ?? [],
+          .map((item) => item.item_uuid),
       ),
     [submissionState.answers, vm?.items],
   );

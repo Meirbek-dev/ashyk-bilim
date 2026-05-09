@@ -22,11 +22,11 @@ interface GamifiedUserAvatarProps extends Omit<UserAvatarProps, 'showProfilePopu
 }
 
 const levelIndicatorSizes = {
-  xs: 'h-2 w-2 text-[8px]',
-  sm: 'h-3 w-3 text-[10px]',
-  md: 'h-4 w-4 text-xs',
-  lg: 'h-5 w-5 text-sm',
-  xl: 'h-6 w-6 text-sm',
+  'xs': 'h-2 w-2 text-[8px]',
+  'sm': 'h-3 w-3 text-[10px]',
+  'md': 'h-4 w-4 text-xs',
+  'lg': 'h-5 w-5 text-sm',
+  'xl': 'h-6 w-6 text-sm',
   '2xl': 'h-6 w-6 text-base',
   '3xl': 'h-9 w-9 text-lg',
 };
@@ -52,12 +52,14 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
     ...avatarProps
   } = props;
 
-  const frame = ENABLE_AVATAR_CUSTOMIZATION && showAvatarFrame && gamificationProfile
-    ? getHighestUnlock(gamificationProfile.level, AVATAR_UNLOCKS.frames)
-    : null;
-  const accessory = ENABLE_AVATAR_CUSTOMIZATION && showAvatarAccessories && gamificationProfile
-    ? getHighestUnlock(gamificationProfile.level, AVATAR_UNLOCKS.accessories)
-    : null;
+  const frame =
+    ENABLE_AVATAR_CUSTOMIZATION && showAvatarFrame && gamificationProfile
+      ? getHighestUnlock(gamificationProfile.level, AVATAR_UNLOCKS.frames)
+      : null;
+  const accessory =
+    ENABLE_AVATAR_CUSTOMIZATION && showAvatarAccessories && gamificationProfile
+      ? getHighestUnlock(gamificationProfile.level, AVATAR_UNLOCKS.accessories)
+      : null;
 
   const avatarElement = (
     <span className="relative inline-flex">

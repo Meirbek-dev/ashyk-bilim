@@ -42,7 +42,7 @@ const Toaster = ({ position = 'top-center', ...props }: ToasterProps) => {
       }}
       style={
         {
-          zIndex: 9999,
+          'zIndex': 9999,
           '--normal-bg': 'var(--popover)',
           '--normal-text': 'var(--popover-foreground)',
           '--normal-border': 'var(--border)',

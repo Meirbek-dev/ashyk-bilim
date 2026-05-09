@@ -31,13 +31,13 @@ interface StudentOverridesPanelProps {
   assessmentUuid: string;
 }
 
-type OverrideFormState = {
+interface OverrideFormState {
   user_id: string;
   max_attempts_override: string;
   due_at_override: string;
   waive_late_penalty: boolean;
   note: string;
-};
+}
 
 const EMPTY_FORM: OverrideFormState = {
   user_id: '',
@@ -86,8 +86,8 @@ export default function StudentOverridesPanel({ assessmentUuid }: StudentOverrid
     startTransition(async () => {
       try {
         const payload: StudentPolicyOverrideCreate = {
-          user_id: parseInt(form.user_id, 10),
-          max_attempts_override: form.max_attempts_override ? parseInt(form.max_attempts_override, 10) : null,
+          user_id: Number.parseInt(form.user_id, 10),
+          max_attempts_override: form.max_attempts_override ? Number.parseInt(form.max_attempts_override, 10) : null,
           due_at_override: form.due_at_override ? new Date(form.due_at_override).toISOString() : null,
           waive_late_penalty: form.waive_late_penalty,
           note: form.note || undefined,

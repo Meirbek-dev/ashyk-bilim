@@ -119,8 +119,8 @@ const createValidationSchema = (t: (key: string, values?: any) => string) =>
 async function optimizeAvatarFile(file: File): Promise<File> {
   if (
     typeof document === 'undefined' ||
-    typeof window === 'undefined' ||
-    !('createImageBitmap' in window) ||
+    typeof globalThis.window === 'undefined' ||
+    !('createImageBitmap' in globalThis) ||
     file.type === 'image/gif' ||
     file.type === 'image/avif'
   ) {

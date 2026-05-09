@@ -18,8 +18,8 @@ function getLocaleFromPathname(pathname: string | undefined): Locale | undefined
 
 export async function getUserLocale(cookieStore?: { get: (name: string) => { value?: string } | undefined }) {
   try {
-    if (typeof window !== 'undefined') {
-      const pathLocale = getLocaleFromPathname(window.location.pathname);
+    if (typeof globalThis.window !== 'undefined') {
+      const pathLocale = getLocaleFromPathname(globalThis.location.pathname);
       if (pathLocale) return pathLocale;
     }
 

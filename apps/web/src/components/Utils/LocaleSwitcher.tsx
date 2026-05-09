@@ -40,7 +40,7 @@ export const LocaleSwitcher = ({ className, isMobile }: LocaleSwitcherProps) => 
         }
       }
 
-      const search = typeof window === 'undefined' ? '' : window.location.search;
+      const search = typeof globalThis.window === 'undefined' ? '' : globalThis.location.search;
       router.replace(`${pathname}${search}`, { locale: newLocale });
     });
   };
