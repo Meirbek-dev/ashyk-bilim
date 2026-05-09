@@ -217,6 +217,7 @@ def _sync_assessment_lifecycle(
     if activity.activity_type not in {
         ActivityTypeEnum.TYPE_ASSIGNMENT,
         ActivityTypeEnum.TYPE_EXAM,
+        ActivityTypeEnum.TYPE_QUIZ,
         ActivityTypeEnum.TYPE_CODE_CHALLENGE,
     }:
         return
@@ -225,10 +226,10 @@ def _sync_assessment_lifecycle(
     lifecycle_raw = details.get("lifecycle_status")
     now = datetime.now(tz=UTC).isoformat()
 
-    if lifecycle_raw is None and "published" in update_data:
+    if "published" in update_data:
         lifecycle_raw = (
             AssessmentLifecycleStatus.PUBLISHED.value
-            if activity.published
+            if bool(update_data["published"])
             else AssessmentLifecycleStatus.DRAFT.value
         )
 
@@ -247,12 +248,14 @@ def _sync_assessment_lifecycle(
         details["scheduled_at"] = None
     elif lifecycle == AssessmentLifecycleStatus.SCHEDULED:
         activity.published = False
+        details["published_at"] = None
     elif lifecycle == AssessmentLifecycleStatus.ARCHIVED:
         activity.published = False
         details["archived_at"] = details.get("archived_at") or now
         details["scheduled_at"] = None
     else:
         activity.published = False
+        details["published_at"] = None
         details["scheduled_at"] = None
 
     activity.details = details
@@ -262,11 +265,25 @@ def _sync_assessment_lifecycle(
             select(Assessment).where(Assessment.activity_id == activity.id)
         ).first()
         if assessment is not None:
+            if lifecycle == AssessmentLifecycleStatus.PUBLISHED:
+                from src.services.assessments.core import build_readiness
+
+                readiness = build_readiness(assessment, db_session)
+                if not readiness.ok:
+                    raise HTTPException(
+                        status_code=422,
+                        detail={
+                            "issues": [
+                                issue.model_dump() for issue in readiness.issues
+                            ]
+                        },
+                    )
+
             assessment.lifecycle = AssessmentLifecycle(lifecycle.value)
             assessment.published_at = (
                 datetime.now(tz=UTC)
                 if lifecycle == AssessmentLifecycleStatus.PUBLISHED
-                else assessment.published_at
+                else None
             )
             assessment.scheduled_at = (
                 _coerce_datetime(details.get("scheduled_at"))

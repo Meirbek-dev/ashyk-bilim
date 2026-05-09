@@ -266,11 +266,26 @@ export function localItemValidationIssues(
 export function dedupeIssues(issues: ValidationIssue[]): ValidationIssue[] {
   const seen = new Set<string>();
   return issues.filter((issue) => {
-    const key = `${issue.itemUuid ?? 'assessment'}:${issue.code}:${issue.message}`;
+    const key = `${issue.itemUuid ?? 'assessment'}:${canonicalIssueCode(issue.code)}`;
     if (seen.has(key)) {
       return false;
     }
     seen.add(key);
     return true;
   });
+}
+
+function canonicalIssueCode(code: string): string {
+  if (
+    code === 'item.prompt_missing' ||
+    code === 'choice.prompt_missing' ||
+    code === 'matching.prompt_missing' ||
+    code === 'open_text.prompt_missing' ||
+    code === 'file.prompt_missing' ||
+    code === 'form.prompt_missing' ||
+    code === 'code.prompt_missing'
+  ) {
+    return 'prompt_missing';
+  }
+  return code;
 }

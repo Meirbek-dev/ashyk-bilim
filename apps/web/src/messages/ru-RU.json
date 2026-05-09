@@ -2307,6 +2307,7 @@
         "document": "Документ",
         "dynamic": "Динамический",
         "exam": "Тест",
+        "quiz": "Квиз",
         "video": "Видео"
       },
       "activityDeletedSuccess": "Активность успешно удалена",
@@ -7824,6 +7825,10 @@
           "TYPE_QUIZ": "Квиз"
         },
         "NativeItemStudio": {
+          "itemNouns": {
+            "question": "Вопрос",
+            "task": "Задание"
+          },
           "outlineTitle": "Структура {itemNoun}",
           "outlinePoints": "Всего баллов: {points}",
           "outlineDescription": "Добавьте {itemNoun}, чтобы начать.",

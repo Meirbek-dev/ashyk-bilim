@@ -2305,6 +2305,7 @@
         "document": "Құжат",
         "dynamic": "Динамикалық",
         "exam": "Емтихан",
+        "quiz": "Тест",
         "video": "Бейне"
       },
       "activityDeletedSuccess": "Белсенділік сәтті жойылды",
@@ -7827,6 +7828,10 @@
           "TYPE_QUIZ": "Тест"
         },
         "NativeItemStudio": {
+          "itemNouns": {
+            "question": "Сұрақ",
+            "task": "Тапсырма"
+          },
           "outlineTitle": "{itemNoun} құрылымы",
           "outlinePoints": "Барлығы: {points} балл",
           "outlineDescription": "Бастау үшін {itemNoun} қосыңыз.",

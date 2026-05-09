@@ -43,7 +43,6 @@ import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge';
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge';
 import ErrorUI from '@/components/Objects/Elements/Error/Error';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -198,9 +197,11 @@ function useAssessmentStudioContext() {
 export function NativeItemOutline({
   allowedKinds,
   itemNoun,
+  itemNounKey,
 }: {
   allowedKinds: SupportedStudioItemKind[];
   itemNoun: string;
+  itemNounKey?: 'question' | 'task';
 }) {
   const {
     assessment,
@@ -213,6 +214,7 @@ export function NativeItemOutline({
     validationIssues,
   } = useAssessmentStudioContext();
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
+  const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}` as any) : itemNoun;
   const kindLabels: Record<SupportedStudioItemKind, string> = {
     CHOICE: t('kindLabels.choice'),
     OPEN_TEXT: t('kindLabels.openText'),
@@ -232,17 +234,21 @@ export function NativeItemOutline({
         });
 
         if (!response.ok) {
-          throw new Error(await responseError(response, t('createFailed', { itemNoun: itemNoun.toLowerCase() })));
+          throw new Error(
+            await responseError(response, t('createFailed', { itemNoun: displayItemNoun.toLowerCase() })),
+          );
         }
 
         const created = (await response.json()) as { item_uuid?: string };
-        toast.success(t('itemCreated', { itemNoun }));
+        toast.success(t('itemCreated', { itemNoun: displayItemNoun }));
         await refresh();
         if (typeof created.item_uuid === 'string') {
           setSelectedItemUuid(created.item_uuid);
         }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('createFailed', { itemNoun: itemNoun.toLowerCase() }));
+        toast.error(
+          error instanceof Error ? error.message : t('createFailed', { itemNoun: displayItemNoun.toLowerCase() }),
+        );
       }
     });
   };
@@ -251,7 +257,7 @@ export function NativeItemOutline({
     <div className="bg-card rounded-lg border p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">{t('outlineTitle', { itemNoun })}</h2>
+          <h2 className="text-sm font-semibold">{t('outlineTitle', { itemNoun: displayItemNoun })}</h2>
           <p className="text-muted-foreground text-xs">{t('outlinePoints', { points: totalPoints })}</p>
         </div>
       </div>
@@ -281,15 +287,15 @@ export function NativeItemOutline({
 
       {items.length === 0 ? (
         <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
-          {t('outlineEmptyMessage', { itemNoun: itemNoun.toLowerCase() })}
+          {t('outlineEmptyMessage', { itemNoun: displayItemNoun.toLowerCase() })}
         </div>
       ) : (
         <div className="space-y-2">
           {items.map((item, index) => {
             const Icon = KIND_ICONS[item.kind as SupportedStudioItemKind] ?? BookOpen;
             const issues = dedupeIssues([
-              ...persistedItemIssues(validationIssues, item.item_uuid),
               ...localItemValidationIssues(item),
+              ...persistedItemIssues(validationIssues, item.item_uuid),
             ]);
             const selected = item.item_uuid === selectedItemUuid;
             return (
@@ -308,7 +314,7 @@ export function NativeItemOutline({
                     <div className="flex items-center gap-2">
                       <Icon className="text-muted-foreground size-4 shrink-0" />
                       <span className="truncate text-sm font-medium">
-                        {index + 1}. {item.title || t('untitledItem', { itemNoun: itemNoun.toLowerCase() })}
+                        {index + 1}. {item.title || t('untitledItem', { itemNoun: displayItemNoun.toLowerCase() })}
                       </span>
                     </div>
                     <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -341,6 +347,7 @@ export function NativeItemOutline({
 interface NativeItemAuthorProps {
   mode: StudioMode;
   itemNoun: string;
+  itemNounKey?: 'question' | 'task';
 }
 
 interface AssessmentEditorState {
@@ -362,7 +369,7 @@ interface AssessmentEditorState {
 
 type EditableItem = Pick<AssessmentItem, 'item_uuid' | 'kind' | 'title' | 'max_score' | 'body'>;
 
-export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
+export function NativeItemAuthor({ mode, itemNoun, itemNounKey }: NativeItemAuthorProps) {
   const {
     assessment,
     items,
@@ -374,6 +381,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
     validationIssues,
   } = useAssessmentStudioContext();
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
+  const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}` as any) : itemNoun;
   const kindLabels: Record<SupportedStudioItemKind, string> = {
     CHOICE: t('kindLabels.choice'),
     OPEN_TEXT: t('kindLabels.openText'),
@@ -448,7 +456,9 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
         });
 
         if (!response.ok) {
-          throw new Error(await responseError(response, t('failedToSaveItem', { itemNoun: itemNoun.toLowerCase() })));
+          throw new Error(
+            await responseError(response, t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() })),
+          );
         }
 
         lastSavedItemRef.current = serializeItemState(nextItem);
@@ -457,11 +467,11 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
       } catch (error) {
         setItemSaveState('error');
         toast.error(
-          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: itemNoun.toLowerCase() }),
+          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
         );
       }
     },
-    [assessment.assessment_uuid, itemNoun, refresh, t],
+    [assessment.assessment_uuid, displayItemNoun, refresh, t],
   );
 
   useEffect(() => {
@@ -494,13 +504,15 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           method: 'DELETE',
         });
         if (!response.ok) {
-          throw new Error(await responseError(response, t('deleteFailed', { itemNoun: itemNoun.toLowerCase() })));
+          throw new Error(await responseError(response, t('deleteFailed', { itemNoun: displayItemNoun.toLowerCase() })));
         }
-        toast.success(t('itemDeleted', { itemNoun }));
+        toast.success(t('itemDeleted', { itemNoun: displayItemNoun }));
         setSelectedItemUuid(null);
         await refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('deleteFailed', { itemNoun: itemNoun.toLowerCase() }));
+        toast.error(
+          error instanceof Error ? error.message : t('deleteFailed', { itemNoun: displayItemNoun.toLowerCase() }),
+        );
       }
     });
   };
@@ -514,25 +526,27 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             kind: itemState.kind,
-            title: itemState.title ? t('copyOf', { title: itemState.title }) : t('copyOfItem', { itemNoun }),
+            title: itemState.title ? t('copyOf', { title: itemState.title }) : t('copyOfItem', { itemNoun: displayItemNoun }),
             max_score: itemState.max_score,
             body: structuredClone(itemState.body),
           }),
         });
 
         if (!response.ok) {
-          throw new Error(await responseError(response, t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() })));
+          throw new Error(
+            await responseError(response, t('duplicateFailed', { itemNoun: displayItemNoun.toLowerCase() })),
+          );
         }
 
         const created = (await response.json()) as { item_uuid?: string };
-        toast.success(t('itemDuplicated', { itemNoun }));
+        toast.success(t('itemDuplicated', { itemNoun: displayItemNoun }));
         await refresh();
         if (typeof created.item_uuid === 'string') {
           setSelectedItemUuid(created.item_uuid);
         }
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : t('duplicateFailed', { itemNoun: itemNoun.toLowerCase() }),
+          error instanceof Error ? error.message : t('duplicateFailed', { itemNoun: displayItemNoun.toLowerCase() }),
         );
       }
     });
@@ -540,8 +554,8 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
 
   const itemIssues = itemState
     ? dedupeIssues([
-        ...persistedItemIssues(validationIssues, itemState.item_uuid),
         ...localItemValidationIssues(itemState),
+        ...persistedItemIssues(validationIssues, itemState.item_uuid),
       ]).map(classifyValidationIssue)
     : [];
   const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState, t).map(classifyValidationIssue);
@@ -554,7 +568,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
     <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
       <StudioOverviewPanel
         mode={mode}
-        itemNoun={itemNoun}
+        itemNoun={displayItemNoun}
         itemCount={items.length}
         totalPoints={totalPoints}
         dueAt={assessmentState.dueAt}
@@ -582,10 +596,10 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           <div className="max-w-sm text-center">
             <BookOpen className="text-muted-foreground mx-auto size-10" />
             <h2 className="mt-3 text-lg font-semibold">
-              {t('noItemSelectedTitle', { itemNoun: itemNoun.toLowerCase() })}
+              {t('noItemSelectedTitle', { itemNoun: displayItemNoun.toLowerCase() })}
             </h2>
             <p className="text-muted-foreground mt-1 text-sm">
-              {t('noItemSelectedDescription', { itemNoun: itemNoun.toLowerCase() })}
+              {t('noItemSelectedDescription', { itemNoun: displayItemNoun.toLowerCase() })}
             </p>
           </div>
         </div>
@@ -601,7 +615,7 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
                 {!isEditable ? <Badge variant="secondary">{t('readOnlyBadge')}</Badge> : null}
               </div>
               <h2 className="mt-2 text-xl font-semibold">
-                {itemState.title || t('untitledItem', { itemNoun: itemNoun.toLowerCase() })}
+                {itemState.title || t('untitledItem', { itemNoun: displayItemNoun.toLowerCase() })}
               </h2>
               <p className="text-muted-foreground text-sm">
                 {itemState.max_score || 0} {t('pointsAbbreviation')} ·{' '}
@@ -632,17 +646,8 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
             </div>
           </div>
 
-          {itemIssues.length > 0 ? (
-            <Alert>
-              <AlertTriangle className="size-4" />
-              <AlertDescription>
-                <InlineIssueList issues={itemIssues} />
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
           <EditorSection
-            title={t('itemMetadataTitle', { itemNoun })}
+            title={t('itemMetadataTitle', { itemNoun: displayItemNoun })}
             description={t('itemMetadataDescription')}
           >
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem]">
@@ -687,10 +692,9 @@ export function NativeItemAuthor({ mode, itemNoun }: NativeItemAuthorProps) {
           </EditorSection>
 
           <EditorSection
-            title={t('itemContentTitle', { itemNoun })}
+            title={t('itemContentTitle', { itemNoun: displayItemNoun })}
             description={t('itemContentDescription')}
           >
-            {itemContentIssues.length > 0 ? <InlineIssueList issues={itemContentIssues} /> : null}
             <NativeItemBodyEditor
               item={itemState}
               disabled={!isEditable}

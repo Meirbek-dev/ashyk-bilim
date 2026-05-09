@@ -25,6 +25,7 @@ registerKind('TYPE_ASSIGNMENT', async () => {
     <NativeItemOutline
       allowedKinds={['CHOICE', 'OPEN_TEXT', 'FILE_UPLOAD', 'FORM', 'MATCHING']}
       itemNoun="Task"
+      itemNounKey="task"
     />
   );
 
@@ -32,6 +33,7 @@ registerKind('TYPE_ASSIGNMENT', async () => {
     <NativeItemAuthor
       mode="assignment"
       itemNoun="Task"
+      itemNounKey="task"
     />
   );
 

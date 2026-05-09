@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -74,9 +73,7 @@ async def _scope_for(
     action: str,
 ):
     checker = PermissionChecker(db_session)
-    return await asyncio.to_thread(
-        resolve_teacher_scope, db_session, checker, current_user, filters, action=action
-    )
+    return resolve_teacher_scope(db_session, checker, current_user, filters, action=action)
 
 
 async def _course_scope_for(
@@ -86,7 +83,7 @@ async def _course_scope_for(
     filters: AnalyticsFilters,
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    await asyncio.to_thread(ensure_course_in_scope, scope, course_id)
+    ensure_course_in_scope(scope, course_id)
     return scope
 
 
@@ -98,9 +95,7 @@ async def _assessment_scope_for(
     filters: AnalyticsFilters,
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    await asyncio.to_thread(
-        ensure_assessment_in_scope, db_session, scope, assessment_type, assessment_id
-    )
+    ensure_assessment_in_scope(db_session, scope, assessment_type, assessment_id)
     return scope
 
 
@@ -111,7 +106,7 @@ async def teacher_overview_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    return await asyncio.to_thread(get_teacher_overview, db_session, scope, filters)
+    return get_teacher_overview(db_session, scope, filters)
 
 
 @router.get("/admin/overview", response_model=AdminAnalyticsResponse)
@@ -123,7 +118,7 @@ async def admin_analytics_overview_platform(
     scope = await _scope_for(db_session, current_user, filters, action="read")
     if not scope.has_platform_scope:
         raise HTTPException(status_code=403, detail="Platform analytics scope required")
-    return await asyncio.to_thread(get_admin_analytics, db_session, scope, filters)
+    return get_admin_analytics(db_session, scope, filters)
 
 
 @router.get("/teacher/courses", response_model=TeacherCourseListResponse)
@@ -133,7 +128,7 @@ async def teacher_courses_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    return await asyncio.to_thread(get_teacher_course_list, db_session, scope, filters)
+    return get_teacher_course_list(db_session, scope, filters)
 
 
 @router.get(
@@ -147,19 +142,15 @@ async def teacher_course_detail_by_uuid_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    course = await asyncio.to_thread(
-        lambda: db_session.exec(
-            sa_select(Course).where(
-                Course.course_uuid == course_uuid, Course.id.in_(scope.course_ids)
-            )
-        ).first()
-    )
+    course = db_session.exec(
+        sa_select(Course).where(
+            Course.course_uuid == course_uuid, Course.id.in_(scope.course_ids)
+        )
+    ).first()
     if course is None:
         raise HTTPException(status_code=404, detail="Course not found in scope")
     try:
-        return await asyncio.to_thread(
-            get_teacher_course_detail, db_session, scope, course.id, filters
-        )
+        return get_teacher_course_detail(db_session, scope, course.id, filters)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -173,9 +164,7 @@ async def teacher_course_detail_platform(
 ):
     scope = await _course_scope_for(db_session, current_user, course_id, filters)
     try:
-        return await asyncio.to_thread(
-            get_teacher_course_detail, db_session, scope, course_id, filters
-        )
+        return get_teacher_course_detail(db_session, scope, course_id, filters)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -187,9 +176,7 @@ async def teacher_assessments_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    return await asyncio.to_thread(
-        get_teacher_assessment_list, db_session, scope, filters
-    )
+    return get_teacher_assessment_list(db_session, scope, filters)
 
 
 @router.get(
@@ -211,8 +198,7 @@ async def teacher_assessment_detail_platform(
         filters,
     )
     try:
-        return await asyncio.to_thread(
-            get_teacher_assessment_detail,
+        return get_teacher_assessment_detail(
             db_session,
             scope,
             assessment_type,
@@ -230,7 +216,7 @@ async def teacher_at_risk_learners_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    return await asyncio.to_thread(get_at_risk_learners, db_session, scope, filters)
+    return get_at_risk_learners(db_session, scope, filters)
 
 
 @router.get(
@@ -245,8 +231,7 @@ async def teacher_interventions_platform(
     course_id: int | None = None,
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    return await asyncio.to_thread(
-        list_teacher_interventions,
+    return list_teacher_interventions(
         db_session,
         scope,
         user_id=user_id,
@@ -265,8 +250,7 @@ async def create_teacher_intervention_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    return await asyncio.to_thread(
-        create_teacher_intervention,
+    return create_teacher_intervention(
         db_session,
         scope,
         payload,
@@ -283,7 +267,7 @@ async def teacher_saved_views_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    return await asyncio.to_thread(list_saved_analytics_views, db_session, scope)
+    return list_saved_analytics_views(db_session, scope)
 
 
 @router.post(
@@ -297,7 +281,7 @@ async def save_teacher_saved_view_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    return await asyncio.to_thread(save_analytics_view, db_session, scope, payload)
+    return save_analytics_view(db_session, scope, payload)
 
 
 @router.delete("/teacher/saved-views/{view_id}", status_code=204)
@@ -308,7 +292,7 @@ async def delete_teacher_saved_view_platform(
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
-    deleted = await asyncio.to_thread(delete_analytics_view, db_session, scope, view_id)
+    deleted = delete_analytics_view(db_session, scope, view_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Saved view not found")
     return Response(status_code=204)
@@ -329,22 +313,20 @@ async def teacher_drillthrough_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
     if course_id is not None:
-        await asyncio.to_thread(ensure_course_in_scope, scope, course_id)
+        ensure_course_in_scope(scope, course_id)
     if metric == "pass_rate":
         if assessment_type is None or assessment_id is None:
             raise HTTPException(
                 status_code=422,
                 detail="assessment_type and assessment_id are required for pass_rate",
             )
-        await asyncio.to_thread(
-            ensure_assessment_in_scope,
+        ensure_assessment_in_scope(
             db_session,
             scope,
             assessment_type,
             assessment_id,
         )
-    return await asyncio.to_thread(
-        get_drillthrough_rows,
+    return get_drillthrough_rows(
         db_session,
         scope,
         filters,
@@ -363,7 +345,7 @@ async def teacher_at_risk_export_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="export")
     return _csv_response(
-        await asyncio.to_thread(export_at_risk_csv, db_session, scope, filters),
+        export_at_risk_csv(db_session, scope, filters),
         "teacher-at-risk.csv",
     )
 
@@ -376,7 +358,7 @@ async def teacher_grading_backlog_export_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="export")
     return _csv_response(
-        await asyncio.to_thread(export_grading_backlog_csv, db_session, scope, filters),
+        export_grading_backlog_csv(db_session, scope, filters),
         "teacher-grading-backlog.csv",
     )
 
@@ -389,7 +371,7 @@ async def teacher_course_progress_export_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="export")
     return _csv_response(
-        await asyncio.to_thread(export_course_progress_csv, db_session, scope, filters),
+        export_course_progress_csv(db_session, scope, filters),
         "teacher-course-progress.csv",
     )
 
@@ -402,8 +384,6 @@ async def teacher_assessment_outcomes_export_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="export")
     return _csv_response(
-        await asyncio.to_thread(
-            export_assessment_outcomes_csv, db_session, scope, filters
-        ),
+        export_assessment_outcomes_csv(db_session, scope, filters),
         "teacher-assessment-outcomes.csv",
     )

@@ -113,7 +113,7 @@ async function fetchGamificationData(): Promise<ApiDashboardResponse | null> {
     const res = await apiFetch('gamification/', {
       method: 'GET',
       baseUrl: getServerAPIUrl(),
-      signal: AbortSignal.timeout(8000),
+      timeoutMs: 8000,
     });
 
     if (!res.ok) {
@@ -138,7 +138,7 @@ async function fetchLeaderboardData(limit: number): Promise<ApiLeaderboardRespon
     const res = await apiFetch(`gamification/leaderboard?limit=${encodeURIComponent(String(limit))}`, {
       method: 'GET',
       baseUrl: getServerAPIUrl(),
-      signal: AbortSignal.timeout(8000),
+      timeoutMs: 8000,
     });
 
     if (!res.ok) {

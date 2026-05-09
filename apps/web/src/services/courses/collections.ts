@@ -43,7 +43,7 @@ async function fetchCollectionById(collection_uuid: string) {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
-    signal: AbortSignal.timeout(10_000),
+    timeoutMs: 10_000,
   });
   return await errorHandling(result);
 }
@@ -60,7 +60,7 @@ async function fetchCollections() {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
-    signal: AbortSignal.timeout(10_000),
+    timeoutMs: 10_000,
   });
   return await errorHandling(result);
 }

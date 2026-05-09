@@ -2305,6 +2305,7 @@
         "document": "Document",
         "dynamic": "Dynamic",
         "exam": "Exam",
+        "quiz": "Quiz",
         "video": "Video"
       },
       "activityDeletedSuccess": "Activity deleted successfully",
@@ -7789,6 +7790,10 @@
           "TYPE_QUIZ": "Quiz"
         },
         "NativeItemStudio": {
+          "itemNouns": {
+            "question": "Question",
+            "task": "Task"
+          },
           "outlineTitle": "{itemNoun} outline",
           "outlinePoints": "{points} total points",
           "outlineDescription": "Add a {itemNoun} to begin.",

@@ -23,6 +23,7 @@ registerKind('TYPE_EXAM', async () => {
     <NativeItemOutline
       allowedKinds={['CHOICE', 'MATCHING']}
       itemNoun="Question"
+      itemNounKey="question"
     />
   );
 
@@ -30,6 +31,7 @@ registerKind('TYPE_EXAM', async () => {
     <NativeItemAuthor
       mode="exam"
       itemNoun="Question"
+      itemNounKey="question"
     />
   );
 

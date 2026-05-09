@@ -23,7 +23,7 @@ import { useAssessmentStudio } from '@/features/assessments/hooks/useAssessment'
 import type { AssessmentLifecycle } from '@/features/assessments/domain';
 import PolicyInspector from '@/features/assessments/shared/PolicyInspector';
 import StudentOverridesPanel from '@/features/assessments/studio/StudentOverridesPanel';
-import { classifyValidationIssue } from '@/features/assessments/domain/readiness';
+import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/domain/readiness';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { apiFetch } from '@/lib/api-client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -103,7 +103,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
 
   const { vm: studio } = vm;
   const previewHref = `/assessments/${studio.assessmentUuid}`;
-  const classifiedIssues = studio.validationIssues.map(classifyValidationIssue);
+  const classifiedIssues = dedupeIssues(studio.validationIssues).map(classifyValidationIssue);
   const hasIssues = classifiedIssues.length > 0;
   const assessmentIssues = classifiedIssues.filter((issue) => !issue.itemUuid);
   const itemIssues = classifiedIssues.filter((issue) => Boolean(issue.itemUuid));

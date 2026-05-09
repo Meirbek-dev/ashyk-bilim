@@ -26,7 +26,7 @@ async function fetchPlatform(): Promise<PlatformRead | null> {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       baseUrl: getServerAPIUrl(),
-      signal: AbortSignal.timeout(8000),
+      timeoutMs: 8000,
     });
     return await errorHandling(result);
   } catch {

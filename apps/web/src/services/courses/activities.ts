@@ -346,7 +346,7 @@ async function fetchActivity(activity_uuid: string): Promise<ActivityReadWithPer
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     baseUrl: getAPIUrl(),
-    signal: AbortSignal.timeout(10_000),
+    timeoutMs: 10_000,
   });
   return (await errorHandling(result)) as ActivityReadWithPermissions;
 }
