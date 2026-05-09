@@ -13,6 +13,7 @@ from math import ceil
 from typing import Any
 
 from fastapi import HTTPException, Request, status
+from pydantic import ValidationError
 from sqlmodel import Session, select
 from ulid import ULID
 
@@ -459,7 +460,7 @@ def _extract_canonical_answers(answers_payload: object) -> dict[str, Any]:
                 continue
             try:
                 normalized[item_uuid] = ITEM_ANSWER_ADAPTER.validate_python(raw_answer)
-            except Exception:
+            except ValidationError:
                 if isinstance(raw_answer, dict):
                     normalized[item_uuid] = raw_answer
         return normalized
@@ -475,7 +476,7 @@ def _extract_canonical_answers(answers_payload: object) -> dict[str, Any]:
                 continue
             try:
                 normalized[item_uuid] = ITEM_ANSWER_ADAPTER.validate_python(raw_answer)
-            except Exception:
+            except ValidationError:
                 normalized[item_uuid] = raw_answer
         return normalized
     return {}

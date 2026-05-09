@@ -12,6 +12,7 @@ from src.db.courses.activities import (
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
+from sqlmodel import Session
 from src.services.courses.activities.activities import (
     create_activity,
     delete_activity,
@@ -37,8 +38,9 @@ async def api_create_activity(
     request: Request,
     activity_object: ActivityCreate,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session=Depends(get_db_session),
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> ActivityRead:
+    assert db_session is not None
     return await create_activity(request, activity_object, current_user, db_session)
 
 
@@ -49,8 +51,9 @@ async def api_get_activity(
     current_user: Annotated[
         PublicUser | AnonymousUser, Depends(get_optional_public_user)
     ],
-    db_session=Depends(get_db_session),
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> ActivityReadWithPermissions:
+    assert db_session is not None
     return await get_activity(
         request, activity_uuid, current_user=current_user, db_session=db_session
     )
@@ -62,8 +65,9 @@ async def api_update_activity(
     activity_object: ActivityUpdate,
     activity_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    db_session=Depends(get_db_session),
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> ActivityRead:
+    assert db_session is not None
     return await update_activity(
         request, activity_object, activity_uuid, current_user, db_session
     )

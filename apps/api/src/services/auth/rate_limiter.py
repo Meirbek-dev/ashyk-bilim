@@ -54,7 +54,7 @@ async def check_rate_limit(
             # Expire the set after the window to avoid unbounded growth
             await pipe.expire(redis_key, window_seconds + 1)
             results = await pipe.execute()
-    except Exception:
+    except Exception:  # noqa: BLE001
         return  # Redis error – fail open, same as unavailable
 
     current_count = results[1]
@@ -109,8 +109,8 @@ def _send_lockout_notification(email: str) -> None:
             from src.services.users.emails import send_lockout_notification_email
 
             send_lockout_notification_email(email=email)
-        except Exception:
-            logger.warning("Failed to send lockout notification to %s", email)
+        except Exception as e:
+            logger.warning("Failed to send lockout notification to %s: %s", email, e)
 
     try:
         asyncio.create_task(_send())

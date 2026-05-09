@@ -231,7 +231,7 @@ async def add_activity_to_trail(
                 source_id=str(activity.id),
                 idempotency_key=f"activity_{activity.id}_{user.id}",
             )
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001
             logger.warning(
                 "Gamification.on_activity_completed failed (user_id=%s, activity_id=%s): %s",
                 user.id,
@@ -245,7 +245,7 @@ async def add_activity_to_trail(
         await check_course_completion_and_create_certificate(
             request, user.id, course.id, db_session
         )
-    except Exception as err:
+    except Exception as err:  # noqa: BLE001
         logger.warning(
             "check_course_completion_and_create_certificate failed (user_id=%s, course_id=%s): %s",
             user.id,

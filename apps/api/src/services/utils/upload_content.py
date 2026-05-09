@@ -2,6 +2,7 @@ import os
 import pathlib
 from typing import Literal
 
+import anyio
 from fastapi import HTTPException, UploadFile
 
 from src.security.file_validation import validate_upload
@@ -85,6 +86,5 @@ async def upload_content(
 
     ensure_directory_exists(f"{storage_root}/{directory}")
 
-    with pathlib.Path(f"{storage_root}/{directory}/{file_and_format}").open("wb") as f:
-        f.write(file_binary)
-        f.close()
+    path = anyio.Path(f"{storage_root}/{directory}/{file_and_format}")
+    await path.write_bytes(file_binary)

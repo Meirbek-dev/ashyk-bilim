@@ -211,7 +211,10 @@ class RoleRepository:
 # ── FastAPI dependency ────────────────────────────────────────────────────────
 
 
-def get_role_repository(db: Session = Depends(get_db_session)) -> RoleRepository:
+def get_role_repository(
+    db: Annotated[Session, Depends(get_db_session)] = None,
+) -> RoleRepository:
+    assert db is not None
     return RoleRepository(db)
 
 

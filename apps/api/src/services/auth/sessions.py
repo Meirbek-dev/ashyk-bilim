@@ -148,7 +148,7 @@ def _parse_session_data(raw: bytes | str) -> SessionData | None:
     try:
         d = json.loads(raw)
         return SessionData(**d)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
 
 
@@ -187,7 +187,7 @@ async def _read_session_from_redis(session_id: str) -> SessionData | None:
         return None
     try:
         raw = await r.get(_session_key(session_id))
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.warning("Redis error reading session %s", session_id)
         return None
     if not raw:
@@ -256,7 +256,7 @@ def _audit_create_sync(session_data_dict: dict) -> None:
             )
             db.add(record)
             db.commit()
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.warning(
             "Audit create failed for session %s", session_data_dict.get("session_id")
         )
@@ -276,7 +276,7 @@ def _audit_revoke_sync(session_id: str) -> None:
                 record.revoked_at = datetime.now(UTC)
                 db.add(record)
                 db.commit()
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.warning("Audit revoke failed for session %s", session_id)
 
 
@@ -314,7 +314,7 @@ def _audit_rotate_sync(
             )
             db.add(new_record)
             db.commit()
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.warning(
             "Audit rotate failed for sessions %s → %s", old_session_id, new_session_id
         )
@@ -392,7 +392,7 @@ async def create_auth_session(
     try:
         await _write_session_to_redis(data, REFRESH_SESSION_TTL)
     except Exception as exc:
-        logger.exception("Redis unavailable — cannot persist session: %s", exc)
+        logger.exception("Redis unavailable — cannot persist session")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Authentication service temporarily unavailable",
@@ -420,7 +420,7 @@ async def get_session_owner_id(
             select(AuthSession).where(AuthSession.session_id == session_id)
         ).first()
         return record.user_id if record else None
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.warning("Failed to resolve owner for session %s", session_id)
         return None
 

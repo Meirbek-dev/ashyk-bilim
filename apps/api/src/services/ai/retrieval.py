@@ -232,7 +232,6 @@ async def ensure_collection(
     if not documents:
         raise RetrievalError("No documents available for retrieval")
 
-    get_settings().ai_config
     content_hash = _content_hash(documents)
     resolved_name = _collection_name(collection_name, content_hash)
     cache_key = f"{embedding_model_name}_{resolved_name}_{content_hash}"

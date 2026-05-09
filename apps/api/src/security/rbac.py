@@ -504,7 +504,7 @@ async def mark_user_roles_updated(user_uuid: str) -> None:
 
 
 def get_permission_checker(
-    db: Session = Depends(get_db_session),
+    db: Annotated[Session, Depends(get_db_session)],
 ) -> PermissionChecker:
     """FastAPI dependency returning a PermissionChecker for this request."""
     return PermissionChecker(db)

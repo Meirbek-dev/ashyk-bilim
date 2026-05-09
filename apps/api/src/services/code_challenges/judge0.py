@@ -184,9 +184,8 @@ async def run_code(
         tc_passed = desc == "ACCEPTED"
         if "TIME" in desc:
             overall_status = "TIMEOUT"
-        elif "RUNTIME" in desc or "SIGNAL" in desc:
-            if overall_status == "DONE":
-                overall_status = "RUNTIME_ERROR"
+        elif ("RUNTIME" in desc or "SIGNAL" in desc) and overall_status == "DONE":
+            overall_status = "RUNTIME_ERROR"
 
         if tc_passed:
             passed += 1

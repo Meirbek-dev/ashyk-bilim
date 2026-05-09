@@ -1,7 +1,7 @@
 """UserManager — business logic layer (fastapi-users)."""
 
 import logging
-from typing import Any
+from typing import Any, Annotated
 
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, IntegerIDMixin
@@ -57,5 +57,6 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         await revoke_all_user_sessions(user.id)
 
 
-async def get_user_manager(user_db=Depends(get_user_db)):
+async def get_user_manager(user_db: Annotated[Any, Depends(get_user_db)] = None):
+    assert user_db is not None
     yield UserManager(user_db)

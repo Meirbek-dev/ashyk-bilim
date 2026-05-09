@@ -1,10 +1,14 @@
+import logging
+
 from fastapi import UploadFile
 
 from src.services.utils.upload_content import upload_content
 
+logger = logging.getLogger(__name__)
+
 
 async def upload_video(video_file, activity_uuid, course_uuid):
-    contents = video_file.file.read()
+    contents = await video_file.read()
     video_format = video_file.filename.split(".")[-1]
 
     try:
@@ -17,6 +21,7 @@ async def upload_video(video_file, activity_uuid, course_uuid):
         )
 
     except Exception:
+        logger.exception("Failed to upload video for activity %s", activity_uuid)
         return {"message": "There was an error uploading the file"}
 
 
@@ -28,7 +33,7 @@ async def upload_subtitle(
     subtitle_id: str | None = None,
 ) -> dict:
     """Upload subtitle file to storage in the same directory as video"""
-    contents = subtitle_file.file.read()
+    contents = await subtitle_file.read()
     subtitle_format = subtitle_file.filename.split(".")[-1]
 
     try:
@@ -42,4 +47,7 @@ async def upload_subtitle(
         return {"success": True, "filename": f"subtitle.{language}.{subtitle_format}"}
 
     except Exception as e:
+        logger.warning(
+            "Error uploading subtitle for activity %s: %s", activity_uuid, e
+        )
         return {"success": False, "message": f"Error uploading subtitle: {e!s}"}

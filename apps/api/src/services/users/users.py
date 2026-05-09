@@ -120,13 +120,13 @@ def update_user(
             if getattr(user, "username", None):
                 keys.append(f"user:username:{user.username.lower()}")
             redis_client.delete_keys(*keys)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
         # Try to return a validated `UserRead`; if validation fails (e.g., test stubs),
         # return the raw user object to keep behavior simple and test-friendly.
         try:
             return UserRead.model_validate(user)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return user
 
     # RBAC check (only for real updates)
@@ -161,7 +161,7 @@ def update_user(
         if getattr(user, "username", None):
             keys.append(f"user:username:{user.username.lower()}")
         redis_client.delete_keys(*keys)
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     return UserRead.model_validate(user)
@@ -202,7 +202,7 @@ def update_user_preferences(
         if getattr(user, "username", None):
             keys.append(f"user:username:{user.username.lower()}")
         redis_client.delete_keys(*keys)
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     return UserRead.model_validate(user)
@@ -245,7 +245,7 @@ async def update_user_avatar(
         if getattr(user, "username", None):
             keys.append(f"user:username:{user.username.lower()}")
         redis_client.delete_keys(*keys)
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     return UserRead.model_validate(user)
@@ -344,8 +344,8 @@ def get_user_session(
         effective = checker.get_expanded_permissions(current_user.id)
         permissions = sorted(effective)
         permissions_timestamp = int(now.timestamp())
-    except Exception as e:
-        _logger.exception(f"Error loading permissions for user {current_user.id}: {e}")
+    except Exception:
+        _logger.exception(f"Error loading permissions for user {current_user.id}")
 
     expires_at = int((now + ACCESS_TOKEN_EXPIRE).timestamp())
     session_version = int(now.timestamp())
@@ -385,7 +385,7 @@ def delete_user_by_id(
         if getattr(user, "username", None):
             keys.append(f"user:username:{user.username.lower()}")
         redis_client.delete_keys(*keys)
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     return "User deleted"
@@ -529,12 +529,12 @@ def _get_user_by_field(
                 return None
             try:
                 return User.model_validate(cached)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 # Cached payload may be partial (e.g., only id/username); return a simple object
                 if isinstance(cached, dict):
                     return SimpleNamespace(**cached)
                 return None
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
     def _try_cache_set(user_obj: User) -> None:
@@ -546,7 +546,7 @@ def _get_user_by_field(
                 redis_client.set_json(
                     f"user:username:{user_obj.username.lower()}", data, USER_CACHE_TTL
                 )
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     # Try cache lookup first (only when allowed)

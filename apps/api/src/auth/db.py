@@ -8,7 +8,7 @@ so this is thread-safe.
 """
 
 import asyncio
-from typing import Any
+from typing import Any, Annotated
 
 from fastapi import Depends
 from fastapi_users.db import BaseUserDatabase
@@ -63,5 +63,8 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
         await asyncio.to_thread(_delete)
 
 
-def get_user_db(session: Session = Depends(get_db_session)) -> SQLModelUserDatabase:
+def get_user_db(
+    session: Annotated[Session, Depends(get_db_session)] = None,
+) -> SQLModelUserDatabase:
+    assert session is not None
     return SQLModelUserDatabase(session)

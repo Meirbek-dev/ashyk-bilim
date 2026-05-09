@@ -9,6 +9,7 @@ import shutil
 from pathlib import Path
 from typing import Literal
 
+import anyio
 from fastapi import HTTPException, UploadFile
 from ulid import ULID
 
@@ -56,7 +57,8 @@ class ChunkedUploadSession:
             )
 
         chunk_path = self.get_chunk_path(chunk_index)
-        Path(chunk_path).write_bytes(chunk_data)
+        path = anyio.Path(chunk_path)
+        await path.write_bytes(chunk_data)
 
         self.chunks_received.add(chunk_index)
 
@@ -72,14 +74,14 @@ class ChunkedUploadSession:
         assembled_data = bytearray()
         for i in range(self.total_chunks):
             chunk_path = self.get_chunk_path(i)
-            if not chunk_path.exists():
+            path = anyio.Path(chunk_path)
+            if not await path.exists():
                 raise HTTPException(
                     status_code=500,
                     detail=f"Chunk {i} missing during assembly",
                 )
 
-            with Path(chunk_path).open("rb") as f:
-                assembled_data.extend(f.read())
+            assembled_data.extend(await path.read_bytes())
 
         # Verify file size
         if len(assembled_data) != self.file_size:

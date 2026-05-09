@@ -1,4 +1,7 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Request
+from sqlmodel import Session
 
 from src.auth.users import get_optional_public_user, get_public_user
 from src.db.trails import TrailCreate, TrailRead
@@ -21,8 +24,8 @@ router = APIRouter()
 async def api_start_trail(
     request: Request,
     trail_object: TrailCreate,
-    user=Depends(get_public_user),
-    db_session=Depends(get_db_session),
+    user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> Trail:
     """
     Start trail
@@ -33,8 +36,8 @@ async def api_start_trail(
 @router.get("")
 async def api_get_user_trail(
     request: Request,
-    user=Depends(get_optional_public_user),
-    db_session=Depends(get_db_session),
+    user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> TrailRead:
     """
     Get a user trails
@@ -48,8 +51,8 @@ async def api_get_user_trail(
 async def api_add_course_to_trail(
     request: Request,
     course_uuid: str,
-    user=Depends(get_public_user),
-    db_session=Depends(get_db_session),
+    user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> TrailRead:
     """
     Add Course to trail
@@ -61,8 +64,8 @@ async def api_add_course_to_trail(
 async def api_remove_course_to_trail(
     request: Request,
     course_uuid: str,
-    user=Depends(get_public_user),
-    db_session=Depends(get_db_session),
+    user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> TrailRead:
     """
     Remove Course from trail
@@ -74,8 +77,8 @@ async def api_remove_course_to_trail(
 async def api_add_activity_to_trail(
     request: Request,
     activity_uuid: str,
-    user=Depends(get_public_user),
-    db_session=Depends(get_db_session),
+    user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> TrailRead:
     """
     Add Course to trail
@@ -87,8 +90,8 @@ async def api_add_activity_to_trail(
 async def api_remove_activity_from_trail(
     request: Request,
     activity_uuid: str,
-    user=Depends(get_public_user),
-    db_session=Depends(get_db_session),
+    user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> TrailRead:
     """
     Remove Activity from trail

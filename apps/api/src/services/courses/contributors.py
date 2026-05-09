@@ -309,7 +309,7 @@ async def add_bulk_course_contributors(
             db_session.add(resource_author)
             results["successful"].append({"username": username, "user_id": user.id})
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             results["failed"].append({"username": username, "reason": str(e)})
 
     if results["successful"]:
@@ -410,7 +410,7 @@ async def remove_bulk_course_contributors(
             db_session.delete(existing_authorship)
             results["successful"].append({"username": username, "user_id": user.id})
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             results["failed"].append({"username": username, "reason": str(e)})
 
     if results["successful"]:

@@ -3,6 +3,7 @@ import logging
 from threading import Lock
 
 from redis import Redis
+from redis.exceptions import RedisError
 from ulid import ULID
 
 from config.config import get_settings
@@ -54,8 +55,11 @@ def _get_redis_client() -> Redis | None:
                     client = Redis.from_url(connection_string, decode_responses=True)
                     client.ping()
                     _redis_client = client
-                except Exception as exc:
+                except RedisError as exc:
                     logger.warning("Redis unavailable for AI session store: %s", exc)
+                    _redis_client = None
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Unexpected error connecting to Redis: %s", exc)
                     _redis_client = None
     return _redis_client
 

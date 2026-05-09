@@ -1,4 +1,7 @@
+import logging
 from datetime import UTC, datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlalchemy import func
@@ -695,7 +698,7 @@ async def get_courses(
     # load and avoid upstream rate limits. Uses Redis if available.
     try:
         from src.services.cache.redis_client import get_json, set_json
-    except Exception:
+    except Exception:  # noqa: BLE001
         get_json = None  # type: ignore
         set_json = None  # type: ignore
 
@@ -708,8 +711,8 @@ async def get_courses(
                 # cached is a list of serialised course dicts
                 return [CourseReadWithPermissions.model_validate(c) for c in cached]
         except Exception:
+            logger.debug("Redis error during cache lookup", exc_info=True)
             # Redis errors should not break the request
-            pass
     from collections import OrderedDict
 
     from sqlalchemy.orm import aliased
@@ -817,10 +820,10 @@ async def get_courses(
             try:
                 serialised = [cr.model_dump() for cr in course_reads]
                 set_json(cache_key, serialised, ttl=60)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 # Swallow redis set errors
                 pass
-    except Exception:
+    except Exception:  # noqa: BLE001
         # Ignore caching errors
         pass
 

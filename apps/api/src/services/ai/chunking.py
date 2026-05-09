@@ -20,8 +20,10 @@ def _tokenizer_for_model(model_name: str) -> Tokenizer:
     try:
         # Fetches tokenizer configuration from the Hugging Face hub
         tokenizer = Tokenizer.from_pretrained(model_name)
-    except Exception:
-        logger.warning("Tokenizer %s not found. Falling back to gpt2", model_name)
+    except Exception as e:
+        logger.warning(
+            "Tokenizer %s not found (error: %s). Falling back to gpt2", model_name, e
+        )
         # gpt2 is a standard BPE fallback similar to cl100k_base
         tokenizer = Tokenizer.from_pretrained("gpt2")
 
