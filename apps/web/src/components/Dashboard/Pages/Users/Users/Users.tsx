@@ -138,7 +138,12 @@ const Users = () => {
   })();
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [isMounted, setIsMounted] = useState(false);
   const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const { data: usersData, error, isLoading } = useMembers(currentPage, USERS_PER_PAGE);
 
@@ -278,13 +283,14 @@ const Users = () => {
 
   return (
     <div>
-      {isLoading ? (
+      {!isMounted || isLoading ? (
         <div>
           <PageLoading />
         </div>
       ) : (
         <>
           <div className="h-6" />
+
           <div className="border-border bg-card mx-auto mr-10 ml-10 rounded-xl border px-4 py-4 shadow-xs">
             <div className="bg-muted mb-3 flex flex-col -space-y-1 rounded-md px-5 py-3">
               <h1 className="text-foreground text-xl font-bold">{t('activeUsersTitle')}</h1>

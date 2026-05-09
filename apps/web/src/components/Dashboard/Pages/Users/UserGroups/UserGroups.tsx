@@ -23,7 +23,7 @@ import Modal from '@/components/Objects/Elements/Modal/Modal';
 import { useUserGroups } from '@/features/users/hooks/useUsers';
 import type { ColumnDef } from '@tanstack/react-table';
 import DataTable from '@components/ui/data-table';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -95,7 +95,12 @@ const UserGroups = () => {
   const [selectedUserGroup, setSelectedUserGroup] = useState<any | null>(null);
   const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<number | null>(null);
   const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<number | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const { data: usergroups, error, isLoading } = useUserGroups();
 
@@ -138,7 +143,7 @@ const UserGroups = () => {
     }
   };
 
-  if (isLoading) {
+  if (!isMounted || isLoading) {
     return (
       <Loader2
         size={16}

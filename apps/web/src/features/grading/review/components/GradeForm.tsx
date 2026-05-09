@@ -484,6 +484,7 @@ export default function GradeForm({
                 type="button"
                 variant="link"
                 className="h-auto p-0 text-xs"
+                disabled={!editable || isSaving || Number.parseFloat(draft.score) === submission.auto_score}
                 onClick={() => setDraft((current) => ({ ...current, score: String(submission.auto_score) }))}
               >
                 {t('useAutoScore')} {submission.auto_score}
