@@ -51,12 +51,8 @@ const nextConfig: NextConfig = {
       '@tiptap/extension-heading',
       '@tiptap/extensions',
       '@tiptap/extension-youtube',
-      '@tiptap/extension-code-block-lowlight',
     ],
   },
-
-  // Required for certain heavy TipTap extensions with Turbopack
-  transpilePackages: ['@tiptap/extension-code-block-lowlight', 'lowlight'],
 };
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');

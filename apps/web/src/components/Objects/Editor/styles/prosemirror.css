@@ -197,9 +197,8 @@
 }
 
 .ProseMirror pre {
-  background: oklch(0.14 0 0);
-  /* Keeping your dark theme for code blocks */
-  color: oklch(0.9 0 0);
+  background: var(--shiki-light-bg, oklch(0.14 0 0));
+  color: var(--shiki-light, oklch(0.9 0 0));
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
   border-radius: 0.5rem;
   border: 1px solid var(--border);
@@ -208,6 +207,11 @@
   margin: 1.5rem 0;
   line-height: 1.5;
   tab-size: 2;
+}
+
+.dark .ProseMirror pre {
+  background: var(--shiki-dark-bg, oklch(0.14 0 0));
+  color: var(--shiki-dark, oklch(0.9 0 0));
 }
 
 .ProseMirror pre code {
@@ -219,58 +223,15 @@
   border-radius: 0;
 }
 
-/* ── Syntax highlighting (hljs) ─────────────────────────────── */
+/* ── Syntax highlighting (Shiki Dual Themes) ─────────────────── */
 
-.ProseMirror .hljs-comment,
-.ProseMirror .hljs-quote {
-  color: oklch(0.5 0 0);
-  font-style: italic;
-}
-
-.ProseMirror .hljs-variable,
-.ProseMirror .hljs-template-variable,
-.ProseMirror .hljs-attribute,
-.ProseMirror .hljs-tag,
-.ProseMirror .hljs-name,
-.ProseMirror .hljs-regexp,
-.ProseMirror .hljs-link,
-.ProseMirror .hljs-selector-id,
-.ProseMirror .hljs-selector-class {
-  color: oklch(0.72 0.16 20);
-}
-
-.ProseMirror .hljs-number,
-.ProseMirror .hljs-meta,
-.ProseMirror .hljs-built_in,
-.ProseMirror .hljs-builtin-name,
-.ProseMirror .hljs-literal,
-.ProseMirror .hljs-type,
-.ProseMirror .hljs-params {
-  color: oklch(0.76 0.12 60);
-}
-
-.ProseMirror .hljs-string,
-.ProseMirror .hljs-symbol,
-.ProseMirror .hljs-bullet {
-  color: oklch(0.76 0.14 145);
-}
-
-.ProseMirror .hljs-title,
-.ProseMirror .hljs-section {
-  color: oklch(0.8 0.1 80);
-}
-
-.ProseMirror .hljs-keyword,
-.ProseMirror .hljs-selector-tag {
-  color: oklch(0.74 0.12 240);
-}
-
-.ProseMirror .hljs-emphasis {
-  font-style: italic;
-}
-
-.ProseMirror .hljs-strong {
-  font-weight: 700;
+.dark .ProseMirror .shiki,
+.dark .ProseMirror .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
 }
 
 /* ── Tables ────────────────────────────────────────────────────── */

@@ -4,7 +4,8 @@ import { AiStreamingCursor } from './AiStreamingCursor';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
-import hljs from 'highlight.js';
+import { highlightCode } from '@/components/Objects/Editor/core/shiki';
+import { useState, useEffect } from 'react';
 
 interface AiMarkdownRendererProps {
   content: string;
@@ -13,10 +14,41 @@ interface AiMarkdownRendererProps {
   className?: string;
 }
 
+function ShikiCodeBlock({ lang, raw, langClass }: { lang: string; raw: string; langClass?: string }) {
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    highlightCode(raw, lang || 'text').then((html) => {
+      if (isMounted) {
+        setHighlighted(html);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [raw, lang]);
+
+  if (!highlighted) {
+    return (
+      <pre className="my-2 overflow-x-auto rounded-lg border border-zinc-700/60 bg-zinc-950 p-3 text-xs leading-relaxed">
+        <code className={cn('font-mono text-zinc-200', langClass)}>{raw}</code>
+      </pre>
+    );
+  }
+
+  return (
+    <div
+      className="my-2 overflow-x-auto rounded-lg border border-zinc-700/60 bg-zinc-950 p-3 text-xs leading-relaxed"
+      dangerouslySetInnerHTML={{ __html: highlighted }}
+    />
+  );
+}
+
 /**
  * Renders AI markdown output as safe JSX.
  * Supports GFM (tables, strikethrough, task lists), fenced code with
- * syntax highlighting via highlight.js, and opens external links safely.
+ * syntax highlighting via Shiki, and opens external links safely.
  *
  * Streaming cursor logic: the cursor is placed after the very last character
  * of streamed content. We compare each node's end offset to the total content
@@ -60,25 +92,7 @@ export function AiMarkdownRenderer({ content, isStreaming = false, className }: 
             const raw = String(children).replace(/\n$/, '');
 
             if (langClass?.startsWith('language-') || raw.includes('\n')) {
-              let highlighted = raw;
-              try {
-                if (lang && hljs.getLanguage(lang)) {
-                  highlighted = hljs.highlight(raw, { language: lang }).value;
-                } else {
-                  highlighted = hljs.highlightAuto(raw).value;
-                }
-              } catch {
-                // fall back to raw text on highlight failure
-              }
-              return (
-                <pre className="my-2 overflow-x-auto rounded-lg border border-zinc-700/60 bg-zinc-950 p-3 text-xs leading-relaxed">
-                  {/* highlight.js output is escape-safe — no user-controlled HTML */}
-                  <code
-                    className={cn('font-mono text-zinc-200', langClass)}
-                    dangerouslySetInnerHTML={{ __html: highlighted }}
-                  />
-                </pre>
-              );
+              return <ShikiCodeBlock lang={lang} raw={raw} langClass={langClass} />;
             }
 
             // Inline code

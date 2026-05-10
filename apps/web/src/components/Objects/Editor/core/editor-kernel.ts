@@ -7,7 +7,7 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import { TableRow } from '@tiptap/extension-table-row';
 import { Youtube } from '@tiptap/extension-youtube';
 import { StarterKit } from '@tiptap/starter-kit';
-import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
+import CodeBlockShiki from 'tiptap-extension-code-block-shiki';
 import Placeholder from '@tiptap/extension-placeholder';
 
 import Badges from '../Extensions/Badges/Badges';
@@ -28,7 +28,6 @@ import { getLinkExtension } from '../EditorConf';
 
 import { normalizeTiptapJsonContent } from './editor-content';
 import { HeadingWithIds } from './heading-with-ids';
-import { SHARED_LOWLIGHT } from './lowlight';
 import { ImagePasteHandler } from './image-paste';
 import { SlashCommand } from './slash-command';
 import { getEditorPresetDefinition } from './editor-presets';
@@ -81,7 +80,13 @@ function createActivityBlockExtensions(activity: ActivityRef, editable: boolean)
     PDFBlock.configure({ editable, activity }),
     QuizBlock.configure({ editable, activity }),
     Youtube.configure({ controls: true, modestBranding: true }),
-    CodeBlockLowlight.configure({ lowlight: SHARED_LOWLIGHT }),
+    CodeBlockShiki.configure({
+      defaultTheme: 'github-dark',
+      themes: {
+        light: 'github-light',
+        dark: 'github-dark',
+      },
+    }),
     EmbedObjects.configure({ editable, activity }),
     Badges.configure({ editable, activity }),
     Buttons.configure({ editable, activity }),
@@ -126,10 +131,13 @@ function createDiscussionLikeExtensions({ editable }: { editable: boolean }): Ed
           class: 'bg-gray-100 px-1 py-0.5 rounded text-sm font-mono',
         },
       },
-      codeBlock: {
-        HTMLAttributes: {
-          class: 'bg-gray-100 p-3 rounded-md overflow-x-auto',
-        },
+      codeBlock: false,
+    }),
+    CodeBlockShiki.configure({
+      defaultTheme: 'github-dark',
+      themes: {
+        light: 'github-light',
+        dark: 'github-dark',
       },
     }),
     HeadingWithIds.configure({
