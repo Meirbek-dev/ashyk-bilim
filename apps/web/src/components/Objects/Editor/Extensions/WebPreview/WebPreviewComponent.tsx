@@ -1,6 +1,8 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlignCenter, AlignLeft, AlignRight, Edit2, Save, Trash, X } from 'lucide-react';
+import { YouTubeEmbed } from '@next/third-parties/google';
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext';
+import { getYouTubeVideoId } from '@/lib/utils';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Modal from '@/components/Objects/Elements/Modal/Modal';
@@ -266,13 +268,26 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
         minHeight="xl"
         dialogContent={
           previewUrl ? (
-            <iframe
-              src={previewUrl}
-              title={t('embeddedWebsitePreview')}
-              className="h-full w-full border-0 bg-white"
-              style={{ display: 'block', borderRadius: 0 }}
-              allowFullScreen
-            />
+            (() => {
+              const videoId = getYouTubeVideoId(previewUrl);
+              if (videoId) {
+                return (
+                  <YouTubeEmbed
+                    videoid={videoId}
+                    style="height: 100%; width: 100%; max-width: none;"
+                  />
+                );
+              }
+              return (
+                <iframe
+                  src={previewUrl}
+                  title={t('embeddedWebsitePreview')}
+                  className="h-full w-full border-0 bg-white"
+                  style={{ display: 'block', borderRadius: 0 }}
+                  allowFullScreen
+                />
+              );
+            })()
           ) : null
         }
       />

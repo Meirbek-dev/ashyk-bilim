@@ -31,3 +31,25 @@ export function generateUUID(): string {
     return value.toString(16);
   });
 }
+
+const YOUTUBE_HOSTNAMES = new Set(['youtube.com', 'www.youtube.com', 'youtu.be', 'www.youtu.be']);
+const YOUTUBE_VIDEO_ID_LENGTH = 11;
+
+export const isYouTubeUrl = (url: string): boolean => {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return YOUTUBE_HOSTNAMES.has(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
+
+export const getYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+
+  const youtubeRegex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/i;
+  const match = youtubeRegex.exec(url);
+
+  return match?.[1]?.length === YOUTUBE_VIDEO_ID_LENGTH ? match[1] : null;
+}

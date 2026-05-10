@@ -10,6 +10,7 @@ import {
   SiNotion,
   SiYoutube,
 } from '@icons-pack/react-simple-icons';
+import { YouTubeEmbed } from '@next/third-parties/google';
 import {
   AlignCenter,
   BoxIcon,
@@ -31,6 +32,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { NodeViewWrapper } from '@tiptap/react';
 import { useTranslations } from 'next-intl';
 import DOMPurify from 'dompurify';
+import { getYouTubeVideoId, isYouTubeUrl } from '@/lib/utils';
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
 
 // ============================================================================
@@ -161,34 +163,9 @@ const SUPPORTED_PRODUCTS: SupportedProduct[] = [
   },
 ];
 
-const YOUTUBE_HOSTNAMES = new Set(['youtube.com', 'www.youtube.com', 'youtu.be', 'www.youtu.be']);
-const YOUTUBE_VIDEO_ID_LENGTH = 11;
-
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
-
-const isYouTubeUrl = (url: string): boolean => {
-  try {
-    const parsed = new URL(url);
-    return YOUTUBE_HOSTNAMES.has(parsed.hostname);
-  } catch {
-    return false;
-  }
-};
-
-const getYouTubeEmbedUrl = (url: string): string => {
-  if (!isYouTubeUrl(url)) return url;
-
-  const youtubeRegex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/i;
-  const match = youtubeRegex.exec(url);
-
-  if (match?.[1]?.length === YOUTUBE_VIDEO_ID_LENGTH) {
-    return `https://www.youtube.com/embed/${match[1]}?autoplay=0&rel=0`;
-  }
-
-  return url;
-};
 
 const sanitizeUrl = (url: string): string => {
   const trimmed = url.trim();
@@ -250,10 +227,21 @@ const EmbedContent = ({
   }, [embedType, sanitizedEmbedCode]);
 
   if (embedType === 'url' && embedUrl) {
-    const processedUrl = isYouTubeUrl(embedUrl) ? getYouTubeEmbedUrl(embedUrl) : embedUrl;
+    const videoId = getYouTubeVideoId(embedUrl);
+
+    if (videoId) {
+      return (
+        <YouTubeEmbed
+          videoid={videoId}
+          style="height: 100%; width: 100%; max-width: none;"
+          params="autoplay=0&rel=0"
+        />
+      );
+    }
+
     return (
       <iframe
-        src={processedUrl}
+        src={embedUrl}
         className="h-full w-full border-0"
         allowFullScreen
         title={embeddedTitle ?? 'Embedded content'}

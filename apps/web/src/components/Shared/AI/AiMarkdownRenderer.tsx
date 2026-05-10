@@ -88,7 +88,7 @@ export function AiMarkdownRenderer({ content, isStreaming = false, className }: 
           // ── Code ──────────────────────────────────────────────────────
           code: ({ className: langClass, children, ...rest }) => {
             const match = /language-(\w+)/.exec(langClass ?? '');
-            const lang = match ? match[1] : '';
+            const lang = match?.[1] ?? 'text';
             const raw = String(children).replace(/\n$/, '');
 
             if (langClass?.startsWith('language-') || raw.includes('\n')) {

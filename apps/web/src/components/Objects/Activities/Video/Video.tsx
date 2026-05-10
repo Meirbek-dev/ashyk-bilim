@@ -1,17 +1,9 @@
 import ArtPlayer from '@components/Objects/Activities/Video/Artplayer';
 import { getActivityMediaDirectory } from '@services/media/media';
+import { YouTubeEmbed } from '@next/third-parties/google';
+import { getYouTubeVideoId } from '@/lib/utils';
 import type ArtplayerType from 'artplayer';
 import { useLocale, useTranslations } from 'next-intl';
-
-// Function to extract YouTube video ID from various YouTube URL formats
-function getYouTubeID(url: string): string | null {
-  if (!url) return null;
-
-  const regex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/;
-  const match = regex.exec(url);
-
-  return match?.[1] || null;
-}
 
 interface VideoDetails {
   startTime?: number;
@@ -52,7 +44,7 @@ const VideoActivity = ({ activity, course }: VideoActivityProps) => {
   const locale = fullLocale.split('-')[0];
 
   // Extract YouTube ID from activity content
-  const videoId = activity?.content?.uri ? getYouTubeID(activity.content.uri) || '' : '';
+  const videoId = activity?.content?.uri ? getYouTubeVideoId(activity.content.uri) || '' : '';
 
   // Generate subtitle entries from activity details
   const subtitleEntries: SubtitleEntry[] = (activity?.details?.subtitles || [])
@@ -134,9 +126,10 @@ const VideoActivity = ({ activity, course }: VideoActivityProps) => {
               />
             )}
             {activity.activity_sub_type === 'SUBTYPE_VIDEO_YOUTUBE' && videoId && (
-              <iframe
-                className="size-full"
-                src={`https://www.youtube.com/embed/${videoId}?${new URLSearchParams({
+              <YouTubeEmbed
+                videoid={videoId}
+                style="height: 100%; width: 100%; max-width: none; position: absolute; inset: 0;"
+                params={new URLSearchParams({
                   autoplay: activity.details?.autoplay ? '1' : '0',
                   mute: activity.details?.muted ? '1' : '0',
                   start: String(activity.details?.startTime || 0),
@@ -144,10 +137,7 @@ const VideoActivity = ({ activity, course }: VideoActivityProps) => {
                   controls: '1',
                   modestbranding: '1',
                   rel: '0',
-                }).toString()}`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                title={t('youtubePlayer')}
+                }).toString()}
               />
             )}
           </div>

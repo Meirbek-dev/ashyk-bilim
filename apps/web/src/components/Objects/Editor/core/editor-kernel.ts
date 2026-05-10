@@ -5,7 +5,6 @@ import { Table } from '@tiptap/extension-table';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { TableRow } from '@tiptap/extension-table-row';
-import { Youtube } from '@tiptap/extension-youtube';
 import { StarterKit } from '@tiptap/starter-kit';
 import CodeBlockShiki from 'tiptap-extension-code-block-shiki';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -24,6 +23,7 @@ import UserBlock from '../Extensions/Users/UserBlock';
 import VideoBlock from '../Extensions/Video/VideoBlock';
 import WarningCallout from '../Extensions/Callout/Warning/WarningCallout';
 import WebPreview from '../Extensions/WebPreview/WebPreview';
+import Youtube from '../Extensions/Youtube/Youtube';
 import { getLinkExtension } from '../EditorConf';
 
 import { normalizeTiptapJsonContent } from './editor-content';
