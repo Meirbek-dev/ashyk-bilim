@@ -141,6 +141,9 @@
       "resultsWaitingForReleaseDescription": "Your latest submission has been graded. Scores and feedback will appear after your teacher releases them.",
       "returnedForRevision": "Returned for revision",
       "resultAvailable": "Result available",
+      "resumedDraft": "Resumed draft",
+      "resumedDraftDescription": "Last saved at {time}",
+      "pointsShort": "pts",
       "task": "Task {index}",
       "taskContentUnavailable": "This task content is not available in student mode yet.",
       "taskTypeFile": "File upload",
@@ -825,7 +828,8 @@
       "verificationStatusUnknown": "Verification Status Unknown",
       "verifyingCertificate": "Verifying Certificate...",
       "viewCourse": "View Course",
-      "viewFullCertificate": "View Full Certificate"
+      "viewFullCertificate": "View Full Certificate",
+      "mastery": "Skill Mastery"
     },
     "CertificateVerifyPage": {
       "description": "Verify the authenticity of the {certificationName} certificate for the course {courseName}.",
@@ -7937,72 +7941,72 @@
           "copyOf": "{title} copy",
           "Form": {
             "requiredLabel": "Required"
-          }
-        },
-        "loading": "Loading studio",
-        "unavailable": "Studio is unavailable for this activity.",
-        "lifecycle": {
-          "draft": "Draft",
-          "scheduled": "Scheduled",
-          "published": "Published",
-          "archived": "Archived"
-        },
-        "lifecycleChanged": "Lifecycle changed to {state}",
-        "updateLifecycleFailed": "Failed to update lifecycle",
-        "breadcrumb": {
-          "curriculum": "Curriculum",
-          "studio": "Studio"
-        },
-        "kinds": {
-          "ASSIGNMENT": "Assignment",
-          "EXAM": "Exam",
-          "CODE_CHALLENGE": "Code Challenge",
-          "QUIZ": "Quiz",
-          "TYPE_ASSIGNMENT": "Assignment",
-          "TYPE_EXAM": "Exam",
-          "TYPE_CODE_CHALLENGE": "Code Challenge",
-          "TYPE_QUIZ": "Quiz"
-        },
-        "issueCount": "{count} issues",
-        "preview": "Preview",
-        "scheduleOptions": "Schedule options",
-        "schedulePublication": "Schedule publication",
-        "schedule": "Schedule",
-        "saveAsDraft": "Save as draft",
-        "moreOptions": "More options",
-        "archive": "Archive",
-        "hideInspector": "Hide inspector",
-        "showInspector": "Show inspector",
-        "publishNow": "Publish now",
-        "issueBlocks": "{count} {count, plural, =1 {issue blocks} other {issues block}} publishing.",
-        "assessmentLabel": "Assessment",
-        "itemsLabel": "Items",
-        "jumpToItem": "Jump to item",
-        "blockerAlertDescription": "Resolve the assessment-level blockers before publishing. Item-level issues remain linked from the list above.",
-        "loadingEditor": "Loading editor",
-        "Items": {
-          "OpenText": {
-            "prompt": "Prompt",
-            "minWords": "Minimum words",
-            "rubric": "Rubric"
           },
-          "FileUpload": {
-            "prompt": "Prompt"
+          "loading": "Loading studio",
+          "unavailable": "Studio is unavailable for this activity.",
+          "lifecycle": {
+            "draft": "Draft",
+            "scheduled": "Scheduled",
+            "published": "Published",
+            "archived": "Archived"
           },
-          "Form": {
-            "prompt": "Prompt",
-            "fieldHeader": "Field {number}",
-            "fieldLabel": "Label",
-            "fieldType": "Type",
-            "fieldTypes": {
-              "text": "Text",
-              "textarea": "Textarea",
-              "number": "Number",
-              "date": "Date"
+          "lifecycleChanged": "Lifecycle changed to {state}",
+          "updateLifecycleFailed": "Failed to update lifecycle",
+          "breadcrumb": {
+            "curriculum": "Curriculum",
+            "studio": "Studio"
+          },
+          "kinds": {
+            "ASSIGNMENT": "Assignment",
+            "EXAM": "Exam",
+            "CODE_CHALLENGE": "Code Challenge",
+            "QUIZ": "Quiz",
+            "TYPE_ASSIGNMENT": "Assignment",
+            "TYPE_EXAM": "Exam",
+            "TYPE_CODE_CHALLENGE": "Code Challenge",
+            "TYPE_QUIZ": "Quiz"
+          },
+          "issueCount": "{count} issues",
+          "preview": "Preview",
+          "scheduleOptions": "Schedule options",
+          "schedulePublication": "Schedule publication",
+          "schedule": "Schedule",
+          "saveAsDraft": "Save as draft",
+          "moreOptions": "More options",
+          "archive": "Archive",
+          "hideInspector": "Hide inspector",
+          "showInspector": "Show inspector",
+          "publishNow": "Publish now",
+          "issueBlocks": "{count} {count, plural, =1 {issue blocks} other {issues block}} publishing.",
+          "assessmentLabel": "Assessment",
+          "itemsLabel": "Items",
+          "jumpToItem": "Jump to item",
+          "blockerAlertDescription": "Resolve the assessment-level blockers before publishing. Item-level issues remain linked from the list above.",
+          "loadingEditor": "Loading editor",
+          "Items": {
+            "OpenText": {
+              "prompt": "Prompt",
+              "minWords": "Minimum words",
+              "rubric": "Rubric"
             },
-            "requiredLabel": "Required",
-            "addField": "Add field",
-            "unsupportedKind": "Unsupported item kind."
+            "FileUpload": {
+              "prompt": "Prompt"
+            },
+            "Form": {
+              "prompt": "Prompt",
+              "fieldHeader": "Field {number}",
+              "fieldLabel": "Label",
+              "fieldType": "Type",
+              "fieldTypes": {
+                "text": "Text",
+                "textarea": "Textarea",
+                "number": "Number",
+                "date": "Date"
+              },
+              "requiredLabel": "Required",
+              "addField": "Add field",
+              "unsupportedKind": "Unsupported item kind."
+            }
           }
         },
         "policyTitle": "{kind} policy"

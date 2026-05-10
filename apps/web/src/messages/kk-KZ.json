@@ -161,7 +161,10 @@
       "resultsWaitingForReleaseTitle": "Нәтижелер жарияланған жоқ",
       "resultsWaitingForReleaseDescription": "Соңғы жіберіліміңіз тексерілді. Ұстаз жарияласа, баға мен пікір көрсетіледі.",
       "returnedForRevision": "Қайта өңдеуге қайтарылды",
-      "resultAvailable": "Нәтиже қолжетімді"
+      "resultAvailable": "Нәтиже қолжетімді",
+      "resumedDraft": "Жоба қалпына келтірілді",
+      "resumedDraftDescription": "Соңғы сақтау уақыты: {time}",
+      "pointsShort": "ұпай"
     },
     "CodeChallenges": {
       "actualOutput": "Сіздің шығаруыңыз",
@@ -825,7 +828,8 @@
       "verificationStatusUnknown": "Тексеру күйі белгісіз",
       "verifyingCertificate": "Сертификат тексерілуде...",
       "viewCourse": "Курсты көру",
-      "viewFullCertificate": "Толық сертификатты көру"
+      "viewFullCertificate": "Толық сертификатты көру",
+      "mastery": "Дағды меңгеру"
     },
     "CertificateVerifyPage": {
       "description": "{courseName} курсы үшін {certificationName} сертификатының шынайылығын тексеріңіз.",
@@ -7974,72 +7978,72 @@
           "copyOf": "{title} көшірмесі",
           "Form": {
             "requiredLabel": "Міндетті"
-          }
-        },
-        "loading": "Студия жүктелуде",
-        "unavailable": "Бұл әрекет үшін студия қолжетімсіз.",
-        "lifecycle": {
-          "draft": "Нобай",
-          "scheduled": "Жоспарланған",
-          "published": "Жарияланған",
-          "archived": "Мұрағатталған"
-        },
-        "lifecycleChanged": "Кезең {state} күйіне ауысты",
-        "updateLifecycleFailed": "Кезеңді жаңарту сәтсіз аяқталды",
-        "breadcrumb": {
-          "curriculum": "Оқу жоспары",
-          "studio": "Студия"
-        },
-        "kinds": {
-          "ASSIGNMENT": "Тапсырма",
-          "EXAM": "Емтихан",
-          "CODE_CHALLENGE": "Код тапсырмасы",
-          "QUIZ": "Тест",
-          "TYPE_ASSIGNMENT": "Тапсырма",
-          "TYPE_EXAM": "Емтихан",
-          "TYPE_CODE_CHALLENGE": "Код тапсырмасы",
-          "TYPE_QUIZ": "Тест"
-        },
-        "issueCount": "{count} мәселе",
-        "preview": "Алдын ала қарау",
-        "scheduleOptions": "Жоспарлау параметрлері",
-        "schedulePublication": "Жариялауды жоспарлау",
-        "schedule": "Жоспарлау",
-        "saveAsDraft": "Нобай ретінде сақтау",
-        "moreOptions": "Қосымша параметрлер",
-        "archive": "Мұрағаттау",
-        "hideInspector": "Инспекторды жасыру",
-        "showInspector": "Инспекторды көрсету",
-        "publishNow": "Қазір жариялау",
-        "issueBlocks": "{count} мәселе жариялауды блоктап тұр",
-        "assessmentLabel": "Бағалау",
-        "itemsLabel": "Элементтер",
-        "jumpToItem": "Элементке өту",
-        "blockerAlertDescription": "Жарияламас бұрын бағалау деңгейіндегі бұғаттаушыларды шешіңіз. Элемент деңгейіндегі мәселелер жоғарыдағы тізімде қалады.",
-        "loadingEditor": "Редактор жүктелуде",
-        "Items": {
-          "OpenText": {
-            "prompt": "Сұрақ",
-            "minWords": "Сөздердің минималды саны",
-            "rubric": "Бағалау рубрикасы"
           },
-          "FileUpload": {
-            "prompt": "Сұрақ"
+          "loading": "Студия жүктелуде",
+          "unavailable": "Бұл әрекет үшін студия қолжетімсіз.",
+          "lifecycle": {
+            "draft": "Нобай",
+            "scheduled": "Жоспарланған",
+            "published": "Жарияланған",
+            "archived": "Мұрағатталған"
           },
-          "Form": {
-            "prompt": "Сұрақ",
-            "fieldHeader": "{number}-өріс",
-            "fieldLabel": "Жазба",
-            "fieldType": "Түрі",
-            "fieldTypes": {
-              "text": "Мәтін",
-              "textarea": "Көп жолды мәтін",
-              "number": "Сан",
-              "date": "Күн"
+          "lifecycleChanged": "Кезең {state} күйіне ауысты",
+          "updateLifecycleFailed": "Кезеңді жаңарту сәтсіз аяқталды",
+          "breadcrumb": {
+            "curriculum": "Оқу жоспары",
+            "studio": "Студия"
+          },
+          "kinds": {
+            "ASSIGNMENT": "Тапсырма",
+            "EXAM": "Емтихан",
+            "CODE_CHALLENGE": "Код тапсырмасы",
+            "QUIZ": "Тест",
+            "TYPE_ASSIGNMENT": "Тапсырма",
+            "TYPE_EXAM": "Емтихан",
+            "TYPE_CODE_CHALLENGE": "Код тапсырмасы",
+            "TYPE_QUIZ": "Тест"
+          },
+          "issueCount": "{count} мәселе",
+          "preview": "Алдын ала қарау",
+          "scheduleOptions": "Жоспарлау параметрлері",
+          "schedulePublication": "Жариялауды жоспарлау",
+          "schedule": "Жоспарлау",
+          "saveAsDraft": "Нобай ретінде сақтау",
+          "moreOptions": "Қосымша параметрлер",
+          "archive": "Мұрағаттау",
+          "hideInspector": "Инспекторды жасыру",
+          "showInspector": "Инспекторды көрсету",
+          "publishNow": "Қазір жариялау",
+          "issueBlocks": "{count} мәселе жариялауды блоктап тұр",
+          "assessmentLabel": "Бағалау",
+          "itemsLabel": "Элементтер",
+          "jumpToItem": "Элементке өту",
+          "blockerAlertDescription": "Жарияламас бұрын бағалау деңгейіндегі бұғаттаушыларды шешіңіз. Элемент деңгейіндегі мәселелер жоғарыдағы тізімде қалады.",
+          "loadingEditor": "Редактор жүктелуде",
+          "Items": {
+            "OpenText": {
+              "prompt": "Сұрақ",
+              "minWords": "Сөздердің минималды саны",
+              "rubric": "Бағалау рубрикасы"
             },
-            "requiredLabel": "Міндетті",
-            "addField": "Өріс қосу",
-            "unsupportedKind": "Элемент түрі қолданылмайды."
+            "FileUpload": {
+              "prompt": "Сұрақ"
+            },
+            "Form": {
+              "prompt": "Сұрақ",
+              "fieldHeader": "{number}-өріс",
+              "fieldLabel": "Жазба",
+              "fieldType": "Түрі",
+              "fieldTypes": {
+                "text": "Мәтін",
+                "textarea": "Көп жолды мәтін",
+                "number": "Сан",
+                "date": "Күн"
+              },
+              "requiredLabel": "Міндетті",
+              "addField": "Өріс қосу",
+              "unsupportedKind": "Элемент түрі қолданылмайды."
+            }
           }
         },
         "policyTitle": "{kind} саясаты"
