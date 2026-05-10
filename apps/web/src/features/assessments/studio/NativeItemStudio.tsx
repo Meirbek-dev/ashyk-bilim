@@ -504,7 +504,9 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey }: NativeItemAuth
           method: 'DELETE',
         });
         if (!response.ok) {
-          throw new Error(await responseError(response, t('deleteFailed', { itemNoun: displayItemNoun.toLowerCase() })));
+          throw new Error(
+            await responseError(response, t('deleteFailed', { itemNoun: displayItemNoun.toLowerCase() })),
+          );
         }
         toast.success(t('itemDeleted', { itemNoun: displayItemNoun }));
         setSelectedItemUuid(null);
@@ -526,7 +528,9 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey }: NativeItemAuth
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             kind: itemState.kind,
-            title: itemState.title ? t('copyOf', { title: itemState.title }) : t('copyOfItem', { itemNoun: displayItemNoun }),
+            title: itemState.title
+              ? t('copyOf', { title: itemState.title })
+              : t('copyOfItem', { itemNoun: displayItemNoun }),
             max_score: itemState.max_score,
             body: structuredClone(itemState.body),
           }),

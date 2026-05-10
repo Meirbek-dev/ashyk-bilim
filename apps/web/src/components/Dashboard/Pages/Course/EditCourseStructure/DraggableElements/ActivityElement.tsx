@@ -107,8 +107,7 @@ const ACTIVITY_CONFIG = {
   TYPE_QUIZ: {
     Icon: HelpCircle,
     translationKey: 'quiz',
-    colorClass:
-      'border-lime-200 dark:border-lime-800 bg-lime-50 dark:bg-lime-950/30 text-lime-700 dark:text-lime-300',
+    colorClass: 'border-lime-200 dark:border-lime-800 bg-lime-50 dark:bg-lime-950/30 text-lime-700 dark:text-lime-300',
   },
   TYPE_CODE_CHALLENGE: {
     Icon: Code2,

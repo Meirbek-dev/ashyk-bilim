@@ -4,6 +4,7 @@ import NextTopLoader from 'nextjs-toploader';
 import { Toaster } from '@/components/ui/sonner';
 import { SessionProvider } from '@/components/providers/session-provider';
 import { ThemeProvider, useTheme } from '@/components/providers/theme-provider';
+import { ValibotProvider } from '@/components/providers/valibot-provider';
 import { ReactQueryProvider } from '@/lib/react-query/providers';
 import type { Session } from '@/lib/auth/types';
 import type { ThemeMode } from '@/lib/themes';
@@ -47,7 +48,9 @@ export default function RootProviders({ children, initialSession, initialThemeMo
           defaultThemeName={initialSession?.user.theme ?? 'modern-minimal'}
           initialMode={initialThemeMode}
         >
-          <ThemedRootChrome>{children}</ThemedRootChrome>
+          <ValibotProvider>
+            <ThemedRootChrome>{children}</ThemedRootChrome>
+          </ValibotProvider>
         </ThemeProvider>
       </SessionProvider>
     </ReactQueryProvider>

@@ -139,9 +139,7 @@ describe('teacher review controls', () => {
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('dialogs.publishTitle')).toBeInTheDocument();
-    expect(
-      within(dialog).getByText('dialogs.publishDescription'),
-    ).toBeInTheDocument();
+    expect(within(dialog).getByText('dialogs.publishDescription')).toBeInTheDocument();
     expect(within(dialog).getByText('preview.gradeReady')).toBeInTheDocument();
     expect(within(dialog).getByText('preview.hiddenFromStudent')).toBeInTheDocument();
     expect(within(dialog).getByText('preview.alreadyVisible')).toBeInTheDocument();
@@ -286,9 +284,7 @@ describe('teacher review controls', () => {
     );
 
     expect(screen.getByText('releaseStateHidden')).toBeInTheDocument();
-    expect(
-      screen.getByText('publishPrerequisite'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('publishPrerequisite')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'publishGrade' })).toBeDisabled();
     expect(screen.getByText('publishPrerequisite')).toBeInTheDocument();
   });
