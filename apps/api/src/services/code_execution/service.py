@@ -143,7 +143,9 @@ class CodeExecutionService:
         try:
             return await asyncio.to_thread(self._list_languages_sync)
         except Exception as exc:
-            logger.warning("ASSESSMENT_SUPPORT_ALERT Judge0 language discovery failed: %s", exc)
+            logger.warning(
+                "ASSESSMENT_SUPPORT_ALERT Judge0 language discovery failed: %s", exc
+            )
             return []
 
     async def run(
@@ -171,7 +173,9 @@ class CodeExecutionService:
             purpose=purpose,
             idempotency_key=idempotency_key,
             source_sha256=_sha256(source_code),
-            stdin_sha256=_sha256(custom_input or "") if custom_input is not None else None,
+            stdin_sha256=_sha256(custom_input or "")
+            if custom_input is not None
+            else None,
             language_id=language_id,
         )
         if existing is not None:
@@ -179,7 +183,14 @@ class CodeExecutionService:
 
         run_uuid = f"code_run_{ULID()}"
         tests = (
-            [CodeTestCase(id="custom", input=custom_input or "", expected_output="", is_visible=True)]
+            [
+                CodeTestCase(
+                    id="custom",
+                    input=custom_input or "",
+                    expected_output="",
+                    is_visible=True,
+                )
+            ]
             if custom_input is not None
             else test_cases
         )
@@ -193,7 +204,9 @@ class CodeExecutionService:
             status=CodeRunStatus.RUNNING,
             language_id=language_id,
             source_sha256=_sha256(source_code),
-            stdin_sha256=_sha256(custom_input or "") if custom_input is not None else None,
+            stdin_sha256=_sha256(custom_input or "")
+            if custom_input is not None
+            else None,
             idempotency_key=idempotency_key,
             total=len(tests),
             started_at=datetime.now(UTC),
@@ -214,7 +227,9 @@ class CodeExecutionService:
                 memory_limit_mb=memory_limit_mb,
             )
         except Exception as exc:
-            logger.warning("ASSESSMENT_SUPPORT_ALERT Judge0 execution degraded: %s", exc)
+            logger.warning(
+                "ASSESSMENT_SUPPORT_ALERT Judge0 execution degraded: %s", exc
+            )
             result = CodeExecutionResult(
                 run_uuid=run_uuid,
                 status=CodeRunStatus.DEGRADED,
@@ -298,7 +313,10 @@ class CodeExecutionService:
 
         for test, submission in zip(test_cases, submissions, strict=False):
             case_status = normalize_status(submission.status)
-            if case_status != CodeRunStatus.ACCEPTED and overall_status == CodeRunStatus.ACCEPTED:
+            if (
+                case_status != CodeRunStatus.ACCEPTED
+                and overall_status == CodeRunStatus.ACCEPTED
+            ):
                 overall_status = case_status
             case_passed = case_status == CodeRunStatus.ACCEPTED if scored else True
             if case_passed and scored:
@@ -307,7 +325,9 @@ class CodeExecutionService:
             stderr = submission.stderr
             compile_output = submission.compile_output
             time_value = float(submission.time) if submission.time is not None else None
-            memory_value = int(submission.memory) if submission.memory is not None else None
+            memory_value = (
+                int(submission.memory) if submission.memory is not None else None
+            )
             details.append(
                 CodeExecutionCaseResult(
                     test_id=test.id,
@@ -315,14 +335,22 @@ class CodeExecutionService:
                     is_visible=test.is_visible,
                     stdin=test.input if test.is_visible else None,
                     expected=test.expected_output if test.is_visible else None,
-                    actual=(submission.stdout or "").strip() if test.is_visible else None,
+                    actual=(submission.stdout or "").strip()
+                    if test.is_visible
+                    else None,
                     stdout=submission.stdout,
                     stderr=submission.stderr,
                     compile_output=submission.compile_output,
                     message=submission.message,
-                    status_id=int(submission.status) if submission.status is not None else None,
-                    status_description=str(submission.status) if submission.status is not None else "",
-                    judge0_token=str(submission.token) if submission.token is not None else None,
+                    status_id=int(submission.status)
+                    if submission.status is not None
+                    else None,
+                    status_description=str(submission.status)
+                    if submission.status is not None
+                    else "",
+                    judge0_token=str(submission.token)
+                    if submission.token is not None
+                    else None,
                     time=time_value,
                     memory=memory_value,
                     weight=float(test.weight or 1),
@@ -360,7 +388,10 @@ class CodeExecutionService:
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail="Source code exceeds the configured size limit",
             )
-        if custom_input is not None and len(custom_input.encode()) > settings.max_stdin_bytes:
+        if (
+            custom_input is not None
+            and len(custom_input.encode()) > settings.max_stdin_bytes
+        ):
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail="Custom input exceeds the configured size limit",
@@ -403,7 +434,9 @@ class CodeExecutionService:
 
     def _result_from_db(self, db_session: Session, run: CodeRun) -> CodeExecutionResult:
         cases = db_session.exec(
-            select(CodeRunCase).where(CodeRunCase.run_uuid == run.run_uuid).order_by(CodeRunCase.id)
+            select(CodeRunCase)
+            .where(CodeRunCase.run_uuid == run.run_uuid)
+            .order_by(CodeRunCase.id)
         ).all()
         details = [
             CodeExecutionCaseResult(

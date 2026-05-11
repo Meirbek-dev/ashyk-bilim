@@ -35,7 +35,7 @@ export const getHighlighter = () => {
  */
 export async function highlightCode(code: string, lang: string) {
   const highlighter = await getHighlighter();
-  
+
   // Ensure the language is loaded
   if (!highlighter.getLoadedLanguages().includes(lang)) {
     try {

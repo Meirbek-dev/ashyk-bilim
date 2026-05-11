@@ -437,8 +437,12 @@ class Judge0Config(PlatformSectionSettings):
         default=30.0,
         validation_alias="JUDGE0_POLL_MAX_WAIT_SECONDS",
     )
-    max_source_bytes: int = Field(default=200_000, validation_alias="JUDGE0_MAX_SOURCE_BYTES")
-    max_stdin_bytes: int = Field(default=50_000, validation_alias="JUDGE0_MAX_STDIN_BYTES")
+    max_source_bytes: int = Field(
+        default=200_000, validation_alias="JUDGE0_MAX_SOURCE_BYTES"
+    )
+    max_stdin_bytes: int = Field(
+        default=50_000, validation_alias="JUDGE0_MAX_STDIN_BYTES"
+    )
 
     @field_validator("base_url", mode="before")
     @classmethod

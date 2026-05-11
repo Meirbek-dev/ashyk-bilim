@@ -1366,7 +1366,11 @@ async def run_code_item(
     visible_tests = [t for t in body.tests if t.is_visible]
 
     service = get_code_execution_service()
-    purpose = CodeRunPurpose.CUSTOM if payload.custom_input is not None else CodeRunPurpose.VISIBLE
+    purpose = (
+        CodeRunPurpose.CUSTOM
+        if payload.custom_input is not None
+        else CodeRunPurpose.VISIBLE
+    )
     result = await service.run(
         db_session=db_session,
         assessment_uuid=assessment_uuid,
@@ -1465,7 +1469,9 @@ async def get_code_item_run(
         item_uuid=item_uuid,
     )
     if result is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Code run not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Code run not found"
+        )
     return CodeRunResponse(
         run_id=result.run_uuid,
         status=result.status.value,

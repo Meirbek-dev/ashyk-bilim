@@ -61,3 +61,11 @@ temp-restore
 tmpclaude-*-cwd
 
 **/.eslintcache
+
+**/node_modules
+**/.venv
+**/.next
+**/coverage
+**/.turbo
+**/.pytest_cache
+temp-restore

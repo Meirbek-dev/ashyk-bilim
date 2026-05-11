@@ -22,10 +22,14 @@ def db_session():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    SQLModel.metadata.create_all(engine, tables=[CodeRun.__table__, CodeRunCase.__table__])
+    SQLModel.metadata.create_all(
+        engine, tables=[CodeRun.__table__, CodeRunCase.__table__]
+    )
     with Session(engine) as session:
         yield session
-    SQLModel.metadata.drop_all(engine, tables=[CodeRunCase.__table__, CodeRun.__table__])
+    SQLModel.metadata.drop_all(
+        engine, tables=[CodeRunCase.__table__, CodeRun.__table__]
+    )
 
 
 class FakeFactory:
@@ -34,7 +38,9 @@ class FakeFactory:
 
 
 @pytest.mark.asyncio
-async def test_code_execution_persists_visible_and_masks_hidden_results(monkeypatch, db_session):
+async def test_code_execution_persists_visible_and_masks_hidden_results(
+    monkeypatch, db_session
+):
     def fake_run(**_kwargs):
         return [
             SimpleNamespace(
@@ -149,7 +155,9 @@ async def async_run_service(
                 is_visible=True,
                 weight=2,
             ),
-            CodeTestCase(id="hidden", input="3", expected_output="9", is_visible=False, weight=3),
+            CodeTestCase(
+                id="hidden", input="3", expected_output="9", is_visible=False, weight=3
+            ),
         ],
         idempotency_key=idempotency_key,
     )

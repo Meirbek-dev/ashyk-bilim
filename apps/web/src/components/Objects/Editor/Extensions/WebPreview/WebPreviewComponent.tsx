@@ -267,28 +267,28 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
         minWidth="xl"
         minHeight="xl"
         dialogContent={
-          previewUrl ? (
-            (() => {
-              const videoId = getYouTubeVideoId(previewUrl);
-              if (videoId) {
+          previewUrl
+            ? (() => {
+                const videoId = getYouTubeVideoId(previewUrl);
+                if (videoId) {
+                  return (
+                    <YouTubeEmbed
+                      videoid={videoId}
+                      style="height: 100%; width: 100%; max-width: none;"
+                    />
+                  );
+                }
                 return (
-                  <YouTubeEmbed
-                    videoid={videoId}
-                    style="height: 100%; width: 100%; max-width: none;"
+                  <iframe
+                    src={previewUrl}
+                    title={t('embeddedWebsitePreview')}
+                    className="h-full w-full border-0 bg-white"
+                    style={{ display: 'block', borderRadius: 0 }}
+                    allowFullScreen
                   />
                 );
-              }
-              return (
-                <iframe
-                  src={previewUrl}
-                  title={t('embeddedWebsitePreview')}
-                  className="h-full w-full border-0 bg-white"
-                  style={{ display: 'block', borderRadius: 0 }}
-                  allowFullScreen
-                />
-              );
-            })()
-          ) : null
+              })()
+            : null
         }
       />
       <div className={`flex w-full ${alignmentClass}`}>

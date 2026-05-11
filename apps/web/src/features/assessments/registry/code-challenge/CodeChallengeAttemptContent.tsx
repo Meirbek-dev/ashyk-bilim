@@ -114,9 +114,9 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   useEffect(() => {
     if (!codeItem || !submissionState.draft || codeAnswer) return;
     submissionState.setItemAnswer(codeItem.item_uuid, {
-        kind: 'CODE',
-        language: primaryLanguageId ?? 0,
-        source: initialCode,
+      kind: 'CODE',
+      language: primaryLanguageId ?? 0,
+      source: initialCode,
     });
   }, [codeAnswer, codeItem, initialCode, primaryLanguageId, submissionState]);
 

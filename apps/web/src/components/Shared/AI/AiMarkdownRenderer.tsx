@@ -92,7 +92,13 @@ export function AiMarkdownRenderer({ content, isStreaming = false, className }: 
             const raw = String(children).replace(/\n$/, '');
 
             if (langClass?.startsWith('language-') || raw.includes('\n')) {
-              return <ShikiCodeBlock lang={lang} raw={raw} langClass={langClass} />;
+              return (
+                <ShikiCodeBlock
+                  lang={lang}
+                  raw={raw}
+                  langClass={langClass}
+                />
+              );
             }
 
             // Inline code

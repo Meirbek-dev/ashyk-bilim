@@ -35,7 +35,9 @@
     ".ruff_cache",
     ".venv",
     "next-env.d.ts",
-    "lib/api/generated/schema.ts"
+    "lib/api/generated/schema.ts",
+    "apps/web/src/lib/schema.ts",
+    "openapi.json"
   ],
   "insertPragma": false,
   "jsxSingleQuote": false,

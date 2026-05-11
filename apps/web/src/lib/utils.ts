@@ -52,4 +52,4 @@ export const getYouTubeVideoId = (url: string): string | null => {
   const match = youtubeRegex.exec(url);
 
   return match?.[1]?.length === YOUTUBE_VIDEO_ID_LENGTH ? match[1] : null;
-}
+};

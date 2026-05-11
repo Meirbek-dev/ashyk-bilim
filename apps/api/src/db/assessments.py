@@ -432,6 +432,13 @@ class AssessmentCreate(PydanticStrictBaseModel):
             return AssessmentType(value)
         return value
 
+    @field_validator("grading_type", mode="before")
+    @classmethod
+    def validate_grading_type(cls, value: object) -> object:
+        if isinstance(value, str):
+            return AssessmentGradingType(value)
+        return value
+
 
 class AssessmentUpdate(PydanticStrictBaseModel):
     title: str | None = None
@@ -439,6 +446,13 @@ class AssessmentUpdate(PydanticStrictBaseModel):
     weight: float | None = None
     grading_type: AssessmentGradingType | None = None
     policy: AssessmentPolicyPatch | None = None
+
+    @field_validator("grading_type", mode="before")
+    @classmethod
+    def validate_grading_type(cls, value: object) -> object:
+        if value is not None and isinstance(value, str):
+            return AssessmentGradingType(value)
+        return value
 
 
 class AssessmentLifecycleTransition(PydanticStrictBaseModel):

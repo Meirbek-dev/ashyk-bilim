@@ -80,9 +80,7 @@ export default function CodeChallengeStudio({ activityUuid }: CodeChallengeStudi
     form.reset({
       ...DEFAULT_VALUES,
       ...settings,
-      allowed_languages: settings.allowed_languages?.length
-        ? settings.allowed_languages
-        : [],
+      allowed_languages: settings.allowed_languages?.length ? settings.allowed_languages : [],
       visible_tests: normalizeTests(settings.visible_tests, true, DEFAULT_VALUES.visible_tests),
       hidden_tests: normalizeTests(settings.hidden_tests, false, []),
       hints: (settings.hints ?? []).map((hint, index) => ({

@@ -490,7 +490,9 @@ async def _run_final_code_answers(
         select(Assessment).where(Assessment.activity_id == draft.activity_id)
     ).first()
     assessment_uuid = (
-        assessment.assessment_uuid if assessment is not None else f"activity_{draft.activity_id}"
+        assessment.assessment_uuid
+        if assessment is not None
+        else f"activity_{draft.activity_id}"
     )
     enriched_answers = dict(answers_by_item_uuid)
     for item in code_items:
@@ -562,7 +564,9 @@ def _coerce_code_answer(raw_answer: Any) -> CodeItemAnswer | None:
     return None
 
 
-def _replace_payload_answers(answers_payload: dict, answers_by_item_uuid: dict[str, Any]) -> dict:
+def _replace_payload_answers(
+    answers_payload: dict, answers_by_item_uuid: dict[str, Any]
+) -> dict:
     next_payload = dict(answers_payload)
     next_payload["answers"] = [
         {

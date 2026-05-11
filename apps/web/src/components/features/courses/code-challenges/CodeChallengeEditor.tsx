@@ -224,8 +224,7 @@ export function CodeChallengeEditor({
 
   const updateLanguage = useCallback(
     (nextLanguageId: number) => {
-      const nextSource =
-        codeByLanguage[nextLanguageId] ?? settings?.starter_code?.[String(nextLanguageId)] ?? '';
+      const nextSource = codeByLanguage[nextLanguageId] ?? settings?.starter_code?.[String(nextLanguageId)] ?? '';
       setSelectedLanguageId(nextLanguageId);
       setCode(nextSource);
       onAnswerChange?.({
@@ -407,7 +406,9 @@ export function CodeChallengeEditor({
                   variant="outline"
                   size="sm"
                   onClick={handleTestAgainstSamples}
-                  disabled={disabled || selectedLanguageId <= 0 || isRunning || isSubmitting || visibleTestCases.length === 0}
+                  disabled={
+                    disabled || selectedLanguageId <= 0 || isRunning || isSubmitting || visibleTestCases.length === 0
+                  }
                 >
                   <Play className="mr-2 h-4 w-4" />
                   {t('runTests')}

@@ -273,9 +273,7 @@ def _sync_assessment_lifecycle(
                     raise HTTPException(
                         status_code=422,
                         detail={
-                            "issues": [
-                                issue.model_dump() for issue in readiness.issues
-                            ]
+                            "issues": [issue.model_dump() for issue in readiness.issues]
                         },
                     )
 
