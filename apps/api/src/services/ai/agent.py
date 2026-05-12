@@ -32,7 +32,7 @@ _AGENT = Agent(
     system_prompt=_BASE_SYSTEM_PROMPT,
     deps_type=AgentDependencies,
     output_type=str,
-    retries=1,
+    tool_retries=1,
     instrument=get_settings().general_config.logfire_enabled,
 )
 
