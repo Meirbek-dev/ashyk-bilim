@@ -42,8 +42,13 @@ from src.infra.db.session import get_db_session
 from src.infra.settings import get_settings
 from src.routers import analytics as analytics_router_module
 from src.routers.analytics import router
+from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.overview import _build_grading_slo_alerts
-from src.services.analytics.queries import AnalyticsContext, AssessmentAnalyticsRow
+from src.services.analytics.queries import (
+    AnalyticsContext,
+    AssessmentAnalyticsRow,
+    ProgressSnapshot,
+)
 from src.services.analytics.schemas import (
     GradingBacklogItem,
     TeacherWorkloadSummary,
@@ -370,6 +375,103 @@ def _make_context_for_quiz(session) -> AnalyticsContext:
         usergroup_names_by_id={10: "Alpha Cohort"},
         cohort_ids_by_user={2: {10}},
     )
+
+
+def test_assessment_rows_accept_progress_snapshot_mapping(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    course = Course(
+        id=1,
+        name="Snapshot Course",
+        description="",
+        about="",
+        learnings=None,
+        tags=None,
+        thumbnail_type=ThumbnailType.IMAGE,
+        thumbnail_image="",
+        thumbnail_video="",
+        public=False,
+        open_to_contributors=False,
+        creator_id=1,
+        course_uuid="course_snapshot",
+    )
+    code_activity = Activity(
+        id=3,
+        name="Code challenge",
+        activity_type=ActivityTypeEnum.TYPE_CODE_CHALLENGE,
+        activity_sub_type=ActivitySubTypeEnum.SUBTYPE_CUSTOM,
+        content={},
+        details={},
+        settings={},
+        published=True,
+        chapter_id=1,
+        course_id=1,
+        creator_id=1,
+        activity_uuid="activity_code",
+        order=1,
+    )
+    assignment = AssessmentAnalyticsRow(
+        id=1,
+        activity_id=1,
+        course_id=1,
+        title="Assignment",
+        settings={},
+    )
+    exam = AssessmentAnalyticsRow(
+        id=2,
+        activity_id=2,
+        course_id=1,
+        title="Exam",
+        settings={},
+    )
+    context = AnalyticsContext(
+        generated_at=datetime(2026, 5, 5, 12, 0, tzinfo=UTC),
+        courses_by_id={1: course},
+        activities_by_id={3: code_activity},
+        chapters_by_id={},
+        course_chapters=[],
+        chapter_activities=[],
+        trail_runs=[],
+        trail_steps=[],
+        activity_progress=[],
+        course_progress=[],
+        certificates=[],
+        assignments=[assignment],
+        assignment_submissions=[],
+        exams=[exam],
+        exam_attempts=[],
+        quiz_submissions=[],
+        quiz_question_stats=[],
+        code_submissions=[],
+        users_by_id={},
+        usergroup_names_by_id={},
+        cohort_ids_by_user={},
+    )
+    snapshots = {
+        (1, 2): ProgressSnapshot(
+            course_id=1,
+            user_id=2,
+            completed_steps=0,
+            total_steps=1,
+            progress_pct=0.0,
+            is_completed=False,
+            has_certificate=False,
+            last_activity_at=None,
+            trailrun_id=None,
+        )
+    }
+    monkeypatch.setattr(
+        "src.services.analytics.assessments.progress_snapshots",
+        lambda _context, _allowed_user_ids: snapshots,
+    )
+
+    rows = build_assessment_rows(context)
+
+    assert [row.assessment_type for row in rows] == [
+        "assignment",
+        "exam",
+        "code_challenge",
+    ]
 
 
 def test_assignment_detail_endpoint_returns_operational_fields(

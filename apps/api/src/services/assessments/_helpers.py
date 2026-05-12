@@ -2,17 +2,11 @@
 
 These are internal utilities used across the decomposed modules. They handle
 entity lookups, permission checks, and response building.
-
-This module re-exports the helpers that were previously private functions in
-core.py. The original implementations remain in core.py during the transition
-period — this file delegates to them.
 """
 
 from __future__ import annotations
 
-# During the transition, we import from core.py directly.
-# Once core.py is fully decomposed, these will be standalone implementations.
-from src.services.assessments.core import (
+from src.services.assessments._shared import (
     _build_assessment_read,
     _build_item_read,
     _build_student_submission_read,

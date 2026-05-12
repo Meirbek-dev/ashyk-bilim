@@ -1,5 +1,3 @@
-'use client';
-
 import { getCourseEditorBundle } from '@services/courses/editor';
 import { apiFetcher, apiFetcherWithHeaders, fetchResponseMetadata } from '@/lib/api-client';
 import { queryOptions } from '@tanstack/react-query';

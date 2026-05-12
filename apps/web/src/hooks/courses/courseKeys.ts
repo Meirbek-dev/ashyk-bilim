@@ -1,5 +1,3 @@
-'use client';
-
 const normalizeCourseUuid = (courseUuid: string) =>
   courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`;
 
