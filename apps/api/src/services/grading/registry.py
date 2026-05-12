@@ -10,7 +10,6 @@ from src.services.grading.code_grader import (
     grade_canonical_code_item,
     grade_code_challenge,
 )
-from src.services.grading.exam_grader import grade_exam_questions
 from src.services.grading.pipeline.context import GradingContext
 from src.services.grading.quiz_grader import (
     apply_attempt_penalty,
@@ -89,10 +88,10 @@ class ExamGrader(BaseGrader):
                 max_score=ctx.max_score,
             )
         else:
-            raw_score, breakdown = grade_exam_questions(
-                questions=[],
-                submitted_answers={},
-                max_score=ctx.max_score,
+            # No canonical items — return empty (exams must have items)
+            raw_score = 0.0
+            breakdown = GradingBreakdown(
+                items=[], needs_manual_review=True, auto_graded=False
             )
         return GradingResult(
             auto_score=raw_score,

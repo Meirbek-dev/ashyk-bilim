@@ -7,6 +7,8 @@ import { jetBrainsMono } from '@/lib/fonts';
 import type { Metadata } from 'next';
 import { cache } from 'react';
 import { getAssessmentByActivityUuid } from '@services/assessments/assessments';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
+import { courseContributorsQueryOptions } from '@/features/courses/queries/course.query';
 
 import ActivityClient from '@/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity';
 
@@ -73,15 +75,26 @@ export default async function PlatformActivityPage(props: {
     }
   }
 
+  const queryClient = new QueryClient();
+
+  if (initialSession?.user && course_meta?.course_uuid) {
+    const normalizedCourseUuid = course_meta.course_uuid.startsWith('course_')
+      ? course_meta.course_uuid
+      : `course_${course_meta.course_uuid}`;
+    await queryClient.prefetchQuery(courseContributorsQueryOptions(normalizedCourseUuid));
+  }
+
   return (
     <div className={jetBrainsMono.variable}>
       <SessionProvider initialSession={initialSession}>
-        <ActivityClient
-          activityid={activityid}
-          courseuuid={courseuuid}
-          activity={activity}
-          course={course_meta}
-        />
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          <ActivityClient
+            activityid={activityid}
+            courseuuid={courseuuid}
+            activity={activity}
+            course={course_meta}
+          />
+        </HydrationBoundary>
       </SessionProvider>
     </div>
   );

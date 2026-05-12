@@ -547,6 +547,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assessments/inline-quiz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Create Inline Quiz
+         * @description Create a new inline quiz assessment linked to a parent activity.
+         */
+        post: operations["api_create_inline_quiz_api_v1_assessments_inline_quiz_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/assessments/policy-preset/{kind}": {
         parameters: {
             query?: never;
@@ -597,6 +617,26 @@ export interface paths {
          * @description Return the authoritative attempt state for the current student.
          */
         get: operations["api_get_attempt_state_api_v1_assessments__assessment_uuid__attempt_state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/{assessment_uuid}/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get Audit Trail
+         * @description List audit events for an assessment (teacher-only).
+         */
+        get: operations["api_get_audit_trail_api_v1_assessments__assessment_uuid__audit_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1152,26 +1192,6 @@ export interface paths {
          * @description Create new pdf file
          */
         post: operations["api_create_pdf_file_block_api_v1_blocks_pdf_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/blocks/quiz/{activity_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Api Submit Quiz
-         * @description Submit a quiz attempt and receive grading results.
-         */
-        post: operations["api_submit_quiz_api_v1_blocks_quiz__activity_id__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2259,6 +2279,26 @@ export interface paths {
          * @description Return the teacher's course-level gradebook matrix.
          */
         get: operations["api_get_course_gradebook_api_v1_grading_courses__course_uuid__gradebook_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/grading/courses/{course_uuid}/gradebook/cursor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get Course Gradebook Cursor
+         * @description Return cursor-paginated gradebook cells for large classes.
+         */
+        get: operations["api_get_course_gradebook_cursor_api_v1_grading_courses__course_uuid__gradebook_cursor_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7074,6 +7114,34 @@ export interface components {
             /** Label */
             label: string;
         };
+        /**
+         * InlineQuizCreate
+         * @description Request body for POST /assessments/inline-quiz.
+         */
+        InlineQuizCreate: {
+            /** Activity Id */
+            activity_id: number;
+            /**
+             * Title
+             * @default Inline Quiz
+             */
+            title: string;
+        };
+        /**
+         * InlineQuizResponse
+         * @description Response for POST /assessments/inline-quiz.
+         */
+        InlineQuizResponse: {
+            /** Activity Id */
+            activity_id: number;
+            /** Assessment Uuid */
+            assessment_uuid: string;
+            /**
+             * Is Inline
+             * @default true
+             */
+            is_inline: boolean;
+        };
         /** InsightFeedItem */
         InsightFeedItem: {
             /** Activity Id */
@@ -7656,80 +7724,6 @@ export interface components {
             strong_miss_pct?: number | null;
             /** Weak Correct Pct */
             weak_correct_pct?: number | null;
-        };
-        /**
-         * QuizGradingResult
-         * @description Grading result for a quiz submission.
-         */
-        QuizGradingResult: {
-            /** Max Score */
-            max_score: number;
-            /** Passed */
-            passed: boolean;
-            /** Per Question */
-            per_question: {
-                [key: string]: unknown;
-            }[];
-            /** Percentage */
-            percentage: number;
-            /** Total Score */
-            total_score: number;
-            /**
-             * Triggered Level Up
-             * @default false
-             */
-            triggered_level_up: boolean;
-            /**
-             * Xp Awarded
-             * @default 0
-             */
-            xp_awarded: number;
-        };
-        /**
-         * QuizSubmissionRequest
-         * @description Request payload for quiz submission.
-         */
-        QuizSubmissionRequest: {
-            /** Answers */
-            answers?: {
-                [key: string]: unknown;
-            }[];
-            /** End Ts */
-            end_ts?: string | null;
-            /** Idempotency Key */
-            idempotency_key?: string | null;
-            /** Start Ts */
-            start_ts?: string | null;
-            /**
-             * Violation Count
-             * @default 0
-             */
-            violation_count: number;
-            /** Violations */
-            violations?: {
-                [key: string]: unknown;
-            };
-        };
-        /**
-         * QuizSubmissionResponse
-         * @description Response for quiz submission.
-         */
-        QuizSubmissionResponse: {
-            /** Attempt Number */
-            attempt_number: number;
-            /** Attempt Uuid */
-            attempt_uuid: string;
-            grading_result: components["schemas"]["QuizGradingResult"];
-            /**
-             * Max Attempts Reached
-             * @default false
-             */
-            max_attempts_reached: boolean;
-            /**
-             * Violations Exceeded
-             * @default false
-             */
-            violations_exceeded: boolean;
         };
         /** ReadinessIssue */
         ReadinessIssue: {
@@ -10604,6 +10598,39 @@ export interface operations {
             };
         };
     };
+    api_create_inline_quiz_api_v1_assessments_inline_quiz_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InlineQuizCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InlineQuizResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     api_get_policy_preset_api_v1_assessments_policy_preset__kind__get: {
         parameters: {
             query?: never;
@@ -10719,6 +10746,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssessmentAttemptProjection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_audit_trail_api_v1_assessments__assessment_uuid__audit_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                assessment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -11930,41 +11991,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlockRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_submit_quiz_api_v1_blocks_quiz__activity_id__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                activity_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["QuizSubmissionRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["QuizSubmissionResponse"];
                 };
             };
             /** @description Validation Error */
@@ -13995,6 +14021,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CourseGradebookResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_course_gradebook_cursor_api_v1_grading_courses__course_uuid__gradebook_cursor_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                course_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

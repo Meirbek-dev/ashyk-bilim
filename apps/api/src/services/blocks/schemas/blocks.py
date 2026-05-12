@@ -2,7 +2,7 @@ from typing import Literal
 
 from src.db.strict_base_model import PydanticStrictBaseModel
 
-BlockType = Literal["quizBlock", "videoBlock", "pdfBlock", "imageBlock"]
+BlockType = Literal["videoBlock", "pdfBlock", "imageBlock"]
 
 
 class Block(PydanticStrictBaseModel):

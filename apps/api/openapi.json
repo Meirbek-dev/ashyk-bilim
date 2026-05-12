@@ -8214,6 +8214,49 @@
         "title": "HistogramBucket",
         "type": "object"
       },
+      "InlineQuizCreate": {
+        "description": "Request body for POST /assessments/inline-quiz.",
+        "properties": {
+          "activity_id": {
+            "title": "Activity Id",
+            "type": "integer"
+          },
+          "title": {
+            "default": "Inline Quiz",
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "activity_id"
+        ],
+        "title": "InlineQuizCreate",
+        "type": "object"
+      },
+      "InlineQuizResponse": {
+        "description": "Response for POST /assessments/inline-quiz.",
+        "properties": {
+          "activity_id": {
+            "title": "Activity Id",
+            "type": "integer"
+          },
+          "assessment_uuid": {
+            "title": "Assessment Uuid",
+            "type": "string"
+          },
+          "is_inline": {
+            "default": true,
+            "title": "Is Inline",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "assessment_uuid",
+          "activity_id"
+        ],
+        "title": "InlineQuizResponse",
+        "type": "object"
+      },
       "InsightFeedItem": {
         "properties": {
           "activity_id": {
@@ -9884,148 +9927,6 @@
           "question_label"
         ],
         "title": "QuestionDifficultyRow",
-        "type": "object"
-      },
-      "QuizGradingResult": {
-        "description": "Grading result for a quiz submission.",
-        "properties": {
-          "max_score": {
-            "title": "Max Score",
-            "type": "number"
-          },
-          "passed": {
-            "title": "Passed",
-            "type": "boolean"
-          },
-          "per_question": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "title": "Per Question",
-            "type": "array"
-          },
-          "percentage": {
-            "title": "Percentage",
-            "type": "number"
-          },
-          "total_score": {
-            "title": "Total Score",
-            "type": "number"
-          },
-          "triggered_level_up": {
-            "default": false,
-            "title": "Triggered Level Up",
-            "type": "boolean"
-          },
-          "xp_awarded": {
-            "default": 0,
-            "title": "Xp Awarded",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "total_score",
-          "max_score",
-          "percentage",
-          "passed",
-          "per_question"
-        ],
-        "title": "QuizGradingResult",
-        "type": "object"
-      },
-      "QuizSubmissionRequest": {
-        "description": "Request payload for quiz submission.",
-        "properties": {
-          "answers": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "title": "Answers",
-            "type": "array"
-          },
-          "end_ts": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "End Ts"
-          },
-          "idempotency_key": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Idempotency Key"
-          },
-          "start_ts": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Start Ts"
-          },
-          "violation_count": {
-            "default": 0,
-            "minimum": 0.0,
-            "title": "Violation Count",
-            "type": "integer"
-          },
-          "violations": {
-            "additionalProperties": true,
-            "title": "Violations",
-            "type": "object"
-          }
-        },
-        "title": "QuizSubmissionRequest",
-        "type": "object"
-      },
-      "QuizSubmissionResponse": {
-        "description": "Response for quiz submission.",
-        "properties": {
-          "attempt_number": {
-            "title": "Attempt Number",
-            "type": "integer"
-          },
-          "attempt_uuid": {
-            "title": "Attempt Uuid",
-            "type": "string"
-          },
-          "grading_result": {
-            "$ref": "#/components/schemas/QuizGradingResult"
-          },
-          "max_attempts_reached": {
-            "default": false,
-            "title": "Max Attempts Reached",
-            "type": "boolean"
-          },
-          "violations_exceeded": {
-            "default": false,
-            "title": "Violations Exceeded",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "attempt_uuid",
-          "attempt_number",
-          "grading_result"
-        ],
-        "title": "QuizSubmissionResponse",
         "type": "object"
       },
       "ReadinessIssue": {
@@ -18810,6 +18711,53 @@
         ]
       }
     },
+    "/api/v1/assessments/inline-quiz": {
+      "post": {
+        "description": "Create a new inline quiz assessment linked to a parent activity.",
+        "operationId": "api_create_inline_quiz_api_v1_assessments_inline_quiz_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InlineQuizCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InlineQuizResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Create Inline Quiz",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
     "/api/v1/assessments/policy-preset/{kind}": {
       "get": {
         "description": "Return default policy settings for a given assessment kind.",
@@ -19003,6 +18951,75 @@
           }
         ],
         "summary": "Api Get Attempt State",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v1/assessments/{assessment_uuid}/audit": {
+      "get": {
+        "description": "List audit events for an assessment (teacher-only).",
+        "operationId": "api_get_audit_trail_api_v1_assessments__assessment_uuid__audit_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Audit Trail",
         "tags": [
           "assessments"
         ]
@@ -21074,64 +21091,6 @@
           }
         ],
         "summary": "Api Create Pdf File Block",
-        "tags": [
-          "blocks"
-        ]
-      }
-    },
-    "/api/v1/blocks/quiz/{activity_id}": {
-      "post": {
-        "description": "Submit a quiz attempt and receive grading results.",
-        "operationId": "api_submit_quiz_api_v1_blocks_quiz__activity_id__post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "activity_id",
-            "required": true,
-            "schema": {
-              "title": "Activity Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QuizSubmissionRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QuizSubmissionResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyCookie": []
-          }
-        ],
-        "summary": "Api Submit Quiz",
         "tags": [
           "blocks"
         ]
@@ -24501,6 +24460,80 @@
           }
         ],
         "summary": "Api Get Course Gradebook",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading/courses/{course_uuid}/gradebook/cursor": {
+      "get": {
+        "description": "Return cursor-paginated gradebook cells for large classes.",
+        "operationId": "api_get_course_gradebook_cursor_api_v1_grading_courses__course_uuid__gradebook_cursor_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 500,
+              "maximum": 2000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Course Gradebook Cursor",
         "tags": [
           "grading"
         ]

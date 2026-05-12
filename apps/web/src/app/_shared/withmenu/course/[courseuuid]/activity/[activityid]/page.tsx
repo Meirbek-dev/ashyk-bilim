@@ -6,6 +6,8 @@ import { redirect } from 'next/navigation';
 import { jetBrainsMono } from '@/lib/fonts';
 import type { Metadata } from 'next';
 import { cache } from 'react';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
+import { courseContributorsQueryOptions } from '@/features/courses/queries/course.query';
 
 import ActivityClient from './activity';
 import { getSession } from '@/lib/auth/session';
@@ -69,9 +71,10 @@ const ActivityPage = async (params: any) => {
   // Don't fetch activity if it's the end page
   const isCourseEnd = activityid === 'end';
 
-  const [course_meta, activity] = await Promise.all([
+  const [course_meta, activity, session] = await Promise.all([
     fetchCourseMetadata(courseuuid),
     isCourseEnd ? Promise.resolve(null) : fetchActivity(activityid),
+    getSession(),
   ]);
 
   if (!isCourseEnd && activity && ASSESSABLE_TYPES.has(activity.activity_type ?? '')) {
@@ -81,14 +84,25 @@ const ActivityPage = async (params: any) => {
     }
   }
 
+  const queryClient = new QueryClient();
+
+  if (session?.user && course_meta?.course_uuid) {
+    const normalizedCourseUuid = course_meta.course_uuid.startsWith('course_')
+      ? course_meta.course_uuid
+      : `course_${course_meta.course_uuid}`;
+    await queryClient.prefetchQuery(courseContributorsQueryOptions(normalizedCourseUuid));
+  }
+
   return (
     <div className={jetBrainsMono.variable}>
-      <ActivityClient
-        activityid={activityid}
-        courseuuid={courseuuid}
-        activity={activity}
-        course={course_meta}
-      />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <ActivityClient
+          activityid={activityid}
+          courseuuid={courseuuid}
+          activity={activity}
+          course={course_meta}
+        />
+      </HydrationBoundary>
     </div>
   );
 };

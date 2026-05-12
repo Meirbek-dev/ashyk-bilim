@@ -73,6 +73,11 @@ from src.services.assessments.core import (
     update_assessment_item,
     update_student_policy_override,
 )
+from src.services.assessments.inline_quiz import (
+    InlineQuizCreate,
+    InlineQuizResponse,
+    create_inline_quiz,
+)
 
 router = APIRouter()
 
@@ -518,17 +523,14 @@ async def api_delete_override(
 # ── Inline quiz ────────────────────────────────────────────────────────────────
 
 
-@router.post("/inline-quiz")
+@router.post("/inline-quiz", response_model=InlineQuizResponse)
 async def api_create_inline_quiz(
-    payload: "InlineQuizCreate",
+    payload: InlineQuizCreate,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-):
+) -> InlineQuizResponse:
     """Create a new inline quiz assessment linked to a parent activity."""
-    from src.services.assessments.inline_quiz import InlineQuizCreate, create_inline_quiz
-
-    validated = InlineQuizCreate.model_validate(payload)
-    return await create_inline_quiz(validated, current_user, db_session)
+    return await create_inline_quiz(payload, current_user, db_session)
 
 
 # ── Audit trail ────────────────────────────────────────────────────────────────

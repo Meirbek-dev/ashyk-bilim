@@ -77,6 +77,11 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[
 
         configure_observability(app, settings, engine)
 
+        # Register event bus subscribers
+        from src.services.events.startup import register_all_subscribers
+
+        register_all_subscribers()
+
         ttl_sweep_task = asyncio.create_task(
             _ttl_sweep_loop(settings.ai_config.collection_retention),
             name="vector_ttl_sweep",

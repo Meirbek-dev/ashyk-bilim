@@ -19,7 +19,6 @@ from sqlalchemy import func as sql_func
 from sqlmodel import Session, select
 from ulid import ULID
 
-import src.services.integrations.plagiarism
 from src.db.assessments import (
     ITEM_ANSWER_ADAPTER,
     Assessment,
@@ -123,7 +122,7 @@ async def submit_assessment(
 
     violation_exceeded = _check_violations(settings, violation_count)
 
-    # Prefer canonical answers[item_uuid] grading inputs, fall back to legacy shapes.
+    # Prefer canonical answers[item_uuid] grading inputs.
     (
         answers_by_item_uuid,
         user_answers,

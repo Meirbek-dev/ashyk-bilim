@@ -114,7 +114,13 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
   const base = apiBase(isServer, baseUrl);
   const url = resolveRequestUrl(path, base);
 
-  const options: RequestInit = { ...fetchInit, credentials: 'include', cache: fetchInit.cache ?? 'no-store' };
+  // When cache tags are provided (server-side Next.js Data Cache), opt-in to
+  // force-cache so revalidateTag() actually works. Without this the default
+  // 'no-store' would silently override the tags and disable caching entirely.
+  const hasCacheTags =
+    isServer && Array.isArray((fetchInit as any).next?.tags) && (fetchInit as any).next?.tags?.length > 0;
+  const defaultCache: RequestCache = hasCacheTags ? 'force-cache' : 'no-store';
+  const options: RequestInit = { ...fetchInit, credentials: 'include', cache: fetchInit.cache ?? defaultCache };
 
   // Server: forward cookies from the incoming request.
   if (isServer) {

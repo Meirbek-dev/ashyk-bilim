@@ -1584,8 +1584,8 @@ def _get_or_project_assessment_for_activity(
     """Return the canonical Assessment row for an activity.
 
     This is a pure read operation. It never creates Assessment or
-    AssessmentPolicy rows. Activities that pre-date the canonical model
-    must be migrated via the ``migrate-legacy-assessments`` CLI command.
+    AssessmentPolicy rows. Activities without a canonical assessment row
+    should have been migrated by the Phase 0 Alembic migration.
     """
     existing = db_session.exec(
         select(Assessment).where(Assessment.activity_id == activity.id)
@@ -1596,11 +1596,10 @@ def _get_or_project_assessment_for_activity(
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail={
-            "code": "MIGRATION_REQUIRED",
+            "code": "ASSESSMENT_NOT_FOUND",
             "message": (
                 "У этой активности нет канонической записи оценивания. "
-                "Запустите 'python cli.py migrate-legacy-assessments' для заполнения "
-                "канонических записей для устаревших активностей."
+                "Обратитесь к администратору для проверки миграции данных."
             ),
         },
     )
@@ -2390,14 +2389,7 @@ def _first_string_setting(payload: dict[str, object], *keys: str) -> str | None:
 
 
 def _time_limit_seconds_from_settings(payload: dict[str, object]) -> int | None:
-    canonical_seconds = _first_int_setting(payload, "time_limit_seconds")
-    if canonical_seconds is not None:
-        return canonical_seconds
-
-    legacy_minutes = _first_int_setting(payload, "time_limit")
-    if legacy_minutes is None:
-        return None
-    return legacy_minutes * 60
+    return _first_int_setting(payload, "time_limit_seconds")
 
 
 def _default_grading_mode(kind: AssessmentType) -> AssessmentGradingMode:

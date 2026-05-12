@@ -1,8 +1,6 @@
 'use client';
 
 import { getCourseEditorBundle } from '@services/courses/editor';
-import { getAssignmentFromActivityUUID } from '@services/courses/assignments';
-import { getCourses } from '@services/courses/courses';
 import { apiFetcher, apiFetcherWithHeaders, fetchResponseMetadata } from '@/lib/api-client';
 import { queryOptions } from '@tanstack/react-query';
 import type { CourseListKeyOptions } from '@/hooks/courses/courseKeys';
@@ -165,8 +163,12 @@ export function activityAssignmentUuidQueryOptions(activityUuid: string) {
   return queryOptions({
     queryKey: queryKeys.assignments.activity(activityUuid),
     queryFn: async () => {
-      const result = await getAssignmentFromActivityUUID(activityUuid);
-      return result?.data?.assignment_uuid?.replace('assignment_', '') ?? null;
+      try {
+        const data = await apiFetcher<{ assessment_uuid?: string }>(`assessments/activity/${activityUuid}`);
+        return data?.assessment_uuid?.replace('assignment_', '') ?? null;
+      } catch {
+        return null;
+      }
     },
   });
 }
@@ -174,6 +176,12 @@ export function activityAssignmentUuidQueryOptions(activityUuid: string) {
 export function platformCoursesQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.platform.courses(),
-    queryFn: () => getCourses(),
+    queryFn: async () => {
+      const { data, headers } = await apiFetcherWithHeaders(courseEndpoints.list({ page: 1, limit: 20 }));
+      return {
+        courses: Array.isArray(data) ? data : [],
+        total: Number.parseInt(headers['x-total-count'] ?? '0', 10),
+      };
+    },
   });
 }

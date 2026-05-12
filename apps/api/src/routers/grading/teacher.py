@@ -64,6 +64,26 @@ async def api_get_course_gradebook(
     )
 
 
+@router.get("/courses/{course_uuid}/gradebook/cursor")
+async def api_get_course_gradebook_cursor(
+    course_uuid: str,
+    db_session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    cursor: Annotated[str | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=2000)] = 500,
+):
+    """Return cursor-paginated gradebook cells for large classes."""
+    from src.services.grading.gradebook_cursor import get_gradebook_cursor
+
+    return await get_gradebook_cursor(
+        course_uuid=course_uuid,
+        current_user=current_user,
+        db_session=db_session,
+        cursor=cursor,
+        limit=limit,
+    )
+
+
 @router.post(
     "/activities/{activity_id}/publish-grades",
     response_model=BulkPublishGradesResponse,

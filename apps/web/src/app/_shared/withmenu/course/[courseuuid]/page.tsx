@@ -3,6 +3,9 @@ import { getCourseMetadata } from '@services/courses/courses';
 import { getSession } from '@/lib/auth/session';
 import { cache } from 'react';
 import type { Metadata } from 'next';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
+import { courseDiscussionsQueryOptions } from '@/features/courses/queries/course.query';
+import { trailCurrentQueryOptions } from '@/features/courses/queries/course.query';
 
 import CourseClient from './course';
 
@@ -55,14 +58,28 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
 const CoursePage = async (params: any) => {
   const { courseuuid } = await params.params;
 
-  // Fetch course metadata once
-  const course_meta = await fetchCourseMetadata(courseuuid);
+  const [course_meta, session] = await Promise.all([fetchCourseMetadata(courseuuid), getSession()]);
+
+  const queryClient = new QueryClient();
+
+  if (session?.user && course_meta?.course_uuid) {
+    // Prefetch data that CourseClient fetches client-side so the page renders
+    // without loading spinners and avoids a client-side waterfall.
+    await Promise.all([
+      queryClient.prefetchQuery(
+        courseDiscussionsQueryOptions(course_meta.course_uuid, { includeReplies: true, limit: 50, offset: 0 }),
+      ),
+      queryClient.prefetchQuery(trailCurrentQueryOptions()),
+    ]);
+  }
 
   return (
-    <CourseClient
-      courseuuid={courseuuid}
-      course={course_meta}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <CourseClient
+        courseuuid={courseuuid}
+        course={course_meta}
+      />
+    </HydrationBoundary>
   );
 };
 

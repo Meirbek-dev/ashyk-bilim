@@ -6,6 +6,9 @@ import { getSession } from '@/lib/auth/session';
 import { SessionProvider } from '@/components/providers/session-provider';
 import { jetBrainsMono } from '@/lib/fonts';
 import { getAssessmentByUuid } from '@services/assessments/assessments';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/react-query/queryKeys';
+import { apiFetcher } from '@/lib/api-client';
 import AssessmentAttemptClient from './AssessmentAttemptClient';
 
 interface Props {
@@ -53,13 +56,27 @@ export default async function AssessmentAttemptPage(props: Props) {
     kind: assessment.kind,
   });
 
+  const queryClient = new QueryClient();
+
+  // Prefetch the activity-keyed assessment data that AssessmentLayout will need,
+  // so the client doesn't duplicate this fetch after hydration.
+  if (assessment.activity_uuid) {
+    const normalizedActivityUuid = assessment.activity_uuid.replace(/^activity_/, '');
+    await queryClient.prefetchQuery({
+      queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
+      queryFn: () => apiFetcher(`assessments/activity/${normalizedActivityUuid}`),
+    });
+  }
+
   return (
     <div className={jetBrainsMono.variable}>
       <SessionProvider initialSession={initialSession}>
-        <AssessmentAttemptClient
-          activityUuid={assessment.activity_uuid}
-          courseUuid={assessment.course_uuid ?? ''}
-        />
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          <AssessmentAttemptClient
+            activityUuid={assessment.activity_uuid}
+            courseUuid={assessment.course_uuid ?? ''}
+          />
+        </HydrationBoundary>
       </SessionProvider>
     </div>
   );
