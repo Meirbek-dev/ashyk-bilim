@@ -81,7 +81,7 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
 
   return (
     <HoverCard onOpenChange={setOpen}>
-      <HoverCardTrigger render={<span />}>{children}</HoverCardTrigger>
+      <HoverCardTrigger>{children}</HoverCardTrigger>
       <HoverCardContent className="soft-shadow border-border bg-card text-card-foreground w-auto max-w-196 min-w-96 border p-0 shadow-sm backdrop-blur-md">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">

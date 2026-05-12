@@ -23,6 +23,7 @@ import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, us
 import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndAnnouncements } from '@/hooks/useDndAnnouncements';
 
 function SortableLandingSection({
   section,
@@ -120,7 +121,7 @@ function SortableLandingSection({
     </div>
   );
 }
-import { createElement, useEffect, useState, useTransition } from 'react';
+import { createElement, useEffect, useMemo, useState, useTransition } from 'react';
 import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { getLandingMediaDirectory } from '@services/media/media';
 import { usePlatformCourses } from '@/features/platform/hooks/usePlatform';
@@ -477,6 +478,12 @@ const EditLanding = () => {
     useSensor(KeyboardSensor),
   );
 
+  const sectionIds = useMemo(
+    () => landingData.sections.map((s: any, i: number) => s._id ?? `section-${i}`),
+    [landingData.sections],
+  );
+  const announcements = useDndAnnouncements(sectionIds);
+
   // Initialize landing data from platform config
   useEffect(() => {
     if (platform?.landing) {
@@ -598,6 +605,7 @@ const EditLanding = () => {
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={onDragEnd}
+                  accessibility={{ announcements }}
                 >
                   <div className="space-y-2">
                     <SortableContext

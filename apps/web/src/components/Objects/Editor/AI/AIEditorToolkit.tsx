@@ -25,10 +25,6 @@ import type { Editor } from '@tiptap/react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/components/providers/theme-provider';
 import { cn } from '@/lib/utils';
-import remarkGfm from 'remark-gfm';
-import remarkHtml from 'remark-html';
-import remarkParse from 'remark-parse';
-import { unified } from 'unified';
 import Image from 'next/image';
 import { toast } from 'sonner';
 
@@ -118,7 +114,7 @@ function useEditorOperations(editor: Editor) {
   }, [editor]);
 
   const typeText = useCallback(
-    async (text: string, replaceSelection = false) => {
+    (text: string, replaceSelection = false) => {
       abortRef.current?.abort();
       abortRef.current = new AbortController();
 
@@ -126,8 +122,11 @@ function useEditorOperations(editor: Editor) {
         editor.chain().focus().deleteSelection().run();
       }
 
-      const html = String(await unified().use(remarkParse).use(remarkGfm).use(remarkHtml).process(text));
-      editor.chain().focus().insertContent(html).run();
+      // Directly insert markdown as structured Tiptap nodes — no HTML intermediate,
+      // no XSS risk from AI-generated content. tiptap-markdown patches insertContentAt
+      // to parse the string as markdown before inserting.
+      const pos = editor.state.selection.to;
+      editor.chain().focus().insertContentAt(pos, text).run();
     },
     [editor],
   );

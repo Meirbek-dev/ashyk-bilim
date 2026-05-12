@@ -49,6 +49,6 @@ describe('editor kernel', () => {
     expect(viewingKernel.preset.isEditable).toBe(false);
     expect(discussionKernel.preset.isEditable).toBe(true);
     expect(viewingKernel.extensions.length).toBeGreaterThan(0);
-    expect(discussionKernel.extensions.length).toBe(viewingKernel.extensions.length);
+    expect(discussionKernel.extensions.length).toBeGreaterThan(viewingKernel.extensions.length);
   });
 });

@@ -16,6 +16,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { useDndAnnouncements } from '@/hooks/useDndAnnouncements';
 import { AlertTriangle, BookOpen, CheckCircle2, Hexagon, Loader2 } from 'lucide-react';
 import { useChapterMutations } from '@/hooks/mutations/useChapterMutations';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -68,6 +69,8 @@ const CurriculumEditor = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
+
+  const announcements = useDndAnnouncements(chapterIds);
 
   useEffect(() => {
     if (structureStatus !== 'saved') return;
@@ -310,6 +313,7 @@ const CurriculumEditor = () => {
           onDragOver={handleDragOver}
           onDragEnd={(event) => void handleDragEnd(event)}
           onDragCancel={handleDragCancel}
+          accessibility={{ announcements }}
         >
           <SortableContext
             items={chapterIds}

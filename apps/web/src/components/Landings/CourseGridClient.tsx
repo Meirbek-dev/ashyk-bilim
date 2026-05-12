@@ -13,7 +13,7 @@ import CourseThumbnail from '@components/Objects/Thumbnails/CourseThumbnail';
 import { useSession } from '@/hooks/useSession';
 import { useCourseListQuery } from '@/features/courses/hooks/useCourseQueries';
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 const COURSES_PER_PAGE = 20;
 
@@ -25,6 +25,11 @@ interface CourseGridClientProps {
 export default function CourseGridClient({ initialCourses, initialTotal }: CourseGridClientProps) {
   const { isAuthenticated } = useSession();
   const [page, setPage] = useState(1);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Fetch courses with pagination
   const { data: coursesResponse, isLoading: coursesLoading } = useCourseListQuery(
@@ -46,7 +51,9 @@ export default function CourseGridClient({ initialCourses, initialTotal }: Cours
 
   // Compute LMS-priority sorting on the client side
   const sortedCourses = useMemo(() => {
-    if (!courses || !trailData?.runs) return courses;
+    // During hydration (before hasMounted is true), we must return the original
+    // unsorted array to match the server-rendered HTML.
+    if (!hasMounted || !courses || !trailData?.runs) return courses;
 
     return [...courses].toSorted((a, b) => {
       const aCleanUuid = a.course_uuid?.replace('course_', '');

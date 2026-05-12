@@ -8,6 +8,7 @@ import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, us
 import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndAnnouncements } from '@/hooks/useDndAnnouncements';
 
 function SortableQuestionCard({ question, index, t, handleEditQuestion, promptDeleteQuestion, isDeleting }: any) {
   const id = question.question_uuid || `temp-${index}`;
@@ -71,7 +72,7 @@ function SortableQuestionCard({ question, index, t, handleEditQuestion, promptDe
 }
 import type { Question } from './questionEditorReducer';
 import { useTranslations } from 'next-intl';
-import { useReducer, useRef } from 'react';
+import { useReducer, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -107,6 +108,12 @@ export default function QuestionManagement({ examUuid, questions, onQuestionsCha
     }),
     useSensor(KeyboardSensor),
   );
+
+  const questionIds = useMemo(
+    () => questions.map((q: any, i: number) => q.question_uuid ?? `temp-${i}`),
+    [questions],
+  );
+  const announcements = useDndAnnouncements(questionIds);
 
   const inlineEditorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -379,6 +386,7 @@ export default function QuestionManagement({ examUuid, questions, onQuestionsCha
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
+          accessibility={{ announcements }}
         >
           <div className="space-y-2">
             <SortableContext

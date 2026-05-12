@@ -5,7 +5,7 @@ import { DEFAULT_THEME_MODE, THEME_MODE_STORAGE_KEY } from '@/lib/themes';
 import type { ThemeMode } from '@/lib/themes';
 import RootProviders from '../root-providers';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getMessages } from 'next-intl/server';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 
@@ -26,11 +26,18 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   }
 
   setRequestLocale(locale);
-  const [cookieStore, initialSession] = await Promise.all([cookies(), getSession()]);
+  const [cookieStore, initialSession, messages] = await Promise.all([
+    cookies(),
+    getSession(),
+    getMessages(),
+  ]);
   const initialThemeMode = getInitialThemeMode(cookieStore.get(THEME_MODE_STORAGE_KEY)?.value);
 
   return (
-    <NextIntlClientProvider>
+    <NextIntlClientProvider
+      locale={locale}
+      messages={messages}
+    >
       <HtmlLangSync />
       <RootProviders
         initialSession={initialSession}

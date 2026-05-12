@@ -313,7 +313,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
           <div className={`flex min-w-0 items-center gap-3 ${isCollapsed ? 'flex-col gap-2' : ''}`}>
             <div className="relative shrink-0">
               <UserAvatar
-                username={user.username}
+                user={user}
                 size="sm"
                 variant="outline"
                 showProfilePopup

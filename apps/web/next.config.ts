@@ -33,10 +33,15 @@ const nextConfig: NextConfig = {
       '@base-ui/react',
       '@icons-pack/react-simple-icons',
       'lucide-react',
+      // Animation
+      'motion/react',
       // Heavy utility libs
       'recharts',
-      'react-day-picker',
+      '@daypicker/react',
       'date-fns',
+      // Monaco editor (locally bundled, code-split via next/dynamic)
+      '@monaco-editor/react',
+      'monaco-editor',
       // TipTap editor (heavy)
       '@tiptap/core',
       '@tiptap/react',
@@ -49,8 +54,12 @@ const nextConfig: NextConfig = {
       '@tiptap/extension-table-header',
       '@tiptap/extension-table-row',
       '@tiptap/extension-heading',
+      '@tiptap/extension-character-count',
+      '@tiptap/extension-focus',
       '@tiptap/extensions',
       '@tiptap/extension-youtube',
+      'tiptap-extension-code-block-shiki',
+      'tiptap-markdown',
     ],
   },
 };

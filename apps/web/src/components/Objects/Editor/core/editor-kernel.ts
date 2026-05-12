@@ -6,7 +6,10 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { TableRow } from '@tiptap/extension-table-row';
 import { StarterKit } from '@tiptap/starter-kit';
+import CharacterCount from '@tiptap/extension-character-count';
+import Focus from '@tiptap/extension-focus';
 import CodeBlockShiki from 'tiptap-extension-code-block-shiki';
+import { Markdown } from 'tiptap-markdown';
 import Placeholder from '@tiptap/extension-placeholder';
 
 import Badges from '../Extensions/Badges/Badges';
@@ -185,6 +188,12 @@ export function createEditorExtensions(options: EditorKernelOptions): EditorExte
         Placeholder.configure({
           placeholder: 'Начните писать или введите `/` для команд…',
         }),
+        // Markdown ↔ Tiptap serialization (used by AI toolkit insertMarkdown)
+        Markdown.configure({ html: true, transformPastedText: true }),
+        // Character count without hard limit — used by toolbar word/char stats
+        CharacterCount,
+        // Adds has-focus / is-focused CSS classes to focused nodes
+        Focus.configure({ className: 'has-focus', mode: 'all' }),
         ...createActivityBlockExtensions(activity, true),
       ];
     }
@@ -196,7 +205,11 @@ export function createEditorExtensions(options: EditorKernelOptions): EditorExte
       return createDiscussionLikeExtensions({ editable: false });
     }
     case 'discussion': {
-      return createDiscussionLikeExtensions({ editable: true });
+      return [
+        ...createDiscussionLikeExtensions({ editable: true }),
+        Markdown.configure({ html: true, transformPastedText: true }),
+        Focus.configure({ className: 'has-focus', mode: 'all' }),
+      ];
     }
     default: {
       return createDiscussionLikeExtensions({ editable: true });

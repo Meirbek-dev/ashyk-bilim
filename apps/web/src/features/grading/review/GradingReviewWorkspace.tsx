@@ -43,6 +43,13 @@ export default function GradingReviewWorkspace({
   const [search, setSearch] = useState(searchFromUrl);
   const [sortBy, setSortBy] = useState(sortFromUrl);
 
+  // Sync state with URL changes
+  useEffect(() => {
+    setActiveFilter(filterFromUrl);
+    setSearch(searchFromUrl);
+    setSortBy(sortFromUrl);
+  }, [filterFromUrl, searchFromUrl, sortFromUrl]);
+
   const updateUrl = useCallback(
     (updates: Partial<{ filter: StatusFilter; sort: string; q: string }>) => {
       const next = new URLSearchParams(searchParams.toString());

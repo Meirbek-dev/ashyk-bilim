@@ -18,12 +18,13 @@ import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, us
 import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndAnnouncements } from '@/hooks/useDndAnnouncements';
 import { usePlatform } from '@/components/Contexts/PlatformContext';
 import { SiLoom, SiYoutube } from '@icons-pack/react-simple-icons';
 import { constructAcceptValue } from '@/lib/constants';
 import type { ChangeEvent, MouseEvent } from 'react';
 import NextImage from '@components/ui/NextImage';
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { useRouter } from 'next/navigation';
@@ -469,6 +470,9 @@ export default function EditImages() {
     useSensor(KeyboardSensor),
   );
 
+  const previewIds = useMemo(() => previews.map((p) => p.id), [previews]);
+  const announcements = useDndAnnouncements(previewIds);
+
   return (
     <div className="bg-background mx-0 mb-16 rounded-3xl sm:mx-10 sm:mb-0">
       <div className="bg-muted/30 mb-2 flex flex-col gap-1 rounded-3xl px-5 py-5">
@@ -651,6 +655,7 @@ export default function EditImages() {
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
+                  accessibility={{ announcements }}
                 >
                   <div
                     className={cn(

@@ -58,7 +58,28 @@ interface DataTableProps<TData> {
   pageSize?: number;
   pageSizeOptions?: number[];
   storageKey?: string;
+  /** Set when the server handles pagination. Disables client-side getPaginationRowModel. */
   serverPaginated?: boolean;
+  /**
+   * Total page count when using server-side pagination.
+   * When omitted, the table derives page count from `data.length`.
+   */
+  pageCount?: number;
+  /**
+   * Called when sort state changes (server-side sorting).
+   * When provided, `manualSorting` is enabled automatically.
+   */
+  onSortingChange?: (sorting: SortingState) => void;
+  /**
+   * Called when the search filter changes (server-side filtering).
+   * When provided, `manualFiltering` is enabled automatically.
+   */
+  onGlobalFilterChange?: (filter: string) => void;
+  /**
+   * Called when pagination state changes (server-side pagination).
+   * Receives current `{ pageIndex, pageSize }`.
+   */
+  onPaginationChange?: (pagination: PaginationState) => void;
   labels?: DataTableLabels;
   toolbarContent?: React.ReactNode;
   enableColumnVisibility?: boolean;
@@ -79,6 +100,10 @@ export default function DataTable<TData>({
   pageSizeOptions = [20, 50, 100, 250],
   storageKey,
   serverPaginated = false,
+  pageCount: controlledPageCount,
+  onSortingChange: onSortingChangeProp,
+  onGlobalFilterChange: onGlobalFilterChangeProp,
+  onPaginationChange: onPaginationChangeProp,
   labels,
   toolbarContent,
   enableColumnVisibility = false,
@@ -100,12 +125,18 @@ export default function DataTable<TData>({
     exportStarted: t('exportStarted'),
   };
   const resolvedLabels = { ...defaultLabels, ...labels };
+
+  // Derive whether server-side modes are active from prop presence
+  const isServerSorted = !!onSortingChangeProp;
+  const isServerFiltered = !!onGlobalFilterChangeProp;
+  const isServerPaginated = serverPaginated || !!onPaginationChangeProp;
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
-    pageSize: serverPaginated ? data.length || pageSize : pageSize,
+    pageSize: isServerPaginated ? data.length || pageSize : pageSize,
   });
 
   React.useEffect(() => {
@@ -124,20 +155,20 @@ export default function DataTable<TData>({
       if (parsed.sorting) setSorting(parsed.sorting);
       if (typeof parsed.globalFilter === 'string') setGlobalFilter(parsed.globalFilter);
       if (parsed.columnVisibility) setColumnVisibility(parsed.columnVisibility);
-      if (!serverPaginated && parsed.pagination) setPagination(parsed.pagination);
+      if (!isServerPaginated && parsed.pagination) setPagination(parsed.pagination);
     } catch {
       globalThis.sessionStorage.removeItem(`data-table:${storageKey}`);
     }
-  }, [storageKey, serverPaginated]);
+  }, [storageKey, isServerPaginated]);
 
   React.useEffect(() => {
-    if (serverPaginated) {
-      setPagination((current) => ({
+    if (isServerPaginated) {
+      setPagination(() => ({
         pageIndex: 0,
         pageSize: data.length || pageSize,
       }));
     }
-  }, [data.length, pageSize, serverPaginated]);
+  }, [data.length, pageSize, isServerPaginated]);
 
   React.useEffect(() => {
     if (!storageKey || typeof globalThis.window === 'undefined') return;
@@ -145,26 +176,62 @@ export default function DataTable<TData>({
     globalThis.sessionStorage.setItem(
       `data-table:${storageKey}`,
       JSON.stringify(
-        serverPaginated
+        isServerPaginated
           ? { sorting, globalFilter, columnVisibility }
           : { sorting, globalFilter, columnVisibility, pagination },
       ),
     );
-  }, [columnVisibility, globalFilter, pagination, sorting, storageKey, serverPaginated]);
+  }, [columnVisibility, globalFilter, pagination, sorting, storageKey, isServerPaginated]);
+
+  // Propagate state changes to server-side callbacks
+  const handleSortingChange = React.useCallback(
+    (updater: React.SetStateAction<SortingState>) => {
+      setSorting((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater;
+        onSortingChangeProp?.(next);
+        return next;
+      });
+    },
+    [onSortingChangeProp],
+  );
+
+  const handleGlobalFilterChange = React.useCallback(
+    (value: string) => {
+      setGlobalFilter(value);
+      onGlobalFilterChangeProp?.(value);
+    },
+    [onGlobalFilterChangeProp],
+  );
+
+  const handlePaginationChange = React.useCallback(
+    (updater: React.SetStateAction<PaginationState>) => {
+      setPagination((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater;
+        onPaginationChangeProp?.(next);
+        return next;
+      });
+    },
+    [onPaginationChangeProp],
+  );
 
   const table = useReactTable({
     data,
     columns,
     state: { sorting, globalFilter, pagination, columnVisibility },
-    onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    onPaginationChange: setPagination,
+    onSortingChange: handleSortingChange,
+    onGlobalFilterChange: handleGlobalFilterChange,
+    onPaginationChange: handlePaginationChange,
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    ...(serverPaginated ? {} : { getPaginationRowModel: getPaginationRowModel() }),
-    manualPagination: serverPaginated,
+    ...(!isServerPaginated ? { getPaginationRowModel: getPaginationRowModel() } : {}),
+    // Server-side operation flags
+    manualPagination: isServerPaginated,
+    manualSorting: isServerSorted,
+    manualFiltering: isServerFiltered,
+    // Supply controlled page count when the server knows the total
+    ...(controlledPageCount !== undefined ? { pageCount: controlledPageCount } : {}),
     globalFilterFn: (row, _columnId, filterValue) => {
       const normalizedFilter = String(filterValue).toLowerCase();
       return row.getVisibleCells().some((cell) =>
@@ -176,9 +243,11 @@ export default function DataTable<TData>({
   });
 
   const { rows } = table.getRowModel();
-  const totalFiltered = table.getFilteredRowModel().rows.length;
+  const totalFiltered = isServerPaginated
+    ? (controlledPageCount ?? 1) * pagination.pageSize
+    : table.getFilteredRowModel().rows.length;
   const { pageIndex, pageSize: currentPageSize } = table.getState().pagination;
-  const pageCount = table.getPageCount();
+  const resolvedPageCount = table.getPageCount();
   const from = totalFiltered > 0 ? pageIndex * currentPageSize + 1 : 0;
   const to = totalFiltered > 0 ? Math.min(from + rows.length - 1, totalFiltered) : 0;
 
@@ -231,7 +300,7 @@ export default function DataTable<TData>({
             <Input
               value={globalFilter}
               onChange={(event) => {
-                setGlobalFilter(event.target.value);
+                handleGlobalFilterChange(event.target.value);
                 setPagination((current) => ({ ...current, pageIndex: 0 }));
               }}
               placeholder={resolvedLabels.searchPlaceholder}
@@ -381,7 +450,7 @@ export default function DataTable<TData>({
               ))}
             </select>
           </div>
-          {pageCount > 1 ? (
+          {resolvedPageCount > 1 ? (
             <div className="flex items-center justify-end gap-2">
               <Button
                 variant="outline"
@@ -393,7 +462,7 @@ export default function DataTable<TData>({
                 {resolvedLabels.prev}
               </Button>
               <span className="text-muted-foreground text-sm">
-                {resolvedLabels.page({ current: pageIndex + 1, total: pageCount })}
+                {resolvedLabels.page({ current: pageIndex + 1, total: resolvedPageCount })}
               </span>
               <Button
                 variant="outline"

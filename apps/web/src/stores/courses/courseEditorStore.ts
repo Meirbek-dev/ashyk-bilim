@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
 
 export type CourseDirtySection = 'general' | 'access' | 'contributors' | 'certification' | 'content';
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -53,7 +54,9 @@ const initialState: CourseEditorState = {
   lastActivitySavedAt: null,
 };
 
-export const useCourseEditorStore = create<CourseEditorState & CourseEditorActions>((set, get) => ({
+export const useCourseEditorStore = create<CourseEditorState & CourseEditorActions>()(
+  devtools(
+    (set, get) => ({
   ...initialState,
 
   openEditor: (courseUuid, lastKnownUpdateDate) =>
@@ -114,6 +117,10 @@ export const useCourseEditorStore = create<CourseEditorState & CourseEditorActio
       activitySaveStatus: status,
       lastActivitySavedAt: status === 'saved' ? Date.now() : get().lastActivitySavedAt,
     }),
-}));
+    }),
+    { name: 'CourseEditorStore', enabled: process.env.NODE_ENV === 'development' },
+  ),
+);
 
-export const selectHasDirtySections = (state: CourseEditorState) => Object.values(state.dirtySections).some(Boolean);
+export const selectHasDirtySections = (state: CourseEditorState & CourseEditorActions): boolean =>
+  Object.values(state.dirtySections).some(Boolean);

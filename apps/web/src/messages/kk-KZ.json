@@ -1002,6 +1002,13 @@
       "exportCsv": "CSV экспорттау",
       "exportStarted": "Жүктеу басталды"
     },
+    "DragAndDrop": {
+      "liftItem": "{count} элементтің {index}-і алынды",
+      "moveItem": "Элемент {count} ішіндегі {index} орнына жылжытылды",
+      "dropItem": "Элемент {count} ішіндегі {index} орнына тастады",
+      "cancelDrag": "Сүйреу болдырылмады, элемент {index} орнына оралды",
+      "dragHandle": "Ретін өзгерту үшін сүйреңіз"
+    },
     "googleLogo": "Google логотипі",
     "loading": "Жүктелуде...",
     "logoAlt": "Ashyk Bilim логотипі",
@@ -7582,7 +7589,6 @@
           "navigationError": "Келесі әрекетке өту мүмкін болмады",
           "next": "Келесі",
           "noAttemptsRemaining": "Бұл емтиханға қалған әрекеттеріңіз жоқ",
-          "noEditableDraft": "Өңдеуге болатын жоба жоқ",
           "noNextActivity": "Келесі әрекет жоқ",
           "notAnswered": "Жауап берілмеді",
           "notSet": "Орнатылмаған",
@@ -7979,47 +7985,6 @@
           "Form": {
             "requiredLabel": "Міндетті"
           },
-          "loading": "Студия жүктелуде",
-          "unavailable": "Бұл әрекет үшін студия қолжетімсіз.",
-          "lifecycle": {
-            "draft": "Нобай",
-            "scheduled": "Жоспарланған",
-            "published": "Жарияланған",
-            "archived": "Мұрағатталған"
-          },
-          "lifecycleChanged": "Кезең {state} күйіне ауысты",
-          "updateLifecycleFailed": "Кезеңді жаңарту сәтсіз аяқталды",
-          "breadcrumb": {
-            "curriculum": "Оқу жоспары",
-            "studio": "Студия"
-          },
-          "kinds": {
-            "ASSIGNMENT": "Тапсырма",
-            "EXAM": "Емтихан",
-            "CODE_CHALLENGE": "Код тапсырмасы",
-            "QUIZ": "Тест",
-            "TYPE_ASSIGNMENT": "Тапсырма",
-            "TYPE_EXAM": "Емтихан",
-            "TYPE_CODE_CHALLENGE": "Код тапсырмасы",
-            "TYPE_QUIZ": "Тест"
-          },
-          "issueCount": "{count} мәселе",
-          "preview": "Алдын ала қарау",
-          "scheduleOptions": "Жоспарлау параметрлері",
-          "schedulePublication": "Жариялауды жоспарлау",
-          "schedule": "Жоспарлау",
-          "saveAsDraft": "Нобай ретінде сақтау",
-          "moreOptions": "Қосымша параметрлер",
-          "archive": "Мұрағаттау",
-          "hideInspector": "Инспекторды жасыру",
-          "showInspector": "Инспекторды көрсету",
-          "publishNow": "Қазір жариялау",
-          "issueBlocks": "{count} мәселе жариялауды блоктап тұр",
-          "assessmentLabel": "Бағалау",
-          "itemsLabel": "Элементтер",
-          "jumpToItem": "Элементке өту",
-          "blockerAlertDescription": "Жарияламас бұрын бағалау деңгейіндегі бұғаттаушыларды шешіңіз. Элемент деңгейіндегі мәселелер жоғарыдағы тізімде қалады.",
-          "loadingEditor": "Редактор жүктелуде",
           "Items": {
             "OpenText": {
               "prompt": "Сұрақ",
@@ -8044,9 +8009,41 @@
               "addField": "Өріс қосу",
               "unsupportedKind": "Элемент түрі қолданылмайды."
             }
-          }
+          },
+          "errorLoading": "Студияны жүктеу кезінде қате кетті"
         },
-        "policyTitle": "{kind} саясаты"
+        "policyTitle": "{kind} саясаты",
+        "loading": "Студия жүктелуде",
+        "unavailable": "Бұл әрекет үшін студия қолжетімсіз.",
+        "lifecycle": {
+          "draft": "Нобай",
+          "scheduled": "Жоспарланған",
+          "published": "Жарияланған",
+          "archived": "Мұрағатталған"
+        },
+        "lifecycleChanged": "Кезең {state} күйіне ауысты",
+        "updateLifecycleFailed": "Кезеңді жаңарту сәтсіз аяқталды",
+        "breadcrumb": {
+          "curriculum": "Оқу жоспары",
+          "studio": "Студия"
+        },
+        "issueCount": "{count} мәселе",
+        "preview": "Алдын ала қарау",
+        "scheduleOptions": "Жоспарлау параметрлері",
+        "schedulePublication": "Жариялауды жоспарлау",
+        "schedule": "Жоспарлау",
+        "saveAsDraft": "Нобай ретінде сақтау",
+        "moreOptions": "Қосымша параметрлер",
+        "archive": "Мұрағаттау",
+        "hideInspector": "Инспекторды жасыру",
+        "showInspector": "Инспекторды көрсету",
+        "publishNow": "Қазір жариялау",
+        "issueBlocks": "{count} мәселе жариялауды блоктап тұр",
+        "assessmentLabel": "Бағалау",
+        "itemsLabel": "Элементтер",
+        "jumpToItem": "Элементке өту",
+        "blockerAlertDescription": "Жарияламас бұрын бағалау деңгейіндегі бұғаттаушыларды шешіңіз. Элемент деңгейіндегі мәселелер жоғарыдағы тізімде қалады.",
+        "loadingEditor": "Редактор жүктелуде"
       },
       "Assignment": {
         "AssignmentPage": {

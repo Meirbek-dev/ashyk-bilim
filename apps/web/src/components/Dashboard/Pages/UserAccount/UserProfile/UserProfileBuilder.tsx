@@ -20,12 +20,13 @@ import {
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover';
 import { updateProfile } from '@/lib/users/client';
-import { createElement, useEffect, useEffectEvent, useState } from 'react';
+import { createElement, useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { useSession } from '@/hooks/useSession';
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDndAnnouncements } from '@/hooks/useDndAnnouncements';
 
 function SortableProfileSection({
   section,
@@ -344,6 +345,12 @@ const UserProfileBuilder = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const sectionIds = useMemo(
+    () => profileData.sections.map((s) => s.id),
+    [profileData.sections],
+  );
+  const announcements = useDndAnnouncements(sectionIds);
+
   // Initialize profile data from user data
   const fetchUserDataEvent = useEffectEvent(async () => {
     if (!me) {
@@ -584,6 +591,7 @@ const UserProfileBuilder = () => {
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={onDragEnd}
+              accessibility={{ announcements }}
             >
               <div className="space-y-2">
                 <SortableContext

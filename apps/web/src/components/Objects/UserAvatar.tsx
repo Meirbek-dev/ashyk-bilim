@@ -116,7 +116,11 @@ const UserAvatar = (props: UserAvatarProps) => {
     </Avatar>
   );
 
-  const popupUserId = userId ?? userData?.id ?? null;
+  const popupUserId = useMemo(() => {
+    if (userId) return userId;
+    if (username && currentUser?.username === username) return currentUser.id;
+    return userData?.id ?? null;
+  }, [userId, username, currentUser, userData]);
 
   if (showProfilePopup && popupUserId) {
     return <UserProfilePopup userId={popupUserId}>{avatarElement}</UserProfilePopup>;

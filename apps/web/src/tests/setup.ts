@@ -40,3 +40,22 @@ class MockIntersectionObserver {
 
 globalThis.ResizeObserver = MockResizeObserver;
 globalThis.IntersectionObserver = MockIntersectionObserver;
+
+// Mock next/navigation
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+  useSelectedLayoutSegment: () => null,
+  useSelectedLayoutSegments: () => [],
+  notFound: vi.fn(),
+  redirect: vi.fn(),
+  permanentRedirect: vi.fn(),
+}));

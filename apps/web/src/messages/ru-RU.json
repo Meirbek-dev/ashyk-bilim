@@ -1008,6 +1008,13 @@
       "exportCsv": "Экспорт CSV",
       "exportStarted": "Загрузка начата"
     },
+    "DragAndDrop": {
+      "liftItem": "Элемент {index} из {count} поднят",
+      "moveItem": "Элемент перемещён на позицию {index} из {count}",
+      "dropItem": "Элемент опущен на позицию {index} из {count}",
+      "cancelDrag": "Перетаскивание отменено, элемент возвращён на позицию {index}",
+      "dragHandle": "Перетащить для изменения порядка"
+    },
     "googleLogo": "Логотип Google",
     "loading": "Загрузка...",
     "logoAlt": "Логотип Ashyk Bilim",
@@ -7892,6 +7899,37 @@
           "TYPE_CODE_CHALLENGE": "Код задача",
           "TYPE_QUIZ": "Квиз"
         },
+        "loading": "Загрузка студии",
+        "unavailable": "Студия недоступна для этой активности.",
+        "lifecycle": {
+          "draft": "Черновик",
+          "scheduled": "Запланировано",
+          "published": "Опубликовано",
+          "archived": "В архиве"
+        },
+        "lifecycleChanged": "Этап изменён на {state}",
+        "updateLifecycleFailed": "Не удалось обновить этап",
+        "breadcrumb": {
+          "curriculum": "Учебный план",
+          "studio": "Студия"
+        },
+        "issueCount": "{count} проблем",
+        "preview": "Предпросмотр",
+        "scheduleOptions": "Параметры планирования",
+        "schedulePublication": "Запланировать публикацию",
+        "schedule": "Запланировать",
+        "saveAsDraft": "Сохранить как черновик",
+        "moreOptions": "Дополнительные параметры",
+        "archive": "Архивировать",
+        "hideInspector": "Скрыть инспектор",
+        "showInspector": "Показать инспектор",
+        "publishNow": "Опубликовать сейчас",
+        "issueBlocks": "{count} {count, plural, one {проблема блокирует} few {проблемы блокируют} other {проблем блокируют}} публикацию.",
+        "assessmentLabel": "Активность",
+        "itemsLabel": "Элементы",
+        "jumpToItem": "Перейти к элементу",
+        "blockerAlertDescription": "Устраните блокировщики на уровне оценивания перед публикацией. Проблемы на уровне элементов остаются доступными по ссылкам в списке выше.",
+        "loadingEditor": "Загрузка редактора",
         "NativeItemStudio": {
           "itemNouns": {
             "question": "Вопрос",
@@ -8002,47 +8040,7 @@
           "Form": {
             "requiredLabel": "Обязательно"
           },
-          "loading": "Загрузка студии",
-          "unavailable": "Студия недоступна для этой активности.",
-          "lifecycle": {
-            "draft": "Черновик",
-            "scheduled": "Запланировано",
-            "published": "Опубликовано",
-            "archived": "В архиве"
-          },
-          "lifecycleChanged": "Этап изменён на {state}",
-          "updateLifecycleFailed": "Не удалось обновить этап",
-          "breadcrumb": {
-            "curriculum": "Учебный план",
-            "studio": "Студия"
-          },
-          "kinds": {
-            "ASSIGNMENT": "Задание",
-            "EXAM": "Тест",
-            "CODE_CHALLENGE": "Код задача",
-            "QUIZ": "Квиз",
-            "TYPE_ASSIGNMENT": "Задание",
-            "TYPE_EXAM": "Тест",
-            "TYPE_CODE_CHALLENGE": "Код задача",
-            "TYPE_QUIZ": "Квиз"
-          },
-          "issueCount": "{count} проблем",
-          "preview": "Предпросмотр",
-          "scheduleOptions": "Параметры планирования",
-          "schedulePublication": "Запланировать публикацию",
-          "schedule": "Запланировать",
-          "saveAsDraft": "Сохранить как черновик",
-          "moreOptions": "Дополнительные параметры",
-          "archive": "Архивировать",
-          "hideInspector": "Скрыть инспектор",
-          "showInspector": "Показать инспектор",
-          "publishNow": "Опубликовать сейчас",
-          "issueBlocks": "{count} {count, plural, one {проблема блокирует} few {проблемы блокируют} other {проблем блокируют}} публикацию.",
-          "assessmentLabel": "Активность",
-          "itemsLabel": "Элементы",
-          "jumpToItem": "Перейти к элементу",
-          "blockerAlertDescription": "Устраните блокировщики на уровне оценивания перед публикацией. Проблемы на уровне элементов остаются доступными по ссылкам в списке выше.",
-          "loadingEditor": "Загрузка редактора",
+          "errorLoading": "Ошибка при загрузке студии",
           "Items": {
             "OpenText": {
               "prompt": "Вопрос",

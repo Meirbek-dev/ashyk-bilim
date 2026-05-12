@@ -1002,6 +1002,13 @@
       "exportCsv": "Export CSV",
       "exportStarted": "Download started"
     },
+    "DragAndDrop": {
+      "liftItem": "Picked up item {index} of {count}",
+      "moveItem": "Moved item to position {index} of {count}",
+      "dropItem": "Dropped item at position {index} of {count}",
+      "cancelDrag": "Drag cancelled, item returned to position {index}",
+      "dragHandle": "Drag to reorder"
+    },
     "googleLogo": "Google logo",
     "loading": "Loading...",
     "logoAlt": "Ashyk Bilim logo",
@@ -7832,6 +7839,37 @@
           "TYPE_CODE_CHALLENGE": "Code Challenge",
           "TYPE_QUIZ": "Quiz"
         },
+        "loading": "Loading studio",
+        "unavailable": "Studio is unavailable for this activity.",
+        "lifecycle": {
+          "draft": "Draft",
+          "scheduled": "Scheduled",
+          "published": "Published",
+          "archived": "Archived"
+        },
+        "lifecycleChanged": "Lifecycle changed to {state}",
+        "updateLifecycleFailed": "Failed to update lifecycle",
+        "breadcrumb": {
+          "curriculum": "Curriculum",
+          "studio": "Studio"
+        },
+        "issueCount": "{count} issues",
+        "preview": "Preview",
+        "scheduleOptions": "Schedule options",
+        "schedulePublication": "Schedule publication",
+        "schedule": "Schedule",
+        "saveAsDraft": "Save as draft",
+        "moreOptions": "More options",
+        "archive": "Archive",
+        "hideInspector": "Hide inspector",
+        "showInspector": "Show inspector",
+        "publishNow": "Publish now",
+        "issueBlocks": "{count} {count, plural, =1 {issue blocks} other {issues block}} publishing.",
+        "assessmentLabel": "Assessment",
+        "itemsLabel": "Items",
+        "jumpToItem": "Jump to item",
+        "blockerAlertDescription": "Resolve the assessment-level blockers before publishing. Item-level issues remain linked from the list above.",
+        "loadingEditor": "Loading editor",
         "NativeItemStudio": {
           "itemNouns": {
             "question": "Question",
@@ -7942,47 +7980,7 @@
           "Form": {
             "requiredLabel": "Required"
           },
-          "loading": "Loading studio",
-          "unavailable": "Studio is unavailable for this activity.",
-          "lifecycle": {
-            "draft": "Draft",
-            "scheduled": "Scheduled",
-            "published": "Published",
-            "archived": "Archived"
-          },
-          "lifecycleChanged": "Lifecycle changed to {state}",
-          "updateLifecycleFailed": "Failed to update lifecycle",
-          "breadcrumb": {
-            "curriculum": "Curriculum",
-            "studio": "Studio"
-          },
-          "kinds": {
-            "ASSIGNMENT": "Assignment",
-            "EXAM": "Exam",
-            "CODE_CHALLENGE": "Code Challenge",
-            "QUIZ": "Quiz",
-            "TYPE_ASSIGNMENT": "Assignment",
-            "TYPE_EXAM": "Exam",
-            "TYPE_CODE_CHALLENGE": "Code Challenge",
-            "TYPE_QUIZ": "Quiz"
-          },
-          "issueCount": "{count} issues",
-          "preview": "Preview",
-          "scheduleOptions": "Schedule options",
-          "schedulePublication": "Schedule publication",
-          "schedule": "Schedule",
-          "saveAsDraft": "Save as draft",
-          "moreOptions": "More options",
-          "archive": "Archive",
-          "hideInspector": "Hide inspector",
-          "showInspector": "Show inspector",
-          "publishNow": "Publish now",
-          "issueBlocks": "{count} {count, plural, =1 {issue blocks} other {issues block}} publishing.",
-          "assessmentLabel": "Assessment",
-          "itemsLabel": "Items",
-          "jumpToItem": "Jump to item",
-          "blockerAlertDescription": "Resolve the assessment-level blockers before publishing. Item-level issues remain linked from the list above.",
-          "loadingEditor": "Loading editor",
+          "errorLoading": "Error loading studio",
           "Items": {
             "OpenText": {
               "prompt": "Prompt",

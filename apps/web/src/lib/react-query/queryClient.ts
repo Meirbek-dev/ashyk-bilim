@@ -1,6 +1,7 @@
 'use client';
 
 import { environmentManager, QueryClient } from '@tanstack/react-query';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 
 const FIVE_MINUTES = 5 * 60 * 1000;
 
@@ -41,4 +42,18 @@ export function getQueryClient() {
 
   browserQueryClient ??= makeQueryClient();
   return browserQueryClient;
+}
+
+/**
+ * SessionStorage persister for the query cache.
+ * Uses sessionStorage so data is cleared when the browser tab closes,
+ * avoiding stale data across different user sessions on shared devices.
+ * Only created in the browser — returns null on the server.
+ */
+export function createQueryPersister() {
+  if (typeof window === 'undefined') return null;
+  return createAsyncStoragePersister({
+    storage: window.sessionStorage,
+    key: 'tanstack-query-cache',
+  });
 }
