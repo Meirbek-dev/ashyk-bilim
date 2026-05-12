@@ -19,6 +19,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from sqlalchemy import func as sql_func
+
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 from ulid import ULID
@@ -258,15 +260,13 @@ def _count_previous_attempts(
     activity_id: int, user_id: int, db_session: Session
 ) -> int:
     """Count all non-DRAFT submissions as prior attempts."""
-    return len(
-        db_session.exec(
-            select(Submission).where(
-                Submission.activity_id == activity_id,
-                Submission.user_id == user_id,
-                Submission.status != SubmissionStatus.DRAFT,
-            )
-        ).all()
-    )
+    return db_session.exec(
+        select(sql_func.count()).where(
+            Submission.activity_id == activity_id,
+            Submission.user_id == user_id,
+            Submission.status != SubmissionStatus.DRAFT,
+        )
+    ).one()
 
 
 def _validate_transition(

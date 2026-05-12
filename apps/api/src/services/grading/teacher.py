@@ -769,16 +769,34 @@ async def bulk_publish_grades(
     )
 
     now = datetime.now(UTC)
+
+    # Batch-fetch the latest GradingEntry per unpublished submission in one query
+    # instead of issuing N separate queries (N+1 pattern).
+    unpublished_ids = [s.id for s in submissions if s.id not in already_published_ids and s.id is not None]
+    latest_entries_by_submission: dict[int, GradingEntry] = {}
+    if unpublished_ids:
+        from sqlalchemy import func as sql_func
+
+        # Subquery: max id per submission (proxy for most-recent entry)
+        subq = (
+            select(sql_func.max(GradingEntry.id).label("max_id"))
+            .where(GradingEntry.submission_id.in_(unpublished_ids))
+            .group_by(GradingEntry.submission_id)
+            .subquery()
+        )
+        latest_rows = db_session.exec(
+            select(GradingEntry).where(GradingEntry.id.in_(select(subq.c.max_id)))
+        ).all()
+        for row in latest_rows:
+            if row.submission_id is not None:
+                latest_entries_by_submission[row.submission_id] = row
+
     published_count = 0
     for submission in submissions:
         if submission.id in already_published_ids:
             continue
 
-        latest_entry = db_session.exec(
-            select(GradingEntry)
-            .where(GradingEntry.submission_id == submission.id)
-            .order_by(desc(GradingEntry.created_at), desc(GradingEntry.id))
-        ).first()
+        latest_entry = latest_entries_by_submission.get(submission.id)
 
         entry = GradingEntry(
             entry_uuid=f"entry_{ULID()}",

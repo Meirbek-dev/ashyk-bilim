@@ -358,5 +358,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
 }
 
 function cloneAnswers(answers: Record<string, ItemAnswer>): Record<string, ItemAnswer> {
-  return typeof structuredClone === 'function' ? structuredClone(answers) : structuredClone(answers);
+  if (typeof structuredClone === 'function') {
+    return structuredClone(answers);
+  }
+  // Fallback for environments without structuredClone (e.g. older Safari/Node)
+  return JSON.parse(JSON.stringify(answers)) as Record<string, ItemAnswer>;
 }

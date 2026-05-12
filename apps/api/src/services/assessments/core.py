@@ -1282,15 +1282,13 @@ async def save_grading_draft(
     else:
         calculated_score = 0.0
 
-    # Apply late penalty
-    late_penalty_pct = float(submission.late_penalty_pct or 0.0)
-    final_score = round(calculated_score * (1 - late_penalty_pct / 100), 2)
-
+    # Pass the raw calculated score — _save_teacher_grade applies the late
+    # penalty itself. Do NOT pre-apply the penalty here or it will be doubled.
     # Build TeacherGradeInput for the existing grade save pipeline
     from src.db.grading.submissions import ItemFeedback, TeacherGradeInput
 
     grade_input = TeacherGradeInput(
-        final_score=final_score,
+        final_score=calculated_score,
         feedback=payload.overall_feedback,
         status=payload.status,
         item_feedback=[
