@@ -16,4 +16,6 @@ if __name__ == "__main__":
         reload=is_dev_mode,
         access_log=is_dev_mode,
         timeout_keep_alive=65,
+        proxy_headers=settings.hosting_config.proxy_headers,
+        forwarded_allow_ips=settings.hosting_config.forwarded_allow_ips,
     )

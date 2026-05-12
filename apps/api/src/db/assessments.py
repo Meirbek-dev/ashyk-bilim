@@ -315,6 +315,13 @@ class Assessment(SQLModelStrictBaseModel, table=True):
             return AssessmentLifecycle(value)
         return value
 
+    @field_validator("grading_type", mode="before")
+    @classmethod
+    def validate_grading_type(cls, value: object) -> object:
+        if isinstance(value, str):
+            return AssessmentGradingType(value)
+        return value
+
 
 class AssessmentItem(SQLModelStrictBaseModel, table=True):
     """Single authoring item inside an assessment."""

@@ -685,7 +685,7 @@ def _calculate_late_penalty(
 def _float_or_zero(value: object) -> float:
     try:
         return float(value)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         return 0.0
 
 

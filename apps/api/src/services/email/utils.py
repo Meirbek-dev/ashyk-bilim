@@ -2,7 +2,7 @@ import resend
 from pydantic import EmailStr
 from resend import Emails
 
-from config.config import get_settings
+from config.config import get_settings, secret_value
 
 
 def send_email(to: EmailStr, subject: str, body: str) -> None:
@@ -19,6 +19,6 @@ def future_send_email(to: EmailStr, subject: str, body: str) -> Emails.SendRespo
         "html": body,
     }
 
-    resend.api_key = settings.mailing_config.resend_api_key
+    resend.api_key = secret_value(settings.mailing_config.resend_api_key)
 
     return resend.Emails.send(params)

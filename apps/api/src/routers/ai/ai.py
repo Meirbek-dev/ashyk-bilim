@@ -1,13 +1,10 @@
 import asyncio
 import contextlib
-import hashlib
 import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlmodel import Session
 
 from src.auth.users import get_public_user
@@ -25,35 +22,23 @@ from src.services.ai.schemas.ai import (
     StartActivityAIChatSession,
 )
 from src.services.ai.streaming import format_sse_message
+from src.services.rate_limit import auth_or_ip_key, rate_limit_dependency
 
 logger = logging.getLogger(__name__)
 
 
-# Initialize rate limiter: prefer auth token or X-User-Id header, fallback to IP
-def _rate_limit_key(request: Request) -> str:
-    # Prefer an explicit user header if present (set by upstream auth middleware)
-    user_header = request.headers.get("x-user-id") or request.headers.get("X-User-Id")
-    if user_header:
-        return f"user:{user_header}"
-
-    # Prefer Authorization bearer token to key by user token
-    auth = request.headers.get("authorization") or request.headers.get("Authorization")
-    if auth:
-        try:
-            parts = auth.split()
-            if len(parts) == 2 and parts[0].lower() == "bearer":
-                token = parts[1]
-                return f"token:{hashlib.sha256(token.encode()).hexdigest()}"
-            return f"auth:{hashlib.sha256(auth.encode()).hexdigest()}"
-        except IndexError, AttributeError:
-            pass
-
-    # Fallback to remote address
-    return get_remote_address(request)
-
-
-# Initialize limiter using per-user key when available
-limiter = Limiter(key_func=_rate_limit_key)
+_limit_ai_start = rate_limit_dependency(
+    namespace="ai:start",
+    max_requests=10,
+    window_seconds=60,
+    key_func=auth_or_ip_key,
+)
+_limit_ai_message = rate_limit_dependency(
+    namespace="ai:message",
+    max_requests=20,
+    window_seconds=60,
+    key_func=auth_or_ip_key,
+)
 
 router = APIRouter()
 
@@ -76,9 +61,10 @@ async def _monitor_disconnect(
 
 
 @router.post(
-    "/start/activity_chat_session", response_model=ActivityAIChatSessionResponse
+    "/start/activity_chat_session",
+    response_model=ActivityAIChatSessionResponse,
+    dependencies=[Depends(_limit_ai_start)],
 )
-@limiter.limit("10/minute")  # 10 requests per minute per IP
 async def api_ai_start_activity_chat_session(
     request: Request,
     chat_session_object: StartActivityAIChatSession,
@@ -111,11 +97,10 @@ async def api_ai_start_activity_chat_session(
 
 
 @router.post(
-    "/send/activity_chat_message", response_model=ActivityAIChatSessionResponse
+    "/send/activity_chat_message",
+    response_model=ActivityAIChatSessionResponse,
+    dependencies=[Depends(_limit_ai_message)],
 )
-@limiter.limit(
-    "20/minute"
-)  # 20 requests per minute per IP (higher limit for chat messages)
 async def api_ai_send_activity_chat_message(
     request: Request,
     chat_session_object: SendActivityAIChatMessage,
@@ -147,8 +132,10 @@ async def api_ai_send_activity_chat_message(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/start/activity_chat_session_stream")
-@limiter.limit("10/minute")
+@router.post(
+    "/start/activity_chat_session_stream",
+    dependencies=[Depends(_limit_ai_start)],
+)
 async def api_ai_start_activity_chat_session_stream(
     request: Request,
     chat_session_object: StartActivityAIChatSession,
@@ -240,8 +227,10 @@ async def api_ai_start_activity_chat_session_stream(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/send/activity_chat_message_stream")
-@limiter.limit("20/minute")
+@router.post(
+    "/send/activity_chat_message_stream",
+    dependencies=[Depends(_limit_ai_message)],
+)
 async def api_ai_send_activity_chat_message_stream(
     request: Request,
     chat_session_object: SendActivityAIChatMessage,

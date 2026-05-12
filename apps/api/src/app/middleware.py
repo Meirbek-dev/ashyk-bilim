@@ -28,6 +28,7 @@ class CachedStaticFiles(StaticFiles):
 def add_application_middleware(app: FastAPI, settings: AppSettings) -> None:
     app.add_middleware(
         CORSMiddleware,
+        allow_origins=settings.hosting_config.allowed_origins,
         allow_origin_regex=settings.hosting_config.allowed_regexp,
         allow_methods=["*"],
         allow_credentials=True,

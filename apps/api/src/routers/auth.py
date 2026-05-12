@@ -7,6 +7,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 
+from config.config import secret_value
 from src.auth.manager import UserManager, get_user_manager
 from src.auth.users import CurrentActiveUser, auth_backend
 from src.db.users import AnonymousUser, User, UserSession
@@ -23,6 +24,13 @@ from src.services.auth.google_oauth import (
     get_frontend_callback_from_state,
     get_google_authorize_url,
 )
+from src.services.auth.rate_limiter import (
+    RateLimitExceeded,
+    check_account_locked,
+    check_rate_limit,
+    clear_login_failures,
+    record_login_failure,
+)
 from src.services.auth.sessions import (
     create_auth_session,
     get_user_active_sessions,
@@ -32,10 +40,31 @@ from src.services.auth.sessions import (
     rotate_session,
 )
 from src.services.auth.utils import find_or_create_google_user
+from src.services.rate_limit import ip_key, rate_limit_dependency
 from src.services.users.users import get_user_session
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+_limit_auth_login_ip = rate_limit_dependency(
+    namespace="auth:login:ip",
+    max_requests=20,
+    window_seconds=60,
+    key_func=ip_key,
+)
+_limit_auth_refresh_ip = rate_limit_dependency(
+    namespace="auth:refresh:ip",
+    max_requests=60,
+    window_seconds=60,
+    key_func=ip_key,
+)
+_limit_google_oauth_ip = rate_limit_dependency(
+    namespace="auth:google:ip",
+    max_requests=30,
+    window_seconds=60,
+    key_func=ip_key,
+)
+auth_sensitive_rate_limit = _limit_auth_login_ip
 
 
 def _client_ip(request: Request) -> str | None:
@@ -117,19 +146,52 @@ def _build_google_error_redirect(callback: str, error_code: str) -> str:
     ))
 
 
-@router.post("/login")
+def _rate_limit_http_error(exc: RateLimitExceeded) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail={
+            "error_code": "RATE_LIMIT_EXCEEDED",
+            "message": "Too many attempts. Please try again later.",
+            "retry_after": exc.retry_after,
+        },
+        headers={"Retry-After": str(exc.retry_after)},
+    )
+
+
+@router.post("/login", dependencies=[Depends(_limit_auth_login_ip)])
 async def login(
     request: Request,
     credentials: Annotated[OAuth2PasswordRequestForm, Depends()],
     user_manager: Annotated[UserManager, Depends(get_user_manager)],
 ) -> Response:
+    email = credentials.username.strip().lower()
+    if await check_account_locked(email):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error_code": "ACCOUNT_TEMPORARILY_LOCKED",
+                "message": "Too many failed login attempts. Please try again later.",
+            },
+            headers={"Retry-After": "900"},
+        )
+    try:
+        await check_rate_limit(
+            key=f"login:email:{email}",
+            max_requests=5,
+            window_seconds=900,
+        )
+    except RateLimitExceeded as exc:
+        raise _rate_limit_http_error(exc) from exc
+
     user = await user_manager.authenticate(credentials)
     if user is None:
+        await record_login_failure(email)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="LOGIN_BAD_CREDENTIALS",
         )
 
+    await clear_login_failures(email)
     return await _build_login_response(request, user, user_manager)
 
 
@@ -171,7 +233,7 @@ async def list_sessions(
     return await get_user_active_sessions(current_user.id)
 
 
-@router.post("/refresh")
+@router.post("/refresh", dependencies=[Depends(_limit_auth_refresh_ip)])
 async def refresh_token(
     request: Request,
     response: Response,
@@ -228,7 +290,7 @@ async def refresh_token(
     return {"status": "ok"}
 
 
-@router.get("/google/authorize")
+@router.get("/google/authorize", dependencies=[Depends(_limit_google_oauth_ip)])
 async def google_authorize(
     callback: str,
 ):
@@ -250,7 +312,7 @@ async def google_authorize(
     return RedirectResponse(url=auth_url)
 
 
-@router.get("/google/callback")
+@router.get("/google/callback", dependencies=[Depends(_limit_google_oauth_ip)])
 async def google_callback(
     request: Request,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -293,7 +355,7 @@ async def google_callback(
     try:
         userinfo = await exchange_google_code(
             client_id=settings.google_oauth.client_id or "",
-            client_secret=settings.google_oauth.client_secret or "",
+            client_secret=secret_value(settings.google_oauth.client_secret) or "",
             code=code,
             redirect_uri=redirect_uri,
             state=state,

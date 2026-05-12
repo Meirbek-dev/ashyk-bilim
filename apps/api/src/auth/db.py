@@ -1,10 +1,9 @@
 """SQLModel → fastapi-users user database adapter.
 
-fastapi-users requires an async UserDatabase interface. Our app uses
-synchronous SQLModel sessions throughout. Each method wraps its DB call in
-asyncio.to_thread so the event loop is never blocked by slow queries.
-The session is created per-request and never shared across threads concurrently,
-so this is thread-safe.
+fastapi-users requires an async UserDatabase interface. The rest of this app
+uses synchronous SQLModel sessions, so each async method opens its own short-lived
+session inside the worker thread that performs the blocking database call.
+Request-scoped sessions are never moved across threads.
 """
 
 import asyncio
@@ -15,56 +14,69 @@ from fastapi_users.db import BaseUserDatabase
 from sqlmodel import Session, select
 
 from src.db.users import User
-from src.infra.db.session import get_db_session
+from src.infra.db.session import SessionFactory, get_session_factory
 
 
 class SQLModelUserDatabase(BaseUserDatabase[User, int]):
-    def __init__(self, session: Session) -> None:
-        self.session = session
+    def __init__(self, session_factory: SessionFactory) -> None:
+        self.session_factory = session_factory
 
     async def get(self, id: int) -> User | None:
-        return await asyncio.to_thread(
-            lambda: self.session.exec(select(User).where(User.id == id)).first()
-        )
+        def _get() -> User | None:
+            with self.session_factory() as session:
+                return session.exec(select(User).where(User.id == id)).first()
+
+        return await asyncio.to_thread(_get)
 
     async def get_by_email(self, email: str) -> User | None:
-        return await asyncio.to_thread(
-            lambda: self.session.exec(
-                select(User).where(User.email == email.lower())
-            ).first()
-        )
+        def _get_by_email() -> User | None:
+            with self.session_factory() as session:
+                return session.exec(
+                    select(User).where(User.email == email.lower())
+                ).first()
+
+        return await asyncio.to_thread(_get_by_email)
 
     async def create(self, create_dict: dict[str, Any]) -> User:
         def _create() -> User:
-            user = User(**create_dict)
-            self.session.add(user)
-            self.session.commit()
-            self.session.refresh(user)
-            return user
+            with self.session_factory() as session:
+                user = User(**create_dict)
+                session.add(user)
+                session.commit()
+                session.refresh(user)
+                return user
 
         return await asyncio.to_thread(_create)
 
     async def update(self, user: User, update_dict: dict[str, Any]) -> User:
         def _update() -> User:
-            for key, value in update_dict.items():
-                setattr(user, key, value)
-            self.session.add(user)
-            self.session.commit()
-            self.session.refresh(user)
-            return user
+            with self.session_factory() as session:
+                db_user = session.get(User, user.id)
+                if db_user is None:
+                    db_user = session.merge(user)
+                for key, value in update_dict.items():
+                    setattr(db_user, key, value)
+                session.add(db_user)
+                session.commit()
+                session.refresh(db_user)
+                return db_user
 
         return await asyncio.to_thread(_update)
 
     async def delete(self, user: User) -> None:
         def _delete() -> None:
-            self.session.delete(user)
-            self.session.commit()
+            with self.session_factory() as session:
+                db_user = session.get(User, user.id)
+                if db_user is None:
+                    return
+                session.delete(db_user)
+                session.commit()
 
         await asyncio.to_thread(_delete)
 
 
 def get_user_db(
-    session: Annotated[Session, Depends(get_db_session)] = None,
+    session_factory: Annotated[SessionFactory, Depends(get_session_factory)] = None,
 ) -> SQLModelUserDatabase:
-    assert session is not None
-    return SQLModelUserDatabase(session)
+    assert session_factory is not None
+    return SQLModelUserDatabase(session_factory)

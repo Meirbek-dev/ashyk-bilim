@@ -1,12 +1,13 @@
 import contextlib
 import logging
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 from fastapi import HTTPException, Request
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
+SessionFactory = Callable[[], contextlib.AbstractContextManager[Session]]
 
 
 @contextlib.contextmanager
@@ -44,3 +45,15 @@ def get_db_session(request: Request) -> Iterator[Session]:
         raise
     finally:
         session.close()
+
+
+def get_session_factory(request: Request) -> SessionFactory:
+    factory = getattr(request.app.state, "session_factory", None)
+    if factory is not None:
+        return factory
+
+    override = request.app.dependency_overrides.get(get_db_session)
+    if override is not None:
+        return contextlib.contextmanager(override)
+
+    raise RuntimeError("Database session factory is not configured")

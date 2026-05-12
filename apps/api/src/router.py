@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 
+from src.app.routing import StrictAPIRoute
 from src.auth.users import fastapi_users
 from src.db.users import UserCreate, UserRead
 from src.routers import (
@@ -35,7 +36,7 @@ from src.routers.uploads import chunked_upload
 from src.routers.utils import router as utils_router
 from src.services.dev.dev import isDevModeEnabledOrRaise
 
-v1_router = APIRouter(prefix="/api/v1")
+v1_router = APIRouter(prefix="/api/v1", route_class=StrictAPIRoute)
 
 
 # Auth domains
@@ -43,12 +44,14 @@ v1_router.include_router(
     fastapi_users.get_reset_password_router(),
     prefix="/auth",
     tags=["auth"],
+    dependencies=[Depends(auth.auth_sensitive_rate_limit)],
 )
 
 v1_router.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
     tags=["auth"],
+    dependencies=[Depends(auth.auth_sensitive_rate_limit)],
 )
 
 # Core domain routes

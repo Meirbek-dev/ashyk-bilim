@@ -98,6 +98,16 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[
                     bg_task.cancel()
                     with contextlib.suppress(asyncio.CancelledError):
                         await bg_task
+            with contextlib.suppress(Exception):
+                from src.services.utils.link_preview import close_link_preview_client
+
+                await close_link_preview_client()
+            with contextlib.suppress(Exception):
+                from src.services.code_execution.service import (
+                    close_code_execution_client,
+                )
+
+                close_code_execution_client()
             await redis_infra.close()
             unregister_engine()
             engine.dispose()

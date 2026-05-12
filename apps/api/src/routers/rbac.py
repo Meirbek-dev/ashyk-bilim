@@ -13,8 +13,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlmodel import Session, select
 
 from src.auth.users import get_optional_public_user, get_public_user
@@ -23,21 +21,22 @@ from src.db.users import AnonymousUser, PublicUser
 from src.db.users import User as UserModel
 from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionCheckerDep, mark_user_roles_updated
+from src.services.rate_limit import auth_or_ip_key, rate_limit_dependency
 
 audit_log = logging.getLogger("rbac.audit")
 
-
-def _rbac_rate_key(request: Request) -> str:
-    auth = request.headers.get("authorization") or ""
-    if auth:
-        import hashlib
-
-        h = hashlib.sha256(auth.encode("utf-8")).hexdigest()[:16]
-        return f"rbac:{h}"
-    return f"rbac:{get_remote_address(request)}"
-
-
-limiter = Limiter(key_func=_rbac_rate_key)
+_limit_rbac_check = rate_limit_dependency(
+    namespace="rbac:check",
+    max_requests=60,
+    window_seconds=60,
+    key_func=auth_or_ip_key,
+)
+_limit_rbac_batch = rate_limit_dependency(
+    namespace="rbac:batch",
+    max_requests=30,
+    window_seconds=60,
+    key_func=auth_or_ip_key,
+)
 
 router = APIRouter()
 
@@ -119,8 +118,11 @@ class UserRoleAssignmentResponse(BaseModel):
 # ============================================================================
 
 
-@router.post("/check", response_model=PermissionCheckResponse)
-@limiter.limit("60/minute")
+@router.post(
+    "/check",
+    response_model=PermissionCheckResponse,
+    dependencies=[Depends(_limit_rbac_check)],
+)
 def check_permission(
     request: Request,
     body: PermissionCheckRequest,
@@ -137,8 +139,11 @@ def check_permission(
     return PermissionCheckResponse(granted=granted, permission=perm)
 
 
-@router.post("/check/batch", response_model=BatchPermissionCheckResponse)
-@limiter.limit("30/minute")
+@router.post(
+    "/check/batch",
+    response_model=BatchPermissionCheckResponse,
+    dependencies=[Depends(_limit_rbac_batch)],
+)
 def check_permissions_batch(
     request: Request,
     body: BatchPermissionCheckRequest,

@@ -6,6 +6,7 @@ from datetime import datetime
 from enum import Enum, StrEnum
 from typing import Any, Optional
 
+from pydantic import field_validator
 from sqlalchemy import JSON, CheckConstraint, Column, Index, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
@@ -231,6 +232,13 @@ class TransactionRead(PydanticStrictBaseModel):
     triggered_level_up: bool
     previous_level: int
     created_at: datetime
+
+    @field_validator("source", mode="before")
+    @classmethod
+    def validate_source(cls, value: object) -> object:
+        if isinstance(value, str):
+            return XPSource(value)
+        return value
 
 
 class LeaderboardEntryRead(PydanticStrictBaseModel):

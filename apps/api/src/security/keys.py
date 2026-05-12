@@ -9,12 +9,15 @@ Generate a suitable secret once:
 
 from functools import lru_cache
 
-from config.config import get_settings
+from config.config import get_settings, secret_value
 
 
 @lru_cache(maxsize=1)
 def get_jwt_secret() -> str:
-    return get_settings().security_config.jwt_secret
+    value = secret_value(get_settings().security_config.jwt_secret)
+    if value is None:
+        raise RuntimeError("PLATFORM_JWT_SECRET must be set")
+    return value
 
 
 def reload_key_cache() -> None:

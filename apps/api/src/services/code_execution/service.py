@@ -6,20 +6,24 @@ import asyncio
 import hashlib
 import logging
 import threading
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+import httpx
 import judge0
 from fastapi import HTTPException, status
+from judge0.clients import __version__ as JUDGE0_SDK_VERSION
 from sqlmodel import Session, select
 from ulid import ULID
 
-from config.config import get_settings
+from config.config import get_settings, secret_value
 from src.db.assessments import CodeRunTestResult, CodeTestCase
 from src.db.code_execution import CodeRun, CodeRunCase, CodeRunPurpose, CodeRunStatus
 
 logger = logging.getLogger(__name__)
+_OUTPUT_TRUNCATION_MARKER = "\n[output truncated]"
 
 
 class CodeExecutionDegradedError(Exception):
@@ -117,22 +121,103 @@ class Judge0SdkClientFactory:
 
     def __init__(self) -> None:
         self._client: judge0.Client | None = None
+        self._fingerprint: tuple[object, ...] | None = None
         self._lock = threading.Lock()
 
     def get_client(self) -> judge0.Client:
         settings = get_settings().integrations.judge0
         headers: dict[str, str] = {}
-        if settings.api_key:
-            headers["X-Auth-Token"] = settings.api_key
+        api_key = secret_value(settings.api_key)
+        if api_key:
+            headers["X-Auth-Token"] = api_key
 
+        fingerprint = (
+            settings.base_url,
+            api_key,
+            settings.request_timeout_seconds,
+            settings.poll_interval_seconds,
+            settings.poll_max_wait_seconds,
+        )
         with self._lock:
-            if self._client is None:
-                self._client = judge0.Client(
+            if self._client is None or self._fingerprint != fingerprint:
+                if self._client is not None:
+                    self._client.client.close()
+                self._client = _ConfiguredJudge0Client(
                     endpoint=settings.base_url,
                     headers=headers,
-                    retry_strategy=judge0.MaxWaitTime(settings.poll_max_wait_seconds),
+                    timeout_seconds=settings.request_timeout_seconds,
+                    poll_interval_seconds=settings.poll_interval_seconds,
+                    poll_max_wait_seconds=settings.poll_max_wait_seconds,
                 )
+                self._fingerprint = fingerprint
             return self._client
+
+    def close(self) -> None:
+        with self._lock:
+            if self._client is not None:
+                self._client.client.close()
+            self._client = None
+            self._fingerprint = None
+
+
+class _ConfiguredJudge0Client(judge0.Client):
+    def __init__(
+        self,
+        endpoint: str,
+        headers: dict[str, str] | None = None,
+        *,
+        timeout_seconds: float,
+        poll_interval_seconds: float,
+        poll_max_wait_seconds: float,
+    ) -> None:
+        self.endpoint = endpoint
+        self.headers = headers or {}
+        self.headers.update(
+            {
+                "X-Judge0-App": "Judge0 Python SDK",
+                "X-Judge0-App-Version": JUDGE0_SDK_VERSION,
+            }
+        )
+        self._poll_interval_seconds = poll_interval_seconds
+        self._poll_max_wait_seconds = poll_max_wait_seconds
+        self.client = httpx.Client(
+            base_url=self.endpoint,
+            timeout=httpx.Timeout(timeout_seconds),
+        )
+
+        try:
+            self.languages = self.get_languages()
+            self.config = self.get_config_info()
+        except Exception as exc:
+            self.client.close()
+            raise RuntimeError("Judge0 client initialization failed") from exc
+
+    @property
+    def retry_strategy(self) -> _BoundedIntervalRetry:
+        return _BoundedIntervalRetry(
+            poll_interval_seconds=self._poll_interval_seconds,
+            max_wait_seconds=self._poll_max_wait_seconds,
+        )
+
+    @retry_strategy.setter
+    def retry_strategy(self, _value: object) -> None:
+        return
+
+
+class _BoundedIntervalRetry:
+    def __init__(self, *, poll_interval_seconds: float, max_wait_seconds: float) -> None:
+        self.poll_interval_seconds = poll_interval_seconds
+        self.max_wait_seconds = max_wait_seconds
+        self.total_wait_time = 0.0
+
+    def wait(self) -> None:
+        time.sleep(self.poll_interval_seconds)
+
+    def step(self) -> None:
+        self.total_wait_time += self.poll_interval_seconds
+
+    def is_done(self) -> bool:
+        return self.total_wait_time >= self.max_wait_seconds
 
 
 class CodeExecutionService:
@@ -147,6 +232,11 @@ class CodeExecutionService:
                 "ASSESSMENT_SUPPORT_ALERT Judge0 language discovery failed: %s", exc
             )
             return []
+
+    def close(self) -> None:
+        close = getattr(self._client_factory, "close", None)
+        if close is not None:
+            close()
 
     async def run(
         self,
@@ -165,6 +255,7 @@ class CodeExecutionService:
         time_limit_seconds: int | None = None,
         memory_limit_mb: int | None = None,
     ) -> CodeExecutionResult:
+        self._validate_language(language_id)
         self._validate_payload(source_code=source_code, custom_input=custom_input)
         existing = self._find_idempotent_run(
             db_session,
@@ -230,6 +321,11 @@ class CodeExecutionService:
             logger.warning(
                 "ASSESSMENT_SUPPORT_ALERT Judge0 execution degraded: %s", exc
             )
+            logger.info(
+                "judge0_execution_metrics run_uuid=%s language_id=%s degraded=true",
+                run_uuid,
+                language_id,
+            )
             result = CodeExecutionResult(
                 run_uuid=run_uuid,
                 status=CodeRunStatus.DEGRADED,
@@ -267,6 +363,8 @@ class CodeExecutionService:
 
     def _list_languages_sync(self) -> list[dict[str, object]]:
         client = self._client_factory.get_client()
+        settings = get_settings().integrations.judge0
+        allowed = set(settings.allowed_language_ids)
         return [
             {
                 "id": language.id,
@@ -276,6 +374,7 @@ class CodeExecutionService:
             }
             for language in client.languages
             if language.is_archived is not True
+            and (not allowed or int(language.id) in allowed)
         ]
 
     def _execute_sync(
@@ -289,7 +388,9 @@ class CodeExecutionService:
         time_limit_seconds: int | None,
         memory_limit_mb: int | None,
     ) -> CodeExecutionResult:
+        settings = get_settings().integrations.judge0
         client = self._client_factory.get_client()
+        started_at = time.monotonic()
         submissions = judge0.run(
             client=client,
             source_code=source_code,
@@ -299,7 +400,12 @@ class CodeExecutionService:
                 for test in test_cases
             ],
             cpu_time_limit=float(time_limit_seconds) if time_limit_seconds else None,
+            wall_time_limit=float(time_limit_seconds + 1)
+            if time_limit_seconds
+            else None,
             memory_limit=memory_limit_mb * 1024 if memory_limit_mb else None,
+            max_file_size=settings.max_output_file_kb,
+            enable_network=False,
         )
         if isinstance(submissions, judge0.Submission):
             submissions = [submissions]
@@ -321,9 +427,12 @@ class CodeExecutionService:
             case_passed = case_status == CodeRunStatus.ACCEPTED if scored else True
             if case_passed and scored:
                 passed += 1
-            stdout = submission.stdout
-            stderr = submission.stderr
-            compile_output = submission.compile_output
+            stdout = _truncate_output(submission.stdout, settings.max_output_bytes)
+            stderr = _truncate_output(submission.stderr, settings.max_output_bytes)
+            compile_output = _truncate_output(
+                submission.compile_output, settings.max_output_bytes
+            )
+            message = _truncate_output(submission.message, settings.max_output_bytes)
             time_value = float(submission.time) if submission.time is not None else None
             memory_value = (
                 int(submission.memory) if submission.memory is not None else None
@@ -335,13 +444,13 @@ class CodeExecutionService:
                     is_visible=test.is_visible,
                     stdin=test.input if test.is_visible else None,
                     expected=test.expected_output if test.is_visible else None,
-                    actual=(submission.stdout or "").strip()
+                    actual=(stdout or "").strip()
                     if test.is_visible
                     else None,
-                    stdout=submission.stdout,
-                    stderr=submission.stderr,
-                    compile_output=submission.compile_output,
-                    message=submission.message,
+                    stdout=stdout,
+                    stderr=stderr,
+                    compile_output=compile_output,
+                    message=message,
                     status_id=int(submission.status)
                     if submission.status is not None
                     else None,
@@ -357,6 +466,21 @@ class CodeExecutionService:
                     description=test.description or "",
                 )
             )
+
+        elapsed_seconds = time.monotonic() - started_at
+        queue_seconds = _max_queue_seconds(submissions)
+        logger.info(
+            "judge0_execution_metrics run_uuid=%s language_id=%s status=%s "
+            "total=%s sdk_elapsed_seconds=%.3f execution_seconds=%s "
+            "queue_seconds=%s degraded=false",
+            run_uuid,
+            language_id,
+            overall_status.value,
+            len(details),
+            elapsed_seconds,
+            time_value,
+            queue_seconds,
+        )
 
         total = len(test_cases)
         if scored and details:
@@ -395,6 +519,17 @@ class CodeExecutionService:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail="Custom input exceeds the configured size limit",
+            )
+
+    def _validate_language(self, language_id: int) -> None:
+        settings = get_settings().integrations.judge0
+        if (
+            settings.allowed_language_ids
+            and language_id not in settings.allowed_language_ids
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Language is not allowed for code execution",
             )
 
     def _find_idempotent_run(
@@ -570,8 +705,45 @@ def _sha256(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
 
 
+def _truncate_output(value: str | None, max_bytes: int) -> str | None:
+    if value is None:
+        return None
+
+    encoded = value.encode()
+    if len(encoded) <= max_bytes:
+        return value
+
+    marker = _OUTPUT_TRUNCATION_MARKER.encode()
+    budget = max(0, max_bytes - len(marker))
+    return encoded[:budget].decode(errors="ignore") + _OUTPUT_TRUNCATION_MARKER
+
+
+def _max_queue_seconds(submissions: list[judge0.Submission]) -> float | None:
+    queue_times = [
+        queue_seconds
+        for submission in submissions
+        if (queue_seconds := _queue_seconds(submission)) is not None
+    ]
+    return round(max(queue_times), 3) if queue_times else None
+
+
+def _queue_seconds(submission: judge0.Submission) -> float | None:
+    created_at = getattr(submission, "created_at", None)
+    finished_at = getattr(submission, "finished_at", None)
+    if created_at is None or finished_at is None:
+        return None
+
+    total_seconds = (finished_at - created_at).total_seconds()
+    run_seconds = float(getattr(submission, "time", None) or 0)
+    return max(0.0, total_seconds - run_seconds)
+
+
 _service = CodeExecutionService()
 
 
 def get_code_execution_service() -> CodeExecutionService:
     return _service
+
+
+def close_code_execution_client() -> None:
+    _service.close()

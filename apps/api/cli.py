@@ -7,7 +7,7 @@ from alembic import command
 from alembic.config import Config
 from sqlmodel import select
 
-from config.config import get_settings
+from config.config import get_settings, secret_value
 from src.core.platform import (
     PLATFORM_BRAND_NAME,
     PLATFORM_DESCRIPTION,
@@ -55,7 +55,7 @@ def install(
             if short:
                 bootstrap_config = settings.bootstrap
                 admin_email = bootstrap_config.initial_admin_email
-                admin_password = bootstrap_config.initial_admin_password
+                admin_password = secret_value(bootstrap_config.initial_admin_password)
 
                 if not admin_email:
                     print(

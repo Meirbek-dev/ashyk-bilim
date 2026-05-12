@@ -3,6 +3,8 @@
 from datetime import datetime
 from typing import Literal
 
+from pydantic import field_validator
+
 from src.db.grading.progress import ActivityProgressState
 from src.db.grading.submissions import AssessmentType
 from src.db.strict_base_model import PydanticStrictBaseModel
@@ -16,6 +18,13 @@ class GradebookActivity(PydanticStrictBaseModel):
     assessment_type: AssessmentType | None = None
     order: int
     due_at: datetime | None = None
+
+    @field_validator("assessment_type", mode="before")
+    @classmethod
+    def validate_assessment_type(cls, value: object) -> object:
+        if value is not None and isinstance(value, str):
+            return AssessmentType(value)
+        return value
 
 
 class GradebookStudent(PydanticStrictBaseModel):
@@ -43,6 +52,13 @@ class ActivityProgressCell(PydanticStrictBaseModel):
     completed_at: datetime | None = None
     due_at: datetime | None = None
     status_reason: str | None = None
+
+    @field_validator("state", mode="before")
+    @classmethod
+    def validate_state(cls, value: object) -> object:
+        if isinstance(value, str):
+            return ActivityProgressState(value)
+        return value
 
 
 class TeacherAction(PydanticStrictBaseModel):
