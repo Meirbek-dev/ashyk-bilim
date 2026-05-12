@@ -1,8 +1,10 @@
 import asyncio
 import hashlib
 import logging
+from datetime import UTC, datetime, timedelta
 
 import sqlalchemy.exc
+from cachebox import TTLCache
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column, MetaData, Table, Text, delete, select, text
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
@@ -18,6 +20,14 @@ from src.services.ai.exceptions import RetrievalError
 from src.services.ai.models import DocumentChunk, RetrievedChunk
 
 logger = logging.getLogger(__name__)
+_AI_SETTINGS = get_settings().ai_config
+_VECTOR_DIMENSIONS = _AI_SETTINGS.embedding_dimensions
+_COLLECTION_LOCK_TTL_SECONDS = max(300, min(_AI_SETTINGS.collection_retention, 86400))
+_collection_locks: TTLCache[str, asyncio.Lock] = TTLCache(
+    maxsize=1000,
+    ttl=_COLLECTION_LOCK_TTL_SECONDS,
+)
+_collection_locks_guard = asyncio.Lock()
 
 # ---------------------------------------------------------------------------
 # Table definition — mirrors the migration schema exactly.
@@ -33,7 +43,7 @@ _document_chunks = Table(
     Column("id", Text, primary_key=True),
     Column("collection_name", Text, nullable=False),
     Column("document", Text, nullable=False),
-    Column("embedding", Vector(), nullable=False),
+    Column("embedding", Vector(_VECTOR_DIMENSIONS), nullable=False),
     Column("metadata", JSONB, nullable=False),
     Column(
         "inserted_at",
@@ -60,6 +70,15 @@ def _collection_name(name: str | None, content_hash: str) -> str:
     if name:
         return name
     return f"doc_collection_{content_hash[:16]}"
+
+
+async def _get_collection_lock(collection_name: str) -> asyncio.Lock:
+    async with _collection_locks_guard:
+        lock = _collection_locks.get(collection_name)
+        if lock is None:
+            lock = asyncio.Lock()
+            _collection_locks[collection_name] = lock
+        return lock
 
 
 def _is_missing_document_chunks_table_error(exc: Exception) -> bool:
@@ -178,22 +197,21 @@ def delete_expired_chunks(retention_seconds: int) -> int:
     (migration pending).
     """
     engine = get_bg_engine()
+    cutoff = datetime.now(UTC) - timedelta(seconds=retention_seconds)
     with Session(engine) as session:
         try:
             result = session.execute(
-                delete(_document_chunks).where(
-                    _document_chunks.c.inserted_at
-                    < text(f"now() - interval '{retention_seconds} seconds'")
-                )
+                delete(_document_chunks).where(_document_chunks.c.inserted_at < cutoff)
             )
             session.commit()
-            return result.rowcount
         except sqlalchemy.exc.ProgrammingError as exc:
             # Table doesn't exist yet — migration not yet applied.
             session.rollback()
             if _is_missing_document_chunks_table_error(exc):
                 return -1
             raise
+        else:
+            return result.rowcount
 
 
 def _sync_collection_content_hash(collection_name: str) -> str | None:
@@ -210,12 +228,13 @@ def _sync_collection_content_hash(collection_name: str) -> str | None:
             if row and row.metadata:
                 val = row.metadata.get("content_hash")
                 return str(val) if val is not None else None
-            return None
         except sqlalchemy.exc.ProgrammingError as exc:
             session.rollback()
             if _is_missing_document_chunks_table_error(exc):
                 return None
             raise
+        else:
+            return None
 
 
 # ---------------------------------------------------------------------------
@@ -240,48 +259,55 @@ async def ensure_collection(
     if isinstance(cached_name, str):
         return cached_name
 
-    db_content_hash = await asyncio.to_thread(
-        _sync_collection_content_hash, resolved_name
-    )
-    if db_content_hash == content_hash:
+    async with await _get_collection_lock(resolved_name):
+        cached_name = cache_manager.retrieval_cache.get(cache_key)
+        if isinstance(cached_name, str):
+            return cached_name
+
+        db_content_hash = await asyncio.to_thread(
+            _sync_collection_content_hash, resolved_name
+        )
+        if db_content_hash == content_hash:
+            cache_manager.retrieval_cache.set(cache_key, resolved_name)
+            if collection_name:
+                activity_uuid = collection_name.removeprefix("activity_")
+                cache_manager.register_retrieval_cache_key(activity_uuid, cache_key)
+            return resolved_name
+
+        chunks = await asyncio.to_thread(
+            chunk_documents, documents, embedding_model_name
+        )
+        if not chunks:
+            raise RetrievalError(
+                "No valid chunks created from documents",
+                details={"document_count": len(documents)},
+            )
+
+        for chunk in chunks:
+            chunk.metadata["content_hash"] = content_hash
+
+        embeddings = await embed_texts(
+            [chunk.document for chunk in chunks],
+            embedding_model_name,
+        )
+        if len(embeddings) != len(chunks):
+            raise RetrievalError(
+                "Embedding count did not match chunk count",
+                details={"chunks": len(chunks), "embeddings": len(embeddings)},
+            )
+
+        await asyncio.to_thread(
+            _sync_upsert_collection,
+            resolved_name,
+            chunks,
+            embeddings,
+        )
+
         cache_manager.retrieval_cache.set(cache_key, resolved_name)
         if collection_name:
             activity_uuid = collection_name.removeprefix("activity_")
             cache_manager.register_retrieval_cache_key(activity_uuid, cache_key)
         return resolved_name
-
-    chunks = await asyncio.to_thread(chunk_documents, documents, embedding_model_name)
-    if not chunks:
-        raise RetrievalError(
-            "No valid chunks created from documents",
-            details={"document_count": len(documents)},
-        )
-
-    for chunk in chunks:
-        chunk.metadata["content_hash"] = content_hash
-
-    embeddings = await embed_texts(
-        [chunk.document for chunk in chunks],
-        embedding_model_name,
-    )
-    if len(embeddings) != len(chunks):
-        raise RetrievalError(
-            "Embedding count did not match chunk count",
-            details={"chunks": len(chunks), "embeddings": len(embeddings)},
-        )
-
-    await asyncio.to_thread(
-        _sync_upsert_collection,
-        resolved_name,
-        chunks,
-        embeddings,
-    )
-
-    cache_manager.retrieval_cache.set(cache_key, resolved_name)
-    if collection_name:
-        activity_uuid = collection_name.removeprefix("activity_")
-        cache_manager.register_retrieval_cache_key(activity_uuid, cache_key)
-    return resolved_name
 
 
 async def retrieve_chunks(

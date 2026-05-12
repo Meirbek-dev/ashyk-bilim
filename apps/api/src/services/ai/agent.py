@@ -4,8 +4,9 @@ from openai import AsyncOpenAI
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.settings import ModelSettings
 
-from config.config import get_settings
+from config.config import get_settings, secret_value
 from src.services.ai.exceptions import RetrievalError
 from src.services.ai.models import AgentDependencies
 
@@ -32,7 +33,7 @@ _AGENT = Agent(
     deps_type=AgentDependencies,
     output_type=str,
     retries=1,
-    instrument=False,
+    instrument=get_settings().general_config.logfire_enabled,
 )
 
 
@@ -76,7 +77,7 @@ def get_agent() -> Agent[AgentDependencies, str]:
 
 def get_openrouter_model() -> OpenAIChatModel:
     settings = get_settings().ai_config
-    api_key = settings.openrouter_api_key
+    api_key = secret_value(settings.openrouter_api_key)
     if not api_key:
         raise RetrievalError("OpenRouter API key not configured")
 
@@ -96,11 +97,19 @@ def get_openrouter_model() -> OpenAIChatModel:
 
 def get_model() -> OpenAIChatModel:
     settings = get_settings().ai_config
-    api_key = settings.openai_api_key
+    api_key = secret_value(settings.openai_api_key)
     if not api_key:
         raise RetrievalError("OpenAI API key not configured")
 
     return OpenAIChatModel(
         settings.chat_model,
         provider=OpenAIProvider(api_key=api_key),
+    )
+
+
+def get_model_settings() -> ModelSettings:
+    settings = get_settings().ai_config
+    return ModelSettings(
+        max_tokens=settings.max_output_tokens,
+        timeout=settings.request_timeout,
     )

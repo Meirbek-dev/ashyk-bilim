@@ -1,34 +1,36 @@
 import hashlib
 import logging
 import re
+from threading import Lock
 
-from tokenizers import Tokenizer
+import tiktoken
+from tiktoken import Encoding
 
 from config.config import get_settings
 from src.services.ai.models import DocumentChunk
 
 logger = logging.getLogger(__name__)
 
-_TOKENIZER_CACHE: dict[str, Tokenizer] = {}
+_ENCODING_CACHE: dict[str, Encoding] = {}
+_ENCODING_CACHE_LOCK = Lock()
 
 
-def _tokenizer_for_model(model_name: str) -> Tokenizer:
-    tokenizer = _TOKENIZER_CACHE.get(model_name)
-    if tokenizer is not None:
-        return tokenizer
+def _encoding_for_model(model_name: str) -> Encoding:
+    encoding = _ENCODING_CACHE.get(model_name)
+    if encoding is not None:
+        return encoding
 
-    try:
-        # Fetches tokenizer configuration from the Hugging Face hub
-        tokenizer = Tokenizer.from_pretrained(model_name)
-    except Exception as e:
-        logger.warning(
-            "Tokenizer %s not found (error: %s). Falling back to gpt2", model_name, e
-        )
-        # gpt2 is a standard BPE fallback similar to cl100k_base
-        tokenizer = Tokenizer.from_pretrained("gpt2")
-
-    _TOKENIZER_CACHE[model_name] = tokenizer
-    return tokenizer
+    with _ENCODING_CACHE_LOCK:
+        encoding = _ENCODING_CACHE.get(model_name)
+        if encoding is not None:
+            return encoding
+        try:
+            encoding = tiktoken.encoding_for_model(model_name)
+        except KeyError as exc:
+            msg = f"No tiktoken encoding configured for model '{model_name}'"
+            raise RuntimeError(msg) from exc
+        _ENCODING_CACHE[model_name] = encoding
+        return encoding
 
 
 def _normalize_text(text: str) -> str:
@@ -41,19 +43,19 @@ def _sentence_split(text: str) -> list[str]:
     return [sentence.strip() for sentence in sentences if sentence.strip()]
 
 
-def _token_count(text: str, tokenizer: Tokenizer) -> int:
-    # tokenizers.Tokenizer.encode does not accept add_special_tokens=False
-    return len(tokenizer.encode(text).ids)
+def count_tokens_for_model(text: str, model_name: str) -> int:
+    encoding = _encoding_for_model(model_name)
+    return len(encoding.encode(text, disallowed_special=()))
 
 
 def _token_window_chunks(
     text: str,
     *,
-    tokenizer: Tokenizer,
+    encoding: Encoding,
     chunk_size: int,
     chunk_overlap: int,
 ) -> list[str]:
-    token_ids = tokenizer.encode(text).ids
+    token_ids = encoding.encode(text, disallowed_special=())
     if len(token_ids) <= chunk_size:
         return [text]
 
@@ -65,7 +67,7 @@ def _token_window_chunks(
         if not window:
             break
 
-        decoded = tokenizer.decode(window).strip()
+        decoded = encoding.decode(window).strip()
         if decoded:
             chunks.append(decoded)
 
@@ -77,7 +79,7 @@ def _token_window_chunks(
 
 def chunk_documents(documents: list[str], model_name: str) -> list[DocumentChunk]:
     settings = get_settings().ai_config
-    tokenizer = _tokenizer_for_model(model_name)
+    encoding = _encoding_for_model(model_name)
     chunk_size = settings.chunk_size
     chunk_overlap = settings.chunk_overlap
 
@@ -94,7 +96,7 @@ def chunk_documents(documents: list[str], model_name: str) -> list[DocumentChunk
         buffer_tokens = 0
 
         for paragraph in paragraphs:
-            paragraph_tokens = _token_count(paragraph, tokenizer)
+            paragraph_tokens = len(encoding.encode(paragraph, disallowed_special=()))
 
             if paragraph_tokens > chunk_size:
                 # Flush the current paragraph buffer first
@@ -108,7 +110,9 @@ def chunk_documents(documents: list[str], model_name: str) -> list[DocumentChunk
                 sentence_buffer_tokens = 0
 
                 for sentence in _sentence_split(paragraph):
-                    sentence_tokens = _token_count(sentence, tokenizer)
+                    sentence_tokens = len(
+                        encoding.encode(sentence, disallowed_special=())
+                    )
                     if sentence_tokens > chunk_size:
                         # Flush sentence buffer if a massive sentence interrupts
                         if sentence_buffer:
@@ -119,7 +123,7 @@ def chunk_documents(documents: list[str], model_name: str) -> list[DocumentChunk
                         packed_chunks.extend(
                             _token_window_chunks(
                                 sentence,
-                                tokenizer=tokenizer,
+                                encoding=encoding,
                                 chunk_size=chunk_size,
                                 chunk_overlap=chunk_overlap,
                             )
@@ -156,11 +160,11 @@ def chunk_documents(documents: list[str], model_name: str) -> list[DocumentChunk
         finalized_chunks: list[str] = []
         for chunk in packed_chunks:
             # Only use the sliding window if joining strings (e.g., "\n\n") pushed it over the limit
-            if _token_count(chunk, tokenizer) > chunk_size:
+            if len(encoding.encode(chunk, disallowed_special=())) > chunk_size:
                 finalized_chunks.extend(
                     _token_window_chunks(
                         chunk,
-                        tokenizer=tokenizer,
+                        encoding=encoding,
                         chunk_size=chunk_size,
                         chunk_overlap=chunk_overlap,
                     )
@@ -184,7 +188,9 @@ def chunk_documents(documents: list[str], model_name: str) -> list[DocumentChunk
                     document=clean_chunk,
                     source_index=source_index,
                     chunk_index=chunk_index,
-                    token_count=_token_count(clean_chunk, tokenizer),
+                    token_count=len(
+                        encoding.encode(clean_chunk, disallowed_special=())
+                    ),
                     metadata={"source_index": source_index, "chunk_index": chunk_index},
                 )
             )

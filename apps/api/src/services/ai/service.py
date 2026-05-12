@@ -4,6 +4,7 @@ import time
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from enum import StrEnum
+from threading import Lock
 from typing import cast
 
 from fastapi import Request
@@ -13,7 +14,7 @@ from sqlmodel import Session, select
 from config.config import get_settings
 from src.db.courses.activities import Activity, ActivityRead
 from src.db.courses.courses import Course, CourseRead
-from src.services.ai.agent import get_agent, get_model
+from src.services.ai.agent import get_agent, get_model, get_model_settings
 from src.services.ai.cache_manager import get_ai_cache_manager
 from src.services.ai.exceptions import (
     ActivityNotFoundError,
@@ -44,6 +45,10 @@ from src.services.courses.activities.utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+_ai_semaphore: asyncio.Semaphore | None = None
+_ai_semaphore_size: int | None = None
+_ai_semaphore_lock = Lock()
 
 _TRANSLATION_HINTS = (
     "translate ",
@@ -134,6 +139,19 @@ class _RequestPolicy:
     mode: RequestMode
     retrieval_enabled: bool
     task_instruction: str | None = None
+
+
+def _get_ai_semaphore(max_concurrent_requests: int) -> asyncio.Semaphore:
+    global _ai_semaphore, _ai_semaphore_size
+    size = max(1, max_concurrent_requests)
+    if _ai_semaphore is not None and _ai_semaphore_size == size:
+        return _ai_semaphore
+
+    with _ai_semaphore_lock:
+        if _ai_semaphore is None or _ai_semaphore_size != size:
+            _ai_semaphore = asyncio.Semaphore(size)
+            _ai_semaphore_size = size
+        return _ai_semaphore
 
 
 def _normalized_question(question: str) -> str:
@@ -324,7 +342,7 @@ async def _get_activity_data(
 
         cache_manager.db_cache.set(cache_key, (activity, course))
         return cast("ActivityRead", activity), cast("CourseRead", course)
-    except ActivityNotFoundError, RetrievalError:
+    except (ActivityNotFoundError, RetrievalError):
         raise
     except Exception as exc:
         raise ActivityNotFoundError(
@@ -452,19 +470,21 @@ async def generate_chat_answer(
                 )
 
             deps = _build_agent_deps(ctx, policy, retrieved_chunks)
-            result = await get_agent().run(
-                question.strip(),
-                deps=deps,
-                model=get_model(),
-                message_history=ctx.session_history,
-            )
+            async with _get_ai_semaphore(settings.max_concurrent_requests):
+                result = await get_agent().run(
+                    question.strip(),
+                    deps=deps,
+                    model=get_model(),
+                    model_settings=get_model_settings(),
+                    message_history=ctx.session_history,
+                )
     except TimeoutError as exc:
         raise AITimeoutError(
             timeout_seconds, details={"activity_uuid": ctx.activity.activity_uuid}
         ) from exc
     except ActivityNotFoundError:
         raise
-    except AITimeoutError, ContentModerationError, RetrievalError:
+    except (AITimeoutError, ContentModerationError, RetrievalError):
         raise
     except Exception as exc:
         msg = f"Unexpected error during AI processing: {exc!s}"
@@ -588,12 +608,16 @@ async def stream_chat_answer(
 
             full_response = ""
             chunk_id = 0
-            async with get_agent().run_stream(
-                question.strip(),
-                deps=deps,
-                model=get_model(),
-                message_history=ctx.session_history,
-            ) as result:
+            async with (
+                _get_ai_semaphore(settings.max_concurrent_requests),
+                get_agent().run_stream(
+                    question.strip(),
+                    deps=deps,
+                    model=get_model(),
+                    model_settings=get_model_settings(),
+                    message_history=ctx.session_history,
+                ) as result,
+            ):
                 async for delta in result.stream_text(delta=True, debounce_by=None):
                     if cancel_event and cancel_event.is_set():
                         yield StatusEvent(
@@ -622,7 +646,7 @@ async def stream_chat_answer(
         raise AITimeoutError(
             timeout_seconds, details={"activity_uuid": ctx.activity.activity_uuid}
         ) from exc
-    except AITimeoutError, ContentModerationError:
+    except (AITimeoutError, ContentModerationError):
         raise
     except Exception as exc:
         msg = f"Unexpected error during AI streaming: {exc!s}"

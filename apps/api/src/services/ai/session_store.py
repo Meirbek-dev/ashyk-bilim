@@ -1,9 +1,6 @@
 import json
 import logging
-from threading import Lock
 
-from redis import Redis
-from redis.exceptions import RedisError
 from ulid import ULID
 
 from config.config import get_settings
@@ -15,11 +12,10 @@ from src.services.ai.models import (
     ChatRole,
     ChatSessionWindow,
 )
+from src.services.cache.redis_client import get_redis_client
 
 logger = logging.getLogger(__name__)
 
-_redis_client: Redis | None = None
-_redis_lock = Lock()
 _SUMMARY_SOURCE_MESSAGE_COUNT = 6
 _SUMMARY_CONTENT_LIMIT = 180
 
@@ -43,25 +39,6 @@ def _session_id(aichat_uuid: str | None, user_id: int | None) -> str:
 
 def _redis_key(session_id: str) -> str:
     return f"{PLATFORM_CHAT_KEY_PREFIX}{session_id}"
-
-
-def _get_redis_client() -> Redis | None:
-    global _redis_client
-    if _redis_client is None:
-        with _redis_lock:
-            if _redis_client is None:
-                connection_string = get_settings().redis_config.redis_connection_string
-                try:
-                    client = Redis.from_url(connection_string, decode_responses=True)
-                    client.ping()
-                    _redis_client = client
-                except RedisError as exc:
-                    logger.warning("Redis unavailable for AI session store: %s", exc)
-                    _redis_client = None
-                except Exception as exc:
-                    logger.warning("Unexpected error connecting to Redis: %s", exc)
-                    _redis_client = None
-    return _redis_client
 
 
 def _truncate_message_content(content: str) -> str:
@@ -95,14 +72,17 @@ def load_chat_session(
     total_messages = 0
     conversation_summary: str | None = None
 
-    client = _get_redis_client()
+    client = get_redis_client()
     if client is not None:
         storage_type = "redis"
         key = _redis_key(session_id)
         try:
             total_messages = client.llen(key)
             raw_messages = client.lrange(key, -window_size, -1)
-            messages = [ChatMessage.model_validate_json(item) for item in raw_messages]
+            messages = [
+                ChatMessage.model_validate_json(_decode_redis_value(item))
+                for item in raw_messages
+            ]
 
             older_message_count = max(total_messages - len(messages), 0)
             if older_message_count > 0:
@@ -110,7 +90,7 @@ def load_chat_session(
                 older_start = max(0, older_end - _SUMMARY_SOURCE_MESSAGE_COUNT + 1)
                 raw_summary_messages = client.lrange(key, older_start, older_end)
                 summary_messages = [
-                    ChatMessage.model_validate_json(item)
+                    ChatMessage.model_validate_json(_decode_redis_value(item))
                     for item in raw_summary_messages
                 ]
                 conversation_summary = _summarize_messages(summary_messages)
@@ -139,7 +119,7 @@ def append_messages(
         return
 
     settings = get_settings()
-    client = _get_redis_client()
+    client = get_redis_client()
     if client is None:
         logger.warning(
             "Redis unavailable, AI chat persistence disabled for session %s", session_id
@@ -185,3 +165,9 @@ def build_chat_messages(
             id=str(ULID()), role=ChatRole.ASSISTANT, content=answer, metadata=metadata
         ),
     ]
+
+
+def _decode_redis_value(value: object) -> str:
+    if isinstance(value, bytes):
+        return value.decode()
+    return str(value)

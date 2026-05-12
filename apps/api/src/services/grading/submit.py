@@ -3,8 +3,9 @@ Submission orchestrator — single entry point per lifecycle action.
 
 Each concern is isolated in a private helper so it can be tested independently:
 
-  start_submission   → create DRAFT with server-stamped start time
   submit_assessment  → validate → grade → persist → award XP
+
+The DRAFT creation / start step lives in submission.py (start_submission_v2).
 """
 
 import logging
@@ -14,6 +15,7 @@ from typing import Any
 
 from fastapi import HTTPException, Request, status
 from pydantic import ValidationError
+from sqlalchemy import func as sql_func
 from sqlmodel import Session, select
 from ulid import ULID
 
@@ -67,70 +69,6 @@ _XP_SOURCE: dict[AssessmentType, XPSource] = {
     AssessmentType.ASSIGNMENT: XPSource.ASSIGNMENT_SUBMISSION,
     AssessmentType.CODE_CHALLENGE: XPSource.CODE_CHALLENGE_COMPLETION,
 }
-
-
-async def start_submission(
-    request: Request | None,
-    activity_id: int,
-    assessment_type: AssessmentType,
-    current_user: PublicUser,
-    db_session: Session,
-) -> SubmissionRead:
-    """
-    Create a DRAFT Submission and record the server-stamped start time.
-
-    Idempotent — returns the existing DRAFT if one is already open.
-    The started_at timestamp is set here so clients cannot falsify it.
-    """
-    activity = _get_activity_or_404(activity_id, db_session)
-    _require_permission(current_user, activity, assessment_type, db_session)
-
-    policy = _get_assessment_policy(activity_id, db_session)
-    override = _active_policy_override(policy, current_user.id, db_session)
-    _enforce_attempt_limit(
-        activity_id,
-        current_user.id,
-        None,
-        db_session,
-        policy=policy,
-        override=override,
-    )
-
-    existing_draft = db_session.exec(
-        select(Submission).where(
-            Submission.activity_id == activity_id,
-            Submission.user_id == current_user.id,
-            Submission.status == SubmissionStatus.DRAFT,
-        )
-    ).first()
-
-    if existing_draft:
-        progress_submissions.start_activity_submission(existing_draft, db_session)
-        return SubmissionRead.model_validate(existing_draft)
-
-    attempt_number = (
-        _count_previous_attempts(activity_id, current_user.id, db_session) + 1
-    )
-    now = datetime.now(UTC)
-
-    submission = Submission(
-        submission_uuid=f"submission_{ULID()}",
-        assessment_type=assessment_type,
-        activity_id=activity_id,
-        user_id=current_user.id,
-        status=SubmissionStatus.DRAFT,
-        attempt_number=attempt_number,
-        answers_json={},
-        grading_json={},
-        started_at=now,
-        created_at=now,
-        updated_at=now,
-    )
-    db_session.add(submission)
-    db_session.commit()
-    db_session.refresh(submission)
-    progress_submissions.start_activity_submission(submission, db_session)
-    return SubmissionRead.model_validate(submission)
 
 
 async def submit_assessment(
@@ -355,15 +293,13 @@ def _count_previous_attempts(
     activity_id: int, user_id: int, db_session: Session
 ) -> int:
     """Count all non-DRAFT submissions (including RETURNED) as prior attempts."""
-    return len(
-        db_session.exec(
-            select(Submission).where(
-                Submission.activity_id == activity_id,
-                Submission.user_id == user_id,
-                Submission.status != SubmissionStatus.DRAFT,
-            )
-        ).all()
-    )
+    return db_session.exec(
+        select(sql_func.count()).where(
+            Submission.activity_id == activity_id,
+            Submission.user_id == user_id,
+            Submission.status != SubmissionStatus.DRAFT,
+        )
+    ).one()
 
 
 def _enforce_attempt_limit(
@@ -420,7 +356,11 @@ def _check_violations(settings: AssessmentSettings, violation_count: int) -> boo
     """Return True if violations should zero out the score.
 
     max_violations is the inclusive upper limit — reaching it triggers zeroing.
+    A max_violations of 0 or less is treated as "no limit" to prevent every
+    submission from being zeroed when the field is unset or misconfigured.
     """
+    if settings.max_violations <= 0:
+        return False
     return (
         settings.track_violations
         and settings.block_on_violations

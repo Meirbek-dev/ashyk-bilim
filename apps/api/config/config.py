@@ -1,5 +1,6 @@
 import ipaddress
 import json
+import os
 from functools import lru_cache
 from typing import Annotated
 
@@ -8,6 +9,7 @@ from pydantic import (
     Field,
     PostgresDsn,
     RedisDsn,
+    SecretStr,
     TypeAdapter,
     field_validator,
     model_validator,
@@ -38,9 +40,10 @@ def _normalize_cookie_domain(raw_domain: str | None) -> str | None:
 
     try:
         ipaddress.ip_address(cleaned)
-        return None
     except ValueError:
         pass
+    else:
+        return None
 
     if ":" in cleaned:
         return None
@@ -48,9 +51,11 @@ def _normalize_cookie_domain(raw_domain: str | None) -> str | None:
     return cleaned
 
 
-def _strip_optional_string(value: str | None) -> str | None:
+def _strip_optional_string(value: SecretStr | str | None) -> str | None:
     if value is None:
         return None
+    if isinstance(value, SecretStr):
+        value = value.get_secret_value()
 
     stripped = value.strip()
     return stripped or None
@@ -60,10 +65,12 @@ class PlatformSectionSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
+        env_nested_delimiter="__",
         case_sensitive=True,
         env_ignore_empty=True,
         extra="ignore",
         populate_by_name=True,
+        secrets_dir=os.getenv("PLATFORM_SECRETS_DIR"),
     )
 
 
@@ -98,13 +105,13 @@ class GeneralConfig(PlatformSectionSettings):
 
 
 class SecurityConfig(PlatformSectionSettings):
-    jwt_secret: str = Field(
+    jwt_secret: SecretStr = Field(
         validation_alias="PLATFORM_JWT_SECRET",
     )
 
     @field_validator("jwt_secret", mode="before")
     @classmethod
-    def normalize_jwt_secret(cls, value: str | None) -> str:
+    def normalize_jwt_secret(cls, value: SecretStr | str | None) -> str:
         stripped = _strip_optional_string(value)
         if not stripped:
             raise ValueError("PLATFORM_JWT_SECRET must be set")
@@ -119,11 +126,11 @@ class AIConfig(PlatformSectionSettings):
     knobs that rarely need to change per deployment).
     """
 
-    openai_api_key: str | None = Field(
+    openai_api_key: SecretStr | None = Field(
         default=None,
         validation_alias="PLATFORM_OPENAI_API_KEY",
     )
-    openrouter_api_key: str | None = Field(
+    openrouter_api_key: SecretStr | None = Field(
         default=None,
         validation_alias="PLATFORM_OPENROUTER_API_KEY",
     )
@@ -198,8 +205,12 @@ class AIConfig(PlatformSectionSettings):
         validation_alias="PLATFORM_AI_COLLECTION_RETENTION",
     )
     embedding_batch_size: int = Field(
-        default=8191,
+        default=128,
         validation_alias="PLATFORM_AI_EMBEDDING_BATCH_SIZE",
+    )
+    embedding_batch_max_tokens: int = Field(
+        default=250_000,
+        validation_alias="PLATFORM_AI_EMBEDDING_BATCH_MAX_TOKENS",
     )
     retrieval_top_k: int = Field(
         default=5,
@@ -237,7 +248,7 @@ class AIConfig(PlatformSectionSettings):
         mode="before",
     )
     @classmethod
-    def normalize_optional_ai_strings(cls, value: str | None) -> str | None:
+    def normalize_optional_ai_strings(cls, value: SecretStr | str | None) -> str | None:
         return _strip_optional_string(value)
 
 
@@ -249,6 +260,14 @@ class HostingConfig(PlatformSectionSettings):
         validation_alias="PLATFORM_COOKIE_SECURE",
     )
     port: int = Field(default=8000, validation_alias="PLATFORM_PORT")
+    proxy_headers: bool = Field(
+        default=True,
+        validation_alias="PLATFORM_PROXY_HEADERS",
+    )
+    forwarded_allow_ips: str = Field(
+        default="127.0.0.1",
+        validation_alias="PLATFORM_FORWARDED_ALLOW_IPS",
+    )
     allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=list,
         validation_alias="PLATFORM_ALLOWED_ORIGINS",
@@ -322,7 +341,7 @@ class HostingConfig(PlatformSectionSettings):
 
 
 class MailingConfig(PlatformSectionSettings):
-    resend_api_key: str | None = Field(
+    resend_api_key: SecretStr | None = Field(
         default=None,
         validation_alias="PLATFORM_RESEND_API_KEY",
     )
@@ -333,7 +352,7 @@ class MailingConfig(PlatformSectionSettings):
 
     @field_validator("resend_api_key", "system_email_address", mode="before")
     @classmethod
-    def normalize_optional_strings(cls, value: str | None) -> str | None:
+    def normalize_optional_strings(cls, value: SecretStr | str | None) -> str | None:
         return _strip_optional_string(value)
 
 
@@ -383,7 +402,7 @@ class GoogleOAuthConfig(PlatformSectionSettings):
         default=None,
         validation_alias="PLATFORM_GOOGLE_CLIENT_ID",
     )
-    client_secret: str | None = Field(
+    client_secret: SecretStr | None = Field(
         default=None,
         validation_alias="PLATFORM_GOOGLE_CLIENT_SECRET",
     )
@@ -399,7 +418,7 @@ class GoogleOAuthConfig(PlatformSectionSettings):
 
     @field_validator("client_id", "client_secret", "redirect_uri", mode="before")
     @classmethod
-    def normalize_optional_strings(cls, value: str | None) -> str | None:
+    def normalize_optional_strings(cls, value: SecretStr | str | None) -> str | None:
         return _strip_optional_string(value)
 
 
@@ -408,14 +427,16 @@ class BootstrapConfig(PlatformSectionSettings):
         default=None,
         validation_alias="PLATFORM_INITIAL_ADMIN_EMAIL",
     )
-    initial_admin_password: str | None = Field(
+    initial_admin_password: SecretStr | None = Field(
         default=None,
         validation_alias="PLATFORM_INITIAL_ADMIN_PASSWORD",
     )
 
     @field_validator("initial_admin_password", mode="before")
     @classmethod
-    def normalize_initial_admin_password(cls, value: str | None) -> str | None:
+    def normalize_initial_admin_password(
+        cls, value: SecretStr | str | None
+    ) -> str | None:
         return _strip_optional_string(value)
 
 
@@ -424,7 +445,7 @@ class Judge0Config(PlatformSectionSettings):
         default="http://judge0-server:2358",
         validation_alias="JUDGE0_URL",
     )
-    api_key: str | None = Field(default=None, validation_alias="JUDGE0_API_KEY")
+    api_key: SecretStr | None = Field(default=None, validation_alias="JUDGE0_API_KEY")
     request_timeout_seconds: float = Field(
         default=30.0,
         validation_alias="JUDGE0_REQUEST_TIMEOUT_SECONDS",
@@ -443,6 +464,16 @@ class Judge0Config(PlatformSectionSettings):
     max_stdin_bytes: int = Field(
         default=50_000, validation_alias="JUDGE0_MAX_STDIN_BYTES"
     )
+    max_output_bytes: int = Field(
+        default=100_000, validation_alias="JUDGE0_MAX_OUTPUT_BYTES"
+    )
+    max_output_file_kb: int = Field(
+        default=128, validation_alias="JUDGE0_MAX_OUTPUT_FILE_KB"
+    )
+    allowed_language_ids: Annotated[list[int], NoDecode] = Field(
+        default_factory=lambda: [50, 54, 60, 62, 63, 68, 71, 72, 73, 74, 78, 83],
+        validation_alias="JUDGE0_ALLOWED_LANGUAGE_IDS",
+    )
 
     @field_validator("base_url", mode="before")
     @classmethod
@@ -458,8 +489,67 @@ class Judge0Config(PlatformSectionSettings):
 
     @field_validator("api_key", mode="before")
     @classmethod
-    def normalize_api_key(cls, value: str | None) -> str | None:
+    def normalize_api_key(cls, value: SecretStr | str | None) -> str | None:
         return _strip_optional_string(value)
+
+    @field_validator("allowed_language_ids", mode="before")
+    @classmethod
+    def parse_allowed_language_ids(cls, value: str | list[int]) -> list[int]:
+        if isinstance(value, list):
+            return [int(item) for item in value]
+
+        if not isinstance(value, str):
+            return value
+
+        stripped = value.strip()
+        if not stripped:
+            return []
+
+        if stripped.startswith("["):
+            try:
+                decoded = json.loads(stripped)
+            except json.JSONDecodeError:
+                decoded = None
+            if isinstance(decoded, list):
+                return [int(item) for item in decoded]
+
+        return [int(item.strip()) for item in stripped.split(",") if item.strip()]
+
+
+class LinkPreviewConfig(PlatformSectionSettings):
+    request_timeout_seconds: float = Field(
+        default=5.0,
+        validation_alias="LINK_PREVIEW_REQUEST_TIMEOUT_SECONDS",
+    )
+    max_response_bytes: int = Field(
+        default=524_288,
+        validation_alias="LINK_PREVIEW_MAX_RESPONSE_BYTES",
+    )
+    max_redirects: int = Field(
+        default=3,
+        validation_alias="LINK_PREVIEW_MAX_REDIRECTS",
+    )
+    cache_ttl_seconds: int = Field(
+        default=3600,
+        validation_alias="LINK_PREVIEW_CACHE_TTL_SECONDS",
+    )
+    memory_cache_max_items: int = Field(
+        default=1024,
+        validation_alias="LINK_PREVIEW_MEMORY_CACHE_MAX_ITEMS",
+    )
+    user_agent: str = Field(
+        default="AshyqBilim-LinkPreview/1.0",
+        validation_alias="LINK_PREVIEW_USER_AGENT",
+    )
+
+    @field_validator("user_agent", mode="before")
+    @classmethod
+    def normalize_user_agent(cls, value: str) -> str:
+        if not isinstance(value, str):
+            return value
+
+        stripped = value.strip()
+        return stripped or "AshyqBilim-LinkPreview/1.0"
 
 
 class PlatformConfig(PydanticStrictBaseModel):
@@ -478,6 +568,7 @@ class PlatformConfig(PydanticStrictBaseModel):
 
 class IntegrationsConfig(PydanticStrictBaseModel):
     judge0: Judge0Config = Field(default_factory=Judge0Config)
+    link_preview: LinkPreviewConfig = Field(default_factory=LinkPreviewConfig)
 
 
 class AppSettings(PlatformConfig):
@@ -505,3 +596,11 @@ def get_settings() -> AppSettings:
 def reload_platform_config_cache() -> None:
     """Clear cached platform configuration (mainly for tests or reloads)."""
     get_settings.cache_clear()
+
+
+def secret_value(value: SecretStr | str | None) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, SecretStr):
+        return value.get_secret_value()
+    return value
