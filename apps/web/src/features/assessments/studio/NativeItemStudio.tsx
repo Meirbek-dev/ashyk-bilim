@@ -123,9 +123,9 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
     queryOptions({
       queryKey: queryKeys.assessments.readiness(assessment?.assessment_uuid ?? ''),
       queryFn: () =>
-        apiFetcher<ReadinessPayload>(
+        apiFetcher<StudioReadinessPayload>(
           `assessments/${assessment?.assessment_uuid}/readiness`,
-        ) as Promise<StudioReadinessPayload>,
+        ),
       enabled: Boolean(assessment?.assessment_uuid),
       retry: false,
     }),

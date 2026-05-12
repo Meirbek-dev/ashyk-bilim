@@ -66,7 +66,7 @@ const LinkToUserGroup = (props: LinkToUserGroupProps) => {
         <h1 className="font-medium">{t('infoMessage')}</h1>
       </div>
       <div className="flex flex-row items-center justify-between p-4">
-        {usergroups?.length >= 1 && (
+        {(usergroups?.length ?? 0) >= 1 && (
           <div className="py-1">
             <span className="ml-0.5 rounded-full bg-gray-100 px-3 py-1 font-bold text-gray-500">
               {t('userGroupNameLabel')}

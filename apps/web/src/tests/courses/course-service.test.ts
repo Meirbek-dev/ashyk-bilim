@@ -155,7 +155,7 @@ describe('getCourses', () => {
 
     const { courses } = await getCourses();
 
-    expect(courses[0].thumbnail_video).toBe('');
+    expect(courses[0]!.thumbnail_video).toBe('');
   });
 
   it('parses JSON tags array', async () => {
@@ -163,7 +163,7 @@ describe('getCourses', () => {
 
     const { courses } = await getCourses();
 
-    expect(courses[0].tags).toEqual(['python', 'beginner']);
+    expect(courses[0]!.tags).toEqual(['python', 'beginner']);
   });
 
   it('falls back to comma-separated tags if not valid JSON', async () => {
@@ -171,7 +171,7 @@ describe('getCourses', () => {
 
     const { courses } = await getCourses();
 
-    expect(courses[0].tags).toEqual(['python', 'beginner']);
+    expect(courses[0]!.tags).toEqual(['python', 'beginner']);
   });
 
   it('normalises null author avatar to empty string', async () => {
@@ -179,7 +179,7 @@ describe('getCourses', () => {
 
     const { courses } = await getCourses();
 
-    expect(courses[0].authors[0].user.avatar_image).toBe('');
+    expect(courses[0]!.authors[0]!.user.avatar_image).toBe('');
   });
 });
 
@@ -214,7 +214,7 @@ describe('getCourseMetadata', () => {
 
     await getCourseMetadata('abc');
 
-    const [url] = mocks.apiFetch.mock.calls[0];
+    const [url] = mocks.apiFetch.mock.calls[0]!;
     expect(url).toContain('courses/course_abc/meta');
   });
 
@@ -225,7 +225,7 @@ describe('getCourseMetadata', () => {
 
     await getCourseMetadata('course_abc');
 
-    const [url] = mocks.apiFetch.mock.calls[0];
+    const [url] = mocks.apiFetch.mock.calls[0]!;
     expect(url).toContain('courses/course_abc/meta');
     expect(url).not.toContain('course_course_abc');
   });
@@ -275,7 +275,7 @@ describe('getEditableCourses', () => {
 
     await getEditableCourses(1, 20, 'python', 'name');
 
-    const [url] = mocks.apiFetch.mock.calls[0];
+    const [url] = mocks.apiFetch.mock.calls[0]!;
     expect(url).toContain('query=python');
     expect(url).toContain('sort_by=name');
   });

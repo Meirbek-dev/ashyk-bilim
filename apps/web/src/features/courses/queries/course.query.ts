@@ -91,7 +91,7 @@ export function editableCourseListQueryOptions<TCourse = unknown>(options: Cours
 export function courseUpdatesQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.courses.updates(courseUuid),
-    queryFn: () => apiFetcher(`${courseEndpoints.detail(courseUuid)}/updates`),
+    queryFn: () => apiFetcher<any[]>(`${courseEndpoints.detail(courseUuid)}/updates`),
   });
 }
 
@@ -110,7 +110,7 @@ export function courseDiscussionsQueryOptions(
         offset: String(offset),
       }).toString();
 
-      return apiFetcher(`${courseEndpoints.detail(courseUuid)}/discussions?${queryString}`);
+      return apiFetcher<any[]>(`${courseEndpoints.detail(courseUuid)}/discussions?${queryString}`);
     },
   });
 }
@@ -118,21 +118,21 @@ export function courseDiscussionsQueryOptions(
 export function trailCurrentQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.trail.current(),
-    queryFn: () => apiFetcher(`trail`),
+    queryFn: () => apiFetcher<{ runs: any[] }>(`trail`),
   });
 }
 
 export function trailLeaderboardQueryOptions(limit = 10) {
   return queryOptions({
     queryKey: queryKeys.trail.leaderboard(limit),
-    queryFn: () => apiFetcher(`gamification/leaderboard?limit=${limit}`),
+    queryFn: () => apiFetcher<{ entries: any[] }>(`gamification/leaderboard?limit=${limit}`),
   });
 }
 
 export function userCertificatesQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.certifications.userAll(),
-    queryFn: () => apiFetcher(`certifications/user/all`),
+    queryFn: () => apiFetcher<any>(`certifications/user/all`),
   });
 }
 

@@ -275,7 +275,7 @@ const EditCourseCertification = () => {
       async () => {
         if (isCertificationEnabled) {
           if (existingCertification) {
-            return updateCertification({
+            await updateCertification({
               certification_uuid: existingCertification.certification_uuid,
               config,
 
@@ -284,9 +284,10 @@ const EditCourseCertification = () => {
                 lastKnownUpdateDate: courseStructure.update_date,
               },
             });
+            return;
           }
 
-          return createCertification({
+          await createCertification({
             course_id: courseStructure.id,
             config,
             options: {
@@ -294,10 +295,11 @@ const EditCourseCertification = () => {
               lastKnownUpdateDate: courseStructure.update_date,
             },
           });
+          return;
         }
 
         if (existingCertification) {
-          return deleteCertification(existingCertification.certification_uuid, {
+          await deleteCertification(existingCertification.certification_uuid, {
             courseUuid: courseStructure.course_uuid,
             lastKnownUpdateDate: courseStructure.update_date,
           });

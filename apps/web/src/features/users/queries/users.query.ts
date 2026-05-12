@@ -30,28 +30,28 @@ export function userCoursesQueryOptions(userId: number) {
 export function userGroupsQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.userGroups.all(),
-    queryFn: () => apiFetcher(`usergroups`),
+    queryFn: () => apiFetcher<{ id: number; name: string; description?: string }[]>(`usergroups`),
   });
 }
 
 export function userGroupUsersQueryOptions(userGroupId: number) {
   return queryOptions({
     queryKey: queryKeys.userGroups.users(userGroupId),
-    queryFn: () => apiFetcher(`usergroups/${userGroupId}/users`),
+    queryFn: () => apiFetcher<any[]>(`usergroups/${userGroupId}/users`),
   });
 }
 
 export function allMembersQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.users.allMembers(),
-    queryFn: () => apiFetcher(`members`),
+    queryFn: () => apiFetcher<any>(`members`),
   });
 }
 
 export function membersQueryOptions(page: number, perPage: number) {
   return queryOptions({
     queryKey: queryKeys.users.members(page, perPage),
-    queryFn: () => apiFetcher(`members?page=${page}&per_page=${perPage}`),
+    queryFn: () => apiFetcher<{ total: number; total_pages: number; users: any[] }>(`members?page=${page}&per_page=${perPage}`),
   });
 }
 

@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="relative"
         suppressHydrationWarning
       >
-        <div className="relative isolate flex min-h-svh flex-col">
+        <div className="relative isolate flex min-h-svh flex-col scrollbar-thumb-primary scrollbar-track-primary">
           <Suspense fallback={null}>{children}</Suspense>
         </div>
       </body>

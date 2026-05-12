@@ -31,7 +31,7 @@ export async function createCertification({ course_id, config, options }: Create
       last_known_update_date: options?.lastKnownUpdateDate ?? undefined,
     }),
   });
-  const response = await errorHandling(result);
+  const response = await errorHandling<any>(result);
 
   const { revalidateTag } = await import('next/cache');
   revalidateTag(tags.courses, 'max');
@@ -52,7 +52,7 @@ export async function updateCertification({ certification_uuid, config, options 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ config, last_known_update_date: options?.lastKnownUpdateDate ?? undefined }),
   });
-  const response = await errorHandling(result);
+  const response = await errorHandling<any>(result);
 
   const { revalidateTag } = await import('next/cache');
   revalidateTag(tags.courses, 'max');
@@ -68,7 +68,7 @@ export async function deleteCertification(certification_uuid: string, options?: 
   const result = await apiFetch(`certifications/${certification_uuid}${query.size > 0 ? `?${query.toString()}` : ''}`, {
     method: 'DELETE',
   });
-  const response = await errorHandling(result);
+  const response = await errorHandling<any>(result);
 
   const { revalidateTag } = await import('next/cache');
   revalidateTag(tags.courses, 'max');

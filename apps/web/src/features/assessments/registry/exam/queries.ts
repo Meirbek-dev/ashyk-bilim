@@ -51,6 +51,6 @@ export function examAllAttemptsQueryOptions(examUuid: string) {
 export function examConfigQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.exams.config(),
-    queryFn: () => apiFetcher(`assessments/exam/config`),
+    queryFn: () => apiFetcher<{ time_limit?: { min: number; max: number } }>(`assessments/exam/config`),
   });
 }

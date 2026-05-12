@@ -68,7 +68,7 @@ function makeSubmission(overrides: Partial<Submission> = {}): Submission {
     answers_json: {},
     metadata_json: {},
     ...overrides,
-  };
+  } as Submission;
 }
 
 /** Set up apiFetch + getResponseMetadata to return a successful response. */
@@ -142,7 +142,7 @@ describe('submitAssessment', () => {
 
     await submitAssessment(42, 'EXAM', {}, 3);
 
-    const [url] = mocks.apiFetch.mock.calls[0];
+    const [url] = mocks.apiFetch.mock.calls[0]!;
     expect(url).toContain('violation_count=3');
   });
 
@@ -222,9 +222,9 @@ describe('getSubmissionsForActivity', () => {
 
     await getSubmissionsForActivity(42);
 
-    const [url] = mocks.apiFetch.mock.calls[0];
+    const [url] = mocks.apiFetch.mock.calls[0]!;
     expect(url).toContain('activity_id=42');
-  });
+  })
 
   it('appends optional filters to the query string', async () => {
     const page: SubmissionsPage = { items: [], total: 0, page: 1, page_size: 25, pages: 1 };
@@ -239,7 +239,7 @@ describe('getSubmissionsForActivity', () => {
       pageSize: 10,
     });
 
-    const [url] = mocks.apiFetch.mock.calls[0];
+    const [url] = mocks.apiFetch.mock.calls[0]!
     expect(url).toContain('status=PENDING');
     expect(url).toContain('search=alice');
     expect(url).toContain('sort_by=submitted_at');
@@ -339,18 +339,18 @@ describe('saveGrade', () => {
   it('includes If-Match header when version is provided', async () => {
     mockSuccess(makeSubmission());
 
-    await saveGrade('sub_v2', { final_score: 80, status: 'GRADED', item_feedback: [] }, 3);
+    await saveGrade('sub_v2', { final_score: 80, feedback: '', status: 'GRADED', item_feedback: [] }, 3);
 
-    const [, options] = mocks.apiFetch.mock.calls[0];
+    const [, options] = mocks.apiFetch.mock.calls[0]!
     expect(options.headers['If-Match']).toBe('3');
   });
 
   it('uses assessment-scoped endpoint when assessmentUuid is given', async () => {
     mockSuccess(makeSubmission());
 
-    await saveGrade('sub_assess_1', { final_score: 75, status: 'GRADED', item_feedback: [] }, undefined, 'asm_uuid_1');
+    await saveGrade('sub_assess_1', { final_score: 75, feedback: '', status: 'GRADED', item_feedback: [] }, undefined, 'asm_uuid_1');
 
-    const [url] = mocks.apiFetch.mock.calls[0];
+    const [url] = mocks.apiFetch.mock.calls[0]!
     expect(url).toBe('assessments/asm_uuid_1/submissions/sub_assess_1');
   });
 
@@ -358,14 +358,14 @@ describe('saveGrade', () => {
     mockFailure('Submission already published');
 
     await expect(
-      saveGrade('sub_err', { final_score: 80, status: 'GRADED', item_feedback: [] }),
+      saveGrade('sub_err', { final_score: 80, feedback: '', status: 'GRADED', item_feedback: [] }),
     ).rejects.toThrow('Submission already published');
   });
 
   it('revalidates submissions tag on success', async () => {
     mockSuccess(makeSubmission());
 
-    await saveGrade('sub_ok', { final_score: 60, status: 'GRADED', item_feedback: [] });
+    await saveGrade('sub_ok', { final_score: 60, feedback: '', status: 'GRADED', item_feedback: [] });
 
     expect(mocks.revalidateTag).toHaveBeenCalledWith('submissions', 'max');
   });
@@ -378,7 +378,7 @@ describe('batchGradeSubmissions', () => {
     const response = { processed: 2, failed: 0, results: [] };
     mockSuccess(response);
 
-    const grades = [
+    const grades: { submission_uuid: string; final_score: number; status: 'GRADED' | 'PUBLISHED' | 'RETURNED' }[] = [
       { submission_uuid: 'sub_1', final_score: 80, status: 'GRADED' },
       { submission_uuid: 'sub_2', final_score: 90, status: 'PUBLISHED' },
     ];

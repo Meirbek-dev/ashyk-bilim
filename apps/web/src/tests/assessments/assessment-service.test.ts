@@ -282,7 +282,7 @@ describe('listStudentPolicyOverrides', () => {
       expect.any(Object),
     );
     expect(result).toHaveLength(1);
-    expect(result[0].max_attempts_override).toBe(3);
+    expect(result[0]!.max_attempts_override).toBe(3);
   });
 
   it('returns empty array on failure', async () => {
@@ -402,7 +402,7 @@ describe('saveGradingDraft', () => {
 
     await saveGradingDraft('asm_1', 'sub_v3', { item_grades: [] }, 3);
 
-    const [, opts] = mocks.apiFetch.mock.calls[0];
+    const [, opts] = mocks.apiFetch.mock.calls[0]!;
     expect(opts.headers['If-Match']).toBe('3');
   });
 

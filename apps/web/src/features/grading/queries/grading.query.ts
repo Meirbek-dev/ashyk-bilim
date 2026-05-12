@@ -36,7 +36,7 @@ function buildSubmissionsSearchParams(params: SubmissionListQueryParams) {
 
 export function gradingDetailQueryOptions(submissionUuid: string, assessmentUuid?: string) {
   return queryOptions({
-    queryKey: queryKeys.grading.detail(submissionUuid, assessmentUuid),
+    queryKey: queryKeys.grading.detail(submissionUuid, assessmentUuid ?? ''),
     queryFn: () =>
       apiFetcher<Submission>(
         assessmentUuid
@@ -66,7 +66,7 @@ export function mySubmissionQueryOptions(activityId: number) {
 
 export function submissionStatsQueryOptions(activityId: number, assessmentUuid?: string) {
   return queryOptions({
-    queryKey: queryKeys.grading.stats(activityId, assessmentUuid),
+    queryKey: queryKeys.grading.stats(activityId, assessmentUuid ?? ''),
     queryFn: () =>
       apiFetcher<SubmissionStats>(
         assessmentUuid

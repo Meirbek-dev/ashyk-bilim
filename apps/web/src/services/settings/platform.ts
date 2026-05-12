@@ -44,7 +44,7 @@ export const uploadPlatformPreview = async (file: File) => {
   const formData = new FormData();
   formData.append('preview_file', file);
   const result = await apiFetch('preview', { method: 'PUT', body: formData });
-  const response = await errorHandling(result);
+  const response = await errorHandling<{ name_in_disk: string }>(result);
   const { revalidateTag } = await import('next/cache');
   revalidateTag(tags.platform, 'max');
   return response;

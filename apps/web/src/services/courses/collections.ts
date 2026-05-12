@@ -45,7 +45,7 @@ async function fetchCollectionById(collection_uuid: string) {
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   });
-  return await errorHandling(result);
+  return await errorHandling<any>(result);
 }
 
 export async function getCollectionById(collection_uuid: string, _next?: any) {
@@ -62,7 +62,7 @@ async function fetchCollections() {
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
   });
-  return await errorHandling(result);
+  return await errorHandling<any>(result);
 }
 
 export async function getCollections(_next?: any) {

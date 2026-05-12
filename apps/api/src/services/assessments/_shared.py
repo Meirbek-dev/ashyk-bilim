@@ -4,6 +4,7 @@ All private helpers used across multiple assessment service modules live here.
 """
 
 from datetime import UTC, datetime, timedelta
+import logging
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError

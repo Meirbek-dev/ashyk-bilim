@@ -10,7 +10,7 @@ export async function getUser(user_id: number) {
 
 export async function getUserByUsername(username: string) {
   const result = await apiFetch(`users/username/${username}`);
-  return await errorHandling(result);
+  return await errorHandling<any>(result);
 }
 
 export async function getCoursesByUser(user_id: number) {

@@ -4,6 +4,7 @@ import logging
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
+from sqlalchemy import desc
 from sqlmodel import Session, select
 
 from src.db.assessments import (
@@ -28,6 +29,7 @@ from src.db.grading.submissions import (
 from src.db.users import PublicUser
 from src.services.assessments._shared import (
     _assert_attempt_action_allowed,
+    _build_attempt_state,
     _build_student_submission_read,
     _build_teacher_submission_read,
     _content_version,
@@ -44,6 +46,7 @@ from src.services.assessments._shared import (
     _parse_if_match_version,
     _policy_version,
     _release_state_for_submission,
+    _require_grade,
     _require_submit_access,
     _score_projection_from_submission,
     _snapshot_submission,

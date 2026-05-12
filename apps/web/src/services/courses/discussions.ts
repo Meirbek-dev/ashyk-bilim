@@ -56,7 +56,7 @@ export async function createDiscussion(course_uuid: string, discussion: Discussi
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(discussion),
   });
-  const data = await errorHandling(result);
+  const data = await errorHandling<Discussion>(result);
 
   if (result.ok) {
     const { revalidateTag } = await import('next/cache');
@@ -76,7 +76,7 @@ export async function updateDiscussion(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(discussion),
   });
-  const data = await errorHandling(result);
+  const data = await errorHandling<Discussion>(result);
 
   if (result.ok) {
     const { revalidateTag } = await import('next/cache');
@@ -90,7 +90,7 @@ export async function deleteDiscussion(course_uuid: string, discussion_uuid: str
   const result = await apiFetch(`courses/${course_uuid}/discussions/${discussion_uuid}`, {
     method: 'DELETE',
   });
-  const data = await errorHandling(result);
+  const data = await errorHandling<{ message: string }>(result);
 
   if (result.ok) {
     const { revalidateTag } = await import('next/cache');
@@ -129,7 +129,7 @@ export async function toggleDiscussionLike(
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
   });
-  const data = await errorHandling(result);
+  const data = await errorHandling<{ message: string; is_liked: boolean; is_disliked: boolean; likes_count: number; dislikes_count: number }>(result);
 
   if (result.ok) {
     const { revalidateTag } = await import('next/cache');
@@ -153,7 +153,7 @@ export async function toggleDiscussionDislike(
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
   });
-  const data = await errorHandling(result);
+  const data = await errorHandling<{ message: string; is_liked: boolean; is_disliked: boolean; likes_count: number; dislikes_count: number }>(result);
 
   if (result.ok) {
     const { revalidateTag } = await import('next/cache');
