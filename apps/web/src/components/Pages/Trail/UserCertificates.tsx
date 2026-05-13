@@ -5,6 +5,7 @@ import { getAbsoluteUrl } from '@services/config/config';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useUserCertificates } from '@/features/certifications/hooks/useCertifications';
 import Link from '@components/ui/AppLink';
+import { useState, useEffect } from 'react';
 import type React from 'react';
 
 const UserCertificates: React.FC = () => {
@@ -13,7 +14,12 @@ const UserCertificates: React.FC = () => {
 
   const { data: certificates, error, isLoading } = useUserCertificates();
 
-  if (isLoading) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || isLoading) {
     return (
       <div className="border-border bg-card text-card-foreground rounded-xl border p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
