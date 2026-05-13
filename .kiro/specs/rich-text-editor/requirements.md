@@ -34,13 +34,13 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 
 #### Acceptance Criteria
 
-1. THE AuthoringEditor SHALL wrap the editor instance in a `<Tiptap instance={editor}>` component tree instead of passing the `editor` prop directly to child components.
-2. WHEN the editor is initializing, THE AuthoringEditor SHALL render a `<Tiptap.Loading>` placeholder to prevent layout shift and SSR hydration mismatches.
+1. THE AuthoringEditor SHALL wrap the editor instance in a `<Tiptap instance={editor}>` component tree, making the editor instance available to `EditorToolbar`, `BubbleToolbar`, `FloatingPlusButton`, and `SlashCommandMenu` via context rather than explicit props.
+2. WHEN the editor instance is null (i.e., before `useEditor` has returned a non-null value), THE AuthoringEditor SHALL render a `<Tiptap.Loading>` placeholder of the same dimensions as the editor content area to prevent layout shift and SSR hydration mismatches.
 3. THE AuthoringEditor SHALL use `<Tiptap.Content />` to render the editable content area instead of `<EditorContent editor={editor} />`.
-4. THE Toolbar SHALL use `useTiptapState` to subscribe only to the specific editor state slices it needs (bold, italic, heading level, etc.), so that unrelated state changes do not trigger full toolbar re-renders.
-5. THE BubbleMenu SHALL be rendered as `<Tiptap.BubbleMenu>` or use `useTiptap()` to access the editor instance without prop drilling.
-6. THE useEditorInstance hook SHALL continue to call `useEditor` with `immediatelyRender: false` to prevent SSR rendering issues in the Next.js App Router environment.
-7. WHEN the editor is destroyed or the component unmounts, THE Editor SHALL clean up all ProseMirror plugins and event listeners without memory leaks.
+4. THE Toolbar SHALL subscribe to editor state using `useEditorState` (from `@tiptap/react`) with a selector function that returns only the specific state slices it needs (e.g., bold active, italic active, current heading level), so that state changes unrelated to those slices do not cause the toolbar to re-render.
+5. WHEN the `<Tiptap.BubbleMenu>` wrapper component is available in the installed version of `@tiptap/react`, THE BubbleMenu SHALL be rendered using `<Tiptap.BubbleMenu>`; IF the wrapper is not available, THE BubbleMenu SHALL use `useTiptap()` to access the editor instance without prop drilling.
+6. THE `useEditorInstance` hook SHALL call `useEditor` with `immediatelyRender: false` to prevent SSR rendering issues in the Next.js App Router environment.
+7. WHEN the editor component unmounts, THE Editor SHALL have no dangling ProseMirror plugin instances or DOM event listeners attached to the editor's DOM node after the unmount completes.
 
 ---
 
@@ -50,10 +50,10 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 
 #### Acceptance Criteria
 
-1. THE AuthoringEditor SHALL isolate the `useEditor` call and `<Tiptap>` tree in a dedicated inner component so that parent state changes (e.g., `saveState`, `isAIOpen`) do not cause the editor to re-render.
-2. THE Toolbar SHALL use `useTiptapState` (or `useEditorState`) selectors that return only primitive or shallow-comparable values, so that the toolbar re-renders only when the selected state actually changes.
-3. WHEN `onContentChange` is called from the editor's `onUpdate` callback, THE Editor SHALL schedule the update via `queueMicrotask` to avoid the React `flushSync` warning.
-4. THE EditorToolbar SHALL NOT re-render when the AI panel open/close state changes.
+1. THE `useEditor` call and `<Tiptap>` component tree SHALL reside in a dedicated inner component (e.g., `EditorCore`) that does not receive `saveState` or `isAIOpen` as props, so that changes to those values in the parent do not cause `EditorCore` to re-render.
+2. THE Toolbar's `useEditorState` selector SHALL return only primitive values (booleans, numbers, strings) or objects that are referentially stable when the selected state has not changed, so that the toolbar does not re-render when unrelated editor state changes.
+3. WHEN the editor's `onUpdate` callback fires, THE callback SHALL not call any React state setter synchronously within the same call stack frame, so that the React `flushSync` warning is not triggered.
+4. WHEN `isAIOpen` changes in the parent component, THE `EditorToolbar` component SHALL NOT re-render.
 
 ---
 
@@ -63,12 +63,14 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 
 #### Acceptance Criteria
 
-1. THE Toolbar SHALL include an "Embed" button in the `media` insert group that opens the Embed Panel dialog.
-2. WHEN the Embed Panel button is clicked, THE EmbedPanel SHALL open as a modal dialog rendered above the editor content.
-3. THE EmbedPanel SHALL display three embed type options: YouTube, Excalidraw, and tldraw.
-4. WHEN an embed type is selected and confirmed, THE EmbedPanel SHALL close and THE Editor SHALL insert an EmbedBlock node at the current cursor position.
-5. IF the author dismisses the Embed Panel without selecting an embed type, THEN THE Editor SHALL remain unchanged.
-6. THE EmbedPanel SHALL be keyboard-navigable and meet WCAG 2.1 AA focus management requirements (focus trap inside dialog, Escape key closes dialog, focus returns to trigger button on close).
+1. THE Toolbar SHALL include an "Embed" button in the `media` insert group at all times when the editor is in authoring mode.
+2. WHEN the "Embed" toolbar button is clicked, THE EmbedPanel dialog SHALL open as a modal rendered above the editor content.
+3. THE EmbedPanel SHALL display three embed type options as selectable cards or tabs: YouTube, Excalidraw, and tldraw.
+4. WHEN an embed type is selected and the author clicks the "Insert" button, THE EmbedPanel SHALL close and THE Editor SHALL insert an EmbedBlock node at the cursor position that was active when the dialog opened.
+5. WHEN no embed type has been selected and the author clicks the "Insert" button, THE EmbedPanel SHALL display a validation error and SHALL NOT close or insert a node.
+6. WHEN the author dismisses the Embed Panel by clicking the "Cancel" button, pressing the Escape key, or clicking the backdrop outside the dialog, THE EmbedPanel SHALL close and THE Editor document SHALL remain unchanged.
+7. WHEN the Embed Panel opens, THE EmbedPanel SHALL move focus to the first focusable, non-disabled, visible element inside the dialog within 100ms of the dialog becoming visible.
+8. WHILE the Embed Panel is open, pressing Tab or Shift+Tab SHALL cycle focus only through focusable elements inside the dialog.
 
 ---
 
@@ -78,11 +80,14 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 
 #### Acceptance Criteria
 
-1. WHEN the YouTube embed type is selected in the Embed Panel, THE EmbedPanel SHALL display a URL input field for the YouTube video URL.
-2. WHEN a valid YouTube URL is submitted, THE EmbedPanel SHALL render a live preview of the video using the `@next/third-parties/google` `YouTubeEmbed` component before insertion, and WHEN the author confirms, THE EmbedBlock SHALL store the video ID extracted from the URL and render the video in the NodeView.
-3. IF an invalid, non-YouTube, or empty URL is submitted, THEN THE EmbedPanel SHALL display an inline validation error and SHALL NOT insert the node.
-4. THE YouTube NodeView SHALL render the video in a responsive 16:9 aspect-ratio container with rounded corners.
-5. WHEN the editor is in read-only (interactive/viewing) mode, THE YouTube NodeView SHALL render the video player without edit controls.
+1. WHEN the YouTube embed type is selected in the Embed Panel, THE EmbedPanel SHALL display a URL input field labeled for YouTube video URLs.
+2. A URL SHALL be considered valid for YouTube embedding if it matches one of the following formats: `https://www.youtube.com/watch?v=<id>`, `https://youtu.be/<id>`, `https://www.youtube.com/embed/<id>`, or `https://www.youtube.com/shorts/<id>`, where `<id>` is a non-empty string.
+3. WHEN a valid YouTube URL is entered in the URL input field, THE EmbedPanel SHALL render a live preview of the video using the `@next/third-parties/google` `YouTubeEmbed` component below the input field.
+4. WHEN the author clicks "Insert" after entering a valid YouTube URL, THE EmbedPanel SHALL close and THE EmbedBlock node inserted into the editor SHALL store the extracted video ID and render the video in the NodeView.
+5. WHEN the author modifies the URL input field, any previously displayed validation error SHALL be cleared.
+6. IF an empty, non-YouTube, or malformed URL is submitted, THEN THE EmbedPanel SHALL display an inline validation error message below the URL input field and SHALL NOT insert the node.
+7. THE YouTube NodeView SHALL render the video in a responsive container with a 16:9 aspect ratio and a minimum border radius of 4px.
+8. WHEN the editor is in read-only (interactive/viewing) mode, THE YouTube NodeView SHALL render the video player without an overlay toolbar (no edit or delete controls).
 
 ---
 
@@ -93,11 +98,11 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 #### Acceptance Criteria
 
 1. WHEN the Excalidraw embed type is selected in the Embed Panel, THE EmbedPanel SHALL display a URL input field for the Excalidraw share link.
-2. WHEN a valid Excalidraw share URL (matching `excalidraw.com` hostname) is submitted, THE EmbedBlock SHALL store the URL and render an `<iframe>` pointing to the Excalidraw embed endpoint inside the NodeView.
-3. IF an invalid URL, a URL from a non-Excalidraw hostname, or an empty URL is submitted, THEN THE EmbedPanel SHALL display an inline validation error and SHALL NOT insert the node.
-4. THE Excalidraw NodeView SHALL render the iframe in a resizable container with a default height of 500px and width of 100%.
-5. WHEN the editor is in authoring mode, THE Excalidraw NodeView SHALL display an overlay toolbar with edit (re-open panel) and delete controls.
-6. THE Excalidraw component SHALL be loaded via Next.js dynamic import with `ssr: false` to prevent server-side rendering errors.
+2. WHEN a valid Excalidraw share URL (hostname exactly `excalidraw.com`) is submitted, THE EmbedBlock SHALL store the URL and THE NodeView SHALL render an `<iframe>` whose `src` is derived by appending `?embed=1` to the share URL.
+3. IF an empty URL, a URL whose hostname is not `excalidraw.com`, or a URL that is not a valid absolute URL is submitted, THEN THE EmbedPanel SHALL display an inline validation error message that describes the specific rejection reason (empty, wrong hostname, or malformed URL) and SHALL NOT insert the node.
+4. WHILE the Excalidraw NodeView is rendered in authoring mode, THE iframe container SHALL be resizable by the author via a drag handle, with a minimum height of 100px, a maximum height of 1200px, and a default height of 500px at 100% width.
+5. WHILE the Excalidraw NodeView is rendered in authoring mode, THE NodeView SHALL display an overlay toolbar with an "Edit" button that re-opens the Embed Panel pre-populated with the stored URL, and a "Delete" button that removes the EmbedBlock node from the document.
+6. WHEN the Excalidraw NodeView is rendered, THE iframe SHALL load without server-side rendering errors (i.e., the component is only instantiated in a browser environment).
 
 ---
 
@@ -108,10 +113,11 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 #### Acceptance Criteria
 
 1. WHEN the tldraw embed type is selected in the Embed Panel, THE EmbedPanel SHALL display a URL input field for the tldraw share link.
-2. WHEN a valid tldraw share URL (matching `tldraw.com` hostname) is submitted, THE EmbedBlock SHALL store the URL and render an `<iframe>` pointing to the tldraw embed endpoint inside the NodeView.
-3. IF an invalid URL, a URL from a non-tldraw hostname, or an empty URL is submitted, THEN THE EmbedPanel SHALL display an inline validation error and SHALL NOT insert the node.
-4. THE tldraw NodeView SHALL render the iframe in a resizable container with a default height of 500px and width of 100%.
-5. WHEN the editor is in authoring mode, THE tldraw NodeView SHALL display an overlay toolbar with edit (re-open panel) and delete controls.
+2. WHEN a valid tldraw share URL (hostname exactly `tldraw.com`, path matching `/r/<room-id>`) is submitted, THE EmbedBlock SHALL store the URL and THE NodeView SHALL render an `<iframe>` whose `src` is derived by appending `?embed=1` to the share URL.
+3. IF an empty URL, a URL whose hostname is not `tldraw.com`, a URL whose path does not match `/r/<room-id>`, or a URL that is not a valid absolute URL is submitted, THEN THE EmbedPanel SHALL display an inline validation error message beneath the URL input field and SHALL NOT insert the node.
+4. WHILE the tldraw NodeView is rendered in authoring mode, THE iframe container SHALL be resizable by the author via a drag handle, with a minimum height of 200px, a maximum height of 2000px, and a default height of 500px at 100% width.
+5. WHILE the tldraw NodeView is rendered in authoring mode, THE NodeView SHALL display an overlay toolbar with an "Edit" button that re-opens the Embed Panel pre-populated with the stored URL, and a "Delete" button that removes the EmbedBlock node from the document.
+6. WHEN the tldraw NodeView is rendered in read-only (student/view) mode, THE overlay toolbar SHALL be hidden and THE iframe SHALL accept pointer events so students can interact with the tldraw canvas.
 
 ---
 
@@ -121,13 +127,14 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 
 #### Acceptance Criteria
 
-1. THE EmbedBlock extension SHALL define a `type` attribute accepting values `youtube`, `excalidraw`, or `tldraw`, with a default of `null`.
-2. THE EmbedBlock extension SHALL define a `url` attribute storing the embed URL, with a default of `null`.
+1. THE EmbedBlock extension SHALL define a `type` attribute accepting values `"youtube"`, `"excalidraw"`, or `"tldraw"`, with a default of `null`.
+2. THE EmbedBlock extension SHALL define a `url` attribute storing the embed URL as a string, with a default of `null`.
 3. THE EmbedBlock extension SHALL define `width` and `height` attributes for the rendered container dimensions, with defaults of `"100%"` and `500` respectively.
-4. THE EmbedBlock extension SHALL expose an `insertEmbedBlock` command that inserts a new EmbedBlock node at the current cursor position.
-5. THE EmbedBlock extension SHALL expose an `updateEmbedBlock` command that updates the attributes of the EmbedBlock node at a given position.
-6. THE EmbedBlock extension SHALL implement `parseHTML` and `renderHTML` so that the node round-trips correctly through HTML serialization.
-7. FOR ALL valid EmbedBlock nodes, serializing to HTML and then parsing back SHALL produce an equivalent node (round-trip property).
+4. THE EmbedBlock extension SHALL expose an `insertEmbedBlock` command that inserts a new `embedBlock` node at the current cursor position.
+5. THE EmbedBlock extension SHALL expose an `updateEmbedBlock(pos: number, attrs: Partial<EmbedBlockAttrs>)` command that updates the attributes of the `embedBlock` node at the given document position; IF no `embedBlock` node exists at `pos`, THE command SHALL be a no-op and SHALL NOT throw.
+6. THE EmbedBlock extension SHALL belong to the `"block"` node group so that it is valid wherever block nodes are permitted in the document schema.
+7. THE EmbedBlock extension SHALL implement `parseHTML` to match a `<div data-embed-block>` element and read `data-embed-type`, `data-embed-url`, `data-embed-width`, and `data-embed-height` attributes, and SHALL implement `renderHTML` to emit a `<div>` with those same `data-*` attributes.
+8. FOR ALL `embedBlock` nodes where `type` is one of `"youtube"`, `"excalidraw"`, or `"tldraw"` and `url` is a non-empty string, serializing the node to HTML via `renderHTML` and then parsing the resulting HTML via `parseHTML` SHALL produce a node with identical `type`, `url`, `width`, and `height` attribute values.
 
 ---
 
@@ -137,11 +144,13 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 
 #### Acceptance Criteria
 
-1. WHEN the editor is in authoring mode, THE EmbedBlock NodeView SHALL display resize handles on the bottom edge of the container.
-2. WHEN a resize handle is dragged, THE EmbedBlock NodeView SHALL update the container height in real time during the drag.
-3. WHEN the drag ends, THE EmbedBlock NodeView SHALL persist the new height by calling `updateAttributes({ height })`.
-4. THE EmbedBlock NodeView SHALL enforce a minimum height of 200px and a maximum height of 1200px; WHEN a drag ends beyond these bounds, THE NodeView SHALL clamp the persisted height to the nearest limit.
-5. WHEN the editor is in read-only mode, THE EmbedBlock NodeView SHALL NOT display resize handles.
+1. WHEN the editor is in authoring mode, THE EmbedBlock NodeView SHALL display a resize handle on the bottom edge of the container.
+2. WHEN a resize handle drag is in progress, THE EmbedBlock NodeView SHALL update the container's rendered height on each `pointermove` event.
+3. WHEN the drag ends (on `pointerup`), THE EmbedBlock NodeView SHALL persist the final height by calling `updateAttributes({ height })`.
+4. THE EmbedBlock NodeView SHALL enforce a minimum height of 200px and a maximum height of 1200px during drag: on each `pointermove` event, the rendered height SHALL be clamped to `[200, 1200]`.
+5. IF the drag ends at a position that would result in a height below 200px, THEN THE persisted height SHALL be 200px; IF the drag ends at a position that would result in a height above 1200px, THEN THE persisted height SHALL be 1200px.
+6. WHEN an EmbedBlock node is rendered and its `height` attribute is not set or is `null`, THE NodeView SHALL render the container at a default height of 200px.
+7. WHEN the editor is in read-only mode, THE EmbedBlock NodeView SHALL NOT display resize handles.
 
 ---
 
@@ -151,9 +160,9 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 
 #### Acceptance Criteria
 
-1. THE SlashCommandMenu SHALL include an "Embed" entry that, when selected, opens the Embed Panel dialog.
-2. WHEN the "Embed" slash command is executed, THE SlashCommand extension SHALL delete the `/embed` text from the document before opening the Embed Panel.
-3. THE Embed slash command entry SHALL display a descriptive label and icon consistent with the toolbar insert button.
+1. WHEN the slash command menu is open, THE SlashCommandMenu SHALL include an "Embed" entry in the `media` category with `id: "embed"` that is returned when the query matches `"embed"`.
+2. WHEN the "Embed" slash command entry is selected, THE SlashCommand extension SHALL delete the text from the position of the `/` character to the current cursor position before opening the Embed Panel dialog.
+3. THE Embed slash command entry SHALL use the same i18n label key and the same icon component as the "Embed" button in the Toolbar's `media` insert group.
 
 ---
 
@@ -163,9 +172,10 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 
 #### Acceptance Criteria
 
-1. THE editor-kernel SHALL continue to register the legacy `EmbedObjects` extension alongside the new `EmbedBlock` extension during a migration period.
-2. WHEN a document containing a `blockEmbed` node is loaded, THE Editor SHALL render it using the existing `EmbedObjectsComponent` NodeView without errors.
-3. THE new `EmbedBlock` extension SHALL use a distinct node name (`embedBlock`) that does not conflict with the legacy `blockEmbed` node name.
+1. WHILE both the legacy `EmbedObjects` extension and the new `EmbedBlock` extension are registered in the editor kernel, THE editor SHALL load and render documents containing either `blockEmbed` or `embedBlock` nodes without errors.
+2. WHEN a document containing a `blockEmbed` node is loaded, THE Editor SHALL render the node using the `EmbedObjectsComponent` NodeView, and the rendered output SHALL be visible to the user with no fallback placeholder shown in its place.
+3. THE new `EmbedBlock` extension SHALL use the node name `embedBlock`, which SHALL NOT conflict with the legacy node name `blockEmbed`.
+4. IF a `blockEmbed` node fails to render (e.g., due to a missing or malformed `src` attribute), THEN THE Editor SHALL render a visible error placeholder in place of the node and SHALL NOT crash or unmount the editor.
 
 ---
 
@@ -175,10 +185,10 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 
 #### Acceptance Criteria
 
-1. THE EmbedPanel SHALL use `useTranslations('DashPage.Editor.EmbedPanel')` for all user-facing strings.
-2. THE EmbedBlock NodeView SHALL use `useTranslations('DashPage.Editor.EmbedPanel')` for overlay toolbar labels.
-3. THE en-US, ru-RU, and kk-KZ message files SHALL each contain a `DashPage.Editor.EmbedPanel` section with keys for: dialog title, embed type labels (YouTube, Excalidraw, tldraw), URL input placeholder, validation error messages, insert button label, cancel button label, edit button label, and delete button label.
-4. THE Toolbar insert button for the Embed Panel SHALL use the existing `DashPage.Editor.Toolbar` namespace key `externalObject` (already defined as "External Object (Embed)") or a new dedicated key.
+1. WHEN the EmbedPanel renders any user-facing string, THE string SHALL be sourced from the `DashPage.Editor.EmbedPanel` namespace via `useTranslations('DashPage.Editor.EmbedPanel')`.
+2. WHEN the EmbedBlock NodeView overlay toolbar renders any label, THE label SHALL be sourced from the `DashPage.Editor.EmbedPanel` namespace via `useTranslations('DashPage.Editor.EmbedPanel')`.
+3. THE `en-US`, `ru-RU`, and `kk-KZ` message files SHALL each contain a `DashPage.Editor.EmbedPanel` section with the following keys: `title` (dialog title), `youtubeLabel`, `excalidrawLabel`, `tldrawLabel`, `urlPlaceholder`, `errorEmpty` (validation error for empty URL), `errorInvalid` (validation error for malformed or wrong-hostname URL), `insertButton`, `cancelButton`, `editButton`, and `deleteButton`.
+4. THE Toolbar insert button for the Embed Panel SHALL use the existing `DashPage.Editor.Toolbar` namespace key `externalObject`.
 
 ---
 
@@ -188,9 +198,10 @@ The existing editor already uses TipTap v3 packages (`@tiptap/core ^3.23.4`, `@t
 
 #### Acceptance Criteria
 
-1. THE Toolbar SHALL have `role="toolbar"` and an `aria-label` attribute.
-2. THE Embed Panel dialog SHALL have `role="dialog"`, `aria-modal="true"`, and an `aria-labelledby` pointing to the dialog title.
-3. WHEN the Embed Panel opens, THE EmbedPanel SHALL move focus to the first interactive element inside the dialog.
-4. WHEN the Embed Panel is open, THE EmbedPanel SHALL trap focus within the dialog so that Tab and Shift+Tab cycle only through dialog elements; IF focus somehow escapes to elements outside the dialog, THE EmbedPanel SHALL immediately return focus to the dialog.
-5. WHEN the Escape key is pressed while the Embed Panel is open, THE EmbedPanel SHALL close and return focus to the toolbar button that triggered it.
-6. THE EmbedBlock NodeView overlay toolbar buttons SHALL each have an `aria-label` describing their action.
+1. THE Toolbar element SHALL have `role="toolbar"` and a non-empty `aria-label` attribute that identifies the toolbar's purpose (e.g., "Editor formatting toolbar").
+2. THE Embed Panel dialog element SHALL have `role="dialog"`, `aria-modal="true"`, and an `aria-labelledby` attribute whose value is the `id` of the visible title element rendered inside the dialog.
+3. WHEN the Embed Panel becomes visible, THE EmbedPanel SHALL move focus to the first focusable, non-disabled, visible element in the dialog's DOM order within 100ms of the dialog becoming visible.
+4. WHILE the Embed Panel is open, pressing Tab SHALL move focus to the next focusable element inside the dialog, and pressing Shift+Tab SHALL move focus to the previous focusable element inside the dialog, cycling within the dialog's focusable elements.
+5. IF focus moves to an element outside the Embed Panel dialog while the dialog is open, THEN THE EmbedPanel SHALL immediately return focus to the first focusable element inside the dialog.
+6. WHEN the Escape key is pressed while the Embed Panel is open, THE EmbedPanel SHALL close and return focus to the toolbar button that triggered it.
+7. THE EmbedBlock NodeView overlay toolbar buttons SHALL each have a non-empty `aria-label` attribute that uniquely identifies the button's specific action (e.g., "Edit Excalidraw embed", "Delete Excalidraw embed").

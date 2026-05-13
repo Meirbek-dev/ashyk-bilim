@@ -1,7 +1,7 @@
 # Ashyk Bilim LMS — Schema Architectural Audit & Refactoring Playbook
 
-> **Stack:** PostgreSQL 18 · FastAPI · Alembic · SQLModel · Judge0 · pgvector  
-> **Scope:** ~60 tables, full constraint/index scan performed  
+> **Stack:** PostgreSQL 18 · FastAPI · Alembic · SQLModel · Judge0 · pgvector
+> **Scope:** ~60 tables, full constraint/index scan performed
 > **Classification:** P0 = Data Integrity Blocker · P1 = High-Impact Feature Gap · P2 = Design Improvement
 
 ---
@@ -46,7 +46,7 @@ These are Rails-era remnants. The newer FastAPI tables (`submission`, `assessmen
 amount double precision NOT NULL
 ```
 
-`DOUBLE PRECISION` stores amounts in IEEE 754 binary. `99.95 KZT` may be stored as `99.94999999999999`. For Kaspi payments, Stripe reconciliation, and invoice generation, this **will cause rounding discrepancies** in production. `NUMERIC(12,2)` is the universally correct type for monetary amounts.
+`DOUBLE PRECISION` stores amounts in IEEE 754 binary. `99.95 KZT` may be stored as `99.94999999999999`. Stripe reconciliation, and invoice generation, this **will cause rounding discrepancies** in production. `NUMERIC(12,2)` is the universally correct type for monetary amounts.
 
 ---
 
@@ -128,7 +128,7 @@ CREATE TABLE public.submission (    -- Your LMS submission model
 - **Progress** = how far the user has gotten through that course
 
 Without a dedicated `enrollment` table you cannot:
-- Track who enrolled them (admin, self-service, Kaspi purchase)
+- Track who enrolled them (admin, self-service)
 - Set `access_expires_at` for time-limited courses
 - Put students on a `WAITLISTED` status
 - Distinguish `DROPPED` (intentional) from `NEVER_STARTED`
@@ -148,14 +148,6 @@ embedding public.vector(512) NOT NULL
 Every RAG query against this table performs a **full sequential scan**, computing cosine distances for every single row. At 10,000 chunks this is slow; at 100,000 it is unusable. An HNSW index reduces search time from O(n) to O(log n) with sub-millisecond ANN latency.
 
 ---
-
-#### P1-3 · `paymentproviderenum` Only Has `'STRIPE'`
-
-```sql
-CREATE TYPE public.paymentproviderenum AS ENUM ('STRIPE');
-```
-
-Ashyk Bilim is targeting the Kazakhstani market. Kaspi Pay is the dominant payment method in Kazakhstan (Kaspi QR and Kaspi Credit cover the majority of e-commerce transactions). Building without it means you cannot monetize the core demographic. The enum needs `KASPI_PAY`, `KASPI_CREDIT`, `CLICK`, `PAYME` as future-proof values, and `paymentsproduct` needs a KZT-aware currency field.
 
 ---
 
@@ -487,8 +479,6 @@ CREATE TYPE public.enrollmentsourceenum AS ENUM (
     'SELF_ENROLL',
     'ADMIN_ENROLL',
     'PAYMENT',
-    'KASPI_PAY',
-    'KASPI_CREDIT',
     'COHORT_ASSIGN',
     'API',
     'INVITATION'
@@ -563,16 +553,12 @@ CREATE INDEX CONCURRENTLY ix_document_chunks_metadata_gin
 
 ```sql
 -- In PostgreSQL, adding values to an enum is safe and non-blocking:
-ALTER TYPE public.paymentproviderenum ADD VALUE IF NOT EXISTS 'KASPI_PAY';
-ALTER TYPE public.paymentproviderenum ADD VALUE IF NOT EXISTS 'KASPI_CREDIT';
 ALTER TYPE public.paymentproviderenum ADD VALUE IF NOT EXISTS 'CLICK';
 ALTER TYPE public.paymentproviderenum ADD VALUE IF NOT EXISTS 'PAYME';
 
 -- Add KZT-specific fields to paymentsproduct:
 ALTER TABLE public.paymentsproduct
     ADD COLUMN currency_code CHAR(3) NOT NULL DEFAULT 'KZT',
-    ADD COLUMN kaspi_merchant_id VARCHAR,
-    ADD COLUMN kaspi_product_code VARCHAR;
 ```
 
 ### Fix P1-4: Fix Unused Enum Types
@@ -840,8 +826,7 @@ def upgrade() -> None:
     """)
     op.execute("""
         CREATE TYPE enrollmentsourceenum AS ENUM (
-            'SELF_ENROLL','ADMIN_ENROLL','PAYMENT','KASPI_PAY',
-            'KASPI_CREDIT','COHORT_ASSIGN','API','INVITATION'
+            'SELF_ENROLL','ADMIN_ENROLL','PAYMENT','COHORT_ASSIGN','API','INVITATION'
         )
     """)
 
@@ -859,8 +844,7 @@ def upgrade() -> None:
                                   name="enrollmentstatusenum", create_type=False),
                   nullable=False, server_default="ACTIVE"),
         sa.Column("source",
-                  postgresql.ENUM("SELF_ENROLL","ADMIN_ENROLL","PAYMENT","KASPI_PAY",
-                                  "KASPI_CREDIT","COHORT_ASSIGN","API","INVITATION",
+                  postgresql.ENUM("SELF_ENROLL","ADMIN_ENROLL","PAYMENT","COHORT_ASSIGN","API","INVITATION",
                                   name="enrollmentsourceenum", create_type=False),
                   nullable=False, server_default="SELF_ENROLL"),
         sa.Column("enrolled_by", sa.Integer(),
@@ -1070,7 +1054,6 @@ def downgrade() -> None:
 | P0-2: Floating-point money | **HIGH** | Low | Payment correctness | **Immediately** |
 | P1-1: Add `enrollment` table | Medium | Medium | Core LMS feature | **Sprint 1** |
 | P1-2: pgvector HNSW index | Low | Trivial | RAG performance | **Sprint 1** |
-| P1-3: Kaspi Pay enum | Low | Trivial | Monetization | **Sprint 1** |
 | P0-4: JSON → JSONB | Low | Low | Query performance | **Sprint 1** |
 | P0-1: Timestamp normalization | Low | Medium | Data correctness | **Sprint 2** |
 | P0-3: Tags tables | Low | Medium | Search/discovery | **Sprint 2** |
