@@ -34,40 +34,40 @@ export function getActivityBlockMediaDirectory({
   return `${getMediaUrl()}content/platform/courses/${courseId}/activities/${activityId}/dynamic/blocks/${type}/${blockId}/${fileId}`;
 }
 
-export interface TaskRefFileDirParams {
+export interface AssessmentItemFileDirParams {
   courseUUID: string;
   activityUUID: string;
-  assignmentUUID: string;
-  assignmentTaskUUID: string;
+  assessmentUUID: string;
+  itemUUID: string;
   fileID: string;
 }
 
-export function getTaskRefFileDir({
+export function getAssessmentItemFileDir({
   courseUUID,
   activityUUID,
-  assignmentUUID,
-  assignmentTaskUUID,
+  assessmentUUID,
+  itemUUID,
   fileID,
-}: TaskRefFileDirParams): string {
-  return `${getMediaUrl()}content/platform/courses/${courseUUID}/activities/${activityUUID}/assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/${fileID}`;
+}: AssessmentItemFileDirParams): string {
+  return `${getMediaUrl()}content/platform/courses/${courseUUID}/activities/${activityUUID}/assignments/${assessmentUUID}/tasks/${itemUUID}/${fileID}`;
 }
 
-export interface TaskFileSubmissionDirParams {
+export interface AssessmentItemSubmissionFileDirParams {
   courseUUID: string;
   activityUUID: string;
-  assignmentUUID: string;
-  assignmentTaskUUID: string;
+  assessmentUUID: string;
+  itemUUID: string;
   fileSubID: string;
 }
 
-export function getTaskFileSubmissionDir({
+export function getAssessmentItemSubmissionFileDir({
   courseUUID,
   activityUUID,
-  assignmentUUID,
-  assignmentTaskUUID,
+  assessmentUUID,
+  itemUUID,
   fileSubID,
-}: TaskFileSubmissionDirParams): string {
-  return `${getMediaUrl()}content/platform/courses/${courseUUID}/activities/${activityUUID}/assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/subs/${fileSubID}`;
+}: AssessmentItemSubmissionFileDirParams): string {
+  return `${getMediaUrl()}content/platform/courses/${courseUUID}/activities/${activityUUID}/assignments/${assessmentUUID}/tasks/${itemUUID}/subs/${fileSubID}`;
 }
 
 export interface ActivityMediaDirectoryParams {

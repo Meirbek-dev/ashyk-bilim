@@ -30,11 +30,15 @@ _SRC_ROOT = Path(__file__).parent.parent / "src"
 # Each entry is (pattern, description).
 _FORBIDDEN_PATTERNS: list[tuple[str, str]] = [
     ("assignment_scheduler", "Legacy assignment_scheduler symbol"),
-    ("grade_assignments", "Legacy grade_assignments permission key"),
     ("AssignmentTask ", "Legacy AssignmentTask model reference"),
     ("assignmenttasksubmission", "Legacy assignmenttasksubmission table name"),
     ("AssignmentUserSubmission", "Legacy AssignmentUserSubmission model reference"),
     ("assignmentusersubmission", "Legacy assignmentusersubmission table name"),
+    ("tasks_ref_files", "Legacy tasks_ref_files upload helper"),
+    ("getTaskRefFileDir", "Legacy getTaskRefFileDir media helper"),
+    ("getTaskFileSubmissionDir", "Legacy getTaskFileSubmissionDir media helper"),
+    ("queryKeys.assignments", "Legacy queryKeys.assignments namespace"),
+    ("EditAssignmentModal", "Legacy EditAssignmentModal component"),
 ]
 
 # Allowlist: files that may legitimately contain a forbidden pattern.

@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { getTaskFileSubmissionDir, getTaskRefFileDir } from '@services/media/media';
+import { getAssessmentItemSubmissionFileDir, getAssessmentItemFileDir } from '@services/media/media';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ export interface FileUploadConstraints {
 
 export interface FileUploadAttemptItem {
   taskUuid: string;
-  assignmentUuid: string;
+  assessmentUuid: string;
   courseUuid?: string | null;
   activityUuid?: string | null;
   referenceFile?: string | null;
@@ -345,22 +345,22 @@ export function FileUploadAttempt({
 
   const fileUrl =
     fileKey && item.courseUuid && item.activityUuid
-      ? getTaskFileSubmissionDir({
+      ? getAssessmentItemSubmissionFileDir({
           courseUUID: item.courseUuid,
           activityUUID: item.activityUuid,
-          assignmentUUID: item.assignmentUuid,
-          assignmentTaskUUID: item.taskUuid,
+          assessmentUUID: item.assessmentUuid,
+          itemUUID: item.taskUuid,
           fileSubID: fileKey,
         })
       : null;
 
   const referenceUrl =
     item.referenceFile && item.courseUuid && item.activityUuid
-      ? getTaskRefFileDir({
+      ? getAssessmentItemFileDir({
           courseUUID: item.courseUuid,
           activityUUID: item.activityUuid,
-          assignmentUUID: item.assignmentUuid,
-          assignmentTaskUUID: item.taskUuid,
+          assessmentUUID: item.assessmentUuid,
+          itemUUID: item.taskUuid,
           fileID: item.referenceFile,
         })
       : null;

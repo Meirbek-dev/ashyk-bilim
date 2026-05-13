@@ -86,7 +86,7 @@ export function CanonicalAttemptItem({
       <FileUploadAttemptModule
         item={{
           taskUuid: item.item_uuid,
-          assignmentUuid: assessmentUuid,
+          assessmentUuid: assessmentUuid,
           constraints: {
             kind: 'FILE_UPLOAD',
             allowed_mime_types: body.mimes,
@@ -331,7 +331,7 @@ export function CanonicalReviewAnswer({
       <ReviewDetail
         item={{
           taskUuid: item.item_uuid,
-          assignmentUuid: item.item_uuid,
+          assessmentUuid: item.item_uuid,
           constraints: {
             kind: 'FILE_UPLOAD',
             allowed_mime_types: body.mimes,
