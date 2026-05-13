@@ -1,4 +1,4 @@
-FROM python:3.14.4-slim-trixie
+FROM python:3.14.5-slim-trixie
 COPY --from=ghcr.io/astral-sh/uv:0.11.7 /uv /uvx /usr/local/bin/
 
 ENV UV_COMPILE_BYTECODE=1 \

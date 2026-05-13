@@ -15,9 +15,15 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 from src.infra.db.engine import get_bg_engine
 from src.infra.settings import AppSettings
+
+if TYPE_CHECKING:
+    from sqlmodel import Session
+
+    from src.db.grading.submissions import Submission
 
 logger = logging.getLogger(__name__)
 
@@ -107,10 +113,8 @@ def _auto_submit_expired_drafts() -> int:
     return count
 
 
-def _force_submit(submission: "Submission", db_session: "Session", now: datetime) -> None:
+def _force_submit(submission: Submission, db_session: Session, now: datetime) -> None:
     """Transition a DRAFT submission to PENDING and record the metadata."""
-    from sqlmodel import Session  # ensure correct import in thread
-
     from src.db.grading.submissions import SubmissionStatus
 
     metadata: dict = submission.metadata_json or {}

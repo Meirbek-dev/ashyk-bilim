@@ -186,20 +186,19 @@ async def save_assessment_draft(
         # ── Redis rate-limiting: at most one save per 5 s per submission ──────
         redis = get_async_redis_client()
         throttle_key = f"draft_throttle:{draft.submission_uuid}"
-        if redis is not None:
-            if await redis.exists(throttle_key):
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail={
-                        "code": "DRAFT_SAVE_THROTTLED",
-                        "message": (
-                            "Draft saved too recently. "
-                            f"Wait {_DRAFT_THROTTLE_TTL} seconds between saves."
-                        ),
-                        "retry_after_seconds": _DRAFT_THROTTLE_TTL,
-                    },
-                    headers={"Retry-After": str(_DRAFT_THROTTLE_TTL)},
-                )
+        if redis is not None and await redis.exists(throttle_key):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    "code": "DRAFT_SAVE_THROTTLED",
+                    "message": (
+                        "Draft saved too recently. "
+                        f"Wait {_DRAFT_THROTTLE_TTL} seconds between saves."
+                    ),
+                    "retry_after_seconds": _DRAFT_THROTTLE_TTL,
+                },
+                headers={"Retry-After": str(_DRAFT_THROTTLE_TTL)},
+            )
 
         _enforce_draft_version(draft, if_match)
 

@@ -51,6 +51,10 @@ from src.db.grading.progress import (
 )
 from src.db.grading.submissions import AssessmentType, Submission, SubmissionStatus
 from src.db.users import AnonymousUser, PublicUser
+from src.services.assessments._constants import (
+    _ALLOWED_LIFECYCLE_TRANSITIONS,
+    _KIND_TO_ACTIVITY,
+)
 from src.services.assessments._helpers import (
     _build_assessment_read,
     _build_item_read,
@@ -71,10 +75,6 @@ from src.services.assessments._helpers import (
     _require_read,
     _sync_activity_lifecycle,
     build_readiness,
-)
-from src.services.assessments._constants import (
-    _ALLOWED_LIFECYCLE_TRANSITIONS,
-    _KIND_TO_ACTIVITY,
 )
 from src.services.courses._utils import _next_activity_order
 
@@ -558,7 +558,7 @@ async def duplicate_assessment(
         # Mirror all configurable policy fields from source.
         new_policy.max_attempts = source_policy.max_attempts
         new_policy.time_limit_seconds = source_policy.time_limit_seconds
-        new_policy.late_policy = source_policy.late_policy
+        new_policy.late_policy_json = source_policy.late_policy_json
         new_policy.completion_rule = source_policy.completion_rule
         new_policy.grading_mode = source_policy.grading_mode
         new_policy.grade_release_mode = source_policy.grade_release_mode
