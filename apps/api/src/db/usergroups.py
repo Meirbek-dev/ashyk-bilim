@@ -31,6 +31,7 @@ class UserGroupUpdate(SQLModelStrictBaseModel):
 
 class UserGroupRead(UserGroupBase):
     id: int
+    creator_id: int | None = None
     usergroup_uuid: str
     creation_date: str
     update_date: str

@@ -34,6 +34,7 @@ class CollectionUpdate(SQLModelStrictBaseModel):
 
 class CollectionRead(CollectionBase):
     id: int
+    creator_id: int | None = None
     courses: list
     collection_uuid: str
     creation_date: str

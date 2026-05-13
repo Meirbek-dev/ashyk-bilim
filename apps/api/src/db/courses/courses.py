@@ -258,6 +258,7 @@ class CourseAccessUpdate(PydanticStrictBaseModel):
 
 class CourseRead(PydanticStrictBaseModel):
     id: int
+    creator_id: int | None = None
     authors: list[AuthorWithRole] = PydanticField(default_factory=list)
     course_uuid: str
     creation_date: datetime
@@ -298,6 +299,7 @@ class CourseRead(PydanticStrictBaseModel):
 
 class FullCourseRead(PydanticStrictBaseModel):
     id: int
+    creator_id: int | None = None
     course_uuid: str | None = None
     creation_date: str | None = None
     update_date: str | None = None
@@ -337,6 +339,7 @@ class FullCourseRead(PydanticStrictBaseModel):
 
 class FullCourseReadWithTrail(PydanticStrictBaseModel):
     id: int
+    creator_id: int | None = None
     course_uuid: str | None = None
     creation_date: str | None = None
     update_date: str | None = None

@@ -187,6 +187,7 @@ class ActivityRead(ActivityBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    creator_id: int | None = None
     chapter_id: int
     course_id: int | None = None
     order: int = 0

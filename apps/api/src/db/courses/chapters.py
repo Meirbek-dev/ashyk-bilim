@@ -59,6 +59,7 @@ class ChapterUpdate(SQLModelStrictBaseModel):
 
 class ChapterRead(ChapterBase):
     id: int
+    creator_id: int | None = None
     activities: list[ActivityRead]
     chapter_uuid: str
     creation_date: datetime
@@ -83,6 +84,7 @@ class ChapterReadWithPermissions(ChapterBase):
     """ChapterRead that includes per-activity permission metadata."""
 
     id: int
+    creator_id: int | None = None
     activities: list[ActivityReadWithPermissions]
     chapter_uuid: str
     creation_date: datetime

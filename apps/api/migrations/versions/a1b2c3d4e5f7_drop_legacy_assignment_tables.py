@@ -103,23 +103,16 @@ def upgrade() -> None:
         op.drop_table("assignment")
 
     # ── 4. Strip legacy keys from submission.metadata_json ───────────────────
-    # Build a chained #- operator expression for each key.
-    # PostgreSQL JSONB: col #- '{key}' removes a top-level key.
     if _LEGACY_METADATA_KEYS:
-        # Build:  metadata_json #- '{key1}' #- '{key2}' …
-        removal_expr = "metadata_json"
-        for key in _LEGACY_METADATA_KEYS:
-            removal_expr = removal_expr + " #- '{" + key + "}'"
-
-        has_any_key = " OR ".join(
-            "metadata_json ? '" + k + "'" for k in _LEGACY_METADATA_KEYS
-        )
+        removal_expr = " ".join(f"- '{key}'" for key in _LEGACY_METADATA_KEYS)
 
         conn.execute(
             sa.text(
                 "UPDATE submission "  # noqa: S608
-                "SET metadata_json = " + removal_expr + " "
-                "WHERE metadata_json IS NOT NULL AND (" + has_any_key + ")"
+                "SET metadata_json = (COALESCE(metadata_json, '{}'::json)::jsonb "
+                + removal_expr
+                + ")::json "
+                "WHERE metadata_json IS NOT NULL"
             )
         )
 
