@@ -405,6 +405,7 @@ class AssessmentItem(SQLModelStrictBaseModel, table=True):
 
 
 class AssessmentPolicyPatch(PydanticStrictBaseModel):
+    model_config = ConfigDict(strict=False)
     # Attempt policy
     max_attempts: int | None = None
     time_limit_seconds: int | None = None

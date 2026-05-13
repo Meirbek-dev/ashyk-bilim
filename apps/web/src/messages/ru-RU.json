@@ -5290,6 +5290,7 @@
           "peer_review": "Рецензия коллеги",
           "perfect_score": "Идеальный результат",
           "quiz_completion": "Тест завершен",
+          "exam_completion": "Экзамен завершен",
           "reading_completion": "Чтение завершено",
           "streak_bonus_100_days": "Бонус за серию 100 дн.",
           "streak_bonus_30_days": "Бонус за серию 30 дн.",
@@ -7696,7 +7697,9 @@
             "form_prompt_missing": "Требуется формулировка вопроса формы.",
             "form_fields_missing": "Форма должна содержать хотя бы одно поле.",
             "form_field_label_missing": "Каждое поле формы должно иметь метку.",
-            "form_field_id_duplicate": "Поля формы должны иметь уникальные идентификаторы."
+            "form_field_id_duplicate": "Поля формы должны иметь уникальные идентификаторы.",
+            "code_languages_missing": "Выберите хотя бы один разрешенный язык",
+            "code_tests_missing": "Добавьте хотя бы один тестовый сценарий"
           },
           "duplicate": "Дублировать",
           "delete": "Удалить",

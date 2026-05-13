@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { RecentActivityFeed } from '@/components/Dashboard/Gamification/recent-activity-feed';
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
 import { Leaderboard } from '@/components/Dashboard/Gamification/leaderboard';
@@ -47,6 +48,11 @@ const Trail = () => {
 
   const { data: trail, isLoading: isTrailLoading } = useTrailCurrent();
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const gamificationProfile = useGamificationStore((s) => s.profile);
   const recentTransactions = useGamificationStore((s) => s.dashboard?.recent_transactions ?? EMPTY_RECENT_TRANSACTIONS);
   const userRank = useGamificationStore((s) => s.dashboard?.user_rank);
@@ -76,7 +82,7 @@ const Trail = () => {
             )}
           </div>
 
-          {isTrailLoading ? (
+          {!mounted || isTrailLoading ? (
             <TrailCourseSkeletons />
           ) : !trail || trail.runs.length === 0 ? (
             <div className="border-border bg-card rounded-xl border py-12 text-center">
