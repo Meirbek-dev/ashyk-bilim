@@ -1,4 +1,4 @@
-import { BarChart2, BookCopy, ClipboardList, School, Settings, ShieldCheck, Users, ChevronRight } from 'lucide-react';
+import { BarChart2, BookCopy, School, Settings, ShieldCheck, Users, ChevronRight } from 'lucide-react';
 import touEmblemLight from '@/app/_shared/dash/images/tou_emblem_light.webp';
 import ServerLink from '@/components/ui/ServerLink';
 import { getTranslations } from 'next-intl/server';
@@ -8,7 +8,6 @@ import Image from 'next/image';
 import {
   canSeeAdmin,
   canSeeAnalytics,
-  canSeeAssignments,
   canSeeCourses,
   canSeePlatform,
   canSeeUsers,
@@ -31,7 +30,6 @@ export default async function PlatformDashHomePage() {
     sessionCan(session, resource, action, scope, permsSet);
 
   const hasCoursesAccess = canSeeCourses(can);
-  const hasAssignmentsAccess = canSeeAssignments(can);
   const hasAnalyticsAccess = canSeeAnalytics(can);
   const hasPlatformAccess = canSeePlatform(can);
   const hasUsersAccess = canSeeUsers(can);
@@ -44,13 +42,6 @@ export default async function PlatformDashHomePage() {
       icon: <BookCopy size={22} />,
       title: t('Courses.title'),
       description: t('Courses.description'),
-    },
-    {
-      visible: hasAssignmentsAccess,
-      href: '/dash/courses',
-      icon: <ClipboardList size={22} />,
-      title: t('Assignments.title'),
-      description: t('Assignments.description'),
     },
     {
       visible: hasAnalyticsAccess,

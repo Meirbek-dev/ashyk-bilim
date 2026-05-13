@@ -8,7 +8,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { Backpack, Book, School, User, Users } from 'lucide-react';
+import { Book, School, User, Users } from 'lucide-react';
 import AppLink from '@/components/ui/AppLink';
 import { getAbsoluteUrl } from '@services/config/config';
 import { useTranslations } from 'next-intl';
@@ -16,7 +16,7 @@ import { useTranslations } from 'next-intl';
 // ── DashBreadcrumbs ──────────────────────────────────────────────────────────
 // Replaces the old BreadCrumbs component used throughout the dashboard.
 
-export type DashBreadcrumbType = 'courses' | 'user' | 'users' | 'platform' | 'platformusers' | 'assignments';
+export type DashBreadcrumbType = 'courses' | 'user' | 'users' | 'platform' | 'platformusers';
 
 interface DashBreadcrumbsProps {
   type: DashBreadcrumbType;
@@ -28,7 +28,6 @@ const DASH_BREADCRUMB_CONFIGS: Record<
   { href: string; icon: React.ComponentType<{ className?: string; size?: number }>; titleKey: string }
 > = {
   courses: { href: '/dash/courses', icon: Book, titleKey: 'Courses.title' },
-  assignments: { href: '/dash/courses', icon: Backpack, titleKey: 'Assignments.title' },
   user: { href: '/dash/user-account/settings/general', icon: User, titleKey: 'UserAccountSettings.title' },
   users: { href: '/dash/users/settings/users', icon: Users, titleKey: 'Card.Users.title' },
   platformusers: { href: '/dash/users/settings/users', icon: Users, titleKey: 'Card.Users.title' },

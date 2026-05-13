@@ -16,15 +16,8 @@ export function canSeeCourses(can: CanCheck): boolean {
   return (
     can(Resources.COURSE, Actions.CREATE, Scopes.PLATFORM) ||
     can(Resources.COURSE, Actions.UPDATE, Scopes.PLATFORM) ||
-    can(Resources.COURSE, Actions.MANAGE, Scopes.PLATFORM)
-  );
-}
-
-export function canSeeAssignments(can: CanCheck): boolean {
-  return (
-    can(Resources.COURSE, Actions.CREATE, Scopes.PLATFORM) ||
-    can(Resources.COURSE, Actions.UPDATE, Scopes.PLATFORM) ||
     can(Resources.COURSE, Actions.UPDATE, Scopes.OWN) ||
+    can(Resources.COURSE, Actions.MANAGE, Scopes.PLATFORM) ||
     can(Resources.ASSIGNMENT, Actions.GRADE, Scopes.PLATFORM) ||
     can(Resources.ASSIGNMENT, Actions.CREATE, Scopes.PLATFORM)
   );
@@ -64,7 +57,6 @@ export function canAccessDashboard(can: CanCheck): boolean {
   return (
     canSeePlatform(can) ||
     canSeeCourses(can) ||
-    canSeeAssignments(can) ||
     canSeeAnalytics(can) ||
     canSeeUsers(can) ||
     canSeeAdmin(can)

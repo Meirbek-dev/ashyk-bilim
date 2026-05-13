@@ -2,7 +2,6 @@ import {
   canAccessDashboard,
   canSeeAdmin,
   canSeeAnalytics,
-  canSeeAssignments,
   canSeeCourses,
   canSeePlatform,
   canSeeUsers,
@@ -14,7 +13,6 @@ export function useNavigationPermissions() {
 
   const hasPlatformAccess = canSeePlatform(can);
   const hasCoursesAccess = canSeeCourses(can);
-  const hasAssignmentsAccess = canSeeAssignments(can);
   const hasAnalyticsAccess = canSeeAnalytics(can);
   const hasUsersAccess = canSeeUsers(can);
   const hasAdminAccess = canSeeAdmin(can);
@@ -22,7 +20,6 @@ export function useNavigationPermissions() {
 
   return {
     canSeeCourses: hasCoursesAccess,
-    canSeeAssignments: hasAssignmentsAccess,
     canSeeAnalytics: hasAnalyticsAccess,
     canSeeUsers: hasUsersAccess,
     canSeeAdmin: hasAdminAccess,

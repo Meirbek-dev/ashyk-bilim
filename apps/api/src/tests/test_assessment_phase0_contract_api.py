@@ -398,7 +398,7 @@ def test_activity_lookup_does_not_create_canonical_assessment_rows(
     response = api_client.get("/assessments/activity/legacy_lookup")
 
     assert response.status_code == 404
-    assert response.json()["detail"]["code"] == "MIGRATION_REQUIRED"
+    assert response.json()["detail"]["code"] == "ASSESSMENT_NOT_FOUND"
     with db_session_factory() as session:
         assert session.exec(select(Assessment)).all() == []
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Backpack, BarChart3, BookCopy, Home, School, Settings, ShieldCheck, Users } from 'lucide-react';
+import { BarChart3, BookCopy, Home, School, Settings, ShieldCheck, Users } from 'lucide-react';
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions';
 import AppLink from '@/components/ui/AppLink';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,7 @@ import type { LucideIcon } from 'lucide-react';
 const DashMobileMenu = () => {
   const pathname = usePathname();
   const t = useTranslations('SidebarMenu');
-  const { canSeePlatform, canSeeCourses, canSeeAssignments, canSeeAnalytics, canSeeUsers, canSeeAdmin } =
+  const { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } =
     useNavigationPermissions();
 
   const navigationItems: {
@@ -35,17 +35,6 @@ const DashMobileMenu = () => {
             icon: BookCopy,
             label: t('mobile.courses'),
             tooltip: t('tooltips.courses'),
-            isActive: pathname.startsWith('/dash/courses'),
-          },
-        ]
-      : []),
-    ...(canSeeAssignments
-      ? [
-          {
-            href: '/dash/courses',
-            icon: Backpack,
-            label: t('mobile.assignments'),
-            tooltip: t('tooltips.assignments'),
             isActive: pathname.startsWith('/dash/courses'),
           },
         ]

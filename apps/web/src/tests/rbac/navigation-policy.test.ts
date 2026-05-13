@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   canSeePlatform,
   canSeeCourses,
-  canSeeAssignments,
   canSeeAnalytics,
   canSeeUsers,
   canSeeAdmin,
@@ -39,21 +38,19 @@ describe('Navigation Policy', () => {
       expect(canSeeCourses(can)).toBe(true);
     });
 
+    it('should return true if user has course:update:own', () => {
+      const can = mockCan(new Set(['course:update:own']));
+      expect(canSeeCourses(can)).toBe(true);
+    });
+
+    it('should return true if user can grade assignments', () => {
+      const can = mockCan(new Set(['assignment:grade:platform']));
+      expect(canSeeCourses(can)).toBe(true);
+    });
+
     it('should return false if user only has course:read:all', () => {
       const can = mockCan(new Set(['course:read:all']));
       expect(canSeeCourses(can)).toBe(false);
-    });
-  });
-
-  describe('canSeeAssignments', () => {
-    it('should return true if user can grade assignments', () => {
-      const can = mockCan(new Set(['assignment:grade:platform']));
-      expect(canSeeAssignments(can)).toBe(true);
-    });
-
-    it('should return true if user has course:update:own', () => {
-      const can = mockCan(new Set(['course:update:own']));
-      expect(canSeeAssignments(can)).toBe(true);
     });
   });
 

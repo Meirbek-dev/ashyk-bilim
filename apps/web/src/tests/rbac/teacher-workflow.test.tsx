@@ -8,7 +8,6 @@ import { Actions, Resources, Scopes } from '@/types/permissions';
 import {
   canSeePlatform,
   canSeeCourses,
-  canSeeAssignments,
   canSeeAnalytics,
   canSeeAdmin,
 } from '@/lib/rbac/navigation-policy';
@@ -84,11 +83,6 @@ describe('Teacher (Instructor) Workflow', () => {
   it('should allow instructor to see courses they created or can manage', () => {
     const mockCan = (r: any, a: any, s: any) => instructorPermissions.includes(`${r}:${a}:${s}`);
     expect(canSeeCourses(mockCan as any)).toBe(true);
-  });
-
-  it('should allow instructor to see assignments for their courses', () => {
-    const mockCan = (r: any, a: any, s: any) => instructorPermissions.includes(`${r}:${a}:${s}`);
-    expect(canSeeAssignments(mockCan as any)).toBe(true);
   });
 
   it('should allow instructor to see analytics for assigned students', () => {
