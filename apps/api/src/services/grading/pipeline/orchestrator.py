@@ -7,6 +7,7 @@ emitted via the event bus after the main transaction commits.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -81,7 +82,65 @@ async def submit_assessment(
       9. Apply penalties
       10. Persist (atomic)
       11. Emit events (post-commit)
+
+    Raises HTTP 504 if the pipeline does not complete within 30 seconds.
+    Raises HTTP 500 for unexpected errors (prevents raw 500 frames leaking).
     """
+    try:
+        async with asyncio.timeout(30):
+            return await _submit_assessment_inner(
+                activity_id=activity_id,
+                assessment_type=assessment_type,
+                answers_payload=answers_payload,
+                settings=settings,
+                current_user=current_user,
+                db_session=db_session,
+                violation_count=violation_count,
+                submission_uuid=submission_uuid,
+            )
+    except asyncio.TimeoutError:
+        logger.error(
+            "submit_assessment timed out after 30s "
+            "(activity_id=%s, user_id=%s)",
+            activity_id,
+            current_user.id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail={
+                "code": "GRADING_TIMEOUT",
+                "message": "Grading pipeline did not complete within the allowed time.",
+            },
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "submit_assessment unexpected error "
+            "(activity_id=%s, user_id=%s)",
+            activity_id,
+            current_user.id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": "GRADING_ERROR",
+                "message": "An unexpected error occurred during grading.",
+            },
+        )
+
+
+async def _submit_assessment_inner(
+    activity_id: int,
+    assessment_type: AssessmentType,
+    answers_payload: dict,
+    settings: AssessmentSettings,
+    current_user: PublicUser,
+    db_session: Session,
+    *,
+    violation_count: int = 0,
+    submission_uuid: str | None = None,
+) -> SubmissionRead:
     # 1. Permission check
     activity = _get_activity_or_404(activity_id, db_session)
     _require_permission(current_user, activity, assessment_type, db_session)
@@ -108,6 +167,22 @@ async def submit_assessment(
 
     # 6. Check violations
     violation_exceeded = check_violations(settings, violation_count)
+
+    # If violations exceeded, record the auto-submit reason in metadata
+    # and cap the violations list at 500 entries.
+    _MAX_VIOLATIONS_STORED = 500
+    if violation_exceeded:
+        current_meta: dict = draft.metadata_json or {}
+        current_meta["auto_submit_reason"] = "INTEGRITY_VIOLATION"
+        current_meta["integrity_violation_count"] = violation_count
+        # Cap the violations list to prevent unbounded metadata growth.
+        existing_violations: list = current_meta.get("violations", [])
+        if len(existing_violations) > _MAX_VIOLATIONS_STORED:
+            current_meta["violations"] = existing_violations[-_MAX_VIOLATIONS_STORED:]
+            current_meta["violations_truncated"] = True
+        draft.metadata_json = current_meta
+        db_session.add(draft)
+        db_session.flush()
 
     # 7. Run code (CODE_CHALLENGE only)
     answers_by_item_uuid = parsed.answers_by_item_uuid
@@ -371,6 +446,20 @@ async def _run_final_code_answers(
                     "code": "CODE_RUNNER_DEGRADED",
                     "message": result.error_message or "Code runner temporarily unavailable.",
                     "is_retryable": True,
+                },
+            )
+        if result.status == CodeRunStatus.COMPILE_ERROR:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "code": "COMPILE_ERROR",
+                    "message": "Source code failed to compile.",
+                    "compile_output": (
+                        result.grading_details()[0].get("compile_output")
+                        if result.grading_details()
+                        else None
+                    ),
+                    "item_uuid": item.item_uuid,
                 },
             )
 

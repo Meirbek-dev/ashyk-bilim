@@ -19,6 +19,8 @@ from src.infra.db.engine import (
 from src.infra.logging import configure_logging
 from src.infra.settings import AppSettings
 from src.tasks.assessment_scheduler import assessment_scheduler_loop
+from src.tasks.assessment_timer import assessment_timer_loop
+from src.tasks.plagiarism_checker import plagiarism_checker_loop
 from src.tasks.upload_reaper import reap_orphan_uploads
 
 logger = logging.getLogger(__name__)
@@ -90,15 +92,23 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[
             assessment_scheduler_loop(settings),
             name="assessment_scheduler",
         )
+        timer_task = asyncio.create_task(
+            assessment_timer_loop(settings),
+            name="assessment_timer",
+        )
         upload_reaper_task = asyncio.create_task(
             _upload_reaper_loop(session_factory),
             name="upload_reaper",
+        )
+        plagiarism_task = asyncio.create_task(
+            plagiarism_checker_loop(),
+            name="plagiarism_checker",
         )
 
         try:
             yield
         finally:
-            for bg_task in (ttl_sweep_task, scheduler_task, upload_reaper_task):
+            for bg_task in (ttl_sweep_task, scheduler_task, timer_task, upload_reaper_task, plagiarism_task):
                 if not bg_task.done():
                     bg_task.cancel()
                     with contextlib.suppress(asyncio.CancelledError):

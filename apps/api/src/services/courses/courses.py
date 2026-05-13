@@ -1665,7 +1665,7 @@ async def get_course_user_rights(
             "delete_content": False,
             "manage_contributors": False,
             "manage_access": False,
-            "grade_assignments": False,
+            "assessment_grade": False,
             "mark_activities_done": False,
             "create_certifications": False,
         },
@@ -1837,7 +1837,7 @@ async def get_course_user_rights(
 
     # GRADING permissions
     if is_instructor_or_admin_or_maintainer_role:
-        rights["permissions"]["grade_assignments"] = True
+        rights["permissions"]["assessment_grade"] = True
 
     # ACTIVITY MARKING permissions
     if is_instructor_or_admin_or_maintainer_role:

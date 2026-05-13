@@ -22,6 +22,29 @@ from src.infra.db.session import get_db_session
 logger = logging.getLogger(__name__)
 
 # ============================================================================
+# Assessment Permission Constants
+# ============================================================================
+
+ASSESSMENT_PERMISSIONS = frozenset({
+    "assessment:create",
+    "assessment:update",
+    "assessment:delete",
+    "assessment:submit",
+    "assessment:grade",
+    "assessment:publish",
+    "assessment:view_grades",
+    "assessment:manage_policy",
+    "assessment:override_policy",
+    "assessment:read",
+})
+
+# Deprecated permission keys and their modern equivalents.
+# Controlled by the DEPRECATED_PERMISSIONS_ENABLED setting.
+DEPRECATED_PERMISSION_MAP: dict[str, str] = {
+    "grade_assignments": "assessment:grade",
+}
+
+# ============================================================================
 # Exceptions
 # ============================================================================
 
@@ -103,6 +126,49 @@ class PermissionChecker:
         self._cache: dict[int, set[str]] = {}
 
     # ------------------------------------------------------------------
+    # Deprecated permission resolution
+    # ------------------------------------------------------------------
+
+    def _resolve_permission(self, key: str) -> str:
+        """Map deprecated permission keys to their modern equivalents.
+
+        Behaviour is controlled by the DEPRECATED_PERMISSIONS_ENABLED setting:
+        - True  (default): silently map the old key → new key with a warning.
+        - False:           raise HTTP 403 PERMISSION_DEPRECATED.
+        """
+        if key not in DEPRECATED_PERMISSION_MAP:
+            return key
+
+        try:
+            from src.infra.settings import get_settings
+
+            enabled = get_settings().general_config.deprecated_permissions_enabled
+        except Exception:
+            enabled = True  # safe default when settings unavailable
+
+        modern_key = DEPRECATED_PERMISSION_MAP[key]
+        if not enabled:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error_code": "PERMISSION_DEPRECATED",
+                    "message": (
+                        f"Permission key '{key}' is deprecated. "
+                        f"Use '{modern_key}' instead."
+                    ),
+                    "deprecated_key": key,
+                    "modern_key": modern_key,
+                },
+            )
+        logger.warning(
+            "Deprecated permission key '%s' used; mapping to '%s'. "
+            "Update callers before disabling DEPRECATED_PERMISSIONS_ENABLED.",
+            key,
+            modern_key,
+        )
+        return modern_key
+
+    # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
@@ -130,6 +196,7 @@ class PermissionChecker:
                 resource is assigned to the user (enrollment, explicit assignment,
                 etc.). Unlocks ``assigned``-scope permissions.
         """
+        permission = self._resolve_permission(permission)
         granted = self._get_or_load(user_id)
         return self._resolve(
             permission,

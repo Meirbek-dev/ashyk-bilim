@@ -7,6 +7,11 @@ trail.  The current grade is always the latest entry by ``created_at``.
 The ``published_at`` timestamp controls student visibility:
   - NULL  → draft (teacher-only; student cannot see the grade yet)
   - non-NULL → visible to the student
+
+Immutability is enforced via SQLAlchemy event listeners:
+  - ``before_update`` raises an ``IntegrityError`` for any field change other
+    than ``published_at`` (publishing a draft entry is allowed).
+  - ``before_delete`` always raises an ``IntegrityError``.
 """
 
 from datetime import UTC, datetime
@@ -21,10 +26,22 @@ from sqlalchemy import (
     Integer,
     Text,
     UniqueConstraint,
+    event,
 )
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session as SASession
 from sqlmodel import Field
 
 from src.db.strict_base_model import SQLModelStrictBaseModel
+
+# ── Constants ─────────────────────────────────────────────────────────────────
+
+# Virtual user ID used by automated grading pipelines.  A graded_by value of
+# SYSTEM_GRADER_ID means the grade was applied without human intervention.
+SYSTEM_GRADER_ID: int = 0
+
+# Fields that may legitimately change after insertion (publishing workflow).
+_MUTABLE_FIELDS: frozenset[str] = frozenset({"published_at"})
 
 
 class GradingEntry(SQLModelStrictBaseModel, table=True):
@@ -121,3 +138,48 @@ class GradingEntryRead(SQLModelStrictBaseModel):
     grading_version: int
     created_at: datetime
     published_at: datetime | None = None
+
+
+# ── Immutability event listeners ──────────────────────────────────────────────
+
+@event.listens_for(GradingEntry, "before_update")
+def _prevent_grading_entry_update(
+    mapper: object, connection: object, target: GradingEntry
+) -> None:
+    """Block any column change except ``published_at``.
+
+    SQLAlchemy's ``get_history()`` returns (added, unchanged, deleted) tuples.
+    A field is considered changed when the "added" bucket is non-empty.
+    """
+    from sqlalchemy import inspect as sa_inspect
+
+    state = sa_inspect(target)
+    changed_fields = {
+        attr.key
+        for attr in state.attrs
+        if attr.history.added and attr.key not in _MUTABLE_FIELDS
+    }
+    if changed_fields:
+        raise IntegrityError(
+            statement=None,
+            params=None,
+            orig=Exception(
+                f"GradingEntry is immutable. Attempted to modify: {sorted(changed_fields)}. "
+                "Create a new GradingEntry instead."
+            ),
+        )
+
+
+@event.listens_for(GradingEntry, "before_delete")
+def _prevent_grading_entry_delete(
+    mapper: object, connection: object, target: GradingEntry
+) -> None:
+    """Block all DELETE operations on GradingEntry rows."""
+    raise IntegrityError(
+        statement=None,
+        params=None,
+        orig=Exception(
+            f"GradingEntry (id={target.id}, uuid={target.entry_uuid}) cannot be deleted. "
+            "The grading ledger is append-only."
+        ),
+    )

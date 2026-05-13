@@ -77,7 +77,7 @@ class CourseUserRightsPermissions(PydanticStrictBaseModel):
     delete_content: bool
     manage_contributors: bool
     manage_access: bool
-    grade_assignments: bool
+    assessment_grade: bool
     mark_activities_done: bool
     create_certifications: bool
 
@@ -574,7 +574,7 @@ async def api_get_course_user_rights(
             "delete_content": true,
             "manage_contributors": true,
             "manage_access": true,
-            "grade_assignments": true,
+            "assessment_grade": true,
             "mark_activities_done": true,
             "create_certifications": true
         },
@@ -604,7 +604,7 @@ async def api_get_course_user_rights(
     - `delete_content`: Can delete course content
     - `manage_contributors`: Can add/remove contributors
     - `manage_access`: Can change course access settings (public, open_to_contributors)
-    - `grade_assignments`: Can grade student assignments
+    - `assessment_grade`: Can grade student assignments
     - `mark_activities_done`: Can mark activities as done for other users
     - `create_certifications`: Can create course certifications
 

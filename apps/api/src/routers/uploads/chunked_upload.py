@@ -137,6 +137,19 @@ async def put_assessment_upload_bytes(
         raise HTTPException(status_code=410, detail="Upload has expired")
 
     content = await request.body()
+
+    # Enforce 100 MB hard limit on all assessment uploads to prevent DoS.
+    _MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+    if len(content) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail={
+                "code": "FILE_TOO_LARGE",
+                "message": f"Upload exceeds the maximum allowed size of 100 MB.",
+                "max_bytes": _MAX_UPLOAD_BYTES,
+                "actual_bytes": len(content),
+            },
+        )
     temp_path = _temp_upload_path(upload.upload_uuid)
     temp_path.parent.mkdir(parents=True, exist_ok=True)
     temp_path.write_bytes(content)

@@ -49,7 +49,7 @@ from src.db.grading.progress import (
     GradeReleaseMode,
     LatePolicyNone,
 )
-from src.db.grading.submissions import AssessmentType
+from src.db.grading.submissions import AssessmentType, Submission, SubmissionStatus
 from src.db.users import AnonymousUser, PublicUser
 from src.services.assessments._helpers import (
     _build_assessment_read,
@@ -79,6 +79,26 @@ from src.services.assessments._constants import (
 from src.services.courses._utils import _next_activity_order
 
 logger = logging.getLogger(__name__)
+
+# Scoring fields that cannot be changed once an assessment is "locked"
+# (PUBLISHED + has non-DRAFT submissions).  Metadata fields like title,
+# description, and explanation are always editable.
+_SCORING_FIELDS: frozenset[str] = frozenset({"body", "body_json", "kind", "max_score"})
+
+
+def _is_assessment_locked(assessment: Assessment, db_session: Session) -> bool:
+    """Return True if the assessment is PUBLISHED and has ≥1 non-DRAFT submission."""
+    if assessment.lifecycle != AssessmentLifecycle.PUBLISHED:
+        return False
+    active_submission = db_session.exec(
+        select(Submission)
+        .where(Submission.assessment_policy_id.in_(  # type: ignore[union-attr]
+            select(AssessmentPolicy.id).where(AssessmentPolicy.activity_id == assessment.activity_id)
+        ))
+        .where(Submission.status != SubmissionStatus.DRAFT)
+        .limit(1)
+    ).first()
+    return active_submission is not None
 
 
 # ── Public assessment CRUD ────────────────────────────────────────────────────
@@ -308,10 +328,29 @@ async def create_assessment_item(
     current_user: PublicUser,
     db_session: Session,
 ) -> AssessmentReadItem:
+    _MAX_ITEMS_PER_ASSESSMENT = 200
+
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     _activity, course = _get_activity_and_course(assessment, db_session)
     _require_author(current_user, course, db_session)
     _ensure_authorable(assessment, db_session)
+
+    item_count = db_session.exec(
+        select(func.count()).where(AssessmentItem.assessment_id == assessment.id)
+    ).one()
+    if item_count >= _MAX_ITEMS_PER_ASSESSMENT:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "ITEM_LIMIT_EXCEEDED",
+                "message": (
+                    f"Assessment already has {item_count} items. "
+                    f"Maximum allowed: {_MAX_ITEMS_PER_ASSESSMENT}."
+                ),
+                "max": _MAX_ITEMS_PER_ASSESSMENT,
+                "current": item_count,
+            },
+        )
 
     max_order = db_session.exec(
         select(func.max(AssessmentItem.order)).where(
@@ -351,6 +390,24 @@ async def update_assessment_item(
     _require_author(current_user, course, db_session)
     _ensure_authorable(assessment, db_session)
     item = _get_item_or_404(assessment, item_uuid, db_session)
+
+    # ── Content locking: block scoring-field changes on locked assessments ────
+    if _is_assessment_locked(assessment, db_session):
+        changed_keys = set(payload.model_dump(exclude_unset=True).keys())
+        forbidden_changes = changed_keys & _SCORING_FIELDS
+        if forbidden_changes:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "ASSESSMENT_LOCKED",
+                    "message": (
+                        "Cannot modify scoring fields of a published assessment "
+                        "that has active submissions. Only title, description, and "
+                        "explanation may be updated."
+                    ),
+                    "locked_fields": sorted(forbidden_changes),
+                },
+            )
 
     changes = payload.model_dump(exclude_unset=True)
     for field, value in changes.items():
@@ -425,6 +482,20 @@ async def delete_assessment_item(
     _activity, course = _get_activity_and_course(assessment, db_session)
     _require_author(current_user, course, db_session)
     _ensure_authorable(assessment, db_session)
+
+    # ── Content locking: cannot delete items on locked assessments ────────────
+    if _is_assessment_locked(assessment, db_session):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "ASSESSMENT_LOCKED",
+                "message": (
+                    "Cannot delete items from a published assessment that has "
+                    "active submissions."
+                ),
+            },
+        )
+
     item = _get_item_or_404(assessment, item_uuid, db_session)
     db_session.delete(item)
     now = datetime.now(UTC)
@@ -433,3 +504,110 @@ async def delete_assessment_item(
     db_session.add(assessment)
     db_session.commit()
     return {"detail": "Элемент оценивания удален"}
+
+
+async def duplicate_assessment(
+    assessment_uuid: str,
+    current_user: PublicUser,
+    db_session: Session,
+) -> AssessmentRead:
+    """Deep-copy an Assessment + its Items + its Policy into a new DRAFT.
+
+    The duplicate is placed in the same chapter/course as the source, gets new
+    UUIDs throughout, and starts in ``DRAFT`` lifecycle regardless of the
+    source's lifecycle state.  The caller must be an author of the course.
+    """
+    source = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
+    activity, course = _get_activity_and_course(source, db_session)
+    _require_author(current_user, course, db_session)
+
+    now = datetime.now(UTC)
+
+    # ── Duplicate the backing Activity ───────────────────────────────────────
+    new_activity = Activity(
+        name=f"{activity.name} (копия)",
+        activity_type=activity.activity_type,
+        activity_sub_type=activity.activity_sub_type,
+        content={},
+        details={"lifecycle_status": AssessmentLifecycle.DRAFT.value},
+        settings=activity.settings,
+        published=False,
+        chapter_id=activity.chapter_id,
+        course_id=activity.course_id,
+        order=_next_activity_order(activity.chapter_id, db_session),
+        creator_id=current_user.id,
+        activity_uuid=f"activity_{ULID()}",
+        creation_date=now,
+        update_date=now,
+    )
+    db_session.add(new_activity)
+    db_session.flush()
+
+    # ── Duplicate the Policy (deep-copy settings, reset runtime counters) ────
+    source_policy: AssessmentPolicy | None = (
+        db_session.get(AssessmentPolicy, source.policy_id) if source.policy_id else None
+    )
+    new_policy = _get_or_create_policy(
+        activity_id=new_activity.id,
+        kind=source.kind,
+        patch=None,
+        db_session=db_session,
+        now=now,
+    )
+    if source_policy is not None:
+        # Mirror all configurable policy fields from source.
+        new_policy.max_attempts = source_policy.max_attempts
+        new_policy.time_limit_minutes = source_policy.time_limit_minutes
+        new_policy.late_policy = source_policy.late_policy
+        new_policy.completion_rule = source_policy.completion_rule
+        new_policy.grading_mode = source_policy.grading_mode
+        new_policy.grade_release_mode = source_policy.grade_release_mode
+        new_policy.passing_score = source_policy.passing_score
+        db_session.add(new_policy)
+    db_session.flush()
+
+    # ── Duplicate the Assessment ──────────────────────────────────────────────
+    new_assessment = Assessment(
+        assessment_uuid=f"assessment_{ULID()}",
+        activity_id=new_activity.id,
+        kind=source.kind,
+        title=f"{source.title} (копия)",
+        description=source.description,
+        lifecycle=AssessmentLifecycle.DRAFT,
+        weight=source.weight,
+        grading_type=source.grading_type,
+        policy_id=new_policy.id,
+        content_version=1,
+        created_at=now,
+        updated_at=now,
+    )
+    db_session.add(new_assessment)
+    db_session.flush()
+
+    # ── Duplicate all AssessmentItems ────────────────────────────────────────
+    source_items: list[AssessmentItem] = list(
+        db_session.exec(
+            select(AssessmentItem)
+            .where(AssessmentItem.assessment_id == source.id)
+            .order_by(AssessmentItem.order)
+        ).all()
+    )
+    for src_item in source_items:
+        new_item = AssessmentItem(
+            item_uuid=f"item_{ULID()}",
+            assessment_id=new_assessment.id,
+            order=src_item.order,
+            kind=src_item.kind,
+            title=src_item.title,
+            description=src_item.description,
+            explanation=src_item.explanation,
+            body_json=src_item.body_json,
+            max_score=src_item.max_score,
+            created_at=now,
+            updated_at=now,
+        )
+        db_session.add(new_item)
+
+    db_session.commit()
+    db_session.refresh(new_assessment)
+    return _build_assessment_read(new_assessment, db_session, current_user=current_user)

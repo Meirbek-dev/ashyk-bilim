@@ -26,9 +26,8 @@ _PYDANTIC_CONFIG: ConfigDict = ConfigDict(
     strict=_dev,
     validate_assignment=_dev,
     validate_default=_dev,
-    # --- Extreme Dev Restrictions ---
-    # 1. Catch unmapped data, misspelled keys, and rogue payload injections
-    # extra="forbid" if _dev else "ignore",
+    # --- Dev-mode: catch unmapped data, misspelled keys, and rogue payload injections
+    extra="forbid" if _dev else "ignore",
     # 2. Catch mutations to nested Pydantic models (Heavy performance hit, perfect for dev)
     revalidate_instances="always" if _dev else "never",
     # 3. Catch unresolvable ForwardRefs and schema bugs at import time, not runtime
@@ -44,7 +43,7 @@ _SQLMODEL_CONFIG: ConfigDict = ConfigDict(
     validate_assignment=_dev,
     validate_default=_dev,
     # Catch stray kwargs passed into DB models before they hit SQLAlchemy
-    # extra="forbid" if _dev else "ignore",
+    extra="forbid" if _dev else "ignore",
     defer_build=False,
 )
 

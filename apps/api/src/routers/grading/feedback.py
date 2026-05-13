@@ -97,6 +97,14 @@ def _latest_or_create_grading_entry(
         return entry
 
     now = datetime.now(UTC)
+    grading_dict = (
+        submission.grading_json if isinstance(submission.grading_json, dict) else {}
+    )
+    raw_dict = (
+        submission.raw_grading_json
+        if isinstance(submission.raw_grading_json, dict)
+        else {}
+    )
     entry = GradingEntry(
         entry_uuid=f"entry_{ULID()}",
         submission_id=submission.id,
@@ -104,19 +112,10 @@ def _latest_or_create_grading_entry(
         raw_score=float(submission.final_score or submission.auto_score or 0),
         penalty_pct=float(submission.late_penalty_pct or 0),
         final_score=float(submission.final_score or submission.auto_score or 0),
-        breakdown=submission.grading_json
-        if isinstance(submission.grading_json, dict)
-        else {},
-        raw_breakdown=submission.raw_grading_json
-        if isinstance(submission.raw_grading_json, dict)
-        else {},
-        effective_breakdown=submission.grading_json
-        if isinstance(submission.grading_json, dict)
-        else {},
+        raw_breakdown=raw_dict,
+        effective_breakdown=grading_dict,
         overall_feedback=(
-            submission.grading_json.get("feedback", "")
-            if isinstance(submission.grading_json, dict)
-            else ""
+            grading_dict.get("feedback", "") if isinstance(grading_dict, dict) else ""
         ),
         grading_version=submission.grading_version,
         created_at=now,

@@ -701,6 +701,10 @@ class StudentSubmissionRead(SubmissionRead):
         "RETURNED_FOR_REVISION",
     ] = "HIDDEN"
     is_result_visible: bool = False
+    # Draft progress metadata — populated on draft save responses.
+    answered_count: int | None = None
+    total_items: int | None = None
+    time_remaining_seconds: int | None = None
 
 
 class TeacherSubmissionRead(SubmissionRead):

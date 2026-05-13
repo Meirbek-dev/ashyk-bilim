@@ -93,6 +93,10 @@ class GeneralConfig(PlatformSectionSettings):
         validation_alias="PLATFORM_LOGFIRE_ENABLED",
     )
     timezone: str = Field(default="UTC", validation_alias="PLATFORM_TIMEZONE")
+    deprecated_permissions_enabled: bool = Field(
+        default=True,
+        validation_alias="PLATFORM_DEPRECATED_PERMISSIONS_ENABLED",
+    )
 
     @field_validator("timezone", mode="before")
     @classmethod

@@ -44,6 +44,44 @@ from src.services.assessments._shared import (
 from src.services.grading.assignment_breakdown import build_effective_grading_breakdown
 from src.services.grading.teacher import _save_teacher_grade, bulk_publish_grades
 
+# ── Policy override ceilings ──────────────────────────────────────────────────
+# Hard limits that no override may exceed — prevents accidental misconfiguration.
+_MAX_ATTEMPTS_CEILING: int = 10
+_MAX_TIME_LIMIT_MINUTES: int = 480  # 8 hours
+_MAX_TIME_LIMIT_SECONDS: int = _MAX_TIME_LIMIT_MINUTES * 60
+
+
+def _validate_policy_override_ceilings(
+    max_attempts: int | None,
+    time_limit_override_seconds: int | None,
+) -> None:
+    """Raise HTTP 422 if override values exceed hard ceilings."""
+    errors: list[dict] = []
+    if max_attempts is not None and max_attempts > _MAX_ATTEMPTS_CEILING:
+        errors.append({
+            "field": "max_attempts_override",
+            "code": "EXCEEDS_CEILING",
+            "message": f"max_attempts_override cannot exceed {_MAX_ATTEMPTS_CEILING}.",
+            "ceiling": _MAX_ATTEMPTS_CEILING,
+            "provided": max_attempts,
+        })
+    if time_limit_override_seconds is not None and time_limit_override_seconds > _MAX_TIME_LIMIT_SECONDS:
+        errors.append({
+            "field": "time_limit_override_seconds",
+            "code": "EXCEEDS_CEILING",
+            "message": (
+                f"time_limit_override_seconds cannot exceed {_MAX_TIME_LIMIT_SECONDS} "
+                f"({_MAX_TIME_LIMIT_MINUTES} minutes)."
+            ),
+            "ceiling": _MAX_TIME_LIMIT_SECONDS,
+            "provided": time_limit_override_seconds,
+        })
+    if errors:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "POLICY_OVERRIDE_CEILING_EXCEEDED", "errors": errors},
+        )
+
 
 async def get_assessment_submissions(
     assessment_uuid: str,
@@ -366,6 +404,8 @@ async def create_student_policy_override(
     if policy is None or policy.id is None:
         raise HTTPException(status_code=404, detail="Политика оценивания не найдена")
 
+    _validate_policy_override_ceilings(payload.max_attempts_override, payload.time_limit_override_seconds)
+
     existing = db_session.exec(
         select(StudentPolicyOverride).where(
             StudentPolicyOverride.policy_id == policy.id,
@@ -417,6 +457,11 @@ async def update_student_policy_override(
     ).first()
     if override is None:
         raise HTTPException(status_code=404, detail="Исключение не найдено")
+
+    _validate_policy_override_ceilings(
+        payload.max_attempts_override,
+        payload.time_limit_override_seconds,
+    )
 
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(override, field, value)

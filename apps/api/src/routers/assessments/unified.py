@@ -6,6 +6,7 @@ teacher submission lists.
 
 from typing import Annotated
 
+from datetime import datetime
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
@@ -50,6 +51,7 @@ from src.services.assessments.core import (
     create_student_policy_override,
     delete_assessment_item,
     delete_student_policy_override,
+    duplicate_assessment,
     get_assessment,
     get_assessment_by_activity_uuid,
     get_assessment_submission,
@@ -309,6 +311,9 @@ async def api_export_assessment_submissions_csv(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
+    assessment_type: Annotated[str | None, Query(description="Filter by assessment type (QUIZ, OPEN_TEXT, CODE_CHALLENGE, etc.)")] = None,
+    submitted_after: Annotated[datetime | None, Query(description="Only include submissions submitted after this ISO-8601 datetime")] = None,
+    submitted_before: Annotated[datetime | None, Query(description="Only include submissions submitted before this ISO-8601 datetime")] = None,
 ) -> StreamingResponse:
     assessment = await get_assessment(assessment_uuid, current_user, db_session)
     return StreamingResponse(
@@ -316,6 +321,9 @@ async def api_export_assessment_submissions_csv(
             activity_id=assessment.activity_id,
             current_user=current_user,
             db_session=db_session,
+            assessment_type_filter=assessment_type,
+            submitted_after=submitted_after,
+            submitted_before=submitted_before,
         ),
         media_type="text/csv",
         headers={
@@ -598,3 +606,22 @@ async def api_get_audit_trail(
         "page": page,
         "page_size": page_size,
     }
+
+
+@router.post("/{assessment_uuid}/duplicate", response_model=AssessmentRead)
+async def api_duplicate_assessment(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+):
+    """Duplicate an assessment.
+
+    Creates a full deep-copy of the assessment, its items, and its policy.
+    The duplicate is placed in the same chapter/course, gets new UUIDs, and
+    starts in ``DRAFT`` lifecycle.  The caller must be an author of the course.
+    """
+    return await duplicate_assessment(
+        assessment_uuid=assessment_uuid,
+        current_user=current_user,
+        db_session=db_session,
+    )

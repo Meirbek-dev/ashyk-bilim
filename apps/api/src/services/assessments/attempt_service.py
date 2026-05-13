@@ -1,7 +1,7 @@
 """Assessment service — student attempt flow."""
 
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy import desc
@@ -13,6 +13,7 @@ from src.db.assessments import (
     AssessmentAttemptProjection,
     AssessmentDraftPatch,
     AssessmentDraftRead,
+    AssessmentItem,
     CodeRunRequest,
     CodeRunResponse,
     GradingDraftSave,
@@ -51,6 +52,7 @@ from src.services.assessments._shared import (
     _score_projection_from_submission,
     _snapshot_submission,
 )
+from src.services.cache.redis_client import get_async_redis_client
 from src.services.code_execution import get_code_execution_service
 from src.services.grading.assignment_breakdown import build_effective_grading_breakdown
 from src.services.grading.pipeline.orchestrator import (
@@ -160,6 +162,8 @@ async def save_assessment_draft(
     *,
     if_match: str | None = None,
 ) -> StudentSubmissionRead:
+    _DRAFT_THROTTLE_TTL = 5  # seconds
+
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
     _assert_attempt_action_allowed(
@@ -178,6 +182,25 @@ async def save_assessment_draft(
             current_user=current_user,
             db_session=db_session,
         )
+
+        # ── Redis rate-limiting: at most one save per 5 s per submission ──────
+        redis = get_async_redis_client()
+        throttle_key = f"draft_throttle:{draft.submission_uuid}"
+        if redis is not None:
+            if await redis.exists(throttle_key):
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail={
+                        "code": "DRAFT_SAVE_THROTTLED",
+                        "message": (
+                            "Draft saved too recently. "
+                            f"Wait {_DRAFT_THROTTLE_TTL} seconds between saves."
+                        ),
+                        "retry_after_seconds": _DRAFT_THROTTLE_TTL,
+                    },
+                    headers={"Retry-After": str(_DRAFT_THROTTLE_TTL)},
+                )
+
         _enforce_draft_version(draft, if_match)
 
         answers = _normalize_answer_patch(assessment, payload, current_user, db_session)
@@ -188,12 +211,10 @@ async def save_assessment_draft(
         if not isinstance(current_answers, dict):
             current_answers = {}
 
+        merged_answers: dict = {**current_answers, **answers}
         draft.answers_json = {
             **current_payload,
-            "answers": {
-                **current_answers,
-                **answers,
-            },
+            "answers": merged_answers,
         }
         draft.version += 1
         draft.updated_at = datetime.now(UTC)
@@ -202,7 +223,38 @@ async def save_assessment_draft(
         db_session.commit()
         db_session.refresh(draft)
         progress_submissions.save_activity_draft(draft, db_session)
-        return _build_student_submission_read(draft, db_session)
+
+        # ── Set throttle key after successful save ────────────────────────────
+        if redis is not None:
+            await redis.set(throttle_key, "1", ex=_DRAFT_THROTTLE_TTL)
+
+        # ── Build response with progress metadata ─────────────────────────────
+        result = _build_student_submission_read(draft, db_session)
+
+        # answered_count: number of non-None answer entries in the merged map
+        result.answered_count = sum(1 for v in merged_answers.values() if v is not None)
+
+        # total_items for the assessment
+        total_items = db_session.exec(
+            select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)
+        ).all()
+        result.total_items = len(total_items)
+
+        # time_remaining_seconds: computed from policy time limit and started_at
+        policy = _get_policy_for_assessment(assessment, db_session)
+        if (
+            policy is not None
+            and policy.time_limit_minutes
+            and draft.started_at
+        ):
+            now = datetime.now(UTC)
+            expires_at = draft.started_at.replace(tzinfo=UTC) + timedelta(
+                minutes=policy.time_limit_minutes
+            )
+            remaining = int((expires_at - now).total_seconds())
+            result.time_remaining_seconds = max(0, remaining)
+
+        return result
     except HTTPException:
         raise
     except Exception:

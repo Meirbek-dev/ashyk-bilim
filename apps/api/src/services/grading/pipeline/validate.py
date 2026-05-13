@@ -12,9 +12,12 @@ from typing import Any
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 
-from src.db.assessments import ITEM_ANSWER_ADAPTER
+from src.db.assessments import ITEM_ANSWER_ADAPTER, FileUploadItemBody
 from src.services.grading.pipeline.context import ParsedAnswers
 from src.services.grading.settings_loader import CanonicalAssessmentItem
+
+# Hard limit on open-text answer length to prevent DoS via huge payloads.
+_OPEN_TEXT_MAX_CHARS: int = 50_000
 
 LEGACY_ANSWER_KEYS = frozenset(
     {

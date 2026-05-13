@@ -12,6 +12,7 @@ from src.services.assessments.assessment_crud import (
     create_assessment,
     create_assessment_item,
     delete_assessment_item,
+    duplicate_assessment,
     get_assessment,
     get_assessment_by_activity_uuid,
     reorder_assessment_items,

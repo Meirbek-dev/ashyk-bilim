@@ -311,6 +311,10 @@ def export_grades_csv(
     activity_id: int,
     current_user: PublicUser,
     db_session: Session,
+    *,
+    assessment_type_filter: str | None = None,
+    submitted_after: datetime | None = None,
+    submitted_before: datetime | None = None,
 ) -> Generator[str]:
     """
     Stream CSV rows of all non-draft submissions one batch at a time.
@@ -318,6 +322,11 @@ def export_grades_csv(
     Yields the header line first, then rows in batches of 200 so the
     response starts immediately and memory usage stays bounded regardless
     of class size.  Uses Python's csv module for safe escaping.
+
+    Optional filters:
+    - ``assessment_type_filter``: restrict to a specific ``AssessmentType`` value.
+    - ``submitted_after``: only include submissions submitted after this datetime.
+    - ``submitted_before``: only include submissions submitted before this datetime.
     """
     activity = db_session.exec(
         select(Activity).where(Activity.id == activity_id)
@@ -368,13 +377,24 @@ def export_grades_csv(
     buf.truncate(0)
     buf.seek(0)
 
+    # Build dynamic WHERE conditions for optional filters.
+    base_conditions = [
+        Submission.activity_id == activity_id,
+        Submission.status != SubmissionStatus.DRAFT,
+    ]
+    if assessment_type_filter is not None:
+        base_conditions.append(
+            Submission.assessment_type == assessment_type_filter
+        )
+    if submitted_after is not None:
+        base_conditions.append(Submission.submitted_at >= submitted_after)
+    if submitted_before is not None:
+        base_conditions.append(Submission.submitted_at <= submitted_before)
+
     query = (
         select(Submission)
         .join(User, User.id == Submission.user_id)
-        .where(
-            Submission.activity_id == activity_id,
-            Submission.status != SubmissionStatus.DRAFT,
-        )
+        .where(*base_conditions)
         .order_by(asc(Submission.submitted_at))
     )
 
@@ -383,10 +403,7 @@ def export_grades_csv(
     # with the total number of submissions.
     all_user_ids_query = (
         select(Submission.user_id)
-        .where(
-            Submission.activity_id == activity_id,
-            Submission.status != SubmissionStatus.DRAFT,
-        )
+        .where(*base_conditions)
         .distinct()
     )
     all_user_ids = set(db_session.exec(all_user_ids_query).all())
@@ -477,15 +494,25 @@ async def batch_grade_submissions(
     current_user: PublicUser,
     db_session: Session,
 ) -> BatchGradeResponse:
-    """Apply teacher grades to multiple submissions in one request.
+    """Apply teacher grades to multiple submissions in one atomic request.
 
-    Each item is isolated: a failure on one submission rolls back only that
-    item and is reported in the response, while valid items still commit.
+    All-or-Nothing semantics: every submission is validated first.  If *any*
+    validation fails, **no** grade is written and the error is reported for the
+    offending item.  Only after all validations pass do we apply all changes in
+    a single commit.
+
+    Batch size is capped at 50 submissions per request.
     """
-    if len(batch_request.grades) > 100:
+    _BATCH_CAP = 50
+    if len(batch_request.grades) > _BATCH_CAP:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Batch grading supports at most 100 submissions per request",
+            detail={
+                "code": "BATCH_SIZE_EXCEEDED",
+                "message": f"Batch grading supports at most {_BATCH_CAP} submissions per request.",
+                "limit": _BATCH_CAP,
+                "provided": len(batch_request.grades),
+            },
         )
 
     requested_uuids = [grade.submission_uuid for grade in batch_request.grades]
@@ -501,39 +528,65 @@ async def batch_grade_submissions(
     }
     checker = PermissionChecker(db_session)
 
-    results: list[BatchGradeResultItem] = []
-    succeeded = 0
-    failed = 0
+    # ── Phase 1: Pre-validate ALL items ──────────────────────────────────────
+    validation_errors: list[BatchGradeResultItem] = []
 
     for grade in batch_request.grades:
         row = submissions_by_uuid.get(grade.submission_uuid)
         if row is None:
-            results.append(
+            validation_errors.append(
                 BatchGradeResultItem(
                     submission_uuid=grade.submission_uuid,
                     success=False,
                     error="Submission not found",
                 )
             )
-            failed += 1
             continue
 
-        submission, activity = row
+        _, activity = row
         if not checker.check(
             current_user.id,
             "assessment:grade",
             resource_owner_id=activity.creator_id,
         ):
-            results.append(
+            validation_errors.append(
                 BatchGradeResultItem(
                     submission_uuid=grade.submission_uuid,
                     success=False,
                     error="Not authorized to grade this submission",
                 )
             )
-            failed += 1
-            continue
 
+    if validation_errors:
+        # Return failures without writing anything.
+        all_results = []
+        error_uuids = {e.submission_uuid for e in validation_errors}
+        for grade in batch_request.grades:
+            if grade.submission_uuid in error_uuids:
+                all_results.append(
+                    next(e for e in validation_errors if e.submission_uuid == grade.submission_uuid)
+                )
+            else:
+                all_results.append(
+                    BatchGradeResultItem(
+                        submission_uuid=grade.submission_uuid,
+                        success=False,
+                        error="Aborted — batch contains invalid entries",
+                    )
+                )
+        return BatchGradeResponse(
+            results=all_results,
+            succeeded=0,
+            failed=len(all_results),
+        )
+
+    # ── Phase 2: Apply all changes (no more validation errors) ───────────────
+    results: list[BatchGradeResultItem] = []
+    succeeded = 0
+    failed = 0
+
+    for grade in batch_request.grades:
+        submission, _ = submissions_by_uuid[grade.submission_uuid]
         try:
             grade_input = TeacherGradeInput(
                 final_score=grade.final_score,
@@ -555,30 +608,38 @@ async def batch_grade_submissions(
                 )
             )
             succeeded += 1
-        except HTTPException as exc:
-            db_session.rollback()
-            results.append(
-                BatchGradeResultItem(
-                    submission_uuid=grade.submission_uuid,
-                    success=False,
-                    error=_stringify_http_exception_detail(exc.detail),
-                )
-            )
-            failed += 1
         except Exception as exc:
+            # Unexpected error — roll back everything and return.
             db_session.rollback()
+            error_msg = (
+                _stringify_http_exception_detail(exc.detail)
+                if isinstance(exc, HTTPException)
+                else str(exc)
+            )
             logger.exception(
                 "Unexpected batch grading failure for submission %s",
                 grade.submission_uuid,
             )
-            results.append(
-                BatchGradeResultItem(
-                    submission_uuid=grade.submission_uuid,
-                    success=False,
-                    error=str(exc),
+            abort_results = [r for r in results]
+            for pending in batch_request.grades[len(results):]:
+                abort_results.append(
+                    BatchGradeResultItem(
+                        submission_uuid=pending.submission_uuid,
+                        success=False,
+                        error="Aborted due to earlier failure",
+                    )
                 )
+            # Mark the failing item
+            abort_results[len(results) - 1] = BatchGradeResultItem(
+                submission_uuid=grade.submission_uuid,
+                success=False,
+                error=error_msg,
             )
-            failed += 1
+            return BatchGradeResponse(
+                results=abort_results,
+                succeeded=0,
+                failed=len(abort_results),
+            )
 
     return BatchGradeResponse(results=results, succeeded=succeeded, failed=failed)
 

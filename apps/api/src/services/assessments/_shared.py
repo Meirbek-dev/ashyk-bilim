@@ -616,6 +616,19 @@ def _get_assessment_by_uuid_or_404(
     assessment_uuid: str,
     db_session: Session,
 ) -> Assessment:
+    # Guard against legacy assignment UUIDs that pre-date the migration.
+    # These rows no longer exist after the migration ran; return a clear error.
+    if isinstance(assessment_uuid, str) and assessment_uuid.startswith("assignment_"):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "MIGRATION_REQUIRED",
+                "message": (
+                    f"UUID '{assessment_uuid}' refers to a legacy assignment that has been "
+                    "migrated to the new assessment system. Use the new assessment UUID."
+                ),
+            },
+        )
     assessment = db_session.exec(
         select(Assessment).where(Assessment.assessment_uuid == assessment_uuid)
     ).first()
