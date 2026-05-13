@@ -557,7 +557,7 @@ async def duplicate_assessment(
     if source_policy is not None:
         # Mirror all configurable policy fields from source.
         new_policy.max_attempts = source_policy.max_attempts
-        new_policy.time_limit_minutes = source_policy.time_limit_minutes
+        new_policy.time_limit_seconds = source_policy.time_limit_seconds
         new_policy.late_policy = source_policy.late_policy
         new_policy.completion_rule = source_policy.completion_rule
         new_policy.grading_mode = source_policy.grading_mode

@@ -244,12 +244,12 @@ async def save_assessment_draft(
         policy = _get_policy_for_assessment(assessment, db_session)
         if (
             policy is not None
-            and policy.time_limit_minutes
+            and policy.time_limit_seconds
             and draft.started_at
         ):
             now = datetime.now(UTC)
             expires_at = draft.started_at.replace(tzinfo=UTC) + timedelta(
-                minutes=policy.time_limit_minutes
+                seconds=policy.time_limit_seconds
             )
             remaining = int((expires_at - now).total_seconds())
             result.time_remaining_seconds = max(0, remaining)

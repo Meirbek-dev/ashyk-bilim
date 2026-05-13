@@ -11,7 +11,7 @@ This migration:
   3. Drops the ``grading_entry.breakdown`` column (no longer referenced by any
      model or API response).
 
-Revision ID: f1a2b3c4d5e6
+Revision ID: 3f7c1d8a9b2e
 Revises: ce32ea3953ee
 Create Date: 2026-05-14
 """
@@ -21,7 +21,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "f1a2b3c4d5e6"
+revision: str = "3f7c1d8a9b2e"
 down_revision: str | None = "ce32ea3953ee"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

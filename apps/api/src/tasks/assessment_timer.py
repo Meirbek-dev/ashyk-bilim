@@ -60,7 +60,7 @@ def _auto_submit_expired_drafts() -> int:
 
     with Session(engine) as db_session:
         # Fetch all DRAFT submissions that have started_at set.
-        # We join to the policy to get time_limit_minutes.
+        # We join to the policy to get the canonical time limit in seconds.
         candidates = db_session.exec(
             select(Submission, AssessmentPolicy)
             .join(
@@ -69,18 +69,18 @@ def _auto_submit_expired_drafts() -> int:
             )
             .where(Submission.status == SubmissionStatus.DRAFT)
             .where(Submission.started_at.is_not(None))  # type: ignore[union-attr]
-            .where(AssessmentPolicy.time_limit_minutes.is_not(None))  # type: ignore[union-attr]
+            .where(AssessmentPolicy.time_limit_seconds.is_not(None))  # type: ignore[union-attr]
         ).all()
 
         for submission, policy in candidates:
-            if policy.time_limit_minutes is None or submission.started_at is None:
+            if policy.time_limit_seconds is None or submission.started_at is None:
                 continue
 
             started = submission.started_at
             if started.tzinfo is None:
                 started = started.replace(tzinfo=UTC)
 
-            deadline = started + timedelta(minutes=policy.time_limit_minutes)
+            deadline = started + timedelta(seconds=policy.time_limit_seconds)
             if now < deadline:
                 continue  # not yet expired
 

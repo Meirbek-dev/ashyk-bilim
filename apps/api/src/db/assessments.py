@@ -116,6 +116,22 @@ class CodeTestCase(PydanticStrictBaseModel):
     description: str | None = None
     match_mode: Literal["EXACT"] = "EXACT"
 
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_legacy_fields(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        normalized = dict(value)
+        normalized.pop("time_limit_override", None)
+        normalized.pop("time_limit_override_seconds", None)
+
+        legacy_group = normalized.pop("group", None)
+        if "is_visible" not in normalized and isinstance(legacy_group, str):
+            normalized["is_visible"] = legacy_group.lower() not in {"hidden", "private"}
+
+        return normalized
+
 
 class CodeItemBody(PydanticStrictBaseModel):
     kind: Literal["CODE"] = "CODE"
