@@ -1,0 +1,175 @@
+---
+title: Advanced usage
+tags:
+  - type: addon
+meta:
+  title: Advanced usage | Tiptap Tracked Changes Docs
+  description: Learn about suggestion grouping, deletion merging, collaboration compatibility, and comments integration in Tiptap Tracked Changes.
+  category: Tracked Changes
+---
+
+import { Callout } from '@/components/ui/Callout'
+
+Advanced behaviors and integration patterns for the Tracked Changes extension.
+
+## Suggestion grouping
+
+When a user types continuously or deletes multiple characters in sequence, these edits are grouped into a single suggestion rather than creating one suggestion per character. Grouping occurs when:
+
+1. The new edit is **adjacent** to an existing suggestion (immediately before or after)
+2. The existing suggestion was created by the **same user**
+3. The existing suggestion is the **same type** (both insertions or both deletions)
+
+Continuous edits that meet all three conditions are merged into a single suggestion.
+
+## Deletion merging
+
+When a user deletes content that overlaps with or is adjacent to existing delete suggestions, the marks are automatically merged to prevent nested or overlapping deletions. The merged suggestion uses the metadata (ID, user, timestamp) from the **oldest** existing delete mark in the range.
+
+This ensures that:
+
+- The document never contains nested delete marks
+- Related deletions are visually grouped together
+- The original author of the first deletion is preserved
+
+## Mixed content handling
+
+When deleting or replacing content that contains a mix of original text and previously suggested insertions:
+
+- **Suggested insertions** (text with `add` marks) are immediately removed from the document
+- **Original content** (text without `add` marks) is marked with a `delete` suggestion
+
+This behavior matches user expectations: if you delete text that was only suggested (not yet accepted), it simply disappears. Original document content requires explicit acceptance to be removed.
+
+## Mark tracking
+
+Tracked Changes can also track mark-level edits on existing text as `markChange` suggestions. This includes simple formatting marks like `bold` and `italic`, as well as marks with attrs such as `link` or `highlight`.
+
+Mark tracking behaves as follows:
+
+- Adding or removing a mark on existing text creates a `markChange` suggestion
+- Formatting applied to newly inserted content stays part of the insertion suggestion instead of creating a second mark suggestion
+- Mark-change suggestions store the changed mark name and attrs, so attributed marks can be restored or removed correctly during accept and reject
+
+### How mark tracking works
+
+On existing text, tracked mark changes record the actual mark mutation that was proposed:
+
+- Adding a mark creates a `markChange` suggestion with an `added` operation
+- Removing a mark creates a `markChange` suggestion with a `removed` operation
+
+For example, if a user applies `bold` to a word, the suggestion stores that `bold` was added. If a user removes `bold` from already formatted text, the suggestion stores that `bold` was removed.
+
+Marks with attrs work the same way, but the attrs are part of the tracked change. This matters for marks such as `link`, where the exact attrs identify the mark variant being changed:
+
+```js
+// Suggest adding a specific link
+editor.commands.addTrackedMark({
+  from: 7,
+  to: 12,
+  markName: 'link',
+  markAttrs: {
+    href: 'https://tiptap.dev',
+    target: '_blank',
+  },
+})
+```
+
+In this case, the suggestion stores both the mark name (`link`) and the mark attrs. Accepting or rejecting the suggestion can then keep, restore, or remove the exact link mark instead of treating all links as equivalent.
+
+If a user applies a mark and then undoes that same mark change on the same text, the tracked mark change can cancel out instead of leaving behind redundant suggestions. This helps keep nested and overlapping mark suggestions stable during review.
+
+By default, Tracked Changes ignores the `suggestion` mark itself and inline comments/thread marks so those internal marks do not create recursive tracked suggestions. You can also opt out of tracking additional marks:
+
+```js
+TrackedChanges.configure({
+  ignoredTrackingMarks: ['highlight'],
+})
+```
+
+Use this option when your application has decorative or integration-specific marks that should never appear in tracked changes.
+
+## Table support
+
+The extension tracks structural changes inside tables, including row, cell, and column operations.
+
+**Cell selection deletions** — When a user deletes cells via a `CellSelection` (i.e. by selecting multiple cells and pressing delete), each selected cell is promoted to a node-level delete suggestion instead of being removed immediately. All cells in the selection share the same `suggestionId`, so they appear as a single grouped change in the suggestions list.
+
+**Column deletions** — Deleting a column produces a single grouped suggestion spanning all cells in that column, rather than one suggestion per cell.
+
+**Accept and reject** — Accepting or rejecting a table suggestion correctly handles the underlying table node structure, preventing errors when the operation involves column nodes.
+
+To enable table tracking, include a table extension alongside Tracked Changes:
+
+```js
+import { Table } from '@tiptap/extension-table'
+import { TableRow } from '@tiptap/extension-table-row'
+import { TableCell } from '@tiptap/extension-table-cell'
+import { TableHeader } from '@tiptap/extension-table-header'
+import { TrackedChanges } from '@tiptap-pro/extension-tracked-changes'
+
+const editor = new Editor({
+  extensions: [
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableCell,
+    TableHeader,
+    TrackedChanges.configure({ enabled: true, userId: 'user-123' }),
+  ],
+})
+```
+
+No additional configuration is required — table changes are tracked automatically once both extensions are active.
+
+## Atom node tracking
+
+The extension automatically tracks changes to atom nodes like images, horizontal rules, and other non-text content. These nodes cannot have marks, so the extension uses node attributes (`suggestionId`, `suggestionType`, `suggestionUserId`, `suggestionCreatedAt`, `suggestionUserMetadata`) instead. This happens transparently — atom nodes appear in the same suggestion queries and can be accepted or rejected like any other suggestion.
+
+## Collaboration compatibility
+
+The extension is designed to work with Yjs-based collaboration. It automatically ignores:
+
+- **Remote sync transactions** from Yjs (`y-sync$` meta)
+- **History transactions** (undo/redo are handled natively by ProseMirror)
+- **Transactions with `addToHistory: false`** (typically remote changes)
+
+This means only local user edits are tracked as suggestions.
+
+## Comments integration
+
+The Tracked Changes extension integrates with the [Comments](/editor/extensions/functionality/comments) extension to enable review workflows where suggestions and comment threads are handled together. The integration is built on top of the event systems exposed by both extensions.
+
+When both extensions are active, comment threads are automatically linked to suggestions through thread metadata. This enables bidirectional synchronization:
+
+- **Resolving** a comment thread linked to a suggestion automatically **accepts** the suggestion
+- **Deleting** a comment thread linked to a suggestion automatically **rejects** the suggestion
+- **Accepting** a suggestion automatically **resolves** its linked comment thread
+- **Rejecting** a suggestion automatically **deletes** its linked comment thread
+
+When a suggestion's content changes (e.g., the user continues typing within a tracked insertion), the linked thread's metadata is updated to stay in sync.
+
+This means users can review changes through either the suggestion UI or the comments panel — both stay consistent.
+
+## Code block compatibility
+
+By default, Tiptap code blocks do not allow marks, which prevents suggestion marks from being applied inside code content. The extension exports a helper to work around this:
+
+```js
+import { CodeBlock } from '@tiptap/extension-code-block'
+import { TrackedChanges, withSuggestionMarkOnCodeBlock } from '@tiptap-pro/extension-tracked-changes'
+import StarterKit from '@tiptap/starter-kit'
+
+const TrackableCodeBlock = withSuggestionMarkOnCodeBlock(CodeBlock)
+
+const editor = new Editor({
+  extensions: [
+    StarterKit.configure({
+      codeBlock: false, // Disable the default code block
+    }),
+    TrackableCodeBlock, // Use the patched version
+    TrackedChanges.configure({ enabled: true, userId: 'user-123' }),
+  ],
+})
+```
+
+This also works with `CodeBlockLowlight` or any other code block extension.

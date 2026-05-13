@@ -1,0 +1,107 @@
+import { SidebarConfig } from '@/types'
+
+export const sidebarConfig: SidebarConfig = {
+  id: 'all-docs',
+  rootHref: '/',
+  title: 'Home',
+  items: [
+    {
+      type: 'group',
+      title: 'Getting started',
+      href: '/getting-started',
+      children: [
+        {
+          href: '/',
+          title: 'Overview',
+        },
+        {
+          href: '/resources/whats-new',
+          title: "What's new in 3.0",
+        },
+        {
+          href: '/authentication',
+          title: 'Authentication',
+          tags: ['New'],
+        },
+      ],
+    },
+    {
+      type: 'group',
+      title: 'Browse by feature',
+      href: '/suite-docs',
+      children: [
+        {
+          href: '/editor/getting-started/overview',
+          title: 'Editor',
+        },
+        {
+          href: '/collaboration/getting-started/overview',
+          title: 'Collaboration',
+        },
+        {
+          href: '/comments/getting-started/overview',
+          title: 'Comments',
+        },
+        {
+          href: '/tracked-changes/getting-started/overview',
+          title: 'Tracked Changes',
+        },
+        {
+          href: '/content-ai/getting-started/overview',
+          title: 'Content AI',
+        },
+        {
+          href: '/collaboration/documents/snapshot',
+          title: 'Snapshots',
+        },
+        {
+          href: '/conversion/getting-started/overview',
+          title: 'Conversion',
+        },
+        {
+          href: '/pages/getting-started/overview',
+          title: 'Pages',
+        },
+      ],
+    },
+    {
+      type: 'group',
+      title: 'Resources',
+      href: '/',
+      children: [
+        {
+          href: '/guides',
+          title: 'Guides',
+        },
+        {
+          href: '/examples',
+          title: 'Examples',
+        },
+        {
+          href: '/resources/agent-skill',
+          title: 'Agent skill',
+        },
+        {
+          href: '/resources/tiptap-trial',
+          title: 'Tiptap trial',
+        },
+        {
+          href: '/resources/contributing',
+          title: 'Contributing',
+        },
+        {
+          href: '/resources/changelog',
+          title: 'Editor changelog',
+        },
+        {
+          href: '/resources/incidents',
+          title: 'Incidents',
+        },
+        {
+          href: 'https://tiptap.dev/pro-license',
+          title: 'Pro license',
+        },
+      ],
+    },
+  ],
+}

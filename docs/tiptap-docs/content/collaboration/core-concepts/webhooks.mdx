@@ -1,0 +1,154 @@
+---
+title: Webhooks in Collaboration
+tags:
+  - type: team
+meta:
+  title: Webhooks | Tiptap Collaboration Docs
+  description: Set up and understand webhook payloads, and manage settings to integrate advanced features. Learn more in the docs!
+  category: Collaboration
+---
+
+import { Callout } from '@/components/ui/Callout'
+
+You can define a URL and we will call it every time a document has changed. This is useful for getting the JSON representation of the Yjs document in your own application.
+
+We call your webhook URL when the document is saved to our database. This operation is debounced by 2-10 seconds. So your application won't be flooded by us. Right now we're only exporting the fragment `default` of the Yjs document.
+
+## Configure Webhooks
+
+To configure webhooks for document and comments notifications:
+
+1. Navigate to the [Collaboration settings](https://cloud.tiptap.dev/v2/configuration/document-server) in your account.
+2. Find the webhooks section and add your desired endpoint URL.
+
+After adding your URL, the webhook is immediately live. You'll start receiving notifications for the specified events without any delay.
+
+<Callout title="Add Comments support to your webhook" variant="warning">
+  If you want to add webhook support for the comments feature and your Document server was created
+  before March 2024, please upgrade your webhook as described [below](#enable-the-comments-webhook).
+</Callout>
+
+## Example payload
+
+All requests to your webhook URL will contain a header called `X-Hocuspocus-Signature-256` that signs the entire message with your secret. You can find it in the [settings](https://collab.tiptap.dev/apps/settings) of your document server.
+
+```json
+{
+  "appName": "", // name of your document server
+  "name": "", // name of the document (URI encoded if necessary)
+  "time": 0, // current time as ISOString (Date.getTime())
+  "tiptapJson": {}, // JSON output from Tiptap (see https://tiptap.dev/guide/output#option-1-json): TiptapTransformer.fromYdoc()
+  "ydocState"?: {}, // optionally contains the entire yDoc as base64. This can be enabled in the runtime configuration (see https://tiptap.dev/docs/collaboration/operations/configure `webhook_include_ydoc_state`)
+  "clientsCount": 100,// number of currently connected clients
+  "type": "", // the payload type (if the document was changed, this is DOCUMENT) ; only available if you are on webhooks v2
+  "trigger": "", // what triggered the event (usually "document.saved") ; only available if you are on webhooks v2
+  "users": [] // list of users who changed the content since the last webhook ("sub" field from the JWT)
+}
+```
+
+## Retries
+
+Webhooks are not retried by default, but you can enable retries by setting `webhook_retries` to `1` (see [Configure Runtime](/collaboration/operations/configure)).
+The retry schedule is as follows:
+
+- 1st retry: 5 seconds after the initial attempt
+- 2nd retry: 15 seconds after the last attempt
+- 3rd retry: 2 minutes after the last attempt
+- 4th retry: 10 minute after the last attempt
+- 5th retry: 30 minutes after the last attempt
+- 6th retry: 3 hours after the last attempt
+
+All retries include a header `X-Hocuspocus-Retry` with the current retry count. The `time` property in the payload is the timestamp of the initial attempt.
+
+## Enable the Comments webhook
+
+The webhook that supports comments is automatically enabled for all users that have created their account after March, 2024.
+
+If your account was created before March, 2024 and you're using an older version of the webhook system, you'll need to manually enable the new comments webhooks. Here's how:
+
+1. In case you’ve already implemented a previous Collaboration webhook, make sure to check the `type` and `trigger` fields when processing incoming webhooks.
+2. Navigate to the [Collaboration settings](https://cloud.tiptap.dev/v2/configuration/document-server) in your account.
+3. Locate the Webhook section and click on the "Update" button.
+
+This upgrade is necessary to accommodate the introduction of multiple new events being routed to the same webhook endpoint, distinguished by a new `type` and `trigger` field.
+
+If you do not wish to use the comments webhook, no upgrade is necessary.
+
+## Loader Webhook
+
+In order to initialize documents, you can use the `webhook_loader_url` setting (see [configure runtime](/collaboration/operations/configure)). This URL will be called if a new document is requested.
+The webhook will contain a header `Authorization` with your secret, and `document-name` with the name of the requested document.
+
+If you return a yjs update (Y.encodeStateAsUpdate on your side), it will be applied to the document. You can also return Tiptap JSON, if you send `Content-Type: application/json` (from January 2026 / v3.67.0).
+If you return anything else, the document will be initialized with an empty document.
+Note that the loader webhook is called only once when the document is created.
+
+The request looks like this:
+```
+GET {{webhook_loader_url}}
+
+Authorization: {{jwt secret}}
+document-name: {{requested document name}}
+```
+
+## Awareness Webhooks
+
+If you want to get notified whenever a user connects to or disconnects from a document, you can enable awareness webhooks [here](/collaboration/operations/configure#settings-overview).
+If you need the user parameter, please make sure to pass it to the TiptapCollabProvider, as mentioned [here](/collaboration/provider/integration#configure-the-collaboration-provider).
+
+The events look like this:
+
+```json
+{
+  "trigger": "user.connected", // or user.disconnected
+  "user": "user_1",
+  "numConnectedUsers": 0,
+  "appName": "",
+  "name": "testdocument",
+  "time": "2025-04-21T19:32:55.632Z",
+  "type": "DOCUMENT"
+}
+```
+
+## Version Webhooks
+
+When a new version is created, a `version.created` webhook is sent to your configured webhook URL. The payload includes the version's metadata, including the automatically generated `__tiptap` metadata.
+
+```json
+{
+  "trigger": "version.created",
+  "type": "DOCUMENT",
+  "appName": "",
+  "name": "testdocument",
+  "time": "2026-03-09T12:00:00.000Z",
+  "version": 5,
+  "versionName": "Name of the version",
+  "meta": {
+    "__tiptap": {
+      "trigger": "websocket",
+      "changesBy": ["#user1", "#user2"],
+      "triggeredBy": "user1"
+    },
+    "wordCount": 4523
+  }
+}
+```
+
+For more details on the `meta.__tiptap` fields, see [automatic version metadata](/collaboration/documents/snapshot#automatic-version-metadata).
+
+## Custom fields
+
+If you use custom fields in Yjs, you can add them to the webhook by setting `webhook_include_fields=1` in the [runtime configuration](/collaboration/operations/configure).
+In order for us to identify the correct type of the yjs field, you need to configure them in the Tiptap Typemap.
+
+```typescript
+// store any data in Yjs. See the official docs: https://docs.yjs.dev/api/shared-types
+// "config" here can be replaced by any string. A map gives you a key-value store.
+const ydoc = new Y.Doc()
+ydoc.getMap('config').set('mycustomoption', 'value123');
+
+// In the provider, you need to tell us the yjs type.
+// We currently support possible options: map, array, text, xmlfragment, xmlelement
+const provider = new TiptapCollabProvider({document: ydoc})
+provider.setFieldType('config', 'map');
+```
