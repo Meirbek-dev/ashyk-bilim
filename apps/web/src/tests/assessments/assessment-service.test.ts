@@ -51,10 +51,7 @@ import {
   saveGradingDraft,
   runCodeItem,
 } from '@/services/assessments/assessment-actions';
-import {
-  getAssessmentByUuid,
-  getAssessmentByActivityUuid,
-} from '@/services/assessments/assessments';
+import { getAssessmentByUuid, getAssessmentByActivityUuid } from '@/services/assessments/assessments';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -118,10 +115,7 @@ describe('getAssessmentByUuid', () => {
 
     const result = await getAssessmentByUuid('asm_test_1');
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
-      'assessments/asm_test_1',
-      expect.any(Object),
-    );
+    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/asm_test_1', expect.any(Object));
     expect(result?.assessment_uuid).toBe('asm_test_1');
     expect(result?.lifecycle).toBe('PUBLISHED');
   });
@@ -152,10 +146,7 @@ describe('getAssessmentByActivityUuid', () => {
 
     const result = await getAssessmentByActivityUuid('activity_abc');
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
-      'assessments/activity/activity_abc',
-      expect.any(Object),
-    );
+    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/activity/activity_abc', expect.any(Object));
     expect(result?.activity_uuid).toBe('activity_abc');
   });
 
@@ -251,10 +242,7 @@ describe('getPolicyPreset', () => {
 
     const result = await getPolicyPreset('ASSIGNMENT');
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
-      'assessments/policy-preset/ASSIGNMENT',
-      expect.any(Object),
-    );
+    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/policy-preset/ASSIGNMENT', expect.any(Object));
     expect(result?.grade_release_mode).toBe('IMMEDIATE');
     expect(result?.grading_mode).toBe('MANUAL');
   });
@@ -277,10 +265,7 @@ describe('listStudentPolicyOverrides', () => {
 
     const result = await listStudentPolicyOverrides('asm_1');
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
-      'assessments/asm_1/overrides',
-      expect.any(Object),
-    );
+    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/asm_1/overrides', expect.any(Object));
     expect(result).toHaveLength(1);
     expect(result[0]!.max_attempts_override).toBe(3);
   });
@@ -317,9 +302,7 @@ describe('createStudentPolicyOverride', () => {
   it('throws on failure', async () => {
     mockMetaFailure('User not enrolled');
 
-    await expect(
-      createStudentPolicyOverride('asm_1', { user_id: 999 }),
-    ).rejects.toThrow('User not enrolled');
+    await expect(createStudentPolicyOverride('asm_1', { user_id: 999 })).rejects.toThrow('User not enrolled');
   });
 });
 
@@ -346,9 +329,7 @@ describe('updateStudentPolicyOverride', () => {
   it('throws on failure', async () => {
     mockMetaFailure('Override not found');
 
-    await expect(
-      updateStudentPolicyOverride('asm_1', 999, {}),
-    ).rejects.toThrow('Override not found');
+    await expect(updateStudentPolicyOverride('asm_1', 999, {})).rejects.toThrow('Override not found');
   });
 });
 
@@ -417,17 +398,15 @@ describe('saveGradingDraft', () => {
       getAssessmentSubmission: vi.fn().mockResolvedValue({ submission_uuid: 'sub_stale', version: 5 }),
     }));
 
-    await expect(
-      saveGradingDraft('asm_1', 'sub_stale', { item_grades: [] }, 2),
-    ).rejects.toBeInstanceOf(StaleGradeError);
+    await expect(saveGradingDraft('asm_1', 'sub_stale', { item_grades: [] }, 2)).rejects.toBeInstanceOf(
+      StaleGradeError,
+    );
   });
 
   it('throws on generic failure', async () => {
     mockMetaFailure('Grade conflict');
 
-    await expect(
-      saveGradingDraft('asm_1', 'sub_err', { item_grades: [] }),
-    ).rejects.toThrow('Grade conflict');
+    await expect(saveGradingDraft('asm_1', 'sub_err', { item_grades: [] })).rejects.toThrow('Grade conflict');
   });
 });
 
@@ -461,8 +440,8 @@ describe('runCodeItem', () => {
   it('throws on failure', async () => {
     mockMetaFailure('Language not supported');
 
-    await expect(
-      runCodeItem('asm_1', 'item_1', { source: 'code', language: 999 }),
-    ).rejects.toThrow('Language not supported');
+    await expect(runCodeItem('asm_1', 'item_1', { source: 'code', language: 999 })).rejects.toThrow(
+      'Language not supported',
+    );
   });
 });

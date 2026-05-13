@@ -28,10 +28,8 @@ export default function AntiCheatOverlay({
 }: AntiCheatOverlayProps) {
   if (!enabled) return null;
 
-  const isNearThreshold =
-    violationThreshold !== null && violationCount >= violationThreshold - 1;
-  const isAtThreshold =
-    violationThreshold !== null && violationCount >= violationThreshold;
+  const isNearThreshold = violationThreshold !== null && violationCount >= violationThreshold - 1;
+  const isAtThreshold = violationThreshold !== null && violationCount >= violationThreshold;
 
   return (
     <div
@@ -45,11 +43,7 @@ export default function AntiCheatOverlay({
       role="status"
       aria-label={`Proctored mode active. Violations: ${violationCount}${violationThreshold ? ` of ${violationThreshold}` : ''}`}
     >
-      {isAtThreshold ? (
-        <ShieldAlert className="size-3.5" />
-      ) : (
-        <Shield className="size-3.5" />
-      )}
+      {isAtThreshold ? <ShieldAlert className="size-3.5" /> : <Shield className="size-3.5" />}
       <span>Proctored</span>
       {violationThreshold !== null && (
         <span className="ml-1 opacity-75">

@@ -26,12 +26,7 @@ interface UseGradingSSEOptions {
   enabled?: boolean;
 }
 
-export function useGradingSSE({
-  activityId,
-  assessmentUuid,
-  onEvent,
-  enabled = true,
-}: UseGradingSSEOptions): void {
+export function useGradingSSE({ activityId, assessmentUuid, onEvent, enabled = true }: UseGradingSSEOptions): void {
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
 

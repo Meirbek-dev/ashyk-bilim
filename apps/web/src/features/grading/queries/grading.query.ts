@@ -43,8 +43,7 @@ export function gradingDetailQueryOptions(submissionUuid: string, assessmentUuid
 export function courseGradebookQueryOptions(courseUuid: string) {
   return queryOptions({
     queryKey: queryKeys.grading.gradebook(courseUuid),
-    queryFn: () =>
-      apiFetcher<CourseGradebookResponse>(`grading/courses/${courseUuid}/gradebook`),
+    queryFn: () => apiFetcher<CourseGradebookResponse>(`grading/courses/${courseUuid}/gradebook`),
     staleTime: 5000,
   });
 }

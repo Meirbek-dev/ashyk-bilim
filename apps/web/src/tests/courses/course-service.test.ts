@@ -112,11 +112,7 @@ function makeFullCourse(overrides: Record<string, unknown> = {}) {
 /** Create a Response-like mock with ok, status, json, headers */
 function makeResponse(
   body: unknown,
-  {
-    status = 200,
-    ok = true,
-    headers = {},
-  }: { status?: number; ok?: boolean; headers?: Record<string, string> } = {},
+  { status = 200, ok = true, headers = {} }: { status?: number; ok?: boolean; headers?: Record<string, string> } = {},
 ) {
   const headerMap = new Map(Object.entries(headers));
   return {
@@ -142,10 +138,7 @@ describe('getCourses', () => {
 
     const result = await getCourses(undefined, 1, 20);
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
-      'courses/page/1/limit/20',
-      expect.objectContaining({ method: 'GET' }),
-    );
+    expect(mocks.apiFetch).toHaveBeenCalledWith('courses/page/1/limit/20', expect.objectContaining({ method: 'GET' }));
     expect(result.total).toBe(1);
     expect(result.courses).toHaveLength(1);
   });
@@ -193,10 +186,7 @@ describe('getCourse', () => {
 
     const result = await getCourse('course_abc');
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
-      'courses/course_abc',
-      expect.any(Object),
-    );
+    expect(mocks.apiFetch).toHaveBeenCalledWith('courses/course_abc', expect.any(Object));
     expect(result.course_uuid).toBe('course_abc');
     // Null description normalised
     expect(result.description).toBe('');
@@ -323,9 +313,7 @@ describe('searchCourses', () => {
 
     const result = await searchCourses('python basics', 1, 10, undefined);
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
-      expect.stringContaining('query=python%20basics'),
-    );
+    expect(mocks.apiFetch).toHaveBeenCalledWith(expect.stringContaining('query=python%20basics'));
     expect(result).toHaveLength(1);
   });
 });

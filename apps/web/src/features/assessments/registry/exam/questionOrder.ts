@@ -17,8 +17,7 @@ export function getOrderedExamQuestions<T extends QuestionLike>(
   questions: T[],
   orderedIds: (string | number)[] | null,
 ): T[] {
-  const sortedByOrderIndex = (): T[] =>
-    [...questions].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  const sortedByOrderIndex = (): T[] => [...questions].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
   if (orderedIds === null) {
     return [...questions];

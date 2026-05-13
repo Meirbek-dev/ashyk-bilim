@@ -47,10 +47,8 @@ export default function PostSubmissionFeedback({
   if (isPendingRelease) {
     return (
       <div className={cn('flex items-center gap-2 rounded-lg border p-4', className)}>
-        <EyeOff className="size-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">
-          Grade pending release by instructor
-        </span>
+        <EyeOff className="text-muted-foreground size-4" />
+        <span className="text-muted-foreground text-sm">Grade pending release by instructor</span>
       </div>
     );
   }
@@ -58,8 +56,8 @@ export default function PostSubmissionFeedback({
   if (reviewVisibility === 'NONE') {
     return (
       <div className={cn('flex items-center gap-2 rounded-lg border p-4', className)}>
-        <Eye className="size-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">
+        <Eye className="text-muted-foreground size-4" />
+        <span className="text-muted-foreground text-sm">
           Submission received. Results will be available after review.
         </span>
       </div>
@@ -73,7 +71,7 @@ export default function PostSubmissionFeedback({
       <div className={cn('rounded-lg border p-4', className)}>
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold">{Math.round(displayScore)}%</span>
-          <span className="text-sm text-muted-foreground">Score</span>
+          <span className="text-muted-foreground text-sm">Score</span>
         </div>
       </div>
     );
@@ -84,28 +82,23 @@ export default function PostSubmissionFeedback({
     <div className={cn('space-y-3 rounded-lg border p-4', className)}>
       <div className="flex items-center gap-2">
         <span className="text-2xl font-bold">{Math.round(displayScore)}%</span>
-        <span className="text-sm text-muted-foreground">Score</span>
+        <span className="text-muted-foreground text-sm">Score</span>
       </div>
 
       {items.length > 0 && (
         <div className="space-y-2 border-t pt-3">
           {items.map((item) => (
-            <div key={item.item_id} className="flex items-start gap-2 text-sm">
-              {item.correct === true && (
-                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-green-600" />
-              )}
-              {item.correct === false && (
-                <XCircle className="mt-0.5 size-4 shrink-0 text-red-600" />
-              )}
-              {item.correct === null && (
-                <MinusCircle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              )}
+            <div
+              key={item.item_id}
+              className="flex items-start gap-2 text-sm"
+            >
+              {item.correct === true && <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-green-600" />}
+              {item.correct === false && <XCircle className="mt-0.5 size-4 shrink-0 text-red-600" />}
+              {item.correct === null && <MinusCircle className="text-muted-foreground mt-0.5 size-4 shrink-0" />}
               <div className="flex-1">
                 <p className="font-medium">{item.item_text || `Question ${item.item_id}`}</p>
-                {item.feedback && (
-                  <p className="text-muted-foreground">{item.feedback}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
+                {item.feedback && <p className="text-muted-foreground">{item.feedback}</p>}
+                <p className="text-muted-foreground text-xs">
                   {item.score}/{item.max_score} points
                 </p>
               </div>

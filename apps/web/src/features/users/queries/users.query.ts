@@ -51,7 +51,8 @@ export function allMembersQueryOptions() {
 export function membersQueryOptions(page: number, perPage: number) {
   return queryOptions({
     queryKey: queryKeys.users.members(page, perPage),
-    queryFn: () => apiFetcher<{ total: number; total_pages: number; users: any[] }>(`members?page=${page}&per_page=${perPage}`),
+    queryFn: () =>
+      apiFetcher<{ total: number; total_pages: number; users: any[] }>(`members?page=${page}&per_page=${perPage}`),
   });
 }
 

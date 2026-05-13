@@ -11,8 +11,7 @@ import type { LucideIcon } from 'lucide-react';
 const DashMobileMenu = () => {
   const pathname = usePathname();
   const t = useTranslations('SidebarMenu');
-  const { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } =
-    useNavigationPermissions();
+  const { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } = useNavigationPermissions();
 
   const navigationItems: {
     href: string;

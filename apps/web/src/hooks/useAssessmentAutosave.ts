@@ -58,11 +58,7 @@ export function useAssessmentAutosave({
 
     try {
       const answers = getAnswers();
-      const result = await saveDraft(
-        assessmentUuid,
-        answers,
-        String(versionRef.current),
-      );
+      const result = await saveDraft(assessmentUuid, answers, String(versionRef.current));
       versionRef.current = result.draft_version;
       setStatus('saved');
       setLastSavedAt(new Date());

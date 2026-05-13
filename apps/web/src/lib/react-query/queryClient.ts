@@ -8,7 +8,8 @@ import { isAuthRoute } from '@/lib/auth/redirect';
 const FIVE_MINUTES = 5 * 60 * 1000;
 
 function handle401(error: unknown): void {
-  const status = typeof error === 'object' && error !== null && 'status' in error ? Number((error as any).status) : undefined;
+  const status =
+    typeof error === 'object' && error !== null && 'status' in error ? Number((error as any).status) : undefined;
   if (status !== 401 || environmentManager.isServer()) return;
   const { pathname, search } = globalThis.location;
   if (!isAuthRoute(pathname)) {

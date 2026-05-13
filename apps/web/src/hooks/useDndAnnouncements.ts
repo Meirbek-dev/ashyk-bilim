@@ -19,10 +19,7 @@ import { useCallback } from 'react';
 export function useDndAnnouncements(items: string[]): Announcements {
   const t = useTranslations('Common.DragAndDrop');
 
-  const getPosition = useCallback(
-    (id: string | number) => items.indexOf(String(id)) + 1,
-    [items],
-  );
+  const getPosition = useCallback((id: string | number) => items.indexOf(String(id)) + 1, [items]);
 
   const count = items.length;
 

@@ -39,18 +39,25 @@ export default function OutlineRail({
     <div className="flex h-full flex-col border-r">
       <div className="flex items-center justify-between border-b px-3 py-2">
         <h3 className="text-sm font-medium">Items</h3>
-        <Button size="sm" variant="ghost" onClick={onAddItem} disabled={disabled}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onAddItem}
+          disabled={disabled}
+        >
           <Plus className="size-3.5" />
         </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {items.length === 0 ? (
-          <p className="p-3 text-xs text-muted-foreground">
-            No items yet. Click + to add one.
-          </p>
+          <p className="text-muted-foreground p-3 text-xs">No items yet. Click + to add one.</p>
         ) : (
-          <ul className="divide-y" role="listbox" aria-label="Assessment items">
+          <ul
+            className="divide-y"
+            role="listbox"
+            aria-label="Assessment items"
+          >
             {items.map((item, idx) => (
               <li
                 key={item.item_uuid}
@@ -62,12 +69,12 @@ export default function OutlineRail({
                 )}
                 onClick={() => onSelectItem(item.item_uuid)}
               >
-                <GripVertical className="size-3 text-muted-foreground shrink-0 cursor-grab" />
-                <div className="flex-1 min-w-0">
+                <GripVertical className="text-muted-foreground size-3 shrink-0 cursor-grab" />
+                <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">
                     {idx + 1}. {item.title || item.kind}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {item.kind} • {item.max_score} pts
                   </p>
                 </div>

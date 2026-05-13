@@ -27,18 +27,14 @@ export default function InlineQuizAttempt({ assessmentUuid }: InlineQuizAttemptP
     return (
       <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950">
         <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" />
-        <span className="text-sm font-medium">
-          Score: {score}%
-        </span>
+        <span className="text-sm font-medium">Score: {score}%</span>
       </div>
     );
   }
 
   return (
     <div className="rounded-lg border p-4">
-      <p className="mb-3 text-sm text-muted-foreground">
-        Inline quiz ({assessmentUuid.slice(0, 16)}…)
-      </p>
+      <p className="text-muted-foreground mb-3 text-sm">Inline quiz ({assessmentUuid.slice(0, 16)}…)</p>
       {/* TODO: Render actual quiz items from useAssessment(assessmentUuid) */}
       <Button
         size="sm"
@@ -54,9 +50,7 @@ export default function InlineQuizAttempt({ assessmentUuid }: InlineQuizAttemptP
           }
         }}
       >
-        {isSubmitting ? (
-          <Loader2 className="mr-1 size-4 animate-spin" />
-        ) : null}
+        {isSubmitting ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
         Submit
       </Button>
     </div>

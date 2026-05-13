@@ -26,11 +26,7 @@ interface AttemptHistoryPanelProps {
   className?: string;
 }
 
-export default function AttemptHistoryPanel({
-  attempts,
-  currentSubmissionUuid,
-  className,
-}: AttemptHistoryPanelProps) {
+export default function AttemptHistoryPanel({ attempts, currentSubmissionUuid, className }: AttemptHistoryPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   if (attempts.length <= 1) return null;
@@ -39,7 +35,7 @@ export default function AttemptHistoryPanel({
     <div className={cn('border rounded-md', className)}>
       <button
         type="button"
-        className="flex w-full items-center gap-2 p-2 text-sm font-medium hover:bg-muted/50"
+        className="hover:bg-muted/50 flex w-full items-center gap-2 p-2 text-sm font-medium"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
@@ -48,7 +44,7 @@ export default function AttemptHistoryPanel({
       </button>
 
       {isOpen && (
-        <div className="border-t divide-y">
+        <div className="divide-y border-t">
           {attempts.map((attempt) => (
             <div
               key={attempt.submission_uuid}
@@ -59,27 +55,23 @@ export default function AttemptHistoryPanel({
             >
               <div className="flex items-center gap-2">
                 <span className="font-mono">#{attempt.attempt_number}</span>
-                <span className={cn(
-                  'rounded px-1.5 py-0.5 text-[10px] font-medium',
-                  attempt.status === 'PUBLISHED' && 'bg-green-100 text-green-700',
-                  attempt.status === 'GRADED' && 'bg-blue-100 text-blue-700',
-                  attempt.status === 'PENDING' && 'bg-yellow-100 text-yellow-700',
-                  attempt.status === 'RETURNED' && 'bg-orange-100 text-orange-700',
-                )}>
+                <span
+                  className={cn(
+                    'rounded px-1.5 py-0.5 text-[10px] font-medium',
+                    attempt.status === 'PUBLISHED' && 'bg-green-100 text-green-700',
+                    attempt.status === 'GRADED' && 'bg-blue-100 text-blue-700',
+                    attempt.status === 'PENDING' && 'bg-yellow-100 text-yellow-700',
+                    attempt.status === 'RETURNED' && 'bg-orange-100 text-orange-700',
+                  )}
+                >
                   {attempt.status}
                 </span>
-                {attempt.is_late && (
-                  <span className="text-[10px] text-red-600">LATE</span>
-                )}
+                {attempt.is_late && <span className="text-[10px] text-red-600">LATE</span>}
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-mono">
-                  {attempt.final_score ?? attempt.auto_score ?? '—'}%
-                </span>
+                <span className="font-mono">{attempt.final_score ?? attempt.auto_score ?? '—'}%</span>
                 {attempt.submitted_at && (
-                  <span className="text-muted-foreground">
-                    {new Date(attempt.submitted_at).toLocaleDateString()}
-                  </span>
+                  <span className="text-muted-foreground">{new Date(attempt.submitted_at).toLocaleDateString()}</span>
                 )}
               </div>
             </div>

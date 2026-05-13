@@ -35,11 +35,8 @@ const CertificateVerificationPage: React.FC<CertificateVerificationPageProps> = 
       ? t('certificateNotFound')
       : null;
 
-  const verificationStatus: 'valid' | 'invalid' | 'loading' = !mounted || isLoading
-    ? 'loading'
-    : certificateData
-      ? 'valid'
-      : 'invalid';
+  const verificationStatus: 'valid' | 'invalid' | 'loading' =
+    !mounted || isLoading ? 'loading' : certificateData ? 'valid' : 'invalid';
 
   // Certificate type translation helper
   const getCertificationTypeLabel = (type: string): string => {

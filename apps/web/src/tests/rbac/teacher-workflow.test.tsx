@@ -5,12 +5,7 @@ import React from 'react';
 import { SessionProvider } from '@/components/providers/session-provider';
 import { PermissionGuard } from '@/components/Security/PermissionGuard';
 import { Actions, Resources, Scopes } from '@/types/permissions';
-import {
-  canSeePlatform,
-  canSeeCourses,
-  canSeeAnalytics,
-  canSeeAdmin,
-} from '@/lib/rbac/navigation-policy';
+import { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeAdmin } from '@/lib/rbac/navigation-policy';
 import type { Session } from '@/lib/auth/types';
 
 // Mock useRouter

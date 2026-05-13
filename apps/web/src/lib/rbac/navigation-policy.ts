@@ -54,11 +54,5 @@ export function canSeeAdmin(can: CanCheck): boolean {
 }
 
 export function canAccessDashboard(can: CanCheck): boolean {
-  return (
-    canSeePlatform(can) ||
-    canSeeCourses(can) ||
-    canSeeAnalytics(can) ||
-    canSeeUsers(can) ||
-    canSeeAdmin(can)
-  );
+  return canSeePlatform(can) || canSeeCourses(can) || canSeeAnalytics(can) || canSeeUsers(can) || canSeeAdmin(can);
 }

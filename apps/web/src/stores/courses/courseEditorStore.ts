@@ -57,66 +57,66 @@ const initialState: CourseEditorState = {
 export const useCourseEditorStore = create<CourseEditorState & CourseEditorActions>()(
   devtools(
     (set, get) => ({
-  ...initialState,
+      ...initialState,
 
-  openEditor: (courseUuid, lastKnownUpdateDate) =>
-    set((state) => {
-      if (state.activeCourseUuid === courseUuid) {
-        return {
-          activeCourseUuid: courseUuid,
-          lastKnownUpdateDate: lastKnownUpdateDate ?? state.lastKnownUpdateDate,
-        };
-      }
-      return {
-        ...initialState,
-        activeCourseUuid: courseUuid,
-        lastKnownUpdateDate: lastKnownUpdateDate ?? null,
-      };
-    }),
+      openEditor: (courseUuid, lastKnownUpdateDate) =>
+        set((state) => {
+          if (state.activeCourseUuid === courseUuid) {
+            return {
+              activeCourseUuid: courseUuid,
+              lastKnownUpdateDate: lastKnownUpdateDate ?? state.lastKnownUpdateDate,
+            };
+          }
+          return {
+            ...initialState,
+            activeCourseUuid: courseUuid,
+            lastKnownUpdateDate: lastKnownUpdateDate ?? null,
+          };
+        }),
 
-  syncLastKnownUpdateDate: (lastKnownUpdateDate) => set({ lastKnownUpdateDate: lastKnownUpdateDate ?? null }),
+      syncLastKnownUpdateDate: (lastKnownUpdateDate) => set({ lastKnownUpdateDate: lastKnownUpdateDate ?? null }),
 
-  setSectionDirty: (section, dirty) =>
-    set((state) => ({
-      dirtySections: { ...state.dirtySections, [section]: dirty },
-    })),
+      setSectionDirty: (section, dirty) =>
+        set((state) => ({
+          dirtySections: { ...state.dirtySections, [section]: dirty },
+        })),
 
-  clearDirtySections: () => set({ dirtySections: {} }),
+      clearDirtySections: () => set({ dirtySections: {} }),
 
-  setConflict: ({ serverVersion = null, message = '', pendingSave = null }) =>
-    set({
-      conflict: {
-        isOpen: true,
-        serverVersion,
-        message: message.trim(),
-        pendingSave,
+      setConflict: ({ serverVersion = null, message = '', pendingSave = null }) =>
+        set({
+          conflict: {
+            isOpen: true,
+            serverVersion,
+            message: message.trim(),
+            pendingSave,
+          },
+        }),
+
+      dismissConflict: () => set({ conflict: createInitialConflictState() }),
+
+      /**
+       * "Save anyway" — sync lastKnownUpdateDate from the server version and retry the pending save.
+       */
+      saveAnyway: async () => {
+        const { conflict } = get();
+        if (!conflict.isOpen) return;
+
+        set((state) => ({
+          lastKnownUpdateDate: conflict.serverVersion?.update_date ?? state.lastKnownUpdateDate,
+          conflict: createInitialConflictState(),
+        }));
+
+        if (conflict.pendingSave) {
+          await conflict.pendingSave();
+        }
       },
-    }),
 
-  dismissConflict: () => set({ conflict: createInitialConflictState() }),
-
-  /**
-   * "Save anyway" — sync lastKnownUpdateDate from the server version and retry the pending save.
-   */
-  saveAnyway: async () => {
-    const { conflict } = get();
-    if (!conflict.isOpen) return;
-
-    set((state) => ({
-      lastKnownUpdateDate: conflict.serverVersion?.update_date ?? state.lastKnownUpdateDate,
-      conflict: createInitialConflictState(),
-    }));
-
-    if (conflict.pendingSave) {
-      await conflict.pendingSave();
-    }
-  },
-
-  setActivitySaveStatus: (status) =>
-    set({
-      activitySaveStatus: status,
-      lastActivitySavedAt: status === 'saved' ? Date.now() : get().lastActivitySavedAt,
-    }),
+      setActivitySaveStatus: (status) =>
+        set({
+          activitySaveStatus: status,
+          lastActivitySavedAt: status === 'saved' ? Date.now() : get().lastActivitySavedAt,
+        }),
     }),
     { name: 'CourseEditorStore', enabled: process.env.NODE_ENV === 'development' },
   ),

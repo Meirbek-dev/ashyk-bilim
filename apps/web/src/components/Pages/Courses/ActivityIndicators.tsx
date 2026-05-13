@@ -341,9 +341,7 @@ const ActivityIndicators = (props: Props) => {
       return cleanRunCourseUuid === cleanCourseUuid;
     });
     return new Set(
-      (run?.steps ?? [])
-        .filter((step: any) => step.complete === true)
-        .map((step: any) => Number(step.activity_id)),
+      (run?.steps ?? []).filter((step: any) => step.complete === true).map((step: any) => Number(step.activity_id)),
     );
   }, [props.trailData, course.course_uuid]);
 

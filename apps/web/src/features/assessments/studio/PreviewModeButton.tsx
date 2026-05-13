@@ -16,11 +16,7 @@ interface PreviewModeButtonProps {
   disabled?: boolean;
 }
 
-export default function PreviewModeButton({
-  isPreview,
-  onToggle,
-  disabled = false,
-}: PreviewModeButtonProps) {
+export default function PreviewModeButton({ isPreview, onToggle, disabled = false }: PreviewModeButtonProps) {
   return (
     <Button
       variant={isPreview ? 'default' : 'outline'}

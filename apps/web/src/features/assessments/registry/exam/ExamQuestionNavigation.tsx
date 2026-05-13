@@ -24,8 +24,8 @@ export default function ExamQuestionNavigation({
   onQuestionSelect,
 }: ExamQuestionNavigationProps) {
   return (
-    <div className="sticky top-4 rounded-lg border bg-card p-4">
-      <div className="mb-3 text-sm font-medium text-muted-foreground">Questions</div>
+    <div className="bg-card sticky top-4 rounded-lg border p-4">
+      <div className="text-muted-foreground mb-3 text-sm font-medium">Questions</div>
       <div className="grid grid-cols-5 gap-1.5">
         {Array.from({ length: totalQuestions }, (_, i) => (
           <button

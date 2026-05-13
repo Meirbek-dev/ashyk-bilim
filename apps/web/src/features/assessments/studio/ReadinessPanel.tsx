@@ -26,7 +26,7 @@ export default function ReadinessPanel({ isReady, issues, isLoading }: Readiness
   if (isLoading) {
     return (
       <div className="animate-pulse rounded-md border p-3">
-        <div className="h-4 w-32 rounded bg-muted" />
+        <div className="bg-muted h-4 w-32 rounded" />
       </div>
     );
   }
@@ -46,7 +46,10 @@ export default function ReadinessPanel({ isReady, issues, isLoading }: Readiness
       <AlertTitle className="text-red-800 dark:text-red-200">Not ready to publish</AlertTitle>
       <AlertDescription className="mt-2 space-y-1">
         {issues.map((issue, idx) => (
-          <p key={idx} className="text-xs text-red-700 dark:text-red-300">
+          <p
+            key={idx}
+            className="text-xs text-red-700 dark:text-red-300"
+          >
             • {issue.message}
           </p>
         ))}

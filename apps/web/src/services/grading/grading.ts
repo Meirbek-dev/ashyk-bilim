@@ -1,10 +1,6 @@
 'use server';
 
-import type {
-  BulkPublishGradesResponse,
-  Submission,
-  TeacherGradeInput,
-} from '@/types/grading';
+import type { BulkPublishGradesResponse, Submission, TeacherGradeInput } from '@/types/grading';
 import { getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { revalidateTag } from 'next/cache';

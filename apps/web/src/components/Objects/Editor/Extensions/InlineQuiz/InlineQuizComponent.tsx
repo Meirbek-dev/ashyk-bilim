@@ -36,7 +36,7 @@ const InlineQuizComponent = (props: TypedNodeViewProps<InlineQuizAttrs>) => {
 
   if (!assessmentUuid) {
     return (
-      <div className="rounded-lg border border-dashed border-muted-foreground/30 p-4 text-center text-sm text-muted-foreground">
+      <div className="border-muted-foreground/30 text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
         Quiz not configured
       </div>
     );

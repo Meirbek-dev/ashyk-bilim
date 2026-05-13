@@ -78,14 +78,14 @@ export default function AttemptTimer({ expiresAt, onExpired, className }: Attemp
       role="timer"
       aria-label={`Time remaining: ${formatted}`}
     >
-      {isCritical ? (
-        <AlertTriangle className="size-3.5" />
-      ) : (
-        <Clock className="size-3.5" />
-      )}
+      {isCritical ? <AlertTriangle className="size-3.5" /> : <Clock className="size-3.5" />}
       <span>{formatted}</span>
       {announcement && (
-        <span className="sr-only" aria-live="polite" aria-atomic="true">
+        <span
+          className="sr-only"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {announcement}
         </span>
       )}

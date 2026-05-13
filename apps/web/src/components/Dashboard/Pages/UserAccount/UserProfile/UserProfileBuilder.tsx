@@ -346,10 +346,7 @@ const UserProfileBuilder = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const sectionIds = useMemo(
-    () => profileData.sections.map((s) => s.id),
-    [profileData.sections],
-  );
+  const sectionIds = useMemo(() => profileData.sections.map((s) => s.id), [profileData.sections]);
   const announcements = useDndAnnouncements(sectionIds);
 
   // Initialize profile data from user data

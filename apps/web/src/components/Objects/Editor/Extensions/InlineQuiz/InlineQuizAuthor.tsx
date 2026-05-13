@@ -16,10 +16,7 @@ interface InlineQuizAuthorProps {
   onAssessmentCreated: (uuid: string) => void;
 }
 
-export default function InlineQuizAuthor({
-  assessmentUuid,
-  onAssessmentCreated,
-}: InlineQuizAuthorProps) {
+export default function InlineQuizAuthor({ assessmentUuid, onAssessmentCreated }: InlineQuizAuthorProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
@@ -44,10 +41,14 @@ export default function InlineQuizAuthor({
 
   if (assessmentUuid && !isEditorOpen) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
-        <BookOpen className="size-4 text-primary" />
+      <div className="border-primary/20 bg-primary/5 flex items-center gap-2 rounded-lg border p-3">
+        <BookOpen className="text-primary size-4" />
         <span className="flex-1 text-sm font-medium">Inline Quiz</span>
-        <Button size="sm" variant="ghost" onClick={() => setIsEditorOpen(true)}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setIsEditorOpen(true)}
+        >
           Edit Questions
         </Button>
       </div>
@@ -56,7 +57,7 @@ export default function InlineQuizAuthor({
 
   if (!assessmentUuid) {
     return (
-      <div className="flex items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 p-6">
+      <div className="border-muted-foreground/30 flex items-center justify-center rounded-lg border border-dashed p-6">
         <Button
           size="sm"
           variant="outline"
@@ -72,11 +73,13 @@ export default function InlineQuizAuthor({
 
   // TODO: Render the standard NativeItemStudio in a modal/drawer
   return (
-    <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-      <p className="text-sm text-muted-foreground">
-        Item editor for assessment {assessmentUuid} (coming in Phase 2)
-      </p>
-      <Button size="sm" variant="ghost" onClick={() => setIsEditorOpen(false)}>
+    <div className="border-primary/20 bg-primary/5 rounded-lg border p-4">
+      <p className="text-muted-foreground text-sm">Item editor for assessment {assessmentUuid} (coming in Phase 2)</p>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => setIsEditorOpen(false)}
+      >
         Close
       </Button>
     </div>

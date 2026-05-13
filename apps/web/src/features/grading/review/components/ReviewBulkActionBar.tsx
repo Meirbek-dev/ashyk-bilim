@@ -7,11 +7,7 @@ import { toast } from 'sonner';
 
 import type { Submission } from '@/features/grading/domain';
 import { getReleaseState } from '@/features/grading/domain';
-import {
-  exportGradesCSV,
-  publishAssessmentGrades,
-  saveGrade,
-} from '@/services/grading/grading';
+import { exportGradesCSV, publishAssessmentGrades, saveGrade } from '@/services/grading/grading';
 import { createStudentPolicyOverride } from '@/services/assessments/assessment-actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,7 +50,9 @@ export default function ReviewBulkActionBar({
   const [lastSummary, setLastSummary] = useState<BulkActionSummary | null>(null);
 
   const gradeable = submissions.filter((submission) => submission.final_score !== null);
-  const userIds = submissions.map((submission) => submission.user?.id).filter((id): id is number => Number.isFinite(id));
+  const userIds = submissions
+    .map((submission) => submission.user?.id)
+    .filter((id): id is number => Number.isFinite(id));
   const releaseSummary = useMemo(() => {
     let visible = 0;
     let hidden = 0;

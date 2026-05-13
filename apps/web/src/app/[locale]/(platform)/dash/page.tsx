@@ -5,13 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 
-import {
-  canSeeAdmin,
-  canSeeAnalytics,
-  canSeeCourses,
-  canSeePlatform,
-  canSeeUsers,
-} from '@/lib/rbac/navigation-policy';
+import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeePlatform, canSeeUsers } from '@/lib/rbac/navigation-policy';
 import { requireSession } from '@/lib/auth/session';
 import { sessionCan } from '@/lib/auth/permissions';
 

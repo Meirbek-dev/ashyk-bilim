@@ -48,18 +48,23 @@ export default function ItemRubricEditor({
     <div className="space-y-3 rounded-md border p-3">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">{itemText || itemUuid}</p>
-        <span className={cn(
-          'text-xs font-mono',
-          percentage >= 80 ? 'text-green-600' : percentage >= 50 ? 'text-yellow-600' : 'text-red-600',
-        )}>
+        <span
+          className={cn(
+            'text-xs font-mono',
+            percentage >= 80 ? 'text-green-600' : percentage >= 50 ? 'text-yellow-600' : 'text-red-600',
+          )}
+        >
           {totalScore}/{maxScore} ({percentage}%)
         </span>
       </div>
 
       {criteria.length > 0 && (
-        <div className="space-y-2 pl-2 border-l-2 border-muted">
+        <div className="border-muted space-y-2 border-l-2 pl-2">
           {criteria.map((criterion) => (
-            <div key={criterion.criterion_id} className="flex items-center gap-2">
+            <div
+              key={criterion.criterion_id}
+              className="flex items-center gap-2"
+            >
               <Label className="min-w-[120px] text-xs">{criterion.label}</Label>
               <Input
                 type="number"
@@ -68,15 +73,15 @@ export default function ItemRubricEditor({
                 step={0.5}
                 value={criterion.score}
                 disabled={disabled}
-                className="w-16 h-7 text-xs"
+                className="h-7 w-16 text-xs"
                 onChange={(e) => onCriterionChange(criterion.criterion_id, 'score', e.target.value)}
               />
-              <span className="text-xs text-muted-foreground">/{criterion.max_score}</span>
+              <span className="text-muted-foreground text-xs">/{criterion.max_score}</span>
               <Input
                 placeholder="Note"
                 value={criterion.note}
                 disabled={disabled}
-                className="flex-1 h-7 text-xs"
+                className="h-7 flex-1 text-xs"
                 onChange={(e) => onCriterionChange(criterion.criterion_id, 'note', e.target.value)}
               />
             </div>

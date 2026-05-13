@@ -112,8 +112,7 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
   } = useQuery(
     queryOptions({
       queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
-      queryFn: () =>
-        apiFetcher<AssessmentStudioDetail>(`assessments/activity/${normalizedActivityUuid}`),
+      queryFn: () => apiFetcher<AssessmentStudioDetail>(`assessments/activity/${normalizedActivityUuid}`),
       enabled: Boolean(normalizedActivityUuid),
     }),
   );
@@ -122,10 +121,7 @@ export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorP
   const readinessQuery = useQuery(
     queryOptions({
       queryKey: queryKeys.assessments.readiness(assessment?.assessment_uuid ?? ''),
-      queryFn: () =>
-        apiFetcher<StudioReadinessPayload>(
-          `assessments/${assessment?.assessment_uuid}/readiness`,
-        ),
+      queryFn: () => apiFetcher<StudioReadinessPayload>(`assessments/${assessment?.assessment_uuid}/readiness`),
       enabled: Boolean(assessment?.assessment_uuid),
       retry: false,
     }),

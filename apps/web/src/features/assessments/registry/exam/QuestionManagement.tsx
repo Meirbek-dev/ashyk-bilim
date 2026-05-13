@@ -109,10 +109,7 @@ export default function QuestionManagement({ examUuid, questions, onQuestionsCha
     useSensor(KeyboardSensor),
   );
 
-  const questionIds = useMemo(
-    () => questions.map((q: any, i: number) => q.question_uuid ?? `temp-${i}`),
-    [questions],
-  );
+  const questionIds = useMemo(() => questions.map((q: any, i: number) => q.question_uuid ?? `temp-${i}`), [questions]);
   const announcements = useDndAnnouncements(questionIds);
 
   const inlineEditorRef = useRef<HTMLDivElement>(null);

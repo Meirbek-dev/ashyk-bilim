@@ -129,7 +129,13 @@ export async function toggleDiscussionLike(
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
   });
-  const data = await errorHandling<{ message: string; is_liked: boolean; is_disliked: boolean; likes_count: number; dislikes_count: number }>(result);
+  const data = await errorHandling<{
+    message: string;
+    is_liked: boolean;
+    is_disliked: boolean;
+    likes_count: number;
+    dislikes_count: number;
+  }>(result);
 
   if (result.ok) {
     const { revalidateTag } = await import('next/cache');
@@ -153,7 +159,13 @@ export async function toggleDiscussionDislike(
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
   });
-  const data = await errorHandling<{ message: string; is_liked: boolean; is_disliked: boolean; likes_count: number; dislikes_count: number }>(result);
+  const data = await errorHandling<{
+    message: string;
+    is_liked: boolean;
+    is_disliked: boolean;
+    likes_count: number;
+    dislikes_count: number;
+  }>(result);
 
   if (result.ok) {
     const { revalidateTag } = await import('next/cache');

@@ -250,5 +250,3 @@ export const getResponseMetadata = async (response: Response): Promise<CustomRes
     HTTPmessage: response.statusText,
   };
 };
-
-

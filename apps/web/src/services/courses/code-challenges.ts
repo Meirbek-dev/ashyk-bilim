@@ -586,7 +586,9 @@ export async function runCustomTest(
 
 export async function getSubmission(activityUuid: string, submissionUuid: string): Promise<CodeSubmission> {
   const submissions = await getSubmissions(activityUuid);
-  const submission = submissions.find((item) => item.submission_uuid === submissionUuid || item.uuid === submissionUuid);
+  const submission = submissions.find(
+    (item) => item.submission_uuid === submissionUuid || item.uuid === submissionUuid,
+  );
   if (!submission) {
     throw new Error('Failed to fetch submission');
   }

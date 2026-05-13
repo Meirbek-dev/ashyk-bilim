@@ -3,9 +3,7 @@ import { playwright } from '@vitest/browser-playwright';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [
-    react(),
-  ],
+  plugins: [react()],
   resolve: {
     // Vite now handles this natively, so we can remove the external plugin
     tsconfigPaths: true,

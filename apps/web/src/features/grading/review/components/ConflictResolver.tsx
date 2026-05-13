@@ -34,28 +34,40 @@ export default function ConflictResolver({
       <AlertTriangle className="size-4" />
       <AlertTitle>Concurrent Edit Detected</AlertTitle>
       <AlertDescription className="mt-2 space-y-3">
-        <p className="text-xs">
-          Another teacher has graded this submission since you loaded it.
-        </p>
+        <p className="text-xs">Another teacher has graded this submission since you loaded it.</p>
 
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div className="rounded border p-2">
-            <p className="font-medium mb-1">Server (current)</p>
-            <p>Score: <strong>{serverScore ?? '—'}</strong></p>
+            <p className="mb-1 font-medium">Server (current)</p>
+            <p>
+              Score: <strong>{serverScore ?? '—'}</strong>
+            </p>
             <p className="truncate">Feedback: {serverFeedback || '—'}</p>
           </div>
           <div className="rounded border p-2">
-            <p className="font-medium mb-1">Your draft</p>
-            <p>Score: <strong>{localScore || '—'}</strong></p>
+            <p className="mb-1 font-medium">Your draft</p>
+            <p>
+              Score: <strong>{localScore || '—'}</strong>
+            </p>
             <p className="truncate">Feedback: {localFeedback || '—'}</p>
           </div>
         </div>
 
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onAcceptServer}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={onAcceptServer}
+          >
             Use server values
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onKeepLocal}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs"
+            onClick={onKeepLocal}
+          >
             Keep my draft & retry
           </Button>
         </div>

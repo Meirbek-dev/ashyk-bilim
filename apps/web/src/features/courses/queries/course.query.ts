@@ -36,8 +36,7 @@ export function courseStructureQueryOptions<TCourseStructure = unknown>(
 ) {
   return queryOptions({
     queryKey: courseKeys.structure(courseUuid, withUnpublishedActivities),
-    queryFn: () =>
-      apiFetcher<TCourseStructure>(courseEndpoints.structure(courseUuid, withUnpublishedActivities)),
+    queryFn: () => apiFetcher<TCourseStructure>(courseEndpoints.structure(courseUuid, withUnpublishedActivities)),
     staleTime: 5000,
   });
 }
