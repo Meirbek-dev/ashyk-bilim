@@ -3,7 +3,6 @@
 import {
   ArrowLeft,
   ChevronRight,
-  ClipboardList,
   Code2,
   FileArchive,
   FileText,
@@ -19,7 +18,6 @@ import { cn } from '@/lib/utils';
 import CodeChallenge from './NewActivityModal/CodeChallengeActivityModal';
 import DocumentPdfModal from './NewActivityModal/DocumentActivityModal';
 import DynamicCanvaModal from './NewActivityModal/DynamicActivityModal';
-import Assignment from './NewActivityModal/AssignmentActivityModal';
 import VideoModal from './NewActivityModal/VideoActivityModal';
 import Exam from './NewActivityModal/ExamActivityModal';
 import FileSubmission from './NewActivityModal/FileSubmissionActivityModal';
@@ -29,7 +27,6 @@ type ViewType =
   | 'dynamic'
   | 'video'
   | 'documentpdf'
-  | 'assignments'
   | 'filesubmission'
   | 'exams'
   | 'codechallenge';
@@ -73,13 +70,6 @@ const ACTIVITY_TYPES: ActivityTypeConfig[] = [
     descriptionKey: 'documentDesc',
     icon: FileText,
     iconClass: 'text-sky-500',
-  },
-  {
-    id: 'assignments',
-    labelKey: 'assignments',
-    descriptionKey: 'assignmentsDesc',
-    icon: ClipboardList,
-    iconClass: 'text-amber-500',
   },
   {
     id: 'filesubmission',
@@ -191,12 +181,6 @@ export default function NewActivityModal({
           course={course}
         />
       )}
-      {selectedView === 'assignments' && (
-        <Assignment
-          submitActivity={submitActivity}
-          {...sharedProps}
-        />
-      )}
       {selectedView === 'filesubmission' && <FileSubmission {...sharedProps} />}
       {selectedView === 'exams' && (
         <Exam
@@ -247,7 +231,7 @@ function ActivityTypeRow({
         !isLast && 'border-b border-gray-100',
       )}
     >
-      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white transition-colors group-hover:border-gray-300 group-hover:bg-gray-50">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white transition-colors group-hover:border-gray-300 group-hover:bg-gray-50">
         {isLoading ? (
           <span className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-gray-300 border-t-gray-600" />
         ) : (
@@ -262,7 +246,7 @@ function ActivityTypeRow({
 
       <ChevronRight
         className={cn(
-          'h-3.5 w-3.5 flex-shrink-0 text-gray-300 transition-all duration-100',
+          'h-3.5 w-3.5 shrink-0 text-gray-300 transition-all duration-100',
           'group-hover:translate-x-0.5 group-hover:text-gray-400',
         )}
       />

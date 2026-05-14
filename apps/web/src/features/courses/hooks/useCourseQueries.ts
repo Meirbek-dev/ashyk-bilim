@@ -3,7 +3,6 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { CourseListKeyOptions } from '@/hooks/courses/courseKeys';
 import {
-  activityAssessmentUuidQueryOptions,
   courseListQueryOptions,
   courseMetadataQueryOptions,
   courseDiscussionsQueryOptions,
@@ -70,15 +69,6 @@ function courseListHookOptions<TCourse = unknown>(
   });
 }
 
-function activityAssessmentUuidHookOptions(activityUuid: string | null | undefined, enabled = true) {
-  const normalizedActivityUuid = activityUuid ?? '';
-
-  return queryOptions({
-    ...activityAssessmentUuidQueryOptions(normalizedActivityUuid),
-    enabled: enabled && Boolean(activityUuid),
-  });
-}
-
 export function useCourseDiscussions(courseUuid: string | null | undefined, options?: UseCourseDiscussionsOptions) {
   return useQuery(courseDiscussionsHookOptions(courseUuid, options));
 }
@@ -96,8 +86,4 @@ export function useCourseListQuery<TCourse = unknown>(
   queryConfig?: { initialData?: CourseListResponse<TCourse>; staleTime?: number },
 ) {
   return useQuery(courseListHookOptions<TCourse>(options, queryConfig));
-}
-
-export function useActivityAssessmentUuid(activityUuid: string | null | undefined, options?: { enabled?: boolean }) {
-  return useQuery(activityAssessmentUuidHookOptions(activityUuid, options?.enabled ?? true));
 }

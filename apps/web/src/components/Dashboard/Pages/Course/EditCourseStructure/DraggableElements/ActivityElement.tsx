@@ -30,7 +30,6 @@ import {
   Video,
   X as XIcon,
 } from "lucide-react";
-import { useActivityAssessmentUuid } from "@/features/courses/hooks/useCourseQueries";
 import { CourseWorkflowBadge } from "@components/Dashboard/Courses/courseWorkflowUi";
 import { useActivityMutations } from "@/hooks/mutations/useActivityMutations";
 import { cleanActivityUuid, cleanCourseUuid } from "@/lib/course-management";
@@ -150,12 +149,6 @@ const ActivityElement = ({
   const [isUpdatingPublish, setIsUpdatingPublish] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeletingActivity, setIsDeletingActivity] = useState(false);
-  const [fetchAssignment, setFetchAssignment] = useState(false);
-
-  const { data: assignmentUUID, isLoading: isAssignmentLoading } =
-    useActivityAssessmentUuid(activity.activity_uuid, {
-      enabled: activity.activity_type === "TYPE_ASSIGNMENT" && fetchAssignment,
-    });
 
   const canUpdate = activity.can_update ?? false;
   const canDelete = activity.can_delete ?? false;
@@ -244,7 +237,7 @@ const ActivityElement = ({
     >
       {/* Drag Handle */}
       <div
-        className="text-muted-foreground hover:text-foreground flex-shrink-0 cursor-grab active:cursor-grabbing"
+        className="text-muted-foreground hover:text-foreground shrink-0 cursor-grab active:cursor-grabbing"
         {...attributes}
         {...listeners}
       >
@@ -271,7 +264,7 @@ const ActivityElement = ({
               <Button
                 size="icon-sm"
                 variant="outline"
-                className="flex-shrink-0 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70"
+                className="shrink-0 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70"
                 onClick={() => void handleSaveEdit()}
                 disabled={isSavingEdit}
               >
@@ -286,7 +279,7 @@ const ActivityElement = ({
               <Button
                 size="icon-sm"
                 variant="outline"
-                className="flex-shrink-0"
+                className="shrink-0"
                 onClick={handleCancelEdit}
                 disabled={isSavingEdit}
               >
@@ -320,7 +313,7 @@ const ActivityElement = ({
                 <Button
                   size="icon-sm"
                   variant="outline"
-                  className="flex-shrink-0"
+                  className="shrink-0"
                   onClick={handleStartEdit}
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -333,14 +326,11 @@ const ActivityElement = ({
 
       {/* Action icons */}
       {!isEditing && (
-        <div className="flex flex-shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {/* Open content editor */}
           <ActivityEditButton
             activity={activity}
             course_uuid={course_uuid}
-            assignmentUUID={assignmentUUID ?? null}
-            isAssignmentLoading={isAssignmentLoading}
-            onRequestAssignment={() => setFetchAssignment(true)}
           />
 
           {/* Preview */}
@@ -452,7 +442,7 @@ const ActivityTypeBadge = ({
   return (
     <div
       className={cn(
-        "flex flex-shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1",
+        "flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1",
         colorClass,
       )}
     >
@@ -467,15 +457,9 @@ const ActivityTypeBadge = ({
 const ActivityEditButton = ({
   activity,
   course_uuid,
-  assignmentUUID,
-  isAssignmentLoading,
-  onRequestAssignment,
 }: {
   activity: Activity;
   course_uuid: string;
-  assignmentUUID: string | null;
-  isAssignmentLoading: boolean;
-  onRequestAssignment: () => void;
 }) => {
   const t = useTranslations("CourseEdit.ActivityElement");
   const course = useCourse() as any;
@@ -500,54 +484,8 @@ const ActivityEditButton = ({
     );
   }
 
-  if (activity.activity_type === "TYPE_ASSIGNMENT") {
-    if (isAssignmentLoading) {
-      return (
-        <Button
-          size="icon"
-          variant="outline"
-          className={ACTION_ICON_BUTTON_CLASS}
-          disabled
-        >
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </Button>
-      );
-    }
-    if (!assignmentUUID) {
-      return (
-        <ToolTip content={t("editAssignmentButton")} side="top">
-          <Button
-            size="icon"
-            variant="outline"
-            className={ACTION_ICON_BUTTON_CLASS}
-            onMouseEnter={onRequestAssignment}
-            onClick={onRequestAssignment}
-          >
-            <FilePenLine className="h-4 w-4" />
-          </Button>
-        </ToolTip>
-      );
-    }
-    const editUrl = `${getAbsoluteUrl("")}/dash/courses/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/studio`;
-    return (
-      <ToolTip content={t("editAssignmentButton")} side="top">
-        <Button
-          size="icon"
-          variant="outline"
-          className={ACTION_ICON_BUTTON_CLASS}
-          nativeButton={false}
-          render={
-            <a href={editUrl} target="_blank" rel="noopener noreferrer">
-              <FilePenLine className="h-4 w-4" />
-              <span className="sr-only">{t("openEditPage")}</span>
-            </a>
-          }
-        />
-      </ToolTip>
-    );
-  }
-
   if (
+    activity.activity_type === "TYPE_ASSIGNMENT" ||
     activity.activity_type === "TYPE_EXAM" ||
     activity.activity_type === "TYPE_QUIZ" ||
     activity.activity_type === "TYPE_CODE_CHALLENGE" ||

@@ -70,26 +70,6 @@ export async function getAssessmentByActivityUuid(activityUuid: string): Promise
   }
 }
 
-export async function createAssignmentAssessment(body: AssessmentMutationPayload): Promise<CustomResponseTyping> {
-  const result = await apiFetch('assessments', {
-    method: 'POST',
-    baseUrl: getAPIUrl(),
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      kind: 'ASSIGNMENT',
-      title: body.title,
-      description: body.description ?? '',
-      course_id: body.course_id,
-      chapter_id: body.chapter_id,
-      grading_type: body.grading_type ?? 'PERCENTAGE',
-      policy: {
-        due_at: body.due_at ?? null,
-      },
-    }),
-  });
-  return getResponseMetadata(result);
-}
-
 export async function updateAssignmentAssessment(
   assessmentUuid: string,
   body: AssessmentMutationPayload,
