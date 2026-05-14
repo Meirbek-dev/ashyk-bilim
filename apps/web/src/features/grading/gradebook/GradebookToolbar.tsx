@@ -153,7 +153,6 @@ function SummaryTile({
 
 export function labelActivityType(t: (key: string) => string, type: string) {
   const key = type.toLowerCase();
-  if (key === 'type_assignment' || key === 'assignment') return t('activityTypes.assignment');
   if (key === 'type_exam' || key === 'exam') return t('activityTypes.exam');
   if (key === 'type_code_challenge' || key === 'code_challenge') return t('activityTypes.codeChallenge');
   if (key === 'type_dynamic' || key === 'quiz') return t('activityTypes.quiz');

@@ -4,7 +4,6 @@ export const activityTypeEnum = v.picklist([
   "TYPE_VIDEO",
   "TYPE_DOCUMENT",
   "TYPE_DYNAMIC",
-  "TYPE_ASSIGNMENT",
   "TYPE_FILE_SUBMISSION",
   "TYPE_EXAM",
   "TYPE_CODE_CHALLENGE",

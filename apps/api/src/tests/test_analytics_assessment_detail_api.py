@@ -484,8 +484,8 @@ def test_assignment_detail_endpoint_returns_operational_fields(
         _course, _chapter, activity, policy = _seed_course_stack(
             session,
             name="Analytics Assignment",
-            activity_type=ActivityTypeEnum.TYPE_ASSIGNMENT,
-            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY,
+            activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
         )
         assessment = Assessment(
             id=1,

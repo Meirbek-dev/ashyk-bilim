@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  BookOpenCheck,
   Check,
   ChevronDown,
   Circle,
@@ -125,9 +124,6 @@ const CourseProgress: FC<CourseProgressProps> = ({
       }
       case "TYPE_DYNAMIC": {
         return <Layers className={iconClass} />;
-      }
-      case "TYPE_ASSIGNMENT": {
-        return <BookOpenCheck className={iconClass} />;
       }
       case "TYPE_FILE_SUBMISSION": {
         return <FileArchive className={iconClass} />;

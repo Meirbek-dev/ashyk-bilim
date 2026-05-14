@@ -89,7 +89,7 @@ function baseGradebook(): CourseGradebookResponse {
         id: 1,
         activity_uuid: 'activity_assignment',
         name: 'Assignment',
-        activity_type: 'TYPE_ASSIGNMENT',
+        activity_type: 'TYPE_FILE_SUBMISSION',
         assessment_type: 'ASSIGNMENT',
         order: 1,
       },

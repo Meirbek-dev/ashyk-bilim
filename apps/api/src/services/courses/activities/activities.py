@@ -216,7 +216,6 @@ def _sync_assessment_lifecycle(
     db_session: Session,
 ) -> None:
     if activity.activity_type not in {
-        ActivityTypeEnum.TYPE_ASSIGNMENT,
         ActivityTypeEnum.TYPE_EXAM,
         ActivityTypeEnum.TYPE_QUIZ,
         ActivityTypeEnum.TYPE_CODE_CHALLENGE,

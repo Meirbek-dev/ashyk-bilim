@@ -238,8 +238,8 @@ def _seed_course_and_assessment(
 
         activity = Activity(
             name="Graded Assignment",
-            activity_type=ActivityTypeEnum.TYPE_ASSIGNMENT,
-            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY,
+            activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
             content={},
             details={},
             settings={},

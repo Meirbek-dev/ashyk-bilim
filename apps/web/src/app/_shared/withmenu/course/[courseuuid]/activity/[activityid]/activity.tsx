@@ -81,8 +81,7 @@ export default function ActivityClient({
   };
 
   const isAssessable = activity
-    ? activity.activity_type === "TYPE_ASSIGNMENT" ||
-      activity.activity_type === "TYPE_EXAM" ||
+    ? activity.activity_type === "TYPE_EXAM" ||
       activity.activity_type === "TYPE_CODE_CHALLENGE" ||
       activity.activity_type === "TYPE_FILE_SUBMISSION"
     : false;

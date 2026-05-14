@@ -4363,12 +4363,12 @@ export interface components {
          * ActivitySubTypeEnum
          * @enum {string}
          */
-        ActivitySubTypeEnum: "SUBTYPE_DYNAMIC_PAGE" | "SUBTYPE_VIDEO_YOUTUBE" | "SUBTYPE_VIDEO_HOSTED" | "SUBTYPE_DOCUMENT_PDF" | "SUBTYPE_DOCUMENT_DOC" | "SUBTYPE_ASSIGNMENT_ANY" | "SUBTYPE_EXAM_STANDARD" | "SUBTYPE_QUIZ_STANDARD" | "SUBTYPE_CODE_GENERAL" | "SUBTYPE_CODE_COMPETITIVE" | "SUBTYPE_FILE_SUBMISSION_STANDARD" | "SUBTYPE_CUSTOM";
+        ActivitySubTypeEnum: "SUBTYPE_DYNAMIC_PAGE" | "SUBTYPE_VIDEO_YOUTUBE" | "SUBTYPE_VIDEO_HOSTED" | "SUBTYPE_DOCUMENT_PDF" | "SUBTYPE_DOCUMENT_DOC" | "SUBTYPE_EXAM_STANDARD" | "SUBTYPE_QUIZ_STANDARD" | "SUBTYPE_CODE_GENERAL" | "SUBTYPE_CODE_COMPETITIVE" | "SUBTYPE_FILE_SUBMISSION_STANDARD" | "SUBTYPE_CUSTOM";
         /**
          * ActivityTypeEnum
          * @enum {string}
          */
-        ActivityTypeEnum: "TYPE_VIDEO" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_ASSIGNMENT" | "TYPE_EXAM" | "TYPE_QUIZ" | "TYPE_CODE_CHALLENGE" | "TYPE_FILE_SUBMISSION" | "TYPE_CUSTOM";
+        ActivityTypeEnum: "TYPE_VIDEO" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_EXAM" | "TYPE_QUIZ" | "TYPE_CODE_CHALLENGE" | "TYPE_FILE_SUBMISSION" | "TYPE_CUSTOM";
         /** ActivityUpdate */
         ActivityUpdate: {
             activity_sub_type?: components["schemas"]["ActivitySubTypeEnum"] | null;

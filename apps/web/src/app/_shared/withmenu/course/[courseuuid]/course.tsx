@@ -3,7 +3,6 @@
 // Import Lucide icons
 import {
   ArrowRight,
-  Backpack,
   Check,
   ChevronDown,
   ClipboardList,
@@ -208,9 +207,6 @@ const CourseClient = (props: any) => {
       }
       case "TYPE_DYNAMIC": {
         return t("page");
-      }
-      case "TYPE_ASSIGNMENT": {
-        return t("assignment");
       }
       case "TYPE_FILE_SUBMISSION": {
         return t("fileSubmission");
@@ -558,7 +554,7 @@ const CourseClient = (props: any) => {
                                           <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15">
                                             <Check
                                               size={10}
-                                              className="stroke-[3] text-emerald-600"
+                                              className="stroke-3 text-emerald-600"
                                             />
                                           </div>
                                         ) : (
@@ -597,10 +593,6 @@ const CourseClient = (props: any) => {
                                           {activity.activity_type ===
                                             "TYPE_DOCUMENT" && (
                                             <File size={11} />
-                                          )}
-                                          {activity.activity_type ===
-                                            "TYPE_ASSIGNMENT" && (
-                                            <Backpack size={11} />
                                           )}
                                           {activity.activity_type ===
                                             "TYPE_FILE_SUBMISSION" && (

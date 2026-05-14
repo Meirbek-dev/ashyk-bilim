@@ -218,8 +218,8 @@ def _seed_assessment(db_session_factory) -> tuple[str, int]:
         activity = Activity(
             id=1,
             name="Activity",
-            activity_type=ActivityTypeEnum.TYPE_ASSIGNMENT,
-            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY,
+            activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
             content={},
             details={},
             settings={},

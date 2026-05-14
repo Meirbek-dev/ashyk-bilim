@@ -110,7 +110,6 @@ export default function ActivityToolbar({
           </Link>
         ) : null}
         {showMarkComplete &&
-        activity.activity_type !== "TYPE_ASSIGNMENT" &&
         activity.activity_type !== "TYPE_FILE_SUBMISSION" ? (
           <MarkStatus
             activity={activity}

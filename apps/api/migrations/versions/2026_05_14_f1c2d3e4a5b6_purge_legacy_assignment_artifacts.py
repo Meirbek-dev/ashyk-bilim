@@ -1,9 +1,10 @@
 """Purge legacy assignment artifacts from remaining tables.
 
 This is a final cleanup migration after the canonical assessment stack has been
-fully backfilled. It removes any orphaned legacy assignment activities and
-strips dead assignment metadata from submissions so no legacy assignment
-internals remain in the database.
+fully backfilled. It retypes legacy TYPE_ASSIGNMENT activities to
+TYPE_FILE_SUBMISSION, strips dead assignment metadata from submissions, and
+drops any remaining legacy assignment tables so no legacy assignment internals
+remain in the database.
 
 Revision ID: f1c2d3e4a5b6
 Revises: 3f7c1d8a9b2e
@@ -43,13 +44,10 @@ def upgrade() -> None:
         conn.execute(
             sa.text(
                 """
-                DELETE FROM activity
+                UPDATE activity
+                SET activity_type = 'TYPE_FILE_SUBMISSION',
+                    activity_sub_type = 'SUBTYPE_FILE_SUBMISSION_STANDARD'
                 WHERE activity_type = 'TYPE_ASSIGNMENT'
-                  AND NOT EXISTS (
-                      SELECT 1
-                      FROM assessment
-                      WHERE assessment.activity_id = activity.id
-                  )
                 """
             )
         )

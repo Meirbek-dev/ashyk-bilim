@@ -22,9 +22,7 @@ class ActivityTypeEnum(StrEnum):
     TYPE_VIDEO = "TYPE_VIDEO"
     TYPE_DOCUMENT = "TYPE_DOCUMENT"
     TYPE_DYNAMIC = "TYPE_DYNAMIC"
-    TYPE_ASSIGNMENT = "TYPE_ASSIGNMENT"
     TYPE_EXAM = "TYPE_EXAM"
-    TYPE_QUIZ = "TYPE_QUIZ"
     TYPE_CODE_CHALLENGE = "TYPE_CODE_CHALLENGE"
     TYPE_FILE_SUBMISSION = "TYPE_FILE_SUBMISSION"
     TYPE_CUSTOM = "TYPE_CUSTOM"
@@ -39,8 +37,6 @@ class ActivitySubTypeEnum(StrEnum):
     # Document
     SUBTYPE_DOCUMENT_PDF = "SUBTYPE_DOCUMENT_PDF"
     SUBTYPE_DOCUMENT_DOC = "SUBTYPE_DOCUMENT_DOC"
-    # Assignment
-    SUBTYPE_ASSIGNMENT_ANY = "SUBTYPE_ASSIGNMENT_ANY"
     # Exam
     SUBTYPE_EXAM_STANDARD = "SUBTYPE_EXAM_STANDARD"
     # Quiz
@@ -132,7 +128,6 @@ _VALID_SUBTYPES: dict[ActivityTypeEnum, set[ActivitySubTypeEnum]] = {
         ActivitySubTypeEnum.SUBTYPE_DOCUMENT_DOC,
     },
     ActivityTypeEnum.TYPE_DYNAMIC: {ActivitySubTypeEnum.SUBTYPE_DYNAMIC_PAGE},
-    ActivityTypeEnum.TYPE_ASSIGNMENT: {ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY},
     ActivityTypeEnum.TYPE_EXAM: {ActivitySubTypeEnum.SUBTYPE_EXAM_STANDARD},
     ActivityTypeEnum.TYPE_QUIZ: {ActivitySubTypeEnum.SUBTYPE_QUIZ_STANDARD},
     ActivityTypeEnum.TYPE_CODE_CHALLENGE: {

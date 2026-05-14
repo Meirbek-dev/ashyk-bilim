@@ -1,17 +1,11 @@
 import AssessmentStudioWorkspace from "@/features/assessments/studio/AssessmentStudioWorkspace";
 import FileSubmissionStudio from "@/features/file-submissions/studio/FileSubmissionStudio";
 import { renderCourseWorkspacePage } from "@components/Dashboard/Courses/renderCourseWorkspacePage";
+import { getAssessmentByActivityUuid } from "@services/assessments/assessments";
 import { getActivity } from "@services/courses/activities";
 import { getCourseMetadata } from "@services/courses/courses";
 import EditorWrapper from "@/components/Objects/Editor/EditorWrapper";
 import { getTranslations } from "next-intl/server";
-
-const ASSESSABLE_TYPES = new Set([
-  "TYPE_ASSIGNMENT",
-  "TYPE_EXAM",
-  "TYPE_CODE_CHALLENGE",
-  "TYPE_QUIZ",
-]);
 
 export default async function PlatformAssessmentStudioPage(props: {
   params: Promise<{ courseuuid: string; activityid: string }>;
@@ -23,20 +17,19 @@ export default async function PlatformAssessmentStudioPage(props: {
     getActivity(activityid),
     getCourseMetadata(courseuuid, undefined, true),
   ]);
-
-  const isAssessment = ASSESSABLE_TYPES.has(activity.activity_type ?? "");
+  const assessment = await getAssessmentByActivityUuid(activity.activity_uuid);
 
   return renderCourseWorkspacePage({
     courseuuid,
     activeStage: "curriculum",
     children:
-      String(activity.activity_type) === "TYPE_FILE_SUBMISSION" ? (
-        <FileSubmissionStudio
+      assessment ? (
+        <AssessmentStudioWorkspace
           courseUuid={courseuuid}
           activityUuid={activityid}
         />
-      ) : isAssessment ? (
-        <AssessmentStudioWorkspace
+      ) : String(activity.activity_type) === "TYPE_FILE_SUBMISSION" ? (
+        <FileSubmissionStudio
           courseUuid={courseuuid}
           activityUuid={activityid}
         />

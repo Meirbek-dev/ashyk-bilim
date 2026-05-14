@@ -179,7 +179,7 @@ def _settings_for_activity(
             _code_settings_payload(activity, assessment, policy, db_session)
         )
 
-    if activity.activity_type == ActivityTypeEnum.TYPE_ASSIGNMENT:
+    if activity.activity_type == ActivityTypeEnum.TYPE_FILE_SUBMISSION:
         return validate_settings(
             _assignment_settings_payload(activity, assessment, policy)
         )

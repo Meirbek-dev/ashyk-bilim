@@ -12,7 +12,7 @@ import { courseContributorsQueryOptions } from '@/features/courses/queries/cours
 
 import ActivityClient from '@/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity';
 
-const ASSESSABLE_TYPES = new Set(['TYPE_ASSIGNMENT', 'TYPE_EXAM', 'TYPE_CODE_CHALLENGE', 'TYPE_QUIZ']);
+const ASSESSABLE_TYPES = new Set(['TYPE_FILE_SUBMISSION', 'TYPE_EXAM', 'TYPE_CODE_CHALLENGE', 'TYPE_QUIZ']);
 
 interface MetadataProps {
   params: Promise<{ courseuuid: string; activityid: string }>;

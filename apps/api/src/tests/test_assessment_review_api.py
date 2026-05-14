@@ -241,8 +241,8 @@ def seeded_review_data_fixture(db_session_factory):
 
         activity = Activity(
             name="Assignment review",
-            activity_type=ActivityTypeEnum.TYPE_ASSIGNMENT,
-            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY,
+            activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
             content={},
             details={},
             settings={},
@@ -255,8 +255,8 @@ def seeded_review_data_fixture(db_session_factory):
         )
         other_activity = Activity(
             name="Other review",
-            activity_type=ActivityTypeEnum.TYPE_ASSIGNMENT,
-            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY,
+            activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
             content={},
             details={},
             settings={},

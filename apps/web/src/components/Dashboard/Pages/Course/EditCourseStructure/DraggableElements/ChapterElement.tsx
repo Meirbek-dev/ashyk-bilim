@@ -41,7 +41,6 @@ import ActivityElement from "./ActivityElement";
 type ActivityType =
   | "TYPE_VIDEO"
   | "TYPE_DOCUMENT"
-  | "TYPE_ASSIGNMENT"
   | "TYPE_FILE_SUBMISSION"
   | "TYPE_DYNAMIC"
   | "TYPE_EXAM"
@@ -259,7 +258,7 @@ const ChapterElement = ({
       <div className="flex items-center gap-3 border-b px-4 py-3 sm:px-6">
         <button
           type="button"
-          className="text-muted-foreground hover:text-foreground flex-shrink-0 cursor-grab rounded-md p-1 active:cursor-grabbing"
+          className="text-muted-foreground hover:text-foreground shrink-0 cursor-grab rounded-md p-1 active:cursor-grabbing"
           aria-label={t("dragChapter")}
           {...attributes}
           {...listeners}
@@ -267,7 +266,7 @@ const ChapterElement = ({
           <GripVertical className="h-5 w-5" />
         </button>
 
-        <div className="bg-muted flex-shrink-0 rounded-lg p-2">
+        <div className="bg-muted shrink-0 rounded-lg p-2">
           <Hexagon
             className="text-muted-foreground h-4 w-4"
             strokeWidth={2.5}
@@ -291,7 +290,7 @@ const ChapterElement = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 w-8 flex-shrink-0 p-0 text-emerald-600 hover:text-emerald-700"
+                  className="h-8 w-8 shrink-0 p-0 text-emerald-600 hover:text-emerald-700"
                   onClick={() => void handleSaveEdit()}
                   disabled={isSavingEdit}
                 >
@@ -307,7 +306,7 @@ const ChapterElement = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 w-8 flex-shrink-0 p-0"
+                  className="h-8 w-8 shrink-0 p-0"
                   onClick={handleCancelEdit}
                   disabled={isSavingEdit}
                 >
@@ -328,7 +327,7 @@ const ChapterElement = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-muted-foreground hover:text-foreground h-7 w-7 flex-shrink-0 p-0"
+                  className="text-muted-foreground hover:text-foreground h-7 w-7 shrink-0 p-0"
                   onClick={handleStartEdit}
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -343,7 +342,7 @@ const ChapterElement = ({
             <Button
               size="sm"
               variant="ghost"
-              className="text-muted-foreground hover:text-destructive h-8 w-8 flex-shrink-0 p-0"
+              className="text-muted-foreground hover:text-destructive h-8 w-8 shrink-0 p-0"
               onClick={() => setIsDeleteDialogOpen(true)}
             >
               <Trash2 className="h-4 w-4" />

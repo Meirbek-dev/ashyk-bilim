@@ -180,8 +180,8 @@ def _seed_base(db_session_factory, *, lifecycle: AssessmentLifecycle):
 
         activity = Activity(
             name="Phase 0 Assessment",
-            activity_type=ActivityTypeEnum.TYPE_ASSIGNMENT,
-            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY,
+            activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
             content={},
             details={},
             settings={},
@@ -380,8 +380,8 @@ def test_activity_lookup_does_not_create_canonical_assessment_rows(
         session.add(
             Activity(
                 name="Legacy Assignment",
-                activity_type=ActivityTypeEnum.TYPE_ASSIGNMENT,
-                activity_sub_type=ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY,
+                activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
+                activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
                 content={},
                 details={},
                 settings={},

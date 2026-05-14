@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   AlertTriangle,
-  Backpack,
   Check,
   ClipboardList,
   Code2,
@@ -47,7 +46,6 @@ import { toast } from "sonner";
 type ActivityType =
   | "TYPE_VIDEO"
   | "TYPE_DOCUMENT"
-  | "TYPE_ASSIGNMENT"
   | "TYPE_FILE_SUBMISSION"
   | "TYPE_DYNAMIC"
   | "TYPE_EXAM"
@@ -88,12 +86,6 @@ const ACTIVITY_CONFIG = {
     translationKey: "document",
     colorClass:
       "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300",
-  },
-  TYPE_ASSIGNMENT: {
-    Icon: Backpack,
-    translationKey: "assignment",
-    colorClass:
-      "border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300",
   },
   TYPE_FILE_SUBMISSION: {
     Icon: FileArchive,
@@ -485,7 +477,6 @@ const ActivityEditButton = ({
   }
 
   if (
-    activity.activity_type === "TYPE_ASSIGNMENT" ||
     activity.activity_type === "TYPE_EXAM" ||
     activity.activity_type === "TYPE_QUIZ" ||
     activity.activity_type === "TYPE_CODE_CHALLENGE" ||

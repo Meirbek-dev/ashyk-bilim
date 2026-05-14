@@ -1,7 +1,6 @@
 "use client";
 import {
   ArrowRight,
-  Backpack,
   Check,
   ClipboardList,
   FileArchive,
@@ -45,9 +44,6 @@ function getActivityTypeIcon(activityType?: string) {
     }
     case "TYPE_DYNAMIC": {
       return <StickyNote size={10} />;
-    }
-    case "TYPE_ASSIGNMENT": {
-      return <Backpack size={10} />;
     }
     case "TYPE_FILE_SUBMISSION": {
       return <FileArchive size={10} />;
@@ -129,9 +125,6 @@ export default function ActivityChapterDropdown(
       }
       case "TYPE_DYNAMIC": {
         return t("activityTypes.dynamic");
-      }
-      case "TYPE_ASSIGNMENT": {
-        return t("activityTypes.assignment");
       }
       case "TYPE_FILE_SUBMISSION": {
         return t("activityTypes.fileSubmission");

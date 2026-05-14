@@ -11,7 +11,6 @@ from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBase
 
 class TrailStepTypeEnum(StrEnum):
     STEP_TYPE_READABLE_ACTIVITY = "STEP_TYPE_READABLE_ACTIVITY"
-    STEP_TYPE_ASSIGNMENT_ACTIVITY = "STEP_TYPE_ASSIGNMENT_ACTIVITY"
     STEP_TYPE_CUSTOM_ACTIVITY = "STEP_TYPE_CUSTOM_ACTIVITY"
 
 

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BookOpenCheck,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -47,9 +46,6 @@ function getActivityTypeLabel(
     case "TYPE_DYNAMIC": {
       return t("activityTypes.interactive");
     }
-    case "TYPE_ASSIGNMENT": {
-      return t("activityTypes.assignment");
-    }
     case "TYPE_FILE_SUBMISSION": {
       return t("activityTypes.fileSubmission");
     }
@@ -76,9 +72,6 @@ function getActivityTypeIconColor(activityType: string): string {
     case "TYPE_DYNAMIC": {
       return "text-emerald-500";
     }
-    case "TYPE_ASSIGNMENT": {
-      return "text-orange-500";
-    }
     case "TYPE_FILE_SUBMISSION": {
       return "text-indigo-500";
     }
@@ -104,9 +97,6 @@ function getActivityTypeBadgeColor(activityType: string): string {
     }
     case "TYPE_DYNAMIC": {
       return "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200";
-    }
-    case "TYPE_ASSIGNMENT": {
-      return "bg-orange-50 text-orange-600 ring-1 ring-orange-200";
     }
     case "TYPE_FILE_SUBMISSION": {
       return "bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200";
@@ -140,9 +130,6 @@ const ActivityTypeIcon = ({
     }
     case "TYPE_DYNAMIC": {
       return <Layers size={size} className={colorClass} />;
-    }
-    case "TYPE_ASSIGNMENT": {
-      return <BookOpenCheck size={size} className={colorClass} />;
     }
     case "TYPE_FILE_SUBMISSION": {
       return <FileArchive size={size} className={colorClass} />;
@@ -467,7 +454,7 @@ const ActivityIndicators = (props: Props) => {
                       }`}
                     >
                       {isChapterComplete ? (
-                        <Check size={11} className="stroke-[3]" />
+                        <Check size={11} className="stroke-3" />
                       ) : (
                         chapterIndex + 1
                       )}

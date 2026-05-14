@@ -1,6 +1,7 @@
 import AssessmentReviewWorkspace from "@/features/assessments/review/AssessmentReviewWorkspace";
 import FileSubmissionReviewWorkspace from "@/features/file-submissions/review/FileSubmissionReviewWorkspace";
 import { renderCourseWorkspacePage } from "@components/Dashboard/Courses/renderCourseWorkspacePage";
+import { getAssessmentByActivityUuid } from "@services/assessments/assessments";
 import { getActivity } from "@services/courses/activities";
 
 export default async function PlatformAssessmentReviewPage(props: {
@@ -12,20 +13,21 @@ export default async function PlatformAssessmentReviewPage(props: {
     props.searchParams,
   ]);
   const activity = await getActivity(activityid);
+  const assessment = await getAssessmentByActivityUuid(activity.activity_uuid);
 
   return renderCourseWorkspacePage({
     courseuuid,
     activeStage: "curriculum",
     children:
-      String(activity.activity_type) === "TYPE_FILE_SUBMISSION" ? (
-        <FileSubmissionReviewWorkspace
-          activityUuid={activityid}
-          initialAttemptUuid={submission ?? null}
-        />
-      ) : (
+      assessment ? (
         <AssessmentReviewWorkspace
           activityUuid={activityid}
           initialSubmissionUuid={submission ?? null}
+        />
+      ) : (
+        <FileSubmissionReviewWorkspace
+          activityUuid={activityid}
+          initialAttemptUuid={submission ?? null}
         />
       ),
   });

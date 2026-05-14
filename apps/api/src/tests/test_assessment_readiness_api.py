@@ -173,13 +173,13 @@ def _seed_assessment(
         session.flush()
 
         activity_type_by_kind = {
-            AssessmentType.ASSIGNMENT: ActivityTypeEnum.TYPE_ASSIGNMENT,
+            AssessmentType.ASSIGNMENT: ActivityTypeEnum.TYPE_FILE_SUBMISSION,
             AssessmentType.EXAM: ActivityTypeEnum.TYPE_EXAM,
             AssessmentType.QUIZ: ActivityTypeEnum.TYPE_QUIZ,
             AssessmentType.CODE_CHALLENGE: ActivityTypeEnum.TYPE_CODE_CHALLENGE,
         }
         activity_sub_type_by_kind = {
-            AssessmentType.ASSIGNMENT: ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY,
+            AssessmentType.ASSIGNMENT: ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
             AssessmentType.EXAM: ActivitySubTypeEnum.SUBTYPE_EXAM_STANDARD,
             AssessmentType.QUIZ: ActivitySubTypeEnum.SUBTYPE_QUIZ_STANDARD,
             AssessmentType.CODE_CHALLENGE: ActivitySubTypeEnum.SUBTYPE_CODE_GENERAL,

@@ -32,7 +32,7 @@ from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
 
 _ASSESSMENT_TYPE_BY_ACTIVITY_TYPE: dict[str, AssessmentType] = {
-    ActivityTypeEnum.TYPE_ASSIGNMENT.value: AssessmentType.ASSIGNMENT,
+    ActivityTypeEnum.TYPE_FILE_SUBMISSION.value: AssessmentType.ASSIGNMENT,
     ActivityTypeEnum.TYPE_EXAM.value: AssessmentType.EXAM,
     ActivityTypeEnum.TYPE_CODE_CHALLENGE.value: AssessmentType.CODE_CHALLENGE,
 }

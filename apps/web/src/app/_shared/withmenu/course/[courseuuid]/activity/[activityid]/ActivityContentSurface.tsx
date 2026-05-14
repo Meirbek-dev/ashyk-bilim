@@ -71,7 +71,6 @@ export function ActivityContent({
     case "TYPE_FILE_SUBMISSION": {
       return <FileSubmissionActivity course={course} activity={activity} />;
     }
-    case "TYPE_ASSIGNMENT":
     case "TYPE_EXAM":
     case "TYPE_CODE_CHALLENGE": {
       return (

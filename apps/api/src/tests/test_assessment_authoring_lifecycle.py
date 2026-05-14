@@ -229,8 +229,8 @@ def _seed_published_assessment(db_session_factory) -> str:
     with db_session_factory() as session:
         activity = Activity(
             name="Published Assignment",
-            activity_type=ActivityTypeEnum.TYPE_ASSIGNMENT,
-            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_ASSIGNMENT_ANY,
+            activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
             content={},
             details={},
             settings={},

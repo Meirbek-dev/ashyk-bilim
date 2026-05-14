@@ -30,10 +30,6 @@ export interface AssessmentMutationPayload {
   due_at?: string | null;
 }
 
-function normalizeAssessmentUuid(assessmentUuid: string): string {
-  return assessmentUuid.startsWith('assignment_') ? assessmentUuid : `assignment_${assessmentUuid}`;
-}
-
 /**
  * Server-side: fetch an assessment by its UUID.
  * Returns null on 404 rather than throwing.
@@ -68,24 +64,4 @@ export async function getAssessmentByActivityUuid(activityUuid: string): Promise
   } catch {
     return null;
   }
-}
-
-export async function updateAssignmentAssessment(
-  assessmentUuid: string,
-  body: AssessmentMutationPayload,
-): Promise<CustomResponseTyping> {
-  const result = await apiFetch(`assessments/${normalizeAssessmentUuid(assessmentUuid)}`, {
-    method: 'PATCH',
-    baseUrl: getAPIUrl(),
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      title: body.title,
-      description: body.description ?? '',
-      grading_type: body.grading_type ?? 'PERCENTAGE',
-      policy: {
-        due_at: body.due_at ?? null,
-      },
-    }),
-  });
-  return getResponseMetadata(result);
 }
