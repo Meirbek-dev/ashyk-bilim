@@ -4155,6 +4155,19 @@
         "youtube": "YouTube",
         "youtubeVideo": "Видео с YouTube"
       },
+      "EmbedPanel": {
+        "title": "Вставить встраивание",
+        "youtubeLabel": "YouTube",
+        "excalidrawLabel": "Excalidraw",
+        "tldrawLabel": "tldraw",
+        "urlPlaceholder": "Вставьте URL здесь...",
+        "errorEmpty": "Пожалуйста, введите URL",
+        "errorInvalid": "URL недействителен или не поддерживается",
+        "insertButton": "Вставить",
+        "cancelButton": "Отмена",
+        "editButton": "Редактировать",
+        "deleteButton": "Удалить"
+      },
       "UserBlock": {
         "errorNotFound": "Пользователь не найден",
         "loadUser": "Загрузить пользователя",

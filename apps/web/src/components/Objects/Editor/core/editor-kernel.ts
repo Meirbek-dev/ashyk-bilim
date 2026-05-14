@@ -15,6 +15,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Badges from '../Extensions/Badges/Badges';
 import Buttons from '../Extensions/Buttons/Buttons';
 import EmbedObjects from '../Extensions/EmbedObjects/EmbedObjects';
+import EmbedBlock from '../Extensions/EmbedBlock/EmbedBlock';
 import Flipcard from '../Extensions/Flipcard/Flipcard';
 import ImageBlock from '../Extensions/Image/ImageBlock';
 import InfoCallout from '../Extensions/Callout/Info/InfoCallout';
@@ -91,6 +92,7 @@ function createActivityBlockExtensions(activity: ActivityRef, editable: boolean)
       },
     }),
     EmbedObjects.configure({ editable, activity }),
+    EmbedBlock,
     Badges.configure({ editable, activity }),
     Buttons.configure({ editable, activity }),
     UserBlock.configure({ editable, activity }),

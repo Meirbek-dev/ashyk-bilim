@@ -1,7 +1,7 @@
 'use client';
 
 import type { Editor } from '@tiptap/react';
-import { BubbleMenu } from '@tiptap/react/menus';
+import { useTiptap } from '@tiptap/react';
 import { useTranslations } from 'next-intl';
 import { Bold, Code, Italic, Link2, Strikethrough, ChevronDown } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
@@ -13,23 +13,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import LinkInputTooltip from '../Toolbar/LinkInputTooltip';
 
-interface BubbleToolbarProps {
-  editor: Editor;
-}
-
-export function BubbleToolbar({ editor }: BubbleToolbarProps) {
+// BubbleToolbar renders the inline formatting controls that appear inside the
+// BubbleMenu wrapper in AuthoringEditor. It accesses the editor via useTiptap()
+// rather than receiving it as a prop (Requirement 1.1, 1.5).
+export function BubbleToolbar() {
+  const { editor } = useTiptap();
   const t = useTranslations('DashPage.Editor.Toolbar');
   const [showLinkInput, setShowLinkInput] = useState(false);
-
-  const shouldShow = useCallback(() => {
-    // Don't show for empty selections, images, or node selections
-    if (editor.state.selection.empty) return false;
-    if (editor.isActive('image')) return false;
-    return true;
-  }, [editor]);
 
   const handleLinkSave = (url: string) => {
     editor.chain().focus().setLink({ href: url, target: '_blank', rel: 'noopener noreferrer' }).run();
@@ -37,11 +30,7 @@ export function BubbleToolbar({ editor }: BubbleToolbarProps) {
   };
 
   return (
-    <BubbleMenu
-      editor={editor}
-      shouldShow={shouldShow}
-      className="border-border bg-popover flex items-center gap-0.5 rounded-lg border px-1 py-0.5 shadow-md"
-    >
+    <>
       {/* Turn-into dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -158,7 +147,7 @@ export function BubbleToolbar({ editor }: BubbleToolbarProps) {
           />
         ) : null}
       </div>
-    </BubbleMenu>
+    </>
   );
 }
 

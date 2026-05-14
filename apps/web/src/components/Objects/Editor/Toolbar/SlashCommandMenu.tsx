@@ -2,8 +2,7 @@
 
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useTranslations } from 'next-intl';
-import { useEditorState } from '@tiptap/react';
-import type { Editor } from '@tiptap/react';
+import { useEditorState, useTiptap } from '@tiptap/react';
 import { useEffect, useMemo, useRef } from 'react';
 import { closeSlashCommand } from '../core/slash-command';
 import type { SlashCommandState } from '../core/slash-command';
@@ -11,11 +10,10 @@ import { createInsertItems, INSERT_CATEGORY_LABELS } from './insert-items';
 
 type SlashItem = ReturnType<typeof createInsertItems>[number];
 
-interface SlashCommandMenuProps {
-  editor: Editor | null;
-}
-
-export function SlashCommandMenu({ editor }: SlashCommandMenuProps) {
+// SlashCommandMenu accesses the editor via useTiptap() rather than receiving
+// it as a prop (Requirement 1.1, 1.5). Must be rendered inside a <Tiptap> tree.
+export function SlashCommandMenu() {
+  const { editor } = useTiptap();
   const t = useTranslations('DashPage.Editor.Toolbar');
   const menuRef = useRef<HTMLDivElement | null>(null);
   const slashState = useEditorState({
@@ -27,7 +25,7 @@ export function SlashCommandMenu({ editor }: SlashCommandMenuProps) {
   const slashItems = useMemo(() => createInsertItems(t), [t]);
 
   useEffect(() => {
-    if (!editor || !slashState?.active) {
+    if (!slashState?.active) {
       return;
     }
 
@@ -47,7 +45,7 @@ export function SlashCommandMenu({ editor }: SlashCommandMenuProps) {
     };
   }, [editor, slashState?.active]);
 
-  if (!slashState?.active || !editor) return null;
+  if (!slashState?.active) return null;
 
   const coords = editor.view.coordsAtPos(slashState.from);
 
@@ -68,7 +66,6 @@ export function SlashCommandMenu({ editor }: SlashCommandMenuProps) {
     .filter((group) => group.items.length > 0);
 
   function runCommand(item: SlashItem) {
-    if (!editor) return;
     const { to } = editor.state.selection;
     editor.chain().focus().deleteRange({ from: slashState!.from, to }).run();
     item.run(editor);

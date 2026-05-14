@@ -4149,6 +4149,19 @@
         "youtube": "YouTube",
         "youtubeVideo": "YouTube бейнесі"
       },
+      "EmbedPanel": {
+        "title": "Кірістіруді қосу",
+        "youtubeLabel": "YouTube",
+        "excalidrawLabel": "Excalidraw",
+        "tldrawLabel": "tldraw",
+        "urlPlaceholder": "URL мекенжайын осында қойыңыз...",
+        "errorEmpty": "URL мекенжайын енгізіңіз",
+        "errorInvalid": "URL мекенжайы жарамсыз немесе қолдау көрсетілмейді",
+        "insertButton": "Кірістіру",
+        "cancelButton": "Бас тарту",
+        "editButton": "Өңдеу",
+        "deleteButton": "Жою"
+      },
       "UserBlock": {
         "errorNotFound": "Пайдаланушы табылмады",
         "loadUser": "Пайдаланушыны жүктеу",

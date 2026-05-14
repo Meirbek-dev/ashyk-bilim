@@ -22,6 +22,7 @@ import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import type { Variants } from 'motion/react';
 import type { Editor } from '@tiptap/react';
+import { useTiptap } from '@tiptap/react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/components/providers/theme-provider';
 import { cn } from '@/lib/utils';
@@ -37,7 +38,6 @@ type ToolLabel = 'Writer' | 'ContinueWriting' | 'MakeLonger' | 'Translate' | 'Cr
 type CritisizeScope = 'selection' | 'lecture';
 
 interface AIEditorToolkitProps {
-  editor: Editor;
   activity: { activity_uuid: string };
   isOpen: boolean;
   onClose: () => void;
@@ -635,7 +635,8 @@ function UserFeedbackModal({
 // Main Component
 // ============================================================================
 
-export default function AIEditorToolkit({ editor, activity, isOpen, onClose }: AIEditorToolkitProps) {
+export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorToolkitProps) {
+  const { editor } = useTiptap();
   const t = useTranslations('Activities.AIEditorToolkit');
   const { resolvedTheme } = useTheme();
   const logoSrc = resolvedTheme === 'dark' ? platformLogoLight : platformLogo;

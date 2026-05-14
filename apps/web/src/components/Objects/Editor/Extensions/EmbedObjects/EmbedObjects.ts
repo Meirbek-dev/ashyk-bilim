@@ -1,7 +1,7 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import type { CommandProps } from '@tiptap/core';
 
-import EmbedObjectsComponent from './EmbedObjectsComponent';
+import EmbedObjectsWithBoundary from './EmbedObjectsWithBoundary';
 import { nodeView } from '@components/Objects/Editor/core';
 
 export type EmbedObjectAlignment = 'left' | 'center';
@@ -72,6 +72,6 @@ export default Node.create({
   },
 
   addNodeView() {
-    return nodeView(EmbedObjectsComponent);
+    return nodeView(EmbedObjectsWithBoundary);
   },
 });

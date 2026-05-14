@@ -1,0 +1,22 @@
+'use client';
+
+import type { NodeViewProps } from '@tiptap/react';
+import EmbedObjectsComponent from './EmbedObjectsComponent';
+import { EmbedObjectsErrorBoundary } from './EmbedObjectsErrorBoundary';
+import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
+
+/**
+ * Thin wrapper that renders EmbedObjectsComponent inside an error boundary.
+ * Requirement 10.4: If a blockEmbed node fails to render (e.g., missing or
+ * malformed src attribute), the editor renders a visible error placeholder
+ * in place of the node and does NOT crash or unmount the editor.
+ */
+const EmbedObjectsWithBoundary = (props: TypedNodeViewProps<any>) => {
+  return (
+    <EmbedObjectsErrorBoundary>
+      <EmbedObjectsComponent {...(props as any)} />
+    </EmbedObjectsErrorBoundary>
+  );
+};
+
+export default EmbedObjectsWithBoundary;

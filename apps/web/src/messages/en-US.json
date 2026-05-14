@@ -4134,6 +4134,19 @@
         "youtube": "YouTube",
         "youtubeVideo": "YouTube video"
       },
+      "EmbedPanel": {
+        "title": "Insert Embed",
+        "youtubeLabel": "YouTube",
+        "excalidrawLabel": "Excalidraw",
+        "tldrawLabel": "tldraw",
+        "urlPlaceholder": "Paste URL here...",
+        "errorEmpty": "Please enter a URL",
+        "errorInvalid": "The URL is invalid or not supported",
+        "insertButton": "Insert",
+        "cancelButton": "Cancel",
+        "editButton": "Edit",
+        "deleteButton": "Delete"
+      },
       "UserBlock": {
         "errorNotFound": "User not found",
         "loadUser": "Load User",

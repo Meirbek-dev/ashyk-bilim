@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import type { Editor } from '@tiptap/react';
 import {
   AlertCircle,
@@ -8,6 +8,7 @@ import {
   FileText,
   GitBranch,
   Globe,
+  Globe2,
   ImagePlus,
   MousePointerClick,
   RotateCw,
@@ -18,6 +19,7 @@ import {
   Video,
 } from 'lucide-react';
 import { SiYoutube } from '@icons-pack/react-simple-icons';
+import { useEmbedPanelStore } from './EmbedPanel/EmbedPanelStore';
 
 type ToolbarTranslator = (key: string, values?: Record<string, string | number>) => string;
 
@@ -114,13 +116,31 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       run: (editor) => editor.commands.insertVideoBlock(),
     },
     {
-      id: 'embed',
+      id: 'youtubeembed',
       label: t('youtubeVideo'),
       description: t('slashEmbedDescription', { label: t('youtubeVideo') }),
       icon: <SiYoutube className="size-4" />,
       category: 'media',
       includeInToolbar: true,
       run: (editor) => editor.commands.insertEmbedObject(),
+    },
+    {
+      // Embed entry for the new EmbedBlock panel (Requirements 9.1, 9.2, 9.3).
+      // Uses the same i18n key and icon as the toolbar Embed button.
+      // On selection the SlashCommandMenu already deletes the "/" text before
+      // calling run(), so we only need to open the EmbedPanel here.
+      // A null ref is passed as the triggerRef because there is no persistent
+      // button element to return focus to after the panel closes.
+      id: 'embed',
+      label: t('externalObject'),
+      description: t('slashEmbedDescription', { label: t('externalObject') }),
+      icon: <Globe2 className="size-4" />,
+      category: 'media',
+      includeInToolbar: false,
+      run: (_editor: Editor) => {
+        const nullRef = { current: null } as RefObject<HTMLButtonElement>;
+        useEmbedPanelStore.getState().open(nullRef);
+      },
     },
     {
       id: 'pdf',
