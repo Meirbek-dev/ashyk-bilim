@@ -518,6 +518,7 @@
       "codeChallenge": "Код тапсырма",
       "document": "Құжат",
       "exam": "Емтихан",
+      "fileSubmission": "Файл жіберу",
       "interactive": "Интерактивті",
       "learningMaterial": "Оқу материалы",
       "page": "Бет",
@@ -542,6 +543,7 @@
       "document": "Құжат",
       "dynamic": "Бет",
       "exam": "Емтихан",
+      "fileSubmission": "Файл жіберу",
       "learningMaterial": "Оқу материалы",
       "video": "Бейне"
     },
@@ -1494,8 +1496,23 @@
       "dynamicPageDesc": "Мәтін, медиа және жаттығулары бар интерактивті мазмұн",
       "exams": "Емтихан",
       "examsDesc": "Автоматты тексеруі бар тест немесе емтихан жасаңыз",
+      "fileSubmission": "Файл жіберу",
+      "fileSubmissionDesc": "Студент файлдарын тексеру және пікірмен жинаңыз",
       "video": "Бейне",
       "videoDesc": "Студенттер үшін бейне жүктеңіз немесе ендіріңіз"
+    },
+    "NewFileSubmissionModal": {
+      "allowedTypes": "Рұқсат етілген файл түрлері",
+      "createActivity": "Белсенділік жасау",
+      "createError": "Файл жіберуді жасау мүмкін болмады: {error}",
+      "createSuccess": "Файл жіберу жасалды",
+      "creating": "Жасалуда...",
+      "dueDate": "Тапсыру мерзімі",
+      "instructions": "Нұсқаулар",
+      "maxFiles": "Ең көп файл саны",
+      "maxSize": "Ең үлкен өлшем (МБ)",
+      "requiredFields": "Атауы мен нұсқаулар міндетті",
+      "title": "Атауы"
     },
     "NewAssignmentModal": {
       "alphabet": "Әліпбилік",
@@ -2296,6 +2313,7 @@
         "document": "Құжат",
         "dynamic": "Динамикалық",
         "exam": "Емтихан",
+        "fileSubmission": "Файл жіберу",
         "quiz": "Тест",
         "video": "Бейне"
       },
@@ -2523,6 +2541,7 @@
     "activityNotPublished": "Бұл белсенділік әлі жарияланбаған",
     "admin": "Әкімші",
     "assignment": "Тапсырма",
+    "fileSubmission": "Файл жіберу",
     "cancel": "Бас тарту",
     "confirmDelete": "Мұны жойғыңыз келетініне сенімдісіз бе?",
     "confirmDeletePost": "Бұл жазбаны жойғыңыз келетініне сенімдісіз бе?",
@@ -7633,6 +7652,7 @@
           "CODE_CHALLENGE": "Код тапсырмасы",
           "QUIZ": "Тест",
           "TYPE_ASSIGNMENT": "Тапсырма",
+          "TYPE_FILE_SUBMISSION": "Файл жіберу",
           "TYPE_EXAM": "Емтихан",
           "TYPE_CODE_CHALLENGE": "Код тапсырмасы",
           "TYPE_QUIZ": "Тест"

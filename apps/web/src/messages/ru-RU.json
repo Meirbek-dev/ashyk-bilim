@@ -523,6 +523,7 @@
       "codeChallenge": "Код задача",
       "document": "Документ",
       "exam": "Тест",
+      "fileSubmission": "Отправка файлов",
       "interactive": "Интерактив",
       "learningMaterial": "Учебный материал",
       "page": "Страница",
@@ -547,6 +548,7 @@
       "document": "Документ",
       "dynamic": "Страница",
       "exam": "Тест",
+      "fileSubmission": "Отправка файлов",
       "learningMaterial": "Учебный материал",
       "video": "Видео"
     },
@@ -1500,8 +1502,23 @@
       "dynamicPageDesc": "Интерактивный контент с текстом, медиа и упражнениями",
       "exams": "Тест",
       "examsDesc": "Создайте тест или экзамен с автоматической проверкой",
+      "fileSubmission": "Отправка файлов",
+      "fileSubmissionDesc": "Собирайте файлы студентов с проверкой и отзывами",
       "video": "Видео",
       "videoDesc": "Загрузите или встройте видео для просмотра студентами"
+    },
+    "NewFileSubmissionModal": {
+      "allowedTypes": "Разрешенные типы файлов",
+      "createActivity": "Создать активность",
+      "createError": "Не удалось создать отправку файлов: {error}",
+      "createSuccess": "Отправка файлов создана",
+      "creating": "Создание...",
+      "dueDate": "Срок сдачи",
+      "instructions": "Инструкции",
+      "maxFiles": "Максимум файлов",
+      "maxSize": "Максимальный размер (МБ)",
+      "requiredFields": "Название и инструкции обязательны",
+      "title": "Название"
     },
     "NewAssignmentModal": {
       "alphabet": "Алфавитный",
@@ -2302,6 +2319,7 @@
         "document": "Документ",
         "dynamic": "Динамический",
         "exam": "Тест",
+        "fileSubmission": "Отправка файлов",
         "quiz": "Квиз",
         "video": "Видео"
       },
@@ -2529,6 +2547,7 @@
     "activityNotPublished": "Это задание еще не опубликовано",
     "admin": "Админ",
     "assignment": "Задание",
+    "fileSubmission": "Отправка файлов",
     "cancel": "Отмена",
     "confirmDelete": "Вы уверены, что хотите удалить это?",
     "confirmDeletePost": "Вы уверены, что хотите удалить этот пост?",
@@ -7653,6 +7672,7 @@
           "CODE_CHALLENGE": "Код задача",
           "QUIZ": "Квиз",
           "TYPE_ASSIGNMENT": "Задание",
+          "TYPE_FILE_SUBMISSION": "Отправка файлов",
           "TYPE_EXAM": "Тест",
           "TYPE_CODE_CHALLENGE": "Код задача",
           "TYPE_QUIZ": "Квиз"

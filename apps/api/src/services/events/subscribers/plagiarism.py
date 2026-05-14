@@ -7,7 +7,10 @@ from __future__ import annotations
 
 import logging
 
-from src.services.events.types import SubmissionSubmittedEvent
+from src.services.events.types import (
+    FileSubmissionSubmittedEvent,
+    SubmissionSubmittedEvent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,23 +51,27 @@ def set_plagiarism_provider(provider: PlagiarismProvider) -> None:
 class PlagiarismSubscriber:
     """Checks submissions with file uploads for plagiarism."""
 
-    async def handle(self, event: SubmissionSubmittedEvent) -> None:
+    async def handle(
+        self, event: SubmissionSubmittedEvent | FileSubmissionSubmittedEvent
+    ) -> None:
         """Only triggers when file_keys are present."""
         if not event.file_keys:
             return
 
         provider = get_plagiarism_provider()
         try:
-            result = await provider.check(event.submission_uuid, event.file_keys)
+            submission_uuid = getattr(event, "submission_uuid", None) or event.attempt_uuid
+            result = await provider.check(submission_uuid, event.file_keys)
             logger.info(
                 "plagiarism_check submission=%s score=%s flagged=%s",
-                event.submission_uuid,
+                submission_uuid,
                 result.get("score", 0),
                 result.get("flagged", False),
             )
         except Exception as exc:
             logger.warning(
                 "plagiarism_check_failed submission=%s error=%s",
-                event.submission_uuid,
+                getattr(event, "submission_uuid", None)
+                or getattr(event, "attempt_uuid", ""),
                 exc,
             )

@@ -8,6 +8,10 @@ commits.
 from src.services.events.bus import EventBus, get_event_bus
 from src.services.events.types import (
     AssessmentPublishedEvent,
+    FileSubmissionGradedEvent,
+    FileSubmissionPublishedEvent,
+    FileSubmissionReturnedEvent,
+    FileSubmissionSubmittedEvent,
     GradePublishedEvent,
     PolicyOverrideCreatedEvent,
     SubmissionReturnedEvent,
@@ -16,6 +20,10 @@ from src.services.events.types import (
 
 __all__ = [
     "AssessmentPublishedEvent",
+    "FileSubmissionGradedEvent",
+    "FileSubmissionPublishedEvent",
+    "FileSubmissionReturnedEvent",
+    "FileSubmissionSubmittedEvent",
     "EventBus",
     "GradePublishedEvent",
     "PolicyOverrideCreatedEvent",

@@ -63,3 +63,48 @@ class PolicyOverrideCreatedEvent:
     user_id: int
     granted_by: int
     assessment_uuid: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FileSubmissionSubmittedEvent:
+    """Emitted after a first-class file submission attempt is submitted."""
+
+    attempt_uuid: str
+    file_submission_uuid: str
+    user_id: int
+    activity_id: int
+    attempt_number: int
+    is_late: bool = False
+    file_keys: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class FileSubmissionGradedEvent:
+    """Emitted when a first-class file submission grade draft is saved."""
+
+    attempt_uuid: str
+    user_id: int
+    final_score: float
+    graded_at: datetime
+    graded_by: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FileSubmissionPublishedEvent:
+    """Emitted when a first-class file submission grade becomes visible."""
+
+    attempt_uuid: str
+    user_id: int
+    final_score: float
+    published_at: datetime
+    graded_by: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FileSubmissionReturnedEvent:
+    """Emitted when a first-class file submission is returned for revision."""
+
+    attempt_uuid: str
+    user_id: int
+    feedback: str = ""
+    returned_at: datetime | None = None

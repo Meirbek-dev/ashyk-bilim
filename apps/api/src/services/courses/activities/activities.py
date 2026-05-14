@@ -18,6 +18,7 @@ from src.db.courses.activities import (
 )
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
+from src.db.file_submissions import FileSubmissionActivity, FileSubmissionLifecycle
 from src.db.grading.progress import AssessmentPolicy
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
@@ -219,6 +220,7 @@ def _sync_assessment_lifecycle(
         ActivityTypeEnum.TYPE_EXAM,
         ActivityTypeEnum.TYPE_QUIZ,
         ActivityTypeEnum.TYPE_CODE_CHALLENGE,
+        ActivityTypeEnum.TYPE_FILE_SUBMISSION,
     }:
         return
 
@@ -259,6 +261,37 @@ def _sync_assessment_lifecycle(
         details["scheduled_at"] = None
 
     activity.details = details
+
+    if (
+        activity.activity_type == ActivityTypeEnum.TYPE_FILE_SUBMISSION
+        and activity.id is not None
+    ):
+        file_submission = db_session.exec(
+            select(FileSubmissionActivity).where(
+                FileSubmissionActivity.activity_id == activity.id
+            )
+        ).first()
+        if file_submission is not None:
+            file_submission.lifecycle = (
+                FileSubmissionLifecycle.PUBLISHED
+                if lifecycle == AssessmentLifecycleStatus.PUBLISHED
+                else FileSubmissionLifecycle.ARCHIVED
+                if lifecycle == AssessmentLifecycleStatus.ARCHIVED
+                else FileSubmissionLifecycle.DRAFT
+            )
+            file_submission.published_at = (
+                datetime.now(tz=UTC)
+                if lifecycle == AssessmentLifecycleStatus.PUBLISHED
+                else None
+            )
+            file_submission.archived_at = (
+                datetime.now(tz=UTC)
+                if lifecycle == AssessmentLifecycleStatus.ARCHIVED
+                else file_submission.archived_at
+            )
+            file_submission.updated_at = datetime.now(tz=UTC)
+            db_session.add(file_submission)
+        return
 
     if activity.id is not None:
         assessment = db_session.exec(

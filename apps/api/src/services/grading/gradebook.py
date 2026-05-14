@@ -6,8 +6,9 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from src.db.courses.activities import Activity
+from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.courses import Course
+from src.db.file_submissions import FileSubmissionAttempt
 from src.db.grading.gradebook import (
     ActivityProgressCell,
     CourseGradebookResponse,
@@ -28,6 +29,10 @@ from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
 from src.db.users import PublicUser, User
 from src.security.rbac import PermissionChecker
+from src.services.file_submissions import (
+    file_submission_attempts_for_gradebook,
+    file_submission_configs_for_activities,
+)
 from src.services.progress.submissions import backfill_activity_progress
 
 
@@ -54,10 +59,26 @@ async def get_course_gradebook(
     progress_by_pair = {(r.user_id, r.activity_id): r for r in progress_rows}
 
     submissions_by_id = _submissions_by_id(
-        {progress.latest_submission_id for progress in progress_rows if progress.latest_submission_id},
+        {
+            progress.latest_submission_id
+            for progress in progress_rows
+            if progress.latest_submission_id
+        },
         db_session,
     )
     policies_by_activity = _policies_by_activity(db_session)
+    file_activity_ids = {
+        activity.id
+        for activity in activities
+        if activity.id is not None
+        and str(activity.activity_type) == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
+    }
+    file_attempts_by_pair = file_submission_attempts_for_gradebook(
+        file_activity_ids, db_session
+    )
+    file_configs_by_activity = file_submission_configs_for_activities(
+        file_activity_ids, db_session
+    )
 
     cells: list[ActivityProgressCell] = []
     for student in students:
@@ -68,10 +89,28 @@ async def get_course_gradebook(
                 if progress and progress.latest_submission_id
                 else None
             )
-            cells.append(_build_cell(student.id, activity.id, progress, latest))
+            file_attempt = file_attempts_by_pair.get((student.id, activity.id))
+            cells.append(
+                _build_cell(
+                    student.id,
+                    activity.id,
+                    progress,
+                    latest,
+                    file_attempt_uuid=file_attempt.attempt_uuid
+                    if file_attempt
+                    else None,
+                    file_attempt_status=str(file_attempt.status)
+                    if file_attempt
+                    else None,
+                )
+            )
 
     activities_payload = [
-        _build_activity(activity, policies_by_activity.get(activity.id))
+        _build_activity(
+            activity,
+            policies_by_activity.get(activity.id),
+            file_configs_by_activity.get(activity.id),
+        )
         for activity in activities
     ]
     students_payload = [_build_student(user) for user in students]
@@ -177,6 +216,14 @@ def _course_students(
 
         user_ids.update(
             db_session.exec(
+                select(FileSubmissionAttempt.user_id).where(
+                    FileSubmissionAttempt.activity_id.in_(activity_ids)
+                )
+            ).all()
+        )
+
+        user_ids.update(
+            db_session.exec(
                 select(ActivityProgress.user_id).where(
                     ActivityProgress.activity_id.in_(activity_ids)
                 )
@@ -237,6 +284,7 @@ def _build_student(user: User) -> GradebookStudent:
 def _build_activity(
     activity: Activity,
     policy: AssessmentPolicy | None,
+    file_config: object | None = None,
 ) -> GradebookActivity:
     return GradebookActivity(
         id=activity.id,
@@ -245,7 +293,11 @@ def _build_activity(
         activity_type=str(activity.activity_type),
         assessment_type=policy.assessment_type if policy else None,
         order=activity.order,
-        due_at=policy.due_at if policy else None,
+        due_at=getattr(file_config, "due_at", None)
+        if file_config
+        else policy.due_at
+        if policy
+        else None,
     )
 
 
@@ -254,6 +306,9 @@ def _build_cell(
     activity_id: int,
     progress: ActivityProgress | None,
     latest: Submission | None,
+    *,
+    file_attempt_uuid: str | None = None,
+    file_attempt_status: str | None = None,
 ) -> ActivityProgressCell:
     if progress is None:
         return ActivityProgressCell(
@@ -271,8 +326,8 @@ def _build_cell(
         is_late=progress.is_late,
         teacher_action_required=progress.teacher_action_required,
         attempt_count=progress.attempt_count,
-        latest_submission_uuid=latest.submission_uuid if latest else None,
-        latest_submission_status=str(latest.status) if latest else None,
+        latest_submission_uuid=latest.submission_uuid if latest else file_attempt_uuid,
+        latest_submission_status=str(latest.status) if latest else file_attempt_status,
         submitted_at=progress.submitted_at,
         graded_at=progress.graded_at,
         completed_at=progress.completed_at,

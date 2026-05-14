@@ -5,7 +5,16 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
 from sqlmodel import Session, select
 from ulid import ULID
 
@@ -145,7 +154,7 @@ async def put_assessment_upload_bytes(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail={
                 "code": "FILE_TOO_LARGE",
-                "message": f"Upload exceeds the maximum allowed size of 100 MB.",
+                "message": "Upload exceeds the maximum allowed size of 100 MB.",
                 "max_bytes": _MAX_UPLOAD_BYTES,
                 "actual_bytes": len(content),
             },

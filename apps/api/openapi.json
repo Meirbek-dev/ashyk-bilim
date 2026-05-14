@@ -653,6 +653,7 @@
           "SUBTYPE_QUIZ_STANDARD",
           "SUBTYPE_CODE_GENERAL",
           "SUBTYPE_CODE_COMPETITIVE",
+          "SUBTYPE_FILE_SUBMISSION_STANDARD",
           "SUBTYPE_CUSTOM"
         ],
         "title": "ActivitySubTypeEnum",
@@ -667,6 +668,7 @@
           "TYPE_EXAM",
           "TYPE_QUIZ",
           "TYPE_CODE_CHALLENGE",
+          "TYPE_FILE_SUBMISSION",
           "TYPE_CUSTOM"
         ],
         "title": "ActivityTypeEnum",
@@ -7437,6 +7439,885 @@
           "chapter_id"
         ],
         "title": "ExternalVideo",
+        "type": "object"
+      },
+      "FileSubmissionAttemptFileRead": {
+        "properties": {
+          "attempt_file_uuid": {
+            "title": "Attempt File Uuid",
+            "type": "string"
+          },
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "scan_status": {
+            "$ref": "#/components/schemas/FileSubmissionScanStatus"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "storage_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Key"
+          },
+          "upload_uuid": {
+            "title": "Upload Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attempt_file_uuid",
+          "upload_uuid",
+          "filename",
+          "content_type",
+          "scan_status",
+          "position",
+          "created_at"
+        ],
+        "title": "FileSubmissionAttemptFileRead",
+        "type": "object"
+      },
+      "FileSubmissionAttemptRead": {
+        "properties": {
+          "attempt_number": {
+            "title": "Attempt Number",
+            "type": "integer"
+          },
+          "attempt_uuid": {
+            "title": "Attempt Uuid",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "feedback": {
+            "additionalProperties": true,
+            "title": "Feedback",
+            "type": "object"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/FileSubmissionAttemptFileRead"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "final_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Score"
+          },
+          "graded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graded At"
+          },
+          "is_late": {
+            "default": false,
+            "title": "Is Late",
+            "type": "boolean"
+          },
+          "late_penalty_pct": {
+            "default": 0.0,
+            "title": "Late Penalty Pct",
+            "type": "number"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FileSubmissionAttemptStatus"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FileSubmissionUserRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "attempt_uuid",
+          "status",
+          "attempt_number",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "FileSubmissionAttemptRead",
+        "type": "object"
+      },
+      "FileSubmissionAttemptStatus": {
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "GRADED",
+          "PUBLISHED",
+          "RETURNED"
+        ],
+        "title": "FileSubmissionAttemptStatus",
+        "type": "string"
+      },
+      "FileSubmissionBulkDownloadRequest": {
+        "properties": {
+          "attempt_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Attempt Uuids",
+            "type": "array"
+          }
+        },
+        "title": "FileSubmissionBulkDownloadRequest",
+        "type": "object"
+      },
+      "FileSubmissionCreate": {
+        "properties": {
+          "allow_late": {
+            "default": true,
+            "title": "Allow Late",
+            "type": "boolean"
+          },
+          "allowed_mime_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Mime Types",
+            "type": "array"
+          },
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "integer"
+          },
+          "course_id": {
+            "title": "Course Id",
+            "type": "integer"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "grade_release_mode": {
+            "default": "IMMEDIATE",
+            "enum": [
+              "IMMEDIATE",
+              "BATCH"
+            ],
+            "title": "Grade Release Mode",
+            "type": "string"
+          },
+          "instructions": {
+            "default": "",
+            "title": "Instructions",
+            "type": "string"
+          },
+          "late_policy": {
+            "additionalProperties": true,
+            "title": "Late Policy",
+            "type": "object"
+          },
+          "max_attempts": {
+            "anyOf": [
+              {
+                "maximum": 50.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts"
+          },
+          "max_file_size_mb": {
+            "anyOf": [
+              {
+                "maximum": 500.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max File Size Mb"
+          },
+          "max_files": {
+            "default": 1,
+            "maximum": 25.0,
+            "minimum": 1.0,
+            "title": "Max Files",
+            "type": "integer"
+          },
+          "rubric": {
+            "additionalProperties": true,
+            "title": "Rubric",
+            "type": "object"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "title": "Settings",
+            "type": "object"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "course_id",
+          "chapter_id"
+        ],
+        "title": "FileSubmissionCreate",
+        "type": "object"
+      },
+      "FileSubmissionDraftPatch": {
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/FileSubmissionFilePatch"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "title": "FileSubmissionDraftPatch",
+        "type": "object"
+      },
+      "FileSubmissionFilePatch": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "upload_uuid": {
+            "title": "Upload Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_uuid"
+        ],
+        "title": "FileSubmissionFilePatch",
+        "type": "object"
+      },
+      "FileSubmissionFileUrlResponse": {
+        "properties": {
+          "attempt_file_uuid": {
+            "title": "Attempt File Uuid",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "get_url": {
+            "title": "Get Url",
+            "type": "string"
+          },
+          "upload_uuid": {
+            "title": "Upload Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attempt_file_uuid",
+          "upload_uuid",
+          "get_url",
+          "expires_at"
+        ],
+        "title": "FileSubmissionFileUrlResponse",
+        "type": "object"
+      },
+      "FileSubmissionGradePatch": {
+        "properties": {
+          "feedback": {
+            "default": "",
+            "title": "Feedback",
+            "type": "string"
+          },
+          "final_score": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Score"
+          },
+          "rubric": {
+            "additionalProperties": true,
+            "title": "Rubric",
+            "type": "object"
+          },
+          "status": {
+            "default": "GRADED",
+            "enum": [
+              "GRADED",
+              "PUBLISHED",
+              "RETURNED"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "FileSubmissionGradePatch",
+        "type": "object"
+      },
+      "FileSubmissionLifecycle": {
+        "enum": [
+          "DRAFT",
+          "PUBLISHED",
+          "ARCHIVED"
+        ],
+        "title": "FileSubmissionLifecycle",
+        "type": "string"
+      },
+      "FileSubmissionRead": {
+        "properties": {
+          "activity_id": {
+            "title": "Activity Id",
+            "type": "integer"
+          },
+          "activity_uuid": {
+            "title": "Activity Uuid",
+            "type": "string"
+          },
+          "allow_late": {
+            "default": true,
+            "title": "Allow Late",
+            "type": "boolean"
+          },
+          "allowed_mime_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Mime Types",
+            "type": "array"
+          },
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/FileSubmissionAttemptRead"
+            },
+            "title": "Attempts",
+            "type": "array"
+          },
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "integer"
+          },
+          "course_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Id"
+          },
+          "course_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Uuid"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "current_attempt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FileSubmissionAttemptRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "file_submission_uuid": {
+            "title": "File Submission Uuid",
+            "type": "string"
+          },
+          "grade_release_mode": {
+            "default": "IMMEDIATE",
+            "title": "Grade Release Mode",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "instructions": {
+            "title": "Instructions",
+            "type": "string"
+          },
+          "late_policy": {
+            "additionalProperties": true,
+            "title": "Late Policy",
+            "type": "object"
+          },
+          "lifecycle": {
+            "$ref": "#/components/schemas/FileSubmissionLifecycle"
+          },
+          "max_attempts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts"
+          },
+          "max_file_size_mb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max File Size Mb"
+          },
+          "max_files": {
+            "title": "Max Files",
+            "type": "integer"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "rubric": {
+            "additionalProperties": true,
+            "title": "Rubric",
+            "type": "object"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "title": "Settings",
+            "type": "object"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "file_submission_uuid",
+          "activity_id",
+          "activity_uuid",
+          "chapter_id",
+          "title",
+          "instructions",
+          "lifecycle",
+          "published",
+          "allowed_mime_types",
+          "max_files",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "FileSubmissionRead",
+        "type": "object"
+      },
+      "FileSubmissionReviewQueue": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FileSubmissionAttemptRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "default": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 25,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "FileSubmissionReviewQueue",
+        "type": "object"
+      },
+      "FileSubmissionScanStatus": {
+        "enum": [
+          "PENDING",
+          "CLEAN",
+          "FLAGGED",
+          "ERROR"
+        ],
+        "title": "FileSubmissionScanStatus",
+        "type": "string"
+      },
+      "FileSubmissionUpdate": {
+        "properties": {
+          "allow_late": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Late"
+          },
+          "allowed_mime_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Mime Types"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "grade_release_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "IMMEDIATE",
+                  "BATCH"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade Release Mode"
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructions"
+          },
+          "late_policy": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Late Policy"
+          },
+          "max_attempts": {
+            "anyOf": [
+              {
+                "maximum": 50.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts"
+          },
+          "max_file_size_mb": {
+            "anyOf": [
+              {
+                "maximum": 500.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max File Size Mb"
+          },
+          "max_files": {
+            "anyOf": [
+              {
+                "maximum": 25.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Files"
+          },
+          "rubric": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rubric"
+          },
+          "settings": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settings"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "FileSubmissionUpdate",
+        "type": "object"
+      },
+      "FileSubmissionUserRead": {
+        "properties": {
+          "avatar_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Image"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "user_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Uuid"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "email"
+        ],
+        "title": "FileSubmissionUserRead",
         "type": "object"
       },
       "FileUploadItemAnswer": {
@@ -24306,6 +25187,926 @@
         "summary": "Config",
         "tags": [
           "dev"
+        ]
+      }
+    },
+    "/api/v1/file-submissions": {
+      "post": {
+        "operationId": "api_create_file_submission_api_v1_file_submissions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileSubmissionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Create File Submission",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/activity/{activity_uuid}": {
+      "get": {
+        "operationId": "api_get_file_submission_by_activity_api_v1_file_submissions_activity__activity_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get File Submission By Activity",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/files/{attempt_file_uuid}/download": {
+      "get": {
+        "operationId": "api_download_file_submission_file_api_v1_file_submissions_files__attempt_file_uuid__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attempt_file_uuid",
+            "required": true,
+            "schema": {
+              "title": "Attempt File Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Download File Submission File",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/files/{attempt_file_uuid}/url": {
+      "get": {
+        "operationId": "api_get_file_submission_file_url_api_v1_file_submissions_files__attempt_file_uuid__url_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attempt_file_uuid",
+            "required": true,
+            "schema": {
+              "title": "Attempt File Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionFileUrlResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get File Submission File Url",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/{file_submission_uuid}": {
+      "get": {
+        "operationId": "api_get_file_submission_api_v1_file_submissions__file_submission_uuid__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get File Submission",
+        "tags": [
+          "file-submissions"
+        ]
+      },
+      "patch": {
+        "operationId": "api_update_file_submission_api_v1_file_submissions__file_submission_uuid__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileSubmissionUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Update File Submission",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/{file_submission_uuid}/draft": {
+      "get": {
+        "operationId": "api_get_file_submission_draft_api_v1_file_submissions__file_submission_uuid__draft_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/FileSubmissionAttemptRead"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Api Get File Submission Draft Api V1 File Submissions  File Submission Uuid  Draft Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get File Submission Draft",
+        "tags": [
+          "file-submissions"
+        ]
+      },
+      "patch": {
+        "operationId": "api_save_file_submission_draft_api_v1_file_submissions__file_submission_uuid__draft_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileSubmissionDraftPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionAttemptRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Save File Submission Draft",
+        "tags": [
+          "file-submissions"
+        ]
+      },
+      "post": {
+        "operationId": "api_start_file_submission_draft_api_v1_file_submissions__file_submission_uuid__draft_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionAttemptRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Start File Submission Draft",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/{file_submission_uuid}/me": {
+      "get": {
+        "operationId": "api_list_my_file_submission_attempts_api_v1_file_submissions__file_submission_uuid__me_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FileSubmissionAttemptRead"
+                  },
+                  "title": "Response Api List My File Submission Attempts Api V1 File Submissions  File Submission Uuid  Me Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api List My File Submission Attempts",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/{file_submission_uuid}/publish": {
+      "post": {
+        "operationId": "api_publish_file_submission_api_v1_file_submissions__file_submission_uuid__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Publish File Submission",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/{file_submission_uuid}/submissions": {
+      "get": {
+        "operationId": "api_list_file_submission_submissions_api_v1_file_submissions__file_submission_uuid__submissions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionReviewQueue"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api List File Submission Submissions",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/{file_submission_uuid}/submissions/download": {
+      "post": {
+        "operationId": "api_download_file_submission_zip_api_v1_file_submissions__file_submission_uuid__submissions_download_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileSubmissionBulkDownloadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Download File Submission Zip",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/{file_submission_uuid}/submissions/export": {
+      "get": {
+        "operationId": "api_export_file_submission_csv_api_v1_file_submissions__file_submission_uuid__submissions_export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Export File Submission Csv",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/{file_submission_uuid}/submissions/{attempt_uuid}/grade": {
+      "patch": {
+        "operationId": "api_grade_file_submission_attempt_api_v1_file_submissions__file_submission_uuid__submissions__attempt_uuid__grade_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attempt_uuid",
+            "required": true,
+            "schema": {
+              "title": "Attempt Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileSubmissionGradePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionAttemptRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Grade File Submission Attempt",
+        "tags": [
+          "file-submissions"
+        ]
+      }
+    },
+    "/api/v1/file-submissions/{file_submission_uuid}/submit": {
+      "post": {
+        "operationId": "api_submit_file_submission_api_v1_file_submissions__file_submission_uuid__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_submission_uuid",
+            "required": true,
+            "schema": {
+              "title": "File Submission Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/FileSubmissionDraftPatch"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSubmissionAttemptRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Submit File Submission",
+        "tags": [
+          "file-submissions"
         ]
       }
     },

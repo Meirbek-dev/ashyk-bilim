@@ -40,6 +40,11 @@ from src.db.assessments import (
 from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course, ThumbnailType
+from src.db.file_submissions import (
+    FileSubmissionActivity,
+    FileSubmissionAttempt,
+    FileSubmissionAttemptFile,
+)
 from src.db.grading.entries import GradingEntry
 from src.db.grading.overrides import StudentPolicyOverride
 from src.db.grading.progress import (
@@ -55,7 +60,9 @@ from src.infra.db.engine import build_engine, build_session_factory
 from src.infra.db.session import get_db_session
 from src.infra.settings import get_settings
 from src.routers.assessments.unified import router
+from src.routers.file_submissions import router as file_submissions_router
 from src.security.rbac import PermissionChecker
+from src.services import file_submissions as file_submission_service
 from src.services.assessments import core
 
 # ---------------------------------------------------------------------------
@@ -71,6 +78,9 @@ _ALL_TABLES = [
     Chapter.__table__,
     Activity.__table__,
     AssessmentPolicy.__table__,
+    FileSubmissionActivity.__table__,
+    FileSubmissionAttempt.__table__,
+    FileSubmissionAttemptFile.__table__,
     Assessment.__table__,
     AssessmentItem.__table__,
     StudentPolicyOverride.__table__,
@@ -124,6 +134,7 @@ def api_client_fixture(
 ):
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
+    app.include_router(file_submissions_router, prefix="/file-submissions")
 
     def override_get_db_session():
         session = db_session_factory()
@@ -139,6 +150,12 @@ def api_client_fixture(
     monkeypatch.setattr(core, "_require_author", lambda *_a, **_kw: None)
     monkeypatch.setattr(core, "_require_read", lambda *_a, **_kw: None)
     monkeypatch.setattr(core, "_require_grade", lambda *_a, **_kw: None)
+    monkeypatch.setattr(
+        file_submission_service, "_require_author", lambda *_a, **_kw: None
+    )
+    monkeypatch.setattr(
+        file_submission_service, "_require_read", lambda *_a, **_kw: None
+    )
     monkeypatch.setattr(PermissionChecker, "require", lambda *_a, **_kw: None)
     monkeypatch.setattr(PermissionChecker, "check", lambda *_a, **_kw: True)
     return TestClient(app)
@@ -355,6 +372,55 @@ def test_create_assessment_unknown_course_returns_404(
 
 
 # ---------------------------------------------------------------------------
+# Tests: file submission activity API
+# ---------------------------------------------------------------------------
+
+
+def test_create_file_submission_activity_is_first_class(
+    api_client, db_session_factory
+) -> None:
+    """POST /file-submissions creates a TYPE_FILE_SUBMISSION activity, not an assessment."""
+    course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
+
+    response = api_client.post(
+        "/file-submissions",
+        json={
+            "title": "Portfolio upload",
+            "instructions": "Upload your final portfolio.",
+            "course_id": course_id,
+            "chapter_id": chapter_id,
+            "allowed_mime_types": ["application/pdf"],
+            "max_files": 2,
+            "max_file_size_mb": 25,
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["title"] == "Portfolio upload"
+    assert data["activity_uuid"].startswith("activity_")
+    assert data["file_submission_uuid"].startswith("filesub_")
+    assert data["allowed_mime_types"] == ["application/pdf"]
+    assert data["max_files"] == 2
+
+    with db_session_factory() as session:
+        activity = session.exec(
+            select(Activity).where(Activity.id == data["activity_id"])
+        ).one()
+        assert activity.activity_type == ActivityTypeEnum.TYPE_FILE_SUBMISSION
+        assert (
+            activity.activity_sub_type
+            == ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD
+        )
+
+    read_response = api_client.get(
+        f"/file-submissions/activity/{data['activity_uuid']}"
+    )
+    assert read_response.status_code == 200
+    assert read_response.json()["file_submission_uuid"] == data["file_submission_uuid"]
+
+
+# ---------------------------------------------------------------------------
 # Tests: update assessment
 # ---------------------------------------------------------------------------
 
@@ -422,6 +488,32 @@ def test_add_item_to_assessment(api_client, db_session_factory) -> None:
     assert data["kind"] == "CHOICE"
     assert data["title"] == "Multiple choice question"
     assert data["item_uuid"] is not None
+
+
+def test_file_upload_items_are_rejected_for_assignments(
+    api_client, db_session_factory
+) -> None:
+    """Legacy FILE_UPLOAD cannot be authored inside assignment assessments."""
+    assessment_uuid = _seed_published_assessment(db_session_factory)
+
+    response = api_client.post(
+        f"/assessments/{assessment_uuid}/items",
+        json={
+            "kind": "FILE_UPLOAD",
+            "title": "Upload final PDF",
+            "body": {
+                "kind": "FILE_UPLOAD",
+                "prompt": "Upload your work.",
+                "max_files": 1,
+                "max_mb": 10,
+                "mimes": ["application/pdf"],
+            },
+            "max_score": 10,
+        },
+    )
+
+    assert response.status_code == 410
+    assert response.json()["detail"]["code"] == "FILE_UPLOAD_ITEM_REMOVED"
 
 
 def test_update_item_title(api_client, db_session_factory) -> None:
@@ -509,10 +601,12 @@ def test_reorder_items_changes_order(api_client, db_session_factory) -> None:
     # Reorder: endpoint uses colon path segment format; body is list of {item_uuid, order} entries
     response = api_client.post(
         f"/assessments/{assessment_uuid}/items:reorder",
-        json={"items": [
-            {"item_uuid": second_uuid, "order": 1},
-            {"item_uuid": "item_published_authoring_1", "order": 2},
-        ]},
+        json={
+            "items": [
+                {"item_uuid": second_uuid, "order": 1},
+                {"item_uuid": "item_published_authoring_1", "order": 2},
+            ]
+        },
     )
 
     # Endpoint returns list[AssessmentReadItem] in new order

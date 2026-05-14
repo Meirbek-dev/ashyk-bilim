@@ -26,6 +26,7 @@ class ActivityTypeEnum(StrEnum):
     TYPE_EXAM = "TYPE_EXAM"
     TYPE_QUIZ = "TYPE_QUIZ"
     TYPE_CODE_CHALLENGE = "TYPE_CODE_CHALLENGE"
+    TYPE_FILE_SUBMISSION = "TYPE_FILE_SUBMISSION"
     TYPE_CUSTOM = "TYPE_CUSTOM"
 
 
@@ -47,6 +48,8 @@ class ActivitySubTypeEnum(StrEnum):
     # Code Challenge
     SUBTYPE_CODE_GENERAL = "SUBTYPE_CODE_GENERAL"
     SUBTYPE_CODE_COMPETITIVE = "SUBTYPE_CODE_COMPETITIVE"
+    # File Submission
+    SUBTYPE_FILE_SUBMISSION_STANDARD = "SUBTYPE_FILE_SUBMISSION_STANDARD"
     # Custom
     SUBTYPE_CUSTOM = "SUBTYPE_CUSTOM"
 
@@ -135,6 +138,9 @@ _VALID_SUBTYPES: dict[ActivityTypeEnum, set[ActivitySubTypeEnum]] = {
     ActivityTypeEnum.TYPE_CODE_CHALLENGE: {
         ActivitySubTypeEnum.SUBTYPE_CODE_GENERAL,
         ActivitySubTypeEnum.SUBTYPE_CODE_COMPETITIVE,
+    },
+    ActivityTypeEnum.TYPE_FILE_SUBMISSION: {
+        ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD
     },
     ActivityTypeEnum.TYPE_CUSTOM: {ActivitySubTypeEnum.SUBTYPE_CUSTOM},
 }

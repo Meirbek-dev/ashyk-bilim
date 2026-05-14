@@ -28,6 +28,7 @@ from src.routers.courses import (
     discussions,
 )
 from src.routers.courses.activities import activities, blocks
+from src.routers import file_submissions
 from src.routers.grading.feedback import router as grading_feedback_router
 from src.routers.grading.sse import router as grading_sse_router
 from src.routers.grading.teacher import router as grading_teacher_router
@@ -75,6 +76,11 @@ v1_router.include_router(
     assessment_unified.router,
     prefix="/assessments",
     tags=["assessments"],
+)
+v1_router.include_router(
+    file_submissions.router,
+    prefix="/file-submissions",
+    tags=["file-submissions"],
 )
 v1_router.include_router(
     certifications.router, prefix="/certifications", tags=["certifications"]

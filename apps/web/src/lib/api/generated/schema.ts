@@ -2130,6 +2130,230 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/file-submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Create File Submission */
+        post: operations["api_create_file_submission_api_v1_file_submissions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/file-submissions/activity/{activity_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get File Submission By Activity */
+        get: operations["api_get_file_submission_by_activity_api_v1_file_submissions_activity__activity_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/file-submissions/files/{attempt_file_uuid}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Download File Submission File */
+        get: operations["api_download_file_submission_file_api_v1_file_submissions_files__attempt_file_uuid__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/file-submissions/files/{attempt_file_uuid}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get File Submission File Url */
+        get: operations["api_get_file_submission_file_url_api_v1_file_submissions_files__attempt_file_uuid__url_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/file-submissions/{file_submission_uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get File Submission */
+        get: operations["api_get_file_submission_api_v1_file_submissions__file_submission_uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Api Update File Submission */
+        patch: operations["api_update_file_submission_api_v1_file_submissions__file_submission_uuid__patch"];
+        trace?: never;
+    };
+    "/api/v1/file-submissions/{file_submission_uuid}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get File Submission Draft */
+        get: operations["api_get_file_submission_draft_api_v1_file_submissions__file_submission_uuid__draft_get"];
+        put?: never;
+        /** Api Start File Submission Draft */
+        post: operations["api_start_file_submission_draft_api_v1_file_submissions__file_submission_uuid__draft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Api Save File Submission Draft */
+        patch: operations["api_save_file_submission_draft_api_v1_file_submissions__file_submission_uuid__draft_patch"];
+        trace?: never;
+    };
+    "/api/v1/file-submissions/{file_submission_uuid}/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api List My File Submission Attempts */
+        get: operations["api_list_my_file_submission_attempts_api_v1_file_submissions__file_submission_uuid__me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/file-submissions/{file_submission_uuid}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Publish File Submission */
+        post: operations["api_publish_file_submission_api_v1_file_submissions__file_submission_uuid__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/file-submissions/{file_submission_uuid}/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api List File Submission Submissions */
+        get: operations["api_list_file_submission_submissions_api_v1_file_submissions__file_submission_uuid__submissions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/file-submissions/{file_submission_uuid}/submissions/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Download File Submission Zip */
+        post: operations["api_download_file_submission_zip_api_v1_file_submissions__file_submission_uuid__submissions_download_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/file-submissions/{file_submission_uuid}/submissions/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Export File Submission Csv */
+        get: operations["api_export_file_submission_csv_api_v1_file_submissions__file_submission_uuid__submissions_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/file-submissions/{file_submission_uuid}/submissions/{attempt_uuid}/grade": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Api Grade File Submission Attempt */
+        patch: operations["api_grade_file_submission_attempt_api_v1_file_submissions__file_submission_uuid__submissions__attempt_uuid__grade_patch"];
+        trace?: never;
+    };
+    "/api/v1/file-submissions/{file_submission_uuid}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Submit File Submission */
+        post: operations["api_submit_file_submission_api_v1_file_submissions__file_submission_uuid__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gamification/": {
         parameters: {
             query?: never;
@@ -4139,12 +4363,12 @@ export interface components {
          * ActivitySubTypeEnum
          * @enum {string}
          */
-        ActivitySubTypeEnum: "SUBTYPE_DYNAMIC_PAGE" | "SUBTYPE_VIDEO_YOUTUBE" | "SUBTYPE_VIDEO_HOSTED" | "SUBTYPE_DOCUMENT_PDF" | "SUBTYPE_DOCUMENT_DOC" | "SUBTYPE_ASSIGNMENT_ANY" | "SUBTYPE_EXAM_STANDARD" | "SUBTYPE_QUIZ_STANDARD" | "SUBTYPE_CODE_GENERAL" | "SUBTYPE_CODE_COMPETITIVE" | "SUBTYPE_CUSTOM";
+        ActivitySubTypeEnum: "SUBTYPE_DYNAMIC_PAGE" | "SUBTYPE_VIDEO_YOUTUBE" | "SUBTYPE_VIDEO_HOSTED" | "SUBTYPE_DOCUMENT_PDF" | "SUBTYPE_DOCUMENT_DOC" | "SUBTYPE_ASSIGNMENT_ANY" | "SUBTYPE_EXAM_STANDARD" | "SUBTYPE_QUIZ_STANDARD" | "SUBTYPE_CODE_GENERAL" | "SUBTYPE_CODE_COMPETITIVE" | "SUBTYPE_FILE_SUBMISSION_STANDARD" | "SUBTYPE_CUSTOM";
         /**
          * ActivityTypeEnum
          * @enum {string}
          */
-        ActivityTypeEnum: "TYPE_VIDEO" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_ASSIGNMENT" | "TYPE_EXAM" | "TYPE_QUIZ" | "TYPE_CODE_CHALLENGE" | "TYPE_CUSTOM";
+        ActivityTypeEnum: "TYPE_VIDEO" | "TYPE_DOCUMENT" | "TYPE_DYNAMIC" | "TYPE_ASSIGNMENT" | "TYPE_EXAM" | "TYPE_QUIZ" | "TYPE_CODE_CHALLENGE" | "TYPE_FILE_SUBMISSION" | "TYPE_CUSTOM";
         /** ActivityUpdate */
         ActivityUpdate: {
             activity_sub_type?: components["schemas"]["ActivitySubTypeEnum"] | null;
@@ -6667,6 +6891,331 @@ export interface components {
             type: "youtube";
             /** Uri */
             uri: string;
+        };
+        /** FileSubmissionAttemptFileRead */
+        FileSubmissionAttemptFileRead: {
+            /** Attempt File Uuid */
+            attempt_file_uuid: string;
+            /** Content Type */
+            content_type: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Filename */
+            filename: string;
+            /** Position */
+            position: number;
+            scan_status: components["schemas"]["FileSubmissionScanStatus"];
+            /** Sha256 */
+            sha256?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /** Storage Key */
+            storage_key?: string | null;
+            /** Upload Uuid */
+            upload_uuid: string;
+        };
+        /** FileSubmissionAttemptRead */
+        FileSubmissionAttemptRead: {
+            /** Attempt Number */
+            attempt_number: number;
+            /** Attempt Uuid */
+            attempt_uuid: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Feedback */
+            feedback?: {
+                [key: string]: unknown;
+            };
+            /** Files */
+            files?: components["schemas"]["FileSubmissionAttemptFileRead"][];
+            /** Final Score */
+            final_score?: number | null;
+            /** Graded At */
+            graded_at?: string | null;
+            /**
+             * Is Late
+             * @default false
+             */
+            is_late: boolean;
+            /**
+             * Late Penalty Pct
+             * @default 0
+             */
+            late_penalty_pct: number;
+            /** Started At */
+            started_at?: string | null;
+            status: components["schemas"]["FileSubmissionAttemptStatus"];
+            /** Submitted At */
+            submitted_at?: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            user?: components["schemas"]["FileSubmissionUserRead"] | null;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /**
+         * FileSubmissionAttemptStatus
+         * @enum {string}
+         */
+        FileSubmissionAttemptStatus: "DRAFT" | "SUBMITTED" | "GRADED" | "PUBLISHED" | "RETURNED";
+        /** FileSubmissionBulkDownloadRequest */
+        FileSubmissionBulkDownloadRequest: {
+            /** Attempt Uuids */
+            attempt_uuids?: string[];
+        };
+        /** FileSubmissionCreate */
+        FileSubmissionCreate: {
+            /**
+             * Allow Late
+             * @default true
+             */
+            allow_late: boolean;
+            /** Allowed Mime Types */
+            allowed_mime_types?: string[];
+            /** Chapter Id */
+            chapter_id: number;
+            /** Course Id */
+            course_id: number;
+            /** Due At */
+            due_at?: string | null;
+            /**
+             * Grade Release Mode
+             * @default IMMEDIATE
+             * @enum {string}
+             */
+            grade_release_mode: "IMMEDIATE" | "BATCH";
+            /**
+             * Instructions
+             * @default
+             */
+            instructions: string;
+            /** Late Policy */
+            late_policy?: {
+                [key: string]: unknown;
+            };
+            /** Max Attempts */
+            max_attempts?: number | null;
+            /** Max File Size Mb */
+            max_file_size_mb?: number | null;
+            /**
+             * Max Files
+             * @default 1
+             */
+            max_files: number;
+            /** Rubric */
+            rubric?: {
+                [key: string]: unknown;
+            };
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
+            /** Title */
+            title: string;
+        };
+        /** FileSubmissionDraftPatch */
+        FileSubmissionDraftPatch: {
+            /** Files */
+            files?: components["schemas"]["FileSubmissionFilePatch"][];
+        };
+        /** FileSubmissionFilePatch */
+        FileSubmissionFilePatch: {
+            /** Display Name */
+            display_name?: string | null;
+            /** Upload Uuid */
+            upload_uuid: string;
+        };
+        /** FileSubmissionFileUrlResponse */
+        FileSubmissionFileUrlResponse: {
+            /** Attempt File Uuid */
+            attempt_file_uuid: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Get Url */
+            get_url: string;
+            /** Upload Uuid */
+            upload_uuid: string;
+        };
+        /** FileSubmissionGradePatch */
+        FileSubmissionGradePatch: {
+            /**
+             * Feedback
+             * @default
+             */
+            feedback: string;
+            /** Final Score */
+            final_score?: number | null;
+            /** Rubric */
+            rubric?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Status
+             * @default GRADED
+             * @enum {string}
+             */
+            status: "GRADED" | "PUBLISHED" | "RETURNED";
+        };
+        /**
+         * FileSubmissionLifecycle
+         * @enum {string}
+         */
+        FileSubmissionLifecycle: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+        /** FileSubmissionRead */
+        FileSubmissionRead: {
+            /** Activity Id */
+            activity_id: number;
+            /** Activity Uuid */
+            activity_uuid: string;
+            /**
+             * Allow Late
+             * @default true
+             */
+            allow_late: boolean;
+            /** Allowed Mime Types */
+            allowed_mime_types: string[];
+            /** Attempts */
+            attempts?: components["schemas"]["FileSubmissionAttemptRead"][];
+            /** Chapter Id */
+            chapter_id: number;
+            /** Course Id */
+            course_id?: number | null;
+            /** Course Uuid */
+            course_uuid?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            current_attempt?: components["schemas"]["FileSubmissionAttemptRead"] | null;
+            /** Due At */
+            due_at?: string | null;
+            /** File Submission Uuid */
+            file_submission_uuid: string;
+            /**
+             * Grade Release Mode
+             * @default IMMEDIATE
+             */
+            grade_release_mode: string;
+            /** Id */
+            id: number;
+            /** Instructions */
+            instructions: string;
+            /** Late Policy */
+            late_policy?: {
+                [key: string]: unknown;
+            };
+            lifecycle: components["schemas"]["FileSubmissionLifecycle"];
+            /** Max Attempts */
+            max_attempts?: number | null;
+            /** Max File Size Mb */
+            max_file_size_mb?: number | null;
+            /** Max Files */
+            max_files: number;
+            /** Published */
+            published: boolean;
+            /** Rubric */
+            rubric?: {
+                [key: string]: unknown;
+            };
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** FileSubmissionReviewQueue */
+        FileSubmissionReviewQueue: {
+            /** Items */
+            items: components["schemas"]["FileSubmissionAttemptRead"][];
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
+        /**
+         * FileSubmissionScanStatus
+         * @enum {string}
+         */
+        FileSubmissionScanStatus: "PENDING" | "CLEAN" | "FLAGGED" | "ERROR";
+        /** FileSubmissionUpdate */
+        FileSubmissionUpdate: {
+            /** Allow Late */
+            allow_late?: boolean | null;
+            /** Allowed Mime Types */
+            allowed_mime_types?: string[] | null;
+            /** Due At */
+            due_at?: string | null;
+            /** Grade Release Mode */
+            grade_release_mode?: ("IMMEDIATE" | "BATCH") | null;
+            /** Instructions */
+            instructions?: string | null;
+            /** Late Policy */
+            late_policy?: {
+                [key: string]: unknown;
+            } | null;
+            /** Max Attempts */
+            max_attempts?: number | null;
+            /** Max File Size Mb */
+            max_file_size_mb?: number | null;
+            /** Max Files */
+            max_files?: number | null;
+            /** Rubric */
+            rubric?: {
+                [key: string]: unknown;
+            } | null;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            } | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** FileSubmissionUserRead */
+        FileSubmissionUserRead: {
+            /** Avatar Image */
+            avatar_image?: string | null;
+            /** Email */
+            email: string;
+            /** First Name */
+            first_name?: string | null;
+            /** Id */
+            id: number;
+            /** Last Name */
+            last_name?: string | null;
+            /** User Uuid */
+            user_uuid?: string | null;
+            /** Username */
+            username: string;
         };
         /** FileUploadItemAnswer */
         FileUploadItemAnswer: {
@@ -13732,6 +14281,536 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    api_create_file_submission_api_v1_file_submissions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FileSubmissionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_file_submission_by_activity_api_v1_file_submissions_activity__activity_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_download_file_submission_file_api_v1_file_submissions_files__attempt_file_uuid__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_file_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_file_submission_file_url_api_v1_file_submissions_files__attempt_file_uuid__url_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_file_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionFileUrlResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_file_submission_api_v1_file_submissions__file_submission_uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_update_file_submission_api_v1_file_submissions__file_submission_uuid__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FileSubmissionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_file_submission_draft_api_v1_file_submissions__file_submission_uuid__draft_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionAttemptRead"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_start_file_submission_draft_api_v1_file_submissions__file_submission_uuid__draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_save_file_submission_draft_api_v1_file_submissions__file_submission_uuid__draft_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                file_submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FileSubmissionDraftPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_list_my_file_submission_attempts_api_v1_file_submissions__file_submission_uuid__me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionAttemptRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_publish_file_submission_api_v1_file_submissions__file_submission_uuid__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_list_file_submission_submissions_api_v1_file_submissions__file_submission_uuid__submissions_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                search?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                file_submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionReviewQueue"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_download_file_submission_zip_api_v1_file_submissions__file_submission_uuid__submissions_download_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FileSubmissionBulkDownloadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_export_file_submission_csv_api_v1_file_submissions__file_submission_uuid__submissions_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_grade_file_submission_attempt_api_v1_file_submissions__file_submission_uuid__submissions__attempt_uuid__grade_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                file_submission_uuid: string;
+                attempt_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FileSubmissionGradePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_submit_file_submission_api_v1_file_submissions__file_submission_uuid__submit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                file_submission_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["FileSubmissionDraftPatch"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSubmissionAttemptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

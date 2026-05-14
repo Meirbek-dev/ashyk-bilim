@@ -83,6 +83,18 @@ def recalculate_activity_progress(
     if activity is None or activity.course_id is None:
         return None
 
+    if (
+        _enum_value(activity.activity_type)
+        == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
+    ):
+        return _recalculate_file_submission_progress(
+            activity,
+            user_id,
+            db_session,
+            commit=commit,
+            update_course_progress=update_course_progress,
+        )
+
     policy = _get_or_create_policy(activity, db_session)
     submissions = list(
         db_session.exec(
@@ -249,13 +261,27 @@ def _ensure_course_activity_progress_rows(
         if activity.id in existing_activity_ids:
             continue
         policy = _get_or_create_policy(activity, db_session)
+        file_due_at = None
+        if (
+            _enum_value(activity.activity_type)
+            == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
+        ):
+            from src.db.file_submissions import FileSubmissionActivity
+
+            file_submission = db_session.exec(
+                select(FileSubmissionActivity).where(
+                    FileSubmissionActivity.activity_id == activity.id
+                )
+            ).first()
+            file_due_at = file_submission.due_at if file_submission else None
         db_session.add(
             ActivityProgress(
                 course_id=course_id,
                 activity_id=activity.id,
                 user_id=user_id,
                 required=True,
-                due_at=_coerce_datetime(policy.due_at) if policy else None,
+                due_at=file_due_at
+                or (_coerce_datetime(policy.due_at) if policy else None),
                 updated_at=now,
             )
         )
@@ -541,7 +567,7 @@ def _positive_int_setting(settings: dict[str, object], key: str) -> int | None:
         return None
     try:
         parsed = int(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return 0.0
     return parsed if parsed > 0 else None
 
@@ -552,7 +578,7 @@ def _number_setting(settings: dict[str, object], key: str, default: float) -> fl
         return default
     try:
         return float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return default
 
 
@@ -638,6 +664,17 @@ def _known_user_ids_by_course(
         if course_id in result:
             result[course_id].add(row.user_id)
 
+    from src.db.file_submissions import FileSubmissionAttempt
+
+    for row in db_session.exec(
+        select(FileSubmissionAttempt.activity_id, FileSubmissionAttempt.user_id).where(
+            FileSubmissionAttempt.activity_id.in_(activity_ids)
+        )
+    ).all():
+        course_id = activity_course.get(row.activity_id)
+        if course_id in result:
+            result[course_id].add(row.user_id)
+
     course_uuid_to_id = {
         course.course_uuid: course.id
         for course in db_session.exec(
@@ -715,6 +752,115 @@ def _coerce_datetime(value: object) -> datetime | None:
             return None
         return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
     return None
+
+
+def _recalculate_file_submission_progress(
+    activity: Activity,
+    user_id: int,
+    db_session: Session,
+    *,
+    commit: bool,
+    update_course_progress: bool,
+) -> ActivityProgress | None:
+    from src.db.file_submissions import (
+        FileSubmissionActivity,
+        FileSubmissionAttempt,
+        FileSubmissionAttemptStatus,
+    )
+
+    file_submission = db_session.exec(
+        select(FileSubmissionActivity).where(
+            FileSubmissionActivity.activity_id == activity.id
+        )
+    ).first()
+    attempts = list(
+        db_session.exec(
+            select(FileSubmissionAttempt).where(
+                FileSubmissionAttempt.activity_id == activity.id,
+                FileSubmissionAttempt.user_id == user_id,
+            )
+        ).all()
+    )
+    progress = db_session.exec(
+        select(ActivityProgress).where(
+            ActivityProgress.activity_id == activity.id,
+            ActivityProgress.user_id == user_id,
+        )
+    ).first()
+    if progress is None:
+        progress = ActivityProgress(
+            course_id=activity.course_id,
+            activity_id=activity.id,
+            user_id=user_id,
+        )
+
+    latest = max(
+        attempts,
+        key=lambda attempt: (attempt.updated_at, attempt.id or 0),
+        default=None,
+    )
+    submitted_attempts = [
+        attempt
+        for attempt in attempts
+        if _enum_value(attempt.status) != FileSubmissionAttemptStatus.DRAFT.value
+    ]
+    state = ActivityProgressState.NOT_STARTED
+    score = latest.final_score if latest else None
+    passed = score is not None and score >= 60
+    teacher_action = False
+    completed_at = None
+    status_reason = "file_submission"
+
+    if latest is not None:
+        latest_status = _enum_value(latest.status)
+        if latest_status == FileSubmissionAttemptStatus.DRAFT.value:
+            state = ActivityProgressState.IN_PROGRESS
+        elif latest_status == FileSubmissionAttemptStatus.SUBMITTED.value:
+            state = ActivityProgressState.NEEDS_GRADING
+            teacher_action = True
+        elif latest_status == FileSubmissionAttemptStatus.RETURNED.value:
+            state = ActivityProgressState.RETURNED
+            status_reason = "returned_for_revision"
+        elif latest_status in {
+            FileSubmissionAttemptStatus.GRADED.value,
+            FileSubmissionAttemptStatus.PUBLISHED.value,
+        }:
+            state = (
+                ActivityProgressState.PASSED if passed else ActivityProgressState.FAILED
+            )
+            completed_at = latest.graded_at or latest.submitted_at or latest.updated_at
+
+    progress.required = True
+    progress.state = state
+    progress.score = score
+    progress.passed = passed if score is not None else None
+    progress.best_submission_id = None
+    progress.latest_submission_id = None
+    progress.attempt_count = len(submitted_attempts)
+    progress.started_at = latest.started_at if latest else None
+    progress.last_activity_at = latest.updated_at if latest else None
+    progress.submitted_at = latest.submitted_at if latest else None
+    progress.graded_at = latest.graded_at if latest else None
+    progress.completed_at = completed_at
+    progress.due_at = file_submission.due_at if file_submission else None
+    progress.is_late = bool(latest.is_late) if latest else False
+    progress.teacher_action_required = teacher_action
+    progress.status_reason = status_reason if latest else None
+    progress.updated_at = datetime.now(UTC)
+    db_session.add(progress)
+
+    if update_course_progress:
+        recalculate_course_progress(
+            activity.course_id,
+            user_id,
+            db_session,
+            commit=False,
+        )
+
+    if commit:
+        db_session.commit()
+        db_session.refresh(progress)
+    return progress
 
 
 def _enum_value(value: object) -> str:

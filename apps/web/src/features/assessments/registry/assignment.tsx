@@ -6,43 +6,51 @@
  * kind-specific shell.
  */
 
-import type { ComponentType } from 'react';
-import { registerKind } from './index';
-import type { KindAttemptProps, KindAuthorProps, KindReviewProps } from './index';
+import type { ComponentType } from "react";
+import { registerKind } from "./index";
+import type {
+  KindAttemptProps,
+  KindAuthorProps,
+  KindReviewProps,
+} from "./index";
 
-registerKind('TYPE_ASSIGNMENT', async () => {
+registerKind("TYPE_ASSIGNMENT", async () => {
   const [
     { NativeItemStudioProvider, NativeItemOutline, NativeItemAuthor },
     { default: AssignmentAttemptContent },
     { default: GradingReviewWorkspace },
   ] = await Promise.all([
-    import('@/features/assessments/studio/NativeItemStudio'),
-    import('./assignment-attempt'),
-    import('@/features/grading/review/GradingReviewWorkspace'),
+    import("@/features/assessments/studio/NativeItemStudio"),
+    import("./assignment-attempt"),
+    import("@/features/grading/review/GradingReviewWorkspace"),
   ]);
 
   const OutlineSlot: ComponentType<KindAuthorProps> = (_props) => (
     <NativeItemOutline
-      allowedKinds={['CHOICE', 'OPEN_TEXT', 'FILE_UPLOAD', 'FORM', 'MATCHING']}
+      allowedKinds={["CHOICE", "OPEN_TEXT", "FORM", "MATCHING"]}
       itemNoun="Task"
       itemNounKey="task"
     />
   );
 
   const AuthorSlot: ComponentType<KindAuthorProps> = (_props) => (
-    <NativeItemAuthor
-      mode="assignment"
-      itemNoun="Task"
-      itemNounKey="task"
-    />
+    <NativeItemAuthor mode="assignment" itemNoun="Task" itemNounKey="task" />
   );
 
-  const ReviewPassthrough: ComponentType<KindReviewProps> = ({ activityId, submissionUuid, title }) =>
-    GradingReviewWorkspace({ activityId, initialSubmissionUuid: submissionUuid ?? null, title });
+  const ReviewPassthrough: ComponentType<KindReviewProps> = ({
+    activityId,
+    submissionUuid,
+    title,
+  }) =>
+    GradingReviewWorkspace({
+      activityId,
+      initialSubmissionUuid: submissionUuid ?? null,
+      title,
+    });
 
   return {
-    label: 'Assignment',
-    iconName: 'BookOpen',
+    label: "Assignment",
+    iconName: "BookOpen",
     Provider: NativeItemStudioProvider,
     Outline: OutlineSlot,
     Author: AuthorSlot,

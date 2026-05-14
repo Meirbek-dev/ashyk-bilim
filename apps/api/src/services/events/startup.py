@@ -18,6 +18,10 @@ from src.services.events.subscribers.plagiarism import PlagiarismSubscriber
 from src.services.events.subscribers.xp_award import XPAwardSubscriber
 from src.services.events.types import (
     AssessmentPublishedEvent,
+    FileSubmissionGradedEvent,
+    FileSubmissionPublishedEvent,
+    FileSubmissionReturnedEvent,
+    FileSubmissionSubmittedEvent,
     GradePublishedEvent,
     PolicyOverrideCreatedEvent,
     SubmissionReturnedEvent,
@@ -47,6 +51,10 @@ def register_all_subscribers() -> None:
     bus.subscribe(SubmissionReturnedEvent, analytics.handle)
     bus.subscribe(AssessmentPublishedEvent, analytics.handle)
     bus.subscribe(PolicyOverrideCreatedEvent, analytics.handle)
+    bus.subscribe(FileSubmissionSubmittedEvent, analytics.handle)
+    bus.subscribe(FileSubmissionGradedEvent, analytics.handle)
+    bus.subscribe(FileSubmissionPublishedEvent, analytics.handle)
+    bus.subscribe(FileSubmissionReturnedEvent, analytics.handle)
 
     # XP award — triggers on grade publication
     xp_award = XPAwardSubscriber()
@@ -55,6 +63,7 @@ def register_all_subscribers() -> None:
     # Plagiarism check — triggers on submission with file uploads
     plagiarism = PlagiarismSubscriber()
     bus.subscribe(SubmissionSubmittedEvent, plagiarism.handle)
+    bus.subscribe(FileSubmissionSubmittedEvent, plagiarism.handle)
 
     _registered = True
     logger.info("event_bus_subscribers_registered count=5")

@@ -1,6 +1,16 @@
 'use client';
 
-import { ArrowLeft, ChevronRight, ClipboardList, Code2, FileText, GraduationCap, Sparkles, Video } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronRight,
+  ClipboardList,
+  Code2,
+  FileArchive,
+  FileText,
+  GraduationCap,
+  Sparkles,
+  Video,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -12,8 +22,17 @@ import DynamicCanvaModal from './NewActivityModal/DynamicActivityModal';
 import Assignment from './NewActivityModal/AssignmentActivityModal';
 import VideoModal from './NewActivityModal/VideoActivityModal';
 import Exam from './NewActivityModal/ExamActivityModal';
+import FileSubmission from './NewActivityModal/FileSubmissionActivityModal';
 
-type ViewType = 'home' | 'dynamic' | 'video' | 'documentpdf' | 'assignments' | 'exams' | 'codechallenge';
+type ViewType =
+  | 'home'
+  | 'dynamic'
+  | 'video'
+  | 'documentpdf'
+  | 'assignments'
+  | 'filesubmission'
+  | 'exams'
+  | 'codechallenge';
 
 interface ActivityTypeConfig {
   id: ViewType;
@@ -61,6 +80,13 @@ const ACTIVITY_TYPES: ActivityTypeConfig[] = [
     descriptionKey: 'assignmentsDesc',
     icon: ClipboardList,
     iconClass: 'text-amber-500',
+  },
+  {
+    id: 'filesubmission',
+    labelKey: 'fileSubmission',
+    descriptionKey: 'fileSubmissionDesc',
+    icon: FileArchive,
+    iconClass: 'text-indigo-500',
   },
   {
     id: 'exams',
@@ -171,6 +197,7 @@ export default function NewActivityModal({
           {...sharedProps}
         />
       )}
+      {selectedView === 'filesubmission' && <FileSubmission {...sharedProps} />}
       {selectedView === 'exams' && (
         <Exam
           submitActivity={submitActivity}
