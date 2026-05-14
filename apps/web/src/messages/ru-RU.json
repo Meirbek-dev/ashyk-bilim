@@ -3823,6 +3823,15 @@
       "rosterActionsImmediateDescription": "Поиск, добавление, удаление, изменение ролей и статусов обновляют список соавторов немедленно. Храните их отдельно от черновика политики выше."
     },
     "Editor": {
+      "InlineQuizExtension": {
+        "title": "Встроенный тест",
+        "editQuestions": "Редактировать вопросы",
+        "itemEditorComingSoon": "Редактор заданий для оценивания {assessmentUuid} (будет в Фазе 2)",
+        "score": "Балл: {score}%",
+        "quizInfo": "Встроенный тест ({id}…)",
+        "submit": "Отправить",
+        "close": "Закрыть"
+      },
       "BadgesExtension": {
         "deepDive": "Глубокое погружение",
         "discussionTopic": "Тема для обсуждения",
@@ -4163,6 +4172,26 @@
         "urlPlaceholder": "Вставьте URL здесь...",
         "errorEmpty": "Пожалуйста, введите URL",
         "errorInvalid": "URL недействителен или не поддерживается",
+        "visualLabel": "Визуальный дизайн",
+        "visualDescription": "Доски, диаграммы, прототипы, холсты, 3D и анимация.",
+        "codeLabel": "Кодинг",
+        "codeDescription": "Запускаемые песочницы, фрагменты, полноценные IDE и приложения для ремикса.",
+        "mediaLabel": "Медиа",
+        "mediaDescription": "Видео, аудио, подкасты, плейлисты и записанные уроки.",
+        "assessmentLabel": "Оценивания",
+        "assessmentDescription": "Викторины, формы, флэш-карточки, опросы и интерактивные проверки.",
+        "productivityLabel": "Продуктивность",
+        "productivityDescription": "Документы, базы данных, рабочие доски, таблицы данных и дашборды.",
+        "academicLabel": "Академическое",
+        "academicDescription": "Математика, наука, симуляции, 3D-модели и вычисления.",
+        "collaborationLabel": "AI и сообщество",
+        "collaborationDescription": "Исследовательские пространства, совместный просмотр и точки входа в сообщество курса.",
+        "errorYoutubeId": "Недопустимый или отсутствующий YouTube video ID.",
+        "noUrlConfigured": "URL Excalidraw не задан.",
+        "missingEmbed": "У этого встраивания нет поддерживаемого сервиса или URL.",
+        "openSource": "Открыть источник",
+        "loadEmbed": "Загрузить встраивание",
+        "resize": "Изменить размер",
         "insertButton": "Вставить",
         "cancelButton": "Отмена",
         "editButton": "Редактировать",
@@ -4178,6 +4207,9 @@
         "embedUrlHint": "Use the service embed/share URL for the most reliable result.",
         "errorSelectType": "Please select an embed service",
         "updateButton": "Update"
+      },
+      "Youtube": {
+        "invalidUrl": "Недопустимый URL-адрес YouTube"
       },
       "UserBlock": {
         "errorNotFound": "Пользователь не найден",
@@ -6276,6 +6308,7 @@
     "visibilityPublic": "Публичная коллекция - Видна всем"
   },
   "NotFoundPage": {
+    "code": "404!",
     "button": "Вернуться на главную",
     "message": "Приносим извинения за неудобства. Похоже, вы пытаетесь получить доступ к странице, которая была удалена или никогда не существовала."
   },
@@ -7004,6 +7037,19 @@
             "defaultDescription": "Подтвердите выбранное массовое действие."
           }
         },
+        "AttemptHistory": {
+          "titleWithCount": "История попыток ({count})"
+        },
+        "ConflictResolver": {
+          "title": "Обнаружено одновременное редактирование",
+          "description": "Другой преподаватель оценил эту работу после того, как вы её загрузили.",
+          "serverHeader": "Сервер (текущее)",
+          "scoreLabel": "Оценка: ",
+          "feedbackLabel": "Отзыв: ",
+          "localHeader": "Ваш черновик",
+          "useServer": "Использовать значения с сервера",
+          "keepLocal": "Оставить мой черновик и повторить"
+        },
         "Panel": {
           "title": "Панель оценивания",
           "loading": "Загрузка...",
@@ -7079,6 +7125,25 @@
       }
     },
     "Assessments": {
+      "Studio": {
+        "itemsLabel": "Задания",
+        "outlineEmptyMessage": "Заданий пока нет. Нажмите +, чтобы добавить свой первый вопрос или блок.",
+        "itemInfo": "{kind} • {max_score} бал."
+      },
+      "Shared": {
+        "AntiCheatOverlay": {
+          "proctored": "С прокторингом"
+        },
+        "PostSubmissionFeedback": {
+          "gradePending": "Оценка ожидает публикации преподавателем",
+          "submissionReceived": "Ответ получен. Результаты будут доступны после проверки.",
+          "score": "Оценка",
+          "points": "{score}/{max_score} баллов"
+        }
+      },
+      "Exam": {
+        "questions": "Вопросы"
+      },
       "ReviewWorkspace": {
         "loading": "Загрузка рабочего пространства проверки...",
         "reviewUnavailable": "Проверка недоступна для этой активности."
@@ -7620,6 +7685,7 @@
         "issueBlocks": "{count} {count, plural, one {проблема блокирует} few {проблемы блокируют} other {проблем блокируют}} публикацию.",
         "assessmentLabel": "Активность",
         "itemsLabel": "Элементы",
+        "outlineEmptyMessage": "Пока нет элементов. Нажмите +, чтобы добавить.",
         "jumpToItem": "Перейти к элементу",
         "blockerAlertDescription": "Устраните блокировщики на уровне оценивания перед публикацией. Проблемы на уровне элементов остаются доступными по ссылкам в списке выше.",
         "loadingEditor": "Загрузка редактора",

@@ -7,8 +7,7 @@ import { SessionProvider } from '@/components/providers/session-provider';
 import { jetBrainsMono } from '@/lib/fonts';
 import { getAssessmentByUuid } from '@services/assessments/assessments';
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/react-query/queryKeys';
-import { apiFetcher } from '@/lib/api-client';
+import { assessmentByActivityQueryOptions } from '@/features/assessments/queries';
 import AssessmentAttemptClient from './AssessmentAttemptClient';
 
 interface Props {
@@ -61,11 +60,7 @@ export default async function AssessmentAttemptPage(props: Props) {
   // Prefetch the activity-keyed assessment data that AssessmentLayout will need,
   // so the client doesn't duplicate this fetch after hydration.
   if (assessment.activity_uuid) {
-    const normalizedActivityUuid = assessment.activity_uuid.replace(/^activity_/, '');
-    await queryClient.prefetchQuery({
-      queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
-      queryFn: () => apiFetcher(`assessments/activity/${normalizedActivityUuid}`),
-    });
+    await queryClient.prefetchQuery(assessmentByActivityQueryOptions(assessment.activity_uuid));
   }
 
   return (

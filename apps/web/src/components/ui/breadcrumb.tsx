@@ -7,9 +7,10 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 function Breadcrumb({ className, ...props }: React.ComponentProps<'nav'>) {
+  const t = useTranslations('Components.Breadcrumb');
   return (
     <nav
-      aria-label="breadcrumb"
+      aria-label={t('ariaLabel')}
       data-slot="breadcrumb"
       className={cn(className)}
       {...props}

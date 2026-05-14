@@ -8,6 +8,7 @@
  */
 
 import { Shield, ShieldAlert } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 interface AntiCheatOverlayProps {
@@ -26,6 +27,7 @@ export default function AntiCheatOverlay({
   violationThreshold,
   className,
 }: AntiCheatOverlayProps) {
+  const t = useTranslations('Features.Assessments.Shared.AntiCheatOverlay');
   if (!enabled) return null;
 
   const isNearThreshold = violationThreshold !== null && violationCount >= violationThreshold - 1;
@@ -44,7 +46,7 @@ export default function AntiCheatOverlay({
       aria-label={`Proctored mode active. Violations: ${violationCount}${violationThreshold ? ` of ${violationThreshold}` : ''}`}
     >
       {isAtThreshold ? <ShieldAlert className="size-3.5" /> : <Shield className="size-3.5" />}
-      <span>Proctored</span>
+      <span>{t('proctored')}</span>
       {violationThreshold !== null && (
         <span className="ml-1 opacity-75">
           {violationCount}/{violationThreshold}

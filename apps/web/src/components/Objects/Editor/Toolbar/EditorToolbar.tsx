@@ -80,6 +80,7 @@ interface EditorToolbarProps {
 
 export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
   const t = useTranslations('DashPage.Editor.Toolbar');
+  const tCommon = useTranslations('Common');
   const { resolvedTheme } = useTheme();
   const logoSrc = resolvedTheme === 'dark' ? platformLogoDark : platformLogoLight;
 
@@ -186,7 +187,7 @@ export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
             width={18}
             height={18}
             src={logoSrc}
-            alt="Ashyk Bilim logo"
+            alt={tCommon('platformLogoAlt')}
             style={{ height: 'auto' }}
           />
           <span>{t('aiEditor')}</span>

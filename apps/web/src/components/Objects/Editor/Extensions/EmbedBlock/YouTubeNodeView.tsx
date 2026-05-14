@@ -4,6 +4,7 @@ import { useCallback, useRef } from 'react';
 import { YouTubeEmbed } from '@next/third-parties/google';
 import { Pencil, Trash2 } from 'lucide-react';
 import { NodeViewWrapper } from '@tiptap/react';
+import { useTranslations } from 'next-intl';
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
 import { useEmbedPanelStore } from '../../Toolbar/EmbedPanel/EmbedPanelStore';
 import type { EmbedBlockAttrs } from './EmbedBlock';
@@ -14,6 +15,7 @@ const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
   const { url } = node.attrs;
   const isEditable = editor.isEditable;
   const videoId = url ? resolveYouTubeVideoId(url) : null;
+  const t = useTranslations('DashPage.Editor.EmbedPanel');
   const openForEdit = useEmbedPanelStore((state) => state.openForEdit);
   const editButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -30,7 +32,7 @@ const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
           className="border-destructive/30 bg-destructive/5 text-destructive flex min-h-[200px] w-full items-center justify-center rounded-md border p-6 text-center text-sm"
           role="alert"
         >
-          Invalid or missing YouTube video ID.
+          {t('errorYoutubeId')}
         </div>
       </NodeViewWrapper>
     );
@@ -57,17 +59,17 @@ const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
           <button
             ref={editButtonRef}
             type="button"
-            aria-label="Edit YouTube embed"
+            aria-label={`${t('editButton')} ${t('youtubeLabel')}`}
             onClick={handleEdit}
-            className="flex size-8 items-center justify-center rounded hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+            className="flex size-8 items-center justify-center rounded hover:bg-gray-100"
           >
             <Pencil className="size-4" />
           </button>
           <button
             type="button"
-            aria-label="Delete YouTube embed"
+            aria-label={`${t('deleteButton')} ${t('youtubeLabel')}`}
             onClick={deleteNode}
-            className="flex size-8 items-center justify-center rounded text-red-600 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500"
+            className="flex size-8 items-center justify-center rounded text-red-600 hover:bg-red-50"
           >
             <Trash2 className="size-4" />
           </button>

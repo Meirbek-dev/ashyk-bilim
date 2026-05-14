@@ -9,6 +9,7 @@ import type { EmbedBlockAttrs } from './EmbedBlock';
 import { buildEmbedSrc } from './embed-validators';
 import { getEmbedProvider } from './embed-options';
 import type { EmbedType } from './embed-options';
+import { useTranslations } from 'next-intl';
 
 const MIN_HEIGHT = 240;
 const MAX_HEIGHT = 1600;
@@ -21,6 +22,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
   const { node, editor, updateAttributes, deleteNode, getPos } = props;
   const { type, url, height: attrHeight } = node.attrs;
   const provider = getEmbedProvider(type);
+  const t = useTranslations('DashPage.Editor.EmbedPanel');
   const isEditable = editor.isEditable;
   const [mounted, setMounted] = useState(false);
   const [isLoaded, setIsLoaded] = useState(!isEditable);
@@ -84,7 +86,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
     return (
       <NodeViewWrapper className="embed-block-node-view w-full">
         <div className="border-destructive/30 bg-destructive/5 text-destructive flex min-h-[160px] w-full items-center justify-center rounded-lg border p-6 text-center text-sm">
-          This embed is missing a supported service or URL.
+          {t('missingEmbed')}
         </div>
       </NodeViewWrapper>
     );
@@ -102,7 +104,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
         {mounted && src && isLoaded ? (
           <iframe
             src={src}
-            title={`${provider.label} embed`}
+            title={`${provider.label} ${t('embed')}`}
             className="h-full w-full border-0"
             loading="lazy"
             allow={provider.allow ?? 'fullscreen; clipboard-read; clipboard-write'}
@@ -123,7 +125,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
                 className="text-primary inline-flex items-center gap-1 text-xs hover:underline"
                 contentEditable={false}
               >
-                Open source
+                {t('openSource')}
                 <ExternalLink className="size-3" />
               </a>
             </div>
@@ -133,7 +135,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
               onClick={() => setIsLoaded(true)}
               contentEditable={false}
             >
-              Load embed
+              {t('loadEmbed')}
             </button>
           </div>
         )}
@@ -147,17 +149,17 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
             <button
               ref={editButtonRef}
               type="button"
-              aria-label={`Edit ${provider.label} embed`}
+              aria-label={`${t('editButton')} ${provider.label} ${t('embed')}`}
               onClick={handleEdit}
-              className="flex size-8 items-center justify-center rounded hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+              className="flex size-8 items-center justify-center rounded hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-blue-500"
             >
               <Pencil className="size-4" />
             </button>
             <button
               type="button"
-              aria-label={`Delete ${provider.label} embed`}
+              aria-label={`${t('deleteButton')} ${provider.label} ${t('embed')}`}
               onClick={deleteNode}
-              className="flex size-8 items-center justify-center rounded text-red-600 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500"
+              className="flex size-8 items-center justify-center rounded text-red-600 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-500"
             >
               <Trash2 className="size-4" />
             </button>
@@ -167,7 +169,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
         {isEditable ? (
           <div
             role="separator"
-            aria-label={`Resize ${provider.label} embed`}
+            aria-label={`${t('resize')} ${provider.label} ${t('embed')}`}
             aria-orientation="horizontal"
             className="absolute bottom-0 left-0 right-0 flex h-4 cursor-ns-resize items-center justify-center"
             contentEditable={false}

@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 interface ExamQuestionNavigationProps {
   totalQuestions: number;
@@ -23,9 +24,11 @@ export default function ExamQuestionNavigation({
   answeredQuestions,
   onQuestionSelect,
 }: ExamQuestionNavigationProps) {
+  const t = useTranslations('Features.Assessments.Exam');
+
   return (
     <div className="bg-card sticky top-4 rounded-lg border p-4">
-      <div className="text-muted-foreground mb-3 text-sm font-medium">Questions</div>
+      <div className="text-muted-foreground mb-3 text-sm font-medium">{t('questions')}</div>
       <div className="grid grid-cols-5 gap-1.5">
         {Array.from({ length: totalQuestions }, (_, i) => (
           <button

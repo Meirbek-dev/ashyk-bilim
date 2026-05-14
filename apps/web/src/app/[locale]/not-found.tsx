@@ -8,6 +8,7 @@ import Image from 'next/image';
 
 export default async function NotFound() {
   const t = await getTranslations('NotFoundPage');
+  const tCommon = await getTranslations('Common');
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center">
@@ -16,7 +17,7 @@ export default async function NotFound() {
           quality={100}
           width={270}
           src={platformLogoFull}
-          alt="logo"
+          alt={tCommon('platformLogoAlt')}
           style={{ height: 'auto' }}
           loading="eager"
           className="theme-logo-dark"
@@ -25,14 +26,14 @@ export default async function NotFound() {
           quality={100}
           width={270}
           src={platformLogoLightFull}
-          alt="logo"
+          alt={tCommon('platformLogoAlt')}
           style={{ height: 'auto' }}
           loading="eager"
           className="theme-logo-light"
         />
       </div>
       <div className="space-y-6 text-center">
-        <h1 className="text-foreground text-8xl leading-7 font-bold drop-shadow-md">404!</h1>
+        <h1 className="text-foreground text-8xl leading-7 font-bold drop-shadow-md">{t('code')}</h1>
         <p className="text-foreground pt-8 text-lg leading-normal font-medium tracking-tight">{t('message')}</p>
       </div>
       <div className="flex flex-col items-center pt-8">

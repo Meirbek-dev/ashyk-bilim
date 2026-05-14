@@ -1,6 +1,5 @@
 'use client';
 
-import type { NodeViewProps } from '@tiptap/react';
 import EmbedObjectsComponent from './EmbedObjectsComponent';
 import { EmbedObjectsErrorBoundary } from './EmbedObjectsErrorBoundary';
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
@@ -14,7 +13,7 @@ import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
 const EmbedObjectsWithBoundary = (props: TypedNodeViewProps<any>) => {
   return (
     <EmbedObjectsErrorBoundary>
-      <EmbedObjectsComponent {...(props as any)} />
+      <EmbedObjectsComponent {...(props)} />
     </EmbedObjectsErrorBoundary>
   );
 };

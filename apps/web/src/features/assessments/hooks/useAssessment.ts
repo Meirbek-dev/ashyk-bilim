@@ -19,6 +19,7 @@ import type { components } from '@/lib/api/generated/schema';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { reportClientError } from '@/services/telemetry/client';
 
+import { assessmentByActivityQueryOptions } from '../queries';
 import { isAssessmentEditable, canPublish, canSchedule, canArchive } from '../domain/lifecycle';
 import { classifyValidationIssue } from '../domain/readiness';
 import { policyFromAssessmentPolicy } from '../domain/policy';
@@ -33,14 +34,6 @@ type AssessmentDetail = components['schemas']['AssessmentRead'];
 interface ReadinessPayload {
   ok: boolean;
   issues: { code: string; message: string; item_uuid?: string | null }[];
-}
-
-function assessmentByActivityQueryOptions(activityUuid: string) {
-  return queryOptions({
-    queryKey: queryKeys.assessments.activity(activityUuid),
-    queryFn: () => apiFetcher<AssessmentDetail>(`assessments/activity/${activityUuid}`),
-    enabled: Boolean(activityUuid),
-  });
 }
 
 function readinessQueryOptions(assessmentUuid: string, enabled: boolean) {

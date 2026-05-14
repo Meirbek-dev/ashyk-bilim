@@ -29,6 +29,7 @@ export function EditorHeader({
   onSave,
 }: EditorHeaderProps) {
   const t = useTranslations('DashPage.Editor.Editor');
+  const tCommon = useTranslations('Common');
   const { resolvedTheme } = useTheme();
   const logoSrc = resolvedTheme === 'dark' ? platformLogoLight : platformLogoDark;
 
@@ -42,7 +43,7 @@ export function EditorHeader({
             width={22}
             height={22}
             src={logoSrc}
-            alt="Ashyk Bilim logo"
+            alt={tCommon('platformLogoAlt')}
             style={{ height: 'auto' }}
           />
         </Link>

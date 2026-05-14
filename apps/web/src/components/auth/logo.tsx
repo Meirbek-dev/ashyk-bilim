@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useTheme } from '@/components/providers/theme-provider';
 
@@ -6,6 +7,7 @@ interface AuthLogoProps {
 }
 
 const AuthLogo = ({ width = 240 }: AuthLogoProps) => {
+  const t = useTranslations('Common');
   const { resolvedTheme } = useTheme();
   const src = resolvedTheme === 'dark' ? '/platform_logo_light_full.svg' : '/platform_logo_full.svg';
 
@@ -13,7 +15,7 @@ const AuthLogo = ({ width = 240 }: AuthLogoProps) => {
     <div className="m-4">
       <Image
         src={src}
-        alt="Ashyk Bilim"
+        alt={t('platformLogoAlt')}
         width={width}
         height={Math.round((width * 119.28) / 327.34)}
         priority

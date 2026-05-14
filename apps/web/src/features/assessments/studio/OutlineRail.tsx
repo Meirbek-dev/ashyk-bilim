@@ -8,6 +8,7 @@
  */
 
 import { GripVertical, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -35,10 +36,12 @@ export default function OutlineRail({
   onAddItem,
   disabled = false,
 }: OutlineRailProps) {
+  const t = useTranslations('Features.Assessments.Studio');
+
   return (
     <div className="flex h-full flex-col border-r">
       <div className="flex items-center justify-between border-b px-3 py-2">
-        <h3 className="text-sm font-medium">Items</h3>
+        <h3 className="text-sm font-medium">{t('itemsLabel')}</h3>
         <Button
           size="sm"
           variant="ghost"
@@ -51,12 +54,12 @@ export default function OutlineRail({
 
       <div className="flex-1 overflow-y-auto">
         {items.length === 0 ? (
-          <p className="text-muted-foreground p-3 text-xs">No items yet. Click + to add one.</p>
+          <p className="text-muted-foreground p-3 text-xs">{t('outlineEmptyMessage')}</p>
         ) : (
           <ul
             className="divide-y"
             role="listbox"
-            aria-label="Assessment items"
+            aria-label={t('itemsLabel')}
           >
             {items.map((item, idx) => (
               <li
@@ -75,7 +78,7 @@ export default function OutlineRail({
                     {idx + 1}. {item.title || item.kind}
                   </p>
                   <p className="text-muted-foreground text-xs">
-                    {item.kind} • {item.max_score} pts
+                    {t('itemInfo', { kind: item.kind, max_score: item.max_score })}
                   </p>
                 </div>
               </li>

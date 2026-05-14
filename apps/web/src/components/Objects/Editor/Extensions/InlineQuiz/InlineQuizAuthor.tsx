@@ -9,6 +9,7 @@
 
 import { useCallback, useState } from 'react';
 import { BookOpen, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 
 interface InlineQuizAuthorProps {
@@ -17,6 +18,7 @@ interface InlineQuizAuthorProps {
 }
 
 export default function InlineQuizAuthor({ assessmentUuid, onAssessmentCreated }: InlineQuizAuthorProps) {
+  const t = useTranslations('DashPage.Editor.InlineQuizExtension');
   const [isCreating, setIsCreating] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
@@ -37,19 +39,19 @@ export default function InlineQuizAuthor({ assessmentUuid, onAssessmentCreated }
     } finally {
       setIsCreating(false);
     }
-  }, [assessmentUuid, onAssessmentCreated]);
+  }, [assessmentUuid]);
 
   if (assessmentUuid && !isEditorOpen) {
     return (
       <div className="border-primary/20 bg-primary/5 flex items-center gap-2 rounded-lg border p-3">
         <BookOpen className="text-primary size-4" />
-        <span className="flex-1 text-sm font-medium">Inline Quiz</span>
+        <span className="flex-1 text-sm font-medium">{t('title')}</span>
         <Button
           size="sm"
           variant="ghost"
           onClick={() => setIsEditorOpen(true)}
         >
-          Edit Questions
+          {t('editQuestions')}
         </Button>
       </div>
     );
@@ -65,7 +67,7 @@ export default function InlineQuizAuthor({ assessmentUuid, onAssessmentCreated }
           disabled={isCreating}
         >
           <Plus className="mr-1 size-4" />
-          {isCreating ? 'Creating...' : 'Add Inline Quiz'}
+          {t('title')}
         </Button>
       </div>
     );
@@ -74,13 +76,15 @@ export default function InlineQuizAuthor({ assessmentUuid, onAssessmentCreated }
   // TODO: Render the standard NativeItemStudio in a modal/drawer
   return (
     <div className="border-primary/20 bg-primary/5 rounded-lg border p-4">
-      <p className="text-muted-foreground text-sm">Item editor for assessment {assessmentUuid} (coming in Phase 2)</p>
+      <p className="text-muted-foreground text-sm">
+        {t('itemEditorComingSoon', { assessmentUuid })}
+      </p>
       <Button
         size="sm"
         variant="ghost"
         onClick={() => setIsEditorOpen(false)}
       >
-        Close
+        {t('close')}
       </Button>
     </div>
   );

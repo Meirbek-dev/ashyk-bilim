@@ -40,7 +40,7 @@ export function codeChallengeSubmissionQueryOptions<TSubmission = unknown>(
   submissionUuid: string,
 ) {
   return queryOptions({
-    queryKey: queryKeys.codeChallenges.submission(submissionUuid),
+    queryKey: queryKeys.codeChallenges.submission(activityUuid, submissionUuid),
     queryFn: async () => (await getSubmission(activityUuid, submissionUuid)) as TSubmission,
     refetchOnWindowFocus: false,
   });

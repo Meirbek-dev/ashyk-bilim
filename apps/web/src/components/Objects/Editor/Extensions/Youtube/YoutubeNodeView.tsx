@@ -4,8 +4,10 @@ import { YouTubeEmbed } from '@next/third-parties/google';
 import { getYouTubeVideoId } from '@/lib/utils';
 import { NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
+import { useTranslations } from 'next-intl';
 
 const YoutubeNodeView = (props: NodeViewProps) => {
+  const t = useTranslations('DashPage.Editor.Youtube');
   const { node } = props;
   const { src, start, controls, nocookie } = node.attrs;
 
@@ -14,7 +16,7 @@ const YoutubeNodeView = (props: NodeViewProps) => {
   if (!videoId) {
     return (
       <NodeViewWrapper className="youtube-node-view border-2 border-dashed border-red-300 p-4 text-center text-red-500">
-        Invalid YouTube URL
+        {t('invalidUrl')}
       </NodeViewWrapper>
     );
   }

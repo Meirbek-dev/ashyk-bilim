@@ -57,8 +57,8 @@ export function EmbedTypeSelector({ selectedType, onSelect, error }: EmbedTypeSe
                     : 'text-muted-foreground hover:bg-background/70 hover:text-foreground',
                 )}
               >
-                <span className="block font-medium">{category.label}</span>
-                <span className="line-clamp-2 text-xs leading-4">{category.description}</span>
+                <span className="block font-medium">{t(category.label)}</span>
+                <span className="line-clamp-2 text-xs leading-4">{t(category.description)}</span>
               </button>
             );
           })}

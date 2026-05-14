@@ -11,6 +11,7 @@ import Image from 'next/image';
 
 const HomeClient = () => {
   const t = useTranslations('HomeClient');
+  const tCommon = useTranslations('Common');
   const { user: viewer } = useSession();
   const { resolvedTheme } = useTheme();
   const logoSrc = resolvedTheme === 'dark' ? platformLogoLightFull : platformLogoFull;
@@ -22,7 +23,7 @@ const HomeClient = () => {
           quality={100}
           width={230}
           src={logoSrc}
-          alt="Ashyk Bilim logo"
+          alt={tCommon('platformLogoAlt')}
           style={{ width: '100%', height: 'auto' }}
           loading="eager"
         />

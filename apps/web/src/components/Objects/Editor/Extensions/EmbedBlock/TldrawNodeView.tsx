@@ -22,6 +22,7 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
   const { url, height: attrHeight } = node.attrs;
 
   const t = useTranslations('DashPage.Editor.EmbedPanel');
+  const tCommon = useTranslations('Common');
   const isEditable = editor.isEditable;
 
   // ── SSR guard ──────────────────────────────────────────────────────────────
@@ -126,12 +127,12 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
               pointerEvents: isEditable ? 'none' : 'auto',
             }}
             allowFullScreen
-            title="tldraw embed"
+            title={t('tldrawLabel')}
           />
         ) : (
           !mounted && (
             <div className="flex h-full w-full items-center justify-center bg-gray-50">
-              <p className="text-sm text-gray-400">Loading tldraw…</p>
+              <p className="text-sm text-gray-400">{`${tCommon('loading')} ${t('tldrawLabel')}…`}</p>
             </div>
           )
         )}
@@ -145,24 +146,23 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
             <button
               ref={editButtonRef}
               type="button"
-              aria-label={t('editButton') + ' tldraw embed'}
+              aria-label={`${t('editButton')} ${t('tldrawLabel')}`}
               onClick={handleEdit}
-              className="rounded px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+              className="rounded px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-blue-500"
             >
               {t('editButton')}
             </button>
             <button
               type="button"
-              aria-label={t('deleteButton') + ' tldraw embed'}
+              aria-label={`${t('deleteButton')} ${t('tldrawLabel')}`}
               onClick={handleDelete}
-              className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500"
+              className="rounded px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-blue-500"
             >
               {t('deleteButton')}
             </button>
           </div>
         )}
 
-        {/* Resize handle — authoring mode only */}
         {isEditable && (
           <div
             className="absolute bottom-0 left-0 right-0 flex cursor-ns-resize items-center justify-center"

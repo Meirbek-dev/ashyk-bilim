@@ -3817,6 +3817,15 @@
       "rosterActionsImmediateDescription": "Іздеу, қосу, жою, рөлдер мен мәртебелерді өзгерту қатысушылар тізімін бірден жаңартады. Оларды жоғарыдағы саясат жобасынан бөлек сақтаңыз."
     },
     "Editor": {
+      "InlineQuizExtension": {
+        "title": "Кірістірілген тест",
+        "editQuestions": "Сұрақтарды өңдеу",
+        "itemEditorComingSoon": "Бағалауға арналған тапсырмалар редакторы {assessmentUuid} (2-кезеңде болады)",
+        "score": "Ұпай: {score}%",
+        "quizInfo": "Кірістірілген тест ({id}…)",
+        "submit": "Жіберу",
+        "close": "Жабу"
+      },
       "BadgesExtension": {
         "deepDive": "Терең талдау",
         "discussionTopic": "Талқылау тақырыбы",
@@ -4157,6 +4166,26 @@
         "urlPlaceholder": "URL мекенжайын осында қойыңыз...",
         "errorEmpty": "URL мекенжайын енгізіңіз",
         "errorInvalid": "URL мекенжайы жарамсыз немесе қолдау көрсетілмейді",
+        "visualLabel": "Көрнекі дизайн",
+        "visualDescription": "Тақталар, диаграммалар, прототиптер, кенептер, 3D және анимация.",
+        "codeLabel": "Кодтау",
+        "codeDescription": "Іске қосылатын құмсалғыштар, үзінділер, толық IDE және өзгертуге болатын қолданбалар.",
+        "mediaLabel": "Медиа",
+        "mediaDescription": "Бейне, аудио, подкасттар, ойнату тізімдері және жазылған сабақтар.",
+        "assessmentLabel": "Бағалау",
+        "assessmentDescription": "Тесттер, формалар, флэшкарталар, сауалнамалар және интерактивті тексерістер.",
+        "productivityLabel": "Өнімділік",
+        "productivityDescription": "Құжаттар, дерекқорлар, жұмыс тақталары, кестелер және дашбордтар.",
+        "academicLabel": "Академиялық",
+        "academicDescription": "Математика, ғылым, модельдеу, 3D модельдер және есептеу.",
+        "collaborationLabel": "AI және қауымдастық",
+        "collaborationDescription": "Зерттеу кеңістіктері, бірлесіп шолу және курс қауымдастығының кіру нүктелері.",
+        "errorYoutubeId": "YouTube видео ID қате немесе жоқ.",
+        "noUrlConfigured": "Excalidraw URL-і көрсетілмеген.",
+        "missingEmbed": "Бұл ендірмеде қолдау көрсетілетін қызмет немесе URL жоқ.",
+        "openSource": "Дереккөзді ашу",
+        "loadEmbed": "Ендірмені жүктеу",
+        "resize": "Өлшемін өзгерту",
         "insertButton": "Кірістіру",
         "cancelButton": "Бас тарту",
         "editButton": "Өңдеу",
@@ -4172,6 +4201,9 @@
         "embedUrlHint": "Use the service embed/share URL for the most reliable result.",
         "errorSelectType": "Please select an embed service",
         "updateButton": "Update"
+      },
+      "Youtube": {
+        "invalidUrl": "Жарамсыз YouTube URL мекенжайы"
       },
       "UserBlock": {
         "errorNotFound": "Пайдаланушы табылмады",
@@ -6270,6 +6302,7 @@
     "visibilityPublic": "Жалпыға қолжетімді жинақ - Барлығына көрінеді"
   },
   "NotFoundPage": {
+    "code": "404!",
     "button": "Басты бетке оралу",
     "message": "Ыңғайсыздық үшін кешірім сұраймыз. Сіз жойылған немесе ешқашан болмаған бетке кіруге тырысып жатқан сияқтысыз."
   },
@@ -6973,6 +7006,19 @@
             "defaultDescription": "Таңдалған жаппай әрекетті растаңыз."
           }
         },
+        "AttemptHistory": {
+          "titleWithCount": "Әрекеттер тарихы ({count})"
+        },
+        "ConflictResolver": {
+          "title": "Бір мезгілде өңдеу анықталды",
+          "description": "Сіз жүктегеннен кейін басқа оқытушы бұл жұмысты бағалады.",
+          "serverHeader": "Сервер (ағымдағы)",
+          "scoreLabel": "Баға: ",
+          "feedbackLabel": "Кері байланыс: ",
+          "localHeader": "Сіздің жобаңыз",
+          "useServer": "Сервер мәндерін пайдалану",
+          "keepLocal": "Менің жобамды қалдыру және қайталау"
+        },
         "Panel": {
           "loading": "Жүктелуде...",
           "notYetSubmitted": "Әлі жіберілмеген",
@@ -7073,6 +7119,25 @@
       }
     },
     "Assessments": {
+      "Studio": {
+        "itemsLabel": "Тапсырмалар",
+        "outlineEmptyMessage": "Тапсырмалар әлі жоқ. Бірінші сұрақты немесе блокты қосу үшін + түймесін басыңыз.",
+        "itemInfo": "{kind} • {max_score} ұпай"
+      },
+      "Shared": {
+        "AntiCheatOverlay": {
+          "proctored": "Прокторингпен"
+        },
+        "PostSubmissionFeedback": {
+          "gradePending": "Бағаны оқытушының жариялауы күтілуде",
+          "submissionReceived": "Жауап алынды. Нәтижелер тексеруден кейін қолжетімді болады.",
+          "score": "Баға",
+          "points": "{score}/{max_score} ұпай"
+        }
+      },
+      "Exam": {
+        "questions": "Сұрақтар"
+      },
       "ReviewWorkspace": {
         "loading": "Тексеру жұмыс кеңістігі жүктелуде...",
         "reviewUnavailable": "Бұл тапсырма үшін тексеру қолжетімді емес."
@@ -7739,6 +7804,7 @@
         "issueBlocks": "{count} мәселе жариялауды блоктап тұр",
         "assessmentLabel": "Бағалау",
         "itemsLabel": "Элементтер",
+        "outlineEmptyMessage": "Әлі элемент жоқ. Қосу үшін + басыңыз.",
         "jumpToItem": "Элементке өту",
         "blockerAlertDescription": "Жарияламас бұрын бағалау деңгейіндегі бұғаттаушыларды шешіңіз. Элемент деңгейіндегі мәселелер жоғарыдағы тізімде қалады.",
         "loadingEditor": "Редактор жүктелуде"

@@ -3802,6 +3802,15 @@
       "rosterActionsImmediateDescription": "Search, add, remove, role changes, and status updates update the live contributor roster right away. Keep them separate from the policy draft above."
     },
     "Editor": {
+      "InlineQuizExtension": {
+        "title": "Inline Quiz",
+        "editQuestions": "Edit Questions",
+        "itemEditorComingSoon": "Item editor for assessment {assessmentUuid} (coming in Phase 2)",
+        "score": "Score: {score}%",
+        "quizInfo": "Inline quiz ({id}…)",
+        "submit": "Submit",
+        "close": "Close"
+      },
       "BadgesExtension": {
         "deepDive": "Deep Dive",
         "discussionTopic": "Discussion Topic",
@@ -4138,6 +4147,20 @@
         "title": "Insert Embed",
         "editTitle": "Edit Embed",
         "description": "Choose a trusted service, then paste a share or embed URL.",
+        "visualLabel": "Visual design",
+        "visualDescription": "Boards, diagrams, prototypes, canvases, 3D, and animation.",
+        "codeLabel": "Coding",
+        "codeDescription": "Runnable sandboxes, snippets, full IDEs, and remixable apps.",
+        "mediaLabel": "Media",
+        "mediaDescription": "Video, audio, podcasts, playlists, and recorded tutorials.",
+        "assessmentLabel": "Assessments",
+        "assessmentDescription": "Quizzes, forms, flashcards, polls, and interactive checks.",
+        "productivityLabel": "Productivity",
+        "productivityDescription": "Docs, databases, work boards, data tables, and dashboards.",
+        "academicLabel": "Academic",
+        "academicDescription": "Math, science, simulations, 3D models, and computation.",
+        "collaborationLabel": "AI & community",
+        "collaborationDescription": "Research spaces, co-browsing, and course community entry points.",
         "categoryLabel": "Embed categories",
         "serviceLabel": "Embed services",
         "searchPlaceholder": "Search services...",
@@ -4152,11 +4175,20 @@
         "errorSelectType": "Please select an embed service",
         "errorEmpty": "Please enter a URL",
         "errorInvalid": "The URL is invalid or not supported",
+        "errorYoutubeId": "Invalid or missing YouTube video ID.",
+        "noUrlConfigured": "No Excalidraw URL configured.",
+        "missingEmbed": "This embed is missing a supported service or URL.",
+        "openSource": "Open source",
+        "loadEmbed": "Load embed",
+        "resize": "Resize",
         "insertButton": "Insert",
         "updateButton": "Update",
         "cancelButton": "Cancel",
         "editButton": "Edit",
         "deleteButton": "Delete"
+      },
+      "Youtube": {
+        "invalidUrl": "Invalid YouTube URL"
       },
       "UserBlock": {
         "errorNotFound": "User not found",
@@ -6250,6 +6282,7 @@
     "visibilityPublic": "Public Collection - Visible to everyone"
   },
   "NotFoundPage": {
+    "code": "404!",
     "button": "Return to Homepage",
     "message": "We apologize for the inconvenience. It seems you are trying to access a page that has been deleted or never existed."
   },
@@ -6968,6 +7001,19 @@
             "defaultDescription": "Confirm the selected bulk action."
           }
         },
+        "AttemptHistory": {
+          "titleWithCount": "Attempt History ({count})"
+        },
+        "ConflictResolver": {
+          "title": "Concurrent Edit Detected",
+          "description": "Another teacher has graded this submission since you loaded it.",
+          "serverHeader": "Server (current)",
+          "scoreLabel": "Score: ",
+          "feedbackLabel": "Feedback: ",
+          "localHeader": "Your draft",
+          "useServer": "Use server values",
+          "keepLocal": "Keep my draft & retry"
+        },
         "Panel": {
           "title": "Grading panel",
           "loading": "Loading...",
@@ -7043,6 +7089,26 @@
       }
     },
     "Assessments": {
+      "Studio": {
+        "itemsLabel": "Items",
+        "outlineEmptyMessage": "No items yet. Click + to add your first question or block.",
+        "itemInfo": "{kind} • {max_score} pts"
+      },
+      "Shared": {
+        "AntiCheatOverlay": {
+          "proctored": "Proctored"
+        },
+        "PostSubmissionFeedback": {
+          "gradePending": "Grade pending release by instructor",
+          "submissionReceived": "Submission received. Results will be available after review.",
+          "score": "Score",
+          "points": "{score}/{max_score} points",
+          "questionNumber": "Question {id}"
+        }
+      },
+      "Exam": {
+        "questions": "Questions"
+      },
       "ReviewWorkspace": {
         "loading": "Loading review workspace...",
         "reviewUnavailable": "Review is unavailable for this activity."
@@ -7563,6 +7629,7 @@
         "issueBlocks": "{count} {count, plural, =1 {issue blocks} other {issues block}} publishing.",
         "assessmentLabel": "Assessment",
         "itemsLabel": "Items",
+        "outlineEmptyMessage": "No items yet. Click + to add one.",
         "jumpToItem": "Jump to item",
         "blockerAlertDescription": "Resolve the assessment-level blockers before publishing. Item-level issues remain linked from the list above.",
         "loadingEditor": "Loading editor",

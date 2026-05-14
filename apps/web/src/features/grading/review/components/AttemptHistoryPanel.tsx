@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, History } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 interface AttemptRecord {
@@ -27,6 +28,8 @@ interface AttemptHistoryPanelProps {
 }
 
 export default function AttemptHistoryPanel({ attempts, currentSubmissionUuid, className }: AttemptHistoryPanelProps) {
+  const t = useTranslations('Features.Grading.Review.AttemptHistory');
+  const tGrading = useTranslations('Grading.Table');
   const [isOpen, setIsOpen] = useState(false);
 
   if (attempts.length <= 1) return null;
@@ -40,7 +43,7 @@ export default function AttemptHistoryPanel({ attempts, currentSubmissionUuid, c
       >
         {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
         <History className="size-3.5" />
-        <span>Attempt History ({attempts.length})</span>
+        <span>{t('titleWithCount', { count: attempts.length })}</span>
       </button>
 
       {isOpen && (
@@ -64,9 +67,13 @@ export default function AttemptHistoryPanel({ attempts, currentSubmissionUuid, c
                     attempt.status === 'RETURNED' && 'bg-orange-100 text-orange-700',
                   )}
                 >
-                  {attempt.status}
+                  {attempt.status === 'PUBLISHED' && tGrading('statusPublished')}
+                  {attempt.status === 'GRADED' && tGrading('statusGraded')}
+                  {attempt.status === 'PENDING' && tGrading('statusPending')}
+                  {attempt.status === 'RETURNED' && tGrading('statusReturned')}
+                  {!['PUBLISHED', 'GRADED', 'PENDING', 'RETURNED'].includes(attempt.status) && attempt.status}
                 </span>
-                {attempt.is_late && <span className="text-[10px] text-red-600">LATE</span>}
+                {attempt.is_late && <span className="text-[10px] text-red-600">{tGrading('filterLate')}</span>}
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-mono">{attempt.final_score ?? attempt.auto_score ?? '—'}%</span>

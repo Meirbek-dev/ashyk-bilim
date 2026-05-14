@@ -9,6 +9,7 @@
  */
 
 import { CheckCircle2, XCircle, MinusCircle, Eye, EyeOff } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 type ReviewVisibility = 'NONE' | 'SCORE_ONLY' | 'FULL';
@@ -44,11 +45,13 @@ export default function PostSubmissionFeedback({
   isPendingRelease = false,
   className,
 }: PostSubmissionFeedbackProps) {
+  const t = useTranslations('Features.Assessments.Shared.PostSubmissionFeedback');
+
   if (isPendingRelease) {
     return (
       <div className={cn('flex items-center gap-2 rounded-lg border p-4', className)}>
         <EyeOff className="text-muted-foreground size-4" />
-        <span className="text-muted-foreground text-sm">Grade pending release by instructor</span>
+        <span className="text-muted-foreground text-sm">{t('gradePending')}</span>
       </div>
     );
   }
@@ -58,7 +61,7 @@ export default function PostSubmissionFeedback({
       <div className={cn('flex items-center gap-2 rounded-lg border p-4', className)}>
         <Eye className="text-muted-foreground size-4" />
         <span className="text-muted-foreground text-sm">
-          Submission received. Results will be available after review.
+          {t('submissionReceived')}
         </span>
       </div>
     );
@@ -71,7 +74,7 @@ export default function PostSubmissionFeedback({
       <div className={cn('rounded-lg border p-4', className)}>
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold">{Math.round(displayScore)}%</span>
-          <span className="text-muted-foreground text-sm">Score</span>
+          <span className="text-muted-foreground text-sm">{t('score')}</span>
         </div>
       </div>
     );
@@ -82,7 +85,7 @@ export default function PostSubmissionFeedback({
     <div className={cn('space-y-3 rounded-lg border p-4', className)}>
       <div className="flex items-center gap-2">
         <span className="text-2xl font-bold">{Math.round(displayScore)}%</span>
-        <span className="text-muted-foreground text-sm">Score</span>
+        <span className="text-muted-foreground text-sm">{t('score')}</span>
       </div>
 
       {items.length > 0 && (
@@ -96,10 +99,10 @@ export default function PostSubmissionFeedback({
               {item.correct === false && <XCircle className="mt-0.5 size-4 shrink-0 text-red-600" />}
               {item.correct === null && <MinusCircle className="text-muted-foreground mt-0.5 size-4 shrink-0" />}
               <div className="flex-1">
-                <p className="font-medium">{item.item_text || `Question ${item.item_id}`}</p>
+                <p className="font-medium">{item.item_text || t('questionNumber', { id: item.item_id })}</p>
                 {item.feedback && <p className="text-muted-foreground">{item.feedback}</p>}
                 <p className="text-muted-foreground text-xs">
-                  {item.score}/{item.max_score} points
+                  {t('points', { score: item.score, max_score: item.max_score })}
                 </p>
               </div>
             </div>

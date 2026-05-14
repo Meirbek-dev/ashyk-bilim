@@ -62,17 +62,14 @@ export function ActivityContent({ activity, course }: { activity: Activity; cour
             <ClipboardList className="text-muted-foreground size-6" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-lg font-medium">{t('assessmentTitle') || 'Assessment'}</h3>
-            <p className="text-muted-foreground max-w-sm text-sm">
-              {t('assessmentDescription') ||
-                'This activity is an assessment. Please use the button below to start or continue your attempt.'}
-            </p>
+            <h3 className="text-lg font-medium">{t('assessmentTitle')}</h3>
+            <p className="text-muted-foreground max-w-sm text-sm">{t('assessmentDescription')}</p>
           </div>
           <Button
             nativeButton={false}
             render={<Link href={`/assessments/${activity.activity_uuid.replace('activity_', '')}`} />}
           >
-            {t('openAssessment') || 'Open Assessment'}
+            {t('openAssessment')}
           </Button>
         </div>
       );

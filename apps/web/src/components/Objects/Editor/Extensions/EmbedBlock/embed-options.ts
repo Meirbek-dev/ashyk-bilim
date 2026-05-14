@@ -16,38 +16,38 @@ export interface EmbedCategory {
 export const EMBED_CATEGORIES: EmbedCategory[] = [
   {
     id: 'visual',
-    label: 'Visual design',
-    description: 'Boards, diagrams, prototypes, canvases, 3D, and animation.',
+    label: 'visualLabel',
+    description: 'visualDescription',
   },
   {
     id: 'code',
-    label: 'Coding',
-    description: 'Runnable sandboxes, snippets, full IDEs, and remixable apps.',
+    label: 'codeLabel',
+    description: 'codeDescription',
   },
   {
     id: 'media',
-    label: 'Media',
-    description: 'Video, audio, podcasts, playlists, and recorded tutorials.',
+    label: 'mediaLabel',
+    description: 'mediaDescription',
   },
   {
     id: 'assessment',
-    label: 'Assessments',
-    description: 'Quizzes, forms, flashcards, polls, and interactive checks.',
+    label: 'assessmentLabel',
+    description: 'assessmentDescription',
   },
   {
     id: 'productivity',
-    label: 'Productivity',
-    description: 'Docs, databases, work boards, data tables, and dashboards.',
+    label: 'productivityLabel',
+    description: 'productivityDescription',
   },
   {
     id: 'academic',
-    label: 'Academic',
-    description: 'Math, science, simulations, 3D models, and computation.',
+    label: 'academicLabel',
+    description: 'academicDescription',
   },
   {
     id: 'collaboration',
-    label: 'AI & community',
-    description: 'Research spaces, co-browsing, and course community entry points.',
+    label: 'collaborationLabel',
+    description: 'collaborationDescription',
   },
 ];
 

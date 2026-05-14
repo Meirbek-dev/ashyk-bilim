@@ -9,6 +9,7 @@
  */
 
 import { AlertTriangle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
@@ -29,27 +30,29 @@ export default function ConflictResolver({
   onAcceptServer,
   onKeepLocal,
 }: ConflictResolverProps) {
+  const t = useTranslations('Features.Grading.Review.ConflictResolver');
+
   return (
     <Alert className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
       <AlertTriangle className="size-4" />
-      <AlertTitle>Concurrent Edit Detected</AlertTitle>
+      <AlertTitle>{t('title')}</AlertTitle>
       <AlertDescription className="mt-2 space-y-3">
-        <p className="text-xs">Another teacher has graded this submission since you loaded it.</p>
+        <p className="text-xs">{t('description')}</p>
 
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div className="rounded border p-2">
-            <p className="mb-1 font-medium">Server (current)</p>
+            <p className="mb-1 font-medium">{t('serverHeader')}</p>
             <p>
-              Score: <strong>{serverScore ?? '—'}</strong>
+              {t('scoreLabel')} <strong>{serverScore ?? '—'}</strong>
             </p>
-            <p className="truncate">Feedback: {serverFeedback || '—'}</p>
+            <p className="truncate">{t('feedbackLabel')} {serverFeedback || '—'}</p>
           </div>
           <div className="rounded border p-2">
-            <p className="mb-1 font-medium">Your draft</p>
+            <p className="mb-1 font-medium">{t('localHeader')}</p>
             <p>
-              Score: <strong>{localScore || '—'}</strong>
+              {t('scoreLabel')} <strong>{localScore || '—'}</strong>
             </p>
-            <p className="truncate">Feedback: {localFeedback || '—'}</p>
+            <p className="truncate">{t('feedbackLabel')} {localFeedback || '—'}</p>
           </div>
         </div>
 
@@ -60,7 +63,7 @@ export default function ConflictResolver({
             className="h-7 text-xs"
             onClick={onAcceptServer}
           >
-            Use server values
+            {t('useServer')}
           </Button>
           <Button
             size="sm"
@@ -68,7 +71,7 @@ export default function ConflictResolver({
             className="h-7 text-xs"
             onClick={onKeepLocal}
           >
-            Keep my draft & retry
+            {t('keepLocal')}
           </Button>
         </div>
       </AlertDescription>

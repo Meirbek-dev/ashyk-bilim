@@ -10,6 +10,7 @@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 interface RubricCriterion {
@@ -41,6 +42,7 @@ export default function ItemRubricEditor({
   onCriterionChange,
   onFeedbackChange,
 }: ItemRubricEditorProps) {
+  const t = useTranslations('Features.Grading.Review');
   const totalScore = criteria.reduce((sum, c) => sum + c.score, 0);
   const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 
@@ -78,7 +80,7 @@ export default function ItemRubricEditor({
               />
               <span className="text-muted-foreground text-xs">/{criterion.max_score}</span>
               <Input
-                placeholder="Note"
+                placeholder={t('itemFeedbackPlaceholder')}
                 value={criterion.note}
                 disabled={disabled}
                 className="h-7 flex-1 text-xs"
@@ -90,7 +92,7 @@ export default function ItemRubricEditor({
       )}
 
       <Textarea
-        placeholder="Item feedback..."
+        placeholder={t('itemFeedbackPlaceholder')}
         value={feedback}
         disabled={disabled}
         className="min-h-12 text-sm"
