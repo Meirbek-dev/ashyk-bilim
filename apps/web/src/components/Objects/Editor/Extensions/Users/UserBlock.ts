@@ -39,7 +39,7 @@ export default Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['block-user', mergeAttributes(HTMLAttributes), 0];
+    return ['block-user', mergeAttributes(HTMLAttributes)];
   },
 
   addCommands() {

@@ -57,7 +57,7 @@ export default Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['block-pdf', mergeAttributes(HTMLAttributes), 0];
+    return ['block-pdf', mergeAttributes(HTMLAttributes)];
   },
 
   addCommands() {

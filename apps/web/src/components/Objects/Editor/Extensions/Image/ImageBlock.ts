@@ -59,7 +59,7 @@ export default Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['block-image', mergeAttributes(HTMLAttributes), 0];
+    return ['block-image', mergeAttributes(HTMLAttributes)];
   },
 
   addCommands() {
