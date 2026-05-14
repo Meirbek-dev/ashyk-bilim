@@ -17,7 +17,7 @@ import type { AssessmentItem } from './items';
 export type AssessmentSurface = 'STUDIO' | 'REVIEW' | 'ATTEMPT';
 
 /** Assessment kind identifiers — mirrors ActivityType from the backend. */
-export type AssessmentKind = 'TYPE_ASSIGNMENT' | 'TYPE_EXAM' | 'TYPE_CODE_CHALLENGE' | 'TYPE_QUIZ';
+export type AssessmentKind = 'TYPE_FILE_SUBMISSION' | 'TYPE_EXAM' | 'TYPE_CODE_CHALLENGE' | 'TYPE_QUIZ';
 
 // ── Studio surface ─────────────────────────────────────────────────────────────
 
@@ -149,12 +149,12 @@ export interface ValidationIssue {
 /**
  * Maps the API-level AssessmentType (from SubmissionRead.assessment_type) to the
  * domain AssessmentKind. The API uses bare names (ASSIGNMENT, EXAM) while the domain
- * uses activity-type-prefixed names (TYPE_ASSIGNMENT, TYPE_EXAM).
+ * uses activity-type-prefixed names (TYPE_FILE_SUBMISSION, TYPE_EXAM).
  */
 export function assessmentTypeToKind(assessmentType: string): AssessmentKind | null {
   switch (assessmentType) {
     case 'ASSIGNMENT': {
-      return 'TYPE_ASSIGNMENT';
+      return 'TYPE_FILE_SUBMISSION';
     }
     case 'EXAM': {
       return 'TYPE_EXAM';

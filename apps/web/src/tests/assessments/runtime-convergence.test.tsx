@@ -59,7 +59,7 @@ vi.mock('@/features/assessments/shared/hooks/useAttemptGuard', () => ({
 vi.mock('@/features/assessments/registry', () => ({
   loadKindModule: () =>
     Promise.resolve({
-      label: 'Assignment',
+      label: 'File submission',
       Attempt: DummyAttempt,
     }),
 }));
@@ -123,7 +123,7 @@ function installLocalStorageMock() {
 function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptViewModel {
   const vm = {
     surface: 'ATTEMPT',
-    kind: 'TYPE_ASSIGNMENT',
+    kind: 'TYPE_FILE_SUBMISSION',
     assessmentUuid: 'assessment_runtime',
     activityUuid: 'activity_runtime',
     title: 'Runtime assessment',

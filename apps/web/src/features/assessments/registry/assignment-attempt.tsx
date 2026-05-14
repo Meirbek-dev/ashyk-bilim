@@ -23,7 +23,7 @@ import { queryKeys } from '@/lib/react-query/queryKeys';
 import type { KindAttemptProps } from './index';
 import { Progress } from '@components/ui/progress';
 
-export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
+export default function FileSubmissionAttemptContent({ vm }: KindAttemptProps) {
   const t = useTranslations('Activities.AssignmentStudentActivity');
   const queryClient = useQueryClient();
   const assessmentUuid = vm?.assessmentUuid ?? null;
@@ -245,7 +245,7 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
         releaseState={vm.releaseState}
       />
 
-      <AssignmentProgressSummary
+      <FileSubmissionProgressSummary
         answeredCount={answeredCount}
         totalCount={vm.items.length}
       />
@@ -265,7 +265,7 @@ export default function AssignmentAttemptContent({ vm }: KindAttemptProps) {
           ))}
         </div>
 
-        <AssignmentAttemptNavigator
+        <FileSubmissionAttemptNavigator
           items={vm.items}
           answeredItemUuids={answeredItemUuids}
         />
@@ -404,7 +404,7 @@ function AssessmentItemCard({
   );
 }
 
-function AssignmentProgressSummary({ answeredCount, totalCount }: { answeredCount: number; totalCount: number }) {
+function FileSubmissionProgressSummary({ answeredCount, totalCount }: { answeredCount: number; totalCount: number }) {
   const t = useTranslations('Activities.AssignmentStudentActivity');
   const progress = totalCount > 0 ? (answeredCount / totalCount) * 100 : 0;
 
@@ -433,7 +433,7 @@ function AssignmentProgressSummary({ answeredCount, totalCount }: { answeredCoun
   );
 }
 
-function AssignmentAttemptNavigator({
+function FileSubmissionAttemptNavigator({
   items,
   answeredItemUuids,
 }: {

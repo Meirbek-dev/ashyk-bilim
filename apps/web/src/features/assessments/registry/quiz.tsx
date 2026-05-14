@@ -13,7 +13,7 @@ import type { KindAuthorProps, KindAttemptProps, KindReviewProps } from './index
 registerKind('TYPE_QUIZ', async () => {
   const [
     { NativeItemStudioProvider, NativeItemOutline, NativeItemAuthor },
-    { default: AssignmentAttemptContent },
+    { default: FileSubmissionAttemptContent },
     { default: GradingReviewWorkspace },
   ] = await Promise.all([
     import('@/features/assessments/studio/NativeItemStudio'),
@@ -53,7 +53,7 @@ registerKind('TYPE_QUIZ', async () => {
     Provider: NativeItemStudioProvider,
     Outline: OutlineSlot,
     Author: AuthorSlot,
-    Attempt: AssignmentAttemptContent as ComponentType<KindAttemptProps>,
+    Attempt: FileSubmissionAttemptContent as ComponentType<KindAttemptProps>,
     Review: ReviewPassthrough,
   };
 });

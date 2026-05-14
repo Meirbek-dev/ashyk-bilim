@@ -1,5 +1,5 @@
 /**
- * Registry module for TYPE_ASSIGNMENT.
+ * Registry module for TYPE_FILE_SUBMISSION.
  *
  * Studio uses the shared NativeItemStudio surface (unified item-registry-based
  * approach); per-kind variation comes from the items registry, not a bespoke
@@ -14,10 +14,10 @@ import type {
   KindReviewProps,
 } from "./index";
 
-registerKind("TYPE_ASSIGNMENT", async () => {
+registerKind("TYPE_FILE_SUBMISSION", async () => {
   const [
     { NativeItemStudioProvider, NativeItemOutline, NativeItemAuthor },
-    { default: AssignmentAttemptContent },
+    { default: FileSubmissionAttemptContent },
     { default: GradingReviewWorkspace },
   ] = await Promise.all([
     import("@/features/assessments/studio/NativeItemStudio"),
@@ -49,12 +49,12 @@ registerKind("TYPE_ASSIGNMENT", async () => {
     });
 
   return {
-    label: "Assignment",
-    iconName: "BookOpen",
+    label: "File submission",
+    iconName: "FileArchive",
     Provider: NativeItemStudioProvider,
     Outline: OutlineSlot,
     Author: AuthorSlot,
-    Attempt: AssignmentAttemptContent as ComponentType<KindAttemptProps>,
+    Attempt: FileSubmissionAttemptContent as ComponentType<KindAttemptProps>,
     Review: ReviewPassthrough,
   };
 });

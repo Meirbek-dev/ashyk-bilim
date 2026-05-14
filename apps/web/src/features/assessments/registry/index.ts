@@ -10,7 +10,7 @@
  * Phase 2+ will progressively replace passthroughs with shared shells.
  *
  * Usage:
- *   const { Author, Attempt, Review } = getKindModule('TYPE_ASSIGNMENT');
+ *   const { Author, Attempt, Review } = getKindModule('TYPE_FILE_SUBMISSION');
  */
 
 import type { ComponentType, ReactNode } from 'react';
@@ -125,7 +125,7 @@ export async function loadKindModule(kind: AssessmentKind): Promise<KindModule> 
 
 // Register all built-in kinds eagerly so they are ready at import time.
 // Each kind file self-registers via a side-effect import.
-import './assignment';
+import './file-submission';
 import './exam';
 import './code-challenge';
 import './quiz';
