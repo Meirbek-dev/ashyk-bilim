@@ -1080,6 +1080,7 @@
     },
     "Breadcrumb": {
       "label": "Навигация",
+      "ariaLabel": "Навигация",
       "more": "Ещё"
     },
     "PolicyInspector": {

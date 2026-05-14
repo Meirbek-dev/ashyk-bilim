@@ -736,6 +736,7 @@ def _replace_attempt_files(
                 created_at=now,
             )
         )
+    db_session.flush()
 
 
 def _project_file_submission_progress(
@@ -1018,11 +1019,16 @@ def _get_current_draft(
     db_session: Session,
 ) -> FileSubmissionAttempt | None:
     return db_session.exec(
-        select(FileSubmissionAttempt).where(
+        select(FileSubmissionAttempt)
+        .where(
             FileSubmissionAttempt.file_submission_id == file_submission.id,
             FileSubmissionAttempt.user_id == user_id,
-            FileSubmissionAttempt.status == FileSubmissionAttemptStatus.DRAFT,
+            FileSubmissionAttempt.status.in_([
+                FileSubmissionAttemptStatus.DRAFT,
+                FileSubmissionAttemptStatus.RETURNED,
+            ]),
         )
+        .order_by(FileSubmissionAttempt.attempt_number.desc())
     ).first()
 
 

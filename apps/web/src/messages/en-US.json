@@ -1074,6 +1074,7 @@
     },
     "Breadcrumb": {
       "label": "Breadcrumb",
+      "ariaLabel": "Breadcrumb",
       "more": "More"
     },
     "PolicyInspector": {

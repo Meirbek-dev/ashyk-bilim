@@ -1074,6 +1074,7 @@
     },
     "Breadcrumb": {
       "label": "Навигация",
+      "ariaLabel": "Навигация",
       "more": "Көбірек"
     },
     "PolicyInspector": {
