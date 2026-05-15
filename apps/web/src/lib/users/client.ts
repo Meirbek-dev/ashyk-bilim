@@ -66,11 +66,8 @@ export async function updateUserAvatar(userId: number, avatarFile: File): Promis
 }
 
 export async function updateUserTheme(userId: number, theme: string): Promise<void> {
-  const response = await apiFetch('/api/user/theme', {
-    baseUrl: '',
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ theme }),
+  const response = await apiFetch(`users/preferences/theme/${userId}?theme=${encodeURIComponent(theme)}`, {
+    method: 'PUT',
   });
   await errorHandling(response);
   await getQueryClient().invalidateQueries({ queryKey: userKeys.byId(userId) });
