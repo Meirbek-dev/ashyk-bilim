@@ -23,8 +23,8 @@ import logging
 import math
 import re
 from collections import Counter
+from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +125,7 @@ def _run_check_tick() -> int:
             .where(
                 # Submissions where plagiarism key is absent from metadata.
                 # Use a JSON path expression: metadata_json->>'plagiarism' IS NULL.
-                Submission.metadata_json["plagiarism"].as_string() == None  # noqa: E711
+                Submission.metadata_json["plagiarism"].as_string() == None
             )
             .where(Submission.assessment_type.in_(list(_TEXT_TYPES)))  # type: ignore[attr-defined]
             .limit(_BATCH_SIZE)
@@ -201,8 +201,8 @@ def _run_check_tick() -> int:
 
 
 def _write_plagiarism_result(
-    submission: "Submission",
-    session: "Session",
+    submission: Submission,
+    session: Session,
     *,
     score: float,
     flagged: bool,

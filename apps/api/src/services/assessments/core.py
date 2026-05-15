@@ -7,49 +7,13 @@ All implementations have been moved to focused modules:
   - _shared.py           (private helpers)
 """
 
-from src.services.assessments.assessment_crud import (
-    check_publish_readiness,
-    create_assessment,
-    create_assessment_item,
-    delete_assessment_item,
-    duplicate_assessment,
-    get_assessment,
-    get_assessment_by_activity_uuid,
-    reorder_assessment_items,
-    transition_assessment_lifecycle,
-    update_assessment,
-    update_assessment_item,
-)
-from src.services.assessments.attempt_service import (
-    get_attempt_state,
-    get_code_item_run,
-    get_my_assessment_draft,
-    get_my_assessment_submissions,
-    run_code_item,
-    save_assessment_draft,
-    save_grading_draft,
-    start_assessment,
-    submit_assessment,
-)
-from src.services.assessments.review_service import (
-    create_student_policy_override,
-    delete_student_policy_override,
-    get_assessment_submission,
-    get_assessment_submission_stats,
-    get_assessment_submissions,
-    get_policy_preset,
-    list_student_policy_overrides,
-    publish_assessment_grades,
-    save_assessment_grade,
-    update_student_policy_override,
-)
 from src.services.assessments._shared import (
-    ASSESSABLE_ACTIVITY_TYPES,
-    _ALLOWED_LIFECYCLE_TRANSITIONS,
     _ACTIVITY_TO_KIND,
+    _ALLOWED_LIFECYCLE_TRANSITIONS,
     _KIND_TO_ACTIVITY,
     _REVIEW_SORT_MAP,
     _UNSET,
+    ASSESSABLE_ACTIVITY_TYPES,
     _active_policy_override,
     _assert_attempt_action_allowed,
     _batch_fetch_users,
@@ -111,6 +75,42 @@ from src.services.assessments._shared import (
     _time_limit_seconds_from_settings,
     _validate_file_upload_answer,
     build_readiness,
+)
+from src.services.assessments.assessment_crud import (
+    check_publish_readiness,
+    create_assessment,
+    create_assessment_item,
+    delete_assessment_item,
+    duplicate_assessment,
+    get_assessment,
+    get_assessment_by_activity_uuid,
+    reorder_assessment_items,
+    transition_assessment_lifecycle,
+    update_assessment,
+    update_assessment_item,
+)
+from src.services.assessments.attempt_service import (
+    get_attempt_state,
+    get_code_item_run,
+    get_my_assessment_draft,
+    get_my_assessment_submissions,
+    run_code_item,
+    save_assessment_draft,
+    save_grading_draft,
+    start_assessment,
+    submit_assessment,
+)
+from src.services.assessments.review_service import (
+    create_student_policy_override,
+    delete_student_policy_override,
+    get_assessment_submission,
+    get_assessment_submission_stats,
+    get_assessment_submissions,
+    get_policy_preset,
+    list_student_policy_overrides,
+    publish_assessment_grades,
+    save_assessment_grade,
+    update_student_policy_override,
 )
 
 __all__ = [

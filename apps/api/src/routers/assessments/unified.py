@@ -4,9 +4,9 @@ These are the canonical verbs for authoring, lifecycle, attempts, drafts, and
 teacher submission lists.
 """
 
+from datetime import datetime
 from typing import Annotated
 
-from datetime import datetime
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session

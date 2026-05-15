@@ -117,7 +117,7 @@ export default function FileSubmissionActivity({ activity }: FileSubmissionActiv
       ...valid.map((file) => ({
         id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
         file,
-        status: 'queued' as UploadState,
+        status: 'queued',
       })),
     ]);
   }

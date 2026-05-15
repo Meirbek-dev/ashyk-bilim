@@ -605,7 +605,7 @@ def test_bulk_publish_grades_stamps_published_at(
     api_client: TestClient, db_session_factory
 ) -> None:
     """POST publish-grades inserts GradingEntry rows with published_at set."""
-    assessment_uuid, activity_id, _ = _seed_course_and_assessment(
+    assessment_uuid, _activity_id, _ = _seed_course_and_assessment(
         db_session_factory, grade_release_mode=GradeReleaseMode.BATCH
     )
 

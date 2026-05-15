@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from statistics import median
 from typing import Any, TypeVar
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlmodel import Session
-from zoneinfo import ZoneInfo
 
 from src.db.assessments import Assessment
 from src.db.courses.activities import Activity

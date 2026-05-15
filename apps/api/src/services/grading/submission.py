@@ -19,9 +19,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from sqlalchemy import func as sql_func
-
 from fastapi import HTTPException, status
+from sqlalchemy import func as sql_func
 from sqlmodel import Session, select
 from ulid import ULID
 

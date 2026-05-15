@@ -6,7 +6,6 @@ based on the configured backend settings
 """
 
 from datetime import UTC, datetime, timezone
-
 from zoneinfo import ZoneInfo
 
 from config.config import get_settings

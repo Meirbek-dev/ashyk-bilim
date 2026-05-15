@@ -98,7 +98,7 @@ async def submit_assessment(
                 violation_count=violation_count,
                 submission_uuid=submission_uuid,
             )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error(
             "submit_assessment timed out after 30s (activity_id=%s, user_id=%s)",
             activity_id,

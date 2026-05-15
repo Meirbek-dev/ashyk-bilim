@@ -314,7 +314,7 @@ def test_submit_when_returned_and_max_attempts_reached(
         activity = session.get(Activity, file_sub.activity_id)
 
         # We need at least one file to submit
-        teacher = session.exec(select(User).where(User.id == 1)).one()
+        session.exec(select(User).where(User.id == 1)).one()
         upload = Upload(
             upload_uuid="upload_1",
             user_id=student_user.id,

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import HTTPException, Query
 from pydantic import Field, field_validator
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from src.db.strict_base_model import PydanticStrictBaseModel
 

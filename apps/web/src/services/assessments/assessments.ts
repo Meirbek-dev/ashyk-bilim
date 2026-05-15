@@ -1,7 +1,6 @@
 'use server';
 
-import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client';
-import type { CustomResponseTyping } from '@/lib/api-client';
+import { apiFetch, errorHandling } from '@/lib/api-client';
 import { getAPIUrl } from '@services/config/config';
 
 export interface AssessmentSummary {

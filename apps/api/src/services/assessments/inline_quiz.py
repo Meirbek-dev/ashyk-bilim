@@ -22,9 +22,9 @@ from src.db.grading.progress import (
     GradeReleaseMode,
 )
 from src.db.grading.submissions import AssessmentType
+from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.security.rbac import PermissionChecker
-from src.db.strict_base_model import PydanticStrictBaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ async def create_inline_quiz(
     existing = db_session.exec(
         select(Assessment).where(
             Assessment.inline_parent_activity_id == payload.activity_id,
-            Assessment.is_inline == True,  # noqa: E712
+            Assessment.is_inline == True,
         )
     ).first()
     if existing:
@@ -85,7 +85,7 @@ async def create_inline_quiz(
     now = datetime.now(UTC)
 
     # Create a lightweight hidden activity for the inline quiz.
-    from src.db.courses.activities import ActivityTypeEnum, ActivitySubTypeEnum
+    from src.db.courses.activities import ActivitySubTypeEnum, ActivityTypeEnum
 
     quiz_activity = Activity(
         name=payload.title,

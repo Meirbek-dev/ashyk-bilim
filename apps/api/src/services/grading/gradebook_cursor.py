@@ -12,6 +12,7 @@ import json
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
+from pydantic import Field
 from sqlmodel import Session, select
 
 from src.db.courses.courses import Course
@@ -22,8 +23,6 @@ from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser
 from src.security.rbac import PermissionChecker
-
-from pydantic import Field
 
 
 class GradebookCursorPage(PydanticStrictBaseModel):

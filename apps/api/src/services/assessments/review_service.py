@@ -305,11 +305,6 @@ async def publish_assessment_grades(
 
 def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
     """Return kind-appropriate default policy settings."""
-    from src.db.grading.progress import (
-        AssessmentCompletionRule,
-        AssessmentGradingMode,
-        GradeReleaseMode,
-    )
 
     presets: dict[AssessmentType, AssessmentPolicyPreset] = {
         AssessmentType.ASSIGNMENT: AssessmentPolicyPreset(
