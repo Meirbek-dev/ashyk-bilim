@@ -1,63 +1,8 @@
-bun knip
+ bun knip
 $ knip
-Unused files (54)
+Unused files (1)
 src/app/[locale]/editor/main.ts
-src/components/Dashboard/Analytics/AnalyticsPageSkeleton.tsx
-src/components/Dashboard/Analytics/ScoreDistributionChart.tsx
-src/components/Dashboard/Courses/CourseWorkspaceOverview.tsx
-src/components/Dashboard/gamification-dashboard.tsx
-src/components/Objects/Activities/CodeChallenge/CodeChallengeActivity.tsx
-src/components/Objects/Activities/DynamicCanva/CustomHeadingExtenstion.tsx
-src/components/Objects/Courses/CourseUpdates/CourseUpdates.tsx
-src/components/Objects/Editor/menus/index.ts
-src/components/Objects/Editor/Toolbar/EmbedPanel/ExcalidrawEmbedForm.tsx
-src/components/Objects/Editor/Toolbar/EmbedPanel/TldrawEmbedForm.tsx
-src/components/Objects/Editor/Toolbar/EmbedPanel/YouTubeEmbedForm.tsx
-src/components/Objects/Editor/Toolbar/index.ts
-src/components/Objects/Elements/ConfirmationModal/ConfirmationModal.tsx
-src/components/Objects/MiniInfoTooltip.tsx
-src/components/Objects/Modals/Chapters/NewChapter.tsx
-src/components/Objects/Onboarding/Onboarding.tsx
-src/components/Objects/Quiz/QuizSkeleton.tsx
-src/components/Pages/Activity/ActivityNavigation.tsx
-src/components/Pages/Certificate/CertificatePage.tsx
-src/components/svg/DividerVerticalIcon.tsx
-src/features/assessments/registry/exam-author.tsx
-src/features/assessments/registry/exam/ExamStartPanel.tsx
-src/features/assessments/registry/exam/QuestionEditor.tsx
-src/features/assessments/registry/exam/questionEditorReducer.ts
-src/features/assessments/registry/exam/QuestionManagement.tsx
-src/features/assessments/shared/AntiCheatOverlay.tsx
-src/features/assessments/shared/AttemptTimer.tsx
-src/features/assessments/shared/AutoSaveIndicator.tsx
-src/features/assessments/shared/PostSubmissionFeedback.tsx
-src/features/assessments/studio/OutlineRail.tsx
-src/features/assessments/studio/PreviewModeButton.tsx
-src/features/assessments/studio/ReadinessPanel.tsx
-src/features/grading/review/components/AttemptHistoryPanel.tsx
-src/features/grading/review/components/ConflictResolver.tsx
-src/features/grading/review/components/ItemRubricEditor.tsx
-src/hooks/courses/useCourse.ts
-src/hooks/courses/useCourseContributors.ts
-src/hooks/courses/useCourseRights.ts
-src/hooks/use-media-query.ts
-src/hooks/useAntiCheatViolations.ts
-src/hooks/useAssessmentAutosave.ts
-src/hooks/useGradingSSE.ts
-src/hooks/useQueryParam.ts
-src/hooks/useUserById.ts
-src/hooks/useWindowSize.ts
-src/lib/cache.ts
-src/lib/currencies.ts
-src/lib/fetchWithRetry.ts
-src/lib/retry.ts
-src/services/settings/password.ts
-src/services/settings/profile.ts
-src/services/utils/health.ts
-src/services/utils/react/middlewares/views.ts
-Unused dependencies (1)
-@excalidraw/excalidraw  package.json:38:6
-Unused exports (434)
+Unused exports (355)
 CourseContext                                   src/components/Contexts/CourseContext.tsx:84:14
 EditorProviderContext                           src/components/Contexts/Editor/EditorContext.tsx:7:14
 PlatformContext                                 src/components/Contexts/PlatformContext.tsx:9:14
@@ -108,74 +53,6 @@ PermissionErrorBoundary                         src/components/Security/index.ts
 RoleSlugs                                       src/components/Security/index.ts:12:38
 perm                                            src/components/Security/index.ts:12:49
 PermissionErrorBoundary               class     src/components/Security/PermissionGuard.tsx:52:14
-AlertDialogOverlay                              src/components/ui/alert-dialog.tsx:187:3
-AlertDialogPortal                               src/components/ui/alert-dialog.tsx:188:3
-AlertAction                                     src/components/ui/alert.tsx:70:47
-AvatarGroup                                     src/components/ui/avatar.tsx:95:47
-AvatarGroupCount                                src/components/ui/avatar.tsx:95:60
-AvatarBadge                                     src/components/ui/avatar.tsx:95:78
-badgeVariants                                   src/components/ui/badge.tsx:52:17
-BreadcrumbEllipsis                              src/components/ui/breadcrumb.tsx:107:3
-CalendarDayButton                               src/components/ui/calendar.tsx:219:20
-CardAction                                      src/components/ui/card.tsx:82:51
-ChartLegend                                     src/components/ui/chart.tsx:362:3
-ChartStyle                                      src/components/ui/chart.tsx:364:3
-CommandDialog                                   src/components/ui/command.tsx:148:3
-CommandShortcut                                 src/components/ui/command.tsx:154:3
-CommandSeparator                                src/components/ui/command.tsx:155:3
-DialogClose                                     src/components/ui/dialog.tsx:162:3
-DialogOverlay                                   src/components/ui/dialog.tsx:167:3
-DialogPortal                                    src/components/ui/dialog.tsx:168:3
-DropdownMenuPortal                              src/components/ui/dropdown-menu.tsx:270:3
-DropdownMenuShortcut                            src/components/ui/dropdown-menu.tsx:280:3
-DropdownMenuSub                                 src/components/ui/dropdown-menu.tsx:281:3
-DropdownMenuSubTrigger                          src/components/ui/dropdown-menu.tsx:282:3
-DropdownMenuSubContent                          src/components/ui/dropdown-menu.tsx:283:3
-FieldGroup                                      src/components/ui/field.tsx:213:3
-FieldLegend                                     src/components/ui/field.tsx:214:3
-FieldSeparator                                  src/components/ui/field.tsx:215:3
-FieldSet                                        src/components/ui/field.tsx:216:3
-FieldTitle                                      src/components/ui/field.tsx:218:3
-InputGroupButton                                src/components/ui/input-group.tsx:139:39
-InputGroupText                                  src/components/ui/input-group.tsx:139:57
-InputGroupInput                                 src/components/ui/input-group.tsx:139:73
-InputGroupTextarea                              src/components/ui/input-group.tsx:139:90
-NativeSelectOptGroup                            src/components/ui/native-select.tsx:52:24
-NavigationMenuContent                           src/components/ui/navigation-menu.tsx:140:3
-NavigationMenuIndicator                         src/components/ui/navigation-menu.tsx:141:3
-NavigationMenuLink                              src/components/ui/navigation-menu.tsx:143:3
-NavigationMenuTrigger                           src/components/ui/navigation-menu.tsx:145:3
-navigationMenuTriggerStyle                      src/components/ui/navigation-menu.tsx:146:3
-NavigationMenuPositioner                        src/components/ui/navigation-menu.tsx:147:3
-PopoverDescription                              src/components/ui/popover.tsx:87:35
-PopoverHeader                                   src/components/ui/popover.tsx:87:55
-PopoverTitle                                    src/components/ui/popover.tsx:87:70
-ProgressTrack                                   src/components/ui/progress.tsx:63:20
-ProgressIndicator                               src/components/ui/progress.tsx:63:35
-ProgressLabel                                   src/components/ui/progress.tsx:63:54
-ProgressValue                                   src/components/ui/progress.tsx:63:69
-ScrollBar                                       src/components/ui/scroll-area.tsx:47:22
-SelectLabel                                     src/components/ui/select.tsx:177:3
-SelectScrollDownButton                          src/components/ui/select.tsx:178:3
-SelectScrollUpButton                            src/components/ui/select.tsx:179:3
-SelectSeparator                                 src/components/ui/select.tsx:180:3
-SheetClose                                      src/components/ui/sheet.tsx:144:31
-SheetFooter                                     src/components/ui/sheet.tsx:144:70
-SidebarGroupAction                              src/components/ui/sidebar.tsx:676:3
-SidebarGroupLabel                               src/components/ui/sidebar.tsx:678:3
-SidebarInput                                    src/components/ui/sidebar.tsx:680:3
-SidebarMenuAction                               src/components/ui/sidebar.tsx:683:3
-SidebarMenuBadge                                src/components/ui/sidebar.tsx:684:3
-SidebarMenuSkeleton                             src/components/ui/sidebar.tsx:687:3
-SidebarMenuSub                                  src/components/ui/sidebar.tsx:688:3
-SidebarMenuSubButton                            src/components/ui/sidebar.tsx:689:3
-SidebarMenuSubItem                              src/components/ui/sidebar.tsx:690:3
-SidebarRail                                     src/components/ui/sidebar.tsx:692:3
-SidebarSeparator                                src/components/ui/sidebar.tsx:693:3
-TableFooter                                     src/components/ui/table.tsx:98:41
-TableCaption                                    src/components/ui/table.tsx:98:86
-tabsListVariants                                src/components/ui/tabs.tsx:76:52
-toggleVariants                                  src/components/ui/toggle.tsx:45:18
 LoadingSkeleton                       function  src/components/Utils/PageSuspense.tsx:12:17
 PageTransitionLoader                  function  src/components/Utils/PageSuspense.tsx:126:23
 default                               function  src/components/Utils/PermissionTooltip.tsx:69:16
@@ -207,14 +84,6 @@ needsTeacherAction                    function  src/features/assessments/domain/
 canTeacherEditGrade                   function  src/features/assessments/domain/submission-status.ts:47:17
 canPublishGrade                       function  src/features/assessments/domain/submission-status.ts:51:17
 canReturnSubmission                   function  src/features/assessments/domain/submission-status.ts:55:17
-useCodeChallengeSettings                        src/features/assessments/hooks/code-challenge.ts:4:3
-useSaveCodeChallengeSettings                    src/features/assessments/hooks/code-challenge.ts:10:3
-useUpdateExamSettings                           src/features/assessments/hooks/exam.ts:5:3
-useExamActivity                                 src/features/assessments/hooks/exam.ts:6:3
-useExamDetail                                   src/features/assessments/hooks/exam.ts:7:3
-useExamQuestions                                src/features/assessments/hooks/exam.ts:8:3
-useExamMyAttempts                               src/features/assessments/hooks/exam.ts:9:3
-useExamAllAttempts                              src/features/assessments/hooks/exam.ts:10:3
 useAssessment                         function  src/features/assessments/hooks/useAssessment.ts:67:17
 useAssessmentReview                   function  src/features/assessments/hooks/useAssessment.ts:209:17
 useAssessment                                   src/features/assessments/index.ts:5:10
@@ -279,7 +148,6 @@ canTransitionSubmission               function  src/features/grading/domain/stat
 isPublishedToStudent                  function  src/features/grading/domain/status.ts:69:17
 canSelectForBatchGrading              function  src/features/grading/domain/status.ts:82:17
 getSubmissionMetadata                 function  src/features/grading/domain/types.ts:63:17
-normalizeCourseUuid                             src/hooks/courses/courseKeys.ts:86:10
 useEditableCourseList                 function  src/hooks/courses/useCourseList.ts:27:17
 useCourseChapters                     function  src/hooks/courses/useCourseStructure.ts:58:17
 useChapter                            function  src/hooks/courses/useCourseStructure.ts:69:17
@@ -302,9 +170,9 @@ PLATFORM_LABEL                                  src/lib/constants.ts:35:14
 getCourseReadinessChecklist           function  src/lib/course-management.ts:72:17
 getCourseManagementBadges             function  src/lib/course-management.ts:129:17
 FILE_TYPES                                      src/lib/file-validation.ts:7:14
-getAcceptValue                        function  src/lib/file-validation.ts:109:17
-getFileTypeDescription                function  src/lib/file-validation.ts:116:17
-MIME_TO_FRIENDLY_NAME                           src/lib/file-validation.ts:135:14
+getAcceptValue                        function  src/lib/file-validation.ts:107:17
+getFileTypeDescription                function  src/lib/file-validation.ts:114:17
+MIME_TO_FRIENDLY_NAME                           src/lib/file-validation.ts:133:14
 inter                                           src/lib/fonts.ts:3:14
 CardHeader                                      src/lib/gamification/components/card-primitives.tsx:312:25
 CardContent                                     src/lib/gamification/components/card-primitives.tsx:313:26
@@ -361,8 +229,6 @@ themeNames                                      src/lib/themes.ts:14:3
 getCurrentUserProfile                 function  src/lib/users/client.ts:32:23
 getCoursesByUser                                src/lib/users/server.ts:3:10
 getUser                                         src/lib/users/server.ts:3:28
-debounce                              function  src/lib/utils.ts:9:17
-isYouTubeUrl                                    src/lib/utils.ts:38:14
 activityTypeEnum                                src/schemas/activitySchemas.ts:3:14
 activitySubTypeEnum                             src/schemas/activitySchemas.ts:13:14
 activityCreateSchema                            src/schemas/activitySchemas.ts:21:14
@@ -492,7 +358,7 @@ XP_SOURCES                                      src/types/gamification/transacti
 XPAwardRequestSchema                            src/types/gamification/transactions.ts:54:14
 XPTransactionSchema                             src/types/gamification/transactions.ts:61:14
 XPAwardResponseSchema                           src/types/gamification/transactions.ts:72:14
-Unused exported types (223)
+Unused exported types (222)
 Chapter                         interface  src/components/Contexts/CourseContext.tsx:31:18
 CourseSectionKey                type       src/components/Contexts/CourseContext.tsx:40:13
 LandingBackground               interface  src/components/Dashboard/Pages/Platform/EditLanding/landing_types.ts:1:18
@@ -542,7 +408,6 @@ Resource                        type       src/components/Security/index.ts:11:2
 Scope                           type       src/components/Security/index.ts:11:33
 Role                            type       src/components/Security/index.ts:11:40
 PermissionString                type       src/components/Security/index.ts:11:46
-ChartConfig                     type       src/components/ui/chart.tsx:14:13
 ChoiceOption                    interface  src/features/assessments/domain/items.ts:3:18
 FormField                       interface  src/features/assessments/domain/items.ts:14:18
 CodeTestCase                    interface  src/features/assessments/domain/items.ts:21:18
@@ -609,7 +474,7 @@ SessionStatus                   type       src/hooks/useSession.ts:24:36
 paths                           type       src/lib/api/generated/index.ts:1:39
 paths                           interface  src/lib/api/generated/schema.ts:6:18
 webhooks                        type       src/lib/api/generated/schema.ts:4080:13
-$defs                           type       src/lib/api/generated/schema.ts:9855:13
+$defs                           type       src/lib/api/generated/schema.ts:9932:13
 SessionUser                     type       src/lib/auth/types.ts:6:13
 CourseReadinessItemId           type       src/lib/course-management.ts:13:13
 CourseManagementBadgeId         type       src/lib/course-management.ts:15:13
@@ -632,7 +497,7 @@ ThemeTokenMap                   type       src/lib/themes.ts:20:8
 CourseContributorsValues        type       src/schemas/courseSchemas.ts:55:13
 RubricCriterion                 interface  src/services/assessments/assessment-actions.ts:111:18
 CodeRunTestResult               interface  src/services/assessments/assessment-actions.ts:135:18
-AssessmentMutationPayload       interface  src/services/assessments/assessments.ts:24:18
+AssessmentMutationPayload       interface  src/services/assessments/assessments.ts:23:18
 AuthUser                        type       src/services/auth/auth.ts:40:15
 ConfigIssue                     interface  src/services/config/env.ts:18:18
 TestCase                        interface  src/services/courses/code-challenges.ts:33:18
@@ -727,5 +592,5 @@ PermissionGuard|default      src/components/Security/PermissionGuard.tsx
 PermissionTooltip|default    src/components/Utils/PermissionTooltip.tsx
 ResourceActionsMenu|default  src/components/Utils/ResourceActionsMenu.tsx
 Configuration hints (1)
-. (root)    knip.json  Add entry and/or refine project files (54 unused files)
+src/components/ui/*    knip.json  Remove from ignoreFiles
 error: script "knip" exited with code 1

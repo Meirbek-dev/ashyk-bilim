@@ -82,5 +82,3 @@ export const courseKeys = {
 
   activity: (activityUuid: string) => ['activities', 'detail', activityUuid] as const,
 };
-
-export { normalizeCourseUuid };
