@@ -39,4 +39,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD python -c "import os,urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.getenv(\"PLATFORM_PORT\",\"8000\")}/api/v1/health', timeout=5).read()" || exit 1
 
 # dumb-init ensures proper PID 1 behaviour: signal forwarding and zombie reaping
-CMD ["dumb-init", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+CMD ["dumb-init", "sh", "-c", "exec granian --interface asgi app:served_app --host 0.0.0.0 --port ${PLATFORM_PORT:-8000}"]

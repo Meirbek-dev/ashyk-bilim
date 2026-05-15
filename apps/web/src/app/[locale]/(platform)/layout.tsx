@@ -12,7 +12,7 @@ async function PlatformLayoutContent({ children }: { children: ReactNode }) {
 
 export default function PlatformLayout({ children }: { children: ReactNode }) {
   return (
-    <Suspense fallback={<PlatformContextProvider>{null}</PlatformContextProvider>}>
+    <Suspense fallback={<PlatformContextProvider>{children}</PlatformContextProvider>}>
       <PlatformLayoutContent>{children}</PlatformLayoutContent>
     </Suspense>
   );

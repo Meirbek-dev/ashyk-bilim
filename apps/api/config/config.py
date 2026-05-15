@@ -92,6 +92,7 @@ class GeneralConfig(PlatformSectionSettings):
         default=False,
         validation_alias="PLATFORM_LOGFIRE_ENABLED",
     )
+    color_logs: bool = Field(default=True, validation_alias="PLATFORM_COLOR_LOGS")
     timezone: str = Field(default="UTC", validation_alias="PLATFORM_TIMEZONE")
     deprecated_permissions_enabled: bool = Field(
         default=True,

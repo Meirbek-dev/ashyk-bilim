@@ -17,11 +17,13 @@ _logger = logging.getLogger(__name__)
 try:
     import redis as _redis
     import redis.asyncio as _aioredis
+    from redis.maint_notifications import MaintNotificationsConfig as _MaintNotificationsConfig
 
     _REDIS_AVAILABLE = True
 except Exception:  # pragma: no cover
     _redis = None  # type: ignore[assignment]
     _aioredis = None  # type: ignore[assignment]
+    _MaintNotificationsConfig = None  # type: ignore[assignment]
     _REDIS_AVAILABLE = False
 
 _sync_client = None
@@ -38,6 +40,10 @@ def configure(url: str) -> None:
     if not _REDIS_AVAILABLE:
         _logger.warning("redis package not installed — Redis features disabled")
         return
+
+    # Disable maintenance notifications for OSS Redis compatibility
+    maint_config = _MaintNotificationsConfig(enabled=False)
+
     _sync_client = _redis.Redis.from_url(
         url,
         decode_responses=False,
@@ -45,6 +51,7 @@ def configure(url: str) -> None:
         socket_timeout=2,
         socket_keepalive=True,
         health_check_interval=10,
+        maint_notifications_config=maint_config,
     )
     _async_client = _aioredis.Redis.from_url(
         url,
@@ -53,6 +60,7 @@ def configure(url: str) -> None:
         socket_timeout=2,
         socket_keepalive=True,
         health_check_interval=10,
+        maint_notifications_config=maint_config,
     )
     _logger.debug("Redis clients configured")
 
