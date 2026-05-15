@@ -7,11 +7,12 @@ ENV UV_COMPILE_BYTECODE=1 \
   PYTHONDONTWRITEBYTECODE=1 \
   PYTHONUNBUFFERED=1 \
   PYTHONIOENCODING=utf-8 \
+  PLATFORM_COLOR_LOGS=true \
   PATH="/app/.venv/bin:${PATH}" \
   PLATFORM_PORT=8000
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends dumb-init \
+  && apt-get install -y --no-install-recommends curl dumb-init \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -36,7 +37,7 @@ USER appuser
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD python -c "import os,urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.getenv(\"PLATFORM_PORT\",\"8000\")}/api/v1/health', timeout=5).read()" || exit 1
+  CMD curl --fail --silent --show-error --http2-prior-knowledge "http://127.0.0.1:${PLATFORM_PORT:-8000}/api/v1/health" >/dev/null || exit 1
 
 # dumb-init ensures proper PID 1 behaviour: signal forwarding and zombie reaping
-CMD ["dumb-init", "sh", "-c", "exec granian --interface asgi app:served_app --host 0.0.0.0 --port ${PLATFORM_PORT:-8000}"]
+CMD ["dumb-init", "python", "app.py"]
