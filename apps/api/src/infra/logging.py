@@ -89,6 +89,12 @@ def build_logging_config(settings: AppSettings) -> dict[str, Any]:
                 "level": "INFO",
                 "propagate": False,
             },
+            "watchfiles": {
+                "level": "INFO",
+            },
+            "watchfiles.main": {
+                "level": "INFO",
+            },
         },
     }
 

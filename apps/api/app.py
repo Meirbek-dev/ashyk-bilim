@@ -2,13 +2,13 @@ import os
 from collections.abc import Callable
 from typing import Any, cast
 
+from granian import Granian
 from granian.constants import HTTPModes, Interfaces
 from granian.http import HTTP2Settings
 from granian.log import LogLevels
 from granian.utils.proxies import wrap_asgi_with_proxy_headers
 
 from config.config import AppSettings, get_settings
-from granian import Granian
 from src.app.factory import create_app
 from src.infra.logging import build_logging_config
 
@@ -64,6 +64,23 @@ def _granian_optional_int(name: str, *, minimum: int = 1) -> int | None:
 
 if __name__ == "__main__":
     is_dev_mode = settings.general_config.development_mode
+
+    if is_dev_mode:
+        import uvicorn
+
+        uvicorn.run(
+            "app:app",
+            host="0.0.0.0",
+            port=settings.hosting_config.port,
+            reload=True,
+            access_log=True,
+            timeout_keep_alive=65,
+            proxy_headers=settings.hosting_config.proxy_headers,
+            forwarded_allow_ips=settings.hosting_config.forwarded_allow_ips,
+            use_colors=settings.general_config.color_logs,
+        )
+        raise SystemExit
+
     Granian(
         "app:served_app",
         address="0.0.0.0",
@@ -86,10 +103,10 @@ if __name__ == "__main__":
         workers=_granian_int("GRANIAN_WORKERS", 1),
         backlog=_granian_int("GRANIAN_BACKLOG", 2048, minimum=128),
         backpressure=_granian_optional_int("GRANIAN_BACKPRESSURE"),
-        respawn_failed_workers=not is_dev_mode,
+        respawn_failed_workers=True,
         workers_kill_timeout=30,
-        reload=is_dev_mode,
+        reload=False,
         log_dictconfig=build_logging_config(settings),
-        log_access=is_dev_mode,
-        log_level=LogLevels.debug if is_dev_mode else LogLevels.info,
+        log_access=False,
+        log_level=LogLevels.info,
     ).serve()
