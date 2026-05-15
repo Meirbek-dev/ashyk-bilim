@@ -46,6 +46,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
   }, [initialHeight]);
 
   const src = provider && url ? buildEmbedSrc(provider.type, url) : '';
+  const providerLabel = provider ? t(`providers.${provider.type}.label`) : '';
 
   const handleEdit = useCallback(() => {
     const pos = typeof getPos === 'function' ? getPos() : undefined;
@@ -93,7 +94,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
     );
   }
 
-  const Icon = provider.iconName ? (Si as Record<string, React.ElementType>)[provider.iconName] : null;
+  const Icon = provider.iconName ? (Si as Record<string, any>)[provider.iconName] : null;
 
   return (
     <NodeViewWrapper
@@ -107,7 +108,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
         {mounted && src && isLoaded ? (
           <iframe
             src={src}
-            title={`${provider.label} ${t('embed')}`}
+            title={`${providerLabel} ${t('embed')}`}
             className="h-full w-full border-0"
             loading="lazy"
             allow={provider.allow ?? 'fullscreen; clipboard-read; clipboard-write'}
@@ -158,7 +159,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
             <button
               ref={editButtonRef}
               type="button"
-              aria-label={`${t('editButton')} ${provider.label} ${t('embed')}`}
+              aria-label={`${t('editButton')} ${providerLabel} ${t('embed')}`}
               onClick={handleEdit}
               className="flex size-8 items-center justify-center rounded hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-blue-500"
             >
@@ -166,7 +167,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
             </button>
             <button
               type="button"
-              aria-label={`${t('deleteButton')} ${provider.label} ${t('embed')}`}
+              aria-label={`${t('deleteButton')} ${providerLabel} ${t('embed')}`}
               onClick={deleteNode}
               className="flex size-8 items-center justify-center rounded text-red-600 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-500"
             >
@@ -178,7 +179,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
         {isEditable ? (
           <div
             role="separator"
-            aria-label={`${t('resize')} ${provider.label} ${t('embed')}`}
+            aria-label={`${t('resize')} ${providerLabel} ${t('embed')}`}
             aria-orientation="horizontal"
             className="absolute right-0 bottom-0 left-0 flex h-4 cursor-ns-resize items-center justify-center"
             contentEditable={false}

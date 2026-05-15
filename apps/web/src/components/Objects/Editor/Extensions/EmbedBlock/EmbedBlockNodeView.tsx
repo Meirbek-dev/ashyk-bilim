@@ -105,7 +105,7 @@ const EmbedBlockNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
       default: {
         if (provider) {
           return (
-            <EmbedErrorBoundary embedType={provider.label}>
+            <EmbedErrorBoundary embedType={provider.type}>
               <GenericEmbedNodeView {...props} />
             </EmbedErrorBoundary>
           );

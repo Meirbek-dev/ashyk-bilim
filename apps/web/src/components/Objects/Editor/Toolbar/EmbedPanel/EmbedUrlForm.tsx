@@ -33,13 +33,15 @@ export function EmbedUrlForm({ type, url, onChange, error, onErrorChange }: Embe
   return (
     <div className="space-y-2">
       <div className="space-y-1">
-        <Label htmlFor={inputId}>{provider ? t('urlForService', { service: provider.label }) : t('urlLabel')}</Label>
+        <Label htmlFor={inputId}>
+          {provider ? t('urlForService', { service: t(`providers.${provider.type}.label`) }) : t('urlLabel')}
+        </Label>
         {provider ? (
           <p
             id={descriptionId}
             className="text-muted-foreground text-xs"
           >
-            {provider.description}
+            {t(`providers.${provider.type}.description`)}
           </p>
         ) : null}
       </div>

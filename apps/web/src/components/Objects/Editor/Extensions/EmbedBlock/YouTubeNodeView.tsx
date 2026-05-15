@@ -59,7 +59,7 @@ const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
           <button
             ref={editButtonRef}
             type="button"
-            aria-label={`${t('editButton')} ${t('youtubeLabel')}`}
+            aria-label={`${t('editButton')} ${t('providers.youtube.label')}`}
             onClick={handleEdit}
             className="flex size-8 items-center justify-center rounded hover:bg-gray-100"
           >
@@ -67,7 +67,7 @@ const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
           </button>
           <button
             type="button"
-            aria-label={`${t('deleteButton')} ${t('youtubeLabel')}`}
+            aria-label={`${t('deleteButton')} ${t('providers.youtube.label')}`}
             onClick={deleteNode}
             className="flex size-8 items-center justify-center rounded text-red-600 hover:bg-red-50"
           >

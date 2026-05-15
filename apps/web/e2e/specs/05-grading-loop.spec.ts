@@ -49,7 +49,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
 
     // The student's name or email should appear somewhere in the table
     await expect(
-      page.getByText(new RegExp(USERS.student.email.split('@')[0], 'i')).first(),
+      page.getByText(new RegExp(USERS.student.email.split('@')[0]!, 'i')).first(),
     ).toBeVisible({ timeout: 15_000 });
   });
 

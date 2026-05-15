@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import * as Si from '@icons-pack/react-simple-icons';
 import { cn } from '@/lib/utils';
 import { EMBED_CATEGORIES, EMBED_PROVIDERS } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
-import type { EmbedCategoryId, EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
+import type { EmbedCategoryId, EmbedProvider, EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
 
 interface EmbedTypeSelectorProps {
   selectedType: EmbedType | null;
@@ -84,9 +84,10 @@ export function EmbedTypeSelector({ selectedType, onSelect, error }: EmbedTypeSe
             aria-label={t('serviceLabel')}
             className="grid max-h-[360px] grid-cols-1 gap-2 overflow-y-auto pr-1 md:grid-cols-2"
           >
-            {filteredProviders.map((provider) => {
+            {filteredProviders.map((p) => {
+              const provider = p as unknown as EmbedProvider;
               const isSelected = selectedType === provider.type;
-              const Icon = provider.iconName ? (Si as Record<string, React.ElementType>)[provider.iconName] : null;
+              const Icon = provider.iconName ? (Si as Record<string, any>)[provider.iconName] : null;
 
               return (
                 <button
@@ -94,7 +95,7 @@ export function EmbedTypeSelector({ selectedType, onSelect, error }: EmbedTypeSe
                   type="button"
                   role="radio"
                   aria-checked={isSelected}
-                  onClick={() => onSelect(provider.type)}
+                  onClick={() => onSelect(provider.type as EmbedType)}
                   className={cn(
                     'border-border bg-background hover:bg-accent/60 hover:text-foreground group flex items-start gap-3 rounded-lg border p-3 text-left transition-colors',
                     'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none',

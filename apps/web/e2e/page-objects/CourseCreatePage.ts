@@ -44,7 +44,7 @@ export class CourseCreatePage {
 
     const url = this.page.url();
     const match = url.match(/\/courses\/([^/]+)\/curriculum/);
-    if (!match) throw new Error(`Could not extract course UUID from URL: ${url}`);
+    if (!match || !match[1]) throw new Error(`Could not extract course UUID from URL: ${url}`);
     return match[1];
   }
 }
