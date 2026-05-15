@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.core.http import get_content_disposition_header
 from src.db.file_submissions import (
     FileSubmissionAttemptRead,
     FileSubmissionCreate,
@@ -114,7 +115,7 @@ async def api_download_file_submission_file(
     return StreamingResponse(
         iter([body]),
         media_type=upload.content_type or "application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{upload.filename}"'},
+        headers={"Content-Disposition": get_content_disposition_header(upload.filename)},
     )
 
 

@@ -33,10 +33,10 @@ dependencies = [
 [dependency-groups]
 
 dev = [
+  "basedpyright>=1.39.4",
   "faker>=40.15.0",
   "mypy>=1.20.2",
   "pyrefly>=0.64.1",
-  "pyright>=1.1.409",
   "pytest>=9.0.3",
   "pytest-asyncio>=1.3.0",
   "pytest-cov>=7.1.0",
@@ -90,13 +90,16 @@ lint.ignore = [
   "RUF001",
   "E501", # line-too-long: Line is too long
 ]
+# lint.select = ["ALL"]
+lint.fixable = ["ALL"]
 target-version = "py315"
 preview = true
-lint.select = ["ALL"]
-lint.fixable = ["ALL"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.ruff.lint.pylint]
+max-args = 8 # Slightly more relaxed than default for FastAPI dependencies
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -107,38 +110,52 @@ markers = ["asyncio: mark test as async"]
 ignore_no_config = true
 
 [tool.pyrefly]
-project-includes = ["**/*.py*"]
+project-includes = ["**/*.py"]
+# Prevent deep nesting which leads to unmaintainable FastAPI endpoints
+max-complexity = 10
+
+[tool.pyrefly.rules]
+# Enable rules that catch logic errors, not just style
+async-function-naming = true
+no-shadowed-builtins = true
+strict-exception-handling = true # Complements your Ruff BLE/TRY rules
 
 [tool.mypy]
+python_version = "3.14"
 strict = true
-disallow_any_generics = true
-warn_return_any = true
-mypy_path = ".."
-explicit_package_bases = true
+plugins = ["pydantic.mypy"]
 
-[tool.pyright]
-# Target the specific Python version from your project requirements
-pythonVersion = "3.14"
+# Robustness settings
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+show_error_codes = true
+
+# Lowering the "Nitpick" factor
+disallow_untyped_decorators = false # FastAPI routes often use untyped decorators
+warn_return_any = false # Too noisy with FastAPI's dynamic responses
+implicit_reexport = true # Useful for __init__.py patterns
+
+[[tool.mypy.overrides]]
+# Libraries that traditionally have poor or no typing
+module = ["selectolax.*", "judge0.*", "python-ulid.*", "cachebox.*"]
+ignore_missing_imports = true
+
+[tool.basedpyright]
 typeCheckingMode = "strict"
-
-# Source folders to include
-include = ["."]
-exclude = ["**/node_modules", "**/__pycache__", "**/.venv", "**/venv", "**/tests", "**/alembic"]
-
-# Rule Overrides
-# ------------------
-# Often necessary because some libraries in your list (like selectolax or resend)
-# might not have perfect type stubs.
+pythonVersion = "3.14"
+# Robustness without the "Any" nitpicking
+reportAny = false
 reportMissingTypeStubs = false
-
-# FastAPI/SQLModel frequently use "Any" or dynamic types for dependency
-# injection and database models. Strict can be too aggressive here.
 reportUnknownMemberType = false
 reportUnknownVariableType = false
 reportUnknownArgumentType = false
+reportUnknownLambdaType = false
 
-# Allow "assert" statements (which you already allow in Ruff)
-reportAssertAlwaysTrue = "warning"
+# Strictness on logic
+reportUnreachable = true
+reportImplicitOverride = true
+reportUnusedCallResult = false # Avoids nitpicking on things like .append() or FastAPI tasks
+reportPropertyTypeMismatch = true
 
-# Ensure Pyright respects your environment
-executionEnvironments = [{ root = "." }]
+# Ignore patterns
+exclude = ["**/node_modules", "**/__pycache__", "**/tests", "**/alembic", "**/venv", ".venv"]

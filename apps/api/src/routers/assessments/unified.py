@@ -12,6 +12,7 @@ from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.core.http import get_content_disposition_header
 from src.db.assessments import (
     AssessmentAttemptProjection,
     AssessmentCreate,

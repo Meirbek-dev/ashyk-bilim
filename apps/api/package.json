@@ -5,8 +5,11 @@
   "scripts": {
     "dev": "uv run app.py",
     "migrate": "uv run --no-sync alembic upgrade head",
-    "format": "uv run ruff format",
-    "lint": "uv run ruff check --fix --unsafe-fixes",
+    "format": "uv run ruff format .",
+    "lint": "uv run ruff check . --fix --unsafe-fixes",
+    "pyrefly": "uv run pyrefly check",
+    "basedpyright": "uv run basedpyright .",
+    "mypy": "uv run mypy .",
     "test": "uv run python -m pytest",
     "generate:openapi": "uv run python scripts/export_openapi.py",
     "generate:contracts": "uv run python scripts/export_openapi.py"

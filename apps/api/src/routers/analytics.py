@@ -8,6 +8,7 @@ from sqlalchemy import select as sa_select
 from sqlmodel import Session
 
 from src.auth.users import get_public_user
+from src.core.http import get_content_disposition_header
 from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
@@ -61,7 +62,7 @@ def _csv_response(stream, filename: str) -> StreamingResponse:
     return StreamingResponse(
         stream,
         media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": get_content_disposition_header(filename)},
     )
 
 
