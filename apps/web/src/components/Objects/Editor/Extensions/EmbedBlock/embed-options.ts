@@ -10,6 +10,7 @@
  */
 
 export type EmbedCategoryId =
+  | 'popular'
   | 'visual'
   | 'code'
   | 'media'
@@ -25,6 +26,7 @@ export interface EmbedCategory {
 }
 
 export const EMBED_CATEGORIES: EmbedCategory[] = [
+  { id: 'popular', label: 'popularLabel', description: 'popularDescription' },
   { id: 'visual', label: 'visualLabel', description: 'visualDescription' },
   { id: 'code', label: 'codeLabel', description: 'codeDescription' },
   { id: 'media', label: 'mediaLabel', description: 'mediaDescription' },
@@ -37,7 +39,7 @@ export const EMBED_CATEGORIES: EmbedCategory[] = [
 export interface EmbedProvider {
   type: string;
   label: string;
-  category: EmbedCategoryId;
+  categories: readonly EmbedCategoryId[];
   description: string;
   placeholder: string;
   hostnames: readonly string[];
@@ -53,7 +55,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'excalidraw',
     label: 'Excalidraw',
-    category: 'visual',
+    categories: ['visual', 'popular'],
     description: 'Hand-drawn diagrams and brainstorming boards.',
     placeholder: 'https://excalidraw.com/#room=...',
     hostnames: ['excalidraw.com'],
@@ -63,7 +65,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'tldraw',
     label: 'tldraw',
-    category: 'visual',
+    categories: ['visual', 'popular'],
     description: 'Fast infinite canvas for sketches and visual thinking.',
     placeholder: 'https://tldraw.com/r/room-id',
     hostnames: ['tldraw.com'],
@@ -72,7 +74,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'figma',
     label: 'Figma',
-    category: 'visual',
+    categories: ['visual', 'popular'],
     description: 'Live design files and clickable prototypes.',
     placeholder: 'https://www.figma.com/file/...',
     hostnames: ['figma.com', 'www.figma.com'],
@@ -82,7 +84,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'canva',
     label: 'Canva',
-    category: 'visual',
+    categories: ['visual'],
     description: 'Posters, infographics, presentations, and design assets.',
     placeholder: 'https://www.canva.com/design/...',
     hostnames: ['canva.com', 'www.canva.com'],
@@ -92,7 +94,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'miro',
     label: 'Miro',
-    category: 'visual',
+    categories: ['visual'],
     description: 'Collaborative workshops, mapping, and group boards.',
     placeholder: 'https://miro.com/app/board/...',
     hostnames: ['miro.com', 'www.miro.com'],
@@ -102,7 +104,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'mural',
     label: 'Mural',
-    category: 'visual',
+    categories: ['visual'],
     description: 'Enterprise visual collaboration and workshop canvases.',
     placeholder: 'https://app.mural.co/...',
     hostnames: ['mural.co', 'app.mural.co'],
@@ -111,7 +113,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'spline',
     label: 'Spline',
-    category: 'visual',
+    categories: ['visual'],
     description: 'Interactive 3D scenes and objects.',
     placeholder: 'https://my.spline.design/...',
     hostnames: ['spline.design', 'my.spline.design'],
@@ -121,7 +123,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'lottiefiles',
     label: 'LottieFiles',
-    category: 'visual',
+    categories: ['visual'],
     description: 'Lightweight animations for explainers and feedback.',
     placeholder: 'https://lottiefiles.com/...',
     hostnames: ['lottiefiles.com', 'www.lottiefiles.com'],
@@ -131,7 +133,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'sketchpad',
     label: 'Sketchpad',
-    category: 'visual',
+    categories: ['visual'],
     description: 'Simple browser sketching canvas for quick drawings.',
     placeholder: 'https://sketchpad.app/...',
     hostnames: ['sketchpad.app', 'www.sketchpad.app'],
@@ -141,7 +143,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'prezi',
     label: 'Prezi',
-    category: 'visual',
+    categories: ['visual'],
     description: 'Zoomable, non-linear presentations for dynamic storytelling.',
     placeholder: 'https://prezi.com/view/...',
     hostnames: ['prezi.com'],
@@ -151,7 +153,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'pitch',
     label: 'Pitch',
-    category: 'visual',
+    categories: ['visual'],
     description: 'Collaborative slide decks with real-time co-editing.',
     placeholder: 'https://pitch.com/public/...',
     hostnames: ['pitch.com'],
@@ -161,7 +163,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'gamma',
     label: 'Gamma',
-    category: 'visual',
+    categories: ['visual'],
     description: 'AI-generated presentations, docs, and web pages.',
     placeholder: 'https://gamma.app/public/...',
     hostnames: ['gamma.app'],
@@ -171,7 +173,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'google-slides',
     label: 'Google Slides',
-    category: 'visual',
+    categories: ['visual', 'popular'],
     description: 'Cloud-based presentations with real-time collaboration.',
     placeholder: 'https://docs.google.com/presentation/d/.../edit',
     hostnames: ['docs.google.com'],
@@ -181,7 +183,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'powerpoint',
     label: 'PowerPoint Online',
-    category: 'visual',
+    categories: ['visual', 'popular'],
     description: 'Microsoft PowerPoint presentations for the web.',
     placeholder: 'https://onedrive.live.com/embed?resid=...',
     hostnames: ['office.com', 'microsoft.com', 'live.com'],
@@ -191,7 +193,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'ms-whiteboard',
     label: 'Microsoft Whiteboard',
-    category: 'visual',
+    categories: ['visual'],
     description: 'Digital canvas for collaboration and ideation.',
     placeholder: 'https://whiteboard.office.com/me/whiteboards/...',
     hostnames: ['whiteboard.office.com', 'whiteboard.microsoft.com'],
@@ -201,7 +203,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'explain-everything',
     label: 'Explain Everything',
-    category: 'visual',
+    categories: ['visual'],
     description: 'Interactive whiteboard and screen recording tool.',
     placeholder: 'https://explaineverything.com/board/...',
     hostnames: ['explaineverything.com'],
@@ -210,7 +212,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'slides-com',
     label: 'Slides.com',
-    category: 'visual',
+    categories: ['visual'],
     description: 'Reveal.js-powered presentations with live audience view.',
     placeholder: 'https://slides.com/user/deck/embed',
     hostnames: ['slides.com'],
@@ -222,7 +224,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'jsfiddle',
     label: 'JSFiddle',
-    category: 'code',
+    categories: ['code'],
     description: 'Quick HTML, CSS, and JavaScript examples.',
     placeholder: 'https://jsfiddle.net/...',
     hostnames: ['jsfiddle.net'],
@@ -233,7 +235,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'codepen',
     label: 'CodePen',
-    category: 'code',
+    categories: ['code', 'popular'],
     description: 'Visual front-end demos and interactive pens.',
     placeholder: 'https://codepen.io/user/pen/...',
     hostnames: ['codepen.io'],
@@ -243,7 +245,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'replit',
     label: 'Replit',
-    category: 'code',
+    categories: ['code'],
     description: 'Full interactive IDEs for many programming languages.',
     placeholder: 'https://replit.com/@user/repl-name',
     hostnames: ['replit.com'],
@@ -253,7 +255,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'stackblitz',
     label: 'StackBlitz',
-    category: 'code',
+    categories: ['code'],
     description: 'Full-stack web project sandboxes.',
     placeholder: 'https://stackblitz.com/edit/...',
     hostnames: ['stackblitz.com'],
@@ -263,7 +265,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'github-gist',
     label: 'GitHub Gist',
-    category: 'code',
+    categories: ['code'],
     description: 'Clean code snippets with syntax highlighting.',
     placeholder: 'https://gist.github.com/user/id',
     hostnames: ['gist.github.com'],
@@ -273,7 +275,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'glitch',
     label: 'Glitch',
-    category: 'code',
+    categories: ['code'],
     description: 'Remixable web apps and project demos.',
     placeholder: 'https://glitch.com/edit/#!/project',
     hostnames: ['glitch.com'],
@@ -283,7 +285,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'codesnip',
     label: 'CodeSnip',
-    category: 'code',
+    categories: ['code'],
     description: 'Modern snippets with AI explanations.',
     placeholder: 'https://codesnip.dev/...',
     hostnames: ['codesnip.dev', 'www.codesnip.dev'],
@@ -292,7 +294,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'codesandbox',
     label: 'CodeSandbox',
-    category: 'code',
+    categories: ['code'],
     description: 'Complex front-end architectures and templates.',
     placeholder: 'https://codesandbox.io/p/sandbox/...',
     hostnames: ['codesandbox.io'],
@@ -303,7 +305,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'observable',
     label: 'Observable',
-    category: 'code',
+    categories: ['code'],
     description: 'Reactive data-science notebooks with live D3/Plot charts.',
     placeholder: 'https://observablehq.com/embed/@user/notebook',
     hostnames: ['observablehq.com'],
@@ -314,7 +316,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'mybinder',
     label: 'MyBinder',
-    category: 'code',
+    categories: ['code'],
     description: 'Shareable Jupyter notebook environments from any Git repo.',
     placeholder: 'https://mybinder.org/v2/gh/user/repo/HEAD',
     hostnames: ['mybinder.org'],
@@ -324,7 +326,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'kaggle',
     label: 'Kaggle',
-    category: 'code',
+    categories: ['code'],
     description: 'Public data-science notebooks and competition kernels.',
     placeholder: 'https://www.kaggle.com/embed/user/notebook',
     hostnames: ['kaggle.com', 'www.kaggle.com'],
@@ -335,7 +337,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'huggingface',
     label: 'Hugging Face',
-    category: 'code',
+    categories: ['code'],
     description: 'Live ML model demos and Gradio/Streamlit Spaces.',
     placeholder: 'https://huggingface.co/spaces/user/space',
     hostnames: ['huggingface.co'],
@@ -345,7 +347,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'wandb',
     label: 'Weights & Biases',
-    category: 'code',
+    categories: ['code'],
     description: 'ML experiment reports with interactive charts and metrics.',
     placeholder: 'https://api.wandb.ai/links/user/report-id',
     hostnames: ['wandb.ai', 'api.wandb.ai'],
@@ -355,7 +357,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'gitpod',
     label: 'Gitpod',
-    category: 'code',
+    categories: ['code'],
     description: 'Instant cloud dev environments from any repository.',
     placeholder: 'https://gitpod.io/#https://github.com/user/repo',
     hostnames: ['gitpod.io'],
@@ -365,7 +367,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'google-colab',
     label: 'Google Colab',
-    category: 'code',
+    categories: ['code', 'popular'],
     description: 'Cloud-based Jupyter notebooks for data science and AI.',
     placeholder: 'https://colab.research.google.com/drive/...',
     hostnames: ['colab.research.google.com'],
@@ -377,7 +379,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'youtube',
     label: 'YouTube',
-    category: 'media',
+    categories: ['media'],
     description: 'Educational videos, lectures, and screencasts.',
     placeholder: 'https://www.youtube.com/watch?v=...',
     hostnames: ['youtube.com', 'www.youtube.com', 'youtu.be'],
@@ -388,7 +390,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'vimeo',
     label: 'Vimeo',
-    category: 'media',
+    categories: ['media'],
     description: 'High-quality hosted video and private course media.',
     placeholder: 'https://vimeo.com/...',
     hostnames: ['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'],
@@ -399,7 +401,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'loom',
     label: 'Loom',
-    category: 'media',
+    categories: ['media'],
     description: 'Recorded walkthroughs and talking-head tutorials.',
     placeholder: 'https://www.loom.com/share/...',
     hostnames: ['loom.com', 'www.loom.com'],
@@ -409,7 +411,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'google-vids',
     label: 'Google Vids',
-    category: 'media',
+    categories: ['media'],
     description: 'AI-assisted educational videos and slide-videos.',
     placeholder: 'https://vids.google.com/...',
     hostnames: ['vids.google.com', 'drive.google.com'],
@@ -419,7 +421,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'wistia',
     label: 'Wistia',
-    category: 'media',
+    categories: ['media'],
     description: 'Course video with analytics and engagement tooling.',
     placeholder: 'https://fast.wistia.net/embed/iframe/...',
     hostnames: ['wistia.com', 'fast.wistia.net'],
@@ -429,7 +431,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'spotify',
     label: 'Spotify',
-    category: 'media',
+    categories: ['media'],
     description: 'Podcasts and curated study playlists.',
     placeholder: 'https://open.spotify.com/...',
     hostnames: ['open.spotify.com', 'spotify.com'],
@@ -439,7 +441,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'soundcloud',
     label: 'SoundCloud',
-    category: 'media',
+    categories: ['media'],
     description: 'Audio examples, music lessons, and listening tasks.',
     placeholder: 'https://soundcloud.com/...',
     hostnames: ['soundcloud.com', 'w.soundcloud.com'],
@@ -449,7 +451,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'suno',
     label: 'Suno',
-    category: 'media',
+    categories: ['media'],
     description: 'AI-generated songs and creative audio assignments.',
     placeholder: 'https://suno.com/song/...',
     hostnames: ['suno.com', 'www.suno.com'],
@@ -459,7 +461,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'sodaphonic',
     label: 'Sodaphonic',
-    category: 'media',
+    categories: ['media'],
     description: 'Browser audio editor for podcasting modules.',
     placeholder: 'https://sodaphonic.com/...',
     hostnames: ['sodaphonic.com', 'www.sodaphonic.com'],
@@ -469,7 +471,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'rutube',
     label: 'RuTube',
-    category: 'media',
+    categories: ['media'],
     description: 'Russian state-accessible video — mirrors or supplements YouTube.',
     placeholder: 'https://rutube.ru/video/...',
     hostnames: ['rutube.ru'],
@@ -480,7 +482,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'vk-video',
     label: 'VK Video',
-    category: 'media',
+    categories: ['media'],
     description: 'VKontakte video — widely watched across Russia and Kazakhstan.',
     placeholder: 'https://vk.com/video-...',
     hostnames: ['vk.com', 'vkvideo.ru'],
@@ -491,7 +493,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'vk-clips',
     label: 'VK Clips / Posts',
-    category: 'media',
+    categories: ['media'],
     description: 'Short-form videos and announcements from VK.',
     placeholder: 'https://vk.com/clip-...',
     hostnames: ['vk.com'],
@@ -501,7 +503,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'ted',
     label: 'TED / TEDx',
-    category: 'media',
+    categories: ['media'],
     description: 'Conference talks on science, design, society, and innovation.',
     placeholder: 'https://www.ted.com/talks/...',
     hostnames: ['ted.com', 'www.ted.com', 'embed.ted.com'],
@@ -513,7 +515,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'deezer',
     label: 'Deezer',
-    category: 'media',
+    categories: ['media'],
     description: 'Music and podcast playlists for listening comprehension tasks.',
     placeholder: 'https://www.deezer.com/playlist/...',
     hostnames: ['deezer.com', 'www.deezer.com', 'widget.deezer.com'],
@@ -524,7 +526,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'mixcloud',
     label: 'Mixcloud',
-    category: 'media',
+    categories: ['media'],
     description: 'Radio shows and long-form audio mixes for background listening.',
     placeholder: 'https://www.mixcloud.com/user/mix/',
     hostnames: ['mixcloud.com', 'www.mixcloud.com'],
@@ -535,7 +537,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'panopto',
     label: 'Panopto',
-    category: 'media',
+    categories: ['media'],
     description: 'University lecture recordings with chapters and in-video quizzes.',
     placeholder: 'https://university.hosted.panopto.com/Panopto/Pages/Embed.aspx?id=...',
     hostnames: ['hosted.panopto.com', 'panopto.com'],
@@ -547,7 +549,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'kaltura',
     label: 'Kaltura',
-    category: 'media',
+    categories: ['media'],
     description: 'Institutional video platform integrated with Moodle and Canvas.',
     placeholder: 'https://cdnapisec.kaltura.com/p/partner-id/embedPlaykitJs/...',
     hostnames: ['kaltura.com', 'cdnapisec.kaltura.com'],
@@ -561,8 +563,8 @@ export const EMBED_PROVIDERS = [
   {
     type: 'h5p',
     label: 'H5P',
-    category: 'assessment',
-    description: 'Interactive LMS content such as quizzes and drag-and-drop tasks.',
+    categories: ['assessment'],
+    description: 'Interactive LMS content such as quizzes and draft-and-drop tasks.',
     placeholder: 'https://h5p.org/h5p/embed/...',
     hostnames: ['h5p.org', 'h5p.com'],
     defaultHeight: 560,
@@ -571,7 +573,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'genially',
     label: 'Genially',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Gamified presentations and interactive images.',
     placeholder: 'https://view.genially.com/...',
     hostnames: ['genially.com', 'view.genially.com'],
@@ -581,7 +583,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'typeform',
     label: 'Typeform',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'High-engagement surveys and entry or exit tickets.',
     placeholder: 'https://form.typeform.com/to/...',
     hostnames: ['typeform.com', 'form.typeform.com'],
@@ -591,7 +593,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'jotform',
     label: 'Jotform',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Forms with logic, uploads, and payment workflows.',
     placeholder: 'https://form.jotform.com/...',
     hostnames: ['jotform.com', 'form.jotform.com'],
@@ -601,7 +603,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'google-forms',
     label: 'Google Forms',
-    category: 'assessment',
+    categories: ['assessment', 'popular'],
     description: 'Quick data-driven quizzes and course surveys.',
     placeholder: 'https://docs.google.com/forms/d/e/...',
     hostnames: ['docs.google.com'],
@@ -611,7 +613,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'tally',
     label: 'Tally',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Notion-style forms that feel lightweight in lessons.',
     placeholder: 'https://tally.so/r/...',
     hostnames: ['tally.so'],
@@ -621,7 +623,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'quizlet',
     label: 'Quizlet',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Flashcard sets and study games.',
     placeholder: 'https://quizlet.com/...',
     hostnames: ['quizlet.com', 'www.quizlet.com'],
@@ -631,7 +633,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'kahoot',
     label: 'Kahoot!',
-    category: 'assessment',
+    categories: ['assessment', 'popular'],
     description: 'Competitive live assessments and game-based checks.',
     placeholder: 'https://create.kahoot.it/share/...',
     hostnames: ['kahoot.it', 'create.kahoot.it'],
@@ -641,7 +643,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'mentimeter',
     label: 'Mentimeter',
-    category: 'assessment',
+    categories: ['assessment', 'popular'],
     description: 'Live polls, word clouds, and classroom feedback.',
     placeholder: 'https://www.mentimeter.com/...',
     hostnames: ['mentimeter.com', 'www.mentimeter.com'],
@@ -652,7 +654,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'blooket',
     label: 'Blooket',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Gamified quizzes and interactive learning games.',
     placeholder: 'https://www.blooket.com/play/...',
     hostnames: ['blooket.com', 'www.blooket.com'],
@@ -661,7 +663,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'quizizz',
     label: 'Quizizz',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Interactive quizzes and asynchronous homework mode.',
     placeholder: 'https://quizizz.com/admin/quiz/...',
     hostnames: ['quizizz.com'],
@@ -671,7 +673,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'edpuzzle',
     label: 'Edpuzzle',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Embed questions and voiceovers into any video.',
     placeholder: 'https://edpuzzle.com/embed/media/...',
     hostnames: ['edpuzzle.com'],
@@ -680,7 +682,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'plickers',
     label: 'Plickers',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Low-tech classroom polling using paper cards.',
     placeholder: 'https://www.plickers.com/...',
     hostnames: ['plickers.com', 'www.plickers.com'],
@@ -689,7 +691,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'wooclap',
     label: 'Wooclap',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Live audience polls, MCQs, and word clouds during lectures.',
     placeholder: 'https://app.wooclap.com/events/EVENT/questions/0',
     hostnames: ['app.wooclap.com', 'wooclap.com'],
@@ -699,7 +701,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'slido',
     label: 'Slido',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Real-time Q&A and polling for large university lectures.',
     placeholder: 'https://wall.sli.do/event/...',
     hostnames: ['sli.do', 'wall.sli.do', 'slido.com'],
@@ -710,7 +712,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'nearpod',
     label: 'Nearpod',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Student-paced interactive lessons with embedded assessments.',
     placeholder: 'https://nearpod.com/libraries/...',
     hostnames: ['nearpod.com'],
@@ -719,7 +721,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'wordwall',
     label: 'Wordwall',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Gamified vocabulary and grammar activities — popular in CIS classrooms.',
     placeholder: 'https://wordwall.net/embed/...',
     hostnames: ['wordwall.net'],
@@ -729,7 +731,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'poll-everywhere',
     label: 'Poll Everywhere',
-    category: 'assessment',
+    categories: ['assessment'],
     description: 'Audience-response activities with PowerPoint/Google Slides integration.',
     placeholder: 'https://www.polleverywhere.com/multiple_choice_polls/...',
     hostnames: ['polleverywhere.com', 'www.polleverywhere.com'],
@@ -742,7 +744,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'airtable',
     label: 'Airtable',
-    category: 'productivity',
+    categories: ['productivity'],
     description: 'Database-driven lessons and project trackers.',
     placeholder: 'https://airtable.com/embed/...',
     hostnames: ['airtable.com'],
@@ -752,7 +754,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'google-sheets',
     label: 'Google Sheets',
-    category: 'productivity',
+    categories: ['productivity', 'popular'],
     description: 'Live tables, datasets, and charts.',
     placeholder: 'https://docs.google.com/spreadsheets/d/...',
     hostnames: ['docs.google.com'],
@@ -762,7 +764,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'trello',
     label: 'Trello',
-    category: 'productivity',
+    categories: ['productivity'],
     description: 'Project management boards and course milestones.',
     placeholder: 'https://trello.com/b/...',
     hostnames: ['trello.com'],
@@ -772,7 +774,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'notion',
     label: 'Notion',
-    category: 'productivity',
+    categories: ['productivity', 'popular'],
     description: 'Resource pages, course wikis, and structured docs.',
     placeholder: 'https://www.notion.so/...',
     hostnames: ['notion.so', 'www.notion.so'],
@@ -782,7 +784,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'coda',
     label: 'Coda',
-    category: 'productivity',
+    categories: ['productivity'],
     description: 'Interactive docs that behave like apps.',
     placeholder: 'https://coda.io/embed/...',
     hostnames: ['coda.io'],
@@ -792,7 +794,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'tableau',
     label: 'Tableau',
-    category: 'productivity',
+    categories: ['productivity'],
     description: 'Advanced analytics dashboards and data visualization.',
     placeholder: 'https://public.tableau.com/views/...',
     hostnames: ['public.tableau.com', 'tableau.com'],
@@ -803,7 +805,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'looker-studio',
     label: 'Looker Studio',
-    category: 'productivity',
+    categories: ['productivity'],
     description: 'Google Data Studio dashboards for live research and analytics.',
     placeholder: 'https://lookerstudio.google.com/embed/reporting/...',
     hostnames: ['lookerstudio.google.com', 'datastudio.google.com'],
@@ -814,7 +816,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'clickup',
     label: 'ClickUp',
-    category: 'productivity',
+    categories: ['productivity'],
     description: 'All-in-one project and task management for group coursework.',
     placeholder: 'https://app.clickup.com/...?embed=1',
     hostnames: ['app.clickup.com', 'clickup.com'],
@@ -825,7 +827,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'wakelet',
     label: 'Wakelet',
-    category: 'productivity',
+    categories: ['productivity'],
     description: 'Curated collections of links, videos, and resources for a lesson.',
     placeholder: 'https://wakelet.com/wake/...',
     hostnames: ['wakelet.com'],
@@ -835,7 +837,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'datalens',
     label: 'Yandex DataLens',
-    category: 'productivity',
+    categories: ['productivity'],
     description: 'Business intelligence and data visualization service.',
     placeholder: 'https://datalens.yandex.ru/embed/...',
     hostnames: ['datalens.yandex.ru', 'datalens.yandex.com'],
@@ -845,7 +847,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'google-docs',
     label: 'Google Docs',
-    category: 'productivity',
+    categories: ['productivity', 'popular'],
     description: 'Collaborative word processing and document editing.',
     placeholder: 'https://docs.google.com/document/d/.../edit',
     hostnames: ['docs.google.com'],
@@ -857,7 +859,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'desmos',
     label: 'Desmos',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Interactive graphing calculator for math.',
     placeholder: 'https://www.desmos.com/calculator/...',
     hostnames: ['desmos.com', 'www.desmos.com'],
@@ -867,7 +869,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'geogebra',
     label: 'GeoGebra',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Geometry, graphing, and 3D math simulations.',
     placeholder: 'https://www.geogebra.org/m/...',
     hostnames: ['geogebra.org', 'www.geogebra.org'],
@@ -876,7 +878,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'wolfram-alpha',
     label: 'Wolfram Alpha',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Computational intelligence and symbolic widgets.',
     placeholder: 'https://www.wolframalpha.com/...',
     hostnames: ['wolframalpha.com', 'www.wolframalpha.com'],
@@ -886,7 +888,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'phet',
     label: 'PhET',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Science simulations for physics, chemistry, and biology.',
     placeholder: 'https://phet.colorado.edu/sims/html/...',
     hostnames: ['phet.colorado.edu'],
@@ -895,7 +897,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'sketchfab',
     label: 'Sketchfab',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Interactive 3D models for artifacts, anatomy, and objects.',
     placeholder: 'https://sketchfab.com/3d-models/...',
     hostnames: ['sketchfab.com', 'www.sketchfab.com'],
@@ -906,7 +908,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'texlyre',
     label: 'TeXlyre',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Live LaTeX and Typst math rendering.',
     placeholder: 'https://texlyre.com/...',
     hostnames: ['texlyre.com', 'www.texlyre.com'],
@@ -916,7 +918,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'yandex-maps',
     label: 'Yandex Maps',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Detailed maps and geographic context for the CIS region.',
     placeholder: 'https://yandex.ru/maps/...',
     hostnames: ['yandex.ru', 'yandex.com', 'maps.yandex.ru'],
@@ -926,7 +928,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'brilliant',
     label: 'Brilliant.org',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Interactive problem solving in math, science, and CS.',
     placeholder: 'https://brilliant.org/courses/...',
     hostnames: ['brilliant.org'],
@@ -936,7 +938,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'symbolab',
     label: 'Symbolab',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Step-by-step math solver and graphing calculator.',
     placeholder: 'https://www.symbolab.com/solver/...',
     hostnames: ['symbolab.com', 'www.symbolab.com'],
@@ -945,7 +947,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'stepik',
     label: 'Stepik',
-    category: 'academic',
+    categories: ['academic', 'popular'],
     description: 'Leading Russian/CIS MOOC with CS, math, and science courses.',
     placeholder: 'https://stepik.org/lesson/.../step/1?unit=...',
     hostnames: ['stepik.org'],
@@ -956,7 +958,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'overleaf',
     label: 'Overleaf',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Collaborative LaTeX editor for reports, theses, and papers.',
     placeholder: 'https://www.overleaf.com/read/...',
     hostnames: ['overleaf.com', 'www.overleaf.com'],
@@ -966,7 +968,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'molview',
     label: 'MolView',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Interactive 2D/3D molecular structure viewer for chemistry.',
     placeholder: 'https://embed.molview.org/v1/?smiles=...',
     hostnames: ['molview.org', 'embed.molview.org'],
@@ -976,7 +978,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'google-maps',
     label: 'Google Maps',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Geographic context for history, social science, and fieldwork.',
     placeholder: 'https://www.google.com/maps/embed?pb=...',
     hostnames: ['google.com', 'www.google.com', 'maps.google.com'],
@@ -987,7 +989,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'chemtube3d',
     label: 'ChemTube3D',
-    category: 'academic',
+    categories: ['academic'],
     description: 'Animated 3D reaction mechanisms for university chemistry.',
     placeholder: 'https://www.chemtube3d.com/...',
     hostnames: ['chemtube3d.com', 'www.chemtube3d.com'],
@@ -998,7 +1000,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'notebooklm',
     label: 'NotebookLM',
-    category: 'collaboration',
+    categories: ['collaboration'],
     description: 'AI-grounded research environments for source material.',
     placeholder: 'https://notebooklm.google.com/...',
     hostnames: ['notebooklm.google.com'],
@@ -1008,7 +1010,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'hyperbeam',
     label: 'Hyperbeam',
-    category: 'collaboration',
+    categories: ['collaboration'],
     description: 'Shared co-browsing sessions inside a lesson.',
     placeholder: 'https://hyperbeam.com/...',
     hostnames: ['hyperbeam.com', 'www.hyperbeam.com'],
@@ -1017,7 +1019,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'discord',
     label: 'Discord',
-    category: 'collaboration',
+    categories: ['collaboration', 'popular'],
     description: 'Course community invites and channel widgets.',
     placeholder: 'https://discord.com/invite/...',
     hostnames: ['discord.com', 'discord.gg'],
@@ -1028,7 +1030,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'telegram',
     label: 'Telegram Post',
-    category: 'collaboration',
+    categories: ['collaboration', 'popular'],
     description: 'Embedded messages and announcements from Telegram channels.',
     placeholder: 'https://t.me/channel/123',
     hostnames: ['t.me'],
@@ -1038,7 +1040,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'chatgpt',
     label: 'ChatGPT Share',
-    category: 'collaboration',
+    categories: ['collaboration', 'popular'],
     description: 'Shared AI conversations and guided learning threads.',
     placeholder: 'https://chatgpt.com/share/...',
     hostnames: ['chatgpt.com', 'openai.com'],
@@ -1048,7 +1050,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'padlet',
     label: 'Padlet',
-    category: 'collaboration',
+    categories: ['collaboration'],
     description: 'Shared digital walls for brainstorming, portfolios, and Q&A.',
     placeholder: 'https://padlet.com/user/board',
     hostnames: ['padlet.com'],
@@ -1058,7 +1060,7 @@ export const EMBED_PROVIDERS = [
   {
     type: 'flip',
     label: 'Flip',
-    category: 'collaboration',
+    categories: ['collaboration'],
     description: 'Asynchronous video discussion boards for reflective assignments.',
     placeholder: 'https://flip.com/groups/...',
     hostnames: ['flip.com'],
@@ -1090,7 +1092,7 @@ export function isEmbedType(type: string | null | undefined): type is EmbedType 
  */
 export function getProvidersByCategory(category: EmbedCategoryId): EmbedProvider[] {
   return (EMBED_PROVIDERS as readonly EmbedProvider[])
-    .filter((p) => p.category === category)
+    .filter((p) => p.categories.includes(category))
     .toSorted((a, b) => {
       if (a.iconName && !b.iconName) return -1;
       if (!a.iconName && b.iconName) return 1;

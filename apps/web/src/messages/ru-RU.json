@@ -4187,6 +4187,8 @@
       },
       "EmbedPanel": {
         "title": "Вставить встраивание",
+        "popularLabel": "Популярные",
+        "popularDescription": "Наиболее часто используемые сервисы преподавателями и студентами.",
         "youtubeLabel": "YouTube",
         "excalidrawLabel": "Excalidraw",
         "tldrawLabel": "tldraw",

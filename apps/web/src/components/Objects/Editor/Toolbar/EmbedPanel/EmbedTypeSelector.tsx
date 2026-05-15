@@ -21,7 +21,7 @@ export function EmbedTypeSelector({ selectedType, onSelect, error }: EmbedTypeSe
   const filteredProviders = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return EMBED_PROVIDERS.filter((provider) => {
-      if (provider.category !== activeCategory) return false;
+      if (!(provider.categories as readonly EmbedCategoryId[]).includes(activeCategory)) return false;
       if (!normalizedQuery) return true;
       return (
         provider.label.toLowerCase().includes(normalizedQuery) ||

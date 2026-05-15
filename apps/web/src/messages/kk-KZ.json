@@ -4181,6 +4181,8 @@
       },
       "EmbedPanel": {
         "title": "Кірістіруді қосу",
+        "popularLabel": "Танымал",
+        "popularDescription": "Мұғалімдер мен студенттер арасында ең көп қолданылатын сервистер.",
         "youtubeLabel": "YouTube",
         "excalidrawLabel": "Excalidraw",
         "tldrawLabel": "tldraw",

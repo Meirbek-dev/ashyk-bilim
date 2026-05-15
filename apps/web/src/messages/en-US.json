@@ -4168,6 +4168,8 @@
         "title": "Insert Embed",
         "editTitle": "Edit Embed",
         "description": "Choose a trusted service, then paste a share or embed URL.",
+        "popularLabel": "Popular",
+        "popularDescription": "Most frequently used embed services by teachers and students.",
         "visualLabel": "Visual design",
         "visualDescription": "Boards, diagrams, prototypes, canvases, 3D, and animation.",
         "codeLabel": "Coding",
