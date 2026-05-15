@@ -20,7 +20,6 @@ import {
   FilePenLine,
   Globe,
   GripVertical,
-  HelpCircle,
   Loader2,
   Lock,
   Pencil,
@@ -49,7 +48,7 @@ type ActivityType =
   | "TYPE_FILE_SUBMISSION"
   | "TYPE_DYNAMIC"
   | "TYPE_EXAM"
-  | "TYPE_QUIZ"
+  | "TYPE_CUSTOM"
   | "TYPE_CODE_CHALLENGE";
 
 interface Activity {
@@ -104,12 +103,6 @@ const ACTIVITY_CONFIG = {
     translationKey: "exam",
     colorClass:
       "border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300",
-  },
-  TYPE_QUIZ: {
-    Icon: HelpCircle,
-    translationKey: "quiz",
-    colorClass:
-      "border-lime-200 dark:border-lime-800 bg-lime-50 dark:bg-lime-950/30 text-lime-700 dark:text-lime-300",
   },
   TYPE_CODE_CHALLENGE: {
     Icon: Code2,
@@ -478,7 +471,6 @@ const ActivityEditButton = ({
 
   if (
     activity.activity_type === "TYPE_EXAM" ||
-    activity.activity_type === "TYPE_QUIZ" ||
     activity.activity_type === "TYPE_CODE_CHALLENGE" ||
     activity.activity_type === "TYPE_FILE_SUBMISSION"
   ) {

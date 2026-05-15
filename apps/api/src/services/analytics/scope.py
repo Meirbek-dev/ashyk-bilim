@@ -181,11 +181,6 @@ def resolve_course_id_for_assessment(
         if activity is None or activity.course_id is None:
             return None
         if (
-            assessment_type == "quiz"
-            and activity.activity_type != ActivityTypeEnum.TYPE_QUIZ
-        ):
-            return None
-        if (
             assessment_type == "code_challenge"
             and activity.activity_type != ActivityTypeEnum.TYPE_CODE_CHALLENGE
         ):

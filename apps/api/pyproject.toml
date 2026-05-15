@@ -2,7 +2,7 @@
 description = "Ashyk Bilim Backend"
 name = "ashyk-bilim-api"
 version = "0.1.0"
-requires-python = ">=3.14.2,<3.15.0"
+requires-python = ">=3.14.5,<3.15.0"
 dependencies = [
   "fastapi[standard-no-fastapi-cloud-cli]>=0.136.1",
   "uvicorn[standard]>=0.46.0",

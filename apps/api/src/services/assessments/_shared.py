@@ -96,7 +96,7 @@ from src.services.progress import submissions as progress_submissions
 ASSESSABLE_ACTIVITY_TYPES = {
     ActivityTypeEnum.TYPE_FILE_SUBMISSION,
     ActivityTypeEnum.TYPE_EXAM,
-    ActivityTypeEnum.TYPE_QUIZ,
+    ActivityTypeEnum.TYPE_CUSTOM,
     ActivityTypeEnum.TYPE_CODE_CHALLENGE,
 }
 
@@ -116,15 +116,14 @@ _KIND_TO_ACTIVITY: dict[
         ActivitySubTypeEnum.SUBTYPE_CODE_GENERAL,
     ),
     AssessmentType.QUIZ: (
-        ActivityTypeEnum.TYPE_QUIZ,
-        ActivitySubTypeEnum.SUBTYPE_QUIZ_STANDARD,
+        ActivityTypeEnum.TYPE_CUSTOM,
+        ActivitySubTypeEnum.SUBTYPE_CUSTOM,
     ),
 }
 
 _ACTIVITY_TO_KIND: dict[ActivityTypeEnum, AssessmentType] = {
     ActivityTypeEnum.TYPE_FILE_SUBMISSION: AssessmentType.ASSIGNMENT,
     ActivityTypeEnum.TYPE_EXAM: AssessmentType.EXAM,
-    ActivityTypeEnum.TYPE_QUIZ: AssessmentType.QUIZ,
     ActivityTypeEnum.TYPE_CODE_CHALLENGE: AssessmentType.CODE_CHALLENGE,
 }
 

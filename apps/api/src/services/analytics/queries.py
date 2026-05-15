@@ -16,7 +16,6 @@ from src.db.courses.activities import Activity
 from src.db.courses.certifications import CertificateUser, Certifications
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
-from src.db.courses.quiz import QuizQuestionStat
 from src.db.grading.progress import ActivityProgress, CourseProgress
 from src.db.grading.submissions import (
     AssessmentType,
@@ -86,7 +85,7 @@ class AnalyticsContext:
     exams: list[AssessmentAnalyticsRow]
     exam_attempts: list[tuple[Submission, AssessmentAnalyticsRow]]
     quiz_submissions: list[tuple[Submission, Activity]]
-    quiz_question_stats: list[QuizQuestionStat]
+    quiz_question_stats: list[Any]
     code_submissions: list[tuple[Submission, Activity]]
     users_by_id: dict[int, User]
     usergroup_names_by_id: dict[int, str]
@@ -554,16 +553,7 @@ def load_analytics_context(
             for row in db_session.exec(quiz_submission_stmt).all()
         ]
 
-    quiz_question_stats: list[QuizQuestionStat] = []
-    if activity_ids:
-        quiz_question_stats = [
-            _unwrap_model(stat, QuizQuestionStat)
-            for stat in db_session.exec(
-                select(QuizQuestionStat).where(
-                    QuizQuestionStat.activity_id.in_(activity_ids)
-                )
-            ).all()
-        ]
+    quiz_question_stats: list[Any] = []
 
     code_submissions: list[tuple[Submission, Activity]] = []
     if activity_ids:

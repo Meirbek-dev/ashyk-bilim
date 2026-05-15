@@ -517,18 +517,6 @@ def _get_or_create_policy(
     )
     settings_json: dict[str, object] = {}
     anti_cheat_json = DEFAULT_ANTI_CHEAT_JSON.copy()
-    if assessment_type == AssessmentType.QUIZ:
-        quiz_block = db_session.exec(
-            select(Block).where(
-                Block.activity_id == activity.id,
-                Block.block_type == BlockTypeEnum.BLOCK_QUIZ,
-            )
-        ).first()
-        if quiz_block is not None:
-            content = quiz_block.content if isinstance(quiz_block.content, dict) else {}
-            raw_settings = content.get("settings")
-            settings_json = raw_settings if isinstance(raw_settings, dict) else {}
-            anti_cheat_json = anti_cheat_from_quiz_settings(settings_json)
 
     policy = AssessmentPolicy(
         policy_uuid=f"policy_{ULID()}",
@@ -586,16 +574,18 @@ def _assessment_type_for_activity(
     activity: Activity,
     db_session: Session,
 ) -> AssessmentType | None:
+    assessment = db_session.exec(
+        select(Assessment).where(Assessment.activity_id == activity.id)
+    ).first()
+    if assessment is not None:
+        try:
+            return AssessmentType(assessment.kind)
+        except ValueError:
+            pass
     value = _enum_value(activity.activity_type)
     if value in _ASSESSMENT_TYPE_BY_ACTIVITY_TYPE:
         return _ASSESSMENT_TYPE_BY_ACTIVITY_TYPE[value]
-    quiz_block = db_session.exec(
-        select(Block.id).where(
-            Block.activity_id == activity.id,
-            Block.block_type == BlockTypeEnum.BLOCK_QUIZ,
-        )
-    ).first()
-    return AssessmentType.QUIZ if quiz_block is not None else None
+    return None
 
 
 def _attach_policy(submission: Submission, db_session: Session) -> None:

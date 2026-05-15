@@ -84,16 +84,16 @@ async def create_inline_quiz(
 
     now = datetime.now(UTC)
 
-    # Create a lightweight activity for the inline quiz (required by the schema)
+    # Create a lightweight hidden activity for the inline quiz.
     from src.db.courses.activities import ActivityTypeEnum, ActivitySubTypeEnum
 
     quiz_activity = Activity(
         name=payload.title,
-        activity_type=ActivityTypeEnum.TYPE_QUIZ,
-        activity_sub_type=ActivitySubTypeEnum.SUBTYPE_QUIZ_STANDARD,
+        activity_type=ActivityTypeEnum.TYPE_CUSTOM,
+        activity_sub_type=ActivitySubTypeEnum.SUBTYPE_CUSTOM,
         content={},
         details={"lifecycle_status": "DRAFT"},
-        settings={"kind": "QUIZ"},
+        settings={"kind": "INLINE_QUIZ"},
         published=False,
         chapter_id=activity.chapter_id,
         course_id=activity.course_id,

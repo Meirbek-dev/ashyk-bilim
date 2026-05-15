@@ -217,7 +217,6 @@ def _sync_assessment_lifecycle(
 ) -> None:
     if activity.activity_type not in {
         ActivityTypeEnum.TYPE_EXAM,
-        ActivityTypeEnum.TYPE_QUIZ,
         ActivityTypeEnum.TYPE_CODE_CHALLENGE,
         ActivityTypeEnum.TYPE_FILE_SUBMISSION,
     }:
