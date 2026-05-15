@@ -71,4 +71,3 @@ export async function uploadNewVideoFile(
     throw error;
   }
 }
-

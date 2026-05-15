@@ -572,4 +572,3 @@ export async function bulkRemoveContributors(
 
   return metadata;
 }
-

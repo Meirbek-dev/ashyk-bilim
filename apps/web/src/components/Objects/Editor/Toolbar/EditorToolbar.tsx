@@ -37,13 +37,13 @@ const ToolbarSeparator = () => (
  * that `useTiptapState`'s default deep-equality check correctly prevents
  * re-renders when unrelated editor state changes (Requirements 1.4, 2.2).
  */
-export type ToolbarStateSnap = {
+export interface ToolbarStateSnap {
   editor: {
     isActive: (name: string, attrs?: Record<string, unknown>) => boolean;
     can: () => { undo: () => boolean; redo: () => boolean };
     getAttributes: (name: string) => Record<string, unknown>;
   };
-};
+}
 
 export function selectToolbarState(snap: ToolbarStateSnap) {
   return {

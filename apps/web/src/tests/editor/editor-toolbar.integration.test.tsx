@@ -160,7 +160,7 @@ let renderCount = 0;
  * inner EditorToolbar is caused by its own hooks, not by the wrapper.
  */
 const TrackedEditorToolbar = React.memo(function TrackedEditorToolbar({ onAIToggle }: { onAIToggle: () => void }) {
-  renderCount++;
+  renderCount += 1;
   return <EditorToolbar onAIToggle={onAIToggle} />;
 });
 

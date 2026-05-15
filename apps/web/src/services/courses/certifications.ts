@@ -4,6 +4,10 @@ import { errorHandling, getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { tags, courseTag } from '@/lib/cacheTags';
 
+interface CertificationInvalidationOptions {
+  lastKnownUpdateDate?: string;
+  courseUuid?: string;
+}
 
 export interface CreateCertificationParams {
   course_id: number;
@@ -74,4 +78,3 @@ export async function getCertificateByUuid(user_certification_uuid: string) {
   );
   return getResponseMetadata(result);
 }
-

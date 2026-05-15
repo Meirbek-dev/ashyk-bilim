@@ -72,11 +72,11 @@ describe('AuthoringEditor integration: mixed blockEmbed + embedBlock document', 
     const schema = getSchema(extensions);
 
     // Both node types must be registered in the schema
-    expect(schema.nodes['blockEmbed']).toBeDefined();
-    expect(schema.nodes['embedBlock']).toBeDefined();
+    expect(schema.nodes.blockEmbed).toBeDefined();
+    expect(schema.nodes.embedBlock).toBeDefined();
 
     // Node names must not conflict
-    expect(schema.nodes['blockEmbed']).not.toBe(schema.nodes['embedBlock']);
+    expect(schema.nodes.blockEmbed).not.toBe(schema.nodes.embedBlock);
   });
 
   it('parses a document containing both blockEmbed and embedBlock nodes without errors', () => {

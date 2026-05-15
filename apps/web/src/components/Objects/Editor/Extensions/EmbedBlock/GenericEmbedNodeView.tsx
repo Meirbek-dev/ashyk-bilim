@@ -23,7 +23,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
   const { type, url, height: attrHeight } = node.attrs;
   const provider = getEmbedProvider(type);
   const t = useTranslations('DashPage.Editor.EmbedPanel');
-  const isEditable = editor.isEditable;
+  const { isEditable } = editor;
   const [mounted, setMounted] = useState(false);
   const [isLoaded, setIsLoaded] = useState(!isEditable);
   const editButtonRef = useRef<HTMLButtonElement>(null);

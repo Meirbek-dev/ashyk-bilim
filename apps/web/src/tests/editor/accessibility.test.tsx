@@ -277,7 +277,7 @@ describe('EmbedPanel focus trap (Requirements 12.4)', () => {
     expect(dialog.contains(document.activeElement)).toBe(true);
 
     // Tab through all focusable elements — focus must stay inside the dialog
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 5; i += 1) {
       await user.tab();
       expect(dialog.contains(document.activeElement)).toBe(true);
     }
@@ -297,7 +297,7 @@ describe('EmbedPanel focus trap (Requirements 12.4)', () => {
     expect(dialog.contains(document.activeElement)).toBe(true);
 
     // Shift+Tab through all focusable elements — focus must stay inside the dialog
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 5; i += 1) {
       await user.tab({ shift: true });
       expect(dialog.contains(document.activeElement)).toBe(true);
     }

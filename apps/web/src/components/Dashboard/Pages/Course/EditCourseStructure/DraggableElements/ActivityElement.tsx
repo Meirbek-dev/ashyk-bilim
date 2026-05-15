@@ -412,7 +412,7 @@ const ActivityElement = ({
 
 const ActivityTypeBadge = ({ activityType }: { activityType: ActivityType }) => {
   const t = useTranslations('CourseEdit.ActivityElement');
-  const config = ACTIVITY_CONFIG[activityType];
+  const config = ACTIVITY_CONFIG[activityType as keyof typeof ACTIVITY_CONFIG];
   if (!config) return null;
   const { Icon, translationKey, colorClass } = config;
   return (

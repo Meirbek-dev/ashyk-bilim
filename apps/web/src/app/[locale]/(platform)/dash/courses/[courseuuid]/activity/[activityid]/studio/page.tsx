@@ -27,7 +27,7 @@ export default async function PlatformAssessmentStudioPage(props: {
         courseUuid={courseuuid}
         activityUuid={activityid}
       />
-    ) : String(activity.activity_type) === 'TYPE_FILE_SUBMISSION' ? (
+    ) : activity.activity_type === 'TYPE_FILE_SUBMISSION' ? (
       <FileSubmissionStudio
         courseUuid={courseuuid}
         activityUuid={activityid}

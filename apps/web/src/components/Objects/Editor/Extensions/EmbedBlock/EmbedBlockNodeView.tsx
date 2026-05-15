@@ -36,20 +36,20 @@ interface EmbedErrorBoundaryState {
 }
 
 class EmbedErrorBoundary extends Component<EmbedErrorBoundaryProps, EmbedErrorBoundaryState> {
-  constructor(props: EmbedErrorBoundaryProps) {
+  public constructor(props: EmbedErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(): EmbedErrorBoundaryState {
+  public static getDerivedStateFromError(): EmbedErrorBoundaryState {
     return { hasError: true };
   }
 
-  override componentDidCatch(error: Error, info: ErrorInfo) {
+  public override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[EmbedBlock] NodeView render error:', error, info);
   }
 
-  override render() {
+  public override render() {
     if (this.state.hasError) {
       const label = this.props.embedType ?? 'embed';
       return (
@@ -81,25 +81,28 @@ const EmbedBlockNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
 
   const renderSubView = () => {
     switch (type) {
-      case 'youtube':
+      case 'youtube': {
         return (
           <EmbedErrorBoundary embedType="youtube">
             <YouTubeNodeView {...props} />
           </EmbedErrorBoundary>
         );
-      case 'excalidraw':
+      }
+      case 'excalidraw': {
         return (
           <EmbedErrorBoundary embedType="excalidraw">
             <ExcalidrawNodeView {...props} />
           </EmbedErrorBoundary>
         );
-      case 'tldraw':
+      }
+      case 'tldraw': {
         return (
           <EmbedErrorBoundary embedType="tldraw">
             <TldrawNodeView {...props} />
           </EmbedErrorBoundary>
         );
-      default:
+      }
+      default: {
         if (provider) {
           return (
             <EmbedErrorBoundary embedType={provider.label}>
@@ -115,6 +118,7 @@ const EmbedBlockNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
             </p>
           </div>
         );
+      }
     }
   };
 

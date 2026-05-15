@@ -169,7 +169,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
               >
                 <Checkbox
                   checked={checked}
-                  onCheckedChange={(value) => togglePreset(preset.mimes, value === true)}
+                  onCheckedChange={(value) => togglePreset(preset.mimes, value)}
                 />
                 {preset.label}
               </label>

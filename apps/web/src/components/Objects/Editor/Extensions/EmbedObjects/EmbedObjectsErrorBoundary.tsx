@@ -21,20 +21,20 @@ export class EmbedObjectsErrorBoundary extends Component<
   EmbedObjectsErrorBoundaryProps,
   EmbedObjectsErrorBoundaryState
 > {
-  constructor(props: EmbedObjectsErrorBoundaryProps) {
+  public constructor(props: EmbedObjectsErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(): EmbedObjectsErrorBoundaryState {
+  public static getDerivedStateFromError(): EmbedObjectsErrorBoundaryState {
     return { hasError: true };
   }
 
-  override componentDidCatch(error: Error, info: ErrorInfo) {
+  public override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[EmbedObjects] blockEmbed NodeView render error:', error, info);
   }
 
-  override render() {
+  public override render() {
     if (this.state.hasError) {
       return (
         <div

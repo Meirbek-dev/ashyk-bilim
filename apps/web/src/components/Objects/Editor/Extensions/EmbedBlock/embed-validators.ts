@@ -57,14 +57,14 @@ export function parseYouTubeUrl(url: string): string | null {
     }
 
     // https://www.youtube.com/embed/<id>
-    const embedMatch = pathname.match(/^\/embed\/([^/?#]+)/);
+    const embedMatch = /^\/embed\/([^/?#]+)/.exec(pathname);
     if (embedMatch) {
       const id = embedMatch[1];
       return id && id.length > 0 ? id : null;
     }
 
     // https://www.youtube.com/shorts/<id>
-    const shortsMatch = pathname.match(/^\/shorts\/([^/?#]+)/);
+    const shortsMatch = /^\/shorts\/([^/?#]+)/.exec(pathname);
     if (shortsMatch) {
       const id = shortsMatch[1];
       return id && id.length > 0 ? id : null;
@@ -199,7 +199,7 @@ function validateProviderUrl(type: EmbedType, url: string): null | EmbedValidati
   const provider = getEmbedProvider(type);
   const parsed = parseAbsoluteUrl(url);
 
-  if (!provider || !parsed || parsed.protocol !== 'https:') {
+  if (!provider || parsed?.protocol !== 'https:') {
     return 'errorInvalid';
   }
 
@@ -229,7 +229,7 @@ function buildVimeoSrc(url: string): string {
 
   if (parsed.hostname === 'player.vimeo.com') return url;
 
-  const id = parsed.pathname.split('/').filter(Boolean)[0];
+  const id = parsed.pathname.split('/').find(Boolean);
   return id ? `https://player.vimeo.com/video/${id}` : url;
 }
 
@@ -261,22 +261,30 @@ function buildGenericEmbeddableSrc(type: EmbedType, url: string): string {
       const videoId = resolveYouTubeVideoId(url);
       return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : url;
     }
-    case 'excalidraw':
+    case 'excalidraw': {
       return buildExcalidrawSrc(url);
-    case 'tldraw':
+    }
+    case 'tldraw': {
       return buildTldrawSrc(url);
-    case 'vimeo':
+    }
+    case 'vimeo': {
       return buildVimeoSrc(url);
-    case 'codepen':
+    }
+    case 'codepen': {
       return buildCodePenSrc(url);
-    case 'figma':
+    }
+    case 'figma': {
       return buildFigmaSrc(url);
-    case 'github-gist':
+    }
+    case 'github-gist': {
       return buildGistSrc(url);
-    case 'spotify':
+    }
+    case 'spotify': {
       return buildSpotifySrc(url);
-    default:
+    }
+    default: {
       return url;
+    }
   }
 }
 

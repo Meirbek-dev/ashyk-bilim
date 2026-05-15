@@ -10,4 +10,3 @@ export async function uploadNewPDFFile(file: File, activity_uuid: string) {
       console.log('error', error);
     });
 }
-

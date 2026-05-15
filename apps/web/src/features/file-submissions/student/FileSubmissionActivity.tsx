@@ -117,7 +117,7 @@ export default function FileSubmissionActivity({ activity }: FileSubmissionActiv
       ...valid.map((file) => ({
         id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
         file,
-        status: 'queued',
+        status: 'queued' as const,
       })),
     ]);
   }
@@ -262,7 +262,7 @@ export default function FileSubmissionActivity({ activity }: FileSubmissionActiv
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {attempt.final_score != null ? <Badge variant="outline">{attempt.final_score}%</Badge> : null}
+                  {attempt.final_score !== null ? <Badge variant="outline">{attempt.final_score}%</Badge> : null}
                   <AttemptStatusBadge status={attempt.status} />
                 </div>
               </div>

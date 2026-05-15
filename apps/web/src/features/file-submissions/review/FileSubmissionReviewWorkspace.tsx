@@ -54,7 +54,7 @@ export default function FileSubmissionReviewWorkspace({
     const items = queue?.items ?? [];
     if (!term) return items;
     return items.filter((attempt) => {
-      const user = attempt.user;
+      const { user } = attempt;
       const name = `${user?.first_name ?? ''} ${user?.last_name ?? ''} ${user?.email ?? ''} ${user?.username ?? ''}`;
       return name.toLowerCase().includes(term);
     });
@@ -90,7 +90,7 @@ export default function FileSubmissionReviewWorkspace({
 
   function selectAttempt(attempt: FileSubmissionAttempt) {
     setSelectedUuid(attempt.attempt_uuid);
-    setScore(attempt.final_score == null ? '' : String(attempt.final_score));
+    setScore(attempt.final_score === null ? '' : String(attempt.final_score));
     setFeedback(typeof attempt.feedback?.feedback === 'string' ? attempt.feedback.feedback : '');
   }
 
@@ -202,7 +202,7 @@ export default function FileSubmissionReviewWorkspace({
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {selected.is_late ? <Badge variant="destructive">Late</Badge> : null}
-                  {selected.final_score != null ? <Badge variant="outline">{selected.final_score}%</Badge> : null}
+                  {selected.final_score !== null ? <Badge variant="outline">{selected.final_score}%</Badge> : null}
                   <AttemptStatusBadge status={selected.status} />
                 </div>
               </div>
@@ -297,7 +297,7 @@ export default function FileSubmissionReviewWorkspace({
 }
 
 function displayUser(attempt: FileSubmissionAttempt) {
-  const user = attempt.user;
+  const { user } = attempt;
   const fullName = `${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim();
   return fullName || user?.username || user?.email || 'Learner';
 }

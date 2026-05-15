@@ -105,7 +105,7 @@ export const EmbedBlock = Node.create({
           }
 
           // No-op if there is no embedBlock node at the given position
-          if (!node || node.type.name !== 'embedBlock') {
+          if (node?.type.name !== 'embedBlock') {
             return true;
           }
 

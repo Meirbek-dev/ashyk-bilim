@@ -13,7 +13,7 @@ import { resolveYouTubeVideoId } from './embed-validators';
 const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
   const { node, editor, deleteNode, getPos } = props;
   const { url } = node.attrs;
-  const isEditable = editor.isEditable;
+  const { isEditable } = editor;
   const videoId = url ? resolveYouTubeVideoId(url) : null;
   const t = useTranslations('DashPage.Editor.EmbedPanel');
   const openForEdit = useEmbedPanelStore((state) => state.openForEdit);

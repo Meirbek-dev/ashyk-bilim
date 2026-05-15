@@ -23,7 +23,7 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
 
   const t = useTranslations('DashPage.Editor.EmbedPanel');
   const tCommon = useTranslations('Common');
-  const isEditable = editor.isEditable;
+  const { isEditable } = editor;
 
   // ── SSR guard ──────────────────────────────────────────────────────────────
   const [mounted, setMounted] = useState(false);
