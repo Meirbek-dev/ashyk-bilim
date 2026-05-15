@@ -3,6 +3,9 @@
  * Defined separately from global-setup to avoid import cycles in test files.
  */
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const STORAGE_STATE_DIR = path.join(__dirname, '.auth');
 

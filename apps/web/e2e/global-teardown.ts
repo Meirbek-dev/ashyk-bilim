@@ -8,7 +8,10 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { STORAGE_STATE_DIR } from './global-setup';
+import { fileURLToPath } from 'node:url';
+import { STORAGE_STATE_DIR } from './auth-states';
+
+const _dirname = path.dirname(fileURLToPath(import.meta.url)); // ESM compat
 
 export default async function globalTeardown(): Promise<void> {
   // Remove saved authentication states (they contain session tokens)

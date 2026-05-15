@@ -7,6 +7,11 @@
  * will read from process.env which has already been populated.
  */
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 export const USERS = {
   admin: {
     email: process.env.E2E_ADMIN_EMAIL ?? 'admin@test.local',

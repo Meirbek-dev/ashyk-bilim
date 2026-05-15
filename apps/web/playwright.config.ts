@@ -1,6 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import * as path from 'node:path';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Minimal env loader — no external deps required in the config file
 function loadEnv(file: string): void {

@@ -19,6 +19,12 @@
 import { chromium, type FullConfig } from '@playwright/test';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { STORAGE_STATE_DIR, STORAGE_STATE } from './auth-states';
+
+export { STORAGE_STATE_DIR, STORAGE_STATE };
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ---------------------------------------------------------------------------
 // Load test-specific env overrides (Playwright runs in Node; dotenv may not be
@@ -44,9 +50,6 @@ loadEnvFile(path.join(__dirname, '.env.test.local')); // overrides
 const API_URL = process.env.E2E_API_URL ?? 'http://localhost:1338/api/v1';
 const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 
-import { STORAGE_STATE_DIR, STORAGE_STATE } from './auth-states';
-export { STORAGE_STATE_DIR, STORAGE_STATE };
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -58,12 +61,15 @@ async function registerUser(opts: {
   firstName: string;
   lastName: string;
 }): Promise<{ id: number; email: string } | null> {
+  // Derive a username from the email local-part (e.g. e2e-teacher@example.com → e2e_teacher)
+  const username = opts.email.split('@')[0]!.replace(/[^a-zA-Z0-9_]/g, '_');
   const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       email: opts.email,
       password: opts.password,
+      username,
       first_name: opts.firstName,
       last_name: opts.lastName,
       is_active: true,
@@ -71,13 +77,17 @@ async function registerUser(opts: {
   });
 
   if (res.status === 400) {
-    // 400 with "REGISTER_USER_ALREADY_EXISTS" means the user was already
-    // created from a previous run — that is fine, continue.
-    const body = await res.json().catch(() => ({}));
-    if (body?.detail === 'REGISTER_USER_ALREADY_EXISTS') {
+    // Handle "already exists" responses — both FastAPI-Users and platform-custom formats
+    const body = await res.json().catch(() => ({})) as Record<string, unknown>;
+    const alreadyExists =
+      body?.detail === 'REGISTER_USER_ALREADY_EXISTS' ||
+      (body as { error_code?: string })?.error_code === 'email_taken' ||
+      (body as { error_code?: string })?.error_code === 'username_taken';
+    if (alreadyExists) {
       console.log(`[setup] User ${opts.email} already exists — skipping registration.`);
       return null;
     }
+    throw new Error(`[setup] Failed to register ${opts.email}: 400 ${JSON.stringify(body)}`);
   }
 
   if (!res.ok) {
@@ -110,13 +120,15 @@ async function loginViaApi(email: string, password: string): Promise<string> {
   return setCookie.map((c) => c.split(';')[0]).join('; ');
 }
 
-/** GET /api/v1/auth/me — returns the current user object */
+/** GET /api/v1/auth/me — returns the current session object with user nested under `user` key */
 async function getMe(cookieHeader: string): Promise<{ id: number; email: string; user_uuid: string }> {
   const res = await fetch(`${API_URL}/auth/me`, {
     headers: { Cookie: cookieHeader },
   });
   if (!res.ok) throw new Error(`[setup] /auth/me failed: ${res.status}`);
-  return res.json();
+  const data = await res.json() as { user?: { id: number; email: string; user_uuid: string }; id?: number; email?: string; user_uuid?: string };
+  // The endpoint wraps the user object: { user: { id, email, ... }, roles, ... }
+  return data.user ?? (data as { id: number; email: string; user_uuid: string });
 }
 
 /** GET /api/v1/roles — list all roles, returns array of { id, slug, name } */
@@ -187,8 +199,8 @@ async function captureStorageState(
 
   await page.goto('/en/login');
 
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(password);
+  await page.locator('input[name="email"]').fill(email);
+  await page.locator('input[name="password"]').fill(password);
   await page.getByRole('button', { name: /login/i }).click();
 
   // Wait for redirect away from /login — indicates successful auth
@@ -240,14 +252,15 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   const adminCookie = await loginViaApi(adminEmail, adminPassword);
   const teacherCookie = await loginViaApi(teacherEmail, teacherPassword);
 
-  // 3. Resolve the "Teacher" role id
+  // 3. Resolve the teacher role id (configurable via E2E_TEACHER_ROLE_SLUG, default: 'instructor')
   const roles = await listRoles(adminCookie);
+  const teacherRoleSlug = process.env.E2E_TEACHER_ROLE_SLUG ?? 'instructor';
   const teacherRole = roles.find(
-    (r) => r.slug === 'teacher' || r.name.toLowerCase().includes('teacher'),
+    (r) => r.slug === teacherRoleSlug,
   );
   if (!teacherRole) {
     throw new Error(
-      `[setup] Could not find a "teacher" role. Available roles: ${roles.map((r) => r.slug).join(', ')}`,
+      `[setup] Could not find role with slug "${teacherRoleSlug}". Available roles: ${roles.map((r) => `${r.slug}(${r.name})`).join(', ')}`,
     );
   }
 
