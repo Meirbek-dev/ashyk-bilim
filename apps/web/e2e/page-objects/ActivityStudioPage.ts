@@ -133,7 +133,10 @@ export class ActivityStudioPage {
           const addChoiceBtn = questionEditor.getByRole('button', { name: /add\s*(choice|option)/i });
           await addChoiceBtn.click();
         }
-        await choiceInput.fill(opts.choices[i]);
+        const choiceText = opts.choices[i];
+        if (choiceText !== undefined) {
+          await choiceInput.fill(choiceText);
+        }
       }
 
       // Mark correct answer(s)
