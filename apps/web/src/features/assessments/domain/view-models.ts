@@ -17,7 +17,7 @@ import type { AssessmentItem } from './items';
 export type AssessmentSurface = 'STUDIO' | 'REVIEW' | 'ATTEMPT';
 
 /** Assessment kind identifiers — mirrors ActivityType from the backend. */
-export type AssessmentKind = 'TYPE_FILE_SUBMISSION' | 'TYPE_EXAM' | 'TYPE_CODE_CHALLENGE' | 'TYPE_QUIZ';
+export type AssessmentKind = 'TYPE_FILE_SUBMISSION' | 'TYPE_EXAM' | 'TYPE_CODE_CHALLENGE' | 'TYPE_CUSTOM';
 
 // ── Studio surface ─────────────────────────────────────────────────────────────
 
@@ -163,7 +163,7 @@ export function assessmentTypeToKind(assessmentType: string): AssessmentKind | n
       return 'TYPE_CODE_CHALLENGE';
     }
     case 'QUIZ': {
-      return 'TYPE_QUIZ';
+      return 'TYPE_CUSTOM';
     }
     default: {
       return null;

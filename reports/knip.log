@@ -1,0 +1,761 @@
+bun knip
+$ knip
+Unused files (85)
+src/app/[locale]/editor/main.ts
+src/components/Dashboard/Analytics/AnalyticsPageSkeleton.tsx
+src/components/Dashboard/Analytics/ScoreDistributionChart.tsx
+src/components/Dashboard/Courses/CourseWorkspaceOverview.tsx
+src/components/Dashboard/gamification-dashboard.tsx
+src/components/DevScriptLoader.tsx
+src/components/Objects/Activities/CodeChallenge/CodeChallengeActivity.tsx 
+src/components/Objects/Activities/DynamicCanva/CustomHeadingExtenstion.tsx
+src/components/Objects/Courses/CourseUpdates/CourseUpdates.tsx
+src/components/Objects/Editor/menus/index.ts
+src/components/Objects/Editor/Toolbar/EmbedPanel/ExcalidrawEmbedForm.tsx  
+src/components/Objects/Editor/Toolbar/EmbedPanel/TldrawEmbedForm.tsx
+src/components/Objects/Editor/Toolbar/EmbedPanel/YouTubeEmbedForm.tsx
+src/components/Objects/Editor/Toolbar/index.ts
+src/components/Objects/Elements/ConfirmationModal/ConfirmationModal.tsx
+src/components/Objects/MiniInfoTooltip.tsx
+src/components/Objects/Modals/Chapters/NewChapter.tsx
+src/components/Objects/Onboarding/Onboarding.tsx
+src/components/Objects/Quiz/QuizSkeleton.tsx
+src/components/Pages/Activity/ActivityNavigation.tsx
+src/components/Pages/Certificate/CertificatePage.tsx
+src/components/svg/DividerVerticalIcon.tsx
+src/components/ui/aspect-ratio.tsx
+src/components/ui/autocomplete.tsx
+src/components/ui/button-group.tsx
+src/components/ui/checkbox-group.tsx
+src/components/ui/combobox.tsx
+src/components/ui/context-menu.tsx
+src/components/ui/direction.tsx
+src/components/ui/empty.tsx
+src/components/ui/fieldset.tsx
+src/components/ui/form.tsx
+src/components/ui/frame.tsx
+src/components/ui/group.tsx
+src/components/ui/item.tsx
+src/components/ui/kbd.tsx
+src/components/ui/menu.tsx
+src/components/ui/menubar.tsx
+src/components/ui/meter.tsx
+src/components/ui/number-field.tsx
+src/components/ui/otp-field.tsx
+src/components/ui/preview-card.tsx
+src/components/ui/slider.tsx
+src/components/ui/toggle-group.tsx
+src/components/ui/toolbar.tsx
+src/features/assessments/registry/exam-author.tsx
+src/features/assessments/registry/exam/ExamStartPanel.tsx
+src/features/assessments/registry/exam/QuestionEditor.tsx
+src/features/assessments/registry/exam/questionEditorReducer.ts
+src/features/assessments/registry/exam/QuestionManagement.tsx
+src/features/assessments/shared/AntiCheatOverlay.tsx
+src/features/assessments/shared/AttemptTimer.tsx
+src/features/assessments/shared/AutoSaveIndicator.tsx
+src/features/assessments/shared/PostSubmissionFeedback.tsx
+src/features/assessments/studio/OutlineRail.tsx
+src/features/assessments/studio/PreviewModeButton.tsx
+src/features/assessments/studio/ReadinessPanel.tsx
+src/features/grading/review/components/AttemptHistoryPanel.tsx
+src/features/grading/review/components/ConflictResolver.tsx
+src/features/grading/review/components/ItemRubricEditor.tsx
+src/hooks/courses/useCourse.ts
+src/hooks/courses/useCourseContributors.ts
+src/hooks/courses/useCourseRights.ts
+src/hooks/use-media-query.ts
+src/hooks/useAntiCheatViolations.ts
+src/hooks/useAssessmentAutosave.ts
+src/hooks/useGradingSSE.ts
+src/hooks/useQueryParam.ts
+src/hooks/useUserById.ts
+src/hooks/useWindowSize.ts
+src/lib/cache.ts
+src/lib/currencies.ts
+src/lib/fetchWithRetry.ts
+src/lib/retry.ts
+src/messages/Artplayer/es.js
+src/messages/Artplayer/fr.js
+src/messages/Artplayer/id.js
+src/messages/Artplayer/index.js
+src/messages/Artplayer/kz.js
+src/messages/Artplayer/ru.js
+src/messages/Artplayer/tr.js
+src/services/settings/password.ts
+src/services/settings/profile.ts
+src/services/utils/health.ts
+src/services/utils/react/middlewares/views.ts
+Unused dependencies (1)
+@excalidraw/excalidraw  package.json:38:6
+Unused exports (434)
+CourseContext                                   src/components/Contexts/CourseContext.tsx:84:14
+EditorProviderContext                           src/components/Contexts/Editor/EditorContext.tsx:7:14
+PlatformContext                                 src/components/Contexts/PlatformContext.tsx:9:14
+CollapsibleSection                    function  src/components/Dashboard/Gamification/collapsible-section.tsx:25:17
+EngagementStreak                      function  src/components/Dashboard/Gamification/engagement-streak.tsx:24:17
+HeroSection                                     src/components/Dashboard/Gamification/index.ts:11:10
+Leaderboard                                     src/components/Dashboard/Gamification/index.ts:12:10
+EngagementStreak                                src/components/Dashboard/Gamification/index.ts:13:10
+RecentActivityFeed                              src/components/Dashboard/Gamification/index.ts:14:10
+CollapsibleSection                              src/components/Dashboard/Gamification/index.ts:15:10
+LevelUpCelebration                              src/components/Dashboard/Gamification/index.ts:18:10
+GlowingLevelBadge                               src/components/Dashboard/Gamification/index.ts:22:3
+LevelProgress                                   src/components/Dashboard/Gamification/index.ts:23:3
+MilestoneProgress                               src/components/Dashboard/Gamification/index.ts:24:3
+XPGainAnimation                                 src/components/Dashboard/Gamification/index.ts:25:3
+ParticleEffect                                  src/components/Dashboard/Gamification/index.ts:26:3
+useXPToast                                      src/components/Dashboard/Gamification/index.ts:27:3
+default                               function  src/components/features/courses/code-challenges/CodeChallengeEditor.tsx:594:16
+default                               function  src/components/features/courses/code-challenges/CodeEditor.tsx:125:16
+CodeRunStatusBadge                    function  src/components/features/courses/code-challenges/CodeRunStatusBadge.tsx:24:17
+Judge0StatusBadge                     function  src/components/features/courses/code-challenges/CodeRunStatusBadge.tsx:28:17
+CodeEditor                                      src/components/features/courses/code-challenges/index.ts:1:10
+LanguageSelector                                src/components/features/courses/code-challenges/index.ts:4:10
+CodeRunStatusBadge                              src/components/features/courses/code-challenges/index.ts:5:10
+Judge0StatusBadge                               src/components/features/courses/code-challenges/index.ts:5:30
+TestCaseCard                                    src/components/features/courses/code-challenges/index.ts:6:10
+TestResultsList                                 src/components/features/courses/code-challenges/index.ts:6:24
+Judge0Status                                    src/components/features/courses/code-challenges/index.ts:6:41
+default                               function  src/components/features/courses/code-challenges/LanguageSelector.tsx:105:16
+TestCaseCard                          function  src/components/features/courses/code-challenges/TestCaseCard.tsx:51:17
+default                               function  src/components/features/courses/code-challenges/TestCaseCard.tsx:309:16
+EditorSaveIndicator                             src/components/Objects/Editor/chrome/index.ts:3:10
+isTiptapJsonDoc                       function  src/components/Objects/Editor/core/editor-content.ts:17:17
+createInteractiveCanvasExtensions     function  src/components/Objects/Editor/core/editor-extensions.ts:11:17
+createDiscussionEditorExtensions      function  src/components/Objects/Editor/core/editor-extensions.ts:15:17
+createViewingEditorExtensions         function  src/components/Objects/Editor/core/editor-extensions.ts:19:17
+buildHeadingId                        function  src/components/Objects/Editor/core/heading-ids.ts:22:17
+insertPastedImageBlocks               function  src/components/Objects/Editor/core/image-paste.ts:75:17
+getHighlighter                                  src/components/Objects/Editor/core/shiki.ts:9:14
+slashCommandKey                                 src/components/Objects/Editor/core/slash-command.ts:18:14
+getSlashCommandState                  function  src/components/Objects/Editor/core/slash-command.ts:20:17
+setSlashCommandState                  function  src/components/Objects/Editor/core/slash-command.ts:28:17
+syncSlashCommandQuery                 function  src/components/Objects/Editor/core/slash-command.ts:49:17
+Youtube                                         src/components/Objects/Editor/Extensions/Youtube/Youtube.ts:5:14
+InteractiveViewer                               src/components/Objects/Editor/views/index.ts:2:10
+DiscussionEditor                                src/components/Objects/Editor/views/index.ts:3:10
+PermissionErrorBoundary                         src/components/Security/index.ts:8:27
+RoleSlugs                                       src/components/Security/index.ts:12:38
+perm                                            src/components/Security/index.ts:12:49
+PermissionErrorBoundary               class     src/components/Security/PermissionGuard.tsx:52:14
+AlertDialogOverlay                              src/components/ui/alert-dialog.tsx:187:3
+AlertDialogPortal                               src/components/ui/alert-dialog.tsx:188:3
+AlertAction                                     src/components/ui/alert.tsx:70:47
+AvatarGroup                                     src/components/ui/avatar.tsx:95:47
+AvatarGroupCount                                src/components/ui/avatar.tsx:95:60
+AvatarBadge                                     src/components/ui/avatar.tsx:95:78
+badgeVariants                                   src/components/ui/badge.tsx:52:17
+BreadcrumbEllipsis                              src/components/ui/breadcrumb.tsx:107:3
+CalendarDayButton                               src/components/ui/calendar.tsx:219:20
+CardAction                                      src/components/ui/card.tsx:82:51
+ChartLegend                                     src/components/ui/chart.tsx:362:3
+ChartStyle                                      src/components/ui/chart.tsx:364:3
+CommandDialog                                   src/components/ui/command.tsx:148:3
+CommandShortcut                                 src/components/ui/command.tsx:154:3
+CommandSeparator                                src/components/ui/command.tsx:155:3
+DialogClose                                     src/components/ui/dialog.tsx:162:3
+DialogOverlay                                   src/components/ui/dialog.tsx:167:3
+DialogPortal                                    src/components/ui/dialog.tsx:168:3
+DropdownMenuPortal                              src/components/ui/dropdown-menu.tsx:270:3
+DropdownMenuShortcut                            src/components/ui/dropdown-menu.tsx:280:3
+DropdownMenuSub                                 src/components/ui/dropdown-menu.tsx:281:3
+DropdownMenuSubTrigger                          src/components/ui/dropdown-menu.tsx:282:3
+DropdownMenuSubContent                          src/components/ui/dropdown-menu.tsx:283:3
+FieldGroup                                      src/components/ui/field.tsx:213:3
+FieldLegend                                     src/components/ui/field.tsx:214:3
+FieldSeparator                                  src/components/ui/field.tsx:215:3
+FieldSet                                        src/components/ui/field.tsx:216:3
+FieldTitle                                      src/components/ui/field.tsx:218:3
+InputGroupButton                                src/components/ui/input-group.tsx:139:39
+InputGroupText                                  src/components/ui/input-group.tsx:139:57
+InputGroupInput                                 src/components/ui/input-group.tsx:139:73
+InputGroupTextarea                              src/components/ui/input-group.tsx:139:90
+NativeSelectOptGroup                            src/components/ui/native-select.tsx:52:24
+NavigationMenuContent                           src/components/ui/navigation-menu.tsx:140:3
+NavigationMenuIndicator                         src/components/ui/navigation-menu.tsx:141:3
+NavigationMenuLink                              src/components/ui/navigation-menu.tsx:143:3
+NavigationMenuTrigger                           src/components/ui/navigation-menu.tsx:145:3
+navigationMenuTriggerStyle                      src/components/ui/navigation-menu.tsx:146:3
+NavigationMenuPositioner                        src/components/ui/navigation-menu.tsx:147:3
+PopoverDescription                              src/components/ui/popover.tsx:87:35
+PopoverHeader                                   src/components/ui/popover.tsx:87:55
+PopoverTitle                                    src/components/ui/popover.tsx:87:70
+ProgressTrack                                   src/components/ui/progress.tsx:63:20
+ProgressIndicator                               src/components/ui/progress.tsx:63:35
+ProgressLabel                                   src/components/ui/progress.tsx:63:54
+ProgressValue                                   src/components/ui/progress.tsx:63:69
+ScrollBar                                       src/components/ui/scroll-area.tsx:47:22
+SelectLabel                                     src/components/ui/select.tsx:177:3
+SelectScrollDownButton                          src/components/ui/select.tsx:178:3
+SelectScrollUpButton                            src/components/ui/select.tsx:179:3
+SelectSeparator                                 src/components/ui/select.tsx:180:3
+SheetClose                                      src/components/ui/sheet.tsx:144:31
+SheetFooter                                     src/components/ui/sheet.tsx:144:70
+SidebarGroupAction                              src/components/ui/sidebar.tsx:676:3
+SidebarGroupLabel                               src/components/ui/sidebar.tsx:678:3
+SidebarInput                                    src/components/ui/sidebar.tsx:680:3
+SidebarMenuAction                               src/components/ui/sidebar.tsx:683:3
+SidebarMenuBadge                                src/components/ui/sidebar.tsx:684:3
+SidebarMenuSkeleton                             src/components/ui/sidebar.tsx:687:3
+SidebarMenuSub                                  src/components/ui/sidebar.tsx:688:3
+SidebarMenuSubButton                            src/components/ui/sidebar.tsx:689:3
+SidebarMenuSubItem                              src/components/ui/sidebar.tsx:690:3
+SidebarRail                                     src/components/ui/sidebar.tsx:692:3
+SidebarSeparator                                src/components/ui/sidebar.tsx:693:3
+TableFooter                                     src/components/ui/table.tsx:98:41
+TableCaption                                    src/components/ui/table.tsx:98:86
+tabsListVariants                                src/components/ui/tabs.tsx:76:52
+toggleVariants                                  src/components/ui/toggle.tsx:45:18
+LoadingSkeleton                       function  src/components/Utils/PageSuspense.tsx:12:17
+PageTransitionLoader                  function  src/components/Utils/PageSuspense.tsx:126:23
+default                               function  src/components/Utils/PermissionTooltip.tsx:69:16
+CommonActions                                   src/components/Utils/ResourceActionsMenu.tsx:141:14
+default                               function  src/components/Utils/ResourceActionsMenu.tsx:232:16
+LIFECYCLE_LABELS                                src/features/assessments/domain/lifecycle.ts:12:14
+LIFECYCLE_DESCRIPTIONS                          src/features/assessments/domain/lifecycle.ts:19:14
+LIFECYCLE_ALLOWED_TRANSITIONS                   src/features/assessments/domain/lifecycle.ts:26:14
+canTransitionLifecycle                function  src/features/assessments/domain/lifecycle.ts:49:17
+DEFAULT_ANTI_CHEAT_POLICY                       src/features/assessments/domain/policy.ts:45:14
+PROGRESS_STATE_LABELS                           src/features/assessments/domain/progress.ts:15:14
+PROGRESS_STATE_CLASSES                          src/features/assessments/domain/progress.ts:28:14
+isProgressComplete                    function  src/features/assessments/domain/progress.ts:40:17
+isProgressOverdue                     function  src/features/assessments/domain/progress.ts:44:17
+progressNeedsTeacherAction            function  src/features/assessments/domain/progress.ts:49:17
+issuesForArea                         function  src/features/assessments/domain/readiness.ts:70:17
+RELEASE_STATE_LABELS                            src/features/assessments/domain/release.ts:16:14
+getReleaseState                       function  src/features/assessments/domain/release.ts:23:17
+isVisibleToStudent                    function  src/features/assessments/domain/release.ts:40:17
+hasStudentFeedback                    function  src/features/assessments/domain/release.ts:45:17
+resolveScore                          function  src/features/assessments/domain/score.ts:22:17
+normalizeToPercent                    function  src/features/assessments/domain/score.ts:44:17
+parseScoreInput                       function  src/features/assessments/domain/score.ts:51:17
+isPassing                             function  src/features/assessments/domain/score.ts:59:17
+SUBMISSION_STATUS_LABELS                        src/features/assessments/domain/submission-status.ts:23:14
+SUBMISSION_ALLOWED_TRANSITIONS                  src/features/assessments/domain/submission-status.ts:31:14
+canTransitionSubmission               function  src/features/assessments/domain/submission-status.ts:39:17
+needsTeacherAction                    function  src/features/assessments/domain/submission-status.ts:43:17
+canTeacherEditGrade                   function  src/features/assessments/domain/submission-status.ts:47:17
+canPublishGrade                       function  src/features/assessments/domain/submission-status.ts:51:17
+canReturnSubmission                   function  src/features/assessments/domain/submission-status.ts:55:17
+useCodeChallengeSettings                        src/features/assessments/hooks/code-challenge.ts:4:3
+useSaveCodeChallengeSettings                    src/features/assessments/hooks/code-challenge.ts:10:3
+useUpdateExamSettings                           src/features/assessments/hooks/exam.ts:5:3
+useExamActivity                                 src/features/assessments/hooks/exam.ts:6:3
+useExamDetail                                   src/features/assessments/hooks/exam.ts:7:3
+useExamQuestions                                src/features/assessments/hooks/exam.ts:8:3
+useExamMyAttempts                               src/features/assessments/hooks/exam.ts:9:3
+useExamAllAttempts                              src/features/assessments/hooks/exam.ts:10:3
+useAssessment                         function  src/features/assessments/hooks/useAssessment.ts:67:17
+useAssessmentReview                   function  src/features/assessments/hooks/useAssessment.ts:209:17
+useAssessment                                   src/features/assessments/index.ts:5:10
+useAssessmentStudio                             src/features/assessments/index.ts:5:25
+useAssessmentAttempt                            src/features/assessments/index.ts:5:46
+useAssessmentReview                             src/features/assessments/index.ts:5:68
+useAssessmentSubmission                         src/features/assessments/index.ts:7:10
+resolveKindModule                               src/features/assessments/index.ts:11:10
+loadKindModule                                  src/features/assessments/index.ts:11:29
+getLoadedKindModule                             src/features/assessments/index.ts:11:45
+registerKind                                    src/features/assessments/index.ts:11:66
+SubmissionStatusBadge                           src/features/assessments/index.ts:15:21
+useAttemptShellControls                         src/features/assessments/index.ts:18:10
+ChoiceItemReviewDetail                function  src/features/assessments/items/choice/index.tsx:411:17
+CodeItemReviewDetail                  function  src/features/assessments/items/code/index.tsx:96:17
+normalizeFileUploadConstraints        function  src/features/assessments/items/file-upload/index.tsx:102:17
+FileUploadAttempt                     function  src/features/assessments/items/file-upload/index.tsx:287:17
+FileUploadReviewDetail                function  src/features/assessments/items/file-upload/index.tsx:438:17
+FormItemAuthor                        function  src/features/assessments/items/form/index.tsx:80:17
+FormItemAttempt                       function  src/features/assessments/items/form/index.tsx:235:17
+FormItemReviewDetail                  function  src/features/assessments/items/form/index.tsx:299:17
+MatchingItemAuthor                    function  src/features/assessments/items/matching/index.tsx:32:17
+MatchingItemAttempt                   function  src/features/assessments/items/matching/index.tsx:111:17
+MatchingItemReview                    function  src/features/assessments/items/matching/index.tsx:181:17
+normalizeOpenText                     function  src/features/assessments/items/open-text/index.tsx:23:17
+OpenTextAuthor                        function  src/features/assessments/items/open-text/index.tsx:33:17
+OpenTextAttempt                       function  src/features/assessments/items/open-text/index.tsx:56:17
+OpenTextReviewDetail                  function  src/features/assessments/items/open-text/index.tsx:81:17
+listItemKindModules                   function  src/features/assessments/items/registry.ts:59:17
+UnsupportedItemAttempt                function  src/features/assessments/items/registry.ts:71:17
+UnsupportedItemReview                 function  src/features/assessments/items/registry.ts:79:17
+useExamActivity                       function  src/features/assessments/registry/exam/hooks.ts:59:17
+useExamQuestions                      function  src/features/assessments/registry/exam/hooks.ts:63:17
+useExamDetail                         function  src/features/assessments/registry/exam/hooks.ts:67:17
+useExamMyAttempts                     function  src/features/assessments/registry/exam/hooks.ts:71:17
+useExamAllAttempts                    function  src/features/assessments/registry/exam/hooks.ts:75:17
+useUpdateExamSettings                 function  src/features/assessments/registry/exam/hooks.ts:83:17
+resolveKindModule                     function  src/features/assessments/registry/index.ts:96:23
+getLoadedKindModule                   function  src/features/assessments/registry/index.ts:114:17
+SaveStateBadge                        function  src/features/assessments/shell/AssessmentActionBar.tsx:231:17
+useAttemptGuard                                 src/features/assessments/shell/hooks/useAssessmentPolicy.ts:9:3
+AssessmentLayout                                src/features/assessments/shell/index.ts:9:21
+AssessmentChrome                                src/features/assessments/shell/index.ts:12:10
+AssessmentActionBar                             src/features/assessments/shell/index.ts:16:10
+SaveStateBadge                                  src/features/assessments/shell/index.ts:16:31
+useAssessmentAttempt                            src/features/assessments/shell/index.ts:25:10
+useAttemptGuard                                 src/features/assessments/shell/index.ts:32:10
+useCourseMetadata                     function  src/features/courses/hooks/useCourseQueries.ts:80:17
+courseQueryOptions                    function  src/features/courses/queries/course.query.ts:19:17
+courseRightsQueryOptions              function  src/features/courses/queries/course.query.ts:44:17
+activityAssessmentUuidQueryOptions    function  src/features/courses/queries/course.query.ts:159:17
+gradebookActivityKind                 function  src/features/grading/domain/gradebook.ts:49:17
+matchesGradebookSavedFilter           function  src/features/grading/domain/gradebook.ts:64:17
+parseScoreInput                       function  src/features/grading/domain/scoring.ts:3:17
+formatPercentScore                    function  src/features/grading/domain/scoring.ts:10:17
+calculateItemPercent                  function  src/features/grading/domain/scoring.ts:18:17
+SUBMISSION_STATUS_COLORS                        src/features/grading/domain/status.ts:11:14
+SUBMISSION_ALLOWED_TRANSITIONS                  src/features/grading/domain/status.ts:19:14
+RELEASE_STATE_LABELS                            src/features/grading/domain/status.ts:27:14
+ACTIVITY_PROGRESS_STATE_LABELS                  src/features/grading/domain/status.ts:34:14
+canTransitionSubmission               function  src/features/grading/domain/status.ts:58:17
+isPublishedToStudent                  function  src/features/grading/domain/status.ts:69:17
+canSelectForBatchGrading              function  src/features/grading/domain/status.ts:82:17
+getSubmissionMetadata                 function  src/features/grading/domain/types.ts:63:17
+normalizeCourseUuid                             src/hooks/courses/courseKeys.ts:86:10
+useEditableCourseList                 function  src/hooks/courses/useCourseList.ts:27:17
+useCourseChapters                     function  src/hooks/courses/useCourseStructure.ts:58:17
+useChapter                            function  src/hooks/courses/useCourseStructure.ts:69:17
+useChapterActivities                  function  src/hooks/courses/useCourseStructure.ts:80:17
+MOBILE_BREAKPOINT                               src/hooks/use-mobile.ts:32:10
+setUserLocale                         function  src/i18n/locale.ts:37:23
+getPathname                                     src/i18n/navigation.ts:6:56
+APIError                              class     src/lib/api/assertSuccess.ts:10:14
+getSetCookieHeaders                   function  src/lib/auth/cookie-bridge.ts:27:17
+getAccessTokenExpiry                  function  src/lib/auth/cookie-bridge.ts:140:17
+getCurrentReturnTo                    function  src/lib/auth/redirect.ts:25:17
+gamificationTag                                 src/lib/cacheTags.ts:9:14
+getCourseListTags                     function  src/lib/cacheTags.ts:43:17
+revalidateGamification                function  src/lib/cacheTags.ts:58:23
+revalidateTags                        function  src/lib/cacheTags.ts:64:23
+SESSION_CACHE_TTL_MS                            src/lib/constants.ts:30:14
+TOKEN_REFRESH_BUFFER_MS                         src/lib/constants.ts:31:14
+SESSION_CACHE_MAX_SIZE                          src/lib/constants.ts:32:14
+PLATFORM_LABEL                                  src/lib/constants.ts:35:14
+getCourseReadinessChecklist           function  src/lib/course-management.ts:72:17
+getCourseManagementBadges             function  src/lib/course-management.ts:129:17
+FILE_TYPES                                      src/lib/file-validation.ts:7:14
+getAcceptValue                        function  src/lib/file-validation.ts:109:17
+getFileTypeDescription                function  src/lib/file-validation.ts:116:17
+MIME_TO_FRIENDLY_NAME                           src/lib/file-validation.ts:135:14
+inter                                           src/lib/fonts.ts:3:14
+CardHeader                                      src/lib/gamification/components/card-primitives.tsx:312:25
+CardContent                                     src/lib/gamification/components/card-primitives.tsx:313:26
+CardStat                                        src/lib/gamification/components/card-primitives.tsx:314:3
+CardMetricRow                                   src/lib/gamification/components/card-primitives.tsx:315:3
+CardTrendIndicator                              src/lib/gamification/components/card-primitives.tsx:316:3
+CardGrid                                        src/lib/gamification/components/card-primitives.tsx:317:3
+XPGainAnimation                       function  src/lib/gamification/components/level-indicators.tsx:261:17
+MilestoneProgress                     function  src/lib/gamification/components/level-indicators.tsx:328:17
+BatchIndicator                        function  src/lib/gamification/components/notification-queue.tsx:289:17
+useContextualPosition                 function  src/lib/gamification/components/notification-queue.tsx:320:17
+effects                                         src/lib/gamification/design-tokens.ts:96:14
+sizes                                           src/lib/gamification/design-tokens.ts:112:14
+motionVariants                                  src/lib/gamification/design-tokens.ts:139:14
+notificationPositions                           src/lib/gamification/design-tokens.ts:178:14
+getLevelTheme                                   src/lib/gamification/index.ts:15:3
+LEVEL_CONFIG                                    src/lib/gamification/levels.ts:12:14
+getUnlockedFeatures                   function  src/lib/gamification/levels.ts:98:17
+getLevelTheme                         function  src/lib/gamification/theme.ts:141:17
+getDisplayColor                       function  src/lib/theme-color-utils.ts:16:17
+getThemePreviewColors                 function  src/lib/theme-color-utils.ts:29:17
+isSystemFontFamily                    function  src/lib/theme-fonts.ts:132:17
+getGoogleThemeFontFamily              function  src/lib/theme-fonts.ts:136:17
+buildFontCssUrl                       function  src/lib/theme-fonts.ts:172:17
+ensureGoogleFontPreconnects           function  src/lib/theme-fonts.ts:209:17
+loadGoogleFontFamilies                function  src/lib/theme-fonts.ts:214:17
+loadGoogleFont                        function  src/lib/theme-fonts.ts:242:17
+THEME_STORAGE_KEY                               src/lib/theme-registry.ts:33:14
+themeNames                                      src/lib/theme-registry.ts:94:14
+applyThemeToElement                   function  src/lib/theme-registry.ts:119:17
+persistTheme                          function  src/lib/theme-registry.ts:129:17
+ThemeProvider                                   src/lib/theme-system.ts:2:10
+useTheme                                        src/lib/theme-system.ts:2:25
+DEFAULT_THEME_NAME                              src/lib/theme-system.ts:5:3
+DEFAULT_THEME_MODE                              src/lib/theme-system.ts:6:3
+THEME_CACHE_STORAGE_KEY                         src/lib/theme-system.ts:7:3
+THEME_MODE_STORAGE_KEY                          src/lib/theme-system.ts:8:3
+THEME_STORAGE_KEY                               src/lib/theme-system.ts:9:3
+applyTheme                                      src/lib/theme-system.ts:10:3
+applyThemeToElement                             src/lib/theme-system.ts:11:3
+getStoredThemeMode                              src/lib/theme-system.ts:12:3
+getSystemThemeMode                              src/lib/theme-system.ts:13:3
+getStoredTheme                                  src/lib/theme-system.ts:14:3
+getTheme                                        src/lib/theme-system.ts:15:3
+persistTheme                                    src/lib/theme-system.ts:16:3
+themeNames                                      src/lib/theme-system.ts:17:3
+themes                                          src/lib/theme-system.ts:18:3
+getDisplayColor                                 src/lib/theme-system.ts:26:10
+getThemePreviewColors                           src/lib/theme-system.ts:26:27
+THEME_STORAGE_KEY                               src/lib/themes.ts:6:3
+applyThemeToElement                             src/lib/themes.ts:8:3
+persistTheme                                    src/lib/themes.ts:13:3
+themeNames                                      src/lib/themes.ts:14:3
+getCurrentUserProfile                 function  src/lib/users/client.ts:32:23
+getCoursesByUser                                src/lib/users/server.ts:3:10
+getUser                                         src/lib/users/server.ts:3:28
+debounce                              function  src/lib/utils.ts:9:17
+isYouTubeUrl                                    src/lib/utils.ts:38:14
+activityTypeEnum                                src/schemas/activitySchemas.ts:3:14
+activitySubTypeEnum                             src/schemas/activitySchemas.ts:13:14
+activityCreateSchema                            src/schemas/activitySchemas.ts:21:14
+activityUpdateSchema                            src/schemas/activitySchemas.ts:32:14
+chapterCreateSchema                             src/schemas/chapterSchemas.ts:3:14
+chapterUpdateSchema                             src/schemas/chapterSchemas.ts:12:14
+courseOrderSchema                               src/schemas/chapterSchemas.ts:25:14
+courseAccessSchema                              src/schemas/courseSchemas.ts:41:14
+courseContributorsSchema                        src/schemas/courseSchemas.ts:51:14
+ACTIVITY_CHAT_PROTOCOL_VERSION                  src/services/ai/activity-chat-adapter.ts:30:14
+parseActivitySseDataLine              function  src/services/ai/activity-chat-adapter.ts:34:17
+reconcileFinalMessageDelta            function  src/services/ai/activity-chat-adapter.ts:44:17
+getTeacherCourseDetail                function  src/services/analytics/teacher.ts:127:17
+deleteAnalyticsView                   function  src/services/analytics/teacher.ts:172:17
+getGoogleAuthorizeUrl                 function  src/services/auth/auth.ts:13:23
+getImageFile                          function  src/services/blocks/Image/images.ts:20:23
+getPDFFile                            function  src/services/blocks/Pdf/pdf.ts:14:23
+getVideoFile                          function  src/services/blocks/Video/video.ts:75:23
+getServerConfig                                 src/services/config/env.ts:234:14
+getAppConfig                                    src/services/config/env.ts:246:14
+getServerEnv                                    src/services/config/env.ts:258:14
+createFileActivity                    function  src/services/courses/activities.ts:271:23
+getCourseCertifications               function  src/services/courses/certifications.ts:7:23
+getUserCertificates                   function  src/services/courses/certifications.ts:80:23
+getAllUserCertificates                function  src/services/courses/certifications.ts:93:23
+mapCanonicalCodeSubmission            function  src/services/courses/code-challenges.ts:357:17
+startCodeChallenge                    function  src/services/courses/code-challenges.ts:424:23
+getCourseContributors                 function  src/services/courses/courses.ts:495:23
+getCourseRights                       function  src/services/courses/courses.ts:581:23
+likeDiscussion                        function  src/services/courses/discussions.ts:103:23
+getServerGamificationProfile          function  src/services/gamification/server.ts:165:23
+revalidateGamificationTags            function  src/services/gamification/server.ts:237:23
+AI_AVATAR_PATH                                  src/services/media/avatar.ts:13:14
+isExternalUrl                                   src/services/media/avatar.ts:26:14
+extractExternalAvatarUrl                        src/services/media/avatar.ts:45:14
+isGoogleAvatarUrl                               src/services/media/avatar.ts:54:14
+getProxiedAvatarUrl                             src/services/media/avatar.ts:63:14
+fetchMyPermissions                    function  src/services/rbac.ts:46:17
+getRoleUsersCount                     function  src/services/rbac.ts:92:17
+getUserGroups                         function  src/services/usergroups/usergroups.ts:7:23
+getUser                               function  src/services/users/users.ts:6:23
+getCoursesByUser                      function  src/services/users/users.ts:16:23
+updateUserAvatar                      function  src/services/users/users.ts:21:23
+updateUserLocale                      function  src/services/users/users.ts:52:23
+getUploadStatus                       function  src/services/utils/chunked-upload.ts:196:23
+cancelUpload                          function  src/services/utils/chunked-upload.ts:210:23
+selectStreaks                                   src/stores/gamification.ts:278:14
+AvatarFrameSchema                               src/types/gamification/customization.ts:58:14
+AvatarAccessorySchema                           src/types/gamification/customization.ts:70:14
+AvatarCustomizationSchema                       src/types/gamification/customization.ts:82:14
+AvatarUnlockSchema                              src/types/gamification/customization.ts:88:14
+AvatarPresetSchema                              src/types/gamification/customization.ts:95:14
+AVATAR_FRAMES                                   src/types/gamification/customization.ts:104:14
+AVATAR_ACCESSORIES                              src/types/gamification/customization.ts:153:14
+getUnlockedFrames                     function  src/types/gamification/customization.ts:193:17
+getUnlockedAccessories                function  src/types/gamification/customization.ts:199:17
+getAllFrames                          function  src/types/gamification/customization.ts:205:17
+getAllAccessories                     function  src/types/gamification/customization.ts:213:17
+getNextUnlock                         function  src/types/gamification/customization.ts:221:17
+getUnlockProgress                     function  src/types/gamification/customization.ts:247:17
+getRarityColor                        function  src/types/gamification/customization.ts:264:17
+getFrameById                          function  src/types/gamification/customization.ts:281:17
+getAccessoryById                      function  src/types/gamification/customization.ts:292:17
+DashboardDataSchema                             src/types/gamification/dashboard.ts:29:14
+StreakUpdateSchema                              src/types/gamification/dashboard.ts:48:14
+ERROR_TYPES                                     src/types/gamification/errors.ts:9:14
+NetworkErrorSchema                              src/types/gamification/errors.ts:75:14
+AuthErrorSchema                                 src/types/gamification/errors.ts:83:14
+DailyLimitExceededErrorSchema                   src/types/gamification/errors.ts:90:14
+ValidationErrorSchema                           src/types/gamification/errors.ts:99:14
+ServerErrorSchema                               src/types/gamification/errors.ts:112:14
+UnknownErrorSchema                              src/types/gamification/errors.ts:120:14
+GamificationErrorSchema                         src/types/gamification/errors.ts:127:14
+isNetworkError                        function  src/types/gamification/errors.ts:137:17
+isAuthError                           function  src/types/gamification/errors.ts:141:17
+isDailyLimitExceededError             function  src/types/gamification/errors.ts:145:17
+isValidationError                     function  src/types/gamification/errors.ts:149:17
+isServerError                         function  src/types/gamification/errors.ts:153:17
+isUnknownError                        function  src/types/gamification/errors.ts:157:17
+isNetworkError                                  src/types/gamification/index.ts:25:3
+isAuthError                                     src/types/gamification/index.ts:26:3
+isDailyLimitExceededError                       src/types/gamification/index.ts:27:3
+isValidationError                               src/types/gamification/index.ts:28:3
+isServerError                                   src/types/gamification/index.ts:29:3
+isUnknownError                                  src/types/gamification/index.ts:30:3
+LeaderboardEntrySchema                          src/types/gamification/leaderboard.ts:52:14
+LeaderboardSchema                               src/types/gamification/leaderboard.ts:67:14
+LeaderboardFiltersSchema                        src/types/gamification/leaderboard.ts:73:14
+UserRankSchema                                  src/types/gamification/leaderboard.ts:80:14
+assignBadges                          function  src/types/gamification/leaderboard.ts:90:17
+markCurrentUser                       function  src/types/gamification/leaderboard.ts:101:17
+calculateRankChange                   function  src/types/gamification/leaderboard.ts:108:17
+calculatePercentile                   function  src/types/gamification/leaderboard.ts:114:17
+findUserInLeaderboard                 function  src/types/gamification/leaderboard.ts:119:17
+getNearbyEntries                      function  src/types/gamification/leaderboard.ts:123:17
+getTopEntries                         function  src/types/gamification/leaderboard.ts:133:17
+enrichUserRank                        function  src/types/gamification/leaderboard.ts:137:17
+DEFAULT_NOTIFICATION_PREFERENCES                src/types/gamification/preferences.ts:53:14
+DEFAULT_PRIVACY_PREFERENCES                     src/types/gamification/preferences.ts:62:14
+DEFAULT_DISPLAY_PREFERENCES                     src/types/gamification/preferences.ts:70:14
+DEFAULT_GAMIFICATION_PREFERENCES                src/types/gamification/preferences.ts:80:14
+NotificationPreferencesSchema                   src/types/gamification/preferences.ts:86:14
+PrivacyPreferencesSchema                        src/types/gamification/preferences.ts:95:14
+DisplayPreferencesSchema                        src/types/gamification/preferences.ts:103:14
+GamificationPreferencesSchema                   src/types/gamification/preferences.ts:113:14
+PartialGamificationPreferencesSchema            src/types/gamification/preferences.ts:119:14
+createDefaultPreferences              function  src/types/gamification/preferences.ts:126:17
+mergePreferences                      function  src/types/gamification/preferences.ts:130:17
+validatePreferences                   function  src/types/gamification/preferences.ts:150:17
+serializePreferences                  function  src/types/gamification/preferences.ts:160:17
+deserializePreferences                function  src/types/gamification/preferences.ts:164:17
+hasNotificationEnabled                function  src/types/gamification/preferences.ts:174:17
+isProfilePublic                       function  src/types/gamification/preferences.ts:178:17
+shouldShowOnLeaderboard               function  src/types/gamification/preferences.ts:182:17
+hasAnimationsEnabled                  function  src/types/gamification/preferences.ts:186:17
+hasSoundEnabled                       function  src/types/gamification/preferences.ts:190:17
+UserGamificationProfileSchema                   src/types/gamification/profile.ts:69:14
+LevelInfoSchema                                 src/types/gamification/profile.ts:92:14
+StreakInfoSchema                                src/types/gamification/profile.ts:103:14
+calculateLevelProgress                function  src/types/gamification/profile.ts:132:17
+hasValidXP                            function  src/types/gamification/profile.ts:159:17
+hasActiveStreak                       function  src/types/gamification/profile.ts:172:17
+isMaxLevel                            function  src/types/gamification/profile.ts:179:17
+canEarnMoreXPToday                    function  src/types/gamification/profile.ts:186:17
+isLevelInfo                           function  src/types/gamification/profile.ts:193:17
+XP_SOURCES                                      src/types/gamification/transactions.ts:10:14
+XPAwardRequestSchema                            src/types/gamification/transactions.ts:54:14
+XPTransactionSchema                             src/types/gamification/transactions.ts:61:14
+XPAwardResponseSchema                           src/types/gamification/transactions.ts:72:14
+Unused exported types (223)
+Chapter                         interface  src/components/Contexts/CourseContext.tsx:31:18
+CourseSectionKey                type       src/components/Contexts/CourseContext.tsx:40:13
+LandingBackground               interface  src/components/Dashboard/Pages/Platform/EditLanding/landing_types.ts:1:18
+LandingTestimonialContent       interface  src/components/Dashboard/Pages/Platform/EditLanding/landing_types.ts:9:18
+LandingHeading                  interface  src/components/Dashboard/Pages/Platform/EditLanding/landing_types.ts:19:18
+LandingUsers                    interface  src/components/Dashboard/Pages/Platform/EditLanding/landing_types.ts:38:18
+LandingCourse                   interface  src/components/Dashboard/Pages/Platform/EditLanding/landing_types.ts:61:18
+Language                        interface  src/components/features/courses/code-challenges/CodeEditor.tsx:16:18
+Language                        type       src/components/features/courses/code-challenges/index.ts:4:33
+TestCaseResult                  type       src/components/features/courses/code-challenges/index.ts:6:60
+Language                        interface  src/components/features/courses/code-challenges/LanguageSelector.tsx:12:18
+EditorModeState                 interface  src/components/Objects/Editor/core/editor-modes.ts:3:18
+ImageUploadHandler              type       src/components/Objects/Editor/core/image-paste.ts:21:13
+BadgeAttrs                      interface  src/components/Objects/Editor/Extensions/Badges/Badges.ts:7:18
+ButtonAlignment                 type       src/components/Objects/Editor/Extensions/Buttons/Buttons.ts:7:13
+ButtonAttrs                     interface  src/components/Objects/Editor/Extensions/Buttons/Buttons.ts:9:18
+InfoCalloutAttrs                interface  src/components/Objects/Editor/Extensions/Callout/Info/InfoCallout.ts:7:18
+WarningCalloutAttrs             interface  src/components/Objects/Editor/Extensions/Callout/Warning/WarningCallout.ts:7:18
+EmbedObjectAlignment            type       src/components/Objects/Editor/Extensions/EmbedObjects/EmbedObjects.ts:7:13
+EmbedObjectAttrs                interface  src/components/Objects/Editor/Extensions/EmbedObjects/EmbedObjects.ts:9:18
+FlipcardAlignment               type       src/components/Objects/Editor/Extensions/Flipcard/Flipcard.ts:6:13
+FlipcardSize                    type       src/components/Objects/Editor/Extensions/Flipcard/Flipcard.ts:7:13
+FlipcardAttrs                   interface  src/components/Objects/Editor/Extensions/Flipcard/Flipcard.ts:9:18
+ImageBlockAlignment             type       src/components/Objects/Editor/Extensions/Image/ImageBlock.ts:7:13
+ImageBlockObject                interface  src/components/Objects/Editor/Extensions/Image/ImageBlock.ts:9:18
+ImageBlockAttrs                 interface  src/components/Objects/Editor/Extensions/Image/ImageBlock.ts:17:18
+InlineQuizOptions               interface  src/components/Objects/Editor/Extensions/InlineQuiz/InlineQuiz.ts:22:18
+MathEquationBlockAttrs          interface  src/components/Objects/Editor/Extensions/MathEquation/MathEquationBlock.ts:7:18
+PdfBlockObject                  interface  src/components/Objects/Editor/Extensions/PDF/PDFBlock.ts:7:18
+PdfBlockAttrs                   interface  src/components/Objects/Editor/Extensions/PDF/PDFBlock.ts:15:18
+ScenarioOption                  interface  src/components/Objects/Editor/Extensions/Scenarios/Scenarios.ts:6:18
+Scenario                        interface  src/components/Objects/Editor/Extensions/Scenarios/Scenarios.ts:12:18
+ScenarioAttrs                   interface  src/components/Objects/Editor/Extensions/Scenarios/Scenarios.ts:19:18
+UserBlockAttrs                  interface  src/components/Objects/Editor/Extensions/Users/UserBlock.ts:7:18
+VideoBlockObject                interface  src/components/Objects/Editor/Extensions/Video/VideoBlock.ts:7:18
+VideoBlockAttrs                 interface  src/components/Objects/Editor/Extensions/Video/VideoBlock.ts:16:18
+WebPreviewAlignment             type       src/components/Objects/Editor/Extensions/WebPreview/WebPreview.ts:7:13
+EmbedType                       type       src/components/Objects/Editor/Toolbar/EmbedPanel/EmbedPanelStore.ts:8:15
+AvatarSize                      type       src/components/Objects/GamifiedUserAvatar.tsx:11:13
+AvatarVariant                   type       src/components/Objects/GamifiedUserAvatar.tsx:12:13
+CourseAuthor                    interface  src/components/Objects/Thumbnails/CourseThumbnail.tsx:51:18
+CourseThumbnailProps            interface  src/components/Objects/Thumbnails/CourseThumbnail.tsx:81:18
+AvatarSize                      type       src/components/Objects/UserAvatar.tsx:16:13
+AvatarVariant                   type       src/components/Objects/UserAvatar.tsx:17:13
+Action                          type       src/components/Security/index.ts:11:15
+Resource                        type       src/components/Security/index.ts:11:23
+Scope                           type       src/components/Security/index.ts:11:33
+Role                            type       src/components/Security/index.ts:11:40
+PermissionString                type       src/components/Security/index.ts:11:46
+ChartConfig                     type       src/components/ui/chart.tsx:14:13
+ChoiceOption                    interface  src/features/assessments/domain/items.ts:3:18
+FormField                       interface  src/features/assessments/domain/items.ts:14:18
+CodeTestCase                    interface  src/features/assessments/domain/items.ts:21:18
+ItemBody                        type       src/features/assessments/domain/items.ts:30:13
+LatePolicy                      interface  src/features/assessments/domain/policy.ts:29:18
+ActivityProgressState           type       src/features/assessments/domain/progress.ts:12:13
+ActivityProgressCell            type       src/features/assessments/domain/progress.ts:13:13
+ValidationSeverity              type       src/features/assessments/domain/readiness.ts:4:13
+ValidationArea                  type       src/features/assessments/domain/readiness.ts:5:13
+ScoreSource                     type       src/features/assessments/domain/score.ts:9:13
+ReviewQueueItemViewModel        interface  src/features/assessments/domain/view-models.ts:52:18
+UseAssessmentOptions            type       src/features/assessments/index.ts:6:15
+AssessmentViewModel             type       src/features/assessments/index.ts:6:37
+AssessmentSaveState             type       src/features/assessments/index.ts:8:15
+KindModule                      type       src/features/assessments/index.ts:12:15
+KindAuthorProps                 type       src/features/assessments/index.ts:12:27
+KindAttemptProps                type       src/features/assessments/index.ts:12:44
+KindReviewProps                 type       src/features/assessments/index.ts:12:62
+SubmissionStatusBadgeProps      type       src/features/assessments/index.ts:16:15
+AttemptNavigationState          type       src/features/assessments/index.ts:20:3
+AttemptRecoveryState            type       src/features/assessments/index.ts:21:3
+AttemptSaveState                type       src/features/assessments/index.ts:22:3
+AttemptShellRegistration        type       src/features/assessments/index.ts:23:3
+MatchingPair                    interface  src/features/assessments/items/choice/index.tsx:26:18
+FileUploadAttemptItem           interface  src/features/assessments/items/file-upload/index.tsx:29:18
+FileUploadAnswer                interface  src/features/assessments/items/file-upload/index.tsx:38:18
+FormBlank                       interface  src/features/assessments/items/form/index.tsx:15:18
+FormQuestion                    interface  src/features/assessments/items/form/index.tsx:22:18
+FormAnswer                      interface  src/features/assessments/items/form/index.tsx:33:18
+MatchingBody                    interface  src/features/assessments/items/matching/index.tsx:19:18
+MatchingAnswer                  interface  src/features/assessments/items/matching/index.tsx:25:18
+OpenTextValue                   interface  src/features/assessments/items/open-text/index.tsx:10:18
+OpenTextAnswer                  interface  src/features/assessments/items/open-text/index.tsx:17:18
+CodeChallengeHintForm           interface  src/features/assessments/registry/code-challenge/CodeChallengeStudio.tsx:26:18
+AttemptEntryMetric              interface  src/features/assessments/shared/AttemptEntryPanel.tsx:12:18
+AttemptNavigationState          interface  src/features/assessments/shell/AssessmentActionBar.tsx:28:18
+PersistedAttemptData            interface  src/features/assessments/shell/hooks/useAssessmentAttempt.ts:7:18
+AttemptGuardOptions             type       src/features/assessments/shell/hooks/useAssessmentPolicy.ts:10:8
+AttemptTimerConfig              type       src/features/assessments/shell/hooks/useAssessmentPolicy.ts:11:8
+AssessmentChromeProps           type       src/features/assessments/shell/index.ts:13:15
+AttemptShellRegistration        type       src/features/assessments/shell/index.ts:19:3
+AttemptNavigationState          type       src/features/assessments/shell/index.ts:20:3
+AttemptRecoveryState            type       src/features/assessments/shell/index.ts:21:3
+UseAssessmentAttemptOptions     type       src/features/assessments/shell/index.ts:27:3
+UseAssessmentAttemptReturn      type       src/features/assessments/shell/index.ts:28:3
+PersistedAttemptData            type       src/features/assessments/shell/index.ts:29:3
+AttemptGuardOptions             type       src/features/assessments/shell/index.ts:32:32
+AttemptTimerConfig              type       src/features/assessments/shell/index.ts:32:58
+FileSubmissionAttemptStatus     type       src/features/file-submissions/services/file-submissions.ts:5:13
+AssessmentType                  type       src/features/grading/domain/types.ts:4:13
+GradingBreakdown                type       src/features/grading/domain/types.ts:6:13
+SubmissionUser                  type       src/features/grading/domain/types.ts:8:13
+ItemFeedback                    type       src/features/grading/domain/types.ts:11:13
+BatchGradeItem                  type       src/features/grading/domain/types.ts:13:13
+BatchGradeRequest               type       src/features/grading/domain/types.ts:14:13
+BatchGradeResultItem            type       src/features/grading/domain/types.ts:15:13
+BatchGradeResponse              type       src/features/grading/domain/types.ts:16:13
+GradebookSummary                type       src/features/grading/domain/types.ts:22:13
+TeacherAction                   type       src/features/grading/domain/types.ts:23:13
+CodeRunRecord                   interface  src/features/grading/domain/types.ts:27:18
+PlagiarismScore                 interface  src/features/grading/domain/types.ts:48:18
+SubmissionMetadata              interface  src/features/grading/domain/types.ts:55:18
+SessionStatus                   type       src/hooks/useSession.ts:24:36
+paths                           type       src/lib/api/generated/index.ts:1:39
+paths                           interface  src/lib/api/generated/schema.ts:6:18
+webhooks                        type       src/lib/api/generated/schema.ts:4080:13
+$defs                           type       src/lib/api/generated/schema.ts:9855:13
+SessionUser                     type       src/lib/auth/types.ts:6:13
+CourseReadinessItemId           type       src/lib/course-management.ts:13:13
+CourseManagementBadgeId         type       src/lib/course-management.ts:15:13
+ContextualPosition              interface  src/lib/gamification/components/notification-queue.tsx:310:18
+XPSourceTheme                   type       src/lib/gamification/index.ts:16:8
+RankTheme                       type       src/lib/gamification/index.ts:17:8
+LevelTheme                      type       src/lib/gamification/index.ts:18:8
+LevelTheme                      interface  src/lib/gamification/theme.ts:126:18
+ThemeTokenMap                   type       src/lib/theme-registry.ts:5:13
+ThemeStyles                     type       src/lib/theme-registry.ts:6:13
+ThemeColors                     interface  src/lib/theme-registry.ts:8:18
+Theme                           type       src/lib/theme-system.ts:19:8
+ThemeColors                     type       src/lib/theme-system.ts:20:8
+ThemeMode                       type       src/lib/theme-system.ts:21:8
+ThemeStyles                     type       src/lib/theme-system.ts:22:8
+ThemeTokenMap                   type       src/lib/theme-system.ts:23:8
+ThemeColors                     type       src/lib/themes.ts:16:8
+ThemeStyles                     type       src/lib/themes.ts:19:8
+ThemeTokenMap                   type       src/lib/themes.ts:20:8
+CourseContributorsValues        type       src/schemas/courseSchemas.ts:55:13
+RubricCriterion                 interface  src/services/assessments/assessment-actions.ts:111:18
+CodeRunTestResult               interface  src/services/assessments/assessment-actions.ts:135:18
+AssessmentMutationPayload       interface  src/services/assessments/assessments.ts:24:18
+AuthUser                        type       src/services/auth/auth.ts:40:15
+ConfigIssue                     interface  src/services/config/env.ts:18:18
+TestCase                        interface  src/services/courses/code-challenges.ts:33:18
+CodeChallengeDraft              interface  src/services/courses/code-challenges.ts:91:18
+SaveStatus                      type       src/stores/courses/courseEditorStore.ts:7:13
+XPToastPayload                  interface  src/stores/gamification.ts:23:18
+WindowPreset                    type       src/types/analytics.ts:7:13
+SortOrder                       type       src/types/analytics.ts:10:13
+GradingBacklogItem              type       src/types/analytics.ts:24:13
+InsightFeedItem                 type       src/types/analytics.ts:26:13
+SavedAnalyticsViewCreate        type       src/types/analytics.ts:28:13
+SavedAnalyticsViewListResponse  type       src/types/analytics.ts:29:13
+TeacherCourseListResponse       type       src/types/analytics.ts:34:13
+ActivityDropoffRow              type       src/types/analytics.ts:36:13
+ContentHealthRow                type       src/types/analytics.ts:37:13
+TeacherCourseDetailResponse     type       src/types/analytics.ts:39:13
+TeacherAssessmentListResponse   type       src/types/analytics.ts:40:13
+CommonFailureRow                type       src/types/analytics.ts:43:13
+AssessmentDiagnosticsSnapshot   type       src/types/analytics.ts:45:13
+AssessmentAuditEventRow         type       src/types/analytics.ts:46:13
+AssessmentSloSnapshot           type       src/types/analytics.ts:47:13
+AssessmentMigrationStatus       type       src/types/analytics.ts:48:13
+AssessmentSupportAlertRow       type       src/types/analytics.ts:49:13
+AssessmentSupportDiagnostics    type       src/types/analytics.ts:50:13
+AssessmentItemAnalyticsRow      type       src/types/analytics.ts:51:13
+AssessmentCohortRow             type       src/types/analytics.ts:52:13
+AtRiskLearnersResponse          type       src/types/analytics.ts:54:13
+AvatarFrame                     interface  src/types/gamification/customization.ts:9:18
+AvatarAccessory                 interface  src/types/gamification/customization.ts:22:18
+AvatarCustomization             interface  src/types/gamification/customization.ts:35:18
+AvatarUnlock                    interface  src/types/gamification/customization.ts:42:18
+AvatarPreset                    interface  src/types/gamification/customization.ts:50:18
+GamificationErrorType           type       src/types/gamification/errors.ts:18:13
+NetworkError                    interface  src/types/gamification/errors.ts:28:18
+AuthError                       interface  src/types/gamification/errors.ts:34:18
+DailyLimitExceededError         interface  src/types/gamification/errors.ts:39:18
+ValidationError                 interface  src/types/gamification/errors.ts:46:18
+ServerError                     interface  src/types/gamification/errors.ts:55:18
+UnknownError                    interface  src/types/gamification/errors.ts:61:18
+LevelInfo                       type       src/types/gamification/index.ts:35:40
+StreakInfo                      type       src/types/gamification/index.ts:35:51
+XPSource                        type       src/types/gamification/index.ts:36:15
+UserRank                        type       src/types/gamification/index.ts:37:54
+LeaderboardFilters              type       src/types/gamification/index.ts:37:64
+GamificationPreferences         type       src/types/gamification/index.ts:39:3
+NotificationPreferences         type       src/types/gamification/index.ts:40:3
+PrivacyPreferences              type       src/types/gamification/index.ts:41:3
+DisplayPreferences              type       src/types/gamification/index.ts:42:3
+AvatarFrame                     type       src/types/gamification/index.ts:44:15
+AvatarAccessory                 type       src/types/gamification/index.ts:44:28
+AvatarCustomization             type       src/types/gamification/index.ts:44:45
+StreakType                      type       src/types/gamification/index.ts:48:13
+LeaderboardBadge                type       src/types/gamification/leaderboard.ts:26:13
+LeaderboardFilters              interface  src/types/gamification/leaderboard.ts:35:18
+UserRank                        interface  src/types/gamification/leaderboard.ts:43:18
+NotificationPreferences         interface  src/types/gamification/preferences.ts:9:18
+PrivacyPreferences              interface  src/types/gamification/preferences.ts:19:18
+DisplayPreferences              interface  src/types/gamification/preferences.ts:28:18
+GamificationPreferences         interface  src/types/gamification/preferences.ts:39:18
+PartialGamificationPreferences  interface  src/types/gamification/preferences.ts:46:18
+XPSource                        type       src/types/gamification/transactions.ts:24:13
+SubmissionStatus                type       src/types/grading.ts:21:13
+AssessmentType                  type       src/types/grading.ts:22:13
+GradedItem                      type       src/types/grading.ts:24:13
+GradingBreakdown                type       src/types/grading.ts:25:13
+SubmissionUser                  type       src/types/grading.ts:27:13
+SubmissionsPage                 type       src/types/grading.ts:30:13
+SubmissionStats                 type       src/types/grading.ts:31:13
+ItemFeedback                    type       src/types/grading.ts:33:13
+BatchGradeItem                  type       src/types/grading.ts:35:13
+BatchGradeRequest               type       src/types/grading.ts:36:13
+BatchGradeResultItem            type       src/types/grading.ts:37:13
+BatchGradeResponse              type       src/types/grading.ts:38:13
+ActivityProgressState           type       src/types/grading.ts:40:13
+ActivityProgressCell            type       src/types/grading.ts:41:13
+GradebookActivity               type       src/types/grading.ts:43:13
+GradebookStudent                type       src/types/grading.ts:44:13
+GradebookSummary                type       src/types/grading.ts:45:13
+TeacherAction                   type       src/types/grading.ts:46:13
+InlineItemFeedback              interface  src/types/grading.ts:48:18
+InlineItemFeedbackInput         interface  src/types/grading.ts:64:18
+BulkAction                      interface  src/types/grading.ts:75:18
+RoleSlug                        type       src/types/permissions.ts:69:13
+Duplicate exports (9)
+CodeChallengeEditor|default  src/components/features/courses/code-challenges/CodeChallengeEditor.tsx
+CodeEditor|default           src/components/features/courses/code-challenges/CodeEditor.tsx
+LanguageSelector|default     src/components/features/courses/code-challenges/LanguageSelector.tsx
+TestCaseCard|default         src/components/features/courses/code-challenges/TestCaseCard.tsx
+EmbedBlock|default           src/components/Objects/Editor/Extensions/EmbedBlock/EmbedBlock.ts
+Youtube|default              src/components/Objects/Editor/Extensions/Youtube/Youtube.ts
+PermissionGuard|default      src/components/Security/PermissionGuard.tsx
+PermissionTooltip|default    src/components/Utils/PermissionTooltip.tsx
+ResourceActionsMenu|default  src/components/Utils/ResourceActionsMenu.tsx
+Configuration hints (1)
+. (root)    knip.json  Add entry and/or refine project files (85 unused files)

@@ -7655,8 +7655,7 @@
           "QUIZ": "Тест",
           "TYPE_FILE_SUBMISSION": "Файл жіберу",
           "TYPE_EXAM": "Емтихан",
-          "TYPE_CODE_CHALLENGE": "Код тапсырмасы",
-          "TYPE_QUIZ": "Тест"
+          "TYPE_CODE_CHALLENGE": "Код тапсырмасы"
         },
         "NativeItemStudio": {
           "itemNouns": {

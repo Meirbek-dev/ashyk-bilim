@@ -1,16 +1,15 @@
 /**
- * Registry module for TYPE_QUIZ.
+ * Registry module for TYPE_CUSTOM-backed quiz assessments.
  *
- * Quiz authoring is constrained to canonical auto-gradable item kinds so the
- * shared studio/attempt shells can run without dropping students into a null
- * route.
+ * Quiz authoring uses the custom activity shell now that the legacy quiz
+ * activity type has been removed.
  */
 
 import type { ComponentType } from 'react';
 import { registerKind } from './index';
 import type { KindAuthorProps, KindAttemptProps, KindReviewProps } from './index';
 
-registerKind('TYPE_QUIZ', async () => {
+registerKind('TYPE_CUSTOM', async () => {
   const [
     { NativeItemStudioProvider, NativeItemOutline, NativeItemAuthor },
     { default: FileSubmissionAttemptContent },

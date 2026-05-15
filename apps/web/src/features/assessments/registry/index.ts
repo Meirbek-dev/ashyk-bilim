@@ -128,4 +128,4 @@ export async function loadKindModule(kind: AssessmentKind): Promise<KindModule> 
 import './file-submission';
 import './exam';
 import './code-challenge';
-import './quiz';
+import './custom';

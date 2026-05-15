@@ -7616,8 +7616,7 @@
           "QUIZ": "Quiz",
           "TYPE_FILE_SUBMISSION": "File Submission",
           "TYPE_EXAM": "Exam",
-          "TYPE_CODE_CHALLENGE": "Code Challenge",
-          "TYPE_QUIZ": "Quiz"
+          "TYPE_CODE_CHALLENGE": "Code Challenge"
         },
         "loading": "Loading studio",
         "unavailable": "Studio is unavailable for this activity.",

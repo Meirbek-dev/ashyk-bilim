@@ -7675,8 +7675,7 @@
           "QUIZ": "Квиз",
           "TYPE_FILE_SUBMISSION": "Отправка файлов",
           "TYPE_EXAM": "Тест",
-          "TYPE_CODE_CHALLENGE": "Код задача",
-          "TYPE_QUIZ": "Квиз"
+          "TYPE_CODE_CHALLENGE": "Код задача"
         },
         "loading": "Загрузка студии",
         "unavailable": "Студия недоступна для этой активности.",

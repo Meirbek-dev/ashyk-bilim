@@ -649,7 +649,6 @@
           "SUBTYPE_DOCUMENT_PDF",
           "SUBTYPE_DOCUMENT_DOC",
           "SUBTYPE_EXAM_STANDARD",
-          "SUBTYPE_QUIZ_STANDARD",
           "SUBTYPE_CODE_GENERAL",
           "SUBTYPE_CODE_COMPETITIVE",
           "SUBTYPE_FILE_SUBMISSION_STANDARD",
@@ -664,7 +663,6 @@
           "TYPE_DOCUMENT",
           "TYPE_DYNAMIC",
           "TYPE_EXAM",
-          "TYPE_QUIZ",
           "TYPE_CODE_CHALLENGE",
           "TYPE_FILE_SUBMISSION",
           "TYPE_CUSTOM"
@@ -3881,7 +3879,6 @@
       },
       "BlockTypeEnum": {
         "enum": [
-          "BLOCK_QUIZ",
           "BLOCK_VIDEO",
           "BLOCK_DOCUMENT_PDF",
           "BLOCK_IMAGE",
