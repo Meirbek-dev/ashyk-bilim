@@ -18,7 +18,7 @@ from src.services.utils.link_preview import (
 
 
 class _FakeStream:
-    def __init__(self, server_addr):
+    def __init__(self, server_addr) -> None:
         self._server_addr = server_addr
 
     def get_extra_info(self, info: str):

@@ -73,7 +73,7 @@ async def create_inline_quiz(
     existing = db_session.exec(
         select(Assessment).where(
             Assessment.inline_parent_activity_id == payload.activity_id,
-            Assessment.is_inline == True,
+            Assessment.is_inline,
         )
     ).first()
     if existing:

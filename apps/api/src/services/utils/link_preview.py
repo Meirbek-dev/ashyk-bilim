@@ -136,7 +136,8 @@ def _assert_public_ip(
     if address.is_global:
         return
 
-    raise UnsafeLinkPreviewURL(f"URL resolves to a non-public address: {host}")
+    msg = f"URL resolves to a non-public address: {host}"
+    raise UnsafeLinkPreviewURL(msg)
 
 
 async def _fetch_html(url: str, settings: LinkPreviewConfig) -> tuple[str, str]:
@@ -172,7 +173,8 @@ async def _fetch_html(url: str, settings: LinkPreviewConfig) -> tuple[str, str]:
                 encoding = response.encoding or "utf-8"
                 return str(response.url), body.decode(encoding, errors="replace")
         except httpx.HTTPError as exc:
-            raise LinkPreviewError(f"Failed to fetch link preview: {exc}") from exc
+            msg = f"Failed to fetch link preview: {exc}"
+            raise LinkPreviewError(msg) from exc
 
     raise LinkPreviewError("Too many redirects")
 

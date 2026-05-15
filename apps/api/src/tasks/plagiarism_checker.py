@@ -125,7 +125,7 @@ def _run_check_tick() -> int:
             .where(
                 # Submissions where plagiarism key is absent from metadata.
                 # Use a JSON path expression: metadata_json->>'plagiarism' IS NULL.
-                Submission.metadata_json["plagiarism"].as_string() == None
+                Submission.metadata_json["plagiarism"].as_string() is None
             )
             .where(Submission.assessment_type.in_(list(_TEXT_TYPES)))  # type: ignore[attr-defined]
             .limit(_BATCH_SIZE)

@@ -689,7 +689,7 @@ def test_lifecycle_transition_invalid_returns_422(
     )
 
     # PUBLISHED → SCHEDULED is not in allowed transitions (may be 422, 400, or 409 depending on validation layer)
-    assert response.status_code in (422, 400, 409)
+    assert response.status_code in {422, 400, 409}
 
 
 # ---------------------------------------------------------------------------

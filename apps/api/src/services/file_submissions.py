@@ -625,7 +625,7 @@ def file_submission_attempts_for_gradebook(
     ).all()
     result: dict[tuple[int, int], FileSubmissionAttempt] = {}
     for attempt in attempts:
-        result[(attempt.user_id, attempt.activity_id)] = attempt
+        result[attempt.user_id, attempt.activity_id] = attempt
     return result
 
 

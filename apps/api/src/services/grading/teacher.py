@@ -431,19 +431,17 @@ def export_grades_csv(
         elif item_headers:
             item_scores = [""] * len(item_headers)
 
-        writer.writerow(
-            [
-                name,
-                email,
-                s.attempt_number,
-                s.status,
-                "yes" if s.is_late else "no",
-                submitted,
-                s.auto_score if s.auto_score is not None else "",
-                s.final_score if s.final_score is not None else "",
-            ]
-            + item_scores
-        )
+        writer.writerow([
+            name,
+            email,
+            s.attempt_number,
+            s.status,
+            "yes" if s.is_late else "no",
+            submitted,
+            s.auto_score if s.auto_score is not None else "",
+            s.final_score if s.final_score is not None else "",
+            *item_scores,
+        ])
         yield buf.getvalue()
         buf.truncate(0)
         buf.seek(0)
@@ -496,14 +494,14 @@ async def batch_grade_submissions(
 
     Batch size is capped at 50 submissions per request.
     """
-    _BATCH_CAP = 50
-    if len(batch_request.grades) > _BATCH_CAP:
+    BATCH_CAP = 50
+    if len(batch_request.grades) > BATCH_CAP:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "code": "BATCH_SIZE_EXCEEDED",
-                "message": f"Batch grading supports at most {_BATCH_CAP} submissions per request.",
-                "limit": _BATCH_CAP,
+                "message": f"Batch grading supports at most {BATCH_CAP} submissions per request.",
+                "limit": BATCH_CAP,
                 "provided": len(batch_request.grades),
             },
         )
@@ -617,15 +615,15 @@ async def batch_grade_submissions(
                 "Unexpected batch grading failure for submission %s",
                 grade.submission_uuid,
             )
-            abort_results = [r for r in results]
-            for pending in batch_request.grades[len(results) :]:
-                abort_results.append(
-                    BatchGradeResultItem(
-                        submission_uuid=pending.submission_uuid,
-                        success=False,
-                        error="Aborted due to earlier failure",
-                    )
+            abort_results = list(results)
+            abort_results.extend(
+                BatchGradeResultItem(
+                    submission_uuid=pending.submission_uuid,
+                    success=False,
+                    error="Aborted due to earlier failure",
                 )
+                for pending in batch_request.grades[len(results) :]
+            )
             # Mark the failing item
             abort_results[len(results) - 1] = BatchGradeResultItem(
                 submission_uuid=grade.submission_uuid,

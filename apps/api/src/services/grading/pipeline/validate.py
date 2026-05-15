@@ -133,6 +133,7 @@ def _extract_canonical_answers(answers_payload: object) -> dict[str, Any]:
         return normalized
 
     _raise_invalid("Submission must include answers", code="empty_answers")
+    return None
 
 
 def _raise_invalid(

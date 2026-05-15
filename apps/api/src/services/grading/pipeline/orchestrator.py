@@ -99,7 +99,7 @@ async def submit_assessment(
                 submission_uuid=submission_uuid,
             )
     except TimeoutError:
-        logger.error(
+        logger.exception(
             "submit_assessment timed out after 30s (activity_id=%s, user_id=%s)",
             activity_id,
             current_user.id,
@@ -171,15 +171,15 @@ async def _submit_assessment_inner(
 
     # If violations exceeded, record the auto-submit reason in metadata
     # and cap the violations list at 500 entries.
-    _MAX_VIOLATIONS_STORED = 500
+    MAX_VIOLATIONS_STORED = 500
     if violation_exceeded:
         current_meta: dict = draft.metadata_json or {}
         current_meta["auto_submit_reason"] = "INTEGRITY_VIOLATION"
         current_meta["integrity_violation_count"] = violation_count
         # Cap the violations list to prevent unbounded metadata growth.
         existing_violations: list = current_meta.get("violations", [])
-        if len(existing_violations) > _MAX_VIOLATIONS_STORED:
-            current_meta["violations"] = existing_violations[-_MAX_VIOLATIONS_STORED:]
+        if len(existing_violations) > MAX_VIOLATIONS_STORED:
+            current_meta["violations"] = existing_violations[-MAX_VIOLATIONS_STORED:]
             current_meta["violations_truncated"] = True
         draft.metadata_json = current_meta
         db_session.add(draft)

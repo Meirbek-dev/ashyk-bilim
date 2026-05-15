@@ -924,7 +924,7 @@ def _build_assignment_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for course_id, user_id in snapshots.items():
         eligible_by_course[course_id].add(user_id)
 
     submissions_by_assignment: dict[int, list] = defaultdict(list)
@@ -1028,7 +1028,7 @@ def _build_exam_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for course_id, user_id in snapshots.items():
         eligible_by_course[course_id].add(user_id)
 
     attempts_by_exam: dict[int, list] = defaultdict(list)
@@ -1119,7 +1119,7 @@ def _build_quiz_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for course_id, user_id in snapshots.items():
         eligible_by_course[course_id].add(user_id)
 
     submissions_by_activity: dict[int, list[tuple[Submission, Activity]]] = defaultdict(
@@ -1209,7 +1209,7 @@ def _build_code_rows(
     bucket_window: tuple[datetime, datetime] | None,
 ) -> list[AssessmentOutlierRow]:
     eligible_by_course: dict[int, set[int]] = defaultdict(set)
-    for course_id, user_id in snapshots:
+    for course_id, user_id in snapshots.items():
         eligible_by_course[course_id].add(user_id)
 
     submissions_by_activity: dict[int, list] = defaultdict(list)

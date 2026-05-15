@@ -367,10 +367,10 @@ def test_submit_when_returned_and_max_attempts_reached(
     from src.services import events
 
     class MockBus:
-        async def emit(self, event):
+        async def emit(self, event) -> None:
             pass
 
-    monkeypatch.setattr(events, "get_event_bus", lambda: MockBus())
+    monkeypatch.setattr(events, "get_event_bus", MockBus)
 
     response = client.post(
         f"/file-submissions/{file_submission_uuid}/submit",

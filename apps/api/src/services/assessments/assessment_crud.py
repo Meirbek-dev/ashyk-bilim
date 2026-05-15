@@ -352,7 +352,7 @@ async def create_assessment_item(
     current_user: PublicUser,
     db_session: Session,
 ) -> AssessmentReadItem:
-    _MAX_ITEMS_PER_ASSESSMENT = 200
+    MAX_ITEMS_PER_ASSESSMENT = 200
 
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     _activity, course = _get_activity_and_course(assessment, db_session)
@@ -363,16 +363,16 @@ async def create_assessment_item(
     item_count = db_session.exec(
         select(func.count()).where(AssessmentItem.assessment_id == assessment.id)
     ).one()
-    if item_count >= _MAX_ITEMS_PER_ASSESSMENT:
+    if item_count >= MAX_ITEMS_PER_ASSESSMENT:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "code": "ITEM_LIMIT_EXCEEDED",
                 "message": (
                     f"Assessment already has {item_count} items. "
-                    f"Maximum allowed: {_MAX_ITEMS_PER_ASSESSMENT}."
+                    f"Maximum allowed: {MAX_ITEMS_PER_ASSESSMENT}."
                 ),
-                "max": _MAX_ITEMS_PER_ASSESSMENT,
+                "max": MAX_ITEMS_PER_ASSESSMENT,
                 "current": item_count,
             },
         )

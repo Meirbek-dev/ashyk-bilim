@@ -158,7 +158,7 @@ async def save_assessment_draft(
     *,
     if_match: str | None = None,
 ) -> StudentSubmissionRead:
-    _DRAFT_THROTTLE_TTL = 5  # seconds
+    DRAFT_THROTTLE_TTL = 5  # seconds
 
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
@@ -189,11 +189,11 @@ async def save_assessment_draft(
                     "code": "DRAFT_SAVE_THROTTLED",
                     "message": (
                         "Draft saved too recently. "
-                        f"Wait {_DRAFT_THROTTLE_TTL} seconds between saves."
+                        f"Wait {DRAFT_THROTTLE_TTL} seconds between saves."
                     ),
-                    "retry_after_seconds": _DRAFT_THROTTLE_TTL,
+                    "retry_after_seconds": DRAFT_THROTTLE_TTL,
                 },
-                headers={"Retry-After": str(_DRAFT_THROTTLE_TTL)},
+                headers={"Retry-After": str(DRAFT_THROTTLE_TTL)},
             )
 
         _enforce_draft_version(draft, if_match)
@@ -221,7 +221,7 @@ async def save_assessment_draft(
 
         # ── Set throttle key after successful save ────────────────────────────
         if redis is not None:
-            await redis.set(throttle_key, "1", ex=_DRAFT_THROTTLE_TTL)
+            await redis.set(throttle_key, "1", ex=DRAFT_THROTTLE_TTL)
 
         # ── Build response with progress metadata ─────────────────────────────
         result = _build_student_submission_read(draft, db_session)
@@ -485,8 +485,7 @@ async def save_grading_draft(
     ).first()
     if refreshed is None:
         raise HTTPException(status_code=500, detail="Отправка не была сохранена")
-    result = _build_teacher_submission_read(refreshed, assessment, db_session)
-    return result
+    return _build_teacher_submission_read(refreshed, assessment, db_session)
 
 
 # ── Phase 5: Code challenge runtime ───────────────────────────────────────────

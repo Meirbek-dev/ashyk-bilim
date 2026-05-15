@@ -118,10 +118,11 @@ def _assert_no_unmapped_activity_types(conn: sa.Connection) -> None:
             f"{row.activity_type}:{row.activity_uuid or row.id}({row.assessment_count})"
             for row in rows
         )
-        raise RuntimeError(
+        msg = (
             "Cannot finalize assessment grading while legacy activities are not "
             f"one-to-one with assessments: {formatted}"
         )
+        raise RuntimeError(msg)
 
 
 def _assert_legacy_submissions_have_canonical_rows(conn: sa.Connection) -> None:

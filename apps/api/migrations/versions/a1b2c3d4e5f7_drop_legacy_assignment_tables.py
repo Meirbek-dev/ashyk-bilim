@@ -16,6 +16,7 @@ Revises: z6a7b8c9d0e1
 Create Date: 2026-05-14
 """
 
+import contextlib
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -52,10 +53,11 @@ def upgrade() -> None:
             sa.text(f"SELECT COUNT(*) AS cnt FROM {table_name}")
         ).scalar()
         if row and int(row) > 0:
-            raise RuntimeError(
+            msg = (
                 f"Cannot drop '{table_name}': {row} rows remain. "
                 "Ensure data migration is complete before running this migration."
             )
+            raise RuntimeError(msg)
 
     # ── 2. Drop child table first (FK dependency) ────────────────────────────
     if "assignmenttask" in existing_tables:
@@ -78,14 +80,12 @@ def upgrade() -> None:
             )
         except Exception:  # constraint may not exist on all envs
             pass
-        try:
+        with contextlib.suppress(Exception):
             op.drop_constraint(
                 "uq_assignmenttask_assignment_uuid",
                 "assignmenttask",
                 type_="unique",
             )
-        except Exception:
-            pass
         op.drop_table("assignmenttask")
 
     # ── 3. Drop parent table ─────────────────────────────────────────────────
