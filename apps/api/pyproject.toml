@@ -44,37 +44,56 @@ dev = [
 ]
 
 [tool.ruff]
+lint.ignore = [
+  # --- General & Style ---
+  "F401", # unused-import: Module imported but not used
+  "COM812", # missing-trailing-comma: Missing a trailing comma (often conflicts with formatters)
+  "PLC0415", # import-outside-top-level: Import should be at the top of the file
+  "PLR2004", # magic-value-comparison: Use of unnamed numerical constants in comparisons
+  "PLR0913", # too-many-arguments: Function has too many arguments (typically > 5)
+
+  # --- Type Checking (flake8-type-checking) ---
+  "TC001", # move-to-type-checking: Move first-party imports into TYPE_CHECKING blocks
+  "TC002", # move-to-type-checking: Move third-party imports into TYPE_CHECKING blocks
+  "TC003", # move-to-type-checking: Move stdlib imports into TYPE_CHECKING blocks
+
+  # --- Annotations (flake8-annotations) ---
+  "ANN001", # missing-type-function-argument: Missing type annotation for function argument
+  "ANN201", # missing-return-type-undocumented-public-function: Missing return type for public function
+
+  # --- Security (flake8-bandit) ---
+  "S101", # assert: Use of `assert` (can be optimized out in production)
+  "S105", # hardcoded-password-string: Possible hardcoded password string assignment
+  "S106", # hardcoded-password-func-arg: Possible hardcoded password in function call
+  "S110", # try-except-pass: Exception caught and silenced with `pass`
+
+  # --- Exceptions (tryceratops / flake8-errmsg) ---
+  "BLE001", # blind-except: Do not catch `Exception` directly; use specific exceptions
+  "TRY003", # raise-vanilla-args: Avoid long message strings in exception raises
+  "EM101", # raw-string-in-exception: Exception must not use a string literal directly
+
+  # --- Docstrings (pydocstyle) ---
+  "D", # docstring-rules: Disables all docstring-related rules
+  "D100", # missing-docstring-in-public-module: Missing docstring at the top of a file
+  "DOC201", # missing-docstring-in-function: Missing docstring in function
+  "DOC202", # missing-docstring-in-method: Missing docstring in method
+  "DOC501", # missing-docstring-in-class: Missing docstring in class
+
+  # --- Miscellaneous ---
+  "DTZ005", # call-datetime-now-without-tzinfo: `datetime.now()` used without a timezone
+  "T20", # flake8-print: Disallows `print` statements (prevents debug debris)
+  "ARG002", # unused-method-argument: Method argument is defined but never used
+  "TD002", # missing-todo-author: TODO comment is missing an author name
+  "TD003", # missing-todo-link: TODO comment is missing a link to a tracker/issue
+
+  "PLC2701",
+  "RUF001",
+  "E501", # line-too-long: Line is too long
+]
 target-version = "py315"
 preview = true
-# lint.select = ["ALL"]
+lint.select = ["ALL"]
 lint.fixable = ["ALL"]
-lint.ignore = [
-  "F401",
-  "COM812", # missing trailing comma (stylistic, optional)
-  "DTZ005", # datetime.now() used without tzinfo (not always relevant)
-  "T20", # flake8-print (allow print statements for debugging/logging)
-  "TC002", # type checking import block placement
-  "TC001", # type checking import not at top of file
-  "TC003", # type checking import formatting
-  "PLR2004", # magic value used in comparison (often acceptable)
-  "D", # all docstring-related rules disabled
-  "D100", # missing docstring in public module
-  "S101", # Use of `assert` detected
-  "TD002", # Missing author in TODO;
-  "S106",
-  "TD003",
-  "S105",
-  "ARG002",
-  "ANN001",
-  "S105",
-  "PLR0913",
-  "ANN201",
-  "PLC0415",
-  "TRY003",
-  "EM101",
-  "BLE001",
-  "S110",
-]
 
 [tool.ruff.format]
 quote-style = "double"

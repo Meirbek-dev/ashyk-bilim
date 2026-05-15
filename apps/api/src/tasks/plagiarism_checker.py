@@ -26,6 +26,10 @@ from collections import Counter
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
+from sqlmodel import Session, select
+
+from src.db.grading.submissions import Submission, SubmissionStatus
+
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL_SECONDS: int = 120
@@ -99,10 +103,6 @@ def _run_check_tick() -> int:
 
     Returns the number of (submission, peer) pairs that were flagged.
     """
-    from sqlmodel import Session, select
-
-    from src.db.grading.submissions import Submission, SubmissionStatus
-
     try:
         from src.infra.db.engine import get_bg_engine
 
@@ -210,8 +210,6 @@ def _write_plagiarism_result(
     now: datetime,
 ) -> None:
     """Write the plagiarism result back into the submission's metadata_json."""
-    from src.db.grading.submissions import Submission  # local import to avoid circulars
-
     current_meta: dict = submission.metadata_json or {}
     current_meta["plagiarism"] = {
         "score": round(score, 4),

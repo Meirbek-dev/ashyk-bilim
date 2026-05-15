@@ -88,10 +88,9 @@ class EventBus:
                     await asyncio.sleep(wait)
                 else:
                     logger.exception(
-                        "event_dead_letter handler=%s event=%s error=%s",
+                        "event_dead_letter handler=%s event=%s",
                         handler_name,
                         type(event).__name__,
-                        exc,
                     )
                     self._dead_letters.append(
                         DeadLetterEntry(

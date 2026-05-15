@@ -165,6 +165,7 @@ async def api_feedback_stream(
                     try:
                         payload = json.loads(raw)
                     except Exception:
+                        logger.warning("Failed to decode SSE payload: %s", raw)
                         continue
                     event_type = str(payload.get("event", "message"))
                     yield encode_sse(event_type, payload)

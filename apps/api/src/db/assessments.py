@@ -7,7 +7,7 @@ storage, but new API surfaces should read and write this module.
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Annotated, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import ConfigDict, Field, TypeAdapter, field_validator, model_validator
 from sqlalchemy import (

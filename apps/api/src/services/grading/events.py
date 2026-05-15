@@ -104,6 +104,7 @@ async def get_events_since(
         try:
             events.append(json.loads(raw))
         except Exception:
+            logger.warning("Failed to decode replay event: %s", raw)
             continue
 
     if not since_event_id:

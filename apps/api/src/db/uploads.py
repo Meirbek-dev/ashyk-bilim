@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
+from typing import Annotated
 
 from pydantic import ConfigDict, Field
 from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String
@@ -36,7 +37,7 @@ class Upload(SQLModelStrictBaseModel, table=True):
     size_bytes: int | None = None
     sha256: str | None = None
     storage_key: str | None = None
-    status: UploadStatus = SQLField(
+    status: Annotated[UploadStatus, Field(strict=False)] = SQLField(
         default=UploadStatus.CREATED,
         sa_column=Column("status", String, nullable=False, server_default="CREATED"),
     )
@@ -97,6 +98,6 @@ class UploadRead(PydanticStrictBaseModel):
     size_bytes: int | None = None
     sha256: str | None = None
     storage_key: str | None = None
-    status: UploadStatus
+    status: UploadStatus = Field(strict=False)
     expires_at: datetime
     finalized_at: datetime | None = None
