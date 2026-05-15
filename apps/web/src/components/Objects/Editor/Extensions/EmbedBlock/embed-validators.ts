@@ -282,6 +282,22 @@ function buildGenericEmbeddableSrc(type: EmbedType, url: string): string {
     case 'spotify': {
       return buildSpotifySrc(url);
     }
+    case 'google-slides': {
+      return url.replace(/\/edit(\?.*)?$/, '/embed');
+    }
+    case 'google-docs': {
+      if (url.includes('/pub')) return url;
+      return url.replace(/\/edit(\?.*)?$/, '/preview');
+    }
+    case 'telegram': {
+      return url.includes('?embed=1') ? url : appendQueryParam(url, 'embed', '1');
+    }
+    case 'quizizz': {
+      return url.replace('/admin/quiz/', '/embed/quiz/');
+    }
+    case 'edpuzzle': {
+      return url.replace('/media/', '/embed/media/');
+    }
     default: {
       return url;
     }

@@ -1,3 +1,14 @@
+/**
+ * Embed provider registry for Ashyk Bilim LMS.
+ *
+ * Icon names reference named exports from `@icons-pack/react-simple-icons`.
+ * Usage in a component:
+ *
+ *   import * as Si from '@icons-pack/react-simple-icons';
+ *   const Icon = provider.iconName ? (Si as Record<string, React.ElementType>)[provider.iconName] : null;
+ *   {Icon && <Icon size={16} />}
+ */
+
 export type EmbedCategoryId =
   | 'visual'
   | 'code'
@@ -14,41 +25,13 @@ export interface EmbedCategory {
 }
 
 export const EMBED_CATEGORIES: EmbedCategory[] = [
-  {
-    id: 'visual',
-    label: 'visualLabel',
-    description: 'visualDescription',
-  },
-  {
-    id: 'code',
-    label: 'codeLabel',
-    description: 'codeDescription',
-  },
-  {
-    id: 'media',
-    label: 'mediaLabel',
-    description: 'mediaDescription',
-  },
-  {
-    id: 'assessment',
-    label: 'assessmentLabel',
-    description: 'assessmentDescription',
-  },
-  {
-    id: 'productivity',
-    label: 'productivityLabel',
-    description: 'productivityDescription',
-  },
-  {
-    id: 'academic',
-    label: 'academicLabel',
-    description: 'academicDescription',
-  },
-  {
-    id: 'collaboration',
-    label: 'collaborationLabel',
-    description: 'collaborationDescription',
-  },
+  { id: 'visual', label: 'visualLabel', description: 'visualDescription' },
+  { id: 'code', label: 'codeLabel', description: 'codeDescription' },
+  { id: 'media', label: 'mediaLabel', description: 'mediaDescription' },
+  { id: 'assessment', label: 'assessmentLabel', description: 'assessmentDescription' },
+  { id: 'productivity', label: 'productivityLabel', description: 'productivityDescription' },
+  { id: 'academic', label: 'academicLabel', description: 'academicDescription' },
+  { id: 'collaboration', label: 'collaborationLabel', description: 'collaborationDescription' },
 ];
 
 export interface EmbedProvider {
@@ -61,9 +44,12 @@ export interface EmbedProvider {
   defaultHeight: number;
   allow?: string;
   requiresEmbedUrl?: boolean;
+  /** Named export from `@icons-pack/react-simple-icons`, e.g. `'SiYoutube'`. */
+  iconName?: string;
 }
 
 export const EMBED_PROVIDERS = [
+  // ─── VISUAL ──────────────────────────────────────────────────────────────────
   {
     type: 'excalidraw',
     label: 'Excalidraw',
@@ -72,6 +58,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://excalidraw.com/#room=...',
     hostnames: ['excalidraw.com'],
     defaultHeight: 520,
+    iconName: 'SiExcalidraw',
   },
   {
     type: 'tldraw',
@@ -90,6 +77,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.figma.com/file/...',
     hostnames: ['figma.com', 'www.figma.com'],
     defaultHeight: 560,
+    iconName: 'SiFigma',
   },
   {
     type: 'canva',
@@ -99,6 +87,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.canva.com/design/...',
     hostnames: ['canva.com', 'www.canva.com'],
     defaultHeight: 560,
+    iconName: 'SiCanva',
   },
   {
     type: 'miro',
@@ -108,6 +97,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://miro.com/app/board/...',
     hostnames: ['miro.com', 'www.miro.com'],
     defaultHeight: 560,
+    iconName: 'SiMiro',
   },
   {
     type: 'mural',
@@ -126,6 +116,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://my.spline.design/...',
     hostnames: ['spline.design', 'my.spline.design'],
     defaultHeight: 560,
+    iconName: 'SiSpline',
   },
   {
     type: 'lottiefiles',
@@ -135,6 +126,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://lottiefiles.com/...',
     hostnames: ['lottiefiles.com', 'www.lottiefiles.com'],
     defaultHeight: 420,
+    iconName: 'SiLottiefiles',
   },
   {
     type: 'sketchpad',
@@ -145,6 +137,88 @@ export const EMBED_PROVIDERS = [
     hostnames: ['sketchpad.app', 'www.sketchpad.app'],
     defaultHeight: 520,
   },
+  // NEW ↓
+  {
+    type: 'prezi',
+    label: 'Prezi',
+    category: 'visual',
+    description: 'Zoomable, non-linear presentations for dynamic storytelling.',
+    placeholder: 'https://prezi.com/view/...',
+    hostnames: ['prezi.com'],
+    defaultHeight: 560,
+    iconName: 'SiPrezi',
+  },
+  {
+    type: 'pitch',
+    label: 'Pitch',
+    category: 'visual',
+    description: 'Collaborative slide decks with real-time co-editing.',
+    placeholder: 'https://pitch.com/public/...',
+    hostnames: ['pitch.com'],
+    defaultHeight: 560,
+    iconName: 'SiPitch',
+  },
+  {
+    type: 'gamma',
+    label: 'Gamma',
+    category: 'visual',
+    description: 'AI-generated presentations, docs, and web pages.',
+    placeholder: 'https://gamma.app/public/...',
+    hostnames: ['gamma.app'],
+    defaultHeight: 560,
+    iconName: 'SiGamma',
+  },
+  {
+    type: 'google-slides',
+    label: 'Google Slides',
+    category: 'visual',
+    description: 'Cloud-based presentations with real-time collaboration.',
+    placeholder: 'https://docs.google.com/presentation/d/.../edit',
+    hostnames: ['docs.google.com'],
+    defaultHeight: 560,
+    iconName: 'SiGoogleslides',
+  },
+  {
+    type: 'powerpoint',
+    label: 'PowerPoint Online',
+    category: 'visual',
+    description: 'Microsoft PowerPoint presentations for the web.',
+    placeholder: 'https://onedrive.live.com/embed?resid=...',
+    hostnames: ['office.com', 'microsoft.com', 'live.com'],
+    defaultHeight: 560,
+    iconName: 'SiMicrosoftpowerpoint',
+  },
+  {
+    type: 'ms-whiteboard',
+    label: 'Microsoft Whiteboard',
+    category: 'visual',
+    description: 'Digital canvas for collaboration and ideation.',
+    placeholder: 'https://whiteboard.office.com/me/whiteboards/...',
+    hostnames: ['whiteboard.office.com', 'whiteboard.microsoft.com'],
+    defaultHeight: 560,
+    iconName: 'SiMicrosoft',
+  },
+  {
+    type: 'explain-everything',
+    label: 'Explain Everything',
+    category: 'visual',
+    description: 'Interactive whiteboard and screen recording tool.',
+    placeholder: 'https://explaineverything.com/board/...',
+    hostnames: ['explaineverything.com'],
+    defaultHeight: 560,
+  },
+  {
+    type: 'slides-com',
+    label: 'Slides.com',
+    category: 'visual',
+    description: 'Reveal.js-powered presentations with live audience view.',
+    placeholder: 'https://slides.com/user/deck/embed',
+    hostnames: ['slides.com'],
+    defaultHeight: 560,
+    requiresEmbedUrl: true,
+  },
+
+  // ─── CODE ────────────────────────────────────────────────────────────────────
   {
     type: 'jsfiddle',
     label: 'JSFiddle',
@@ -154,6 +228,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['jsfiddle.net'],
     defaultHeight: 460,
     requiresEmbedUrl: true,
+    iconName: 'SiJsfiddle',
   },
   {
     type: 'codepen',
@@ -163,6 +238,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://codepen.io/user/pen/...',
     hostnames: ['codepen.io'],
     defaultHeight: 460,
+    iconName: 'SiCodepen',
   },
   {
     type: 'replit',
@@ -172,6 +248,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://replit.com/@user/repl-name',
     hostnames: ['replit.com'],
     defaultHeight: 560,
+    iconName: 'SiReplit',
   },
   {
     type: 'stackblitz',
@@ -181,6 +258,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://stackblitz.com/edit/...',
     hostnames: ['stackblitz.com'],
     defaultHeight: 560,
+    iconName: 'SiStackblitz',
   },
   {
     type: 'github-gist',
@@ -190,6 +268,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://gist.github.com/user/id',
     hostnames: ['gist.github.com'],
     defaultHeight: 420,
+    iconName: 'SiGithub',
   },
   {
     type: 'glitch',
@@ -199,6 +278,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://glitch.com/edit/#!/project',
     hostnames: ['glitch.com'],
     defaultHeight: 560,
+    iconName: 'SiGlitch',
   },
   {
     type: 'codesnip',
@@ -217,7 +297,83 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://codesandbox.io/p/sandbox/...',
     hostnames: ['codesandbox.io'],
     defaultHeight: 560,
+    iconName: 'SiCodesandbox',
   },
+  // NEW ↓
+  {
+    type: 'observable',
+    label: 'Observable',
+    category: 'code',
+    description: 'Reactive data-science notebooks with live D3/Plot charts.',
+    placeholder: 'https://observablehq.com/embed/@user/notebook',
+    hostnames: ['observablehq.com'],
+    defaultHeight: 520,
+    requiresEmbedUrl: true,
+    iconName: 'SiObservable',
+  },
+  {
+    type: 'mybinder',
+    label: 'MyBinder',
+    category: 'code',
+    description: 'Shareable Jupyter notebook environments from any Git repo.',
+    placeholder: 'https://mybinder.org/v2/gh/user/repo/HEAD',
+    hostnames: ['mybinder.org'],
+    defaultHeight: 640,
+    iconName: 'SiJupyter',
+  },
+  {
+    type: 'kaggle',
+    label: 'Kaggle',
+    category: 'code',
+    description: 'Public data-science notebooks and competition kernels.',
+    placeholder: 'https://www.kaggle.com/embed/user/notebook',
+    hostnames: ['kaggle.com', 'www.kaggle.com'],
+    defaultHeight: 560,
+    requiresEmbedUrl: true,
+    iconName: 'SiKaggle',
+  },
+  {
+    type: 'huggingface',
+    label: 'Hugging Face',
+    category: 'code',
+    description: 'Live ML model demos and Gradio/Streamlit Spaces.',
+    placeholder: 'https://huggingface.co/spaces/user/space',
+    hostnames: ['huggingface.co'],
+    defaultHeight: 640,
+    iconName: 'SiHuggingface',
+  },
+  {
+    type: 'wandb',
+    label: 'Weights & Biases',
+    category: 'code',
+    description: 'ML experiment reports with interactive charts and metrics.',
+    placeholder: 'https://api.wandb.ai/links/user/report-id',
+    hostnames: ['wandb.ai', 'api.wandb.ai'],
+    defaultHeight: 560,
+    iconName: 'SiWeightsandbiases',
+  },
+  {
+    type: 'gitpod',
+    label: 'Gitpod',
+    category: 'code',
+    description: 'Instant cloud dev environments from any repository.',
+    placeholder: 'https://gitpod.io/#https://github.com/user/repo',
+    hostnames: ['gitpod.io'],
+    defaultHeight: 640,
+    iconName: 'SiGitpod',
+  },
+  {
+    type: 'google-colab',
+    label: 'Google Colab',
+    category: 'code',
+    description: 'Cloud-based Jupyter notebooks for data science and AI.',
+    placeholder: 'https://colab.research.google.com/drive/...',
+    hostnames: ['colab.research.google.com'],
+    defaultHeight: 560,
+    iconName: 'SiGooglecolab',
+  },
+
+  // ─── MEDIA ───────────────────────────────────────────────────────────────────
   {
     type: 'youtube',
     label: 'YouTube',
@@ -227,6 +383,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['youtube.com', 'www.youtube.com', 'youtu.be'],
     defaultHeight: 420,
     allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
+    iconName: 'SiYoutube',
   },
   {
     type: 'vimeo',
@@ -237,6 +394,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'],
     defaultHeight: 420,
     allow: 'autoplay; fullscreen; picture-in-picture',
+    iconName: 'SiVimeo',
   },
   {
     type: 'loom',
@@ -246,6 +404,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.loom.com/share/...',
     hostnames: ['loom.com', 'www.loom.com'],
     defaultHeight: 420,
+    iconName: 'SiLoom',
   },
   {
     type: 'google-vids',
@@ -255,6 +414,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://vids.google.com/...',
     hostnames: ['vids.google.com', 'drive.google.com'],
     defaultHeight: 480,
+    iconName: 'SiGoogle',
   },
   {
     type: 'wistia',
@@ -264,6 +424,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://fast.wistia.net/embed/iframe/...',
     hostnames: ['wistia.com', 'fast.wistia.net'],
     defaultHeight: 420,
+    iconName: 'SiWistia',
   },
   {
     type: 'spotify',
@@ -273,6 +434,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://open.spotify.com/...',
     hostnames: ['open.spotify.com', 'spotify.com'],
     defaultHeight: 352,
+    iconName: 'SiSpotify',
   },
   {
     type: 'soundcloud',
@@ -282,6 +444,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://soundcloud.com/...',
     hostnames: ['soundcloud.com', 'w.soundcloud.com'],
     defaultHeight: 320,
+    iconName: 'SiSoundcloud',
   },
   {
     type: 'suno',
@@ -291,6 +454,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://suno.com/song/...',
     hostnames: ['suno.com', 'www.suno.com'],
     defaultHeight: 420,
+    iconName: 'SiSuno',
   },
   {
     type: 'sodaphonic',
@@ -301,6 +465,99 @@ export const EMBED_PROVIDERS = [
     hostnames: ['sodaphonic.com', 'www.sodaphonic.com'],
     defaultHeight: 520,
   },
+  // NEW ↓
+  {
+    type: 'rutube',
+    label: 'RuTube',
+    category: 'media',
+    description: 'Russian state-accessible video — mirrors or supplements YouTube.',
+    placeholder: 'https://rutube.ru/video/...',
+    hostnames: ['rutube.ru'],
+    defaultHeight: 420,
+    allow: 'autoplay; fullscreen',
+    iconName: 'SiRutube',
+  },
+  {
+    type: 'vk-video',
+    label: 'VK Video',
+    category: 'media',
+    description: 'VKontakte video — widely watched across Russia and Kazakhstan.',
+    placeholder: 'https://vk.com/video-...',
+    hostnames: ['vk.com', 'vkvideo.ru'],
+    defaultHeight: 420,
+    allow: 'autoplay; encrypted-media; fullscreen',
+    iconName: 'SiVk',
+  },
+  {
+    type: 'vk-clips',
+    label: 'VK Clips / Posts',
+    category: 'media',
+    description: 'Short-form videos and announcements from VK.',
+    placeholder: 'https://vk.com/clip-...',
+    hostnames: ['vk.com'],
+    defaultHeight: 560,
+    iconName: 'SiVk',
+  },
+  {
+    type: 'ted',
+    label: 'TED / TEDx',
+    category: 'media',
+    description: 'Conference talks on science, design, society, and innovation.',
+    placeholder: 'https://www.ted.com/talks/...',
+    hostnames: ['ted.com', 'www.ted.com', 'embed.ted.com'],
+    defaultHeight: 480,
+    allow: 'autoplay; fullscreen',
+    requiresEmbedUrl: true,
+    iconName: 'SiTed',
+  },
+  {
+    type: 'deezer',
+    label: 'Deezer',
+    category: 'media',
+    description: 'Music and podcast playlists for listening comprehension tasks.',
+    placeholder: 'https://www.deezer.com/playlist/...',
+    hostnames: ['deezer.com', 'www.deezer.com', 'widget.deezer.com'],
+    defaultHeight: 350,
+    requiresEmbedUrl: true,
+    iconName: 'SiDeezer',
+  },
+  {
+    type: 'mixcloud',
+    label: 'Mixcloud',
+    category: 'media',
+    description: 'Radio shows and long-form audio mixes for background listening.',
+    placeholder: 'https://www.mixcloud.com/user/mix/',
+    hostnames: ['mixcloud.com', 'www.mixcloud.com'],
+    defaultHeight: 120,
+    requiresEmbedUrl: true,
+    iconName: 'SiMixcloud',
+  },
+  {
+    type: 'panopto',
+    label: 'Panopto',
+    category: 'media',
+    description: 'University lecture recordings with chapters and in-video quizzes.',
+    placeholder: 'https://university.hosted.panopto.com/Panopto/Pages/Embed.aspx?id=...',
+    hostnames: ['hosted.panopto.com', 'panopto.com'],
+    defaultHeight: 480,
+    allow: 'autoplay; fullscreen',
+    requiresEmbedUrl: true,
+    iconName: 'SiPanopto',
+  },
+  {
+    type: 'kaltura',
+    label: 'Kaltura',
+    category: 'media',
+    description: 'Institutional video platform integrated with Moodle and Canvas.',
+    placeholder: 'https://cdnapisec.kaltura.com/p/partner-id/embedPlaykitJs/...',
+    hostnames: ['kaltura.com', 'cdnapisec.kaltura.com'],
+    defaultHeight: 480,
+    allow: 'autoplay; fullscreen',
+    requiresEmbedUrl: true,
+    iconName: 'SiKaltura',
+  },
+
+  // ─── ASSESSMENT ──────────────────────────────────────────────────────────────
   {
     type: 'h5p',
     label: 'H5P',
@@ -309,6 +566,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://h5p.org/h5p/embed/...',
     hostnames: ['h5p.org', 'h5p.com'],
     defaultHeight: 560,
+    iconName: 'SiH5p',
   },
   {
     type: 'genially',
@@ -318,6 +576,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://view.genially.com/...',
     hostnames: ['genially.com', 'view.genially.com'],
     defaultHeight: 560,
+    iconName: 'SiGenially',
   },
   {
     type: 'typeform',
@@ -327,6 +586,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://form.typeform.com/to/...',
     hostnames: ['typeform.com', 'form.typeform.com'],
     defaultHeight: 560,
+    iconName: 'SiTypeform',
   },
   {
     type: 'jotform',
@@ -336,6 +596,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://form.jotform.com/...',
     hostnames: ['jotform.com', 'form.jotform.com'],
     defaultHeight: 560,
+    iconName: 'SiJotform',
   },
   {
     type: 'google-forms',
@@ -345,6 +606,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://docs.google.com/forms/d/e/...',
     hostnames: ['docs.google.com'],
     defaultHeight: 640,
+    iconName: 'SiGoogleforms',
   },
   {
     type: 'tally',
@@ -354,6 +616,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://tally.so/r/...',
     hostnames: ['tally.so'],
     defaultHeight: 560,
+    iconName: 'SiTally',
   },
   {
     type: 'quizlet',
@@ -363,6 +626,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://quizlet.com/...',
     hostnames: ['quizlet.com', 'www.quizlet.com'],
     defaultHeight: 500,
+    iconName: 'SiQuizlet',
   },
   {
     type: 'kahoot',
@@ -372,6 +636,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://create.kahoot.it/share/...',
     hostnames: ['kahoot.it', 'create.kahoot.it'],
     defaultHeight: 500,
+    iconName: 'SiKahoot',
   },
   {
     type: 'mentimeter',
@@ -381,7 +646,99 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.mentimeter.com/...',
     hostnames: ['mentimeter.com', 'www.mentimeter.com'],
     defaultHeight: 560,
+    iconName: 'SiMentimeter',
   },
+  // NEW ↓
+  {
+    type: 'blooket',
+    label: 'Blooket',
+    category: 'assessment',
+    description: 'Gamified quizzes and interactive learning games.',
+    placeholder: 'https://www.blooket.com/play/...',
+    hostnames: ['blooket.com', 'www.blooket.com'],
+    defaultHeight: 500,
+  },
+  {
+    type: 'quizizz',
+    label: 'Quizizz',
+    category: 'assessment',
+    description: 'Interactive quizzes and asynchronous homework mode.',
+    placeholder: 'https://quizizz.com/admin/quiz/...',
+    hostnames: ['quizizz.com'],
+    defaultHeight: 500,
+    iconName: 'SiQuizizz',
+  },
+  {
+    type: 'edpuzzle',
+    label: 'Edpuzzle',
+    category: 'assessment',
+    description: 'Embed questions and voiceovers into any video.',
+    placeholder: 'https://edpuzzle.com/embed/media/...',
+    hostnames: ['edpuzzle.com'],
+    defaultHeight: 500,
+  },
+  {
+    type: 'plickers',
+    label: 'Plickers',
+    category: 'assessment',
+    description: 'Low-tech classroom polling using paper cards.',
+    placeholder: 'https://www.plickers.com/...',
+    hostnames: ['plickers.com', 'www.plickers.com'],
+    defaultHeight: 500,
+  },
+  {
+    type: 'wooclap',
+    label: 'Wooclap',
+    category: 'assessment',
+    description: 'Live audience polls, MCQs, and word clouds during lectures.',
+    placeholder: 'https://app.wooclap.com/events/EVENT/questions/0',
+    hostnames: ['app.wooclap.com', 'wooclap.com'],
+    defaultHeight: 560,
+    requiresEmbedUrl: true,
+  },
+  {
+    type: 'slido',
+    label: 'Slido',
+    category: 'assessment',
+    description: 'Real-time Q&A and polling for large university lectures.',
+    placeholder: 'https://wall.sli.do/event/...',
+    hostnames: ['sli.do', 'wall.sli.do', 'slido.com'],
+    defaultHeight: 560,
+    requiresEmbedUrl: true,
+    iconName: 'SiSlido',
+  },
+  {
+    type: 'nearpod',
+    label: 'Nearpod',
+    category: 'assessment',
+    description: 'Student-paced interactive lessons with embedded assessments.',
+    placeholder: 'https://nearpod.com/libraries/...',
+    hostnames: ['nearpod.com'],
+    defaultHeight: 580,
+  },
+  {
+    type: 'wordwall',
+    label: 'Wordwall',
+    category: 'assessment',
+    description: 'Gamified vocabulary and grammar activities — popular in CIS classrooms.',
+    placeholder: 'https://wordwall.net/embed/...',
+    hostnames: ['wordwall.net'],
+    defaultHeight: 500,
+    requiresEmbedUrl: true,
+  },
+  {
+    type: 'poll-everywhere',
+    label: 'Poll Everywhere',
+    category: 'assessment',
+    description: 'Audience-response activities with PowerPoint/Google Slides integration.',
+    placeholder: 'https://www.polleverywhere.com/multiple_choice_polls/...',
+    hostnames: ['polleverywhere.com', 'www.polleverywhere.com'],
+    defaultHeight: 480,
+    requiresEmbedUrl: true,
+    iconName: 'SiPolleverywhere',
+  },
+
+  // ─── PRODUCTIVITY ────────────────────────────────────────────────────────────
   {
     type: 'airtable',
     label: 'Airtable',
@@ -390,6 +747,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://airtable.com/embed/...',
     hostnames: ['airtable.com'],
     defaultHeight: 560,
+    iconName: 'SiAirtable',
   },
   {
     type: 'google-sheets',
@@ -399,6 +757,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://docs.google.com/spreadsheets/d/...',
     hostnames: ['docs.google.com'],
     defaultHeight: 560,
+    iconName: 'SiGooglesheets',
   },
   {
     type: 'trello',
@@ -408,6 +767,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://trello.com/b/...',
     hostnames: ['trello.com'],
     defaultHeight: 560,
+    iconName: 'SiTrello',
   },
   {
     type: 'notion',
@@ -417,6 +777,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.notion.so/...',
     hostnames: ['notion.so', 'www.notion.so'],
     defaultHeight: 560,
+    iconName: 'SiNotion',
   },
   {
     type: 'coda',
@@ -426,6 +787,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://coda.io/embed/...',
     hostnames: ['coda.io'],
     defaultHeight: 560,
+    iconName: 'SiCoda',
   },
   {
     type: 'tableau',
@@ -435,7 +797,63 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://public.tableau.com/views/...',
     hostnames: ['public.tableau.com', 'tableau.com'],
     defaultHeight: 640,
+    iconName: 'SiTableau',
   },
+  // NEW ↓
+  {
+    type: 'looker-studio',
+    label: 'Looker Studio',
+    category: 'productivity',
+    description: 'Google Data Studio dashboards for live research and analytics.',
+    placeholder: 'https://lookerstudio.google.com/embed/reporting/...',
+    hostnames: ['lookerstudio.google.com', 'datastudio.google.com'],
+    defaultHeight: 640,
+    requiresEmbedUrl: true,
+    iconName: 'SiLooker',
+  },
+  {
+    type: 'clickup',
+    label: 'ClickUp',
+    category: 'productivity',
+    description: 'All-in-one project and task management for group coursework.',
+    placeholder: 'https://app.clickup.com/...?embed=1',
+    hostnames: ['app.clickup.com', 'clickup.com'],
+    defaultHeight: 560,
+    requiresEmbedUrl: true,
+    iconName: 'SiClickup',
+  },
+  {
+    type: 'wakelet',
+    label: 'Wakelet',
+    category: 'productivity',
+    description: 'Curated collections of links, videos, and resources for a lesson.',
+    placeholder: 'https://wakelet.com/wake/...',
+    hostnames: ['wakelet.com'],
+    defaultHeight: 560,
+    iconName: 'SiWakelet',
+  },
+  {
+    type: 'datalens',
+    label: 'Yandex DataLens',
+    category: 'productivity',
+    description: 'Business intelligence and data visualization service.',
+    placeholder: 'https://datalens.yandex.ru/embed/...',
+    hostnames: ['datalens.yandex.ru', 'datalens.yandex.com'],
+    defaultHeight: 560,
+    iconName: 'SiYandex',
+  },
+  {
+    type: 'google-docs',
+    label: 'Google Docs',
+    category: 'productivity',
+    description: 'Collaborative word processing and document editing.',
+    placeholder: 'https://docs.google.com/document/d/.../edit',
+    hostnames: ['docs.google.com'],
+    defaultHeight: 640,
+    iconName: 'SiGoogledocs',
+  },
+
+  // ─── ACADEMIC ────────────────────────────────────────────────────────────────
   {
     type: 'desmos',
     label: 'Desmos',
@@ -444,6 +862,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.desmos.com/calculator/...',
     hostnames: ['desmos.com', 'www.desmos.com'],
     defaultHeight: 520,
+    iconName: 'SiDesmos',
   },
   {
     type: 'geogebra',
@@ -462,6 +881,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.wolframalpha.com/...',
     hostnames: ['wolframalpha.com', 'www.wolframalpha.com'],
     defaultHeight: 500,
+    iconName: 'SiWolframalpha',
   },
   {
     type: 'phet',
@@ -481,6 +901,7 @@ export const EMBED_PROVIDERS = [
     hostnames: ['sketchfab.com', 'www.sketchfab.com'],
     defaultHeight: 520,
     allow: 'autoplay; fullscreen; xr-spatial-tracking',
+    iconName: 'SiSketchfab',
   },
   {
     type: 'texlyre',
@@ -491,6 +912,89 @@ export const EMBED_PROVIDERS = [
     hostnames: ['texlyre.com', 'www.texlyre.com'],
     defaultHeight: 500,
   },
+  // NEW ↓
+  {
+    type: 'yandex-maps',
+    label: 'Yandex Maps',
+    category: 'academic',
+    description: 'Detailed maps and geographic context for the CIS region.',
+    placeholder: 'https://yandex.ru/maps/...',
+    hostnames: ['yandex.ru', 'yandex.com', 'maps.yandex.ru'],
+    defaultHeight: 480,
+    iconName: 'SiYandex',
+  },
+  {
+    type: 'brilliant',
+    label: 'Brilliant.org',
+    category: 'academic',
+    description: 'Interactive problem solving in math, science, and CS.',
+    placeholder: 'https://brilliant.org/courses/...',
+    hostnames: ['brilliant.org'],
+    defaultHeight: 600,
+    iconName: 'SiBrilliant',
+  },
+  {
+    type: 'symbolab',
+    label: 'Symbolab',
+    category: 'academic',
+    description: 'Step-by-step math solver and graphing calculator.',
+    placeholder: 'https://www.symbolab.com/solver/...',
+    hostnames: ['symbolab.com', 'www.symbolab.com'],
+    defaultHeight: 600,
+  },
+  {
+    type: 'stepik',
+    label: 'Stepik',
+    category: 'academic',
+    description: 'Leading Russian/CIS MOOC with CS, math, and science courses.',
+    placeholder: 'https://stepik.org/lesson/.../step/1?unit=...',
+    hostnames: ['stepik.org'],
+    defaultHeight: 600,
+    requiresEmbedUrl: true,
+    iconName: 'SiStepik',
+  },
+  {
+    type: 'overleaf',
+    label: 'Overleaf',
+    category: 'academic',
+    description: 'Collaborative LaTeX editor for reports, theses, and papers.',
+    placeholder: 'https://www.overleaf.com/read/...',
+    hostnames: ['overleaf.com', 'www.overleaf.com'],
+    defaultHeight: 640,
+    iconName: 'SiOverleaf',
+  },
+  {
+    type: 'molview',
+    label: 'MolView',
+    category: 'academic',
+    description: 'Interactive 2D/3D molecular structure viewer for chemistry.',
+    placeholder: 'https://embed.molview.org/v1/?smiles=...',
+    hostnames: ['molview.org', 'embed.molview.org'],
+    defaultHeight: 520,
+    requiresEmbedUrl: true,
+  },
+  {
+    type: 'google-maps',
+    label: 'Google Maps',
+    category: 'academic',
+    description: 'Geographic context for history, social science, and fieldwork.',
+    placeholder: 'https://www.google.com/maps/embed?pb=...',
+    hostnames: ['google.com', 'www.google.com', 'maps.google.com'],
+    defaultHeight: 480,
+    requiresEmbedUrl: true,
+    iconName: 'SiGooglemaps',
+  },
+  {
+    type: 'chemtube3d',
+    label: 'ChemTube3D',
+    category: 'academic',
+    description: 'Animated 3D reaction mechanisms for university chemistry.',
+    placeholder: 'https://www.chemtube3d.com/...',
+    hostnames: ['chemtube3d.com', 'www.chemtube3d.com'],
+    defaultHeight: 560,
+  },
+
+  // ─── COLLABORATION ────────────────────────────────────────────────────────────
   {
     type: 'notebooklm',
     label: 'NotebookLM',
@@ -499,6 +1003,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://notebooklm.google.com/...',
     hostnames: ['notebooklm.google.com'],
     defaultHeight: 560,
+    iconName: 'SiGoogle',
   },
   {
     type: 'hyperbeam',
@@ -517,6 +1022,48 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://discord.com/invite/...',
     hostnames: ['discord.com', 'discord.gg'],
     defaultHeight: 420,
+    iconName: 'SiDiscord',
+  },
+  // NEW ↓
+  {
+    type: 'telegram',
+    label: 'Telegram Post',
+    category: 'collaboration',
+    description: 'Embedded messages and announcements from Telegram channels.',
+    placeholder: 'https://t.me/channel/123',
+    hostnames: ['t.me'],
+    defaultHeight: 400,
+    iconName: 'SiTelegram',
+  },
+  {
+    type: 'chatgpt',
+    label: 'ChatGPT Share',
+    category: 'collaboration',
+    description: 'Shared AI conversations and guided learning threads.',
+    placeholder: 'https://chatgpt.com/share/...',
+    hostnames: ['chatgpt.com', 'openai.com'],
+    defaultHeight: 560,
+    iconName: 'SiOpenai',
+  },
+  {
+    type: 'padlet',
+    label: 'Padlet',
+    category: 'collaboration',
+    description: 'Shared digital walls for brainstorming, portfolios, and Q&A.',
+    placeholder: 'https://padlet.com/user/board',
+    hostnames: ['padlet.com'],
+    defaultHeight: 560,
+    iconName: 'SiPadlet',
+  },
+  {
+    type: 'flip',
+    label: 'Flip',
+    category: 'collaboration',
+    description: 'Asynchronous video discussion boards for reflective assignments.',
+    placeholder: 'https://flip.com/groups/...',
+    hostnames: ['flip.com'],
+    defaultHeight: 560,
+    iconName: 'SiFlip',
   },
 ] as const satisfies readonly EmbedProvider[];
 
@@ -535,4 +1082,18 @@ export function getEmbedProvider(type: EmbedType | string | null | undefined): E
 
 export function isEmbedType(type: string | null | undefined): type is EmbedType {
   return Boolean(type && PROVIDERS_BY_TYPE.has(type as EmbedType));
+}
+
+/**
+ * Returns providers filtered and sorted for a given category.
+ * Providers without an `iconName` are sorted last so icon grids look clean.
+ */
+export function getProvidersByCategory(category: EmbedCategoryId): EmbedProvider[] {
+  return (EMBED_PROVIDERS as readonly EmbedProvider[])
+    .filter((p) => p.category === category)
+    .toSorted((a, b) => {
+      if (a.iconName && !b.iconName) return -1;
+      if (!a.iconName && b.iconName) return 1;
+      return a.label.localeCompare(b.label);
+    });
 }
