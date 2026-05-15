@@ -258,8 +258,8 @@ async def api_export_file_submission_csv(
         content=csv_body,
         media_type="text/csv",
         headers={
-            "Content-Disposition": (
-                f"attachment; filename=file-submissions-{file_submission_uuid}.csv"
+            "Content-Disposition": get_content_disposition_header(
+                f"file-submissions-{file_submission_uuid}.csv"
             )
         },
     )
@@ -282,8 +282,8 @@ async def api_download_file_submission_zip(
         iter([body]),
         media_type="application/zip",
         headers={
-            "Content-Disposition": (
-                f"attachment; filename=file-submissions-{file_submission_uuid}.zip"
+            "Content-Disposition": get_content_disposition_header(
+                f"file-submissions-{file_submission_uuid}.zip"
             )
         },
     )

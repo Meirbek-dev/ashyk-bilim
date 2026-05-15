@@ -15,6 +15,7 @@ from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
 from src.auth.users import get_public_user
+from src.core.http import get_content_disposition_header
 from src.db.grading.bulk_actions import BulkActionRead
 from src.db.grading.gradebook import CourseGradebookResponse
 from src.db.grading.schemas import (
@@ -224,7 +225,9 @@ def api_export_submissions_csv(
         ),
         media_type="text/csv",
         headers={
-            "Content-Disposition": f"attachment; filename=grades-activity-{activity_id}.csv"
+            "Content-Disposition": get_content_disposition_header(
+                f"grades-activity-{activity_id}.csv"
+            )
         },
     )
 

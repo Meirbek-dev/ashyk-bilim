@@ -343,8 +343,8 @@ async def api_export_assessment_submissions_csv(
         ),
         media_type="text/csv",
         headers={
-            "Content-Disposition": (
-                f"attachment; filename=grades-assessment-{assessment_uuid}.csv"
+            "Content-Disposition": get_content_disposition_header(
+                f"grades-assessment-{assessment_uuid}.csv"
             )
         },
     )
