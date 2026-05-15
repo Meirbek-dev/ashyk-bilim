@@ -4,5 +4,5 @@
   "entry": ["src/components/ui/**"],
   "ignoreDependencies": ["sharp", "shadcn"],
   "ignoreBinaries": ["src/messages/migrate.ts"],
-  "ignoreFiles": ["src/components/ui/*", "src/components/DevScriptLoader.tsx", "src/messages/Artplayer/*"]
+  "ignoreFiles": ["src/components/DevScriptLoader.tsx", "src/messages/Artplayer/*"]
 }

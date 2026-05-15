@@ -191,32 +191,6 @@ export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<
 }
 
 /**
- * Get upload status
- */
-export async function getUploadStatus(uploadId: string): Promise<any> {
-  const response = await apiFetch(`uploads/status/${uploadId}`);
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to get upload status');
-  }
-
-  return response.json();
-}
-
-/**
- * Cancel upload
- */
-export async function cancelUpload(uploadId: string): Promise<void> {
-  const response = await apiFetch(`uploads/${uploadId}`, { method: 'DELETE' });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to cancel upload');
-  }
-}
-
-/**
  * Determine if a file should use chunked upload
  * Files larger than 5MB should use chunked upload to avoid nginx 413 errors
  */

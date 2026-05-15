@@ -265,37 +265,6 @@ async function createPdfActivity(
   return uploadFormData('activities/documentpdf', formData, onProgress);
 }
 
-/**
- * Create file-based activity (video or PDF)
- */
-export async function createFileActivity(
-  file: File,
-  type: string,
-  data: any,
-  chapterId: number,
-  options?: ActivityInvalidationOptions,
-  onProgress?: (progress: UploadProgress) => void,
-): Promise<ActivityRead> {
-  let result: ActivityRead;
-
-  if (type === 'video') {
-    if (shouldUseChunkedUpload(file.size)) {
-      after(() => console.log('Using chunked upload for video activity'));
-      result = await createVideoActivityChunked(file, data, chapterId, options, onProgress);
-    } else {
-      result = await createVideoActivityStandard(file, data, chapterId, options, onProgress);
-    }
-  } else if (type === 'documentpdf') {
-    result = await createPdfActivity(file, data, chapterId, options, onProgress);
-  } else {
-    throw new Error(`Unsupported file activity type: ${type}`);
-  }
-
-  await invalidateActivityCache(options?.courseUuid);
-
-  return result;
-}
-
 export async function createExternalVideoActivity(
   data: any,
   activity: any,

@@ -10,12 +10,6 @@ interface LogoutOptions {
   redirectTo?: string;
 }
 
-export async function getGoogleAuthorizeUrl(frontendCallback: string): Promise<string> {
-  const url = new URL(`${getAPIUrl()}auth/google/authorize`);
-  url.searchParams.set('callback', frontendCallback);
-  return url.toString();
-}
-
 export async function logout(options?: LogoutOptions): Promise<void> {
   broadcastLogout();
   await logoutAction(options?.redirectTo ?? '/login');

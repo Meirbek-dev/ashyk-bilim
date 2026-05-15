@@ -124,10 +124,6 @@ export function getTeacherCourseDetailByUuid(courseUuid: string, query?: Analyti
   return analyticsRequest<TeacherCourseDetailResponse>(`teacher/courses/by-uuid/${courseUuid}`, query);
 }
 
-export function getTeacherCourseDetail(courseId: number, query?: AnalyticsQuery) {
-  return analyticsRequest<TeacherCourseDetailResponse>(`teacher/courses/${courseId}`, query);
-}
-
 export function getTeacherAssessmentList(query?: AnalyticsQuery) {
   return analyticsRequest<TeacherAssessmentListResponse>('teacher/assessments', query);
 }
@@ -166,12 +162,6 @@ export function saveAnalyticsView(payload: SavedAnalyticsViewCreate, query?: Ana
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-  });
-}
-
-export function deleteAnalyticsView(viewId: number, query?: AnalyticsQuery) {
-  return analyticsRequest<void>(`teacher/saved-views/${viewId}`, query, {
-    method: 'DELETE',
   });
 }
 

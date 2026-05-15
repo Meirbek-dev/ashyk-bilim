@@ -17,7 +17,3 @@ export async function uploadNewImageFile(file: File, activity_uuid: string): Pro
   return errorHandling(response);
 }
 
-export async function getImageFile(file_id: string) {
-  const response = await apiFetch(`blocks/image?file_id=${file_id}`);
-  return errorHandling(response);
-}

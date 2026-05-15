@@ -100,21 +100,6 @@ export async function deleteDiscussion(course_uuid: string, discussion_uuid: str
   return data;
 }
 
-export async function likeDiscussion(course_uuid: string, discussion_uuid: string): Promise<any> {
-  const result = await apiFetch(`courses/${course_uuid}/discussions/${discussion_uuid}/like`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  });
-  const data = await errorHandling(result);
-
-  if (result.ok) {
-    const { revalidateTag } = await import('next/cache');
-    revalidateTag(tags.courses, 'max');
-  }
-
-  return data;
-}
-
 export async function toggleDiscussionLike(
   course_uuid: string,
   discussion_uuid: string,

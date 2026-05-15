@@ -354,7 +354,7 @@ function normalizeJudge0State(
   return 'COMPLETED';
 }
 
-export function mapCanonicalCodeSubmission(raw: GradingSubmission): CodeSubmission {
+function mapCanonicalCodeSubmission(raw: GradingSubmission): CodeSubmission {
   const metadata = (raw.metadata_json ?? {}) as CanonicalMetadata;
   const answerMap = (raw.answers_json?.answers ?? {}) as Record<string, CanonicalCodeAnswer>;
   const firstCodeAnswer = Object.values(answerMap).find((answer) => answer?.kind === 'CODE');
@@ -419,27 +419,6 @@ export async function saveCodeChallengeSettings(
     throw new Error('Failed to reload code challenge settings');
   }
   return toCodeChallengeSettings(refreshed, getCodeAssessmentItem(refreshed));
-}
-
-export async function startCodeChallenge(activityUuid: string): Promise<CodeChallengeDraft> {
-  const assessment = await loadCodeAssessment(activityUuid);
-  if (!assessment) {
-    throw new Error('Code challenge assessment not found');
-  }
-
-  const response = await apiFetch(`assessments/${assessment.assessment_uuid}/start`, { method: 'POST' });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || 'Failed to start code challenge');
-  }
-
-  const submission = (await response.json()) as GradingSubmission;
-  return {
-    id: submission.id,
-    submission_uuid: submission.submission_uuid,
-    status: submission.status,
-  };
 }
 
 export async function submitCode(

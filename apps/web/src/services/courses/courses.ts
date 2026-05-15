@@ -492,11 +492,6 @@ export async function deleteCourseFromBackend(
   return data;
 }
 
-export async function getCourseContributors(course_uuid: string) {
-  const result = await apiFetch(`courses/${course_uuid}/contributors`);
-  return await getResponseMetadata(result);
-}
-
 export async function editContributor(
   course_uuid: string,
   contributor_id: number,
@@ -578,7 +573,3 @@ export async function bulkRemoveContributors(
   return metadata;
 }
 
-export async function getCourseRights(course_uuid: string) {
-  const result = await apiFetch(`courses/${course_uuid}/rights`);
-  return await errorHandling(result);
-}

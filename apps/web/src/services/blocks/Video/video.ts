@@ -72,12 +72,3 @@ export async function uploadNewVideoFile(
   }
 }
 
-export async function getVideoFile(file_id: string) {
-  try {
-    const result = await apiFetch(`blocks/video?file_id=${file_id}`);
-    return await result.json();
-  } catch (error) {
-    console.error('error', error);
-    throw error;
-  }
-}

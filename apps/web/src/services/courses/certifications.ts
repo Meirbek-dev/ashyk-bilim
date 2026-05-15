@@ -4,16 +4,6 @@ import { errorHandling, getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { tags, courseTag } from '@/lib/cacheTags';
 
-export async function getCourseCertifications(course_uuid: string, next?: any) {
-  const result = await apiFetch(`certifications/course/${course_uuid}`, next ? { next } : {});
-  return await getResponseMetadata(result);
-}
-
-interface CertificationInvalidationOptions {
-  courseUuid?: string;
-  includeEditableList?: boolean;
-  lastKnownUpdateDate?: string | null;
-}
 
 export interface CreateCertificationParams {
   course_id: number;
@@ -77,11 +67,6 @@ export async function deleteCertification(certification_uuid: string, options?: 
   return response;
 }
 
-export async function getUserCertificates(course_uuid: string) {
-  const result = await apiFetch(`certifications/user/course/${course_uuid}`);
-  return getResponseMetadata(result);
-}
-
 export async function getCertificateByUuid(user_certification_uuid: string) {
   const result = await fetch(
     `${(await import('@services/config/config')).getAPIUrl()}certifications/certificate/${user_certification_uuid}`,
@@ -90,7 +75,3 @@ export async function getCertificateByUuid(user_certification_uuid: string) {
   return getResponseMetadata(result);
 }
 
-export async function getAllUserCertificates() {
-  const result = await apiFetch('certifications/user/all');
-  return getResponseMetadata(result);
-}

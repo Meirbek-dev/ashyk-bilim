@@ -4,11 +4,6 @@ import { getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { courseTag, tags } from '@/lib/cacheTags';
 
-export async function getUserGroups() {
-  const result = await apiFetch('usergroups');
-  return await getResponseMetadata(result);
-}
-
 export async function createUserGroup(body: any) {
   const result = await apiFetch('usergroups/', {
     method: 'POST',

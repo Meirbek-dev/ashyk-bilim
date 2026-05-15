@@ -162,17 +162,6 @@ async function getUnifiedServerData(): Promise<ApiDashboardResponse | null> {
   return fetchGamificationData();
 }
 
-export async function getServerGamificationProfile(): Promise<UserGamificationProfile | null> {
-  const json = await getUnifiedServerData();
-
-  // Return null if no data (unauthorized or error)
-  if (!json) {
-    return null;
-  }
-
-  return normalizeProfile(json.profile);
-}
-
 export async function getServerGamificationDashboard(): Promise<DashboardData | null> {
   const json = await getUnifiedServerData();
 
@@ -234,7 +223,7 @@ const normalizeStreakUpdate = (payload: ApiStreakUpdateResponse): StreakUpdate =
 });
 
 // Server-only revalidation utility after successful mutations
-export async function revalidateGamificationTags() {
+async function revalidateGamificationTags() {
   for (const tag of gamificationTags()) {
     revalidateTag(tag, 'max');
   }

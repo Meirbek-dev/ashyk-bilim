@@ -43,10 +43,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 // My permissions
 // ============================================================================
 
-export function fetchMyPermissions(): Promise<UserRBACData> {
-  return request('rbac/me/permissions');
-}
-
 // ============================================================================
 // Permissions - read-only
 // ============================================================================
@@ -87,10 +83,6 @@ export function updateRole(roleId: number, body: UpdateRoleBody): Promise<Role> 
 
 export function deleteRole(roleId: number): Promise<void> {
   return request(`roles/${roleId}`, { method: 'DELETE' });
-}
-
-export function getRoleUsersCount(roleId: number): Promise<{ count: number }> {
-  return request(`roles/${roleId}/users/count`);
 }
 
 export function listRoleAuditLog(page = 1, pageSize = 20): Promise<RoleAuditListResponse> {

@@ -93,7 +93,7 @@ export function registerKind(kind: AssessmentKind, factory: () => Promise<KindMo
 }
 
 /** Resolve a kind module. Throws if the kind is not registered. */
-export async function resolveKindModule(kind: AssessmentKind): Promise<KindModule> {
+async function resolveKindModule(kind: AssessmentKind): Promise<KindModule> {
   const factory = getRegistry().get(kind);
   if (!factory) {
     throw new Error(`AssessmentKindRegistry: no module registered for kind "${kind}"`);
@@ -109,10 +109,6 @@ function getLoadedModules(): Map<AssessmentKind, KindModule> {
   const f = getLoadedModules as any;
   if (!f._map) f._map = new Map();
   return f._map;
-}
-
-export function getLoadedKindModule(kind: AssessmentKind): KindModule | undefined {
-  return getLoadedModules().get(kind);
 }
 
 export async function loadKindModule(kind: AssessmentKind): Promise<KindModule> {

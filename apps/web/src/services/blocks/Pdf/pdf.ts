@@ -11,10 +11,3 @@ export async function uploadNewPDFFile(file: File, activity_uuid: string) {
     });
 }
 
-export async function getPDFFile(file_id: string) {
-  return apiFetch(`blocks/pdf?file_id=${file_id}`)
-    .then((result) => result.json())
-    .catch((error: unknown) => {
-      console.log('error', error);
-    });
-}
