@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { renderEditorHtml } from '@components/Objects/Editor/core';
 import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
@@ -21,7 +22,14 @@ function resolveToHtml(content: string): string {
 }
 
 export default function RichContentRenderer({ content, className = '' }: RichContentRendererProps) {
-  const html = resolveToHtml(content);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const html = isMounted ? resolveToHtml(content) : '';
+
   // Sanitize the HTML content to prevent XSS attacks
   const sanitizedContent =
     typeof globalThis.window !== 'undefined'
@@ -97,3 +105,4 @@ export default function RichContentRenderer({ content, className = '' }: RichCon
     />
   );
 }
+

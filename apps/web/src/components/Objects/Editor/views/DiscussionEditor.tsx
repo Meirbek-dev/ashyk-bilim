@@ -76,7 +76,8 @@ export function DiscussionEditor({
 
   // Sync content prop changes with editor
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed || !editor.commands) return;
+
     const currentJson = JSON.stringify(editor.getJSON());
     if (currentJson !== content) {
       let parsedContent: string | object = content;
