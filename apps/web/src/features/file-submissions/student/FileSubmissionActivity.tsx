@@ -33,6 +33,7 @@ import type {
   FileSubmissionActivity as FileSubmissionActivityRead,
   FileSubmissionAttemptFile,
 } from "@/features/file-submissions/services/file-submissions";
+import { getFriendlyMimeName } from "@/lib/file-validation";
 
 interface FileSubmissionActivityProps {
   activity: Activity;
@@ -476,7 +477,9 @@ function buildRequirements(data?: FileSubmissionActivityRead): string[] {
   if (data.max_file_size_mb)
     requirements.push(`${data.max_file_size_mb} MB each`);
   if (data.allowed_mime_types.length > 0)
-    requirements.push(data.allowed_mime_types.join(", "));
+    requirements.push(
+      data.allowed_mime_types.map(getFriendlyMimeName).join(", "),
+    );
   return requirements;
 }
 

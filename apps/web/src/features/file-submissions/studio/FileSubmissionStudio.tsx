@@ -24,6 +24,7 @@ import {
   publishFileSubmissionActivity,
   updateFileSubmissionActivity,
 } from "@/features/file-submissions/services/file-submissions";
+import { getFriendlyMimeName } from "@/lib/file-validation";
 
 interface FileSubmissionStudioProps {
   courseUuid: string;
@@ -282,7 +283,7 @@ export default function FileSubmissionStudio({
                 <dt className="text-muted-foreground">Allowed files</dt>
                 <dd>
                   {data.allowed_mime_types.length > 0
-                    ? data.allowed_mime_types.join(", ")
+                    ? data.allowed_mime_types.map(getFriendlyMimeName).join(", ")
                     : "Any file type"}
                 </dd>
               </div>

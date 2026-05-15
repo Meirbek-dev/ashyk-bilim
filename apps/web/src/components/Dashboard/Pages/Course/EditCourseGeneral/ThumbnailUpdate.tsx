@@ -14,6 +14,7 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import type React from 'react';
+import { getFriendlyMimeName } from '@/lib/file-validation';
 
 const MAX_FILE_SIZE = 8_000_000; // 8MB for images
 const MAX_VIDEO_FILE_SIZE = 100_000_000; // 100MB for videos

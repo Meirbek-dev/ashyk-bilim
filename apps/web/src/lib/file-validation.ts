@@ -80,7 +80,9 @@ export function validateFile(
   }
 
   if (!matchedType) {
-    const allowedMimes = allowedTypes.flatMap((type) => FILE_TYPES[type].mimeTypes);
+    const allowedMimes = allowedTypes
+      .flatMap((type) => FILE_TYPES[type].mimeTypes)
+      .map(getFriendlyMimeName);
     return {
       valid: false,
       error: `Invalid file type: ${file.type || file.name}. Allowed types: ${allowedMimes.join(', ')}`,
@@ -125,4 +127,47 @@ export function getFileTypeDescription(allowedTypes: FileType[]): string {
     maxSizes.length === 1 && typeof onlyMaxSize !== 'undefined' ? `${onlyMaxSize / 1024 / 1024}MB` : 'varies';
 
   return `${extensions} (max ${maxSizeStr})`;
+}
+
+/**
+ * Mapping of MIME types to short, user-friendly names
+ */
+export const MIME_TO_FRIENDLY_NAME: Record<string, string> = {
+  'application/pdf': 'PDF',
+  'image/jpeg': 'JPEG',
+  'image/jpg': 'JPG',
+  'image/png': 'PNG',
+  'image/webp': 'WEBP',
+  'image/gif': 'GIF',
+  'image/avif': 'AVIF',
+  'application/msword': 'DOC',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+  'application/vnd.oasis.opendocument.text': 'ODT',
+  'text/csv': 'CSV',
+  'application/vnd.ms-excel': 'XLS',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+  'application/vnd.ms-powerpoint': 'PPT',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
+  'application/zip': 'ZIP',
+  'application/x-zip-compressed': 'ZIP',
+  'application/x-rar-compressed': 'RAR',
+  'text/plain': 'TXT',
+  'text/markdown': 'MD',
+  'application/json': 'JSON',
+  'video/mp4': 'MP4',
+  'video/webm': 'WEBM',
+  'video/x-matroska': 'MKV',
+  'video/quicktime': 'MOV',
+  'audio/mpeg': 'MP3',
+  'audio/wav': 'WAV',
+  'image/*': 'Images',
+  'video/*': 'Videos',
+  'audio/*': 'Audio',
+};
+
+/**
+ * Returns a short, friendly name for a MIME type, or the MIME type itself if unknown.
+ */
+export function getFriendlyMimeName(mime: string): string {
+  return MIME_TO_FRIENDLY_NAME[mime] ?? mime;
 }
