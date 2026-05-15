@@ -1,50 +1,39 @@
-"use client";
+'use client';
 
-import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  CalendarClock,
-  Eye,
-  Loader2,
-  Save,
-  Send,
-  SlidersHorizontal,
-} from "lucide-react";
-import { toast } from "sonner";
+import type { FormEvent } from 'react';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CalendarClock, Eye, Loader2, Save, Send, SlidersHorizontal } from 'lucide-react';
+import { toast } from 'sonner';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import Link from "@components/ui/AppLink";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import Link from '@components/ui/AppLink';
 import {
   getFileSubmissionByActivity,
   publishFileSubmissionActivity,
   updateFileSubmissionActivity,
-} from "@/features/file-submissions/services/file-submissions";
-import { getFriendlyMimeName } from "@/lib/file-validation";
+} from '@/features/file-submissions/services/file-submissions';
+import { getFriendlyMimeName } from '@/lib/file-validation';
 
 interface FileSubmissionStudioProps {
   courseUuid: string;
   activityUuid: string;
 }
 
-const queryKey = (activityUuid: string) =>
-  ["file-submission", "studio", activityUuid] as const;
+const queryKey = (activityUuid: string) => ['file-submission', 'studio', activityUuid] as const;
 
-export default function FileSubmissionStudio({
-  courseUuid,
-  activityUuid,
-}: FileSubmissionStudioProps) {
-  const cleanActivityUuid = activityUuid.replace(/^activity_/, "");
+export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileSubmissionStudioProps) {
+  const cleanActivityUuid = activityUuid.replace(/^activity_/, '');
   const queryClient = useQueryClient();
-  const [title, setTitle] = useState("");
-  const [instructions, setInstructions] = useState("");
-  const [dueAt, setDueAt] = useState("");
+  const [title, setTitle] = useState('');
+  const [instructions, setInstructions] = useState('');
+  const [dueAt, setDueAt] = useState('');
   const [maxFiles, setMaxFiles] = useState(1);
-  const [maxFileSizeMb, setMaxFileSizeMb] = useState<number | "">("");
+  const [maxFileSizeMb, setMaxFileSizeMb] = useState<number | ''>('');
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKey(cleanActivityUuid),
@@ -56,54 +45,46 @@ export default function FileSubmissionStudio({
     if (!data) return;
     setTitle(data.title);
     setInstructions(data.instructions);
-    setDueAt(data.due_at ? toDateTimeLocal(data.due_at) : "");
+    setDueAt(data.due_at ? toDateTimeLocal(data.due_at) : '');
     setMaxFiles(data.max_files);
-    setMaxFileSizeMb(data.max_file_size_mb ?? "");
+    setMaxFileSizeMb(data.max_file_size_mb ?? '');
   }, [data]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!data) throw new Error("File submission is unavailable");
+      if (!data) throw new Error('File submission is unavailable');
       return await updateFileSubmissionActivity(data.file_submission_uuid, {
         title,
         instructions,
         due_at: dueAt ? new Date(dueAt).toISOString() : null,
         max_files: maxFiles,
-        max_file_size_mb: maxFileSizeMb === "" ? null : maxFileSizeMb,
+        max_file_size_mb: maxFileSizeMb === '' ? null : maxFileSizeMb,
       });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: queryKey(cleanActivityUuid),
       });
-      toast.success("File submission saved");
+      toast.success('File submission saved');
     },
     onError: (saveError) => {
-      toast.error(
-        saveError instanceof Error
-          ? saveError.message
-          : "Unable to save file submission",
-      );
+      toast.error(saveError instanceof Error ? saveError.message : 'Unable to save file submission');
     },
   });
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      if (!data) throw new Error("File submission is unavailable");
+      if (!data) throw new Error('File submission is unavailable');
       return await publishFileSubmissionActivity(data.file_submission_uuid);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: queryKey(cleanActivityUuid),
       });
-      toast.success("File submission published");
+      toast.success('File submission published');
     },
     onError: (publishError) => {
-      toast.error(
-        publishError instanceof Error
-          ? publishError.message
-          : "Unable to publish file submission",
-      );
+      toast.error(publishError instanceof Error ? publishError.message : 'Unable to publish file submission');
     },
   });
 
@@ -123,9 +104,7 @@ export default function FileSubmissionStudio({
 
   if (error || !data) {
     return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-        Studio is unavailable.
-      </div>
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">Studio is unavailable.</div>
     );
   }
 
@@ -136,7 +115,7 @@ export default function FileSubmissionStudio({
           <div className="min-w-0">
             <div className="text-muted-foreground flex flex-wrap items-center gap-1 text-xs">
               <Link
-                href={`/dash/courses/${courseUuid.replace("course_", "")}/curriculum`}
+                href={`/dash/courses/${courseUuid.replace('course_', '')}/curriculum`}
                 className="hover:text-foreground"
               >
                 Curriculum
@@ -148,13 +127,7 @@ export default function FileSubmissionStudio({
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h1 className="truncate text-xl font-semibold">{data.title}</h1>
-              <Badge
-                variant={
-                  data.lifecycle === "PUBLISHED" ? "default" : "secondary"
-                }
-              >
-                {data.lifecycle}
-              </Badge>
+              <Badge variant={data.lifecycle === 'PUBLISHED' ? 'default' : 'secondary'}>{data.lifecycle}</Badge>
               {data.due_at ? (
                 <Badge variant="outline">
                   <CalendarClock className="mr-1 size-3" />
@@ -168,11 +141,7 @@ export default function FileSubmissionStudio({
               variant="ghost"
               size="sm"
               nativeButton={false}
-              render={
-                <Link
-                  href={`/course/${courseUuid.replace("course_", "")}/activity/${cleanActivityUuid}`}
-                />
-              }
+              render={<Link href={`/course/${courseUuid.replace('course_', '')}/activity/${cleanActivityUuid}`} />}
             >
               <Eye className="size-4" />
               Preview
@@ -183,28 +152,15 @@ export default function FileSubmissionStudio({
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending || publishMutation.isPending}
             >
-              {saveMutation.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Save className="size-4" />
-              )}
+              {saveMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               Save
             </Button>
             <Button
               size="sm"
               onClick={() => publishMutation.mutate()}
-              disabled={
-                publishMutation.isPending ||
-                saveMutation.isPending ||
-                !title.trim() ||
-                !instructions.trim()
-              }
+              disabled={publishMutation.isPending || saveMutation.isPending || !title.trim() || !instructions.trim()}
             >
-              {publishMutation.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Send className="size-4" />
-              )}
+              {publishMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               Publish
             </Button>
           </div>
@@ -212,7 +168,10 @@ export default function FileSubmissionStudio({
       </header>
 
       <main className="grid gap-6 p-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:p-6">
-        <form onSubmit={save} className="space-y-5">
+        <form
+          onSubmit={save}
+          className="space-y-5"
+        >
           <Field>
             <FieldLabel>Title</FieldLabel>
             <Input
@@ -254,11 +213,7 @@ export default function FileSubmissionStudio({
                 type="number"
                 min={1}
                 value={maxFileSizeMb}
-                onChange={(event) =>
-                  setMaxFileSizeMb(
-                    event.target.value === "" ? "" : Number(event.target.value),
-                  )
-                }
+                onChange={(event) => setMaxFileSizeMb(event.target.value === '' ? '' : Number(event.target.value))}
               />
             </Field>
           </div>
@@ -273,18 +228,18 @@ export default function FileSubmissionStudio({
             <dl className="grid gap-3 text-sm">
               <div>
                 <dt className="text-muted-foreground">Attempts</dt>
-                <dd>{data.max_attempts ?? "Unlimited"}</dd>
+                <dd>{data.max_attempts ?? 'Unlimited'}</dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">Late work</dt>
-                <dd>{data.allow_late ? "Allowed" : "Blocked"}</dd>
+                <dd>{data.allow_late ? 'Allowed' : 'Blocked'}</dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">Allowed files</dt>
                 <dd>
                   {data.allowed_mime_types.length > 0
-                    ? data.allowed_mime_types.map(getFriendlyMimeName).join(", ")
-                    : "Any file type"}
+                    ? data.allowed_mime_types.map(getFriendlyMimeName).join(', ')
+                    : 'Any file type'}
                 </dd>
               </div>
             </dl>
@@ -297,7 +252,7 @@ export default function FileSubmissionStudio({
               nativeButton={false}
               render={
                 <Link
-                  href={`/dash/courses/${courseUuid.replace("course_", "")}/activity/${cleanActivityUuid}/review`}
+                  href={`/dash/courses/${courseUuid.replace('course_', '')}/activity/${cleanActivityUuid}/review`}
                 />
               }
             >
@@ -318,7 +273,7 @@ function toDateTimeLocal(value: string) {
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
+    dateStyle: 'medium',
+    timeStyle: 'short',
   }).format(new Date(value));
 }

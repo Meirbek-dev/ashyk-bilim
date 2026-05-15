@@ -34,7 +34,9 @@ _AGENT = Agent(
     deps_type=AgentDependencies,
     output_type=str,
     tool_retries=1,
-    capabilities=[Instrumentation()] if get_settings().general_config.logfire_enabled else [],
+    capabilities=[Instrumentation()]
+    if get_settings().general_config.logfire_enabled
+    else [],
 )
 
 

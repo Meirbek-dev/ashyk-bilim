@@ -9,10 +9,7 @@
 import * as fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
-import {
-  selectToolbarState,
-  type ToolbarStateSnap,
-} from '../../components/Objects/Editor/Toolbar/EditorToolbar';
+import { selectToolbarState, type ToolbarStateSnap } from '../../components/Objects/Editor/Toolbar/EditorToolbar';
 
 // ---------------------------------------------------------------------------
 // Arbitrary generator for editor state snapshots
@@ -41,15 +38,9 @@ const arbEditorStateSnapshot: fc.Arbitrary<ToolbarStateSnap> = fc
     canUndo: fc.boolean(),
     canRedo: fc.boolean(),
     // getAttributes('codeBlock').language — string | undefined
-    codeBlockLanguage: fc.oneof(
-      fc.constant(undefined),
-      fc.string({ minLength: 0, maxLength: 40 }),
-    ),
+    codeBlockLanguage: fc.oneof(fc.constant(undefined), fc.string({ minLength: 0, maxLength: 40 })),
     // getAttributes('link').href — string | undefined
-    linkHref: fc.oneof(
-      fc.constant(undefined),
-      fc.string({ minLength: 0, maxLength: 200 }),
-    ),
+    linkHref: fc.oneof(fc.constant(undefined), fc.string({ minLength: 0, maxLength: 200 })),
   })
   .map(({ isActiveResults, canUndo, canRedo, codeBlockLanguage, linkHref }) => {
     let callIndex = 0;
@@ -68,9 +59,7 @@ const arbEditorStateSnapshot: fc.Arbitrary<ToolbarStateSnap> = fc
         }),
         getAttributes: (name: string) => {
           if (name === 'codeBlock') {
-            return codeBlockLanguage !== undefined
-              ? { language: codeBlockLanguage }
-              : {};
+            return codeBlockLanguage !== undefined ? { language: codeBlockLanguage } : {};
           }
           if (name === 'link') {
             return linkHref !== undefined ? { href: linkHref } : {};
@@ -96,11 +85,7 @@ describe('EditorToolbar state selector (Property 9)', () => {
 
         for (const [key, value] of Object.entries(result)) {
           const t = typeof value;
-          const isPrimitive =
-            t === 'boolean' ||
-            t === 'number' ||
-            t === 'string' ||
-            (t === 'object' && value === null);
+          const isPrimitive = t === 'boolean' || t === 'number' || t === 'string' || (t === 'object' && value === null);
 
           expect(
             isPrimitive,

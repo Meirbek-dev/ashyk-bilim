@@ -8,7 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import {
   AlertTriangle,
   Check,
@@ -27,29 +27,29 @@ import {
   Trash2,
   Video,
   X as XIcon,
-} from "lucide-react";
-import { CourseWorkflowBadge } from "@components/Dashboard/Courses/courseWorkflowUi";
-import { useActivityMutations } from "@/hooks/mutations/useActivityMutations";
-import { cleanActivityUuid, cleanCourseUuid } from "@/lib/course-management";
+} from 'lucide-react';
+import { CourseWorkflowBadge } from '@components/Dashboard/Courses/courseWorkflowUi';
+import { useActivityMutations } from '@/hooks/mutations/useActivityMutations';
+import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management';
 
-import ToolTip from "@/components/Objects/Elements/Tooltip/Tooltip";
-import { useCourse } from "@components/Contexts/CourseContext";
-import { getAbsoluteUrl } from "@services/config/config";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useTranslations } from "next-intl";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
-import { toast } from "sonner";
+import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip';
+import { useCourse } from '@components/Contexts/CourseContext';
+import { getAbsoluteUrl } from '@services/config/config';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useTranslations } from 'next-intl';
+import { cn } from '@/lib/utils';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 type ActivityType =
-  | "TYPE_VIDEO"
-  | "TYPE_DOCUMENT"
-  | "TYPE_FILE_SUBMISSION"
-  | "TYPE_DYNAMIC"
-  | "TYPE_EXAM"
-  | "TYPE_CUSTOM"
-  | "TYPE_CODE_CHALLENGE";
+  | 'TYPE_VIDEO'
+  | 'TYPE_DOCUMENT'
+  | 'TYPE_FILE_SUBMISSION'
+  | 'TYPE_DYNAMIC'
+  | 'TYPE_EXAM'
+  | 'TYPE_CUSTOM'
+  | 'TYPE_CODE_CHALLENGE';
 
 interface Activity {
   id: string;
@@ -76,43 +76,40 @@ interface ActivityElementProps {
 const ACTIVITY_CONFIG = {
   TYPE_VIDEO: {
     Icon: Video,
-    translationKey: "video",
-    colorClass:
-      "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300",
+    translationKey: 'video',
+    colorClass: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300',
   },
   TYPE_DOCUMENT: {
     Icon: File,
-    translationKey: "document",
+    translationKey: 'document',
     colorClass:
-      "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300",
+      'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300',
   },
   TYPE_FILE_SUBMISSION: {
     Icon: FileArchive,
-    translationKey: "fileSubmission",
+    translationKey: 'fileSubmission',
     colorClass:
-      "border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300",
+      'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300',
   },
   TYPE_DYNAMIC: {
     Icon: Sparkles,
-    translationKey: "dynamic",
+    translationKey: 'dynamic',
     colorClass:
-      "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300",
+      'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300',
   },
   TYPE_EXAM: {
     Icon: ClipboardList,
-    translationKey: "exam",
-    colorClass:
-      "border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300",
+    translationKey: 'exam',
+    colorClass: 'border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300',
   },
   TYPE_CODE_CHALLENGE: {
     Icon: Code2,
-    translationKey: "codeChallenge",
-    colorClass:
-      "border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-950/30 text-cyan-700 dark:text-cyan-300",
+    translationKey: 'codeChallenge',
+    colorClass: 'border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-950/30 text-cyan-700 dark:text-cyan-300',
   },
 } as const;
 
-const ACTION_ICON_BUTTON_CLASS = "text-muted-foreground shadow-sm";
+const ACTION_ICON_BUTTON_CLASS = 'text-muted-foreground shadow-sm';
 
 const ActivityElement = ({
   activity,
@@ -122,14 +119,11 @@ const ActivityElement = ({
   attributes,
   listeners,
 }: ActivityElementProps) => {
-  const { deleteActivity, updateActivity } = useActivityMutations(
-    course_uuid,
-    true,
-  );
-  const t = useTranslations("CourseEdit.ActivityElement");
+  const { deleteActivity, updateActivity } = useActivityMutations(course_uuid, true);
+  const t = useTranslations('CourseEdit.ActivityElement');
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editedName, setEditedName] = useState(activity?.name ?? "");
+  const [editedName, setEditedName] = useState(activity?.name ?? '');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isUpdatingPublish, setIsUpdatingPublish] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -158,10 +152,10 @@ const ActivityElement = ({
     setIsSavingEdit(true);
     try {
       await updateActivity(activity.activity_uuid, { name: trimmedName });
-      toast.success(t("activityNameUpdatedSuccess"));
+      toast.success(t('activityNameUpdatedSuccess'));
       setIsEditing(false);
     } catch (error: any) {
-      toast.error(error?.message || t("failedToUpdateActivityName"));
+      toast.error(error?.message || t('failedToUpdateActivityName'));
       setEditedName(activity.name);
     } finally {
       setIsSavingEdit(false);
@@ -170,14 +164,14 @@ const ActivityElement = ({
 
   const handleTogglePublish = async () => {
     setIsUpdatingPublish(true);
-    const toastId = toast.loading(t("updating"));
+    const toastId = toast.loading(t('updating'));
     try {
       await updateActivity(activity.activity_uuid, {
         published: !activity.published,
       });
-      toast.success(t("activityUpdateSuccess"));
+      toast.success(t('activityUpdateSuccess'));
     } catch (error: any) {
-      toast.error(error?.message || t("updateFailed"));
+      toast.error(error?.message || t('updateFailed'));
     } finally {
       toast.dismiss(toastId);
       setIsUpdatingPublish(false);
@@ -186,13 +180,13 @@ const ActivityElement = ({
 
   const handleDeleteActivity = async () => {
     setIsDeletingActivity(true);
-    const toastId = toast.loading(t("deletingActivity"));
+    const toastId = toast.loading(t('deletingActivity'));
     try {
       await deleteActivity(activity.activity_uuid);
-      toast.success(t("activityDeletedSuccess"));
+      toast.success(t('activityDeletedSuccess'));
       setIsDeleteDialogOpen(false);
     } catch (error: any) {
-      toast.error(error?.message || t("deleteFailed"));
+      toast.error(error?.message || t('deleteFailed'));
     } finally {
       toast.dismiss(toastId);
       setIsDeletingActivity(false);
@@ -200,10 +194,10 @@ const ActivityElement = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       e.preventDefault();
       void handleSaveEdit();
-    } else if (e.key === "Escape") {
+    } else if (e.key === 'Escape') {
       e.preventDefault();
       handleCancelEdit();
     }
@@ -214,10 +208,8 @@ const ActivityElement = ({
   return (
     <div
       className={cn(
-        "mb-2 flex items-center gap-3 rounded-lg border bg-card p-3 transition-all duration-200",
-        isDragging
-          ? "shadow-xl ring-2 ring-ring/30"
-          : "shadow-sm hover:shadow-md",
+        'mb-2 flex items-center gap-3 rounded-lg border bg-card p-3 transition-all duration-200',
+        isDragging ? 'shadow-xl ring-2 ring-ring/30' : 'shadow-sm hover:shadow-md',
       )}
     >
       {/* Drag Handle */}
@@ -241,11 +233,14 @@ const ActivityElement = ({
               value={editedName}
               onChange={(e) => setEditedName(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={t("activityNamePlaceholder")}
+              placeholder={t('activityNamePlaceholder')}
               className="h-8 text-sm"
               disabled={isSavingEdit}
             />
-            <ToolTip content={t("save")} side="top">
+            <ToolTip
+              content={t('save')}
+              side="top"
+            >
               <Button
                 size="icon-sm"
                 variant="outline"
@@ -253,14 +248,13 @@ const ActivityElement = ({
                 onClick={() => void handleSaveEdit()}
                 disabled={isSavingEdit}
               >
-                {isSavingEdit ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Check className="h-4 w-4" />
-                )}
+                {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               </Button>
             </ToolTip>
-            <ToolTip content={t("cancel")} side="top">
+            <ToolTip
+              content={t('cancel')}
+              side="top"
+            >
               <Button
                 size="icon-sm"
                 variant="outline"
@@ -274,27 +268,26 @@ const ActivityElement = ({
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <span className="text-foreground truncate text-sm font-medium">
-              {activity.name}
-            </span>
+            <span className="text-foreground truncate text-sm font-medium">{activity.name}</span>
             {activity.published ? (
               <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
-                {t("liveBadge")}
+                {t('liveBadge')}
               </span>
             ) : (
               <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                {t("draftBadge")}
+                {t('draftBadge')}
               </span>
             )}
             {isOwner && (
-              <ToolTip content={t("ownerBadge")}>
-                <CourseWorkflowBadge tone="info">
-                  {t("ownerLabel")}
-                </CourseWorkflowBadge>
+              <ToolTip content={t('ownerBadge')}>
+                <CourseWorkflowBadge tone="info">{t('ownerLabel')}</CourseWorkflowBadge>
               </ToolTip>
             )}
             {canUpdate && (
-              <ToolTip content={t("editButton")} side="top">
+              <ToolTip
+                content={t('editButton')}
+                side="top"
+              >
                 <Button
                   size="icon-sm"
                   variant="outline"
@@ -319,16 +312,19 @@ const ActivityElement = ({
           />
 
           {/* Preview */}
-          <ToolTip content={t("previewTooltip")} side="top">
+          <ToolTip
+            content={t('previewTooltip')}
+            side="top"
+          >
             <Button
               size="icon"
               variant="outline"
               className={ACTION_ICON_BUTTON_CLASS}
               onClick={() =>
                 window.open(
-                  `${getAbsoluteUrl("")}/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`,
-                  "_blank",
-                  "noopener,noreferrer",
+                  `${getAbsoluteUrl('')}/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`,
+                  '_blank',
+                  'noopener,noreferrer',
                 )
               }
             >
@@ -339,7 +335,7 @@ const ActivityElement = ({
           {/* Publish toggle */}
           {canUpdate && (
             <ToolTip
-              content={activity.published ? t("unpublish") : t("publish")}
+              content={activity.published ? t('unpublish') : t('publish')}
               side="top"
             >
               <Button
@@ -362,7 +358,10 @@ const ActivityElement = ({
 
           {/* Delete */}
           {canDelete && (
-            <ToolTip content={t("deleteButton")} side="top">
+            <ToolTip
+              content={t('deleteButton')}
+              side="top"
+            >
               <Button
                 size="icon"
                 variant="outline"
@@ -385,12 +384,8 @@ const ActivityElement = ({
             <AlertDialogMedia className="bg-muted text-foreground">
               <AlertTriangle className="size-8" />
             </AlertDialogMedia>
-            <AlertDialogTitle>
-              {t("deleteTitle", { name: activity.name })}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("deleteConfirmation")}
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t('deleteTitle', { name: activity.name })}</AlertDialogTitle>
+            <AlertDialogDescription>{t('deleteConfirmation')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeletingActivity} />
@@ -402,10 +397,10 @@ const ActivityElement = ({
               {isDeletingActivity ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("deleting")}
+                  {t('deleting')}
                 </>
               ) : (
-                t("deleteButton")
+                t('deleteButton')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -415,53 +410,43 @@ const ActivityElement = ({
   );
 };
 
-const ActivityTypeBadge = ({
-  activityType,
-}: {
-  activityType: ActivityType;
-}) => {
-  const t = useTranslations("CourseEdit.ActivityElement");
+const ActivityTypeBadge = ({ activityType }: { activityType: ActivityType }) => {
+  const t = useTranslations('CourseEdit.ActivityElement');
   const config = ACTIVITY_CONFIG[activityType];
   if (!config) return null;
   const { Icon, translationKey, colorClass } = config;
   return (
-    <div
-      className={cn(
-        "flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1",
-        colorClass,
-      )}
-    >
+    <div className={cn('flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1', colorClass)}>
       <Icon className="h-3.5 w-3.5" />
-      <span className="text-xs font-medium">
-        {t(`ActivityTypes.${translationKey}`)}
-      </span>
+      <span className="text-xs font-medium">{t(`ActivityTypes.${translationKey}`)}</span>
     </div>
   );
 };
 
-const ActivityEditButton = ({
-  activity,
-  course_uuid,
-}: {
-  activity: Activity;
-  course_uuid: string;
-}) => {
-  const t = useTranslations("CourseEdit.ActivityElement");
+const ActivityEditButton = ({ activity, course_uuid }: { activity: Activity; course_uuid: string }) => {
+  const t = useTranslations('CourseEdit.ActivityElement');
   const course = useCourse() as any;
 
-  if (activity.activity_type === "TYPE_DYNAMIC") {
-    const editUrl = `${getAbsoluteUrl("")}/editor/course/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/edit`;
+  if (activity.activity_type === 'TYPE_DYNAMIC') {
+    const editUrl = `${getAbsoluteUrl('')}/editor/course/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/edit`;
     return (
-      <ToolTip content={t("editPageButton")} side="top">
+      <ToolTip
+        content={t('editPageButton')}
+        side="top"
+      >
         <Button
           size="icon"
           variant="outline"
           className={ACTION_ICON_BUTTON_CLASS}
           nativeButton={false}
           render={
-            <a href={editUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              href={editUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <FilePenLine className="h-4 w-4" />
-              <span className="sr-only">{t("openEditPage")}</span>
+              <span className="sr-only">{t('openEditPage')}</span>
             </a>
           }
         />
@@ -470,22 +455,29 @@ const ActivityEditButton = ({
   }
 
   if (
-    activity.activity_type === "TYPE_EXAM" ||
-    activity.activity_type === "TYPE_CODE_CHALLENGE" ||
-    activity.activity_type === "TYPE_FILE_SUBMISSION"
+    activity.activity_type === 'TYPE_EXAM' ||
+    activity.activity_type === 'TYPE_CODE_CHALLENGE' ||
+    activity.activity_type === 'TYPE_FILE_SUBMISSION'
   ) {
-    const editUrl = `${getAbsoluteUrl("")}/dash/courses/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/studio`;
+    const editUrl = `${getAbsoluteUrl('')}/dash/courses/${cleanCourseUuid(course?.courseStructure?.course_uuid ?? course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}/studio`;
     return (
-      <ToolTip content={t("configureButton")} side="top">
+      <ToolTip
+        content={t('configureButton')}
+        side="top"
+      >
         <Button
           size="icon"
           variant="outline"
           className={ACTION_ICON_BUTTON_CLASS}
           nativeButton={false}
           render={
-            <a href={editUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              href={editUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <FilePenLine className="h-4 w-4" />
-              <span className="sr-only">{t("openEditPage")}</span>
+              <span className="sr-only">{t('openEditPage')}</span>
             </a>
           }
         />

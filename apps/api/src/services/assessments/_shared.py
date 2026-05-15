@@ -158,6 +158,7 @@ _REVIEW_SORT_MAP = {
     "attempt_number": Submission.attempt_number,
 }
 
+
 def _get_or_project_assessment_for_activity(
     activity: Activity,
     db_session: Session,
@@ -187,7 +188,6 @@ def _get_or_project_assessment_for_activity(
 
 
 # ── Builders and helpers ──────────────────────────────────────────────────────
-
 
 
 def _build_assessment_read(
@@ -237,7 +237,6 @@ def _build_assessment_read(
         created_at=assessment.created_at,
         updated_at=assessment.updated_at,
     )
-
 
 
 def _build_attempt_projection(
@@ -296,7 +295,6 @@ def _build_attempt_projection(
     )
 
 
-
 def _build_review_projection(
     assessment: Assessment,
     activity: Activity,
@@ -309,7 +307,6 @@ def _build_review_projection(
         kind=assessment.kind,
         default_filter="NEEDS_GRADING",
     )
-
 
 
 def _build_attempt_state(
@@ -487,7 +484,6 @@ def _build_attempt_state(
     }
 
 
-
 def _assert_attempt_action_allowed(
     *,
     action: str,
@@ -526,7 +522,6 @@ def _assert_attempt_action_allowed(
     return state
 
 
-
 def _release_state_for_submission(
     submission: Submission | None,
     db_session: Session,
@@ -541,7 +536,6 @@ def _release_state_for_submission(
     if submission_status == SubmissionStatus.GRADED:
         return "AWAITING_RELEASE"
     return "HIDDEN"
-
 
 
 def _score_projection_from_submission(
@@ -563,7 +557,6 @@ def _score_projection_from_submission(
     return AssessmentScoreProjection()
 
 
-
 def _build_item_read(item: AssessmentItem) -> AssessmentReadItem:
     return AssessmentReadItem(
         id=item.id or 0,
@@ -578,10 +571,8 @@ def _build_item_read(item: AssessmentItem) -> AssessmentReadItem:
     )
 
 
-
 def _get_items(assessment: Assessment, db_session: Session) -> list[AssessmentItem]:
     return _get_items_raw(assessment, db_session)
-
 
 
 def _get_items_raw(assessment: Assessment, db_session: Session) -> list[AssessmentItem]:
@@ -590,7 +581,6 @@ def _get_items_raw(assessment: Assessment, db_session: Session) -> list[Assessme
         .where(AssessmentItem.assessment_id == assessment.id)
         .order_by(AssessmentItem.order, AssessmentItem.id)
     ).all()
-
 
 
 def _get_item_or_404(
@@ -609,7 +599,6 @@ def _get_item_or_404(
     return item
 
 
-
 def _get_assessment_by_uuid_or_404(
     assessment_uuid: str,
     db_session: Session,
@@ -620,7 +609,6 @@ def _get_assessment_by_uuid_or_404(
     if assessment is None:
         raise HTTPException(status_code=404, detail="Оценивание не найдено")
     return assessment
-
 
 
 def _get_activity_by_uuid_or_404(activity_uuid: str, db_session: Session) -> Activity:
@@ -640,7 +628,6 @@ def _get_activity_by_uuid_or_404(activity_uuid: str, db_session: Session) -> Act
     return activity
 
 
-
 def _get_activity_and_course(
     assessment: Assessment,
     db_session: Session,
@@ -649,7 +636,6 @@ def _get_activity_and_course(
     if activity is None:
         raise HTTPException(status_code=404, detail="Активность не найдена")
     return activity, _get_course_for_activity_or_404(activity, db_session)
-
 
 
 def _get_assessment_submission_or_404(
@@ -672,7 +658,6 @@ def _get_assessment_submission_or_404(
     return submission
 
 
-
 def _get_course_for_activity_or_404(activity: Activity, db_session: Session) -> Course:
     if activity.course_id is not None:
         course = db_session.get(Course, activity.course_id)
@@ -686,13 +671,11 @@ def _get_course_for_activity_or_404(activity: Activity, db_session: Session) -> 
     raise HTTPException(status_code=404, detail="Курс не найден")
 
 
-
 def _get_course_or_404(course_id: int, db_session: Session) -> Course:
     course = db_session.get(Course, course_id)
     if course is None:
         raise HTTPException(status_code=404, detail="Курс не найден")
     return course
-
 
 
 def _get_chapter_or_404(chapter_id: int, db_session: Session) -> Chapter:
@@ -702,13 +685,11 @@ def _get_chapter_or_404(chapter_id: int, db_session: Session) -> Chapter:
     return chapter
 
 
-
 def _require_author(user: PublicUser, course: Course, db_session: Session) -> None:
     checker = PermissionChecker(db_session)
     if checker.check(user.id, "assessment:author", resource_owner_id=course.creator_id):
         return
     checker.require(user.id, "activity:update", resource_owner_id=course.creator_id)
-
 
 
 def _require_publish(user: PublicUser, course: Course, db_session: Session) -> None:
@@ -720,13 +701,11 @@ def _require_publish(user: PublicUser, course: Course, db_session: Session) -> N
     checker.require(user.id, "activity:update", resource_owner_id=course.creator_id)
 
 
-
 def _require_grade(user: PublicUser, course: Course, db_session: Session) -> None:
     checker = PermissionChecker(db_session)
     if checker.check(user.id, "assessment:grade", resource_owner_id=course.creator_id):
         return
     checker.require(user.id, "assessment:grade", resource_owner_id=course.creator_id)
-
 
 
 def _require_read(
@@ -751,7 +730,6 @@ def _require_read(
         resource_owner_id=activity.creator_id,
         is_assigned=True,
     )
-
 
 
 def _require_submit_access(
@@ -781,7 +759,6 @@ def _require_submit_access(
     )
 
 
-
 def _has_submit_access(
     user: PublicUser | AnonymousUser | None,
     activity: Activity,
@@ -799,7 +776,6 @@ def _has_submit_access(
         resource_owner_id=activity.creator_id,
         is_assigned=True,
     )
-
 
 
 def _ensure_authorable(assessment: Assessment, db_session: Session) -> None:
@@ -823,7 +799,6 @@ def _ensure_authorable(assessment: Assessment, db_session: Session) -> None:
                     ),
                 },
             )
-
 
 
 def _get_or_create_policy(
@@ -869,7 +844,6 @@ def _get_or_create_policy(
     return policy
 
 
-
 def _normalized_policy_patch(
     kind: AssessmentType,
     patch: AssessmentPolicyPatch,
@@ -911,7 +885,6 @@ def _normalized_policy_patch(
         payload["settings_json"] = existing
 
     return payload
-
 
 
 def _normalize_policy_settings_json(
@@ -980,7 +953,6 @@ def _normalize_policy_settings_json(
     return normalized
 
 
-
 def _first_int_setting(payload: dict[str, object], *keys: str) -> int | None:
     for key in keys:
         value = payload.get(key)
@@ -993,7 +965,6 @@ def _first_int_setting(payload: dict[str, object], *keys: str) -> int | None:
     return None
 
 
-
 def _first_string_setting(payload: dict[str, object], *keys: str) -> str | None:
     for key in keys:
         value = payload.get(key)
@@ -1002,10 +973,8 @@ def _first_string_setting(payload: dict[str, object], *keys: str) -> str | None:
     return None
 
 
-
 def _time_limit_seconds_from_settings(payload: dict[str, object]) -> int | None:
     return _first_int_setting(payload, "time_limit_seconds")
-
 
 
 def _default_grading_mode(kind: AssessmentType) -> AssessmentGradingMode:
@@ -1016,12 +985,10 @@ def _default_grading_mode(kind: AssessmentType) -> AssessmentGradingMode:
     return AssessmentGradingMode.AUTO
 
 
-
 def _default_completion_rule(kind: AssessmentType) -> AssessmentCompletionRule:
     if kind == AssessmentType.ASSIGNMENT:
         return AssessmentCompletionRule.SUBMITTED
     return AssessmentCompletionRule.PASSED
-
 
 
 def _default_anti_cheat(kind: AssessmentType) -> dict[str, object]:
@@ -1037,7 +1004,6 @@ def _default_anti_cheat(kind: AssessmentType) -> dict[str, object]:
     }
 
 
-
 def _default_activity_settings(kind: AssessmentType) -> dict[str, object]:
     if kind == AssessmentType.EXAM:
         return validate_settings({"kind": "EXAM"}).model_dump(mode="json")
@@ -1046,7 +1012,6 @@ def _default_activity_settings(kind: AssessmentType) -> dict[str, object]:
     if kind == AssessmentType.QUIZ:
         return validate_settings({"kind": "QUIZ"}).model_dump(mode="json")
     return validate_settings({"kind": "ASSIGNMENT"}).model_dump(mode="json")
-
 
 
 def _sync_activity_lifecycle(
@@ -1069,7 +1034,6 @@ def _sync_activity_lifecycle(
         "archived_at": _dt_iso(assessment.archived_at),
     })
     activity.settings = settings
-
 
 
 def _normalize_answer_patch(
@@ -1109,7 +1073,6 @@ def _normalize_answer_patch(
             },
         )
     return normalized
-
 
 
 def _validate_file_upload_answer(
@@ -1187,7 +1150,6 @@ def _validate_file_upload_answer(
             db_session.add(upload)
 
 
-
 def _get_or_create_submission_draft(
     *,
     assessment: Assessment,
@@ -1219,7 +1181,6 @@ def _get_or_create_submission_draft(
     return draft
 
 
-
 def _enforce_draft_version(draft: Submission, if_match: str | None) -> None:
     if if_match is None:
         return
@@ -1241,7 +1202,6 @@ def _enforce_draft_version(draft: Submission, if_match: str | None) -> None:
         )
 
 
-
 def _parse_if_match_version(if_match: str | None) -> int | None:
     if if_match is None:
         return None
@@ -1253,7 +1213,6 @@ def _parse_if_match_version(if_match: str | None) -> int | None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Заголовок If-Match должен содержать текущую числовую версию отправки",
         ) from exc
-
 
 
 def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
@@ -1526,7 +1485,6 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
     return issues
 
 
-
 def _allowed_item_kinds_for_assessment(kind: str) -> set[ItemKind] | None:
     if kind == AssessmentType.EXAM:
         return {ItemKind.CHOICE, ItemKind.MATCHING}
@@ -1543,7 +1501,6 @@ def _allowed_item_kinds_for_assessment(kind: str) -> set[ItemKind] | None:
     return None
 
 
-
 def _get_policy_for_assessment(
     assessment: Assessment,
     db_session: Session,
@@ -1557,7 +1514,6 @@ def _get_policy_for_assessment(
             AssessmentPolicy.activity_id == assessment.activity_id
         )
     ).first()
-
 
 
 def _build_policy_read(
@@ -1584,7 +1540,6 @@ def _build_policy_read(
         anti_cheat_json=policy.anti_cheat_json,
         settings_json=policy.settings_json,
     )
-
 
 
 def _active_policy_override(
@@ -1614,7 +1569,6 @@ def _active_policy_override(
     return override
 
 
-
 def _effective_due_at(
     policy: AssessmentPolicy | None,
     override: StudentPolicyOverride | None,
@@ -1627,11 +1581,9 @@ def _effective_due_at(
     return due_at if due_at.tzinfo else due_at.replace(tzinfo=UTC)
 
 
-
 def _earliest_datetime(values: list[datetime | None]) -> datetime | None:
     concrete = [value for value in values if value is not None]
     return min(concrete) if concrete else None
-
 
 
 def _has_published_grade(submission: Submission | None, db_session: Session) -> bool:
@@ -1653,10 +1605,8 @@ def _has_published_grade(submission: Submission | None, db_session: Session) -> 
     return published_entry is not None
 
 
-
 def _is_result_visible(submission: Submission | None, db_session: Session) -> bool:
     return _has_published_grade(submission, db_session)
-
 
 
 def _build_student_submission_read(
@@ -1673,7 +1623,6 @@ def _build_student_submission_read(
         result.grading_json = GradingBreakdown()
         result.graded_at = None
     return result
-
 
 
 def _build_teacher_submission_read(
@@ -1694,17 +1643,14 @@ def _build_teacher_submission_read(
     return result
 
 
-
 def _content_version(assessment: Assessment) -> int:
     return int(getattr(assessment, "content_version", 1) or 1)
-
 
 
 def _policy_version(policy: AssessmentPolicy | None) -> int:
     if policy is None:
         return 0
     return int(getattr(policy, "policy_version", 1) or 1)
-
 
 
 def _snapshot_submission(
@@ -1753,7 +1699,6 @@ def _snapshot_submission(
         db_session.commit()
 
 
-
 def _coerce_datetime(value: object) -> datetime | None:
     if isinstance(value, datetime):
         return value if value.tzinfo else value.replace(tzinfo=UTC)
@@ -1766,12 +1711,10 @@ def _coerce_datetime(value: object) -> datetime | None:
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
-
 def _dt_iso(value: datetime | None) -> str | None:
     if value is None:
         return None
     return value.isoformat()
-
 
 
 def _batch_fetch_users(user_ids: set[int], db_session: Session) -> dict[int, User]:
@@ -1779,7 +1722,6 @@ def _batch_fetch_users(user_ids: set[int], db_session: Session) -> dict[int, Use
         return {}
     rows = db_session.exec(select(User).where(User.id.in_(list(user_ids)))).all()
     return {user.id: user for user in rows if user.id is not None}
-
 
 
 def _submission_user(user: User):
@@ -1795,6 +1737,7 @@ def _submission_user(user: User):
         avatar_image=user.avatar_image,
         user_uuid=user.user_uuid,
     )
+
 
 def _build_override_read(override: StudentPolicyOverride) -> StudentPolicyOverrideRead:
     return StudentPolicyOverrideRead(
@@ -1812,7 +1755,6 @@ def _build_override_read(override: StudentPolicyOverride) -> StudentPolicyOverri
 
 
 # ── Phase 4: Item-level grading ────────────────────────────────────────────────
-
 
 
 def build_readiness(

@@ -58,7 +58,7 @@ class EmbedErrorBoundary extends Component<EmbedErrorBoundaryProps, EmbedErrorBo
           role="alert"
         >
           <div>
-            <p className="text-sm font-semibold capitalize text-red-700">{label} embed</p>
+            <p className="text-sm font-semibold text-red-700 capitalize">{label} embed</p>
             <p className="mt-1 text-xs text-red-500">
               This embed could not be rendered. Please try editing or removing it.
             </p>

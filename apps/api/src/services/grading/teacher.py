@@ -381,9 +381,7 @@ def export_grades_csv(
         Submission.status != SubmissionStatus.DRAFT,
     ]
     if assessment_type_filter is not None:
-        base_conditions.append(
-            Submission.assessment_type == assessment_type_filter
-        )
+        base_conditions.append(Submission.assessment_type == assessment_type_filter)
     if submitted_after is not None:
         base_conditions.append(Submission.submitted_at >= submitted_after)
     if submitted_before is not None:
@@ -399,11 +397,7 @@ def export_grades_csv(
     # Pre-fetch all involved users in a single query (user records are small).
     # Submission rows are streamed below so memory scales with batch size, not
     # with the total number of submissions.
-    all_user_ids_query = (
-        select(Submission.user_id)
-        .where(*base_conditions)
-        .distinct()
-    )
+    all_user_ids_query = select(Submission.user_id).where(*base_conditions).distinct()
     all_user_ids = set(db_session.exec(all_user_ids_query).all())
     users_by_id = _batch_fetch_users(all_user_ids, db_session)
 
@@ -433,22 +427,23 @@ def export_grades_csv(
                 for item in sample_submission.grading_json.get("items", []):
                     if isinstance(item, dict):
                         item_id = item.get("item_id", "")
-                        item_scores.append(
-                            str(scores_by_id.get(item_id, ""))
-                        )
+                        item_scores.append(str(scores_by_id.get(item_id, "")))
         elif item_headers:
             item_scores = [""] * len(item_headers)
 
-        writer.writerow([
-            name,
-            email,
-            s.attempt_number,
-            s.status,
-            "yes" if s.is_late else "no",
-            submitted,
-            s.auto_score if s.auto_score is not None else "",
-            s.final_score if s.final_score is not None else "",
-        ] + item_scores)
+        writer.writerow(
+            [
+                name,
+                email,
+                s.attempt_number,
+                s.status,
+                "yes" if s.is_late else "no",
+                submitted,
+                s.auto_score if s.auto_score is not None else "",
+                s.final_score if s.final_score is not None else "",
+            ]
+            + item_scores
+        )
         yield buf.getvalue()
         buf.truncate(0)
         buf.seek(0)
@@ -562,7 +557,11 @@ async def batch_grade_submissions(
         for grade in batch_request.grades:
             if grade.submission_uuid in error_uuids:
                 all_results.append(
-                    next(e for e in validation_errors if e.submission_uuid == grade.submission_uuid)
+                    next(
+                        e
+                        for e in validation_errors
+                        if e.submission_uuid == grade.submission_uuid
+                    )
                 )
             else:
                 all_results.append(
@@ -619,7 +618,7 @@ async def batch_grade_submissions(
                 grade.submission_uuid,
             )
             abort_results = [r for r in results]
-            for pending in batch_request.grades[len(results):]:
+            for pending in batch_request.grades[len(results) :]:
                 abort_results.append(
                     BatchGradeResultItem(
                         submission_uuid=pending.submission_uuid,
@@ -883,7 +882,11 @@ async def bulk_publish_grades(
 
     # Batch-fetch the latest GradingEntry per unpublished submission in one query
     # instead of issuing N separate queries (N+1 pattern).
-    unpublished_ids = [s.id for s in submissions if s.id not in already_published_ids and s.id is not None]
+    unpublished_ids = [
+        s.id
+        for s in submissions
+        if s.id not in already_published_ids and s.id is not None
+    ]
     latest_entries_by_submission: dict[int, GradingEntry] = {}
     if unpublished_ids:
         from sqlalchemy import func as sql_func

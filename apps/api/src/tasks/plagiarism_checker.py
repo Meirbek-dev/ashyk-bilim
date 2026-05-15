@@ -39,6 +39,7 @@ _TEXT_TYPES: frozenset[str] = frozenset({"OPEN_TEXT", "QUIZ", "ESSAY"})
 
 # ── Tokeniser ─────────────────────────────────────────────────────────────────
 
+
 def _tokenise(text: str) -> Counter[str]:
     """Lower-case, strip punctuation, split on whitespace.  Returns tf vector."""
     tokens = re.findall(r"[a-zа-яёіңғүұқөәA-ZА-ЯЁІҢҒҮҰҚӨӘa-zA-Z0-9_]{2,}", text.lower())
@@ -72,6 +73,7 @@ def _extract_text_from_answers(answers_json: dict) -> str:
 
 # ── Main loop ─────────────────────────────────────────────────────────────────
 
+
 async def plagiarism_checker_loop() -> None:
     """Periodic loop that checks submitted text answers for plagiarism."""
     logger.info(
@@ -91,6 +93,7 @@ async def plagiarism_checker_loop() -> None:
 
 # ── Sync worker (runs in thread pool) ────────────────────────────────────────
 
+
 def _run_check_tick() -> int:
     """Find unchecked submissions per activity and run pairwise similarity.
 
@@ -102,6 +105,7 @@ def _run_check_tick() -> int:
 
     try:
         from src.infra.db.engine import get_bg_engine
+
         engine = get_bg_engine()
     except RuntimeError:
         return 0  # engine not yet initialised (e.g. during test setup)
@@ -183,7 +187,12 @@ def _run_check_tick() -> int:
                     details["most_similar_score"] = round(max_score, 4)
 
                 _write_plagiarism_result(
-                    target, session, score=max_score, flagged=flagged, details=details, now=now
+                    target,
+                    session,
+                    score=max_score,
+                    flagged=flagged,
+                    details=details,
+                    now=now,
                 )
 
         session.commit()

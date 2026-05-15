@@ -80,9 +80,7 @@ export function validateFile(
   }
 
   if (!matchedType) {
-    const allowedMimes = allowedTypes
-      .flatMap((type) => FILE_TYPES[type].mimeTypes)
-      .map(getFriendlyMimeName);
+    const allowedMimes = allowedTypes.flatMap((type) => FILE_TYPES[type].mimeTypes).map(getFriendlyMimeName);
     return {
       valid: false,
       error: `Invalid file type: ${file.type || file.name}. Allowed types: ${allowedMimes.join(', ')}`,

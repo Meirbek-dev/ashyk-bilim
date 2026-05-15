@@ -46,7 +46,9 @@ class GraderRegistry:
         return grader_cls()
 
     @classmethod
-    def grade(cls, assessment_type: AssessmentType, ctx: GradingContext) -> GradingResult:
+    def grade(
+        cls, assessment_type: AssessmentType, ctx: GradingContext
+    ) -> GradingResult:
         return cls.get(assessment_type).grade(ctx)
 
 

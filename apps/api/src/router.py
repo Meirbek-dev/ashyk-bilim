@@ -8,6 +8,7 @@ from src.routers import (
     auth,
     code_execution,
     dev,
+    file_submissions,
     gamification,
     health,
     platform,
@@ -28,7 +29,6 @@ from src.routers.courses import (
     discussions,
 )
 from src.routers.courses.activities import activities, blocks
-from src.routers import file_submissions
 from src.routers.grading.feedback import router as grading_feedback_router
 from src.routers.grading.sse import router as grading_sse_router
 from src.routers.grading.teacher import router as grading_teacher_router

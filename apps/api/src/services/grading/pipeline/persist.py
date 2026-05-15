@@ -50,9 +50,7 @@ def persist_submission(
     draft.late_penalty_pct = penalty.late_penalty_pct
     draft.final_score = penalty.final_score if not result.needs_manual_review else None
     draft.status = new_status
-    draft.is_late = (
-        effective.due_at is not None and now > effective.due_at
-    )
+    draft.is_late = effective.due_at is not None and now > effective.due_at
     draft.submitted_at = now
     draft.graded_at = now if new_status == SubmissionStatus.GRADED else None
     draft.updated_at = now

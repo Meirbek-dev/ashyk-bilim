@@ -20,11 +20,11 @@ from src.services.events.types import (
 
 __all__ = [
     "AssessmentPublishedEvent",
+    "EventBus",
     "FileSubmissionGradedEvent",
     "FileSubmissionPublishedEvent",
     "FileSubmissionReturnedEvent",
     "FileSubmissionSubmittedEvent",
-    "EventBus",
     "GradePublishedEvent",
     "PolicyOverrideCreatedEvent",
     "SubmissionReturnedEvent",

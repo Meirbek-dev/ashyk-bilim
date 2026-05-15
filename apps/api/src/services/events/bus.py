@@ -78,7 +78,7 @@ class EventBus:
                 return
             except Exception as exc:
                 if attempt < MAX_RETRIES - 1:
-                    wait = BACKOFF_BASE_SECONDS ** attempt
+                    wait = BACKOFF_BASE_SECONDS**attempt
                     logger.warning(
                         "event_handler_retry handler=%s attempt=%d error=%s",
                         handler_name,

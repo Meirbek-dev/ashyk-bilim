@@ -13,7 +13,7 @@ import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
 const EmbedObjectsWithBoundary = (props: TypedNodeViewProps<any>) => {
   return (
     <EmbedObjectsErrorBoundary>
-      <EmbedObjectsComponent {...(props)} />
+      <EmbedObjectsComponent {...props} />
     </EmbedObjectsErrorBoundary>
   );
 };

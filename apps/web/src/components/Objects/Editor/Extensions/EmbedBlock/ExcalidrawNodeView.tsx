@@ -146,7 +146,7 @@ const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
         {/* Overlay toolbar — authoring mode only */}
         {isEditable && (
           <div
-            className="absolute right-2 top-2 flex items-center gap-1 rounded-lg bg-white/90 p-1 shadow-md backdrop-blur-sm"
+            className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-white/90 p-1 shadow-md backdrop-blur-sm"
             style={{ pointerEvents: 'auto' }}
           >
             <button
@@ -209,7 +209,7 @@ const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
             role="separator"
             aria-label={`${t('resize')} ${t('excalidrawLabel')}`}
             aria-orientation="horizontal"
-            className="absolute bottom-0 left-0 right-0 flex h-3 cursor-ns-resize items-center justify-center"
+            className="absolute right-0 bottom-0 left-0 flex h-3 cursor-ns-resize items-center justify-center"
             style={{ pointerEvents: 'auto' }}
             onPointerDown={handleResizeHandlePointerDown}
           >

@@ -60,9 +60,7 @@ export default function PostSubmissionFeedback({
     return (
       <div className={cn('flex items-center gap-2 rounded-lg border p-4', className)}>
         <Eye className="text-muted-foreground size-4" />
-        <span className="text-muted-foreground text-sm">
-          {t('submissionReceived')}
-        </span>
+        <span className="text-muted-foreground text-sm">{t('submissionReceived')}</span>
       </div>
     );
   }

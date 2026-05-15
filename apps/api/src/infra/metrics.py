@@ -14,9 +14,9 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Generator
 
 
 @dataclass
@@ -26,7 +26,7 @@ class Counter:
     name: str
     _values: dict[tuple, float] = field(default_factory=lambda: defaultdict(float))
 
-    def labels(self, **kwargs: str) -> "_LabeledCounter":
+    def labels(self, **kwargs: str) -> _LabeledCounter:
         return _LabeledCounter(self, tuple(sorted(kwargs.items())))
 
     def inc(self, labels: tuple = (), amount: float = 1.0) -> None:
@@ -36,9 +36,7 @@ class Counter:
         return self._values[labels]
 
     def collect(self) -> list[dict]:
-        return [
-            {"labels": dict(k), "value": v} for k, v in self._values.items()
-        ]
+        return [{"labels": dict(k), "value": v} for k, v in self._values.items()]
 
 
 @dataclass
@@ -59,7 +57,7 @@ class Histogram:
         default_factory=lambda: defaultdict(list)
     )
 
-    def labels(self, **kwargs: str) -> "_LabeledHistogram":
+    def labels(self, **kwargs: str) -> _LabeledHistogram:
         return _LabeledHistogram(self, tuple(sorted(kwargs.items())))
 
     def observe(self, value: float, labels: tuple = ()) -> None:
@@ -90,7 +88,7 @@ class _LabeledHistogram:
         self._histogram.observe(value, self._labels)
 
     @contextmanager
-    def time(self) -> Generator[None, None, None]:
+    def time(self) -> Generator[None]:
         start = time.perf_counter()
         yield
         self.observe(time.perf_counter() - start)
@@ -105,7 +103,9 @@ class MetricsRegistry:
         self.auto_score = Histogram("grading_auto_score")
         self.code_execution_duration = Histogram("code_execution_duration_seconds")
         self.code_execution_degraded_total = Counter("code_execution_degraded_total")
-        self.lifecycle_transition_total = Counter("assessment_lifecycle_transition_total")
+        self.lifecycle_transition_total = Counter(
+            "assessment_lifecycle_transition_total"
+        )
         self.event_bus_dispatch_total = Counter("event_bus_dispatch_total")
 
     def collect_all(self) -> dict:

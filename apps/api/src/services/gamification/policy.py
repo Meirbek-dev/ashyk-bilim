@@ -45,7 +45,7 @@ def get_policy(db: Session) -> tuple[dict[str, int], int]:
             for k, v in cfg.rewards.items():
                 try:
                     iv = int(v)
-                except (ValueError, TypeError):
+                except ValueError, TypeError:
                     continue
                 # Only accept non-positive overrides for admin_award; for other sources enforce > 0
                 if k == "admin_award":
@@ -58,7 +58,7 @@ def get_policy(db: Session) -> tuple[dict[str, int], int]:
         if cfg.daily_xp_limit is not None:
             try:
                 dl = int(cfg.daily_xp_limit)
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 dl = None
             if dl is not None and dl > 0:
                 daily_limit = dl

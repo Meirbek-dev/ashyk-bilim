@@ -1,17 +1,16 @@
 bun knip
 $ knip
-Unused files (85)
+Unused files (54)
 src/app/[locale]/editor/main.ts
 src/components/Dashboard/Analytics/AnalyticsPageSkeleton.tsx
 src/components/Dashboard/Analytics/ScoreDistributionChart.tsx
 src/components/Dashboard/Courses/CourseWorkspaceOverview.tsx
 src/components/Dashboard/gamification-dashboard.tsx
-src/components/DevScriptLoader.tsx
-src/components/Objects/Activities/CodeChallenge/CodeChallengeActivity.tsx 
+src/components/Objects/Activities/CodeChallenge/CodeChallengeActivity.tsx
 src/components/Objects/Activities/DynamicCanva/CustomHeadingExtenstion.tsx
 src/components/Objects/Courses/CourseUpdates/CourseUpdates.tsx
 src/components/Objects/Editor/menus/index.ts
-src/components/Objects/Editor/Toolbar/EmbedPanel/ExcalidrawEmbedForm.tsx  
+src/components/Objects/Editor/Toolbar/EmbedPanel/ExcalidrawEmbedForm.tsx
 src/components/Objects/Editor/Toolbar/EmbedPanel/TldrawEmbedForm.tsx
 src/components/Objects/Editor/Toolbar/EmbedPanel/YouTubeEmbedForm.tsx
 src/components/Objects/Editor/Toolbar/index.ts
@@ -23,29 +22,6 @@ src/components/Objects/Quiz/QuizSkeleton.tsx
 src/components/Pages/Activity/ActivityNavigation.tsx
 src/components/Pages/Certificate/CertificatePage.tsx
 src/components/svg/DividerVerticalIcon.tsx
-src/components/ui/aspect-ratio.tsx
-src/components/ui/autocomplete.tsx
-src/components/ui/button-group.tsx
-src/components/ui/checkbox-group.tsx
-src/components/ui/combobox.tsx
-src/components/ui/context-menu.tsx
-src/components/ui/direction.tsx
-src/components/ui/empty.tsx
-src/components/ui/fieldset.tsx
-src/components/ui/form.tsx
-src/components/ui/frame.tsx
-src/components/ui/group.tsx
-src/components/ui/item.tsx
-src/components/ui/kbd.tsx
-src/components/ui/menu.tsx
-src/components/ui/menubar.tsx
-src/components/ui/meter.tsx
-src/components/ui/number-field.tsx
-src/components/ui/otp-field.tsx
-src/components/ui/preview-card.tsx
-src/components/ui/slider.tsx
-src/components/ui/toggle-group.tsx
-src/components/ui/toolbar.tsx
 src/features/assessments/registry/exam-author.tsx
 src/features/assessments/registry/exam/ExamStartPanel.tsx
 src/features/assessments/registry/exam/QuestionEditor.tsx
@@ -75,13 +51,6 @@ src/lib/cache.ts
 src/lib/currencies.ts
 src/lib/fetchWithRetry.ts
 src/lib/retry.ts
-src/messages/Artplayer/es.js
-src/messages/Artplayer/fr.js
-src/messages/Artplayer/id.js
-src/messages/Artplayer/index.js
-src/messages/Artplayer/kz.js
-src/messages/Artplayer/ru.js
-src/messages/Artplayer/tr.js
 src/services/settings/password.ts
 src/services/settings/profile.ts
 src/services/utils/health.ts
@@ -758,4 +727,5 @@ PermissionGuard|default      src/components/Security/PermissionGuard.tsx
 PermissionTooltip|default    src/components/Utils/PermissionTooltip.tsx
 ResourceActionsMenu|default  src/components/Utils/ResourceActionsMenu.tsx
 Configuration hints (1)
-. (root)    knip.json  Add entry and/or refine project files (85 unused files)
+. (root)    knip.json  Add entry and/or refine project files (54 unused files)
+error: script "knip" exited with code 1

@@ -8,15 +8,9 @@ import { Button } from '@/components/ui/button';
 import { useEmbedPanelStore } from './EmbedPanelStore';
 import { EmbedTypeSelector } from './EmbedTypeSelector';
 import { EmbedUrlForm } from './EmbedUrlForm';
-import {
-  DEFAULT_EMBED_TYPE,
-  getEmbedProvider,
-} from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
+import { DEFAULT_EMBED_TYPE, getEmbedProvider } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
 import type { EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
-import {
-  normalizeEmbedUrl,
-  validateEmbedUrl,
-} from '@components/Objects/Editor/Extensions/EmbedBlock/embed-validators';
+import { normalizeEmbedUrl, validateEmbedUrl } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-validators';
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',

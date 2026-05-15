@@ -33,12 +33,12 @@ const schema = getSchema([StarterKit, EmbedBlock]);
  *
  * Returns the parsed node's attrs.
  */
-function htmlRoundTrip(attrs: {
-  type: EmbedType;
-  url: string;
+function htmlRoundTrip(attrs: { type: EmbedType; url: string; width: string; height: number }): {
+  type: string | null;
+  url: string | null;
   width: string;
   height: number;
-}): { type: string | null; url: string | null; width: string; height: number } {
+} {
   // Build the ProseMirror node from JSON
   const nodeJson = {
     type: 'embedBlock',
@@ -117,29 +117,26 @@ describe('updateEmbedBlock no-op behavior (Property 10)', () => {
 
   it('leaves the document unchanged when called at any position in a document without embedBlock nodes', () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: 0 }),
-        (pos) => {
-          // Create a fresh editor with a simple paragraph document (no embedBlock nodes)
-          editor = new Editor({
-            extensions: [StarterKit, EmbedBlock],
-            content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'hello' }] }] },
-          });
+      fc.property(fc.integer({ min: 0 }), (pos) => {
+        // Create a fresh editor with a simple paragraph document (no embedBlock nodes)
+        editor = new Editor({
+          extensions: [StarterKit, EmbedBlock],
+          content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'hello' }] }] },
+        });
 
-          const before = JSON.stringify(editor.getJSON());
+        const before = JSON.stringify(editor.getJSON());
 
-          // Should not throw and should be a no-op
-          expect(() => {
-            editor!.commands.updateEmbedBlock(pos, { url: 'https://example.com' });
-          }).not.toThrow();
+        // Should not throw and should be a no-op
+        expect(() => {
+          editor!.commands.updateEmbedBlock(pos, { url: 'https://example.com' });
+        }).not.toThrow();
 
-          const after = JSON.stringify(editor.getJSON());
-          expect(after).toBe(before);
+        const after = JSON.stringify(editor.getJSON());
+        expect(after).toBe(before);
 
-          editor.destroy();
-          editor = null;
-        },
-      ),
+        editor.destroy();
+        editor = null;
+      }),
       { numRuns: 100 },
     );
   });

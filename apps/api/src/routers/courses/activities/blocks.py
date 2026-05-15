@@ -122,6 +122,3 @@ async def api_get_pdf_file_block(
     Get pdf file
     """
     return await get_pdf_block(request, block_uuid, current_user, db_session)
-
-
-

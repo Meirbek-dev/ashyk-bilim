@@ -91,7 +91,7 @@ class TrailStepRead(PydanticStrictBaseModel):
                 return 0
         try:
             return int(v)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return 0
 
 

@@ -75,7 +75,7 @@ function EditorCore({ activity, content, onUpdate, onAIToggle }: EditorCoreProps
     return (
       <div className="prosemirror-authoring bg-background flex-1 overflow-y-auto">
         <div className="py-6">
-          <div className="mx-auto min-h-[500px] w-full max-w-3xl animate-pulse rounded-md bg-muted/40" />
+          <div className="bg-muted/40 mx-auto min-h-[500px] w-full max-w-3xl animate-pulse rounded-md" />
         </div>
       </div>
     );

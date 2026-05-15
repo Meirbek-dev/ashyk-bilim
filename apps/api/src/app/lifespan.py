@@ -108,7 +108,13 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[
         try:
             yield
         finally:
-            for bg_task in (ttl_sweep_task, scheduler_task, timer_task, upload_reaper_task, plagiarism_task):
+            for bg_task in (
+                ttl_sweep_task,
+                scheduler_task,
+                timer_task,
+                upload_reaper_task,
+                plagiarism_task,
+            ):
                 if not bg_task.done():
                     bg_task.cancel()
                     with contextlib.suppress(asyncio.CancelledError):

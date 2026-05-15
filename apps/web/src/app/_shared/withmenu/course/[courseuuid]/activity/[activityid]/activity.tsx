@@ -1,34 +1,20 @@
-"use client";
+'use client';
 
-import { Suspense, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
-import type {
-  Activity,
-  CourseStructure,
-} from "@components/Contexts/CourseContext";
-import { CourseProvider } from "@components/Contexts/CourseContext";
-import { ActivityAIChatProvider } from "@components/Contexts/AI/ActivityAIChatContext";
-import ActivityIndicators from "@components/Pages/Courses/ActivityIndicators";
-import FixedActivitySecondaryBar from "@components/Pages/Activity/FixedActivitySecondaryBar";
-import GeneralWrapper from "@/components/Objects/Elements/Wrappers/GeneralWrapper";
-import { CourseBreadcrumbs } from "@/components/ui/app-breadcrumbs";
-import { useContributorStatus } from "@/hooks/useContributorStatus";
-import {
-  COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY,
-  FOCUS_MODE_CHANGE_EVENT,
-} from "@/lib/constants";
-import {
-  buildCourseActivityIndex,
-  normalizeActivityUuid,
-} from "@/lib/course-activity-index";
-import {
-  ActivityContent,
-  CourseEndPanel,
-  FocusActivityView,
-  LoadingFallback,
-} from "./ActivityContentSurface";
-import ActivityToolbar from "./ActivityToolbar";
+import type { Activity, CourseStructure } from '@components/Contexts/CourseContext';
+import { CourseProvider } from '@components/Contexts/CourseContext';
+import { ActivityAIChatProvider } from '@components/Contexts/AI/ActivityAIChatContext';
+import ActivityIndicators from '@components/Pages/Courses/ActivityIndicators';
+import FixedActivitySecondaryBar from '@components/Pages/Activity/FixedActivitySecondaryBar';
+import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
+import { CourseBreadcrumbs } from '@/components/ui/app-breadcrumbs';
+import { useContributorStatus } from '@/hooks/useContributorStatus';
+import { COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY, FOCUS_MODE_CHANGE_EVENT } from '@/lib/constants';
+import { buildCourseActivityIndex, normalizeActivityUuid } from '@/lib/course-activity-index';
+import { ActivityContent, CourseEndPanel, FocusActivityView, LoadingFallback } from './ActivityContentSurface';
+import ActivityToolbar from './ActivityToolbar';
 
 interface ActivityClientProps {
   activityid: string;
@@ -37,71 +23,55 @@ interface ActivityClientProps {
   course: CourseStructure;
 }
 
-export default function ActivityClient({
-  activityid,
-  courseuuid,
-  activity,
-  course,
-}: ActivityClientProps) {
-  const t = useTranslations("ActivityPage");
+export default function ActivityClient({ activityid, courseuuid, activity, course }: ActivityClientProps) {
+  const t = useTranslations('ActivityPage');
   const { contributorStatus } = useContributorStatus(courseuuid);
   const [isFocusMode, setIsFocusMode] = useState(false);
-  const canView = activity
-    ? activity.published === true || contributorStatus === "ACTIVE"
-    : false;
+  const canView = activity ? activity.published === true || contributorStatus === 'ACTIVE' : false;
   const cleanActivityId = normalizeActivityUuid(activityid);
-  const activityIndex = useMemo(
-    () => buildCourseActivityIndex<Activity>(course.chapters),
-    [course.chapters],
-  );
-  const currentEntry =
-    activityIndex.allActivities[
-      activityIndex.indexByCleanUuid.get(cleanActivityId) ?? -1
-    ];
+  const activityIndex = useMemo(() => buildCourseActivityIndex<Activity>(course.chapters), [course.chapters]);
+  const currentEntry = activityIndex.allActivities[activityIndex.indexByCleanUuid.get(cleanActivityId) ?? -1];
   const chapterLabel = currentEntry
-    ? `${t("chapter")} ${currentEntry.chapterIndex + 1} : ${currentEntry.chapterName ?? ""}`
+    ? `${t('chapter')} ${currentEntry.chapterIndex + 1} : ${currentEntry.chapterName ?? ''}`
     : null;
 
   useEffect(() => {
-    const saved = globalThis.localStorage?.getItem(
-      COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY,
-    );
-    setIsFocusMode(saved === "true");
+    const saved = globalThis.localStorage?.getItem(COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY);
+    setIsFocusMode(saved === 'true');
   }, []);
 
   const setFocusMode = (next: boolean) => {
     setIsFocusMode(next);
-    globalThis.localStorage?.setItem(
-      COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY,
-      String(next),
-    );
-    globalThis.dispatchEvent?.(
-      new CustomEvent(FOCUS_MODE_CHANGE_EVENT, { detail: { enabled: next } }),
-    );
+    globalThis.localStorage?.setItem(COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY, String(next));
+    globalThis.dispatchEvent?.(new CustomEvent(FOCUS_MODE_CHANGE_EVENT, { detail: { enabled: next } }));
   };
 
   const isAssessable = activity
-    ? activity.activity_type === "TYPE_EXAM" ||
-      activity.activity_type === "TYPE_CODE_CHALLENGE" ||
-      activity.activity_type === "TYPE_FILE_SUBMISSION"
+    ? activity.activity_type === 'TYPE_EXAM' ||
+      activity.activity_type === 'TYPE_CODE_CHALLENGE' ||
+      activity.activity_type === 'TYPE_FILE_SUBMISSION'
     : false;
 
   const body =
-    activityid === "end" ? (
-      <CourseEndPanel course={course} courseuuid={courseuuid} />
+    activityid === 'end' ? (
+      <CourseEndPanel
+        course={course}
+        courseuuid={courseuuid}
+      />
     ) : activity && canView ? (
-      <ActivityContent activity={activity} course={course} />
+      <ActivityContent
+        activity={activity}
+        course={course}
+      />
     ) : (
       <div className="border-border bg-muted/30 rounded-lg border p-7">
-        <p className="text-muted-foreground text-sm font-medium">
-          {t("activityNotPublished")}
-        </p>
+        <p className="text-muted-foreground text-sm font-medium">{t('activityNotPublished')}</p>
       </div>
     );
 
   return (
     <CourseProvider courseuuid={course.course_uuid}>
-      <ActivityAIChatProvider activityUuid={activity?.activity_uuid ?? ""}>
+      <ActivityAIChatProvider activityUuid={activity?.activity_uuid ?? ''}>
         {isFocusMode && activity && canView ? (
           <FocusActivityView
             activity={activity}
@@ -115,25 +85,19 @@ export default function ActivityClient({
         ) : (
           <GeneralWrapper>
             <div className="space-y-4 pt-2">
-              {activityid !== "end" ? (
+              {activityid !== 'end' ? (
                 <>
                   <CourseBreadcrumbs
-                    course={{ ...course, name: course.name ?? "" }}
-                    activity={
-                      activity
-                        ? { ...activity, name: activity.name ?? "" }
-                        : { name: "" }
-                    }
+                    course={{ ...course, name: course.name ?? '' }}
+                    activity={activity ? { ...activity, name: activity.name ?? '' } : { name: '' }}
                   />
                   <header className="space-y-4 pb-4">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
                         <h1 className="text-foreground text-2xl font-semibold tracking-tight">
-                          {activity?.name ?? ""}
+                          {activity?.name ?? ''}
                         </h1>
-                        <p className="text-muted-foreground mt-0.5 text-sm">
-                          {chapterLabel}
-                        </p>
+                        <p className="text-muted-foreground mt-0.5 text-sm">{chapterLabel}</p>
                       </div>
                       {activity && canView ? (
                         <ActivityToolbar
@@ -159,9 +123,7 @@ export default function ActivityClient({
               ) : null}
 
               <Suspense fallback={<LoadingFallback />}>
-                <div className="border-border relative rounded-lg border p-7">
-                  {body}
-                </div>
+                <div className="border-border relative rounded-lg border p-7">{body}</div>
               </Suspense>
 
               {activity && canView ? (

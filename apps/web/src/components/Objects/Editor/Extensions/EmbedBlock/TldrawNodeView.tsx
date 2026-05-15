@@ -33,9 +33,7 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
 
   // ── Height state (local during drag, persisted on commit) ──────────────────
   const initialHeight =
-    typeof attrHeight === 'number' && attrHeight > 0
-      ? clampEmbedHeight(attrHeight)
-      : TLDRAW_DEFAULT_HEIGHT;
+    typeof attrHeight === 'number' && attrHeight > 0 ? clampEmbedHeight(attrHeight) : TLDRAW_DEFAULT_HEIGHT;
 
   const [displayHeight, setDisplayHeight] = useState(initialHeight);
 
@@ -67,16 +65,13 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
     [isEditable, displayHeight],
   );
 
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!dragStateRef.current) return;
-      const delta = e.clientY - dragStateRef.current.startY;
-      const raw = dragStateRef.current.startHeight + delta;
-      const clamped = Math.min(TLDRAW_MAX_HEIGHT, Math.max(TLDRAW_MIN_HEIGHT, raw));
-      setDisplayHeight(clamped);
-    },
-    [],
-  );
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragStateRef.current) return;
+    const delta = e.clientY - dragStateRef.current.startY;
+    const raw = dragStateRef.current.startHeight + delta;
+    const clamped = Math.min(TLDRAW_MAX_HEIGHT, Math.max(TLDRAW_MIN_HEIGHT, raw));
+    setDisplayHeight(clamped);
+  }, []);
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -140,7 +135,7 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
         {/* Overlay toolbar — authoring mode only */}
         {isEditable && (
           <div
-            className="absolute right-2 top-2 flex gap-1 rounded-lg bg-white/90 p-1 shadow-md backdrop-blur-sm"
+            className="absolute top-2 right-2 flex gap-1 rounded-lg bg-white/90 p-1 shadow-md backdrop-blur-sm"
             style={{ pointerEvents: 'auto' }}
           >
             <button
@@ -165,7 +160,7 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
 
         {isEditable && (
           <div
-            className="absolute bottom-0 left-0 right-0 flex cursor-ns-resize items-center justify-center"
+            className="absolute right-0 bottom-0 left-0 flex cursor-ns-resize items-center justify-center"
             style={{ height: '12px', pointerEvents: 'auto' }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}

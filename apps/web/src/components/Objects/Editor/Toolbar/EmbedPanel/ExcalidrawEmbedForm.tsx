@@ -34,12 +34,7 @@ export interface ExcalidrawEmbedFormProps {
  *
  * Requirements: 5.1, 5.3, 11.1
  */
-export function ExcalidrawEmbedForm({
-  url,
-  onChange,
-  error,
-  onErrorChange,
-}: ExcalidrawEmbedFormProps) {
+export function ExcalidrawEmbedForm({ url, onChange, error, onErrorChange }: ExcalidrawEmbedFormProps) {
   const t = useTranslations('DashPage.Editor.EmbedPanel');
   const inputId = useId();
   const errorId = useId();

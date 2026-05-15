@@ -142,7 +142,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
 
         {isEditable ? (
           <div
-            className="absolute right-2 top-2 flex items-center gap-1 rounded-md border border-black/10 bg-white/95 p-1 text-gray-700 shadow-sm backdrop-blur"
+            className="absolute top-2 right-2 flex items-center gap-1 rounded-md border border-black/10 bg-white/95 p-1 text-gray-700 shadow-sm backdrop-blur"
             contentEditable={false}
             style={{ pointerEvents: 'auto' }}
           >
@@ -171,7 +171,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
             role="separator"
             aria-label={`${t('resize')} ${provider.label} ${t('embed')}`}
             aria-orientation="horizontal"
-            className="absolute bottom-0 left-0 right-0 flex h-4 cursor-ns-resize items-center justify-center"
+            className="absolute right-0 bottom-0 left-0 flex h-4 cursor-ns-resize items-center justify-center"
             contentEditable={false}
             style={{ pointerEvents: 'auto' }}
             onPointerDown={handlePointerDown}

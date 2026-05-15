@@ -142,6 +142,7 @@ class GradingEntryRead(SQLModelStrictBaseModel):
 
 # ── Immutability event listeners ──────────────────────────────────────────────
 
+
 @event.listens_for(GradingEntry, "before_update")
 def _prevent_grading_entry_update(
     mapper: object, connection: object, target: GradingEntry

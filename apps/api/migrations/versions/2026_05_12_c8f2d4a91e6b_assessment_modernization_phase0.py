@@ -148,9 +148,7 @@ def upgrade() -> None:
                 changed = True
         if changed:
             conn.execute(
-                sa.text(
-                    "UPDATE submission SET metadata_json = :meta WHERE id = :id"
-                ),
+                sa.text("UPDATE submission SET metadata_json = :meta WHERE id = :id"),
                 {"meta": json.dumps(metadata), "id": row.id},
             )
 

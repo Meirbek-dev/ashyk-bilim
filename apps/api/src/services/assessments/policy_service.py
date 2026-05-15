@@ -21,6 +21,7 @@ from src.db.assessments import (
     StudentPolicyOverrideRead,
     StudentPolicyOverrideUpdate,
 )
+from src.db.audit import AuditEventType
 from src.db.grading.overrides import StudentPolicyOverride
 from src.db.grading.progress import (
     AssessmentCompletionRule,
@@ -37,7 +38,6 @@ from src.services.assessments._helpers import (
     _require_grade,
 )
 from src.services.audit import record_audit_event
-from src.db.audit import AuditEventType
 
 logger = logging.getLogger(__name__)
 

@@ -1,21 +1,21 @@
-import * as v from "valibot";
+import * as v from 'valibot';
 
 export const activityTypeEnum = v.picklist([
-  "TYPE_VIDEO",
-  "TYPE_DOCUMENT",
-  "TYPE_DYNAMIC",
-  "TYPE_FILE_SUBMISSION",
-  "TYPE_EXAM",
-  "TYPE_CODE_CHALLENGE",
-  "TYPE_CUSTOM",
+  'TYPE_VIDEO',
+  'TYPE_DOCUMENT',
+  'TYPE_DYNAMIC',
+  'TYPE_FILE_SUBMISSION',
+  'TYPE_EXAM',
+  'TYPE_CODE_CHALLENGE',
+  'TYPE_CUSTOM',
 ] as const);
 
 export const activitySubTypeEnum = v.picklist([
-  "SUBTYPE_DYNAMIC_PAGE",
-  "SUBTYPE_VIDEO_YOUTUBE",
-  "SUBTYPE_VIDEO_HOSTED",
-  "SUBTYPE_DOCUMENT_PDF",
-  "SUBTYPE_FILE_SUBMISSION_STANDARD",
+  'SUBTYPE_DYNAMIC_PAGE',
+  'SUBTYPE_VIDEO_YOUTUBE',
+  'SUBTYPE_VIDEO_HOSTED',
+  'SUBTYPE_DOCUMENT_PDF',
+  'SUBTYPE_FILE_SUBMISSION_STANDARD',
 ] as const);
 
 export const activityCreateSchema = v.object({

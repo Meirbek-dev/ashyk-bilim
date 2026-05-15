@@ -1,25 +1,12 @@
-"use client";
-import {
-  ArrowRight,
-  Check,
-  ClipboardList,
-  FileArchive,
-  FileText,
-  ListTree,
-  StickyNote,
-  Video,
-  X,
-} from "lucide-react";
-import { useEffect, useEffectEvent, useRef, useState, useMemo } from "react";
-import { getAbsoluteUrl } from "@services/config/config";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useTranslations } from "next-intl";
-import Link from "@components/ui/AppLink";
-import {
-  buildCourseActivityIndex,
-  normalizeActivityUuid,
-} from "@/lib/course-activity-index";
-import type { ReactNode } from "react";
+'use client';
+import { ArrowRight, Check, ClipboardList, FileArchive, FileText, ListTree, StickyNote, Video, X } from 'lucide-react';
+import { useEffect, useEffectEvent, useRef, useState, useMemo } from 'react';
+import { getAbsoluteUrl } from '@services/config/config';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslations } from 'next-intl';
+import Link from '@components/ui/AppLink';
+import { buildCourseActivityIndex, normalizeActivityUuid } from '@/lib/course-activity-index';
+import type { ReactNode } from 'react';
 
 interface ActivityChapterDropdownProps {
   course: any;
@@ -36,19 +23,19 @@ interface ActivityDropdownActivity {
 
 function getActivityTypeIcon(activityType?: string) {
   switch (activityType) {
-    case "TYPE_VIDEO": {
+    case 'TYPE_VIDEO': {
       return <Video size={10} />;
     }
-    case "TYPE_DOCUMENT": {
+    case 'TYPE_DOCUMENT': {
       return <FileText size={10} />;
     }
-    case "TYPE_DYNAMIC": {
+    case 'TYPE_DYNAMIC': {
       return <StickyNote size={10} />;
     }
-    case "TYPE_FILE_SUBMISSION": {
+    case 'TYPE_FILE_SUBMISSION': {
       return <FileArchive size={10} />;
     }
-    case "TYPE_EXAM": {
+    case 'TYPE_EXAM': {
       return <ClipboardList size={10} />;
     }
     default: {
@@ -57,37 +44,29 @@ function getActivityTypeIcon(activityType?: string) {
   }
 }
 
-export default function ActivityChapterDropdown(
-  props: ActivityChapterDropdownProps,
-): ReactNode {
+export default function ActivityChapterDropdown(props: ActivityChapterDropdownProps): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const t = useTranslations("ActivityPage");
+  const t = useTranslations('ActivityPage');
 
   // Clean up course UUID by removing 'course_' prefix if it exists
-  const cleanCourseUuid = props.course.course_uuid?.replace("course_", "");
+  const cleanCourseUuid = props.course.course_uuid?.replace('course_', '');
 
   // Build activity index for efficient lookups
   const activityIndex = useMemo(
-    () =>
-      buildCourseActivityIndex<ActivityDropdownActivity>(props.course.chapters),
+    () => buildCourseActivityIndex<ActivityDropdownActivity>(props.course.chapters),
     [props.course.chapters],
   );
 
   // Map for quick completion lookup
   const completedActivityIds = useMemo(() => {
     const run = props.trailData?.runs?.find((run: any) => {
-      const cleanRunCourseUuid = run.course?.course_uuid?.replace(
-        "course_",
-        "",
-      );
+      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
       return cleanRunCourseUuid === cleanCourseUuid;
     });
     return new Set(
-      (run?.steps ?? [])
-        .filter((step: any) => step.complete === true)
-        .map((step: any) => step.activity_id),
+      (run?.steps ?? []).filter((step: any) => step.complete === true).map((step: any) => step.activity_id),
     );
   }, [props.trailData, cleanCourseUuid]);
 
@@ -96,18 +75,15 @@ export default function ActivityChapterDropdown(
 
   // Close dropdown when clicking outside
   const handleClickOutside = useEffectEvent((event: MouseEvent) => {
-    if (
-      dropdownRef.current &&
-      !dropdownRef.current.contains(event.target as Node)
-    ) {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
       setIsOpen(false);
     }
   });
 
   useEffect(() => {
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
@@ -117,48 +93,49 @@ export default function ActivityChapterDropdown(
 
   const getActivityTypeLabel = (activityType?: string) => {
     switch (activityType) {
-      case "TYPE_VIDEO": {
-        return t("activityTypes.video");
+      case 'TYPE_VIDEO': {
+        return t('activityTypes.video');
       }
-      case "TYPE_DOCUMENT": {
-        return t("activityTypes.document");
+      case 'TYPE_DOCUMENT': {
+        return t('activityTypes.document');
       }
-      case "TYPE_DYNAMIC": {
-        return t("activityTypes.dynamic");
+      case 'TYPE_DYNAMIC': {
+        return t('activityTypes.dynamic');
       }
-      case "TYPE_FILE_SUBMISSION": {
-        return t("activityTypes.fileSubmission");
+      case 'TYPE_FILE_SUBMISSION': {
+        return t('activityTypes.fileSubmission');
       }
-      case "TYPE_EXAM": {
-        return t("activityTypes.exam");
+      case 'TYPE_EXAM': {
+        return t('activityTypes.exam');
       }
       default: {
-        return t("activityTypes.learningMaterial");
+        return t('activityTypes.learningMaterial');
       }
     }
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div
+      className="relative"
+      ref={dropdownRef}
+    >
       <button
         type="button"
         onClick={toggleDropdown}
         className="soft-shadow border-border bg-card text-foreground hover:bg-muted flex items-center space-x-2 rounded-full border p-2.5 px-5 transition delay-150 duration-300 ease-in-out"
-        aria-label={t("viewAllActivities")}
-        title={t("viewAllActivities")}
+        aria-label={t('viewAllActivities')}
+        title={t('viewAllActivities')}
       >
         <ListTree size={17} />
-        <span className="text-xs font-bold">{t("chapters")}</span>
+        <span className="text-xs font-bold">{t('chapters')}</span>
       </button>
 
       {isOpen ? (
         <div
-          className={`absolute z-50 mt-2 ${isMobile ? "left-1/2 w-[min(calc(100vw-1rem),22rem)] -translate-x-1/2" : "right-0 w-72"} fade-in animate-in border-border bg-card max-h-[70vh] cursor-pointer overflow-y-auto overscroll-contain rounded-lg border py-1 shadow-xl duration-200`}
+          className={`absolute z-50 mt-2 ${isMobile ? 'left-1/2 w-[min(calc(100vw-1rem),22rem)] -translate-x-1/2' : 'right-0 w-72'} fade-in animate-in border-border bg-card max-h-[70vh] cursor-pointer overflow-y-auto overscroll-contain rounded-lg border py-1 shadow-xl duration-200`}
         >
           <div className="border-border flex items-center justify-between border-b px-3 py-1.5">
-            <h3 className="text-foreground text-sm font-semibold">
-              {t("courseContent")}
-            </h3>
+            <h3 className="text-foreground text-sm font-semibold">{t('courseContent')}</h3>
             <button
               type="button"
               onClick={() => {
@@ -176,11 +153,12 @@ export default function ActivityChapterDropdown(
               // Build a map of chapterIndex to activities for grouping
               const chapters = props.course.chapters ?? [];
               return chapters.map((chapter: any, chapterIndex: number) => {
-                const chapterActivities = activityIndex.allActivities.filter(
-                  (a) => a.chapterIndex === chapterIndex,
-                );
+                const chapterActivities = activityIndex.allActivities.filter((a) => a.chapterIndex === chapterIndex);
                 return (
-                  <div key={chapter.id} className="mb-1">
+                  <div
+                    key={chapter.id}
+                    className="mb-1"
+                  >
                     <div className="flex items-center border-y border-gray-100 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-600">
                       <div className="flex items-center space-x-1.5">
                         <div className="bg-primary text-primary-foreground flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold">
@@ -191,24 +169,19 @@ export default function ActivityChapterDropdown(
                     </div>
                     <div className="py-0.5">
                       {chapterActivities.map((activity) => {
-                        const isCurrent =
-                          activity.cleanUuid === cleanCurrentActivityId;
-                        const isComplete = completedActivityIds.has(
-                          activity.id,
-                        );
+                        const isCurrent = activity.cleanUuid === cleanCurrentActivityId;
+                        const isComplete = completedActivityIds.has(activity.id);
                         return (
                           <Link
                             key={activity.id}
-                            href={`${getAbsoluteUrl("")}/course/${cleanCourseUuid}/activity/${activity.cleanUuid}`}
+                            href={`${getAbsoluteUrl('')}/course/${cleanCourseUuid}/activity/${activity.cleanUuid}`}
                             onClick={() => {
                               setIsOpen(false);
                             }}
                           >
                             <div
                               className={`group px-3 py-2 transition-colors hover:bg-neutral-50 ${
-                                isCurrent
-                                  ? "border-l-2 border-neutral-300 bg-neutral-50 pl-2.5 font-medium"
-                                  : ""
+                                isCurrent ? 'border-l-2 border-neutral-300 bg-neutral-50 pl-2.5 font-medium' : ''
                               }`}
                             >
                               <div className="flex items-center space-x-2">
@@ -222,7 +195,10 @@ export default function ActivityChapterDropdown(
                                     </div>
                                   ) : (
                                     <div className="cursor-pointer text-neutral-300">
-                                      <Check size={14} className="stroke-2" />
+                                      <Check
+                                        size={14}
+                                        className="stroke-2"
+                                      />
                                     </div>
                                   )}
                                 </div>
@@ -233,18 +209,14 @@ export default function ActivityChapterDropdown(
                                     </p>
                                     {isCurrent ? (
                                       <div className="flex animate-pulse items-center space-x-1 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
-                                        <span>{t("current")}</span>
+                                        <span>{t('current')}</span>
                                       </div>
                                     ) : null}
                                   </div>
                                   <div className="mt-0.5 flex items-center space-x-1 text-neutral-400">
-                                    {getActivityTypeIcon(
-                                      activity.activity_type,
-                                    )}
+                                    {getActivityTypeIcon(activity.activity_type)}
                                     <span className="text-[10px] font-medium">
-                                      {getActivityTypeLabel(
-                                        activity.activity_type,
-                                      )}
+                                      {getActivityTypeLabel(activity.activity_type)}
                                     </span>
                                   </div>
                                 </div>

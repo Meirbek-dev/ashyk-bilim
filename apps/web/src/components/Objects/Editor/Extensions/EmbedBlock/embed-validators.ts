@@ -40,8 +40,7 @@ export function parseYouTubeUrl(url: string): string | null {
   if (protocol !== 'https:') return null;
 
   // Normalise hostname: accept "youtube.com" and "www.youtube.com"
-  const isYouTubeHost =
-    hostname === 'www.youtube.com' || hostname === 'youtube.com';
+  const isYouTubeHost = hostname === 'www.youtube.com' || hostname === 'youtube.com';
   const isYouTuBeHost = hostname === 'youtu.be';
 
   if (isYouTuBeHost) {
@@ -96,9 +95,7 @@ export function resolveYouTubeVideoId(value: string): string | null {
  *                        hostname is not exactly `excalidraw.com`
  *   - `null`           — valid (absolute URL with hostname `excalidraw.com`)
  */
-export function validateExcalidrawUrl(
-  url: string,
-): null | EmbedValidationError {
+export function validateExcalidrawUrl(url: string): null | EmbedValidationError {
   if (url.trim() === '') return 'errorEmpty';
 
   let parsed: URL;
@@ -140,9 +137,7 @@ export function buildExcalidrawSrc(url: string): string {
  *   - `'errorInvalid'` — non-empty but fails any of the above checks
  *   - `null`           — valid
  */
-export function validateTldrawUrl(
-  url: string,
-): null | EmbedValidationError {
+export function validateTldrawUrl(url: string): null | EmbedValidationError {
   if (url.trim() === '') return 'errorEmpty';
 
   let parsed: URL;
@@ -209,9 +204,7 @@ function validateProviderUrl(type: EmbedType, url: string): null | EmbedValidati
   }
 
   const hostname = parsed.hostname.toLowerCase();
-  const isAllowedHost = provider.hostnames.some((allowedHost) =>
-    hostnameMatches(hostname, allowedHost.toLowerCase()),
-  );
+  const isAllowedHost = provider.hostnames.some((allowedHost) => hostnameMatches(hostname, allowedHost.toLowerCase()));
 
   return isAllowedHost ? null : 'errorInvalid';
 }

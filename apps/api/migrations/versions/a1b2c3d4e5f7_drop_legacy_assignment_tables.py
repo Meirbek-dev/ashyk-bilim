@@ -49,7 +49,7 @@ def upgrade() -> None:
         if table_name not in existing_tables:
             continue
         row = conn.execute(
-            sa.text(f"SELECT COUNT(*) AS cnt FROM {table_name}")  # noqa: S608
+            sa.text(f"SELECT COUNT(*) AS cnt FROM {table_name}")
         ).scalar()
         if row and int(row) > 0:
             raise RuntimeError(
@@ -108,7 +108,7 @@ def upgrade() -> None:
 
         conn.execute(
             sa.text(
-                "UPDATE submission "  # noqa: S608
+                "UPDATE submission "
                 "SET metadata_json = (COALESCE(metadata_json, '{}'::json)::jsonb "
                 + removal_expr
                 + ")::json "
@@ -168,7 +168,9 @@ def downgrade() -> None:
         sa.Column("title", sa.String(), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("assignment_type", sa.String(), nullable=False),
-        sa.Column("max_grade_value", sa.Integer(), nullable=False, server_default=sa.text("0")),
+        sa.Column(
+            "max_grade_value", sa.Integer(), nullable=False, server_default=sa.text("0")
+        ),
         sa.Column("task_content", sa.JSON(), nullable=True),
         sa.Column("assignment_id", sa.Integer(), nullable=False),
         sa.Column("activity_id", sa.Integer(), nullable=True),
@@ -186,7 +188,11 @@ def downgrade() -> None:
             ondelete="SET NULL",
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("assignment_id", "assignment_task_uuid", name="uq_assignmenttask_assignment_uuid"),
+        sa.UniqueConstraint(
+            "assignment_id",
+            "assignment_task_uuid",
+            name="uq_assignmenttask_assignment_uuid",
+        ),
         sa.UniqueConstraint("assignment_id", "order", name="uq_assignmenttask_order"),
     )
     op.create_index(

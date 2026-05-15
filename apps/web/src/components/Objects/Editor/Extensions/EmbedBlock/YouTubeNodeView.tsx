@@ -53,7 +53,7 @@ const YouTubeNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
 
       {isEditable ? (
         <div
-          className="absolute right-2 top-2 flex items-center gap-1 rounded-md border border-black/10 bg-white/95 p-1 text-gray-700 shadow-sm backdrop-blur"
+          className="absolute top-2 right-2 flex items-center gap-1 rounded-md border border-black/10 bg-white/95 p-1 text-gray-700 shadow-sm backdrop-blur"
           contentEditable={false}
         >
           <button

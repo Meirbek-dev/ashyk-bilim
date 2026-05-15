@@ -65,7 +65,10 @@ vi.mock('next-intl', () => ({
 vi.mock('next/image', () => ({
   default: ({ alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement> & { alt: string }) => (
     // eslint-disable-next-line @next/next/no-img-element
-    <img alt={alt} {...props} />
+    <img
+      alt={alt}
+      {...props}
+    />
   ),
 }));
 
@@ -76,13 +79,9 @@ vi.mock('@/components/providers/theme-provider', () => ({
 
 // Mock EmbedPanelStore — open is a stable no-op so it never changes identity
 const stableOpen = vi.fn();
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/EmbedPanel/EmbedPanelStore',
-  () => ({
-    useEmbedPanelStore: (selector: (s: { open: typeof stableOpen }) => unknown) =>
-      selector({ open: stableOpen }),
-  }),
-);
+vi.mock('../../components/Objects/Editor/Toolbar/EmbedPanel/EmbedPanelStore', () => ({
+  useEmbedPanelStore: (selector: (s: { open: typeof stableOpen }) => unknown) => selector({ open: stableOpen }),
+}));
 
 // Mock all sub-components that EditorToolbar renders so they don't pull in
 // heavy dependencies. Each is a simple stable component.
@@ -160,11 +159,7 @@ let renderCount = 0;
  * only re-renders when its own props change, so any re-render of the
  * inner EditorToolbar is caused by its own hooks, not by the wrapper.
  */
-const TrackedEditorToolbar = React.memo(function TrackedEditorToolbar({
-  onAIToggle,
-}: {
-  onAIToggle: () => void;
-}) {
+const TrackedEditorToolbar = React.memo(function TrackedEditorToolbar({ onAIToggle }: { onAIToggle: () => void }) {
   renderCount++;
   return <EditorToolbar onAIToggle={onAIToggle} />;
 });

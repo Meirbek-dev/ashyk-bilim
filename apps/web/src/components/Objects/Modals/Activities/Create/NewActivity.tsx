@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  ArrowLeft,
-  ChevronRight,
-  Code2,
-  FileArchive,
-  FileText,
-  GraduationCap,
-  Sparkles,
-  Video,
-} from 'lucide-react';
+import { ArrowLeft, ChevronRight, Code2, FileArchive, FileText, GraduationCap, Sparkles, Video } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -22,14 +13,7 @@ import VideoModal from './NewActivityModal/VideoActivityModal';
 import Exam from './NewActivityModal/ExamActivityModal';
 import FileSubmission from './NewActivityModal/FileSubmissionActivityModal';
 
-type ViewType =
-  | 'home'
-  | 'dynamic'
-  | 'video'
-  | 'documentpdf'
-  | 'filesubmission'
-  | 'exams'
-  | 'codechallenge';
+type ViewType = 'home' | 'dynamic' | 'video' | 'documentpdf' | 'filesubmission' | 'exams' | 'codechallenge';
 
 interface ActivityTypeConfig {
   id: ViewType;

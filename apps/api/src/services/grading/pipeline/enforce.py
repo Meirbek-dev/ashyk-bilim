@@ -44,9 +44,7 @@ def resolve_effective_policy(
         due_at = policy.due_at
         allow_late = policy.allow_late
         passing_score = policy.passing_score
-        late_policy = LATE_POLICY_ADAPTER.validate_python(
-            policy.late_policy_json or {}
-        )
+        late_policy = LATE_POLICY_ADAPTER.validate_python(policy.late_policy_json or {})
 
     # Per-student override overrides policy
     if override is not None:

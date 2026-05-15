@@ -60,7 +60,9 @@ class PlagiarismSubscriber:
 
         provider = get_plagiarism_provider()
         try:
-            submission_uuid = getattr(event, "submission_uuid", None) or event.attempt_uuid
+            submission_uuid = (
+                getattr(event, "submission_uuid", None) or event.attempt_uuid
+            )
             result = await provider.check(submission_uuid, event.file_keys)
             logger.info(
                 "plagiarism_check submission=%s score=%s flagged=%s",

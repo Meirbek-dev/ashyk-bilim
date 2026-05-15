@@ -45,14 +45,18 @@ export default function ConflictResolver({
             <p>
               {t('scoreLabel')} <strong>{serverScore ?? '—'}</strong>
             </p>
-            <p className="truncate">{t('feedbackLabel')} {serverFeedback || '—'}</p>
+            <p className="truncate">
+              {t('feedbackLabel')} {serverFeedback || '—'}
+            </p>
           </div>
           <div className="rounded border p-2">
             <p className="mb-1 font-medium">{t('localHeader')}</p>
             <p>
               {t('scoreLabel')} <strong>{localScore || '—'}</strong>
             </p>
-            <p className="truncate">{t('feedbackLabel')} {localFeedback || '—'}</p>
+            <p className="truncate">
+              {t('feedbackLabel')} {localFeedback || '—'}
+            </p>
           </div>
         </div>
 

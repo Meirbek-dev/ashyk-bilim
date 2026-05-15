@@ -311,9 +311,24 @@ async def api_export_assessment_submissions_csv(
     assessment_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
-    assessment_type: Annotated[str | None, Query(description="Filter by assessment type (QUIZ, OPEN_TEXT, CODE_CHALLENGE, etc.)")] = None,
-    submitted_after: Annotated[datetime | None, Query(description="Only include submissions submitted after this ISO-8601 datetime")] = None,
-    submitted_before: Annotated[datetime | None, Query(description="Only include submissions submitted before this ISO-8601 datetime")] = None,
+    assessment_type: Annotated[
+        str | None,
+        Query(
+            description="Filter by assessment type (QUIZ, OPEN_TEXT, CODE_CHALLENGE, etc.)"
+        ),
+    ] = None,
+    submitted_after: Annotated[
+        datetime | None,
+        Query(
+            description="Only include submissions submitted after this ISO-8601 datetime"
+        ),
+    ] = None,
+    submitted_before: Annotated[
+        datetime | None,
+        Query(
+            description="Only include submissions submitted before this ISO-8601 datetime"
+        ),
+    ] = None,
 ) -> StreamingResponse:
     assessment = await get_assessment(assessment_uuid, current_user, db_session)
     return StreamingResponse(

@@ -19,14 +19,11 @@ describe('EmbedBlock NodeView height clamping (Property 8)', () => {
   // Feature: rich-text-editor, Property 8: EmbedBlock NodeView height is always clamped to [200, 1200]
   it('clampEmbedHeight always returns a value in [200, 1200] for any integer input', () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: -500, max: 3000 }),
-        (rawHeight) => {
-          const clamped = clampEmbedHeight(rawHeight);
-          expect(clamped).toBeGreaterThanOrEqual(200);
-          expect(clamped).toBeLessThanOrEqual(1200);
-        },
-      ),
+      fc.property(fc.integer({ min: -500, max: 3000 }), (rawHeight) => {
+        const clamped = clampEmbedHeight(rawHeight);
+        expect(clamped).toBeGreaterThanOrEqual(200);
+        expect(clamped).toBeLessThanOrEqual(1200);
+      }),
       { numRuns: 100 },
     );
   });

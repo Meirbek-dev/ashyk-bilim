@@ -32,12 +32,7 @@ export interface YouTubeEmbedFormProps {
  *
  * Requirements: 4.1, 4.2, 4.3, 4.5, 4.6, 11.1
  */
-export function YouTubeEmbedForm({
-  url,
-  onChange,
-  error,
-  onErrorChange,
-}: YouTubeEmbedFormProps) {
+export function YouTubeEmbedForm({ url, onChange, error, onErrorChange }: YouTubeEmbedFormProps) {
   const t = useTranslations('DashPage.Editor.EmbedPanel');
   const inputId = useId();
   const errorId = useId();
@@ -60,7 +55,7 @@ export function YouTubeEmbedForm({
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor={inputId}
-          className="text-sm font-medium leading-none"
+          className="text-sm leading-none font-medium"
         >
           {t('urlPlaceholder')}
         </label>
@@ -88,7 +83,7 @@ export function YouTubeEmbedForm({
           <p
             id={errorId}
             role="alert"
-            className="text-sm font-normal text-destructive"
+            className="text-destructive text-sm font-normal"
           >
             {t(error as 'errorEmpty' | 'errorInvalid')}
           </p>

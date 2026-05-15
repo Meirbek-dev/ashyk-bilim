@@ -119,4 +119,3 @@ async def get_events_since(
     if found_idx is None:
         return events  # ID not in window — return everything
     return events[found_idx + 1 :]
-

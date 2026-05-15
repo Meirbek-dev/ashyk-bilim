@@ -71,6 +71,6 @@ __all__: list[str] = [
     "PydanticStrictBaseModel",
     "SQLModelDefaultBase",
     "SQLModelStrictBaseModel",
-    "is_dev_mode",
     "coerce_date_to_end_of_day",
+    "is_dev_mode",
 ]

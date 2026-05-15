@@ -2,5 +2,6 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "tags": ["-lintignore"],
   "ignoreDependencies": ["sharp", "shadcn"],
-  "ignoreBinaries": ["src/messages/migrate.ts"]
+  "ignoreBinaries": ["src/messages/migrate.ts"],
+  "ignoreFiles": ["src/components/ui/*", "src/components/DevScriptLoader.tsx", "src/messages/Artplayer/*"]
 }

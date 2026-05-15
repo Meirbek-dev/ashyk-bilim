@@ -172,12 +172,10 @@ class _ConfiguredJudge0Client(judge0.Client):
     ) -> None:
         self.endpoint = endpoint
         self.headers = headers or {}
-        self.headers.update(
-            {
-                "X-Judge0-App": "Judge0 Python SDK",
-                "X-Judge0-App-Version": JUDGE0_SDK_VERSION,
-            }
-        )
+        self.headers.update({
+            "X-Judge0-App": "Judge0 Python SDK",
+            "X-Judge0-App-Version": JUDGE0_SDK_VERSION,
+        })
         self._poll_interval_seconds = poll_interval_seconds
         self._poll_max_wait_seconds = poll_max_wait_seconds
         self.client = httpx.Client(
@@ -205,7 +203,9 @@ class _ConfiguredJudge0Client(judge0.Client):
 
 
 class _BoundedIntervalRetry:
-    def __init__(self, *, poll_interval_seconds: float, max_wait_seconds: float) -> None:
+    def __init__(
+        self, *, poll_interval_seconds: float, max_wait_seconds: float
+    ) -> None:
         self.poll_interval_seconds = poll_interval_seconds
         self.max_wait_seconds = max_wait_seconds
         self.total_wait_time = 0.0
@@ -444,9 +444,7 @@ class CodeExecutionService:
                     is_visible=test.is_visible,
                     stdin=test.input if test.is_visible else None,
                     expected=test.expected_output if test.is_visible else None,
-                    actual=(stdout or "").strip()
-                    if test.is_visible
-                    else None,
+                    actual=(stdout or "").strip() if test.is_visible else None,
                     stdout=stdout,
                     stderr=stderr,
                     compile_output=compile_output,

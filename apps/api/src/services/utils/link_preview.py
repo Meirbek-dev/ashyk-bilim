@@ -85,15 +85,13 @@ def _normalize_user_url(url: str) -> str:
         raise UnsafeLinkPreviewURL("Localhost URLs are not allowed")
 
     path = parsed.path or "/"
-    return urlunsplit(
-        (
-            parsed.scheme.lower(),
-            parsed.netloc,
-            path,
-            parsed.query,
-            "",
-        )
-    )
+    return urlunsplit((
+        parsed.scheme.lower(),
+        parsed.netloc,
+        path,
+        parsed.query,
+        "",
+    ))
 
 
 async def _assert_public_destination(url: str) -> None:
@@ -141,9 +139,7 @@ def _assert_public_ip(
     raise UnsafeLinkPreviewURL(f"URL resolves to a non-public address: {host}")
 
 
-async def _fetch_html(
-    url: str, settings: LinkPreviewConfig
-) -> tuple[str, str]:
+async def _fetch_html(url: str, settings: LinkPreviewConfig) -> tuple[str, str]:
     client = await _get_http_client(settings)
     current_url = url
     headers = {

@@ -308,7 +308,11 @@ def _seed_course_and_assessment(
             user_id=alice.id,
             status=SubmissionStatus.PENDING,
             attempt_number=1,
-            answers_json={"answers": {"item_grade_1": {"kind": "OPEN_TEXT", "text": "Alice's answer"}}},
+            answers_json={
+                "answers": {
+                    "item_grade_1": {"kind": "OPEN_TEXT", "text": "Alice's answer"}
+                }
+            },
             grading_json=GradingBreakdown().model_dump(),
             started_at=now - timedelta(hours=2),
             submitted_at=now - timedelta(hours=1),
@@ -323,7 +327,11 @@ def _seed_course_and_assessment(
             user_id=bob.id,
             status=SubmissionStatus.GRADED,
             attempt_number=1,
-            answers_json={"answers": {"item_grade_1": {"kind": "OPEN_TEXT", "text": "Bob's answer"}}},
+            answers_json={
+                "answers": {
+                    "item_grade_1": {"kind": "OPEN_TEXT", "text": "Bob's answer"}
+                }
+            },
             grading_json=GradingBreakdown(feedback="Good work.").model_dump(),
             auto_score=None,
             final_score=78,
@@ -422,9 +430,7 @@ def test_get_submissions_invalid_status_returns_400(
     assert response.status_code == 400
 
 
-def test_get_submissions_pagination(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_get_submissions_pagination(api_client: TestClient, db_session_factory) -> None:
     """page_size=1 returns exactly one item per page with correct totals."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 

@@ -30,7 +30,7 @@ def _time_spent_seconds(
             if raw is not None:
                 value = float(raw)
                 return value if value >= 0 else None
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
     created_at = parse_timestamp(created)
     updated_at = parse_timestamp(updated)

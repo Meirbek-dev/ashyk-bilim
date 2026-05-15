@@ -98,7 +98,11 @@ async def get_gradebook_cursor(
 
     cells: list[ActivityProgressCell] = []
     for progress in page_rows:
-        latest = submissions_by_id.get(progress.latest_submission_id) if progress.latest_submission_id else None
+        latest = (
+            submissions_by_id.get(progress.latest_submission_id)
+            if progress.latest_submission_id
+            else None
+        )
         cells.append(
             ActivityProgressCell(
                 user_id=progress.user_id,
@@ -140,16 +144,22 @@ async def get_gradebook_cursor(
 
 
 def _get_course_or_404(course_uuid: str, db_session: Session) -> Course:
-    normalized = course_uuid if course_uuid.startswith("course_") else f"course_{course_uuid}"
+    normalized = (
+        course_uuid if course_uuid.startswith("course_") else f"course_{course_uuid}"
+    )
     course = db_session.exec(
         select(Course).where(Course.course_uuid == normalized)
     ).first()
     if course is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
+        )
     return course
 
 
-def _require_gradebook_access(course: Course, current_user: PublicUser, db_session: Session) -> None:
+def _require_gradebook_access(
+    course: Course, current_user: PublicUser, db_session: Session
+) -> None:
     is_author = db_session.exec(
         select(ResourceAuthor.id).where(
             ResourceAuthor.resource_uuid == course.course_uuid,

@@ -6,42 +6,38 @@
  * kind-specific shell.
  */
 
-import type { ComponentType } from "react";
-import { registerKind } from "./index";
-import type {
-  KindAttemptProps,
-  KindAuthorProps,
-  KindReviewProps,
-} from "./index";
+import type { ComponentType } from 'react';
+import { registerKind } from './index';
+import type { KindAttemptProps, KindAuthorProps, KindReviewProps } from './index';
 
-registerKind("TYPE_FILE_SUBMISSION", async () => {
+registerKind('TYPE_FILE_SUBMISSION', async () => {
   const [
     { NativeItemStudioProvider, NativeItemOutline, NativeItemAuthor },
     { default: FileSubmissionAttemptContent },
     { default: GradingReviewWorkspace },
   ] = await Promise.all([
-    import("@/features/assessments/studio/NativeItemStudio"),
-    import("./assignment-attempt"),
-    import("@/features/grading/review/GradingReviewWorkspace"),
+    import('@/features/assessments/studio/NativeItemStudio'),
+    import('./assignment-attempt'),
+    import('@/features/grading/review/GradingReviewWorkspace'),
   ]);
 
   const OutlineSlot: ComponentType<KindAuthorProps> = (_props) => (
     <NativeItemOutline
-      allowedKinds={["CHOICE", "OPEN_TEXT", "FORM", "MATCHING"]}
+      allowedKinds={['CHOICE', 'OPEN_TEXT', 'FORM', 'MATCHING']}
       itemNoun="Task"
       itemNounKey="task"
     />
   );
 
   const AuthorSlot: ComponentType<KindAuthorProps> = (_props) => (
-    <NativeItemAuthor mode="assignment" itemNoun="Task" itemNounKey="task" />
+    <NativeItemAuthor
+      mode="assignment"
+      itemNoun="Task"
+      itemNounKey="task"
+    />
   );
 
-  const ReviewPassthrough: ComponentType<KindReviewProps> = ({
-    activityId,
-    submissionUuid,
-    title,
-  }) =>
+  const ReviewPassthrough: ComponentType<KindReviewProps> = ({ activityId, submissionUuid, title }) =>
     GradingReviewWorkspace({
       activityId,
       initialSubmissionUuid: submissionUuid ?? null,
@@ -49,8 +45,8 @@ registerKind("TYPE_FILE_SUBMISSION", async () => {
     });
 
   return {
-    label: "File submission",
-    iconName: "FileArchive",
+    label: 'File submission',
+    iconName: 'FileArchive',
     Provider: NativeItemStudioProvider,
     Outline: OutlineSlot,
     Author: AuthorSlot,

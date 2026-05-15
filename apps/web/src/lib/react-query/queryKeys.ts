@@ -15,7 +15,8 @@ export const queryKeys = {
   codeChallenges: {
     languages: () => ['code-challenges', 'languages'] as const,
     settings: (activityUuid: string) => ['code-challenges', 'settings', activityUuid] as const,
-    submission: (activityUuid: string, submissionUuid: string) => ['code-challenges', 'submission', activityUuid, submissionUuid] as const,
+    submission: (activityUuid: string, submissionUuid: string) =>
+      ['code-challenges', 'submission', activityUuid, submissionUuid] as const,
     submissions: (activityUuid: string) => ['code-challenges', 'submissions', activityUuid] as const,
   },
   certifications: {

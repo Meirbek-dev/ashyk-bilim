@@ -100,8 +100,7 @@ async def submit_assessment(
             )
     except asyncio.TimeoutError:
         logger.error(
-            "submit_assessment timed out after 30s "
-            "(activity_id=%s, user_id=%s)",
+            "submit_assessment timed out after 30s (activity_id=%s, user_id=%s)",
             activity_id,
             current_user.id,
         )
@@ -116,8 +115,7 @@ async def submit_assessment(
         raise
     except Exception:
         logger.exception(
-            "submit_assessment unexpected error "
-            "(activity_id=%s, user_id=%s)",
+            "submit_assessment unexpected error (activity_id=%s, user_id=%s)",
             activity_id,
             current_user.id,
         )
@@ -147,7 +145,10 @@ async def _submit_assessment_inner(
 
     # 2. Get-or-create DRAFT
     draft = _get_or_create_draft(
-        activity_id, assessment_type, current_user, db_session,
+        activity_id,
+        assessment_type,
+        current_user,
+        db_session,
         submission_uuid=submission_uuid,
     )
 
@@ -280,8 +281,10 @@ def _require_permission(
     permission = _SUBMIT_PERMISSION.get(assessment_type, "assessment:submit")
     checker = PermissionChecker(db_session)
     checker.require(
-        current_user.id, permission,
-        resource_owner_id=activity.creator_id, is_assigned=True,
+        current_user.id,
+        permission,
+        resource_owner_id=activity.creator_id,
+        is_assigned=True,
     )
 
 
@@ -303,7 +306,9 @@ def _get_or_create_draft(
             )
         ).first()
         if draft is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
+            )
         if draft.status != SubmissionStatus.DRAFT:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -327,7 +332,9 @@ def _get_or_create_draft(
             detail="No active draft found. Call /assessments/{uuid}/start first.",
         )
 
-    attempt_number = _count_completed_attempts(activity_id, current_user.id, db_session) + 1
+    attempt_number = (
+        _count_completed_attempts(activity_id, current_user.id, db_session) + 1
+    )
     now = datetime.now(UTC)
     draft = Submission(
         submission_uuid=f"submission_{ULID()}",
@@ -347,7 +354,9 @@ def _get_or_create_draft(
     return draft
 
 
-def _count_completed_attempts(activity_id: int, user_id: int, db_session: Session) -> int:
+def _count_completed_attempts(
+    activity_id: int, user_id: int, db_session: Session
+) -> int:
     return db_session.exec(
         select(sql_func.count()).where(
             Submission.activity_id == activity_id,
@@ -357,14 +366,18 @@ def _count_completed_attempts(activity_id: int, user_id: int, db_session: Sessio
     ).one()
 
 
-def _get_assessment_policy(activity_id: int, db_session: Session) -> AssessmentPolicy | None:
+def _get_assessment_policy(
+    activity_id: int, db_session: Session
+) -> AssessmentPolicy | None:
     return db_session.exec(
         select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)
     ).first()
 
 
 def _active_policy_override(
-    policy: AssessmentPolicy | None, user_id: int, db_session: Session,
+    policy: AssessmentPolicy | None,
+    user_id: int,
+    db_session: Session,
 ) -> StudentPolicyOverride | None:
     if policy is None or policy.id is None:
         return None
@@ -378,7 +391,11 @@ def _active_policy_override(
     if override is None:
         return None
     if override.expires_at is not None:
-        expires_at = override.expires_at if override.expires_at.tzinfo else override.expires_at.replace(tzinfo=UTC)
+        expires_at = (
+            override.expires_at
+            if override.expires_at.tzinfo
+            else override.expires_at.replace(tzinfo=UTC)
+        )
         if expires_at <= now:
             return None
     return override
@@ -403,7 +420,8 @@ async def _run_final_code_answers(
         select(Assessment).where(Assessment.activity_id == draft.activity_id)
     ).first()
     assessment_uuid = (
-        assessment.assessment_uuid if assessment is not None
+        assessment.assessment_uuid
+        if assessment is not None
         else f"activity_{draft.activity_id}"
     )
     enriched_answers = dict(answers_by_item_uuid)
@@ -444,7 +462,8 @@ async def _run_final_code_answers(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail={
                     "code": "CODE_RUNNER_DEGRADED",
-                    "message": result.error_message or "Code runner temporarily unavailable.",
+                    "message": result.error_message
+                    or "Code runner temporarily unavailable.",
                     "is_retryable": True,
                 },
             )
@@ -479,7 +498,9 @@ async def _run_final_code_answers(
     next_payload["answers"] = [
         {
             "item_uuid": uuid,
-            "answer": ans.model_dump(mode="json") if hasattr(ans, "model_dump") else ans,
+            "answer": ans.model_dump(mode="json")
+            if hasattr(ans, "model_dump")
+            else ans,
         }
         for uuid, ans in enriched_answers.items()
     ]

@@ -18,9 +18,7 @@ import {
 describe('parseYouTubeUrl', () => {
   describe('valid formats', () => {
     it('extracts ID from watch?v= URL', () => {
-      expect(parseYouTubeUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(
-        'dQw4w9WgXcQ',
-      );
+      expect(parseYouTubeUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
     });
 
     it('extracts ID from youtu.be short URL', () => {
@@ -28,15 +26,11 @@ describe('parseYouTubeUrl', () => {
     });
 
     it('extracts ID from /embed/ URL', () => {
-      expect(parseYouTubeUrl('https://www.youtube.com/embed/dQw4w9WgXcQ')).toBe(
-        'dQw4w9WgXcQ',
-      );
+      expect(parseYouTubeUrl('https://www.youtube.com/embed/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
     });
 
     it('extracts ID from /shorts/ URL', () => {
-      expect(parseYouTubeUrl('https://www.youtube.com/shorts/dQw4w9WgXcQ')).toBe(
-        'dQw4w9WgXcQ',
-      );
+      expect(parseYouTubeUrl('https://www.youtube.com/shorts/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
     });
 
     it('accepts youtube.com (without www) for watch?v=', () => {
@@ -101,9 +95,7 @@ describe('validateExcalidrawUrl', () => {
   });
 
   it('returns null for valid excalidraw.com URL', () => {
-    expect(
-      validateExcalidrawUrl('https://excalidraw.com/#room=abc,key'),
-    ).toBeNull();
+    expect(validateExcalidrawUrl('https://excalidraw.com/#room=abc,key')).toBeNull();
   });
 
   it('returns null for excalidraw.com URL with path', () => {
@@ -115,9 +107,7 @@ describe('validateExcalidrawUrl', () => {
   });
 
   it('returns errorInvalid for subdomain of excalidraw.com', () => {
-    expect(validateExcalidrawUrl('https://app.excalidraw.com/path')).toBe(
-      'errorInvalid',
-    );
+    expect(validateExcalidrawUrl('https://app.excalidraw.com/path')).toBe('errorInvalid');
   });
 
   it('returns errorInvalid for non-URL string', () => {
@@ -135,9 +125,7 @@ describe('validateExcalidrawUrl', () => {
 
 describe('buildExcalidrawSrc', () => {
   it('appends ?embed=1 when no query string present', () => {
-    expect(buildExcalidrawSrc('https://excalidraw.com/#room=abc')).toBe(
-      'https://excalidraw.com/#room=abc?embed=1',
-    );
+    expect(buildExcalidrawSrc('https://excalidraw.com/#room=abc')).toBe('https://excalidraw.com/#room=abc?embed=1');
   });
 
   it('appends &embed=1 when query string already present', () => {
@@ -199,14 +187,10 @@ describe('validateTldrawUrl', () => {
 
 describe('buildTldrawSrc', () => {
   it('appends ?embed=1 when no query string present', () => {
-    expect(buildTldrawSrc('https://tldraw.com/r/my-room')).toBe(
-      'https://tldraw.com/r/my-room?embed=1',
-    );
+    expect(buildTldrawSrc('https://tldraw.com/r/my-room')).toBe('https://tldraw.com/r/my-room?embed=1');
   });
 
   it('appends &embed=1 when query string already present', () => {
-    expect(buildTldrawSrc('https://tldraw.com/r/my-room?foo=bar')).toBe(
-      'https://tldraw.com/r/my-room?foo=bar&embed=1',
-    );
+    expect(buildTldrawSrc('https://tldraw.com/r/my-room?foo=bar')).toBe('https://tldraw.com/r/my-room?foo=bar&embed=1');
   });
 });

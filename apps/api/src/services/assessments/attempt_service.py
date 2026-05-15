@@ -107,7 +107,6 @@ async def start_assessment(
         raise
 
 
-
 async def get_my_assessment_submissions(
     assessment_uuid: str,
     current_user: PublicUser,
@@ -130,7 +129,6 @@ async def get_my_assessment_submissions(
     ]
 
 
-
 async def get_my_assessment_draft(
     assessment_uuid: str,
     current_user: PublicUser,
@@ -150,7 +148,6 @@ async def get_my_assessment_draft(
         assessment_uuid=assessment.assessment_uuid,
         submission=_build_student_submission_read(draft, db_session) if draft else None,
     )
-
 
 
 async def save_assessment_draft(
@@ -240,11 +237,7 @@ async def save_assessment_draft(
 
         # time_remaining_seconds: computed from policy time limit and started_at
         policy = _get_policy_for_assessment(assessment, db_session)
-        if (
-            policy is not None
-            and policy.time_limit_seconds
-            and draft.started_at
-        ):
+        if policy is not None and policy.time_limit_seconds and draft.started_at:
             now = datetime.now(UTC)
             expires_at = draft.started_at.replace(tzinfo=UTC) + timedelta(
                 seconds=policy.time_limit_seconds
@@ -263,7 +256,6 @@ async def save_assessment_draft(
             current_user.id,
         )
         raise
-
 
 
 async def submit_assessment(
@@ -669,4 +661,3 @@ async def get_code_item_run(
 
 
 # ── Readiness ─────────────────────────────────────────────────────────────────
-

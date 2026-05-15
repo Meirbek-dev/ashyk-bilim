@@ -342,7 +342,7 @@ async def _get_activity_data(
 
         cache_manager.db_cache.set(cache_key, (activity, course))
         return cast("ActivityRead", activity), cast("CourseRead", course)
-    except (ActivityNotFoundError, RetrievalError):
+    except ActivityNotFoundError, RetrievalError:
         raise
     except Exception as exc:
         raise ActivityNotFoundError(
@@ -484,7 +484,7 @@ async def generate_chat_answer(
         ) from exc
     except ActivityNotFoundError:
         raise
-    except (AITimeoutError, ContentModerationError, RetrievalError):
+    except AITimeoutError, ContentModerationError, RetrievalError:
         raise
     except Exception as exc:
         msg = f"Unexpected error during AI processing: {exc!s}"
@@ -646,7 +646,7 @@ async def stream_chat_answer(
         raise AITimeoutError(
             timeout_seconds, details={"activity_uuid": ctx.activity.activity_uuid}
         ) from exc
-    except (AITimeoutError, ContentModerationError):
+    except AITimeoutError, ContentModerationError:
         raise
     except Exception as exc:
         msg = f"Unexpected error during AI streaming: {exc!s}"

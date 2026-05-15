@@ -21,7 +21,11 @@ vi.mock('next-intl', () => ({
 vi.mock('next/image', () => ({
   default: ({ src, alt, ...rest }: { src: string; alt: string; [k: string]: unknown }) => (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={typeof src === 'string' ? src : ''} alt={alt} {...rest} />
+    <img
+      src={typeof src === 'string' ? src : ''}
+      alt={alt}
+      {...rest}
+    />
   ),
 }));
 
@@ -69,107 +73,71 @@ vi.mock('@tiptap/react', () => ({
 }));
 
 // Mock sub-components used by EditorToolbar that have their own heavy deps
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/UndoRedoGroup',
-  () => ({
-    UndoRedoGroup: () => <div data-testid="undo-redo-group" />,
-  }),
-);
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/TextFormatGroup',
-  () => ({
-    TextFormatGroup: () => <div data-testid="text-format-group" />,
-  }),
-);
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/HeadingDropdown',
-  () => ({
-    HeadingDropdown: () => <div data-testid="heading-dropdown" />,
-  }),
-);
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/CodeBlockLanguageDropdown',
-  () => ({
-    CodeBlockLanguageDropdown: () => <div data-testid="code-block-language-dropdown" />,
-  }),
-);
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/LinkToggle',
-  () => ({
-    LinkToggle: () => <div data-testid="link-toggle" />,
-  }),
-);
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/ListDropdown',
-  () => ({
-    ListDropdown: () => <div data-testid="list-dropdown" />,
-  }),
-);
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/TableDropdown',
-  () => ({
-    TableDropdown: () => <div data-testid="table-dropdown" />,
-  }),
-);
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/InsertButtons',
-  () => ({
-    InsertButtons: () => <div data-testid="insert-buttons" />,
-  }),
-);
+vi.mock('../../components/Objects/Editor/Toolbar/UndoRedoGroup', () => ({
+  UndoRedoGroup: () => <div data-testid="undo-redo-group" />,
+}));
+vi.mock('../../components/Objects/Editor/Toolbar/TextFormatGroup', () => ({
+  TextFormatGroup: () => <div data-testid="text-format-group" />,
+}));
+vi.mock('../../components/Objects/Editor/Toolbar/HeadingDropdown', () => ({
+  HeadingDropdown: () => <div data-testid="heading-dropdown" />,
+}));
+vi.mock('../../components/Objects/Editor/Toolbar/CodeBlockLanguageDropdown', () => ({
+  CodeBlockLanguageDropdown: () => <div data-testid="code-block-language-dropdown" />,
+}));
+vi.mock('../../components/Objects/Editor/Toolbar/LinkToggle', () => ({
+  LinkToggle: () => <div data-testid="link-toggle" />,
+}));
+vi.mock('../../components/Objects/Editor/Toolbar/ListDropdown', () => ({
+  ListDropdown: () => <div data-testid="list-dropdown" />,
+}));
+vi.mock('../../components/Objects/Editor/Toolbar/TableDropdown', () => ({
+  TableDropdown: () => <div data-testid="table-dropdown" />,
+}));
+vi.mock('../../components/Objects/Editor/Toolbar/InsertButtons', () => ({
+  InsertButtons: () => <div data-testid="insert-buttons" />,
+}));
 
 // Mock EmbedPanel sub-components to keep tests focused on accessibility
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/EmbedPanel/EmbedTypeSelector',
-  () => ({
-    EmbedTypeSelector: ({
-      onSelect,
-    }: {
-      selectedType: string | null;
-      onSelect: (t: string) => void;
-      error: string | null;
-    }) => (
-      <div data-testid="embed-type-selector">
-        <button type="button" onClick={() => onSelect('youtube')}>
-          Select YouTube
-        </button>
-      </div>
-    ),
-  }),
-);
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/EmbedPanel/YouTubeEmbedForm',
-  () => ({
-    YouTubeEmbedForm: () => <div data-testid="youtube-embed-form" />,
-  }),
-);
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/EmbedPanel/ExcalidrawEmbedForm',
-  () => ({
-    ExcalidrawEmbedForm: () => <div data-testid="excalidraw-embed-form" />,
-  }),
-);
-vi.mock(
-  '../../components/Objects/Editor/Toolbar/EmbedPanel/TldrawEmbedForm',
-  () => ({
-    TldrawEmbedForm: () => <div data-testid="tldraw-embed-form" />,
-  }),
-);
+vi.mock('../../components/Objects/Editor/Toolbar/EmbedPanel/EmbedTypeSelector', () => ({
+  EmbedTypeSelector: ({
+    onSelect,
+  }: {
+    selectedType: string | null;
+    onSelect: (t: string) => void;
+    error: string | null;
+  }) => (
+    <div data-testid="embed-type-selector">
+      <button
+        type="button"
+        onClick={() => onSelect('youtube')}
+      >
+        Select YouTube
+      </button>
+    </div>
+  ),
+}));
+vi.mock('../../components/Objects/Editor/Toolbar/EmbedPanel/YouTubeEmbedForm', () => ({
+  YouTubeEmbedForm: () => <div data-testid="youtube-embed-form" />,
+}));
+vi.mock('../../components/Objects/Editor/Toolbar/EmbedPanel/ExcalidrawEmbedForm', () => ({
+  ExcalidrawEmbedForm: () => <div data-testid="excalidraw-embed-form" />,
+}));
+vi.mock('../../components/Objects/Editor/Toolbar/EmbedPanel/TldrawEmbedForm', () => ({
+  TldrawEmbedForm: () => <div data-testid="tldraw-embed-form" />,
+}));
 
 // Mock embed validators
-vi.mock(
-  '../../components/Objects/Editor/Extensions/EmbedBlock/embed-validators',
-  () => ({
-    parseYouTubeUrl: (url: string) => (url.includes('youtube') ? 'dQw4w9WgXcQ' : null),
-    validateEmbedUrl: (_type: string, url: string) =>
-      url.trim() === '' ? 'errorEmpty' : url.includes('invalid') ? 'errorInvalid' : null,
-    normalizeEmbedUrl: (_type: string, url: string) => url.trim(),
-    validateExcalidrawUrl: (url: string) =>
-      url.trim() === '' ? 'errorEmpty' : url.includes('excalidraw.com') ? null : 'errorInvalid',
-    validateTldrawUrl: (url: string) =>
-      url.trim() === '' ? 'errorEmpty' : url.includes('tldraw.com') ? null : 'errorInvalid',
-  }),
-);
+vi.mock('../../components/Objects/Editor/Extensions/EmbedBlock/embed-validators', () => ({
+  parseYouTubeUrl: (url: string) => (url.includes('youtube') ? 'dQw4w9WgXcQ' : null),
+  validateEmbedUrl: (_type: string, url: string) =>
+    url.trim() === '' ? 'errorEmpty' : url.includes('invalid') ? 'errorInvalid' : null,
+  normalizeEmbedUrl: (_type: string, url: string) => url.trim(),
+  validateExcalidrawUrl: (url: string) =>
+    url.trim() === '' ? 'errorEmpty' : url.includes('excalidraw.com') ? null : 'errorInvalid',
+  validateTldrawUrl: (url: string) =>
+    url.trim() === '' ? 'errorEmpty' : url.includes('tldraw.com') ? null : 'errorInvalid',
+}));
 
 // ── Imports (after mocks) ─────────────────────────────────────────────────────
 

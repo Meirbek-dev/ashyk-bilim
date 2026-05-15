@@ -92,9 +92,13 @@ def _is_assessment_locked(assessment: Assessment, db_session: Session) -> bool:
         return False
     active_submission = db_session.exec(
         select(Submission)
-        .where(Submission.assessment_policy_id.in_(  # type: ignore[union-attr]
-            select(AssessmentPolicy.id).where(AssessmentPolicy.activity_id == assessment.activity_id)
-        ))
+        .where(
+            Submission.assessment_policy_id.in_(  # type: ignore[union-attr]
+                select(AssessmentPolicy.id).where(
+                    AssessmentPolicy.activity_id == assessment.activity_id
+                )
+            )
+        )
         .where(Submission.status != SubmissionStatus.DRAFT)
         .limit(1)
     ).first()

@@ -117,7 +117,9 @@ async def api_feedback_stream(
                 await redis.incr(conn_key)
                 await redis.expire(conn_key, 3600)  # auto-clean stale counter
             except Exception:
-                logger.warning("Failed to increment SSE connection counter", exc_info=True)
+                logger.warning(
+                    "Failed to increment SSE connection counter", exc_info=True
+                )
 
         try:
             # ── Replay missed events ──────────────────────────────────────────
@@ -189,4 +191,3 @@ async def api_feedback_stream(
             "X-Accel-Buffering": "no",
         },
     )
-

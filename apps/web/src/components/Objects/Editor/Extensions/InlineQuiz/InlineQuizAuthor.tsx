@@ -76,9 +76,7 @@ export default function InlineQuizAuthor({ assessmentUuid, onAssessmentCreated }
   // TODO: Render the standard NativeItemStudio in a modal/drawer
   return (
     <div className="border-primary/20 bg-primary/5 rounded-lg border p-4">
-      <p className="text-muted-foreground text-sm">
-        {t('itemEditorComingSoon', { assessmentUuid })}
-      </p>
+      <p className="text-muted-foreground text-sm">{t('itemEditorComingSoon', { assessmentUuid })}</p>
       <Button
         size="sm"
         variant="ghost"

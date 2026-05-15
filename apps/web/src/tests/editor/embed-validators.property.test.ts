@@ -30,11 +30,7 @@ const arbValidTldrawUrl = arbRoomId.map((roomId) => `https://tldraw.com/r/${room
  * Generates a valid tldraw share URL that already has a query string.
  */
 const arbValidTldrawUrlWithQuery = fc
-  .tuple(
-    arbRoomId,
-    fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9]{0,9}$/),
-    fc.stringMatching(/^[a-zA-Z0-9]{1,10}$/),
-  )
+  .tuple(arbRoomId, fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9]{0,9}$/), fc.stringMatching(/^[a-zA-Z0-9]{1,10}$/))
   .map(([roomId, key, value]) => `https://tldraw.com/r/${roomId}?${key}=${value}`);
 
 // ---------------------------------------------------------------------------
@@ -50,12 +46,9 @@ describe('Property 5: validateTldrawUrl returns correct error key for any string
 
   it('returns errorEmpty for any whitespace-only string', () => {
     fc.assert(
-      fc.property(
-        fc.string({ unit: fc.constantFrom(' ', '\t', '\n', '\r'), minLength: 1, maxLength: 20 }),
-        (url) => {
-          expect(validateTldrawUrl(url)).toBe('errorEmpty');
-        },
-      ),
+      fc.property(fc.string({ unit: fc.constantFrom(' ', '\t', '\n', '\r'), minLength: 1, maxLength: 20 }), (url) => {
+        expect(validateTldrawUrl(url)).toBe('errorEmpty');
+      }),
       { numRuns: 50 },
     );
   });
@@ -191,29 +184,21 @@ describe('Property 6: buildTldrawSrc appends ?embed=1 correctly for any valid tl
 
   it('src always equals url + ?embed=1 (no query) or url + &embed=1 (with query)', () => {
     fc.assert(
-      fc.property(
-        fc.oneof(arbValidTldrawUrl, arbValidTldrawUrlWithQuery),
-        (url) => {
-          const src = buildTldrawSrc(url);
-          const expected = url.includes('?')
-            ? `${url}&embed=1`
-            : `${url}?embed=1`;
-          expect(src).toBe(expected);
-        },
-      ),
+      fc.property(fc.oneof(arbValidTldrawUrl, arbValidTldrawUrlWithQuery), (url) => {
+        const src = buildTldrawSrc(url);
+        const expected = url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`;
+        expect(src).toBe(expected);
+      }),
       { numRuns: 200 },
     );
   });
 
   it('src always ends with embed=1', () => {
     fc.assert(
-      fc.property(
-        fc.oneof(arbValidTldrawUrl, arbValidTldrawUrlWithQuery),
-        (url) => {
-          const src = buildTldrawSrc(url);
-          expect(src.endsWith('embed=1')).toBe(true);
-        },
-      ),
+      fc.property(fc.oneof(arbValidTldrawUrl, arbValidTldrawUrlWithQuery), (url) => {
+        const src = buildTldrawSrc(url);
+        expect(src.endsWith('embed=1')).toBe(true);
+      }),
       { numRuns: 200 },
     );
   });

@@ -60,7 +60,9 @@ class XPAwardSubscriber:
                         )
                     ).first()
 
-                passing_score = float(policy.passing_score) if policy is not None else 60.0
+                passing_score = (
+                    float(policy.passing_score) if policy is not None else 60.0
+                )
                 if float(event.final_score) < passing_score:
                     return
 

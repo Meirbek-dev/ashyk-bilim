@@ -32,17 +32,13 @@ POLL_INTERVAL_SECONDS: int = 30
 
 async def assessment_timer_loop(settings: AppSettings) -> None:
     """Periodic loop that auto-submits timed-out DRAFT submissions."""
-    logger.info(
-        "Assessment timer started (poll interval: %ds)", POLL_INTERVAL_SECONDS
-    )
+    logger.info("Assessment timer started (poll interval: %ds)", POLL_INTERVAL_SECONDS)
     while True:
         await asyncio.sleep(POLL_INTERVAL_SECONDS)
         try:
             await asyncio.to_thread(_auto_submit_expired_drafts)
         except Exception:
-            logger.exception(
-                "Assessment timer tick failed; will retry next cycle"
-            )
+            logger.exception("Assessment timer tick failed; will retry next cycle")
 
 
 def _auto_submit_expired_drafts() -> int:

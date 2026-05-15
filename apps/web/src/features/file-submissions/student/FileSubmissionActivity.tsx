@@ -1,46 +1,34 @@
-"use client";
+'use client';
 
-import type { Dispatch, SetStateAction } from "react";
-import { useMemo, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  AlertCircle,
-  CalendarClock,
-  CheckCircle2,
-  FileArchive,
-  Loader2,
-  Paperclip,
-  Send,
-  Trash2,
-} from "lucide-react";
-import { toast } from "sonner";
+import type { Dispatch, SetStateAction } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, CalendarClock, CheckCircle2, FileArchive, Loader2, Paperclip, Send, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
-import type {
-  Activity,
-  CourseStructure,
-} from "@components/Contexts/CourseContext";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import type { Activity, CourseStructure } from '@components/Contexts/CourseContext';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   getFileSubmissionByActivity,
   saveFileSubmissionDraft,
   startFileSubmissionDraft,
   submitFileSubmission,
   uploadSubmissionFile,
-} from "@/features/file-submissions/services/file-submissions";
+} from '@/features/file-submissions/services/file-submissions';
 import type {
   FileSubmissionActivity as FileSubmissionActivityRead,
   FileSubmissionAttemptFile,
-} from "@/features/file-submissions/services/file-submissions";
-import { getFriendlyMimeName } from "@/lib/file-validation";
+} from '@/features/file-submissions/services/file-submissions';
+import { getFriendlyMimeName } from '@/lib/file-validation';
 
 interface FileSubmissionActivityProps {
   activity: Activity;
   course: CourseStructure;
 }
 
-type UploadState = "queued" | "uploading" | "saved" | "failed";
+type UploadState = 'queued' | 'uploading' | 'saved' | 'failed';
 
 interface PendingUpload {
   id: string;
@@ -50,13 +38,10 @@ interface PendingUpload {
   error?: string;
 }
 
-const queryKey = (activityUuid: string) =>
-  ["file-submission", "activity", activityUuid] as const;
+const queryKey = (activityUuid: string) => ['file-submission', 'activity', activityUuid] as const;
 
-export default function FileSubmissionActivity({
-  activity,
-}: FileSubmissionActivityProps) {
-  const activityUuid = activity.activity_uuid?.replace(/^activity_/, "") ?? "";
+export default function FileSubmissionActivity({ activity }: FileSubmissionActivityProps) {
+  const activityUuid = activity.activity_uuid?.replace(/^activity_/, '') ?? '';
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<PendingUpload[]>([]);
@@ -69,7 +54,7 @@ export default function FileSubmissionActivity({
 
   const saveMutation = useMutation({
     mutationFn: async ({ submit }: { submit: boolean }) => {
-      if (!data) throw new Error("File submission is unavailable");
+      if (!data) throw new Error('File submission is unavailable');
       const uploaded = await uploadPendingFiles(data, pending, setPending);
       const files = [
         ...(data.current_attempt?.files ?? []).map((file) => ({
@@ -83,34 +68,22 @@ export default function FileSubmissionActivity({
       ];
       const currentVersion = data.current_attempt?.version ?? null;
       return submit
-        ? await submitFileSubmission(
-            data.file_submission_uuid,
-            files,
-            currentVersion,
-          )
-        : await saveFileSubmissionDraft(
-            data.file_submission_uuid,
-            files,
-            currentVersion,
-          );
+        ? await submitFileSubmission(data.file_submission_uuid, files, currentVersion)
+        : await saveFileSubmissionDraft(data.file_submission_uuid, files, currentVersion);
     },
     onSuccess: async (_attempt, variables) => {
       setPending([]);
       await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) });
-      toast.success(variables.submit ? "Submission sent" : "Draft saved");
+      toast.success(variables.submit ? 'Submission sent' : 'Draft saved');
     },
     onError: (mutationError) => {
-      toast.error(
-        mutationError instanceof Error
-          ? mutationError.message
-          : "Unable to save submission",
-      );
+      toast.error(mutationError instanceof Error ? mutationError.message : 'Unable to save submission');
     },
   });
 
   const startMutation = useMutation({
     mutationFn: async () => {
-      if (!data) throw new Error("File submission is unavailable");
+      if (!data) throw new Error('File submission is unavailable');
       return await startFileSubmissionDraft(data.file_submission_uuid);
     },
     onSuccess: async () => {
@@ -118,25 +91,15 @@ export default function FileSubmissionActivity({
       inputRef.current?.click();
     },
     onError: (mutationError) => {
-      toast.error(
-        mutationError instanceof Error
-          ? mutationError.message
-          : "Unable to start draft",
-      );
+      toast.error(mutationError instanceof Error ? mutationError.message : 'Unable to start draft');
     },
   });
 
   const activeAttempt = data?.current_attempt ?? null;
   const attachedFiles = activeAttempt?.files ?? [];
   const totalSelected = attachedFiles.length + pending.length;
-  const canEdit =
-    !activeAttempt ||
-    activeAttempt.status === "DRAFT" ||
-    activeAttempt.status === "RETURNED";
-  const canSubmit =
-    canEdit &&
-    (attachedFiles.length > 0 || pending.length > 0) &&
-    !saveMutation.isPending;
+  const canEdit = !activeAttempt || activeAttempt.status === 'DRAFT' || activeAttempt.status === 'RETURNED';
+  const canSubmit = canEdit && (attachedFiles.length > 0 || pending.length > 0) && !saveMutation.isPending;
   const requirements = useMemo(() => buildRequirements(data), [data]);
 
   function addFiles(fileList: FileList | null) {
@@ -147,18 +110,14 @@ export default function FileSubmissionActivity({
     const rejected = nextFiles.slice(availableSlots);
     const invalid = accepted.filter((file) => !isAllowedFile(file, data));
     const valid = accepted.filter((file) => isAllowedFile(file, data));
-    if (rejected.length > 0)
-      toast.error(
-        `Maximum ${data.max_files} file${data.max_files === 1 ? "" : "s"} allowed`,
-      );
-    if (invalid.length > 0)
-      toast.error("Some files do not match this activity requirements");
+    if (rejected.length > 0) toast.error(`Maximum ${data.max_files} file${data.max_files === 1 ? '' : 's'} allowed`);
+    if (invalid.length > 0) toast.error('Some files do not match this activity requirements');
     setPending((rows) => [
       ...rows,
       ...valid.map((file) => ({
         id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
         file,
-        status: "queued" as UploadState,
+        status: 'queued' as UploadState,
       })),
     ]);
   }
@@ -185,22 +144,14 @@ export default function FileSubmissionActivity({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge
-              variant={data.lifecycle === "PUBLISHED" ? "default" : "secondary"}
-            >
+            <Badge variant={data.lifecycle === 'PUBLISHED' ? 'default' : 'secondary'}>
               {data.lifecycle.toLowerCase()}
             </Badge>
-            {activeAttempt ? (
-              <AttemptStatusBadge status={activeAttempt.status} />
-            ) : null}
-            {activeAttempt?.is_late ? (
-              <Badge variant="destructive">Late</Badge>
-            ) : null}
+            {activeAttempt ? <AttemptStatusBadge status={activeAttempt.status} /> : null}
+            {activeAttempt?.is_late ? <Badge variant="destructive">Late</Badge> : null}
           </div>
           <div className="prose prose-sm dark:prose-invert max-w-none">
-            <p className="whitespace-pre-wrap text-sm leading-6">
-              {data.instructions}
-            </p>
+            <p className="text-sm leading-6 whitespace-pre-wrap">{data.instructions}</p>
           </div>
         </div>
         <div className="border-border bg-muted/20 grid min-w-64 gap-2 rounded-md border p-4 text-sm">
@@ -225,8 +176,8 @@ export default function FileSubmissionActivity({
       {canEdit ? (
         <div
           className={cn(
-            "border-border bg-background hover:bg-muted/30 flex min-h-44 flex-col items-center justify-center rounded-md border border-dashed p-6 text-center transition-colors",
-            saveMutation.isPending && "pointer-events-none opacity-70",
+            'border-border bg-background hover:bg-muted/30 flex min-h-44 flex-col items-center justify-center rounded-md border border-dashed p-6 text-center transition-colors',
+            saveMutation.isPending && 'pointer-events-none opacity-70',
           )}
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
@@ -239,16 +190,12 @@ export default function FileSubmissionActivity({
             type="file"
             className="hidden"
             multiple={data.max_files > 1}
-            accept={data.allowed_mime_types.join(",") || undefined}
+            accept={data.allowed_mime_types.join(',') || undefined}
             onChange={(event) => addFiles(event.target.files)}
           />
           <FileArchive className="text-muted-foreground mb-3 size-8" />
-          <p className="text-sm font-medium">
-            Drop files here or choose from your device
-          </p>
-          <p className="text-muted-foreground mt-1 text-xs">
-            {requirements.join(" · ")}
-          </p>
+          <p className="text-sm font-medium">Drop files here or choose from your device</p>
+          <p className="text-muted-foreground mt-1 text-xs">{requirements.join(' · ')}</p>
           <Button
             className="mt-4"
             variant="outline"
@@ -256,61 +203,43 @@ export default function FileSubmissionActivity({
               if (activeAttempt) inputRef.current?.click();
               else startMutation.mutate();
             }}
-            disabled={
-              startMutation.isPending || totalSelected >= data.max_files
-            }
+            disabled={startMutation.isPending || totalSelected >= data.max_files}
           >
-            {startMutation.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Paperclip className="size-4" />
-            )}
+            {startMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
             Choose files
           </Button>
         </div>
       ) : (
         <div className="border-border bg-muted/30 rounded-md border p-4 text-sm">
-          Your latest attempt has been submitted. New files can be added if the
-          teacher returns it for revision.
+          Your latest attempt has been submitted. New files can be added if the teacher returns it for revision.
         </div>
       )}
 
       <FileList
         attachedFiles={attachedFiles}
         pending={pending}
-        onRemovePending={(id) =>
-          setPending((rows) => rows.filter((row) => row.id !== id))
-        }
+        onRemovePending={(id) => setPending((rows) => rows.filter((row) => row.id !== id))}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-muted-foreground flex items-center gap-2 text-xs">
           <AlertCircle className="size-3.5" />
-          Submit only final files. Saving a draft keeps files private until you
-          submit.
+          Submit only final files. Saving a draft keeps files private until you submit.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             onClick={() => saveMutation.mutate({ submit: false })}
-            disabled={
-              !canEdit || pending.length === 0 || saveMutation.isPending
-            }
+            disabled={!canEdit || pending.length === 0 || saveMutation.isPending}
           >
-            {saveMutation.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : null}
+            {saveMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
             Save draft
           </Button>
           <Button
             onClick={() => saveMutation.mutate({ submit: true })}
             disabled={!canSubmit}
           >
-            {saveMutation.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Send className="size-4" />
-            )}
+            {saveMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
             Submit files
           </Button>
         </div>
@@ -326,21 +255,14 @@ export default function FileSubmissionActivity({
                 className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm"
               >
                 <div>
-                  <p className="font-medium">
-                    Attempt {attempt.attempt_number}
-                  </p>
+                  <p className="font-medium">Attempt {attempt.attempt_number}</p>
                   <p className="text-muted-foreground text-xs">
-                    {attempt.submitted_at
-                      ? formatDate(attempt.submitted_at)
-                      : "Draft"}{" "}
-                    · {attempt.files.length} file
-                    {attempt.files.length === 1 ? "" : "s"}
+                    {attempt.submitted_at ? formatDate(attempt.submitted_at) : 'Draft'} · {attempt.files.length} file
+                    {attempt.files.length === 1 ? '' : 's'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {attempt.final_score != null ? (
-                    <Badge variant="outline">{attempt.final_score}%</Badge>
-                  ) : null}
+                  {attempt.final_score != null ? <Badge variant="outline">{attempt.final_score}%</Badge> : null}
                   <AttemptStatusBadge status={attempt.status} />
                 </div>
               </div>
@@ -427,30 +349,22 @@ async function uploadPendingFiles(
       continue;
     }
     setPending((rows) =>
-      rows.map((candidate) =>
-        candidate.id === row.id
-          ? { ...candidate, status: "uploading" }
-          : candidate,
-      ),
+      rows.map((candidate) => (candidate.id === row.id ? { ...candidate, status: 'uploading' } : candidate)),
     );
     try {
       const uploaded = await uploadSubmissionFile(row.file);
       const next = {
         ...row,
         upload_uuid: uploaded.upload_uuid,
-        status: "saved" as UploadState,
+        status: 'saved' as UploadState,
       };
-      setPending((rows) =>
-        rows.map((candidate) => (candidate.id === row.id ? next : candidate)),
-      );
+      setPending((rows) => rows.map((candidate) => (candidate.id === row.id ? next : candidate)));
       result.push(next);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Upload failed";
+      const message = error instanceof Error ? error.message : 'Upload failed';
       setPending((rows) =>
         rows.map((candidate) =>
-          candidate.id === row.id
-            ? { ...candidate, status: "failed", error: message }
-            : candidate,
+          candidate.id === row.id ? { ...candidate, status: 'failed', error: message } : candidate,
         ),
       );
       throw error;
@@ -460,52 +374,38 @@ async function uploadPendingFiles(
 }
 
 function isAllowedFile(file: File, data: FileSubmissionActivityRead): boolean {
-  if (data.max_file_size_mb && file.size > data.max_file_size_mb * 1024 * 1024)
-    return false;
+  if (data.max_file_size_mb && file.size > data.max_file_size_mb * 1024 * 1024) return false;
   if (data.allowed_mime_types.length === 0) return true;
   return data.allowed_mime_types.some((mime) => {
-    if (mime.endsWith("/*")) return file.type.startsWith(mime.slice(0, -1));
+    if (mime.endsWith('/*')) return file.type.startsWith(mime.slice(0, -1));
     return file.type === mime;
   });
 }
 
 function buildRequirements(data?: FileSubmissionActivityRead): string[] {
   if (!data) return [];
-  const requirements = [
-    `Up to ${data.max_files} file${data.max_files === 1 ? "" : "s"}`,
-  ];
-  if (data.max_file_size_mb)
-    requirements.push(`${data.max_file_size_mb} MB each`);
+  const requirements = [`Up to ${data.max_files} file${data.max_files === 1 ? '' : 's'}`];
+  if (data.max_file_size_mb) requirements.push(`${data.max_file_size_mb} MB each`);
   if (data.allowed_mime_types.length > 0)
-    requirements.push(
-      data.allowed_mime_types.map(getFriendlyMimeName).join(", "),
-    );
+    requirements.push(data.allowed_mime_types.map(getFriendlyMimeName).join(', '));
   return requirements;
 }
 
 function AttemptStatusBadge({ status }: { status: string }) {
-  const variant =
-    status === "SUBMITTED"
-      ? "default"
-      : status === "RETURNED"
-        ? "destructive"
-        : "secondary";
+  const variant = status === 'SUBMITTED' ? 'default' : status === 'RETURNED' ? 'destructive' : 'secondary';
   return <Badge variant={variant}>{status.toLowerCase()}</Badge>;
 }
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
+    dateStyle: 'medium',
+    timeStyle: 'short',
   }).format(new Date(value));
 }
 
 function formatBytes(bytes: number) {
-  if (!bytes) return "0 B";
-  const units = ["B", "KB", "MB", "GB"];
-  const index = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    units.length - 1,
-  );
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   return `${(bytes / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
 }

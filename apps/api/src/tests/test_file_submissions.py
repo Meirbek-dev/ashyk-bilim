@@ -374,7 +374,7 @@ def test_submit_when_returned_and_max_attempts_reached(
 
     response = client.post(
         f"/file-submissions/{file_submission_uuid}/submit",
-        json={"files": [{"upload_uuid": "upload_1", "display_name": "test.txt"}]}
+        json={"files": [{"upload_uuid": "upload_1", "display_name": "test.txt"}]},
     )
 
     if response.status_code != 200:
@@ -382,4 +382,3 @@ def test_submit_when_returned_and_max_attempts_reached(
 
     assert response.status_code == 200
     assert response.json()["status"] == "SUBMITTED"
-

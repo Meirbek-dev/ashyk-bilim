@@ -289,7 +289,9 @@ def _seed_assessment(
             lifecycle=lifecycle,
             scheduled_at=None,
             published_at=(
-                datetime.now(UTC) if lifecycle == AssessmentLifecycle.PUBLISHED else None
+                datetime.now(UTC)
+                if lifecycle == AssessmentLifecycle.PUBLISHED
+                else None
             ),
             archived_at=None,
             weight=1.0,

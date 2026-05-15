@@ -48,9 +48,7 @@ def upgrade() -> None:
             continue
 
         conn.execute(
-            table.update()
-            .where(table.c.id == row.id)
-            .values(body_json=cleaned)
+            table.update().where(table.c.id == row.id).values(body_json=cleaned)
         )
 
 

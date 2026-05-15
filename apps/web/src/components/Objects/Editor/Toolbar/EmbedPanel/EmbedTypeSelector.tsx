@@ -4,10 +4,7 @@ import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
-import {
-  EMBED_CATEGORIES,
-  EMBED_PROVIDERS,
-} from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
+import { EMBED_CATEGORIES, EMBED_PROVIDERS } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
 import type { EmbedCategoryId, EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
 
 interface EmbedTypeSelectorProps {

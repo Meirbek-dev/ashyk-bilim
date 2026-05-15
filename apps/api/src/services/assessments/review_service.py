@@ -64,7 +64,10 @@ def _validate_policy_override_ceilings(
             "ceiling": _MAX_ATTEMPTS_CEILING,
             "provided": max_attempts,
         })
-    if time_limit_override_seconds is not None and time_limit_override_seconds > _MAX_TIME_LIMIT_SECONDS:
+    if (
+        time_limit_override_seconds is not None
+        and time_limit_override_seconds > _MAX_TIME_LIMIT_SECONDS
+    ):
         errors.append({
             "field": "time_limit_override_seconds",
             "code": "EXCEEDS_CEILING",
@@ -162,7 +165,6 @@ async def get_assessment_submissions(
     )
 
 
-
 async def get_assessment_submission_stats(
     assessment_uuid: str,
     current_user: PublicUser,
@@ -225,7 +227,6 @@ async def get_assessment_submission_stats(
     )
 
 
-
 async def get_assessment_submission(
     assessment_uuid: str,
     submission_uuid: str,
@@ -254,7 +255,6 @@ async def get_assessment_submission(
     if user is not None:
         result.user = _submission_user(user)
     return result
-
 
 
 async def save_assessment_grade(
@@ -292,7 +292,6 @@ async def save_assessment_grade(
     return _build_teacher_submission_read(refreshed, assessment, db_session)
 
 
-
 async def publish_assessment_grades(
     assessment_uuid: str,
     current_user: PublicUser,
@@ -302,7 +301,6 @@ async def publish_assessment_grades(
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_grade(current_user, course, db_session)
     return await bulk_publish_grades(activity.id, current_user, db_session)
-
 
 
 def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
@@ -388,7 +386,6 @@ async def list_student_policy_overrides(
     return [_build_override_read(o) for o in overrides]
 
 
-
 async def create_student_policy_override(
     assessment_uuid: str,
     payload: StudentPolicyOverrideCreate,
@@ -402,7 +399,9 @@ async def create_student_policy_override(
     if policy is None or policy.id is None:
         raise HTTPException(status_code=404, detail="Политика оценивания не найдена")
 
-    _validate_policy_override_ceilings(payload.max_attempts_override, payload.time_limit_override_seconds)
+    _validate_policy_override_ceilings(
+        payload.max_attempts_override, payload.time_limit_override_seconds
+    )
 
     existing = db_session.exec(
         select(StudentPolicyOverride).where(
@@ -430,7 +429,6 @@ async def create_student_policy_override(
     db_session.commit()
     db_session.refresh(override)
     return _build_override_read(override)
-
 
 
 async def update_student_policy_override(
@@ -468,7 +466,6 @@ async def update_student_policy_override(
     db_session.commit()
     db_session.refresh(override)
     return _build_override_read(override)
-
 
 
 async def delete_student_policy_override(
