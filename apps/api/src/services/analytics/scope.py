@@ -159,7 +159,7 @@ def resolve_course_id_for_assessment(
     assessment_type: str,
     assessment_id: int,
 ) -> int | None:
-    if assessment_type in {"assignment", "exam"}:
+    if assessment_type in {"manual_assessment", "exam"}:
         row = db_session.exec(
             select(Assessment, Activity)
             .join(Activity, Activity.id == Assessment.activity_id)

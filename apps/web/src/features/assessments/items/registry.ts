@@ -8,7 +8,6 @@ export type ItemKind =
   | 'TRUE_FALSE'
   | 'MATCHING'
   | 'OPEN_TEXT'
-  | 'FILE_UPLOAD'
   | 'FORM'
   | 'CODE';
 
@@ -85,7 +84,6 @@ export function UnsupportedItemReview({ answer }: ItemReviewDetailProps): ReactN
 }
 
 import './choice';
-import './file-upload';
 import './form';
 import './matching';
 import './open-text';

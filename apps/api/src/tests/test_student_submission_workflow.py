@@ -264,7 +264,7 @@ def _seed_assessment(
         policy = AssessmentPolicy(
             policy_uuid="policy_submit",
             activity_id=activity.id,
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             grading_mode=grading_mode,
             grade_release_mode=grade_release_mode,
             completion_rule=AssessmentCompletionRule.GRADED,
@@ -283,7 +283,7 @@ def _seed_assessment(
         assessment = Assessment(
             assessment_uuid="assessment_submit",
             activity_id=activity.id,
-            kind=AssessmentType.ASSIGNMENT,
+            kind=AssessmentType.EXAM,
             title="Submit Assessment",
             description="",
             lifecycle=lifecycle,
@@ -396,7 +396,7 @@ def test_start_blocked_when_max_attempts_exhausted(
         session.add(
             Submission(
                 submission_uuid="submission_exhausted_1",
-                assessment_type=AssessmentType.ASSIGNMENT,
+                assessment_type=AssessmentType.EXAM,
                 activity_id=activity_id,
                 user_id=student_user.id,
                 status=SubmissionStatus.GRADED,
@@ -438,7 +438,7 @@ def test_get_my_submissions_returns_own_submissions(
         session.add(
             Submission(
                 submission_uuid="submission_own_1",
-                assessment_type=AssessmentType.ASSIGNMENT,
+                assessment_type=AssessmentType.EXAM,
                 activity_id=activity_id,
                 user_id=student_user.id,
                 status=SubmissionStatus.GRADED,
@@ -456,7 +456,7 @@ def test_get_my_submissions_returns_own_submissions(
         session.add(
             Submission(
                 submission_uuid="submission_other_1",
-                assessment_type=AssessmentType.ASSIGNMENT,
+                assessment_type=AssessmentType.EXAM,
                 activity_id=activity_id,
                 user_id=other_user_id,
                 status=SubmissionStatus.GRADED,
@@ -497,7 +497,7 @@ def test_get_my_submissions_masks_score_when_batch_mode_unpublished(
     with db_session_factory() as session:
         sub = Submission(
             submission_uuid="submission_batch_hidden",
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             activity_id=activity_id,
             user_id=student_user.id,
             status=SubmissionStatus.GRADED,
@@ -558,7 +558,7 @@ def test_get_my_submissions_shows_score_after_immediate_publish(
     with db_session_factory() as session:
         sub = Submission(
             submission_uuid="submission_immediate_visible",
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             activity_id=activity_id,
             user_id=student_user.id,
             status=SubmissionStatus.PUBLISHED,
@@ -637,7 +637,7 @@ def test_resubmission_draft_created_from_returned(
     with db_session_factory() as session:
         returned_sub = Submission(
             submission_uuid="submission_returned_1",
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             activity_id=activity_id,
             user_id=student_user.id,
             status=SubmissionStatus.RETURNED,
@@ -674,7 +674,7 @@ def test_attempt_limit_prevents_resubmission(
     with db_session_factory() as session:
         returned_sub = Submission(
             submission_uuid="submission_returned_limit",
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             activity_id=activity_id,
             user_id=student_user.id,
             status=SubmissionStatus.RETURNED,

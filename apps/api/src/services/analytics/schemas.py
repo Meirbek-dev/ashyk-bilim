@@ -98,7 +98,7 @@ class GradingBacklogItem(PydanticStrictBaseModel):
     course_id: int
     course_name: str
     assessment_id: int
-    assessment_type: Literal["assignment"]
+    assessment_type: Literal["manual_assessment"]
     title: str
     awaiting_review: int
     oldest_submitted_at: str | None = None
@@ -112,7 +112,7 @@ class TeacherWorkloadSummary(PydanticStrictBaseModel):
     median_feedback_latency_hours: float | None = None
     aging_buckets: WorkloadAgingBuckets
     forecast_backlog_7d: int = 0
-    backlog_by_assignment: list[GradingBacklogItem]
+    backlog_by_manual_assessment: list[GradingBacklogItem]
 
 
 class InsightFeedItem(PydanticStrictBaseModel):
@@ -449,7 +449,7 @@ class ContentHealthRow(PydanticStrictBaseModel):
 
 
 class AssessmentOutlierRow(PydanticStrictBaseModel):
-    assessment_type: Literal["assignment", "quiz", "exam", "code_challenge"]
+    assessment_type: Literal["manual_assessment", "quiz", "exam", "code_challenge"]
     assessment_id: int
     activity_id: int | None = None
     course_id: int
@@ -644,7 +644,7 @@ class TeacherAssessmentDetailSummary(PydanticStrictBaseModel):
 
 class TeacherAssessmentDetailResponse(PydanticStrictBaseModel):
     generated_at: str
-    assessment_type: Literal["assignment", "quiz", "exam", "code_challenge"]
+    assessment_type: Literal["manual_assessment", "quiz", "exam", "code_challenge"]
     assessment_id: int
     course_id: int
     title: str

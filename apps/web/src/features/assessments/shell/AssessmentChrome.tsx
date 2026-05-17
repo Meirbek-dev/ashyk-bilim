@@ -14,7 +14,7 @@ import type { SubmissionStatus } from '@/features/assessments/domain/submission-
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 export interface AssessmentChromeProps {
-  /** Assessment kind label shown above the title (e.g. "Assignment", "Exam"). */
+  /** Assessment kind label shown above the title (e.g. "Exam"). */
   kindLabel: string;
   title: string;
   description?: string | null;

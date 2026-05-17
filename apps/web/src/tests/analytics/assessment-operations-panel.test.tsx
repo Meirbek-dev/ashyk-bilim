@@ -27,7 +27,7 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
   return {
     course_id: overrides.course_id ?? 1,
     generated_at: '2026-05-05T12:00:00Z',
-    assessment_type: 'assignment',
+    assessment_type: 'manual_assessment',
     assessment_id: 42,
     title: 'Operational analytics',
     summary: {
@@ -58,7 +58,7 @@ function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}):
       stale_backlog: 2,
       suspicious_attempts: 1,
       missing_scores: 4,
-      note: 'Assignments use canonical submission states and grading ledger history.',
+      note: 'ManualAssessments use canonical submission states and grading ledger history.',
     },
     audit_history: [
       {
@@ -154,7 +154,7 @@ describe('AssessmentOperationsPanel', () => {
 
     expect(screen.getByText('pages.assessmentOpsTitle')).toBeInTheDocument();
     expect(
-      screen.getByText('Assignments use canonical submission states and grading ledger history.'),
+      screen.getByText('ManualAssessments use canonical submission states and grading ledger history.'),
     ).toBeInTheDocument();
     expect(screen.getByText('Backlog is approaching the release target for manual grading.')).toBeInTheDocument();
     expect(
@@ -181,7 +181,7 @@ describe('AssessmentOperationsPanel', () => {
             canonical_row_count: 18,
             cutover_ready: true,
             compatibility_mode: 'canonical',
-            note: 'Assignments are reading only canonical submission rows.',
+            note: 'ManualAssessments are reading only canonical submission rows.',
           },
           slo: {
             status: 'healthy',
@@ -210,7 +210,7 @@ describe('AssessmentOperationsPanel', () => {
     );
 
     expect(screen.getByText('pages.assessmentOpsAuditEmpty')).toBeInTheDocument();
-    expect(screen.getByText('Assignments are reading only canonical submission rows.')).toBeInTheDocument();
+    expect(screen.getByText('ManualAssessments are reading only canonical submission rows.')).toBeInTheDocument();
     expect(screen.getByText('Current grading latency is within target.')).toBeInTheDocument();
     expect(screen.getByText('Support diagnostics are within the current operational envelope.')).toBeInTheDocument();
     expect(screen.getByText('pages.assessmentSupportAlertsEmpty')).toBeInTheDocument();

@@ -22,13 +22,13 @@ interface AssessmentReviewWorkspaceProps {
 
 interface AssessmentReviewDetail {
   assessment_uuid: string;
-  kind: 'ASSIGNMENT' | 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
+  kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
   review_projection?: {
     assessment_uuid: string;
     activity_id: number;
     activity_uuid: string;
     title: string;
-    kind: 'ASSIGNMENT' | 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
+    kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
     default_filter?: 'ALL' | 'NEEDS_GRADING' | 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED';
   } | null;
 }

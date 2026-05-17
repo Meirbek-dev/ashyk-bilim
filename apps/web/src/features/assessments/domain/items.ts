@@ -1,4 +1,4 @@
-export type UnifiedItemKind = 'CHOICE' | 'OPEN_TEXT' | 'FILE_UPLOAD' | 'FORM' | 'CODE' | 'MATCHING';
+export type UnifiedItemKind = 'CHOICE' | 'OPEN_TEXT' | 'FORM' | 'CODE' | 'MATCHING';
 
 export interface ChoiceOption {
   id: string;
@@ -37,7 +37,6 @@ export type ItemBody =
       explanation?: string | null;
     }
   | { kind: 'OPEN_TEXT'; prompt: string; min_words?: number | null; rubric?: string | null }
-  | { kind: 'FILE_UPLOAD'; prompt: string; max_files: number; max_mb?: number | null; mimes: string[] }
   | { kind: 'FORM'; prompt: string; fields: FormField[] }
   | {
       kind: 'CODE';
@@ -53,7 +52,6 @@ export type ItemBody =
 export type ItemAnswer =
   | { kind: 'CHOICE'; selected: string[] }
   | { kind: 'OPEN_TEXT'; text: string }
-  | { kind: 'FILE_UPLOAD'; uploads: { upload_uuid: string; filename?: string }[] }
   | { kind: 'FORM'; values: Record<string, string> }
   | { kind: 'CODE'; language: number; source: string; latest_run?: { passed: number; total: number; score?: number } }
   | { kind: 'MATCHING'; matches: MatchPair[] };
@@ -78,9 +76,6 @@ export function isAnswered(answer: ItemAnswer | null | undefined): boolean {
     }
     case 'OPEN_TEXT': {
       return answer.text.trim().length > 0;
-    }
-    case 'FILE_UPLOAD': {
-      return answer.uploads.length > 0;
     }
     case 'FORM': {
       return Object.values(answer.values).some((value) => value.trim().length > 0);

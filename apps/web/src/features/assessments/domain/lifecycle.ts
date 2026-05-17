@@ -1,9 +1,9 @@
 /**
  * AssessmentLifecycle — unified authoring lifecycle that applies to every
- * assessable activity type (assignments, exams, code challenges, quizzes).
+ * assessable activity type (exams, code challenges, quizzes).
  *
  * Supersedes:
- *   - AssignmentStatus (DRAFT/SCHEDULED/PUBLISHED/ARCHIVED) — already this shape
+ *   - Assessment lifecycle state (DRAFT/SCHEDULED/PUBLISHED/ARCHIVED)
  *   - Exam.published: boolean — must migrate to this enum
  *   - Code-challenge (no lifecycle today) — starts at DRAFT
  */

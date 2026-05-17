@@ -21,9 +21,9 @@ from src.services.analytics.interventions import summarize_interventions
 from src.services.analytics.quality import build_data_quality
 from src.services.analytics.queries import (
     ActivityEvent,
-    assignment_graded_at,
-    assignment_is_graded,
-    assignment_is_reviewable,
+    manual_assessment_graded_at,
+    manual_assessment_is_graded,
+    manual_assessment_is_reviewable,
     build_activity_events,
     build_series,
     cohort_user_ids,
@@ -208,7 +208,7 @@ def _teacher_rollup_id(scope: TeacherAnalyticsScope, filters: AnalyticsFilters) 
 def _build_grading_slo_alerts(workload) -> list[AlertItem]:
     alerts: list[AlertItem] = []
     breached_rows = [
-        row for row in workload.backlog_by_assignment if row.sla_breaches > 0
+        row for row in workload.backlog_by_manual_assessment if row.sla_breaches > 0
     ]
 
     for row in breached_rows[:3]:
@@ -239,7 +239,7 @@ def _build_grading_slo_alerts(workload) -> list[AlertItem]:
         return alerts
 
     leading_backlog = (
-        workload.backlog_by_assignment[0] if workload.backlog_by_assignment else None
+        workload.backlog_by_manual_assessment[0] if workload.backlog_by_manual_assessment else None
     )
     if (
         leading_backlog is not None
@@ -352,8 +352,8 @@ def get_teacher_overview(
     )
     ungraded_submissions = sum(
         1
-        for submission, _assignment in context.assignment_submissions
-        if assignment_is_reviewable(submission)
+        for submission, _manual_assessment in context.manual_assessment_submissions
+        if manual_assessment_is_reviewable(submission)
         and (allowed_user_ids is None or submission.user_id in allowed_user_ids)
     )
 
@@ -427,23 +427,23 @@ def get_teacher_overview(
     submission_events = [
         event
         for event in events
-        if event.source in {"assignment", "quiz", "exam", "code_challenge"}
+        if event.source in {"manual_assessment", "quiz", "exam", "code_challenge"}
     ]
     grading_events = []
-    for submission, assignment in context.assignment_submissions:
+    for submission, manual_assessment in context.manual_assessment_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
-        if not assignment_is_graded(submission):
+        if not manual_assessment_is_graded(submission):
             continue
-        ts = parse_timestamp(assignment_graded_at(submission))
+        ts = parse_timestamp(manual_assessment_graded_at(submission))
         if ts is None:
             continue
         grading_events.append(
             ActivityEvent(
                 user_id=submission.user_id,
-                course_id=assignment.course_id,
+                course_id=manual_assessment.course_id,
                 ts=ts,
-                source="graded_assignment",
+                source="graded_manual_assessment",
             )
         )
 

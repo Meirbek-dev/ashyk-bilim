@@ -38,12 +38,6 @@ const xpSourceThemes: Record<string, XPSourceTheme> = {
     bgColor: colors.xpBg.quiz,
     label: 'Quiz Completed',
   },
-  assignment_submission: {
-    icon: Trophy,
-    color: colors.xp.assignment,
-    bgColor: colors.xpBg.assignment,
-    label: 'Assignment Submitted',
-  },
   streak_bonus: {
     icon: TrendingUp,
     color: colors.xp.streak,

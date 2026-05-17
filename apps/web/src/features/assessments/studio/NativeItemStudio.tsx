@@ -6,7 +6,6 @@ import {
   CalendarClock,
   CheckCircle2,
   Copy,
-  FileUp,
   GitCompareArrows,
   ListTodo,
   LoaderCircle,
@@ -36,8 +35,6 @@ import {
 import type { ValidationIssue } from '@/features/assessments/domain/view-models';
 import { ChoiceItemAuthor } from '@/features/assessments/items/choice';
 import type { ChoiceAuthorValue } from '@/features/assessments/items/choice';
-import { FileUploadConstraintsEditor } from '@/features/assessments/items/file-upload';
-import type { FileUploadConstraints } from '@/features/assessments/items/file-upload';
 import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge';
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge';
 import ErrorUI from '@/components/Objects/Elements/Error/Error';
@@ -52,7 +49,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>;
-type StudioMode = 'assignment' | 'exam';
+type StudioMode = 'exam';
 
 interface AssessmentPolicyDetail {
   due_at?: string | null;
@@ -67,7 +64,7 @@ interface AssessmentStudioDetail {
   assessment_uuid: string;
   activity_uuid: string;
   course_uuid?: string | null;
-  kind: 'ASSIGNMENT' | 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
+  kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
   title: string;
   description: string;
   lifecycle: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
@@ -97,7 +94,6 @@ const AssessmentStudioContext = createContext<AssessmentStudioContextValue | nul
 const KIND_ICONS: Record<SupportedStudioItemKind, typeof ListTodo> = {
   CHOICE: ListTodo,
   OPEN_TEXT: BookOpen,
-  FILE_UPLOAD: FileUp,
   FORM: TextCursorInput,
   MATCHING: GitCompareArrows,
 };
@@ -213,7 +209,6 @@ export function NativeItemOutline({
   const kindLabels: Record<SupportedStudioItemKind, string> = {
     CHOICE: t('kindLabels.choice'),
     OPEN_TEXT: t('kindLabels.openText'),
-    FILE_UPLOAD: t('kindLabels.fileUpload'),
     FORM: t('kindLabels.form'),
     MATCHING: t('kindLabels.matching'),
   };
@@ -380,7 +375,6 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey }: NativeItemAuth
   const kindLabels: Record<SupportedStudioItemKind, string> = {
     CHOICE: t('kindLabels.choice'),
     OPEN_TEXT: t('kindLabels.openText'),
-    FILE_UPLOAD: t('kindLabels.fileUpload'),
     FORM: t('kindLabels.form'),
     MATCHING: t('kindLabels.matching'),
   };
@@ -578,7 +572,7 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey }: NativeItemAuth
 
       <EditorSection
         title={t('assessmentDetailsTitle')}
-        description={t(mode === 'exam' ? 'assessmentDetailsExamDescription' : 'assessmentDetailsAssignmentDescription')}
+        description={t('assessmentDetailsExamDescription')}
         actions={<SaveStateBadge state={assessmentSaveState} />}
       >
         <AssessmentMetadataForm
@@ -738,7 +732,7 @@ function StudioOverviewPanel({
               {readyForPublish ? <CheckCircle2 className="size-3" /> : <AlertTriangle className="size-3" />}
               {readyForPublish ? t('readyToPublish') : t('needsWork')}
             </Badge>
-            <Badge variant="outline">{mode === 'exam' ? t('examPolicyTitle') : t('gradingModeLabel')}</Badge>
+            <Badge variant="outline">{t('examPolicyTitle')}</Badge>
           </div>
           <h2 className="mt-3 text-lg font-semibold">{t('workflowTitle', { itemNoun: itemNoun.toLowerCase() })}</h2>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">{t('workflowDescription')}</p>
@@ -903,7 +897,7 @@ function AssessmentMetadataForm({
         />
       </div>
 
-      <div className={cn('grid gap-4', mode === 'assignment' ? 'md:grid-cols-[1fr_12rem]' : 'md:grid-cols-2')}>
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="assessment-due-at">{t('dueDateLabel')}</Label>
           <Input
@@ -917,27 +911,9 @@ function AssessmentMetadataForm({
           />
         </div>
 
-        {mode === 'assignment' ? (
-          <div className="space-y-2">
-            <Label htmlFor="assessment-grading-type">{t('gradingModeLabel')}</Label>
-            <NativeSelect
-              id="assessment-grading-type"
-              value={state.gradingType}
-              disabled={disabled}
-              className="w-full"
-              onChange={(event) =>
-                onChange({ ...state, gradingType: event.target.value as AssessmentEditorState['gradingType'] })
-              }
-            >
-              <NativeSelectOption value="NUMERIC">{t('gradingModeNumeric')}</NativeSelectOption>
-              <NativeSelectOption value="PERCENTAGE">{t('gradingModePercentage')}</NativeSelectOption>
-            </NativeSelect>
-          </div>
-        ) : null}
       </div>
 
-      {mode === 'exam' ? (
-        <>
+      <>
           <div className="rounded-lg border p-4">
             <div className="mb-4 flex items-center gap-2">
               <ShieldAlert className="size-4" />
@@ -1030,8 +1006,7 @@ function AssessmentMetadataForm({
               onChange={(checked) => onChange({ ...state, showCorrectAnswers: checked })}
             />
           </div>
-        </>
-      ) : null}
+      </>
 
       {issues.length > 0 ? <InlineIssueList issues={issues} /> : null}
     </div>
@@ -1156,51 +1131,6 @@ function NativeItemBodyEditor({
           </div>
         </div>
         {issues.length > 0 ? <InlineIssueList issues={issues} /> : null}
-      </div>
-    );
-  }
-
-  if (item.body.kind === 'FILE_UPLOAD') {
-    const { body } = item;
-    const constraints: FileUploadConstraints = {
-      kind: 'FILE_UPLOAD',
-      allowed_mime_types: body.mimes,
-      max_file_size_mb: body.max_mb ?? null,
-      max_files: body.max_files,
-    };
-
-    return (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="file-upload-prompt">{t('Items.FileUpload.prompt')}</Label>
-          <Textarea
-            id="file-upload-prompt"
-            value={body.prompt}
-            disabled={disabled}
-            className="min-h-24"
-            aria-invalid={hasIssue('file.prompt_missing')}
-            onChange={(event) =>
-              onChange({ ...item, body: { ...body, kind: 'FILE_UPLOAD', prompt: event.target.value } })
-            }
-          />
-        </div>
-        {issues.length > 0 ? <InlineIssueList issues={issues} /> : null}
-        <FileUploadConstraintsEditor
-          value={constraints}
-          disabled={disabled}
-          onChange={(nextConstraints) =>
-            onChange({
-              ...item,
-              body: {
-                ...body,
-                kind: 'FILE_UPLOAD',
-                max_files: nextConstraints.max_files,
-                max_mb: nextConstraints.max_file_size_mb ?? null,
-                mimes: nextConstraints.allowed_mime_types,
-              },
-            })
-          }
-        />
       </div>
     );
   }
@@ -1381,21 +1311,6 @@ function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTitle: st
     };
   }
 
-  if (kind === 'FILE_UPLOAD') {
-    return {
-      kind,
-      title: defaultTitle,
-      max_score: 1,
-      body: {
-        kind,
-        prompt: '',
-        max_files: 1,
-        max_mb: null,
-        mimes: [],
-      },
-    };
-  }
-
   if (kind === 'FORM') {
     return {
       kind,
@@ -1428,12 +1343,6 @@ function buildAssessmentPatch(mode: StudioMode, assessment: AssessmentStudioDeta
     title: state.title,
     description: state.description,
   };
-
-  if (mode === 'assignment') {
-    payload.grading_type = state.gradingType;
-    payload.policy = { due_at: dueAt };
-    return payload;
-  }
 
   const settings = normalizeRecord(assessment.assessment_policy?.settings_json);
   payload.policy = {

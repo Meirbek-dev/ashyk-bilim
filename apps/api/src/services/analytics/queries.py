@@ -80,8 +80,8 @@ class AnalyticsContext:
     activity_progress: list[ActivityProgress]
     course_progress: list[CourseProgress]
     certificates: list[tuple[CertificateUser, Certifications]]
-    assignments: list[AssessmentAnalyticsRow]
-    assignment_submissions: list[tuple[Submission, AssessmentAnalyticsRow]]
+    manual_assessments: list[AssessmentAnalyticsRow]
+    manual_assessment_submissions: list[tuple[Submission, AssessmentAnalyticsRow]]
     exams: list[AssessmentAnalyticsRow]
     exam_attempts: list[tuple[Submission, AssessmentAnalyticsRow]]
     quiz_submissions: list[tuple[Submission, Activity]]
@@ -222,34 +222,34 @@ def enum_value(value: object) -> str:
     return str(getattr(value, "value", value))
 
 
-def assignment_submission_status(submission: Submission) -> str:
+def manual_assessment_submission_status(submission: Submission) -> str:
     return enum_value(submission.status)
 
 
-def assignment_is_reviewable(submission: Submission) -> bool:
-    return assignment_submission_status(submission) == SubmissionStatus.PENDING.value
+def manual_assessment_is_reviewable(submission: Submission) -> bool:
+    return manual_assessment_submission_status(submission) == SubmissionStatus.PENDING.value
 
 
-def assignment_is_graded(submission: Submission) -> bool:
-    return assignment_submission_status(submission) in {
+def manual_assessment_is_graded(submission: Submission) -> bool:
+    return manual_assessment_submission_status(submission) in {
         SubmissionStatus.GRADED.value,
         SubmissionStatus.PUBLISHED.value,
     }
 
 
-def assignment_score(submission: Submission) -> float | None:
+def manual_assessment_score(submission: Submission) -> float | None:
     score = submission.final_score
-    if score is None and assignment_is_graded(submission):
+    if score is None and manual_assessment_is_graded(submission):
         score = submission.auto_score
     return float(score) if score is not None else None
 
 
-def assignment_submitted_at(submission: Submission) -> object:
+def manual_assessment_submitted_at(submission: Submission) -> object:
     return submission.submitted_at or submission.updated_at or submission.created_at
 
 
-def assignment_graded_at(submission: Submission) -> object | None:
-    if not assignment_is_graded(submission):
+def manual_assessment_graded_at(submission: Submission) -> object | None:
+    if not manual_assessment_is_graded(submission):
         return None
     return submission.graded_at or submission.updated_at
 
@@ -381,8 +381,8 @@ def load_analytics_context(
             activity_progress=[],
             course_progress=[],
             certificates=[],
-            assignments=[],
-            assignment_submissions=[],
+            manual_assessments=[],
+            manual_assessment_submissions=[],
             exams=[],
             exam_attempts=[],
             quiz_submissions=[],
@@ -475,35 +475,9 @@ def load_analytics_context(
     ]
     assessments_by_activity = {row.activity_id: row for row in analytics_assessments}
 
-    assignments = [
-        row
-        for row in analytics_assessments
-        if any(
-            assessment.activity_id == row.activity_id
-            and str(assessment.kind) == AssessmentType.ASSIGNMENT.value
-            for assessment, _activity in assessment_rows
-        )
-    ]
-    assignment_activity_ids = [row.activity_id for row in assignments]
-    assignment_submissions: list[tuple[Submission, AssessmentAnalyticsRow]] = []
-    if assignment_activity_ids:
-        submission_stmt = (
-            select(Submission)
-            .where(Submission.activity_id.in_(assignment_activity_ids))
-            .where(Submission.assessment_type == AssessmentType.ASSIGNMENT)
-            .where(Submission.status != SubmissionStatus.DRAFT)
-        )
-        if activity_start is not None:
-            # Generic submissions reliably update this timestamp on submit or grading.
-            submission_stmt = submission_stmt.where(
-                Submission.updated_at >= activity_start
-            )
-        assignment_submissions = [
-            (sub, assessments_by_activity[sub.activity_id])
-            for row in db_session.exec(submission_stmt).all()
-            if (sub := _unwrap_model(row, Submission)).activity_id
-            in assessments_by_activity
-        ]
+    manual_assessments: list[AssessmentAnalyticsRow] = []
+    manual_assessment_activity_ids: list[int] = []
+    manual_assessment_submissions: list[tuple[Submission, AssessmentAnalyticsRow]] = []
 
     exams = [
         row
@@ -588,7 +562,7 @@ def load_analytics_context(
     user_ids.update(progress.user_id for progress in activity_progress)
     user_ids.update(progress.user_id for progress in course_progress)
     user_ids.update(
-        submission.user_id for submission, _assignment in assignment_submissions
+        submission.user_id for submission, _manual_assessment in manual_assessment_submissions
     )
     user_ids.update(attempt.user_id for attempt, _exam in exam_attempts)
     user_ids.update(submission.user_id for submission, _activity in quiz_submissions)
@@ -653,8 +627,8 @@ def load_analytics_context(
         activity_progress=activity_progress,
         course_progress=course_progress,
         certificates=certificate_rows,
-        assignments=assignments,
-        assignment_submissions=assignment_submissions,
+        manual_assessments=manual_assessments,
+        manual_assessment_submissions=manual_assessment_submissions,
         exams=exams,
         exam_attempts=exam_attempts,
         quiz_submissions=quiz_submissions,
@@ -733,7 +707,7 @@ def build_activity_events(
             )
         )
 
-    for submission, assignment in context.assignment_submissions:
+    for submission, manual_assessment in context.manual_assessment_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
         ts = (
@@ -746,12 +720,12 @@ def build_activity_events(
         events.append(
             ActivityEvent(
                 user_id=submission.user_id,
-                course_id=assignment.course_id,
+                course_id=manual_assessment.course_id,
                 ts=ts,
-                source="assignment",
-                assessment_type="assignment",
-                assessment_id=assignment.id,
-                activity_id=assignment.activity_id,
+                source="manual_assessment",
+                assessment_type="manual_assessment",
+                assessment_id=manual_assessment.id,
+                activity_id=manual_assessment.activity_id,
             )
         )
 

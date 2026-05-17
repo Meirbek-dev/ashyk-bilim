@@ -10,7 +10,7 @@
  * Phase 2+ will progressively replace passthroughs with shared shells.
  *
  * Usage:
- *   const { Author, Attempt, Review } = getKindModule('TYPE_FILE_SUBMISSION');
+ *   const { Author, Attempt, Review } = getKindModule('TYPE_EXAM');
  */
 
 import type { ComponentType, ReactNode } from 'react';
@@ -53,20 +53,20 @@ export interface KindModule {
   iconName: string;
   /**
    * Optional context provider that wraps Outline + Author + Inspector together.
-   * Use when the three slots need shared state (e.g. selected task in assignments).
+   * Use when the three slots need shared state.
    * AssessmentStudioWorkspace renders this as the outermost wrapper.
    */
   Provider?: ComponentType<KindAuthorProps & { children: ReactNode }>;
   /**
    * Optional left rail rendered in column 1 of the studio 3-column grid.
-   * Examples: task outline (assignment), question list (exam).
+   * Examples: question list (exam), task outline (code challenge).
    */
   Outline?: ComponentType<KindAuthorProps>;
   /** Teacher authoring panel — center column of the studio grid. */
   Author: ComponentType<KindAuthorProps>;
   /**
    * Optional right rail rendered in column 3 of the studio 3-column grid.
-   * Examples: policy inspector (assignment), exam settings summary.
+   * Examples: policy inspector or exam settings summary.
    */
   Inspector?: ComponentType<KindAuthorProps>;
   /** Student attempt panel. */
@@ -121,7 +121,6 @@ export async function loadKindModule(kind: AssessmentKind): Promise<KindModule> 
 
 // Register all built-in kinds eagerly so they are ready at import time.
 // Each kind file self-registers via a side-effect import.
-import './file-submission';
 import './exam';
 import './code-challenge';
 import './custom';

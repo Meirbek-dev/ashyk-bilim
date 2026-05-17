@@ -105,25 +105,6 @@ def _is_assessment_locked(assessment: Assessment, db_session: Session) -> bool:
     return active_submission is not None
 
 
-def _reject_legacy_file_upload_item(
-    assessment: Assessment,
-    item_kind: ItemKind,
-) -> None:
-    if (
-        AssessmentType(assessment.kind) == AssessmentType.ASSIGNMENT
-        and ItemKind(item_kind) == ItemKind.FILE_UPLOAD
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE,
-            detail={
-                "code": "FILE_UPLOAD_ITEM_REMOVED",
-                "message": (
-                    "File submissions are now a separate activity type. "
-                    "Create a TYPE_FILE_SUBMISSION activity instead."
-                ),
-            },
-        )
-
 
 # ── Public assessment CRUD ────────────────────────────────────────────────────
 
@@ -358,7 +339,6 @@ async def create_assessment_item(
     _activity, course = _get_activity_and_course(assessment, db_session)
     _require_author(current_user, course, db_session)
     _ensure_authorable(assessment, db_session)
-    _reject_legacy_file_upload_item(assessment, payload.kind)
 
     item_count = db_session.exec(
         select(func.count()).where(AssessmentItem.assessment_id == assessment.id)
@@ -415,12 +395,6 @@ async def update_assessment_item(
     _require_author(current_user, course, db_session)
     _ensure_authorable(assessment, db_session)
     item = _get_item_or_404(assessment, item_uuid, db_session)
-    next_kind = payload.kind
-    if next_kind is None and payload.body is not None:
-        next_kind = ItemKind(payload.body.kind)
-    if next_kind is not None:
-        _reject_legacy_file_upload_item(assessment, next_kind)
-
     # ── Content locking: block scoring-field changes on locked assessments ────
     if _is_assessment_locked(assessment, db_session):
         changed_keys = set(payload.model_dump(exclude_unset=True).keys())

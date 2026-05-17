@@ -69,18 +69,6 @@ def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
             anti_cheat_enabled=True,
             review_visibility="SCORE_ONLY",
         ),
-        AssessmentType.ASSIGNMENT: AssessmentPolicyPreset(
-            kind=AssessmentType.ASSIGNMENT,
-            grade_release_mode=GradeReleaseMode.IMMEDIATE,
-            grading_mode=AssessmentGradingMode.MANUAL,
-            completion_rule=AssessmentCompletionRule.GRADED,
-            passing_score=60.0,
-            max_attempts=None,
-            time_limit_seconds=None,
-            allow_late=True,
-            anti_cheat_enabled=False,
-            review_visibility="FULL",
-        ),
         AssessmentType.CODE_CHALLENGE: AssessmentPolicyPreset(
             kind=AssessmentType.CODE_CHALLENGE,
             grade_release_mode=GradeReleaseMode.IMMEDIATE,
@@ -94,7 +82,12 @@ def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
             review_visibility="FULL",
         ),
     }
-    return presets.get(kind, presets[AssessmentType.ASSIGNMENT])
+    if kind not in presets:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assessment policy preset not found",
+        )
+    return presets[kind]
 
 
 async def list_student_policy_overrides(

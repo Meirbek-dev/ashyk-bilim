@@ -2376,7 +2376,7 @@
           },
           "assessment_type": {
             "enum": [
-              "assignment",
+              "manual_assessment",
               "quiz",
               "exam",
               "code_challenge"
@@ -3290,7 +3290,6 @@
       "AssessmentType": {
         "enum": [
           "QUIZ",
-          "ASSIGNMENT",
           "EXAM",
           "CODE_CHALLENGE"
         ],
@@ -8315,83 +8314,6 @@
         "title": "FileSubmissionUserRead",
         "type": "object"
       },
-      "FileUploadItemAnswer": {
-        "properties": {
-          "kind": {
-            "const": "FILE_UPLOAD",
-            "default": "FILE_UPLOAD",
-            "title": "Kind",
-            "type": "string"
-          },
-          "uploads": {
-            "items": {
-              "$ref": "#/components/schemas/FileUploadReference"
-            },
-            "title": "Uploads",
-            "type": "array"
-          }
-        },
-        "title": "FileUploadItemAnswer",
-        "type": "object"
-      },
-      "FileUploadItemBody": {
-        "properties": {
-          "kind": {
-            "const": "FILE_UPLOAD",
-            "default": "FILE_UPLOAD",
-            "title": "Kind",
-            "type": "string"
-          },
-          "max_files": {
-            "default": 1,
-            "title": "Max Files",
-            "type": "integer"
-          },
-          "max_mb": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Mb"
-          },
-          "mimes": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Mimes",
-            "type": "array"
-          },
-          "prompt": {
-            "default": "",
-            "title": "Prompt",
-            "type": "string"
-          }
-        },
-        "title": "FileUploadItemBody",
-        "type": "object"
-      },
-      "FileUploadReference": {
-        "properties": {
-          "filename": {
-            "default": "",
-            "title": "Filename",
-            "type": "string"
-          },
-          "upload_uuid": {
-            "title": "Upload Uuid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "upload_uuid"
-        ],
-        "title": "FileUploadReference",
-        "type": "object"
-      },
       "ForecastItem": {
         "properties": {
           "assessment_id": {
@@ -9030,7 +8952,7 @@
             "type": "integer"
           },
           "assessment_type": {
-            "const": "assignment",
+            "const": "manual_assessment",
             "title": "Assessment Type",
             "type": "string"
           },
@@ -9391,7 +9313,6 @@
           "mapping": {
             "CHOICE": "#/components/schemas/ChoiceItemAnswer",
             "CODE": "#/components/schemas/CodeItemAnswer",
-            "FILE_UPLOAD": "#/components/schemas/FileUploadItemAnswer",
             "FORM": "#/components/schemas/FormItemAnswer",
             "MATCHING": "#/components/schemas/MatchingItemAnswer",
             "OPEN_TEXT": "#/components/schemas/OpenTextItemAnswer"
@@ -9404,9 +9325,6 @@
           },
           {
             "$ref": "#/components/schemas/OpenTextItemAnswer"
-          },
-          {
-            "$ref": "#/components/schemas/FileUploadItemAnswer"
           },
           {
             "$ref": "#/components/schemas/FormItemAnswer"
@@ -9424,7 +9342,6 @@
           "mapping": {
             "CHOICE": "#/components/schemas/ChoiceItemBody",
             "CODE": "#/components/schemas/CodeItemBody",
-            "FILE_UPLOAD": "#/components/schemas/FileUploadItemBody",
             "FORM": "#/components/schemas/FormItemBody",
             "MATCHING": "#/components/schemas/MatchingItemBody",
             "OPEN_TEXT": "#/components/schemas/OpenTextItemBody"
@@ -9437,9 +9354,6 @@
           },
           {
             "$ref": "#/components/schemas/OpenTextItemBody"
-          },
-          {
-            "$ref": "#/components/schemas/FileUploadItemBody"
           },
           {
             "$ref": "#/components/schemas/FormItemBody"
@@ -9807,7 +9721,6 @@
         "enum": [
           "CHOICE",
           "OPEN_TEXT",
-          "FILE_UPLOAD",
           "FORM",
           "CODE",
           "MATCHING"
@@ -12399,7 +12312,7 @@
           },
           "assessment_type": {
             "enum": [
-              "assignment",
+              "manual_assessment",
               "quiz",
               "exam",
               "code_challenge"
@@ -13684,11 +13597,11 @@
           "aging_buckets": {
             "$ref": "#/components/schemas/WorkloadAgingBuckets"
           },
-          "backlog_by_assignment": {
+          "backlog_by_manual_assessment": {
             "items": {
               "$ref": "#/components/schemas/GradingBacklogItem"
             },
-            "title": "Backlog By Assignment",
+            "title": "Backlog By Manual Assessment",
             "type": "array"
           },
           "backlog_total": {
@@ -13720,7 +13633,7 @@
         },
         "required": [
           "aging_buckets",
-          "backlog_by_assignment"
+          "backlog_by_manual_assessment"
         ],
         "title": "TeacherWorkloadSummary",
         "type": "object"
@@ -15233,7 +15146,6 @@
           "course_completion",
           "login_bonus",
           "quiz_completion",
-          "assignment_submission",
           "exam_completion",
           "streak_bonus",
           "admin_award",

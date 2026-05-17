@@ -545,7 +545,8 @@
       "exam": "Емтихан",
       "fileSubmission": "Файл жіберу",
       "learningMaterial": "Оқу материалы",
-      "video": "Бейне"
+      "video": "Бейне",
+      "codeChallenge": "Code challenge"
     },
     "assignmentActions": {
       "submit": "Тапсырманы жіберу",
@@ -606,7 +607,16 @@
     "unmarkConfirmation": "Белсенділіктің аяқталу белгісін алып тастағыңыз келетініне сенімдісіз бе?",
     "unmarkDialogTitle": "Белсенділіктің аяқталу белгісін алып тастау керек пе?",
     "unpublishedActivity": "Бұл белсенділік әлі жарияланған жоқ",
-    "viewAllActivities": "Барлық белсенділіктерді көру"
+    "viewAllActivities": "Барлық белсенділіктерді көру",
+    "assessmentUnavailable": "This assessment is not available yet.",
+    "backToCourse": "Back to course",
+    "courseComplete": "Course complete",
+    "fileSubmissionInlineAction": "Use the submission form",
+    "needsRevision": "Needs revision",
+    "noAction": "No action available",
+    "notStarted": "Not started",
+    "submitted": "Submitted",
+    "support": "Support"
   },
   "AdminUtils": {
     "priority": {
@@ -1143,12 +1153,12 @@
         "bucket3_7d": "3-7к:",
         "bucket7dPlus": "7к+:",
         "medianFeedback": "Орташа кері байланыс:",
-        "assignment": "Тапсырма",
         "course": "Курс",
         "waiting": "Күту",
         "oldest": "Ең ескі",
         "noSubmissions": "Тексеруді күткен тапсырма жоқ.",
-        "na": "N/A"
+        "na": "N/A",
+        "assessment": "Бағалау"
       },
       "dataQualityPanel": {
         "title": "Деректер сапасы",

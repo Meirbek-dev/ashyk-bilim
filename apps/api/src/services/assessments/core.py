@@ -73,7 +73,6 @@ from src.services.assessments._shared import (
     _submission_user,
     _sync_activity_lifecycle,
     _time_limit_seconds_from_settings,
-    _validate_file_upload_answer,
     build_readiness,
 )
 from src.services.assessments.assessment_crud import (

@@ -38,8 +38,8 @@ def build_data_quality(
     missing_sources: list[str] = []
     if not context.trail_steps:
         missing_sources.append("progress_events")
-    if not context.assignment_submissions:
-        missing_sources.append("assignment_submissions")
+    if not context.manual_assessment_submissions:
+        missing_sources.append("manual_assessment_submissions")
     if not context.quiz_submissions:
         missing_sources.append("quiz_submissions")
     if not context.exam_attempts:

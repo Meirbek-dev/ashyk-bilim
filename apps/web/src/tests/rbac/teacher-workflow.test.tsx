@@ -63,7 +63,7 @@ describe('Teacher (Instructor) Workflow', () => {
     'course:read:all',
     'course:update:own',
     'course:create:platform',
-    'assignment:grade:own',
+    'manual_assessment:grade:own',
     'analytics:read:assigned',
     'chapter:read:all',
     'activity:read:all',
@@ -150,10 +150,10 @@ describe('Teacher (Instructor) Workflow', () => {
         <Wrapper>
           <PermissionGuard
             action={Actions.GRADE}
-            resource={Resources.ASSIGNMENT}
+            resource={Resources.ASSESSMENT}
             scope={Scopes.OWN}
           >
-            <button data-testid="grade-own">Grade My Assignment</button>
+            <button data-testid="grade-own">Grade My ManualAssessment</button>
           </PermissionGuard>
         </Wrapper>,
       );
@@ -166,10 +166,10 @@ describe('Teacher (Instructor) Workflow', () => {
         <Wrapper>
           <PermissionGuard
             action={Actions.GRADE}
-            resource={Resources.ASSIGNMENT}
+            resource={Resources.ASSESSMENT}
             scope={Scopes.PLATFORM}
           >
-            <button data-testid="grade-all">Grade All Assignments</button>
+            <button data-testid="grade-all">Grade All ManualAssessments</button>
           </PermissionGuard>
         </Wrapper>,
       );

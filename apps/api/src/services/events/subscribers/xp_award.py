@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 _XP_SOURCE: dict[AssessmentType, XPSource] = {
     AssessmentType.QUIZ: XPSource.QUIZ_COMPLETION,
     AssessmentType.EXAM: XPSource.EXAM_COMPLETION,
-    AssessmentType.ASSIGNMENT: XPSource.ASSIGNMENT_SUBMISSION,
     AssessmentType.CODE_CHALLENGE: XPSource.CODE_CHALLENGE_COMPLETION,
 }
 

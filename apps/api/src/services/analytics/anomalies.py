@@ -66,7 +66,7 @@ def build_anomalies(
     current_submissions = defaultdict(int)
     previous_submissions = defaultdict(int)
     for event in events:
-        if event.source not in {"assignment", "quiz", "exam", "code_challenge"}:
+        if event.source not in {"manual_assessment", "quiz", "exam", "code_challenge"}:
             continue
         if current_start <= event.ts <= current_end:
             current_submissions[event.course_id] += 1

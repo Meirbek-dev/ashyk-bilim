@@ -43,8 +43,8 @@ describe('Navigation Policy', () => {
       expect(canSeeCourses(can)).toBe(true);
     });
 
-    it('should return true if user can grade assignments', () => {
-      const can = mockCan(new Set(['assignment:grade:platform']));
+    it('should return true if user can grade manual_assessments', () => {
+      const can = mockCan(new Set(['manual_assessment:grade:platform']));
       expect(canSeeCourses(can)).toBe(true);
     });
 

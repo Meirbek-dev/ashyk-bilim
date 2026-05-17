@@ -121,7 +121,6 @@ class CodeChallengeGrader(BaseGrader):
         )
 
 
-@GraderRegistry.register(AssessmentType.ASSIGNMENT)
 class ManualReviewGrader(BaseGrader):
     def grade(self, ctx: GradingContext) -> GradingResult:
         if ctx.items:

@@ -240,7 +240,7 @@ def seeded_review_data_fixture(db_session_factory):
         session.flush()
 
         activity = Activity(
-            name="Assignment review",
+            name="ManualAssessment review",
             activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
             activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
             content={},
@@ -273,7 +273,7 @@ def seeded_review_data_fixture(db_session_factory):
         policy = AssessmentPolicy(
             policy_uuid="policy_review",
             activity_id=activity.id,
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             grading_mode=AssessmentGradingMode.MANUAL,
             grade_release_mode=GradeReleaseMode.IMMEDIATE,
             completion_rule=AssessmentCompletionRule.GRADED,
@@ -289,7 +289,7 @@ def seeded_review_data_fixture(db_session_factory):
         other_policy = AssessmentPolicy(
             policy_uuid="policy_review_other",
             activity_id=other_activity.id,
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             grading_mode=AssessmentGradingMode.MANUAL,
             grade_release_mode=GradeReleaseMode.IMMEDIATE,
             completion_rule=AssessmentCompletionRule.GRADED,
@@ -308,7 +308,7 @@ def seeded_review_data_fixture(db_session_factory):
         assessment = Assessment(
             assessment_uuid="assessment_review",
             activity_id=activity.id,
-            kind=AssessmentType.ASSIGNMENT,
+            kind=AssessmentType.EXAM,
             title="Essay Review",
             description="",
             lifecycle=AssessmentLifecycle.PUBLISHED,
@@ -322,7 +322,7 @@ def seeded_review_data_fixture(db_session_factory):
         other_assessment = Assessment(
             assessment_uuid="assessment_review_other",
             activity_id=other_activity.id,
-            kind=AssessmentType.ASSIGNMENT,
+            kind=AssessmentType.EXAM,
             title="Other Review",
             description="",
             lifecycle=AssessmentLifecycle.PUBLISHED,
@@ -370,7 +370,7 @@ def seeded_review_data_fixture(db_session_factory):
 
         alice_submission = Submission(
             submission_uuid="submission_alice_review",
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             activity_id=activity.id,
             assessment_policy_id=policy.id,
             user_id=alice.id,
@@ -395,7 +395,7 @@ def seeded_review_data_fixture(db_session_factory):
         )
         aaron_submission = Submission(
             submission_uuid="submission_aaron_review",
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             activity_id=activity.id,
             assessment_policy_id=policy.id,
             user_id=aaron.id,
@@ -420,7 +420,7 @@ def seeded_review_data_fixture(db_session_factory):
         )
         bella_submission = Submission(
             submission_uuid="submission_bella_review",
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             activity_id=activity.id,
             assessment_policy_id=policy.id,
             user_id=bella.id,
@@ -448,7 +448,7 @@ def seeded_review_data_fixture(db_session_factory):
         )
         drew_submission = Submission(
             submission_uuid="submission_drew_review",
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             activity_id=activity.id,
             assessment_policy_id=policy.id,
             user_id=drew.id,
@@ -494,7 +494,7 @@ def test_assessment_review_projection_exposes_native_queue_defaults(
         "activity_id": payload["activity_id"],
         "activity_uuid": payload["activity_uuid"],
         "title": "Essay Review",
-        "kind": "ASSIGNMENT",
+        "kind": "EXAM",
         "default_filter": "NEEDS_GRADING",
         "supports_search": True,
         "supports_late_only": True,

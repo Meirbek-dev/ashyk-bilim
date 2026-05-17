@@ -148,14 +148,11 @@ export interface ValidationIssue {
 
 /**
  * Maps the API-level AssessmentType (from SubmissionRead.assessment_type) to the
- * domain AssessmentKind. The API uses bare names (ASSIGNMENT, EXAM) while the domain
- * uses activity-type-prefixed names (TYPE_FILE_SUBMISSION, TYPE_EXAM).
+ * domain AssessmentKind. The API uses bare names (EXAM, QUIZ) while the domain
+ * uses activity-type-prefixed names (TYPE_EXAM, TYPE_CUSTOM).
  */
 export function assessmentTypeToKind(assessmentType: string): AssessmentKind | null {
   switch (assessmentType) {
-    case 'ASSIGNMENT': {
-      return 'TYPE_FILE_SUBMISSION';
-    }
     case 'EXAM': {
       return 'TYPE_EXAM';
     }

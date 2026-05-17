@@ -550,7 +550,8 @@
       "exam": "Тест",
       "fileSubmission": "Отправка файлов",
       "learningMaterial": "Учебный материал",
-      "video": "Видео"
+      "video": "Видео",
+      "codeChallenge": "Code challenge"
     },
     "assignmentActions": {
       "submit": "Отправить задание",
@@ -611,7 +612,16 @@
     "unmarkConfirmation": "Вы уверены, что хотите снять отметку о завершении активности?",
     "unmarkDialogTitle": "Снять отметку о завершении активности?",
     "unpublishedActivity": "Эта активность еще не опубликована",
-    "viewAllActivities": "Посмотреть все активности"
+    "viewAllActivities": "Посмотреть все активности",
+    "assessmentUnavailable": "This assessment is not available yet.",
+    "backToCourse": "Back to course",
+    "courseComplete": "Course complete",
+    "fileSubmissionInlineAction": "Use the submission form",
+    "needsRevision": "Needs revision",
+    "noAction": "No action available",
+    "notStarted": "Not started",
+    "submitted": "Submitted",
+    "support": "Support"
   },
   "AdminUtils": {
     "priority": {
@@ -1149,12 +1159,12 @@
         "bucket3_7d": "3-7д:",
         "bucket7dPlus": "7д+:",
         "medianFeedback": "Медианная обратная связь:",
-        "assignment": "Задание",
         "course": "Курс",
         "waiting": "Ожидание",
         "oldest": "Старейшее",
         "noSubmissions": "Нет отправлений, ожидающих проверки.",
-        "na": "N/A"
+        "na": "N/A",
+        "assessment": "Оценивание"
       },
       "dataQualityPanel": {
         "title": "Качество данных",

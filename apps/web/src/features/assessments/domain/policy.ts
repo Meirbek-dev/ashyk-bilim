@@ -21,7 +21,7 @@ export interface AntiCheatPolicy {
   fullscreenEnforced: boolean;
   /**
    * Number of violations before auto-submit. null = no auto-submit.
-   * Mirrors exam `violation_threshold` and assignment quiz `max_violations`.
+   * Mirrors timed assessment violation thresholds.
    */
   violationThreshold: number | null;
 }

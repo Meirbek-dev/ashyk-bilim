@@ -6,7 +6,6 @@ import type { ReactNode } from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import AssessmentLayout from '@/features/assessments/shell/AssessmentLayout';
-import AssignmentAttemptContent from '@/features/assessments/registry/assignment-attempt';
 import { useAttemptShellControls } from '@/features/assessments/shell';
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
 
@@ -123,7 +122,7 @@ function installLocalStorageMock() {
 function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptViewModel {
   const vm = {
     surface: 'ATTEMPT',
-    kind: 'TYPE_FILE_SUBMISSION',
+    kind: 'TYPE_EXAM',
     assessmentUuid: 'assessment_runtime',
     activityUuid: 'activity_runtime',
     title: 'Runtime assessment',
@@ -149,7 +148,7 @@ function createAttemptVm(overrides: Partial<AttemptViewModel> = {}): AttemptView
     items: [
       {
         id: 1,
-        item_uuid: 'item_assignment',
+        item_uuid: 'item_manual_assessment',
         order: 1,
         kind: 'OPEN_TEXT',
         title: 'Reflection',
@@ -217,54 +216,4 @@ describe('assessment runtime convergence', () => {
     expect(mocks.applyServerMock).toHaveBeenCalledTimes(1);
   });
 
-  it('renders returned resubmission entry flow and starts a revision draft', async () => {
-    const saveMock = vi.fn().mockResolvedValue(undefined);
-    mocks.useAssessmentSubmissionMock.mockReturnValue({
-      answers: {},
-      draft: null,
-      submissions: [
-        {
-          submission_uuid: 'submission_returned',
-          status: 'RETURNED',
-          final_score: 84,
-          grading_json: { feedback: 'Revise the argument and resubmit.' },
-          submitted_at: '2026-05-05T09:45:00Z',
-          updated_at: '2026-05-05T09:45:00Z',
-          created_at: '2026-05-05T09:30:00Z',
-          attempt_number: 1,
-        },
-      ],
-      submission: null,
-      status: null,
-      saveState: 'idle',
-      isSaving: false,
-      isSubmitting: false,
-      save: saveMock,
-      submit: vi.fn(),
-      setItemAnswer: vi.fn(),
-      conflict: null,
-    });
-
-    renderWithClient(
-      <AssignmentAttemptContent
-        courseUuid="course_runtime"
-        activityUuid="activity_runtime"
-        vm={createAttemptVm()}
-      />,
-    );
-
-    expect(screen.getByText('readyToRevise')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'startRevision' })).toBeInTheDocument();
-    expect(screen.getByText('readyToReviseDescription')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'startRevision' }));
-
-    await waitFor(() => {
-      expect(mocks.apiFetchMock).toHaveBeenCalledWith(
-        'assessments/assessment_runtime/start',
-        expect.objectContaining({ method: 'POST' }),
-      );
-    });
-    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('revisionDraftCreated');
-  });
 });

@@ -201,37 +201,6 @@ export function localItemValidationIssues(
     }
   }
 
-  if (item.body.kind === 'FILE_UPLOAD') {
-    if (!item.body.prompt.trim()) {
-      issues.push({
-        code: 'file.prompt_missing',
-        message: 'File-upload prompt is required.',
-        itemUuid: item.item_uuid,
-      });
-    }
-    if (item.body.max_files < 1) {
-      issues.push({
-        code: 'file.max_files_invalid',
-        message: 'File upload items must allow at least one file.',
-        itemUuid: item.item_uuid,
-      });
-    }
-    if (item.body.max_mb !== null && item.body.max_mb !== undefined && item.body.max_mb <= 0) {
-      issues.push({
-        code: 'file.max_mb_invalid',
-        message: 'Maximum file size must be greater than zero when set.',
-        itemUuid: item.item_uuid,
-      });
-    }
-    if (item.body.mimes.some((mime) => !mime.trim())) {
-      issues.push({
-        code: 'file.mime_invalid',
-        message: 'Allowed file types cannot be blank.',
-        itemUuid: item.item_uuid,
-      });
-    }
-  }
-
   if (item.body.kind === 'FORM') {
     if (!item.body.prompt.trim()) {
       issues.push({ code: 'form.prompt_missing', message: 'Form prompt is required.', itemUuid: item.item_uuid });

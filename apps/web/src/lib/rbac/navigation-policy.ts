@@ -18,8 +18,8 @@ export function canSeeCourses(can: CanCheck): boolean {
     can(Resources.COURSE, Actions.UPDATE, Scopes.PLATFORM) ||
     can(Resources.COURSE, Actions.UPDATE, Scopes.OWN) ||
     can(Resources.COURSE, Actions.MANAGE, Scopes.PLATFORM) ||
-    can(Resources.ASSIGNMENT, Actions.GRADE, Scopes.PLATFORM) ||
-    can(Resources.ASSIGNMENT, Actions.CREATE, Scopes.PLATFORM)
+    can(Resources.ASSESSMENT, Actions.GRADE, Scopes.PLATFORM) ||
+    can(Resources.ASSESSMENT, Actions.CREATE, Scopes.PLATFORM)
   );
 }
 

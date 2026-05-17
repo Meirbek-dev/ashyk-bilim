@@ -52,7 +52,6 @@ logger = logging.getLogger(__name__)
 _SUBMIT_PERMISSION: dict[AssessmentType, str] = {
     AssessmentType.QUIZ: "assessment:submit",
     AssessmentType.EXAM: "assessment:submit",
-    AssessmentType.ASSIGNMENT: "assessment:submit",
     AssessmentType.CODE_CHALLENGE: "assessment:submit",
 }
 
@@ -326,32 +325,10 @@ def _get_or_create_draft(
     if draft:
         return draft
 
-    if assessment_type != AssessmentType.ASSIGNMENT:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No active draft found. Call /assessments/{uuid}/start first.",
-        )
-
-    attempt_number = (
-        _count_completed_attempts(activity_id, current_user.id, db_session) + 1
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="No active draft found. Call /assessments/{uuid}/start first.",
     )
-    now = datetime.now(UTC)
-    draft = Submission(
-        submission_uuid=f"submission_{ULID()}",
-        assessment_type=assessment_type,
-        activity_id=activity_id,
-        user_id=current_user.id,
-        status=SubmissionStatus.DRAFT,
-        attempt_number=attempt_number,
-        answers_json={},
-        grading_json={},
-        started_at=now,
-        created_at=now,
-        updated_at=now,
-    )
-    db_session.add(draft)
-    db_session.flush()
-    return draft
 
 
 def _count_completed_attempts(

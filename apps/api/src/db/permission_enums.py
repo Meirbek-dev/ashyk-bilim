@@ -29,7 +29,6 @@ class ResourceType(StrEnum):
     COURSE = "course"
     CHAPTER = "chapter"
     ACTIVITY = "activity"
-    ASSIGNMENT = "assignment"
     QUIZ = "quiz"
     USER = "user"
     USERGROUP = "usergroup"
@@ -88,7 +87,6 @@ SYSTEM_ROLES: dict[str, dict] = {
             "course:manage:own",
             "chapter:*:platform",
             "activity:*:platform",
-            "assignment:*:platform",
             "quiz:*:platform",
             "exam:*:platform",
             "assessment:*:platform",
@@ -120,9 +118,6 @@ SYSTEM_ROLES: dict[str, dict] = {
             "activity:read:all",
             "activity:update:own",
             "activity:delete:own",
-            "assignment:*:own",
-            "assignment:read:assigned",
-            "assignment:grade:own",
             "quiz:*:own",
             "quiz:read:assigned",
             "quiz:grade:own",
@@ -187,8 +182,6 @@ SYSTEM_ROLES: dict[str, dict] = {
             "course:enroll:all",
             "chapter:read:all",
             "activity:read:all",
-            "assignment:submit:assigned",
-            "assignment:read:assigned",
             "quiz:submit:assigned",
             "quiz:read:assigned",
             "exam:submit:assigned",

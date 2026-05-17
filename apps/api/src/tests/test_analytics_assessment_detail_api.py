@@ -282,7 +282,7 @@ def _seed_course_stack(
         id=1,
         policy_uuid=f"policy_{course.id}",
         activity_id=activity.id,
-        assessment_type=AssessmentType.ASSIGNMENT,
+        assessment_type=AssessmentType.EXAM,
         grading_mode=AssessmentGradingMode.MANUAL,
         grade_release_mode=GradeReleaseMode.IMMEDIATE,
         completion_rule=AssessmentCompletionRule.GRADED,
@@ -301,7 +301,7 @@ def _seed_course_stack(
     return course, chapter, activity, policy
 
 
-def _make_context_for_assignment(session, assessment_id: int) -> AnalyticsContext:
+def _make_context_for_manual_assessment(session, assessment_id: int) -> AnalyticsContext:
     course = session.get(Course, 1)
     activity = session.get(Activity, 1)
     assessment = session.get(Assessment, assessment_id)
@@ -310,7 +310,7 @@ def _make_context_for_assignment(session, assessment_id: int) -> AnalyticsContex
     ]
     users = session.exec(select(User)).scalars().all()
     users_by_id = {user.id: user for user in users if user.id is not None}
-    assignment_row = AssessmentAnalyticsRow(
+    manual_assessment_row = AssessmentAnalyticsRow(
         id=assessment.id,
         activity_id=activity.id,
         course_id=course.id,
@@ -329,9 +329,9 @@ def _make_context_for_assignment(session, assessment_id: int) -> AnalyticsContex
         activity_progress=[],
         course_progress=[],
         certificates=[],
-        assignments=[assignment_row],
-        assignment_submissions=[
-            (submission, assignment_row)
+        manual_assessments=[manual_assessment_row],
+        manual_assessment_submissions=[
+            (submission, manual_assessment_row)
             for submission in submissions
             if submission is not None
         ],
@@ -364,8 +364,8 @@ def _make_context_for_quiz(session) -> AnalyticsContext:
         activity_progress=[],
         course_progress=[],
         certificates=[],
-        assignments=[],
-        assignment_submissions=[],
+        manual_assessments=[],
+        manual_assessment_submissions=[],
         exams=[],
         exam_attempts=[],
         quiz_submissions=[(quiz_submission, activity)],
@@ -410,11 +410,11 @@ def test_assessment_rows_accept_progress_snapshot_mapping(
         activity_uuid="activity_code",
         order=1,
     )
-    assignment = AssessmentAnalyticsRow(
+    manual_assessment = AssessmentAnalyticsRow(
         id=1,
         activity_id=1,
         course_id=1,
-        title="Assignment",
+        title="ManualAssessment",
         settings={},
     )
     exam = AssessmentAnalyticsRow(
@@ -436,8 +436,8 @@ def test_assessment_rows_accept_progress_snapshot_mapping(
         activity_progress=[],
         course_progress=[],
         certificates=[],
-        assignments=[assignment],
-        assignment_submissions=[],
+        manual_assessments=[manual_assessment],
+        manual_assessment_submissions=[],
         exams=[exam],
         exam_attempts=[],
         quiz_submissions=[],
@@ -468,13 +468,13 @@ def test_assessment_rows_accept_progress_snapshot_mapping(
     rows = build_assessment_rows(context)
 
     assert [row.assessment_type for row in rows] == [
-        "assignment",
+        "manual_assessment",
         "exam",
         "code_challenge",
     ]
 
 
-def test_assignment_detail_endpoint_returns_operational_fields(
+def test_manual_assessment_detail_endpoint_returns_operational_fields(
     api_client: TestClient,
     db_session_factory,
     monkeypatch: pytest.MonkeyPatch,
@@ -483,16 +483,16 @@ def test_assignment_detail_endpoint_returns_operational_fields(
         _seed_users(session)
         _course, _chapter, activity, policy = _seed_course_stack(
             session,
-            name="Analytics Assignment",
+            name="Analytics ManualAssessment",
             activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
             activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
         )
         assessment = Assessment(
             id=1,
-            assessment_uuid="assessment_assignment_analytics",
+            assessment_uuid="assessment_manual_assessment_analytics",
             activity_id=activity.id,
-            kind=AssessmentType.ASSIGNMENT,
-            title="Operational assignment",
+            kind=AssessmentType.EXAM,
+            title="Operational manual_assessment",
             description="",
             lifecycle=AssessmentLifecycle.PUBLISHED,
             scheduled_at=None,
@@ -510,7 +510,7 @@ def test_assignment_detail_endpoint_returns_operational_fields(
             Submission(
                 id=1,
                 submission_uuid="submission_pending",
-                assessment_type=AssessmentType.ASSIGNMENT,
+                assessment_type=AssessmentType.EXAM,
                 activity_id=activity.id,
                 assessment_policy_id=policy.id,
                 user_id=2,
@@ -535,7 +535,7 @@ def test_assignment_detail_endpoint_returns_operational_fields(
             Submission(
                 id=2,
                 submission_uuid="submission_graded",
-                assessment_type=AssessmentType.ASSIGNMENT,
+                assessment_type=AssessmentType.EXAM,
                 activity_id=activity.id,
                 assessment_policy_id=policy.id,
                 user_id=3,
@@ -553,7 +553,7 @@ def test_assignment_detail_endpoint_returns_operational_fields(
             Submission(
                 id=3,
                 submission_uuid="submission_returned",
-                assessment_type=AssessmentType.ASSIGNMENT,
+                assessment_type=AssessmentType.EXAM,
                 activity_id=activity.id,
                 assessment_policy_id=policy.id,
                 user_id=4,
@@ -569,7 +569,7 @@ def test_assignment_detail_endpoint_returns_operational_fields(
             Submission(
                 id=4,
                 submission_uuid="submission_published",
-                assessment_type=AssessmentType.ASSIGNMENT,
+                assessment_type=AssessmentType.EXAM,
                 activity_id=activity.id,
                 assessment_policy_id=policy.id,
                 user_id=5,
@@ -623,14 +623,14 @@ def test_assignment_detail_endpoint_returns_operational_fields(
 
     monkeypatch.setattr(
         "src.services.analytics.assessments.load_analytics_context",
-        lambda db_session, _course_ids: _make_context_for_assignment(db_session, 1),
+        lambda db_session, _course_ids: _make_context_for_manual_assessment(db_session, 1),
     )
     monkeypatch.setattr(
         "src.services.analytics.assessments.progress_snapshots",
         lambda _context, _allowed_user_ids: {(1, 2), (1, 3), (1, 4), (1, 5)},
     )
 
-    response = api_client.get("/analytics/teacher/assessments/assignment/1")
+    response = api_client.get("/analytics/teacher/assessments/manual_assessment/1")
 
     assert response.status_code == 200
     payload = response.json()
@@ -646,7 +646,7 @@ def test_assignment_detail_endpoint_returns_operational_fields(
         "stale_backlog": 1,
         "suspicious_attempts": 1,
         "missing_scores": 2,
-        "note": "Assignments use canonical submission states and grading ledger history.",
+        "note": "ManualAssessments use canonical submission states and grading ledger history.",
     }
     assert payload["slo"]["status"] == "breached"
     assert payload["migration"]["compatibility_mode"] == "canonical"
@@ -754,20 +754,20 @@ def test_quiz_detail_endpoint_uses_canonical_submission_rows(
     assert payload["audit_history"] == []
 
 
-def test_overview_grading_slo_alerts_surface_breached_assignments() -> None:
+def test_overview_grading_slo_alerts_surface_breached_manual_assessments() -> None:
     workload = TeacherWorkloadSummary(
         backlog_total=4,
         sla_breaches=3,
         median_feedback_latency_hours=61.0,
         aging_buckets=WorkloadAgingBuckets(),
         forecast_backlog_7d=5,
-        backlog_by_assignment=[
+        backlog_by_manual_assessment=[
             GradingBacklogItem(
                 course_id=1,
-                course_name="Analytics Assignment",
+                course_name="Analytics ManualAssessment",
                 assessment_id=7,
-                assessment_type="assignment",
-                title="Operational assignment",
+                assessment_type="manual_assessment",
+                title="Operational manual_assessment",
                 awaiting_review=4,
                 oldest_submitted_at="2026-05-02T10:00:00Z",
                 age_hours=80.0,
@@ -782,5 +782,5 @@ def test_overview_grading_slo_alerts_surface_breached_assignments() -> None:
     assert alerts[0].type == "grading_slo"
     assert alerts[0].severity == "critical"
     assert alerts[0].assessment_id == 7
-    assert alerts[0].href == "/dash/analytics/assessments/assignment/7"
+    assert alerts[0].href == "/dash/analytics/assessments/manual_assessment/7"
     assert "72" in alerts[0].body

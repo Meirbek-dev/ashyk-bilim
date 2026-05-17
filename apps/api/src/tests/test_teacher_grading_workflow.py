@@ -237,7 +237,7 @@ def _seed_course_and_assessment(
         session.flush()
 
         activity = Activity(
-            name="Graded Assignment",
+            name="Graded ManualAssessment",
             activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
             activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
             content={},
@@ -256,7 +256,7 @@ def _seed_course_and_assessment(
         policy = AssessmentPolicy(
             policy_uuid="policy_grade",
             activity_id=activity.id,
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             grading_mode=AssessmentGradingMode.MANUAL,
             grade_release_mode=grade_release_mode,
             completion_rule=AssessmentCompletionRule.GRADED,
@@ -275,8 +275,8 @@ def _seed_course_and_assessment(
         assessment = Assessment(
             assessment_uuid="assessment_grade",
             activity_id=activity.id,
-            kind=AssessmentType.ASSIGNMENT,
-            title="Graded Assignment",
+            kind=AssessmentType.EXAM,
+            title="Graded ManualAssessment",
             description="",
             lifecycle=AssessmentLifecycle.PUBLISHED,
             scheduled_at=None,
@@ -303,7 +303,7 @@ def _seed_course_and_assessment(
         # Alice: PENDING submission (needs grading)
         alice_sub = Submission(
             submission_uuid="submission_alice_grade",
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             activity_id=activity.id,
             user_id=alice.id,
             status=SubmissionStatus.PENDING,
@@ -322,7 +322,7 @@ def _seed_course_and_assessment(
         # Bob: GRADED submission (already graded)
         bob_sub = Submission(
             submission_uuid="submission_bob_grade",
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             activity_id=activity.id,
             user_id=bob.id,
             status=SubmissionStatus.GRADED,

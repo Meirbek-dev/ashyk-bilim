@@ -54,7 +54,6 @@ class AssessmentLifecycle(StrEnum):
 class ItemKind(StrEnum):
     CHOICE = "CHOICE"
     OPEN_TEXT = "OPEN_TEXT"
-    FILE_UPLOAD = "FILE_UPLOAD"
     FORM = "FORM"
     CODE = "CODE"
     MATCHING = "MATCHING"
@@ -88,14 +87,6 @@ class OpenTextItemBody(PydanticStrictBaseModel):
     prompt: str = ""
     min_words: int | None = None
     rubric: str | None = None
-
-
-class FileUploadItemBody(PydanticStrictBaseModel):
-    kind: Literal["FILE_UPLOAD"] = "FILE_UPLOAD"
-    prompt: str = ""
-    max_files: int = 1
-    max_mb: int | None = None
-    mimes: list[str] = Field(default_factory=list)
 
 
 class FormField(PydanticStrictBaseModel):
@@ -157,7 +148,6 @@ class MatchingItemBody(PydanticStrictBaseModel):
 type ItemBody = Annotated[
     ChoiceItemBody
     | OpenTextItemBody
-    | FileUploadItemBody
     | FormItemBody
     | CodeItemBody
     | MatchingItemBody,
@@ -178,16 +168,6 @@ class ChoiceItemAnswer(PydanticStrictBaseModel):
 class OpenTextItemAnswer(PydanticStrictBaseModel):
     kind: Literal["OPEN_TEXT"] = "OPEN_TEXT"
     text: str = ""
-
-
-class FileUploadReference(PydanticStrictBaseModel):
-    upload_uuid: str
-    filename: str = ""
-
-
-class FileUploadItemAnswer(PydanticStrictBaseModel):
-    kind: Literal["FILE_UPLOAD"] = "FILE_UPLOAD"
-    uploads: list[FileUploadReference] = Field(default_factory=list)
 
 
 class FormItemAnswer(PydanticStrictBaseModel):
@@ -222,7 +202,6 @@ class MatchingItemAnswer(PydanticStrictBaseModel):
 type ItemAnswer = Annotated[
     ChoiceItemAnswer
     | OpenTextItemAnswer
-    | FileUploadItemAnswer
     | FormItemAnswer
     | CodeItemAnswer
     | MatchingItemAnswer,

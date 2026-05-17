@@ -87,10 +87,10 @@ function baseGradebook(): CourseGradebookResponse {
     activities: [
       {
         id: 1,
-        activity_uuid: 'activity_assignment',
-        name: 'Assignment',
+        activity_uuid: 'activity_manual_assessment',
+        name: 'ManualAssessment',
         activity_type: 'TYPE_FILE_SUBMISSION',
-        assessment_type: 'ASSIGNMENT',
+        assessment_type: 'EXAM',
         order: 1,
       },
       {
@@ -112,7 +112,7 @@ function baseGradebook(): CourseGradebookResponse {
         is_late: true,
         teacher_action_required: true,
         attempt_count: 2,
-        latest_submission_uuid: 'submission_assignment',
+        latest_submission_uuid: 'submission_manual_assessment',
         latest_submission_status: 'PENDING',
         submitted_at: '2026-01-02T10:00:00Z',
         due_at: '2026-01-01T10:00:00Z',
@@ -155,9 +155,9 @@ function baseGradebook(): CourseGradebookResponse {
         action_type: 'GRADE_SUBMISSION',
         user_id: 10,
         activity_id: 1,
-        submission_uuid: 'submission_assignment',
+        submission_uuid: 'submission_manual_assessment',
         student_name: 'Student One',
-        activity_name: 'Assignment',
+        activity_name: 'ManualAssessment',
         submitted_at: '2026-01-02T10:00:00Z',
         is_late: true,
       },
@@ -191,7 +191,7 @@ describe('CourseGradebookCommandCenter', () => {
     render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />);
 
     const table = screen.getByRole('table');
-    expect(within(table).getByText('Assignment')).toBeInTheDocument();
+    expect(within(table).getByText('ManualAssessment')).toBeInTheDocument();
     expect(within(table).getByText('states.needs_grading')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'savedFilters.all' }));
@@ -221,7 +221,7 @@ describe('CourseGradebookCommandCenter', () => {
     fireEvent.click(within(screen.getByRole('table')).getByText('states.needs_grading'));
 
     expect(navigationMocks.push).toHaveBeenCalledWith(
-      '/dash/courses/gradebook/activity/assignment/review?submission=submission_assignment',
+      '/dash/courses/gradebook/activity/manual_assessment/review?submission=submission_manual_assessment',
     );
   });
 

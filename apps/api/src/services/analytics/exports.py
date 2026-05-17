@@ -9,9 +9,9 @@ from sqlmodel import Session
 from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
-    assignment_is_reviewable,
-    assignment_submission_status,
-    assignment_submitted_at,
+    manual_assessment_is_reviewable,
+    manual_assessment_submission_status,
+    manual_assessment_submitted_at,
     cohort_user_ids,
     load_analytics_context,
     progress_snapshots,
@@ -44,7 +44,7 @@ REASON_CODE_LABELS_RU = {
 }
 
 ASSESSMENT_TYPE_LABELS_RU = {
-    "assignment": "Задание",
+    "manual_assessment": "Задание",
     "quiz": "Тест",
     "exam": "Экзамен",
     "code_challenge": "Задача по коду",
@@ -142,8 +142,8 @@ def export_grading_backlog_csv(
     allowed_user_ids = cohort_user_ids(context, filters.cohort_ids)
 
     def row_iter() -> Iterator[list[object]]:
-        for submission, assignment in context.assignment_submissions:
-            if not assignment_is_reviewable(submission):
+        for submission, manual_assessment in context.manual_assessment_submissions:
+            if not manual_assessment_is_reviewable(submission):
                 continue
             if (
                 allowed_user_ids is not None
@@ -151,18 +151,18 @@ def export_grading_backlog_csv(
             ):
                 continue
             user = context.users_by_id.get(submission.user_id)
-            course = context.courses_by_id.get(assignment.course_id)
+            course = context.courses_by_id.get(manual_assessment.course_id)
             yield [
                 submission.user_id,
                 user.username if user else "Неизвестно",
-                assignment.course_id,
+                manual_assessment.course_id,
                 course.name
                 if course is not None
-                else f"Удаленный курс #{assignment.course_id}",
-                assignment.id,
-                assignment.title,
-                _status_ru(assignment_submission_status(submission)),
-                assignment_submitted_at(submission),
+                else f"Удаленный курс #{manual_assessment.course_id}",
+                manual_assessment.id,
+                manual_assessment.title,
+                _status_ru(manual_assessment_submission_status(submission)),
+                manual_assessment_submitted_at(submission),
             ]
 
     return _csv_stream(

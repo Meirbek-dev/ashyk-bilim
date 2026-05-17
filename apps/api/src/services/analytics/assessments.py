@@ -23,12 +23,12 @@ from src.services.analytics.queries import (
     AnalyticsContext,
     ProgressSnapshot,
     assessment_pass_threshold,
-    assignment_graded_at,
-    assignment_is_graded,
-    assignment_is_reviewable,
-    assignment_score,
-    assignment_submission_status,
-    assignment_submitted_at,
+    manual_assessment_graded_at,
+    manual_assessment_is_graded,
+    manual_assessment_is_reviewable,
+    manual_assessment_score,
+    manual_assessment_submission_status,
+    manual_assessment_submitted_at,
     cohort_user_ids,
     display_name,
     hours_between,
@@ -137,7 +137,7 @@ def _build_rollup_assessment_rows(
                     list({
                         row.assessment_id
                         for row in rollups
-                        if row.assessment_type in {"assignment", "exam"}
+                        if row.assessment_type in {"manual_assessment", "exam"}
                     })
                 )
             )
@@ -163,7 +163,7 @@ def _build_rollup_assessment_rows(
         course = course_map.get(row.course_id)
         if course is None:
             continue
-        if row.assessment_type == "assignment":
+        if row.assessment_type == "manual_assessment":
             title = (
                 assessments.get(row.assessment_id).title
                 if row.assessment_id in assessments
@@ -338,7 +338,7 @@ def _quality_by_question_from_quiz_submissions(
 ) -> dict[str, dict[str, float | int]]:
     scored_submissions: list[tuple[float, Submission]] = []
     for submission in submissions:
-        if (score := assignment_score(submission)) is None:
+        if (score := manual_assessment_score(submission)) is None:
             continue
         scored_submissions.append((score, submission))
     if len(scored_submissions) < 4:
@@ -407,10 +407,10 @@ def _submission_has_suspicion(submission: Submission) -> bool:
 
 
 def _submission_missing_score(submission: Submission) -> bool:
-    status = assignment_submission_status(submission)
+    status = manual_assessment_submission_status(submission)
     if status == SubmissionStatus.DRAFT.value:
         return False
-    return assignment_score(submission) is None
+    return manual_assessment_score(submission) is None
 
 
 def _submission_latencies(submissions: list[Submission]) -> list[float]:
@@ -418,8 +418,8 @@ def _submission_latencies(submissions: list[Submission]) -> list[float]:
         value
         for value in (
             hours_between(
-                assignment_submitted_at(submission),
-                assignment_graded_at(submission),
+                manual_assessment_submitted_at(submission),
+                manual_assessment_graded_at(submission),
             )
             for submission in submissions
         )
@@ -434,14 +434,14 @@ def _build_submission_diagnostics(
     note: str | None = None,
 ) -> AssessmentDiagnosticsSnapshot:
     status_counts = Counter(
-        assignment_submission_status(submission) for submission in submissions
+        manual_assessment_submission_status(submission) for submission in submissions
     )
     stale_backlog = sum(
         1
         for submission in submissions
-        if assignment_submission_status(submission) == SubmissionStatus.PENDING.value
+        if manual_assessment_submission_status(submission) == SubmissionStatus.PENDING.value
         and (
-            hours_between(assignment_submitted_at(submission), datetime.now(UTC)) or 0.0
+            hours_between(manual_assessment_submitted_at(submission), datetime.now(UTC)) or 0.0
         )
         > 72
     )
@@ -650,7 +650,6 @@ def _build_migration_status(
     activity_id: int,
 ) -> AssessmentMigrationStatus:
     canonical_type = {
-        "assignment": SubmissionAssessmentType.ASSIGNMENT,
         "quiz": SubmissionAssessmentType.QUIZ,
         "exam": SubmissionAssessmentType.EXAM,
         "code_challenge": SubmissionAssessmentType.CODE_CHALLENGE,
@@ -917,7 +916,7 @@ def _build_support_diagnostics(
     )
 
 
-def _build_assignment_rows(
+def _build_manual_assessment_rows(
     context: AnalyticsContext,
     snapshots: dict[tuple[int, int], ProgressSnapshot],
     allowed_user_ids: set[int] | None,
@@ -927,39 +926,39 @@ def _build_assignment_rows(
     for course_id, user_id in snapshots:
         eligible_by_course[course_id].add(user_id)
 
-    submissions_by_assignment: dict[int, list] = defaultdict(list)
-    for submission, assignment in context.assignment_submissions:
+    submissions_by_manual_assessment: dict[int, list] = defaultdict(list)
+    for submission, manual_assessment in context.manual_assessment_submissions:
         if not _is_allowed(submission.user_id, allowed_user_ids):
             continue
-        if not _in_bucket_window(assignment_submitted_at(submission), bucket_window):
+        if not _in_bucket_window(manual_assessment_submitted_at(submission), bucket_window):
             continue
-        if assignment.id is not None:
-            submissions_by_assignment[assignment.id].append((submission, assignment))
+        if manual_assessment.id is not None:
+            submissions_by_manual_assessment[manual_assessment.id].append((submission, manual_assessment))
 
     rows: list[AssessmentOutlierRow] = []
-    for assignment in context.assignments:
-        assignment_id = assignment.id
-        if assignment_id is None:
+    for manual_assessment in context.manual_assessments:
+        manual_assessment_id = manual_assessment.id
+        if manual_assessment_id is None:
             continue
-        submissions = submissions_by_assignment.get(assignment_id, [])
-        eligible = len(eligible_by_course.get(assignment.course_id, set()))
+        submissions = submissions_by_manual_assessment.get(manual_assessment_id, [])
+        eligible = len(eligible_by_course.get(manual_assessment.course_id, set()))
         submitted = len({submission.user_id for submission, _ in submissions})
         graded = [
             submission
             for submission, _ in submissions
-            if assignment_is_graded(submission)
-            and assignment_score(submission) is not None
+            if manual_assessment_is_graded(submission)
+            and manual_assessment_score(submission) is not None
         ]
-        grades = [assignment_score(submission) or 0.0 for submission in graded]
+        grades = [manual_assessment_score(submission) or 0.0 for submission in graded]
         scores_by_user = {
-            submission.user_id: assignment_score(submission) or 0.0
+            submission.user_id: manual_assessment_score(submission) or 0.0
             for submission in graded
         }
         pass_rate = safe_pct(
             sum(
                 1
                 for submission in graded
-                if (assignment_score(submission) or 0.0) >= 60
+                if (manual_assessment_score(submission) or 0.0) >= 60
             ),
             len(graded),
         )
@@ -969,8 +968,8 @@ def _build_assignment_rows(
             value
             for value in (
                 hours_between(
-                    assignment_submitted_at(submission),
-                    assignment_graded_at(submission),
+                    manual_assessment_submitted_at(submission),
+                    manual_assessment_graded_at(submission),
                 )
                 for submission in graded
             )
@@ -990,15 +989,15 @@ def _build_assignment_rows(
         ):
             outlier_reason_codes.append("grading_latency")
 
-        course = context.courses_by_id[assignment.course_id]
+        course = context.courses_by_id[manual_assessment.course_id]
         rows.append(
             AssessmentOutlierRow(
-                assessment_type="assignment",
-                assessment_id=assignment_id,
-                activity_id=assignment.activity_id,
-                course_id=assignment.course_id,
+                assessment_type="manual_assessment",
+                assessment_id=manual_assessment_id,
+                activity_id=manual_assessment.activity_id,
+                course_id=manual_assessment.course_id,
                 course_name=course.name,
-                title=assignment.title,
+                title=manual_assessment.title,
                 submission_rate=submission_rate,
                 completion_rate=submission_rate,
                 pass_rate=pass_rate,
@@ -1055,12 +1054,12 @@ def _build_exam_rows(
         scores = [
             score
             for attempt, _ in attempts
-            if (score := assignment_score(attempt)) is not None
+            if (score := manual_assessment_score(attempt)) is not None
         ]
         scores_by_user = {
             attempt.user_id: score
             for attempt, _ in attempts
-            if (score := assignment_score(attempt)) is not None
+            if (score := manual_assessment_score(attempt)) is not None
         }
         attempts_by_user = Counter(attempt.user_id for attempt, _ in attempts)
         threshold = assessment_pass_threshold(exam.settings)
@@ -1144,17 +1143,17 @@ def _build_quiz_rows(
         submitted_users = {
             submission.user_id
             for submission, _ in submissions
-            if assignment_submission_status(submission) != SubmissionStatus.DRAFT.value
+            if manual_assessment_submission_status(submission) != SubmissionStatus.DRAFT.value
         }
         scores = [
             score
             for submission, _ in submissions
-            if (score := assignment_score(submission)) is not None
+            if (score := manual_assessment_score(submission)) is not None
         ]
         scores_by_user = {
             submission.user_id: score
             for submission, _ in submissions
-            if (score := assignment_score(submission)) is not None
+            if (score := manual_assessment_score(submission)) is not None
         }
         attempts_by_user = Counter(submission.user_id for submission, _ in submissions)
         pass_rate = safe_pct(sum(1 for score in scores if score >= 60), len(scores))
@@ -1238,17 +1237,17 @@ def _build_code_rows(
         submitted_users = {
             submission.user_id
             for submission, _ in submissions
-            if assignment_is_graded(submission)
+            if manual_assessment_is_graded(submission)
         }
         scores = [
             score
             for submission, _ in submissions
-            if (score := assignment_score(submission)) is not None
+            if (score := manual_assessment_score(submission)) is not None
         ]
         scores_by_user = {
             submission.user_id: score
             for submission, _ in submissions
-            if (score := assignment_score(submission)) is not None
+            if (score := manual_assessment_score(submission)) is not None
         }
         attempts_by_user = Counter(submission.user_id for submission, _ in submissions)
         pass_rate = safe_pct(sum(1 for score in scores if score >= 60), len(scores))
@@ -1303,7 +1302,7 @@ def build_assessment_rows(
     snapshots = progress_snapshots(context, allowed_user_ids)
     bucket_window = _selected_bucket_window(filters)
     rows = [
-        *_build_assignment_rows(context, snapshots, allowed_user_ids, bucket_window),
+        *_build_manual_assessment_rows(context, snapshots, allowed_user_ids, bucket_window),
         *_build_quiz_rows(context, snapshots, allowed_user_ids, bucket_window),
         *_build_exam_rows(context, snapshots, allowed_user_ids, bucket_window),
         *_build_code_rows(context, snapshots, allowed_user_ids, bucket_window),
@@ -1409,7 +1408,7 @@ def get_teacher_assessment_detail(
     # Resolve course_id with a targeted query before loading the full analytics context
     # so we only pull data for the one course that hosts this assessment.
     scoped_course_id: int | None = None
-    if assessment_type in {"assignment", "exam"}:
+    if assessment_type in {"manual_assessment", "exam"}:
         row = db_session.get(Assessment, assessment_id)
         if row is not None:
             activity = db_session.get(Activity, row.activity_id)
@@ -1431,33 +1430,33 @@ def get_teacher_assessment_detail(
     for course_id, user_id in snapshots:
         eligible_by_course[course_id].add(user_id)
 
-    if assessment_type == "assignment":
-        assignment = next(
-            (item for item in context.assignments if item.id == assessment_id), None
+    if assessment_type == "manual_assessment":
+        manual_assessment = next(
+            (item for item in context.manual_assessments if item.id == assessment_id), None
         )
-        if assignment is None:
+        if manual_assessment is None:
             msg = f"Задание не найдено: {assessment_id}"
             raise ValueError(msg)
         records = [
-            (submission, assignment_)
-            for submission, assignment_ in context.assignment_submissions
-            if assignment_.id == assessment_id
+            (submission, manual_assessment_)
+            for submission, manual_assessment_ in context.manual_assessment_submissions
+            if manual_assessment_.id == assessment_id
             and _is_allowed(submission.user_id, allowed_user_ids)
         ]
-        eligible = len(eligible_by_course.get(assignment.course_id, set()))
+        eligible = len(eligible_by_course.get(manual_assessment.course_id, set()))
         scores = [
             score
             for submission, _ in records
-            if assignment_is_graded(submission)
-            for score in [assignment_score(submission)]
+            if manual_assessment_is_graded(submission)
+            for score in [manual_assessment_score(submission)]
             if score is not None
         ]
         latencies = [
             value
             for value in (
                 hours_between(
-                    assignment_submitted_at(submission),
-                    assignment_graded_at(submission),
+                    manual_assessment_submitted_at(submission),
+                    manual_assessment_graded_at(submission),
                 )
                 for submission, _ in records
             )
@@ -1471,11 +1470,11 @@ def get_teacher_assessment_detail(
                     context.users_by_id.get(submission.user_id)
                 ),
                 attempts=1,
-                best_score=assignment_score(submission),
-                last_score=assignment_score(submission),
-                submitted_at=to_iso(assignment_submitted_at(submission)),
-                graded_at=to_iso(assignment_graded_at(submission)),
-                status=assignment_submission_status(submission),
+                best_score=manual_assessment_score(submission),
+                last_score=manual_assessment_score(submission),
+                submitted_at=to_iso(manual_assessment_submitted_at(submission)),
+                graded_at=to_iso(manual_assessment_graded_at(submission)),
+                status=manual_assessment_submission_status(submission),
             )
             for submission, _ in records
         ]
@@ -1491,7 +1490,7 @@ def get_teacher_assessment_detail(
                 count=sum(
                     1
                     for submission, _ in records
-                    if assignment_is_reviewable(submission)
+                    if manual_assessment_is_reviewable(submission)
                 ),
             ),
         ]
@@ -1501,11 +1500,11 @@ def get_teacher_assessment_detail(
         diagnostics = _build_submission_diagnostics(
             submissions,
             manual_grading_required=True,
-            note="Assignments use canonical submission states and grading ledger history.",
+            note="ManualAssessments use canonical submission states and grading ledger history.",
         )
         audit_history = _load_audit_history(
             db_session,
-            activity_id=assignment.activity_id,
+            activity_id=manual_assessment.activity_id,
             submission_ids=[
                 submission.id for submission in submissions if submission.id is not None
             ],
@@ -1514,10 +1513,10 @@ def get_teacher_assessment_detail(
         slo = _build_slo_snapshot(diagnostics, latencies)
         migration = _build_migration_status(
             db_session,
-            assessment_type="assignment",
-            activity_id=assignment.activity_id,
+            assessment_type="manual_assessment",
+            activity_id=manual_assessment.activity_id,
         )
-        eligible_user_ids = eligible_by_course.get(assignment.course_id, set())
+        eligible_user_ids = eligible_by_course.get(manual_assessment.course_id, set())
         cohort_analytics = _build_cohort_analytics(
             context,
             eligible_user_ids=eligible_user_ids,
@@ -1530,7 +1529,7 @@ def get_teacher_assessment_detail(
         )
         item_analytics = _build_workflow_item_rows(diagnostics)
         support = _build_support_diagnostics(
-            assessment_type="assignment",
+            assessment_type="manual_assessment",
             eligible_learners=eligible,
             learner_rows=learner_rows,
             audit_history=audit_history,
@@ -1543,10 +1542,10 @@ def get_teacher_assessment_detail(
         )
         return TeacherAssessmentDetailResponse(
             generated_at=to_iso(context.generated_at) or "",
-            assessment_type="assignment",
+            assessment_type="manual_assessment",
             assessment_id=assessment_id,
-            course_id=assignment.course_id,
-            title=assignment.title,
+            course_id=manual_assessment.course_id,
+            title=manual_assessment.title,
             pass_threshold=60,
             pass_threshold_bucket_label=_score_bucket(60),
             summary=TeacherAssessmentDetailSummary(
@@ -1593,7 +1592,7 @@ def get_teacher_assessment_detail(
         exam_scores: list[float] = []
         for attempt, _exam in records:
             exam_attempts_by_user[attempt.user_id].append(attempt)
-            if (score := assignment_score(attempt)) is not None:
+            if (score := manual_assessment_score(attempt)) is not None:
                 exam_scores.append(score)
         submitted_users = {
             attempt.user_id for attempt, _exam in records if attempt.submitted_at
@@ -1604,14 +1603,14 @@ def get_teacher_assessment_detail(
                 (
                     score
                     for item in attempts
-                    if (score := assignment_score(item)) is not None
+                    if (score := manual_assessment_score(item)) is not None
                 ),
                 default=None,
             )
             last_attempt = max(
                 attempts, key=lambda item: item.submitted_at or item.started_at or ""
             )
-            last_score = assignment_score(last_attempt)
+            last_score = manual_assessment_score(last_attempt)
             learner_rows.append(
                 AssessmentLearnerRow(
                     user_id=user_id,
@@ -1729,12 +1728,12 @@ def get_teacher_assessment_detail(
         quiz_scores: list[float] = []
         for submission, _activity in records:
             quiz_submissions_by_user[submission.user_id].append(submission)
-            if (score := assignment_score(submission)) is not None:
+            if (score := manual_assessment_score(submission)) is not None:
                 quiz_scores.append(score)
         submitted_users = {
             submission.user_id
             for submission, _activity in records
-            if assignment_submission_status(submission) != SubmissionStatus.DRAFT.value
+            if manual_assessment_submission_status(submission) != SubmissionStatus.DRAFT.value
         }
         quality_by_question = _quality_by_question_from_quiz_submissions([
             submission for submission, _activity in records
@@ -1789,12 +1788,12 @@ def get_teacher_assessment_detail(
                 (
                     score
                     for item in quiz_submission_list
-                    if (score := assignment_score(item)) is not None
+                    if (score := manual_assessment_score(item)) is not None
                 ),
                 default=None,
             )
             last_attempt = ordered_attempts[-1]
-            last_score = assignment_score(last_attempt)
+            last_score = manual_assessment_score(last_attempt)
             learner_rows.append(
                 AssessmentLearnerRow(
                     user_id=user_id,
@@ -1802,9 +1801,9 @@ def get_teacher_assessment_detail(
                     attempts=len(quiz_submission_list),
                     best_score=round(best_score, 2) if best_score is not None else None,
                     last_score=round(last_score, 2) if last_score is not None else None,
-                    submitted_at=to_iso(assignment_submitted_at(last_attempt)),
-                    graded_at=to_iso(assignment_graded_at(last_attempt)),
-                    status=assignment_submission_status(last_attempt),
+                    submitted_at=to_iso(manual_assessment_submitted_at(last_attempt)),
+                    graded_at=to_iso(manual_assessment_graded_at(last_attempt)),
+                    status=manual_assessment_submission_status(last_attempt),
                 )
             )
         canonical_quiz_submissions = [submission for submission, _activity in records]
@@ -1964,7 +1963,7 @@ def get_teacher_assessment_detail(
         failure_counter: Counter[str] = Counter()
         for submission, _activity in records:
             code_attempts_by_user[submission.user_id].append(submission)
-            score = assignment_score(submission)
+            score = manual_assessment_score(submission)
             if score is not None:
                 code_scores.append(score)
                 failed_tests = (
@@ -1978,7 +1977,7 @@ def get_teacher_assessment_detail(
         submitted_users = {
             submission.user_id
             for submission, _activity in records
-            if assignment_is_graded(submission)
+            if manual_assessment_is_graded(submission)
         }
         learner_rows = []
         for user_id, attempts in code_attempts_by_user.items():
@@ -1990,12 +1989,12 @@ def get_teacher_assessment_detail(
                 (
                     score
                     for item in submission_attempts
-                    if (score := assignment_score(item)) is not None
+                    if (score := manual_assessment_score(item)) is not None
                 ),
                 default=None,
             )
             last_attempt = ordered_attempts[-1]
-            last_score = assignment_score(last_attempt)
+            last_score = manual_assessment_score(last_attempt)
             learner_rows.append(
                 AssessmentLearnerRow(
                     user_id=user_id,

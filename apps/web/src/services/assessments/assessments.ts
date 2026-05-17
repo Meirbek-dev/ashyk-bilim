@@ -11,7 +11,7 @@ export interface AssessmentSummary {
   course_id: number | null;
   course_uuid: string | null;
   chapter_id: number;
-  kind: 'ASSIGNMENT' | 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
+  kind: 'EXAM' | 'CODE_CHALLENGE' | 'QUIZ';
   title: string;
   description: string;
   lifecycle: string;

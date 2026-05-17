@@ -34,42 +34,6 @@ export function getActivityBlockMediaDirectory({
   return `${getMediaUrl()}content/platform/courses/${courseId}/activities/${activityId}/dynamic/blocks/${type}/${blockId}/${fileId}`;
 }
 
-export interface AssessmentItemFileDirParams {
-  courseUUID: string;
-  activityUUID: string;
-  assessmentUUID: string;
-  itemUUID: string;
-  fileID: string;
-}
-
-export function getAssessmentItemFileDir({
-  courseUUID,
-  activityUUID,
-  assessmentUUID,
-  itemUUID,
-  fileID,
-}: AssessmentItemFileDirParams): string {
-  return `${getMediaUrl()}content/platform/courses/${courseUUID}/activities/${activityUUID}/assignments/${assessmentUUID}/tasks/${itemUUID}/${fileID}`;
-}
-
-export interface AssessmentItemSubmissionFileDirParams {
-  courseUUID: string;
-  activityUUID: string;
-  assessmentUUID: string;
-  itemUUID: string;
-  fileSubID: string;
-}
-
-export function getAssessmentItemSubmissionFileDir({
-  courseUUID,
-  activityUUID,
-  assessmentUUID,
-  itemUUID,
-  fileSubID,
-}: AssessmentItemSubmissionFileDirParams): string {
-  return `${getMediaUrl()}content/platform/courses/${courseUUID}/activities/${activityUUID}/assignments/${assessmentUUID}/tasks/${itemUUID}/subs/${fileSubID}`;
-}
-
 export interface ActivityMediaDirectoryParams {
   courseUUID: string;
   activityUUID: string;

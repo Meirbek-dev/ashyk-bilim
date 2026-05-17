@@ -76,7 +76,6 @@ _ALLOWED_TEACHER_TRANSITIONS: dict[SubmissionStatus, frozenset[SubmissionStatus]
 _XP_SOURCE_ON_PUBLISH: dict[AssessmentType, XPSource] = {
     AssessmentType.QUIZ: XPSource.QUIZ_COMPLETION,
     AssessmentType.EXAM: XPSource.EXAM_COMPLETION,
-    AssessmentType.ASSIGNMENT: XPSource.ASSIGNMENT_SUBMISSION,
     AssessmentType.CODE_CHALLENGE: XPSource.CODE_CHALLENGE_COMPLETION,
 }
 

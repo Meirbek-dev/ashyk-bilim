@@ -12,9 +12,9 @@ from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     AnalyticsContext,
     assessment_pass_threshold,
-    assignment_is_graded,
-    assignment_is_reviewable,
-    assignment_score,
+    manual_assessment_is_graded,
+    manual_assessment_is_reviewable,
+    manual_assessment_score,
     build_activity_events,
     cohort_names_for_user,
     cohort_user_ids,
@@ -198,10 +198,10 @@ def build_risk_rows(
     missing_assessments: dict[tuple[int, int], int] = defaultdict(int)
     open_grading_blocks: dict[tuple[int, int], int] = defaultdict(int)
 
-    course_assignment_ids: dict[int, set[int]] = defaultdict(set)
-    for assignment in context.assignments:
-        if assignment.id is not None:
-            course_assignment_ids[assignment.course_id].add(assignment.id)
+    course_manual_assessment_ids: dict[int, set[int]] = defaultdict(set)
+    for manual_assessment in context.manual_assessments:
+        if manual_assessment.id is not None:
+            course_manual_assessment_ids[manual_assessment.course_id].add(manual_assessment.id)
 
     course_exam_ids: dict[int, set[int]] = defaultdict(set)
     exam_thresholds: dict[int, float] = {}
@@ -217,16 +217,16 @@ def build_risk_rows(
         if activity.activity_type.value == "TYPE_CODE_CHALLENGE":
             course_code_ids[activity.course_id].add(activity.id)
 
-    assignment_seen: dict[tuple[int, int], set[int]] = defaultdict(set)
-    for submission, assignment in context.assignment_submissions:
+    manual_assessment_seen: dict[tuple[int, int], set[int]] = defaultdict(set)
+    for submission, manual_assessment in context.manual_assessment_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
-        key = (assignment.course_id, submission.user_id)
-        assignment_seen[key].add(assignment.id)
-        if assignment_is_reviewable(submission):
+        key = (manual_assessment.course_id, submission.user_id)
+        manual_assessment_seen[key].add(manual_assessment.id)
+        if manual_assessment_is_reviewable(submission):
             open_grading_blocks[key] += 1
-        score = assignment_score(submission)
-        if assignment_is_graded(submission) and score is not None and score < 60:
+        score = manual_assessment_score(submission)
+        if manual_assessment_is_graded(submission) and score is not None and score < 60:
             failed_assessments[key] += 1
 
     exam_seen: dict[tuple[int, int], set[int]] = defaultdict(set)
@@ -235,7 +235,7 @@ def build_risk_rows(
             continue
         key = (exam.course_id, attempt.user_id)
         exam_seen[key].add(exam.id)
-        score = assignment_score(attempt)
+        score = manual_assessment_score(attempt)
         if score is None:
             continue
         if score < exam_thresholds.get(exam.id or 0, 60):
@@ -248,10 +248,10 @@ def build_risk_rows(
         if activity.course_id is None:
             continue
         key = (activity.course_id, submission.user_id)
-        score = assignment_score(submission)
+        score = manual_assessment_score(submission)
         if score is not None and score >= 60:
             code_success_by_pair[key].add(activity.id)
-        elif assignment_is_graded(submission):
+        elif manual_assessment_is_graded(submission):
             failed_assessments[key] += 1
 
     rows: list[AtRiskLearnerRow] = []
@@ -272,8 +272,8 @@ def build_risk_rows(
 
         missing = 0
         missing += len(
-            course_assignment_ids.get(course_id, set())
-            - assignment_seen.get(pair, set())
+            course_manual_assessment_ids.get(course_id, set())
+            - manual_assessment_seen.get(pair, set())
         )
         missing += len(
             course_exam_ids.get(course_id, set()) - exam_seen.get(pair, set())

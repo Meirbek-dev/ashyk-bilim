@@ -32,12 +32,12 @@ async def assessment_scheduler_loop(settings: AppSettings) -> None:
     while True:
         await asyncio.sleep(POLL_INTERVAL_SECONDS)
         try:
-            await asyncio.to_thread(_publish_due_assignments)
+            await asyncio.to_thread(_publish_due_assessments)
         except Exception:
             logger.exception("Assessment scheduler tick failed; will retry next cycle")
 
 
-def _publish_due_assignments() -> int:
+def _publish_due_assessments() -> int:
     """Synchronous DB work executed in a thread-pool to avoid blocking the loop.
 
     Returns the number of assessments published in this tick.

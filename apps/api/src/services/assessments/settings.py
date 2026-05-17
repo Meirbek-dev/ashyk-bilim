@@ -55,15 +55,6 @@ class CodeAssessmentSettings(PydanticStrictBaseModel):
     archived_at: str | None = None
 
 
-class AssignmentAssessmentSettings(PydanticStrictBaseModel):
-    kind: Literal["ASSIGNMENT"] = "ASSIGNMENT"
-    lifecycle_status: str = "DRAFT"
-    due_at: str | None = None
-    attempt_limit: int | None = None
-    grading_strategy: str = "MANUAL"
-    anti_cheat: dict[str, object] = PydanticField(default_factory=dict)
-
-
 class ExamAssessmentSettings(PydanticStrictBaseModel):
     kind: Literal["EXAM"] = "EXAM"
     time_limit: int | None = None
@@ -101,8 +92,7 @@ class QuizAssessmentSettings(PydanticStrictBaseModel):
 
 
 type AssessmentSettings = Annotated[
-    AssignmentAssessmentSettings
-    | ExamAssessmentSettings
+    ExamAssessmentSettings
     | QuizAssessmentSettings
     | CodeAssessmentSettings,
     PydanticField(discriminator="kind"),
@@ -179,33 +169,16 @@ def _settings_for_activity(
             _code_settings_payload(activity, assessment, policy, db_session)
         )
 
-    if activity.activity_type == ActivityTypeEnum.TYPE_FILE_SUBMISSION:
-        return validate_settings(
-            _assignment_settings_payload(activity, assessment, policy)
-        )
-
     if (
         assessment is not None
         and AssessmentType(assessment.kind) == AssessmentType.QUIZ
     ):
         return validate_settings(_quiz_settings_payload(assessment, policy, db_session))
 
-    return AssignmentAssessmentSettings()
-
-
-def _assignment_settings_payload(
-    activity: Activity,
-    assessment: Assessment | None,
-    policy: AssessmentPolicy | None,
-) -> dict[str, object]:
-    return {
-        "kind": "ASSIGNMENT",
-        "lifecycle_status": _lifecycle_value(activity, assessment),
-        "due_at": policy.due_at.isoformat() if policy and policy.due_at else None,
-        "attempt_limit": policy.max_attempts if policy else None,
-        "grading_strategy": (policy.grading_mode if policy else "MANUAL"),
-        "anti_cheat": policy.anti_cheat_json if policy else {},
-    }
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Assessment settings are not available for this activity type",
+    )
 
 
 def _exam_settings_payload(

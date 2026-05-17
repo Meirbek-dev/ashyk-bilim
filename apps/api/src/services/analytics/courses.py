@@ -15,7 +15,7 @@ from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.bottlenecks import build_content_bottlenecks
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
-    assignment_is_reviewable,
+    manual_assessment_is_reviewable,
     build_activity_events,
     build_series,
     cohort_user_ids,
@@ -292,9 +292,9 @@ def build_course_rows(
         )
         ungraded_submissions = sum(
             1
-            for submission, assignment in context.assignment_submissions
-            if assignment.course_id == course_id
-            and assignment_is_reviewable(submission)
+            for submission, manual_assessment in context.manual_assessment_submissions
+            if manual_assessment.course_id == course_id
+            and manual_assessment_is_reviewable(submission)
             and (allowed_user_ids is None or submission.user_id in allowed_user_ids)
         )
         last_update = course_last_content_update(context, course_id)
@@ -593,9 +593,9 @@ def get_teacher_course_detail(
     )
     ungraded_submissions = sum(
         1
-        for submission, assignment in context.assignment_submissions
-        if assignment.course_id == course_id
-        and assignment_is_reviewable(submission)
+        for submission, manual_assessment in context.manual_assessment_submissions
+        if manual_assessment.course_id == course_id
+        and manual_assessment_is_reviewable(submission)
         and (allowed_user_ids is None or submission.user_id in allowed_user_ids)
     )
 

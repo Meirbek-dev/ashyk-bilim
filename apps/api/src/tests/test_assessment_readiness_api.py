@@ -173,13 +173,13 @@ def _seed_assessment(
         session.flush()
 
         activity_type_by_kind = {
-            AssessmentType.ASSIGNMENT: ActivityTypeEnum.TYPE_FILE_SUBMISSION,
+            AssessmentType.EXAM: ActivityTypeEnum.TYPE_FILE_SUBMISSION,
             AssessmentType.EXAM: ActivityTypeEnum.TYPE_EXAM,
             AssessmentType.QUIZ: ActivityTypeEnum.TYPE_CUSTOM,
             AssessmentType.CODE_CHALLENGE: ActivityTypeEnum.TYPE_CODE_CHALLENGE,
         }
         activity_sub_type_by_kind = {
-            AssessmentType.ASSIGNMENT: ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
+            AssessmentType.EXAM: ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
             AssessmentType.EXAM: ActivitySubTypeEnum.SUBTYPE_EXAM_STANDARD,
             AssessmentType.QUIZ: ActivitySubTypeEnum.SUBTYPE_CUSTOM,
             AssessmentType.CODE_CHALLENGE: ActivitySubTypeEnum.SUBTYPE_CODE_GENERAL,
@@ -265,7 +265,7 @@ def test_readiness_endpoint_returns_new_policy_and_item_codes(
 ) -> None:
     assessment = _seed_assessment(
         db_session_factory,
-        kind=AssessmentType.ASSIGNMENT,
+        kind=AssessmentType.EXAM,
         title="  ",
         scheduled_at=datetime.now(UTC) + timedelta(days=3),
         policy_kwargs={

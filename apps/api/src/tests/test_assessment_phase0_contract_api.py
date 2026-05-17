@@ -198,7 +198,7 @@ def _seed_base(db_session_factory, *, lifecycle: AssessmentLifecycle):
         policy = AssessmentPolicy(
             policy_uuid="policy_phase0",
             activity_id=activity.id,
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             grading_mode=AssessmentGradingMode.MANUAL,
             grade_release_mode=GradeReleaseMode.BATCH,
             completion_rule=AssessmentCompletionRule.GRADED,
@@ -217,7 +217,7 @@ def _seed_base(db_session_factory, *, lifecycle: AssessmentLifecycle):
         assessment = Assessment(
             assessment_uuid="assessment_phase0",
             activity_id=activity.id,
-            kind=AssessmentType.ASSIGNMENT,
+            kind=AssessmentType.EXAM,
             title="Phase 0 Assessment",
             description="",
             lifecycle=lifecycle,
@@ -265,7 +265,7 @@ def test_canonical_student_me_masks_unpublished_batch_grade(
         ).one()
         submission = Submission(
             submission_uuid="submission_hidden",
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             activity_id=activity.id,
             user_id=2,
             status=SubmissionStatus.GRADED,
@@ -379,7 +379,7 @@ def test_activity_lookup_does_not_create_canonical_assessment_rows(
         session.flush()
         session.add(
             Activity(
-                name="Legacy Assignment",
+                name="Legacy ManualAssessment",
                 activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
                 activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
                 content={},
@@ -417,7 +417,7 @@ def test_published_assessment_with_submissions_rejects_item_edits(
         session.add(
             Submission(
                 submission_uuid="submission_existing",
-                assessment_type=AssessmentType.ASSIGNMENT,
+                assessment_type=AssessmentType.EXAM,
                 activity_id=activity.id,
                 user_id=2,
                 status=SubmissionStatus.DRAFT,

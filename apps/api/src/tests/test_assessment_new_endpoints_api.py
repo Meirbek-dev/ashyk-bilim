@@ -304,7 +304,7 @@ class TestAttemptState:
 
 
 class TestPolicyPreset:
-    @pytest.mark.parametrize("kind", ["EXAM", "QUIZ", "ASSIGNMENT", "CODE_CHALLENGE"])
+    @pytest.mark.parametrize("kind", ["EXAM", "QUIZ", "EXAM", "CODE_CHALLENGE"])
     def test_returns_preset_for_kind(
         self, db_session_factory, teacher_user, monkeypatch, kind
     ):

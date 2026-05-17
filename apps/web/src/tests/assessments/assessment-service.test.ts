@@ -64,8 +64,8 @@ function makeAssessment(overrides = {}) {
     course_id: 1,
     course_uuid: 'course_test_1',
     chapter_id: 10,
-    kind: 'ASSIGNMENT' as const,
-    title: 'Test Assignment',
+    kind: 'EXAM' as const,
+    title: 'Test ManualAssessment',
     description: 'A test assessment',
     lifecycle: 'PUBLISHED',
     published_at: '2026-05-01T10:00:00Z',
@@ -227,7 +227,7 @@ describe('getAttemptState', () => {
 describe('getPolicyPreset', () => {
   it('fetches the policy preset for a given kind', async () => {
     const preset = {
-      kind: 'ASSIGNMENT',
+      kind: 'EXAM',
       grade_release_mode: 'IMMEDIATE',
       grading_mode: 'MANUAL',
       completion_rule: 'GRADED',
@@ -240,9 +240,9 @@ describe('getPolicyPreset', () => {
     };
     mockMetaSuccess(preset);
 
-    const result = await getPolicyPreset('ASSIGNMENT');
+    const result = await getPolicyPreset('EXAM');
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/policy-preset/ASSIGNMENT', expect.any(Object));
+    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/policy-preset/EXAM', expect.any(Object));
     expect(result?.grade_release_mode).toBe('IMMEDIATE');
     expect(result?.grading_mode).toBe('MANUAL');
   });

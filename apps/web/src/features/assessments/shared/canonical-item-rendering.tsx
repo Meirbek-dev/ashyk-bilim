@@ -79,33 +79,6 @@ export function CanonicalAttemptItem({
     );
   }
 
-  if (body.kind === 'FILE_UPLOAD') {
-    const uploadModule = getItemKindModule('FILE_UPLOAD');
-    const FileUploadAttemptModule = uploadModule.Attempt;
-    return (
-      <FileUploadAttemptModule
-        item={{
-          taskUuid: item.item_uuid,
-          assessmentUuid,
-          constraints: {
-            kind: 'FILE_UPLOAD',
-            allowed_mime_types: body.mimes,
-            max_file_size_mb: body.max_mb ?? null,
-            max_files: body.max_files,
-          },
-        }}
-        answer={answer?.kind === 'FILE_UPLOAD' ? answer : null}
-        disabled={disabled}
-        onAnswerChange={(nextAnswer) =>
-          onChange({
-            kind: 'FILE_UPLOAD',
-            uploads: nextAnswer?.uploads ?? [],
-          })
-        }
-      />
-    );
-  }
-
   if (body.kind === 'FORM') {
     const currentValues = answer?.kind === 'FORM' ? answer.values : {};
     return (
@@ -322,25 +295,6 @@ export function CanonicalReviewAnswer({
           </div>
         ) : null}
       </div>
-    );
-  }
-
-  if (body.kind === 'FILE_UPLOAD') {
-    const { ReviewDetail } = getItemKindModule('FILE_UPLOAD');
-    return (
-      <ReviewDetail
-        item={{
-          taskUuid: item.item_uuid,
-          assessmentUuid: item.item_uuid,
-          constraints: {
-            kind: 'FILE_UPLOAD',
-            allowed_mime_types: body.mimes,
-            max_file_size_mb: body.max_mb ?? null,
-            max_files: body.max_files,
-          },
-        }}
-        answer={answer?.kind === 'FILE_UPLOAD' ? answer : null}
-      />
     );
   }
 

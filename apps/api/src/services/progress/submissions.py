@@ -32,7 +32,6 @@ from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
 
 _ASSESSMENT_TYPE_BY_ACTIVITY_TYPE: dict[str, AssessmentType] = {
-    ActivityTypeEnum.TYPE_FILE_SUBMISSION.value: AssessmentType.ASSIGNMENT,
     ActivityTypeEnum.TYPE_EXAM.value: AssessmentType.EXAM,
     ActivityTypeEnum.TYPE_CODE_CHALLENGE.value: AssessmentType.CODE_CHALLENGE,
 }
@@ -504,17 +503,11 @@ def _get_or_create_policy(
         return None
 
     grading_mode = (
-        AssessmentGradingMode.MANUAL
-        if assessment_type == AssessmentType.ASSIGNMENT
-        else AssessmentGradingMode.AUTO_THEN_MANUAL
+        AssessmentGradingMode.AUTO_THEN_MANUAL
         if assessment_type in {AssessmentType.QUIZ, AssessmentType.EXAM}
         else AssessmentGradingMode.AUTO
     )
-    completion_rule = (
-        AssessmentCompletionRule.GRADED
-        if assessment_type == AssessmentType.ASSIGNMENT
-        else AssessmentCompletionRule.PASSED
-    )
+    completion_rule = AssessmentCompletionRule.PASSED
     settings_json: dict[str, object] = {}
     anti_cheat_json = DEFAULT_ANTI_CHEAT_JSON.copy()
 

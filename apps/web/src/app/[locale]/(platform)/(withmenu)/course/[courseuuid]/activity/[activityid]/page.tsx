@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import { getActivity } from '@services/courses/activities';
 import { getCourseMetadata } from '@services/courses/courses';
 import { getSession } from '@/lib/auth/session';
@@ -8,11 +7,9 @@ import type { Metadata } from 'next';
 import { cache } from 'react';
 import { getAssessmentByActivityUuid } from '@services/assessments/assessments';
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
-import { courseContributorsQueryOptions } from '@/features/courses/queries/course.query';
+import { courseContributorsQueryOptions, trailCurrentQueryOptions } from '@/features/courses/queries/course.query';
 
 import ActivityClient from '@/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity';
-
-const ASSESSABLE_TYPES = new Set(['TYPE_FILE_SUBMISSION', 'TYPE_EXAM', 'TYPE_CODE_CHALLENGE', 'TYPE_CUSTOM']);
 
 interface MetadataProps {
   params: Promise<{ courseuuid: string; activityid: string }>;
@@ -67,13 +64,12 @@ export default async function PlatformActivityPage(props: {
     getSession(),
   ]);
 
-  // Redirect assessable activities to the canonical assessment URL.
-  if (!isCourseEnd && activity && ASSESSABLE_TYPES.has(activity.activity_type ?? '')) {
-    const assessment = await getAssessmentByActivityUuid(activity.activity_uuid);
-    if (assessment) {
-      redirect(`/assessments/${assessment.assessment_uuid}`);
-    }
-  }
+  const assessment =
+    !isCourseEnd &&
+    activity &&
+    ['TYPE_EXAM', 'TYPE_CODE_CHALLENGE', 'TYPE_CUSTOM'].includes(activity.activity_type ?? '')
+      ? await getAssessmentByActivityUuid(activity.activity_uuid)
+      : null;
 
   const queryClient = new QueryClient();
 
@@ -81,7 +77,10 @@ export default async function PlatformActivityPage(props: {
     const normalizedCourseUuid = course_meta.course_uuid.startsWith('course_')
       ? course_meta.course_uuid
       : `course_${course_meta.course_uuid}`;
-    await queryClient.prefetchQuery(courseContributorsQueryOptions(normalizedCourseUuid));
+    await Promise.all([
+      queryClient.prefetchQuery(courseContributorsQueryOptions(normalizedCourseUuid)),
+      queryClient.prefetchQuery(trailCurrentQueryOptions()),
+    ]);
   }
 
   return (
@@ -90,6 +89,7 @@ export default async function PlatformActivityPage(props: {
         <HydrationBoundary state={dehydrate(queryClient)}>
           <ActivityClient
             activityid={activityid}
+            assessmentUuid={assessment?.assessment_uuid ?? null}
             courseuuid={courseuuid}
             activity={activity}
             course={course_meta}

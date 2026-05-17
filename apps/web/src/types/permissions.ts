@@ -32,7 +32,6 @@ export const Resources = {
   COURSE: 'course',
   CHAPTER: 'chapter',
   ACTIVITY: 'activity',
-  ASSIGNMENT: 'assignment',
   QUIZ: 'quiz',
   USER: 'user',
   USERGROUP: 'usergroup',
@@ -44,6 +43,7 @@ export const Resources = {
   ANALYTICS: 'analytics',
   TRAIL: 'trail',
   EXAM: 'exam',
+  ASSESSMENT: 'assessment',
   API_TOKEN: 'api_token',
 } as const;
 

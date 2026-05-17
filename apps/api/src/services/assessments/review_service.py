@@ -307,18 +307,6 @@ def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
     """Return kind-appropriate default policy settings."""
 
     presets: dict[AssessmentType, AssessmentPolicyPreset] = {
-        AssessmentType.ASSIGNMENT: AssessmentPolicyPreset(
-            kind=AssessmentType.ASSIGNMENT,
-            grade_release_mode=GradeReleaseMode.IMMEDIATE,
-            grading_mode=AssessmentGradingMode.MANUAL,
-            completion_rule=AssessmentCompletionRule.SUBMITTED,
-            passing_score=60.0,
-            max_attempts=None,
-            time_limit_seconds=None,
-            allow_late=True,
-            anti_cheat_enabled=False,
-            review_visibility="FULL",
-        ),
         AssessmentType.EXAM: AssessmentPolicyPreset(
             kind=AssessmentType.EXAM,
             grade_release_mode=GradeReleaseMode.BATCH,

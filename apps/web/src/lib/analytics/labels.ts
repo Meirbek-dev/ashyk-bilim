@@ -3,7 +3,7 @@ import type { AssessmentType, Bucket, ComparePreset } from '@/types/analytics';
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 
 const assessmentTypeKeys: Record<AssessmentType, string> = {
-  assignment: 'labels.assessmentType.assignment',
+  manual_assessment: 'labels.assessmentType.manualAssessment',
   quiz: 'labels.assessmentType.quiz',
   exam: 'labels.assessmentType.exam',
   code_challenge: 'labels.assessmentType.codeChallenge',

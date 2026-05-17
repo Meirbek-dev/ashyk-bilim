@@ -78,7 +78,6 @@ from src.db.grading.submissions import (
     SubmissionStatus,
     TeacherGradeInput,
 )
-from src.db.uploads import Upload, UploadStatus
 from src.db.users import AnonymousUser, PublicUser, User
 from src.security.rbac import PermissionChecker
 from src.services.assessments.settings import validate_settings
@@ -97,7 +96,6 @@ from src.services.grading.teacher import _save_teacher_grade, bulk_publish_grade
 from src.services.progress import submissions as progress_submissions
 
 ASSESSABLE_ACTIVITY_TYPES = {
-    ActivityTypeEnum.TYPE_FILE_SUBMISSION,
     ActivityTypeEnum.TYPE_EXAM,
     ActivityTypeEnum.TYPE_CUSTOM,
     ActivityTypeEnum.TYPE_CODE_CHALLENGE,
@@ -106,10 +104,6 @@ ASSESSABLE_ACTIVITY_TYPES = {
 _KIND_TO_ACTIVITY: dict[
     AssessmentType, tuple[ActivityTypeEnum, ActivitySubTypeEnum]
 ] = {
-    AssessmentType.ASSIGNMENT: (
-        ActivityTypeEnum.TYPE_FILE_SUBMISSION,
-        ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
-    ),
     AssessmentType.EXAM: (
         ActivityTypeEnum.TYPE_EXAM,
         ActivitySubTypeEnum.SUBTYPE_EXAM_STANDARD,
@@ -125,7 +119,6 @@ _KIND_TO_ACTIVITY: dict[
 }
 
 _ACTIVITY_TO_KIND: dict[ActivityTypeEnum, AssessmentType] = {
-    ActivityTypeEnum.TYPE_FILE_SUBMISSION: AssessmentType.ASSIGNMENT,
     ActivityTypeEnum.TYPE_EXAM: AssessmentType.EXAM,
     ActivityTypeEnum.TYPE_CODE_CHALLENGE: AssessmentType.CODE_CHALLENGE,
 }
@@ -912,11 +905,7 @@ def _normalize_policy_settings_json(
         )
     if max_attempts is not _UNSET or normalized_max_attempts is not None:
         normalized["max_attempts"] = normalized_max_attempts
-        if kind in {
-            AssessmentType.ASSIGNMENT,
-            AssessmentType.EXAM,
-            AssessmentType.QUIZ,
-        }:
+        if kind in {AssessmentType.EXAM, AssessmentType.QUIZ}:
             normalized["attempt_limit"] = normalized_max_attempts
 
     if kind in {AssessmentType.EXAM, AssessmentType.QUIZ}:
@@ -964,16 +953,12 @@ def _time_limit_seconds_from_settings(payload: dict[str, object]) -> int | None:
 
 
 def _default_grading_mode(kind: AssessmentType) -> AssessmentGradingMode:
-    if kind == AssessmentType.ASSIGNMENT:
-        return AssessmentGradingMode.MANUAL
     if kind == AssessmentType.EXAM:
         return AssessmentGradingMode.AUTO_THEN_MANUAL
     return AssessmentGradingMode.AUTO
 
 
 def _default_completion_rule(kind: AssessmentType) -> AssessmentCompletionRule:
-    if kind == AssessmentType.ASSIGNMENT:
-        return AssessmentCompletionRule.SUBMITTED
     return AssessmentCompletionRule.PASSED
 
 
@@ -997,7 +982,7 @@ def _default_activity_settings(kind: AssessmentType) -> dict[str, object]:
         return validate_settings({"kind": "CODE_CHALLENGE"}).model_dump(mode="json")
     if kind == AssessmentType.QUIZ:
         return validate_settings({"kind": "QUIZ"}).model_dump(mode="json")
-    return validate_settings({"kind": "ASSIGNMENT"}).model_dump(mode="json")
+    raise ValueError(f"Unsupported assessment kind: {kind}")
 
 
 def _sync_activity_lifecycle(
@@ -1045,8 +1030,6 @@ def _normalize_answer_patch(
             mismatched.append(entry.item_uuid)
             continue
         answer_payload = answer.model_dump(mode="json")
-        if str(answer.kind) == ItemKind.FILE_UPLOAD.value:
-            _validate_file_upload_answer(answer_payload, item, current_user, db_session)
         normalized[entry.item_uuid] = answer_payload
 
     if invalid or mismatched:
@@ -1059,81 +1042,6 @@ def _normalize_answer_patch(
             },
         )
     return normalized
-
-
-def _validate_file_upload_answer(
-    answer: dict[str, object],
-    item: AssessmentItem,
-    current_user: PublicUser,
-    db_session: Session,
-) -> None:
-    body = item.body_json if isinstance(item.body_json, dict) else {}
-    allowed_mimes = (
-        body.get("mimes")
-        if isinstance(body.get("mimes"), list)
-        else body.get("allowed_mime_types")
-        if isinstance(body.get("allowed_mime_types"), list)
-        else []
-    )
-    max_mb = (
-        body.get("max_mb")
-        if isinstance(body.get("max_mb"), int)
-        else body.get("max_file_size_mb")
-    )
-    max_bytes = (
-        int(max_mb) * 1024 * 1024 if isinstance(max_mb, int) and max_mb > 0 else None
-    )
-    uploads_value = answer.get("uploads")
-    uploads: list[object] = uploads_value if isinstance(uploads_value, list) else []
-    for file_ref in uploads:
-        if not isinstance(file_ref, dict):
-            raise HTTPException(
-                status_code=400, detail="Некорректный ответ с загрузкой файла"
-            )
-        upload_id = file_ref.get("upload_uuid")
-        upload = db_session.exec(
-            select(Upload).where(Upload.upload_uuid == upload_id)
-        ).first()
-        if (
-            upload is None
-            or upload.user_id != current_user.id
-            or upload.status != UploadStatus.FINALIZED
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail={
-                    "message": "Загрузка файла не завершена для этого пользователя",
-                    "upload_uuid": upload_id,
-                    "item_uuid": item.item_uuid,
-                },
-            )
-        if allowed_mimes and upload.content_type not in allowed_mimes:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail={
-                    "message": "Тип контента файла не разрешен",
-                    "upload_uuid": upload_id,
-                    "item_uuid": item.item_uuid,
-                },
-            )
-        if (
-            max_bytes is not None
-            and upload.size_bytes is not None
-            and upload.size_bytes > max_bytes
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail={
-                    "message": "Файл больше, чем разрешено для этого элемента",
-                    "upload_uuid": upload_id,
-                    "item_uuid": item.item_uuid,
-                },
-            )
-        if upload.referenced_at is None:
-            upload.referenced_at = datetime.now(UTC)
-            upload.updated_at = upload.referenced_at
-            upload.referenced_count = (upload.referenced_count or 0) + 1
-            db_session.add(upload)
 
 
 def _get_or_create_submission_draft(
@@ -1303,39 +1211,6 @@ def _item_readiness_issues(item: AssessmentItem) -> list[ReadinessIssue]:
                     item_uuid=item.item_uuid,
                 )
             )
-    elif body.kind == "FILE_UPLOAD":
-        if not body.prompt.strip():
-            issues.append(
-                ReadinessIssue(
-                    code="file.prompt_missing",
-                    message="Текст задания загрузки файла (промпт) обязателен.",
-                    item_uuid=item.item_uuid,
-                )
-            )
-        if body.max_files < 1:
-            issues.append(
-                ReadinessIssue(
-                    code="file.max_files_invalid",
-                    message="Элементы с загрузкой файлов должны разрешать хотя бы один файл.",
-                    item_uuid=item.item_uuid,
-                )
-            )
-        if body.max_mb is not None and body.max_mb <= 0:
-            issues.append(
-                ReadinessIssue(
-                    code="file.max_mb_invalid",
-                    message="Максимальный размер файла должен быть больше нуля.",
-                    item_uuid=item.item_uuid,
-                )
-            )
-        if any(not mime.strip() for mime in body.mimes):
-            issues.append(
-                ReadinessIssue(
-                    code="file.mime_invalid",
-                    message="Разрешенные типы файлов не могут быть пустыми.",
-                    item_uuid=item.item_uuid,
-                )
-            )
     elif body.kind == "FORM":
         if not body.prompt.strip():
             issues.append(
@@ -1476,14 +1351,6 @@ def _allowed_item_kinds_for_assessment(kind: str) -> set[ItemKind] | None:
         return {ItemKind.CHOICE, ItemKind.MATCHING}
     if kind == AssessmentType.QUIZ:
         return {ItemKind.CHOICE, ItemKind.MATCHING}
-    if kind == AssessmentType.ASSIGNMENT:
-        return {
-            ItemKind.CHOICE,
-            ItemKind.OPEN_TEXT,
-            ItemKind.FILE_UPLOAD,
-            ItemKind.FORM,
-            ItemKind.MATCHING,
-        }
     return None
 
 

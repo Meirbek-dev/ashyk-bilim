@@ -114,7 +114,6 @@ class SubmissionStatus(StrEnum):
 
 class AssessmentType(StrEnum):
     QUIZ = "QUIZ"
-    ASSIGNMENT = "ASSIGNMENT"
     EXAM = "EXAM"
     CODE_CHALLENGE = "CODE_CHALLENGE"
 

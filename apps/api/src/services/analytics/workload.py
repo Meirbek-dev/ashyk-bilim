@@ -3,11 +3,11 @@ from __future__ import annotations
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     AnalyticsContext,
-    assignment_graded_at,
-    assignment_is_graded,
-    assignment_is_reviewable,
-    assignment_submission_status,
-    assignment_submitted_at,
+    manual_assessment_graded_at,
+    manual_assessment_is_graded,
+    manual_assessment_is_reviewable,
+    manual_assessment_submission_status,
+    manual_assessment_submitted_at,
     cohort_user_ids,
     display_name,
     hours_between,
@@ -31,7 +31,7 @@ def build_teacher_workload(
     generated_at = context.generated_at
     current_start, current_end = filters.window_bounds(now=generated_at)
 
-    backlog_by_assignment: dict[int, dict[str, object]] = {}
+    backlog_by_manual_assessment: dict[int, dict[str, object]] = {}
     latency_hours: list[float] = []
     backlog_total = 0
     sla_breaches = 0
@@ -39,24 +39,24 @@ def build_teacher_workload(
     submitted_in_window = 0
     graded_in_window = 0
 
-    for submission, assignment in context.assignment_submissions:
+    for submission, manual_assessment in context.manual_assessment_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
 
-        submitted_at = parse_timestamp(assignment_submitted_at(submission))
-        graded_at = parse_timestamp(assignment_graded_at(submission))
+        submitted_at = parse_timestamp(manual_assessment_submitted_at(submission))
+        graded_at = parse_timestamp(manual_assessment_graded_at(submission))
         if submitted_at is not None and current_start <= submitted_at <= current_end:
             submitted_in_window += 1
         if graded_at is not None and current_start <= graded_at <= current_end:
             graded_in_window += 1
 
-        if assignment_is_graded(submission):
+        if manual_assessment_is_graded(submission):
             latency = hours_between(submitted_at, graded_at)
             if latency is not None:
                 latency_hours.append(latency)
             continue
 
-        if not assignment_is_reviewable(submission):
+        if not manual_assessment_is_reviewable(submission):
             continue
 
         backlog_total += 1
@@ -77,14 +77,14 @@ def build_teacher_workload(
         else:
             aging.d7_plus += 1
 
-        course = context.courses_by_id.get(assignment.course_id)
-        item = backlog_by_assignment.setdefault(
-            assignment.id or 0,
+        course = context.courses_by_id.get(manual_assessment.course_id)
+        item = backlog_by_manual_assessment.setdefault(
+            manual_assessment.id or 0,
             {
-                "course_id": assignment.course_id,
+                "course_id": manual_assessment.course_id,
                 "course_name": course.name if course is not None else "Unknown course",
-                "assessment_id": assignment.id or 0,
-                "title": assignment.title,
+                "assessment_id": manual_assessment.id or 0,
+                "title": manual_assessment.title,
                 "awaiting_review": 0,
                 "oldest_submitted_at": submitted_at,
                 "max_age_hours": age_hours,
@@ -114,7 +114,7 @@ def build_teacher_workload(
             course_id=int(item["course_id"]),
             course_name=str(item["course_name"]),
             assessment_id=int(item["assessment_id"]),
-            assessment_type="assignment",
+            assessment_type="manual_assessment",
             title=str(item["title"]),
             awaiting_review=int(item["awaiting_review"]),
             oldest_submitted_at=to_iso(item.get("oldest_submitted_at")),
@@ -123,7 +123,7 @@ def build_teacher_workload(
             else None,
             sla_breaches=int(item["sla_breaches"]),
         )
-        for item in backlog_by_assignment.values()
+        for item in backlog_by_manual_assessment.values()
     ]
     backlog_rows.sort(
         key=lambda row: (row.sla_breaches, row.age_hours or 0, row.awaiting_review),
@@ -136,7 +136,7 @@ def build_teacher_workload(
         median_feedback_latency_hours=median_or_none(latency_hours),
         aging_buckets=aging,
         forecast_backlog_7d=forecast_backlog,
-        backlog_by_assignment=backlog_rows[:25],
+        backlog_by_manual_assessment=backlog_rows[:25],
     )
 
 
@@ -146,28 +146,28 @@ def backlog_items_for_drillthrough(
     allowed_user_ids = cohort_user_ids(context, filters.cohort_ids)
     rows: list[dict[str, object]] = []
     generated_at = context.generated_at
-    for submission, assignment in context.assignment_submissions:
+    for submission, manual_assessment in context.manual_assessment_submissions:
         if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
             continue
-        if not assignment_is_reviewable(submission):
+        if not manual_assessment_is_reviewable(submission):
             continue
-        submitted_at = parse_timestamp(assignment_submitted_at(submission))
+        submitted_at = parse_timestamp(manual_assessment_submitted_at(submission))
         age_hours = (
             round((generated_at - submitted_at).total_seconds() / 3600, 2)
             if submitted_at is not None
             else None
         )
         user = context.users_by_id.get(submission.user_id)
-        course = context.courses_by_id.get(assignment.course_id)
+        course = context.courses_by_id.get(manual_assessment.course_id)
         rows.append({
             "submission_id": submission.id or 0,
-            "assignment_id": assignment.id or 0,
-            "assignment_title": assignment.title,
-            "course_id": assignment.course_id,
+            "manual_assessment_id": manual_assessment.id or 0,
+            "manual_assessment_title": manual_assessment.title,
+            "course_id": manual_assessment.course_id,
             "course_name": course.name if course is not None else "Unknown course",
             "user_id": submission.user_id,
             "user_display_name": display_name(user),
-            "status": assignment_submission_status(submission),
+            "status": manual_assessment_submission_status(submission),
             "submitted_at": to_iso(submitted_at),
             "age_hours": age_hours,
             "sla_breached": age_hours is not None and age_hours > GRADING_SLA_HOURS,

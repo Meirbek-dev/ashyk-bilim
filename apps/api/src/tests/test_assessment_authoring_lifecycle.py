@@ -228,9 +228,9 @@ def _seed_published_assessment(db_session_factory) -> str:
     now = datetime.now(UTC)
     with db_session_factory() as session:
         activity = Activity(
-            name="Published Assignment",
-            activity_type=ActivityTypeEnum.TYPE_FILE_SUBMISSION,
-            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD,
+            name="Published ManualAssessment",
+            activity_type=ActivityTypeEnum.TYPE_EXAM,
+            activity_sub_type=ActivitySubTypeEnum.SUBTYPE_EXAM_STANDARD,
             content={},
             details={},
             settings={},
@@ -247,7 +247,7 @@ def _seed_published_assessment(db_session_factory) -> str:
         policy = AssessmentPolicy(
             policy_uuid="policy_published_authoring",
             activity_id=activity.id,
-            assessment_type=AssessmentType.ASSIGNMENT,
+            assessment_type=AssessmentType.EXAM,
             grading_mode=AssessmentGradingMode.MANUAL,
             grade_release_mode=GradeReleaseMode.IMMEDIATE,
             completion_rule=AssessmentCompletionRule.GRADED,
@@ -266,8 +266,8 @@ def _seed_published_assessment(db_session_factory) -> str:
         assessment = Assessment(
             assessment_uuid="assessment_published_authoring",
             activity_id=activity.id,
-            kind=AssessmentType.ASSIGNMENT,
-            title="Published Assignment",
+            kind=AssessmentType.EXAM,
+            title="Published ManualAssessment",
             description="",
             lifecycle=AssessmentLifecycle.PUBLISHED,
             scheduled_at=None,
@@ -284,9 +284,17 @@ def _seed_published_assessment(db_session_factory) -> str:
             item_uuid="item_published_authoring_1",
             assessment_id=assessment.id,
             order=1,
-            kind=ItemKind.OPEN_TEXT,
+            kind=ItemKind.CHOICE,
             title="Q1",
-            body_json={"kind": "OPEN_TEXT", "prompt": "Explain X."},
+            body_json={
+                "kind": "CHOICE",
+                "prompt": "Choose the correct answer.",
+                "options": [
+                    {"text": "Correct", "is_correct": True},
+                    {"text": "Incorrect", "is_correct": False},
+                ],
+                "multiple": False,
+            },
             max_score=100,
         )
         session.add(item)
@@ -310,7 +318,7 @@ def test_get_assessment_returns_items(api_client, db_session_factory) -> None:
     assert data["assessment_uuid"] == assessment_uuid
     assert data["lifecycle"] == "PUBLISHED"
     assert len(data["items"]) == 1
-    assert data["items"][0]["kind"] == "OPEN_TEXT"
+    assert data["items"][0]["kind"] == "CHOICE"
 
 
 def test_get_assessment_404_for_unknown(api_client, db_session_factory) -> None:
@@ -336,8 +344,8 @@ def test_create_assessment_seeds_draft_and_policy(
     response = api_client.post(
         "/assessments",
         json={
-            "kind": "ASSIGNMENT",
-            "title": "New Assignment",
+            "kind": "EXAM",
+            "title": "New ManualAssessment",
             "description": "Test assessment",
             "course_id": course_id,
             "chapter_id": chapter_id,
@@ -347,8 +355,8 @@ def test_create_assessment_seeds_draft_and_policy(
     assert response.status_code == 200
     data = response.json()
     assert data["lifecycle"] == "DRAFT"
-    assert data["title"] == "New Assignment"
-    assert data["kind"] == "ASSIGNMENT"
+    assert data["title"] == "New ManualAssessment"
+    assert data["kind"] == "EXAM"
     assert data["assessment_uuid"] is not None
 
 
@@ -361,7 +369,7 @@ def test_create_assessment_unknown_course_returns_404(
     response = api_client.post(
         "/assessments",
         json={
-            "kind": "ASSIGNMENT",
+            "kind": "EXAM",
             "title": "Orphan",
             "course_id": 9999,
             "chapter_id": chapter_id,
@@ -431,12 +439,12 @@ def test_update_assessment_metadata(api_client, db_session_factory) -> None:
 
     response = api_client.patch(
         f"/assessments/{assessment_uuid}",
-        json={"title": "Renamed Assignment", "description": "Updated description"},
+        json={"title": "Renamed ManualAssessment", "description": "Updated description"},
     )
 
     assert response.status_code == 200
     data = response.json()
-    assert data["title"] == "Renamed Assignment"
+    assert data["title"] == "Renamed ManualAssessment"
     assert data["description"] == "Updated description"
 
 
@@ -490,19 +498,19 @@ def test_add_item_to_assessment(api_client, db_session_factory) -> None:
     assert data["item_uuid"] is not None
 
 
-def test_file_upload_items_are_rejected_for_assignments(
+def test_unknown_item_kinds_are_rejected_for_assessments(
     api_client, db_session_factory
 ) -> None:
-    """Legacy FILE_UPLOAD cannot be authored inside assignment assessments."""
+    """Unknown item kinds cannot be authored inside assessments."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
     response = api_client.post(
         f"/assessments/{assessment_uuid}/items",
         json={
-            "kind": "FILE_UPLOAD",
+            "kind": "UNSUPPORTED_UPLOAD_KIND",
             "title": "Upload final PDF",
             "body": {
-                "kind": "FILE_UPLOAD",
+                "kind": "UNSUPPORTED_UPLOAD_KIND",
                 "prompt": "Upload your work.",
                 "max_files": 1,
                 "max_mb": 10,
@@ -512,8 +520,7 @@ def test_file_upload_items_are_rejected_for_assignments(
         },
     )
 
-    assert response.status_code == 410
-    assert response.json()["detail"]["code"] == "FILE_UPLOAD_ITEM_REMOVED"
+    assert response.status_code == 422
 
 
 def test_update_item_title(api_client, db_session_factory) -> None:
@@ -631,7 +638,7 @@ def test_lifecycle_transition_draft_to_published(
     create_resp = api_client.post(
         "/assessments",
         json={
-            "kind": "ASSIGNMENT",
+            "kind": "EXAM",
             "title": "Lifecycle Test",
             "course_id": course_id,
             "chapter_id": chapter_id,
@@ -644,9 +651,17 @@ def test_lifecycle_transition_draft_to_published(
     api_client.post(
         f"/assessments/{assessment_uuid}/items",
         json={
-            "kind": "OPEN_TEXT",
+            "kind": "CHOICE",
             "title": "Q1",
-            "body": {"kind": "OPEN_TEXT", "prompt": "Explain."},
+            "body": {
+                "kind": "CHOICE",
+                "prompt": "Choose.",
+                "options": [
+                    {"text": "Correct", "is_correct": True},
+                    {"text": "Incorrect", "is_correct": False},
+                ],
+                "multiple": False,
+            },
             "max_score": 100,
         },
     )
@@ -718,8 +733,8 @@ def test_readiness_check_flags_missing_items(api_client, db_session_factory) -> 
     create_resp = api_client.post(
         "/assessments",
         json={
-            "kind": "ASSIGNMENT",
-            "title": "Empty Assignment",
+            "kind": "EXAM",
+            "title": "Empty ManualAssessment",
             "course_id": course_id,
             "chapter_id": chapter_id,
         },
@@ -741,11 +756,11 @@ def test_readiness_check_flags_missing_items(api_client, db_session_factory) -> 
 # ---------------------------------------------------------------------------
 
 
-def test_policy_preset_assignment_has_defaults(api_client, db_session_factory) -> None:
-    """GET /assessments/policy-preset/ASSIGNMENT returns a sensible default policy."""
+def test_policy_preset_manual_assessment_has_defaults(api_client, db_session_factory) -> None:
+    """GET /assessments/policy-preset/EXAM returns a sensible default policy."""
     _seed_course_and_chapter(db_session_factory)
 
-    response = api_client.get("/assessments/policy-preset/ASSIGNMENT")
+    response = api_client.get("/assessments/policy-preset/EXAM")
 
     assert response.status_code == 200
     data = response.json()

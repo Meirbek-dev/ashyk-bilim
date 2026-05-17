@@ -99,15 +99,6 @@ def load_activity_settings(
             )
         return AssessmentSettings(items=assessment_items)
 
-    if assessment_type == AssessmentType.ASSIGNMENT:
-        if canonical.kind == "ASSIGNMENT":
-            return AssessmentSettings(
-                items=assessment_items,
-                due_date_iso=canonical.due_at,
-                max_attempts=canonical.attempt_limit,
-            )
-        return AssessmentSettings(items=assessment_items)
-
     return AssessmentSettings(items=assessment_items)
 
 
