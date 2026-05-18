@@ -276,6 +276,7 @@ export async function gradeFileSubmissionAttempt(
   payload: {
     final_score?: number | null;
     feedback?: string;
+    rubric?: Record<string, any>;
     status: 'GRADED' | 'PUBLISHED' | 'RETURNED';
   },
   version?: number | null,
@@ -289,7 +290,7 @@ export async function gradeFileSubmissionAttempt(
     body: JSON.stringify({
       final_score: payload.final_score ?? null,
       feedback: payload.feedback ?? '',
-      rubric: {},
+      rubric: payload.rubric ?? {},
       status: payload.status,
     }),
   });

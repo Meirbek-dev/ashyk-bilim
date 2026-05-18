@@ -67,9 +67,6 @@ const nextConfig: NextConfig = {
       'recharts',
       '@daypicker/react',
       'date-fns',
-      // Monaco editor (locally bundled, code-split via next/dynamic)
-      '@monaco-editor/react',
-      'monaco-editor',
       // TipTap editor (heavy)
       '@tiptap/core',
       '@tiptap/react',

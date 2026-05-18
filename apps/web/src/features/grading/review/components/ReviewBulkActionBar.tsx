@@ -392,20 +392,24 @@ async function saveGradesWithinAssessment(
   );
 
   const failures: Array<{ name: string; error: string }> = [];
-  for (let i = 0; i < results.length; i++) {
-    const result = results[i];
+  results.forEach((result, i) => {
     if (result.status === 'rejected') {
       const sub = submissions[i];
-      const name =
-        sub.user
-          ? `${sub.user.first_name ?? ''} ${sub.user.last_name ?? ''}`.trim() || sub.user.username || sub.user.email || sub.submission_uuid
-          : sub.submission_uuid;
+      if (!sub) return;
+
+      const name = sub.user
+        ? `${sub.user.first_name ?? ''} ${sub.user.last_name ?? ''}`.trim() ||
+          sub.user.username ||
+          sub.user.email ||
+          sub.submission_uuid
+        : sub.submission_uuid;
+
       failures.push({
         name,
         error: result.reason instanceof Error ? result.reason.message : 'Unknown error',
       });
     }
-  }
+  });
 
   const succeeded = results.filter((result) => result.status === 'fulfilled').length;
   return {

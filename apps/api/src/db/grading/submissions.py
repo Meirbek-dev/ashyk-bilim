@@ -76,6 +76,9 @@ class SubmissionMetadata(PydanticStrictBaseModel):
     idempotency_key: str | None = None
     duration_seconds: int | None = None
     violation_count: int = 0
+    # Auto-submit diagnostics
+    auto_submit_reason: str | None = None
+    auto_submitted_at: str | None = None
     # Plagiarism detection outcome (populated post-submit by background task)
     plagiarism: PlagiarismScore | None = None
 

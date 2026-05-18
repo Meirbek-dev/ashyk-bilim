@@ -2,14 +2,10 @@
 
 import { useCallback, useMemo, useRef } from 'react';
 import type { OnChange, OnMount } from '@monaco-editor/react';
-import { loader } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
 import dynamic from 'next/dynamic';
 
 import { useTheme } from '@/components/providers/theme-provider';
 import { cn } from '@/lib/utils';
-
-loader.config({ monaco });
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react').then((mod) => mod.Editor), { ssr: false });
 
