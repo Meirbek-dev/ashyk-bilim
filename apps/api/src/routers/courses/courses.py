@@ -26,6 +26,10 @@ from src.db.courses.courses import (
 from src.db.courses.enhanced_responses import CourseReadWithPermissions
 from src.db.resource_authors import ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum
 from src.db.strict_base_model import PydanticStrictBaseModel
+from src.db.student_activity_runtime import (
+    StudentActivityActionRequest,
+    StudentActivityRuntime,
+)
 from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionCheckerDep
@@ -57,6 +61,10 @@ from src.services.courses.updates import (
     delete_update,
     get_updates_by_course_uuid,
     update_update,
+)
+from src.services.student_activity_runtime import (
+    get_student_activity_runtime,
+    run_student_activity_action,
 )
 
 router = APIRouter()
@@ -104,6 +112,52 @@ class CourseUserRightsResponse(PydanticStrictBaseModel):
     permissions: CourseUserRightsPermissions
     ownership: CourseUserRightsOwnership
     roles: CourseUserRightsRoles
+
+
+@router.get(
+    "/{course_uuid}/activities/{activity_uuid}/runtime",
+    response_model=StudentActivityRuntime,
+)
+async def api_get_student_activity_runtime(
+    request: Request,
+    course_uuid: str,
+    activity_uuid: str,
+    current_user: Annotated[
+        PublicUser | AnonymousUser, Depends(get_optional_public_user)
+    ] = None,
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
+) -> StudentActivityRuntime:
+    assert db_session is not None
+    return await get_student_activity_runtime(
+        request,
+        course_uuid=course_uuid,
+        activity_uuid=activity_uuid,
+        current_user=current_user,
+        db_session=db_session,
+    )
+
+
+@router.post(
+    "/{course_uuid}/activities/{activity_uuid}/actions",
+    response_model=StudentActivityRuntime,
+)
+async def api_run_student_activity_action(
+    request: Request,
+    course_uuid: str,
+    activity_uuid: str,
+    action: StudentActivityActionRequest,
+    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+    db_session: Annotated[Session, Depends(get_db_session)] = None,
+) -> StudentActivityRuntime:
+    assert db_session is not None
+    return await run_student_activity_action(
+        request,
+        course_uuid=course_uuid,
+        activity_uuid=activity_uuid,
+        action=action,
+        current_user=current_user,
+        db_session=db_session,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -599,12 +653,12 @@ async def api_get_course_user_rights(
     - `create`: Can create new courses (instructor role or higher)
     - `update`: Can update course settings (title, description, etc.)
     - `delete`: Can delete the course
-    - `create_content`: Can create activities, assignments, chapters, etc.
+    - `create_content`: Can create activities, assessments, chapters, etc.
     - `update_content`: Can update course content
     - `delete_content`: Can delete course content
     - `manage_contributors`: Can add/remove contributors
     - `manage_access`: Can change course access settings (public, open_to_contributors)
-    - `assessment_grade`: Can grade student assignments
+    - `assessment_grade`: Can grade student assessment work
     - `mark_activities_done`: Can mark activities as done for other users
     - `create_certifications`: Can create course certifications
 

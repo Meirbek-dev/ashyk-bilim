@@ -419,8 +419,9 @@ function PrimaryAction({
 }) {
   const t = useTranslations('ActivityPage');
   const router = useRouter();
+  const action = vm.primaryAction;
 
-  if (vm.state.isCourseEnd) {
+  if (action.id === 'back_to_course') {
     return (
       <Button
         className="w-full"
@@ -432,11 +433,11 @@ function PrimaryAction({
     );
   }
 
-  if (vm.progress.currentComplete && vm.progress.next) {
+  if (action.id === 'next_activity' && action.targetActivityUuid) {
     return (
       <Button
         className="w-full"
-        onClick={() => router.push(`/course/${vm.course.cleanUuid}/activity/${vm.progress.next?.cleanUuid}`)}
+        onClick={() => router.push(`/course/${vm.course.cleanUuid}/activity/${action.targetActivityUuid}`)}
       >
         {t('next')}
         <ChevronRight className="size-4" />
@@ -444,7 +445,7 @@ function PrimaryAction({
     );
   }
 
-  if (completion.canMarkComplete) {
+  if ((action.id === 'mark_complete' || action.id === 'unmark_complete') && completion.canMarkComplete) {
     return (
       <Button
         className="w-full"
@@ -453,6 +454,31 @@ function PrimaryAction({
       >
         {completion.isPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
         {vm.progress.currentComplete ? t('statusComplete') : t('markAsComplete')}
+      </Button>
+    );
+  }
+
+  if (action.id === 'start' || action.id === 'continue') {
+    return (
+      <Button
+        className="w-full"
+        onClick={() => document.getElementById('activity-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+      >
+        <Layers className="size-4" />
+        {action.id === 'continue' ? t('continueActivity') : t('viewAssessment')}
+      </Button>
+    );
+  }
+
+  if (action.id === 'view_receipt' || action.id === 'view_feedback' || action.id === 'revise' || action.id === 'review_policy') {
+    return (
+      <Button
+        className="w-full"
+        variant={action.id === 'revise' ? 'default' : 'outline'}
+        onClick={() => document.getElementById('activity-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+      >
+        <ClipboardList className="size-4" />
+        {getPrimaryActionText(action.id, t)}
       </Button>
     );
   }
@@ -473,6 +499,7 @@ function ActivityMobileActionBar({ activity, vm }: { activity: Activity | null; 
   const t = useTranslations('ActivityPage');
   const router = useRouter();
   const { mode } = useActivityLayout();
+  const action = vm.primaryAction;
 
   const isAssessmentType =
     activity?.activity_type === 'TYPE_EXAM' ||
@@ -493,7 +520,7 @@ function ActivityMobileActionBar({ activity, vm }: { activity: Activity | null; 
           vm={vm}
         />
         <div className="min-w-0 flex-1">
-          {completion.canMarkComplete ? (
+          {(action.id === 'mark_complete' || action.id === 'unmark_complete') && completion.canMarkComplete ? (
             <Button
               className="w-full"
               onClick={vm.progress.currentComplete ? completion.unmarkComplete : completion.markComplete}
@@ -501,6 +528,13 @@ function ActivityMobileActionBar({ activity, vm }: { activity: Activity | null; 
             >
               {completion.isPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
               {vm.progress.currentComplete ? t('statusComplete') : t('markAsComplete')}
+            </Button>
+          ) : action.id === 'next_activity' && action.targetActivityUuid ? (
+            <Button
+              className="w-full"
+              onClick={() => router.push(`/course/${vm.course.cleanUuid}/activity/${action.targetActivityUuid}`)}
+            >
+              {t('next')}
             </Button>
           ) : isAssessmentType && mode === 'PREFLIGHT' ? (
             <Button
@@ -519,12 +553,13 @@ function ActivityMobileActionBar({ activity, vm }: { activity: Activity | null; 
               <CheckCircle2 className="size-4" />
               {t('viewResult')}
             </Button>
-          ) : activity && vm.progress.next ? (
+          ) : action.enabled && action.id !== 'none' ? (
             <Button
               className="w-full"
-              onClick={() => router.push(`/course/${vm.course.cleanUuid}/activity/${vm.progress.next?.cleanUuid}`)}
+              variant={action.id === 'revise' ? 'default' : 'outline'}
+              onClick={scrollToContent}
             >
-              {t('next')}
+              {getPrimaryActionText(action.id, t)}
             </Button>
           ) : (
             <Button
@@ -669,15 +704,19 @@ function NavIconButton({
 function ActivityStatusBadge({ status }: { status: StudentActivityViewModel['status'] }) {
   const t = useTranslations('ActivityPage');
   return (
-    <Badge variant={status === 'complete' || status === 'course_end' ? 'default' : 'secondary'}>
+    <Badge variant={status === 'complete' || status === 'course_end' || status === 'passed' || status === 'published' ? 'default' : 'secondary'}>
       {getStatusLabel(status, t)}
     </Badge>
   );
 }
 
 function ActivityStatusIcon({ status }: { status: StudentActivityViewModel['status'] }) {
-  if (status === 'complete' || status === 'course_end') return <CheckCircle2 className="size-5 text-primary" />;
-  if (status === 'assessment') return <ClipboardList className="size-5 text-muted-foreground" />;
+  if (status === 'complete' || status === 'course_end' || status === 'passed' || status === 'published') {
+    return <CheckCircle2 className="size-5 text-primary" />;
+  }
+  if (status === 'submitted' || status === 'needs_grading' || status === 'graded_hidden' || status === 'returned') {
+    return <ClipboardList className="size-5 text-muted-foreground" />;
+  }
   return <Circle className="size-5 text-muted-foreground" />;
 }
 
@@ -686,17 +725,55 @@ function getStatusLabel(status: StudentActivityViewModel['status'], t: (key: str
     case 'course_end':
       return t('courseComplete');
     case 'complete':
+    case 'passed':
       return t('statusComplete');
-    case 'assessment':
-      return t('assessmentTitle');
+    case 'in_progress':
+    case 'draft':
+      return t('continueActivity');
     case 'submitted':
+    case 'needs_grading':
       return t('submitted');
-    case 'needs_revision':
+    case 'returned':
       return t('needsRevision');
+    case 'graded_hidden':
+      return t('statusGradingInProgress');
+    case 'published':
+      return t('viewResult');
+    case 'failed':
+      return t('failed');
     case 'unavailable':
       return t('unpublishedActivity');
     default:
       return t('notStarted');
+  }
+}
+
+function getPrimaryActionText(actionId: StudentActivityViewModel['primaryAction']['id'], t: (key: string) => string): string {
+  switch (actionId) {
+    case 'start':
+      return t('viewAssessment');
+    case 'continue':
+      return t('continueActivity');
+    case 'submit':
+      return t('submitButton');
+    case 'view_receipt':
+      return t('submitted');
+    case 'view_feedback':
+      return t('viewResult');
+    case 'revise':
+      return t('needsRevision');
+    case 'review_policy':
+      return t('statusGradingInProgress');
+    case 'next_activity':
+      return t('next');
+    case 'back_to_course':
+      return t('backToCourse');
+    case 'unmark_complete':
+      return t('statusComplete');
+    case 'mark_complete':
+      return t('markAsComplete');
+    default:
+      return t('noAction');
   }
 }
 

@@ -1810,7 +1810,7 @@ async def get_course_user_rights(
     if is_instructor_or_admin_or_maintainer_role:
         rights["permissions"]["delete"] = True
 
-    # CONTENT CREATION permissions (activities, assignments, chapters, etc.)
+    # CONTENT CREATION permissions (activities, assessments, chapters, etc.)
     if is_instructor_or_admin_or_maintainer_role:
         rights["permissions"]["create_content"] = True
 

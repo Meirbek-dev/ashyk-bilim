@@ -29,7 +29,7 @@ interface CourseGradebookCommandCenterProps {
   courseUuid: string;
 }
 
-const ROLLUP_KINDS: GradebookRollupKind[] = ['assignment_group', 'cohort', 'learner', 'activity'];
+const ROLLUP_KINDS: GradebookRollupKind[] = ['activity_category', 'cohort', 'learner', 'activity'];
 
 export default function CourseGradebookCommandCenter({ courseUuid }: CourseGradebookCommandCenterProps) {
   const t = useTranslations('Features.Grading.Gradebook');
@@ -212,7 +212,7 @@ export default function CourseGradebookCommandCenter({ courseUuid }: CourseGrade
 
 function RollupPanel({ data }: { data: CourseGradebookResponse }) {
   const t = useTranslations('Features.Grading.Gradebook');
-  const [kind, setKind] = useState<GradebookRollupKind>('assignment_group');
+  const [kind, setKind] = useState<GradebookRollupKind>('activity_category');
   const rows = useMemo(() => buildGradebookRollups(data, kind), [data, kind]);
 
   return (
@@ -316,7 +316,7 @@ function exportGradebookCsv(
 }
 
 function labelRollupRow(t: (key: string) => string, kind: GradebookRollupKind, label: string) {
-  if (kind === 'assignment_group') return labelActivityType(t, label);
+  if (kind === 'activity_category') return labelActivityType(t, label);
   if (kind === 'cohort' && label === '__default_cohort__') return t('defaultCohort');
   return label;
 }

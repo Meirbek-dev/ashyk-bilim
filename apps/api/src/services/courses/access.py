@@ -1,6 +1,6 @@
 """Course membership and access helpers.
 
-These functions are used across multiple assignment/submission service modules
+These functions are used across assessment and submission service modules
 to determine whether a user has read or submit access to course content.
 """
 

@@ -101,14 +101,14 @@
       "teacherView": "Просмотр для преподавателя"
     },
     "AssignmentStudentActivity": {
-      "assignment": "Задание",
+      "assignment": "Учебная задача",
       "blankLabel": "Поле {index}",
-      "descriptionTitle": "Описание задания",
+      "descriptionTitle": "Описание учебные задачи",
       "dueDate": "Срок сдачи",
       "emptyOption": "Пустой вариант",
       "hint": "Подсказка",
-      "loadSubmissionError": "Не удалось загрузить ваш ответ по заданию.",
-      "noTasks": "Нет доступных заданий",
+      "loadSubmissionError": "Не удалось загрузить ваш ответ по учебной задаче.",
+      "noTasks": "Нет доступных учебных задач",
       "points": "{count, plural, =0 {# баллов} one {# балл} few {# балла} many {# баллов} other {# баллов}}",
       "progressSaved": "Прогресс сохранён",
       "questionLabel": "Вопрос {index}",
@@ -117,18 +117,18 @@
       "saveSubmissionError": "Не удалось сохранить ваш ответ.",
       "signInToSave": "Войдите в систему, чтобы сохранить ответ.",
       "noAssessmentFound": "Оценка не найдена.",
-      "failedToStartAssessment": "Не удалось начать задание.",
-      "assessmentStarted": "Задание начато.",
+      "failedToStartAssessment": "Не удалось начать учебная задача.",
+      "assessmentStarted": "Учебная задача начато.",
       "revisionDraftCreated": "Черновик для доработки создан.",
       "recoveredSavedAnswers": "Сохраненные ответы восстановлены.",
       "readyToRevise": "Готово к доработке",
-      "readyToBeginDescription": "Начните задание и отправьте его, когда будете готовы.",
+      "readyToBeginDescription": "Начните учебная задача и отправьте его, когда будете готовы.",
       "readyToReviseDescription": "Черновик для доработки готов. Обновите ответы и отправьте снова.",
       "startRevision": "Начать доработку",
-      "startAssessment": "Начать задание",
+      "startAssessment": "Начать учебная задача",
       "scoreLabel": "Оценка",
-      "task": "Задание {index}",
-      "taskContentUnavailable": "Содержимое этого задания пока недоступно в режиме студента.",
+      "task": "Учебная задача {index}",
+      "taskContentUnavailable": "Содержимое этого учебные задачи пока недоступно в режиме студента.",
       "taskTypeFile": "Загрузка файла",
       "taskTypeForm": "Форма",
       "taskTypeOther": "Другое",
@@ -136,7 +136,7 @@
       "untitledQuestion": "Вопрос без текста",
       "unsavedChanges": "Есть несохранённые изменения",
       "allowedFormats": "Разрешенные форматы: pdf, docx, mp4, mkv, jpg, jpeg, png, pptx, zip",
-      "ariaLabel": "Выберите файл для загрузки для задания",
+      "ariaLabel": "Выберите файл для загрузки для учебные задачи",
       "missingAssignmentInfo": "Отсутствует необходимая информация о задании",
       "selectFile": "Выберите файл",
       "submitFile": "Отправить файл",
@@ -146,8 +146,8 @@
       "workProgressTitle": "Прогресс работы",
       "answeredProgress": "Отвечено {answered} из {total}",
       "unansweredProgress": "{count, plural, =0 {На все вопросы есть ответ} one {Остался # вопрос} few {Осталось # вопроса} many {Осталось # вопросов} other {Осталось # вопроса}}",
-      "taskNavigatorTitle": "Навигация по заданиям",
-      "itemsLabel": "Задания",
+      "taskNavigatorTitle": "Навигация по учебные задачим",
+      "itemsLabel": "Учебные задачи",
       "timeLimit": "Ограничение времени",
       "unlimited": "Неограниченно",
       "attemptsLabel": "Попытки",
@@ -519,7 +519,7 @@
   },
   "ActivityIndicators": {
     "activityTypes": {
-      "assignment": "Задание",
+      "assignment": "Учебная задача",
       "codeChallenge": "Код задача",
       "document": "Документ",
       "exam": "Тест",
@@ -544,7 +544,7 @@
     "activityCounter": "{current} из {total}",
     "activityNotPublished": "Эта активность еще не опубликована",
     "activityTypes": {
-      "assignment": "Задание",
+      "assignment": "Учебная задача",
       "document": "Документ",
       "dynamic": "Страница",
       "exam": "Тест",
@@ -554,10 +554,10 @@
       "codeChallenge": "Code challenge"
     },
     "assignmentActions": {
-      "submit": "Отправить задание",
-      "submitConfirm": "Вы уверены, что хотите отправить задание на проверку? Вы не сможете внести изменения после отправки.",
+      "submit": "Отправить учебная задача",
+      "submitConfirm": "Вы уверены, что хотите отправить учебная задача на проверку? Вы не сможете внести изменения после отправки.",
       "submitForGrading": "Отправить на проверку",
-      "submitYourAssingmentForGrading": "Отправьте задание на проверку"
+      "submitYourAssingmentForGrading": "Отправьте учебная задача на проверку"
     },
     "assignmentStatus": {
       "graded": "Оценено",
@@ -603,8 +603,8 @@
     "openAssessment": "Открыть оценивание",
     "status": "Статус",
     "statusComplete": "Завершено",
-    "submitErrorToast": "Не удалось отправить задание на проверку",
-    "submitSuccessToast": "Задание успешно отправлено на проверку",
+    "submitErrorToast": "Не удалось отправить учебная задача на проверку",
+    "submitSuccessToast": "Учебная задача успешно отправлено на проверку",
     "unknownGradingType": "Неизвестный тип оценивания",
     "unmarkActivity": "Снять отметку о завершении",
     "unmarkAsComplete": "Снять отметку о завершении",
@@ -622,8 +622,9 @@
     "notStarted": "Not started",
     "submitted": "Submitted",
     "support": "Support",
-    "viewAssessment": "Перейти к заданию",
-    "viewResult": "Смотреть результат"
+    "viewAssessment": "Перейти к учебной задаче",
+    "viewResult": "Смотреть результат",
+    "onThisPage": "На этой странице"
   },
   "AdminUtils": {
     "priority": {
@@ -758,7 +759,7 @@
   "Certificates": {
     "ActivityIndicators": {
       "certificationAvailable": "Курс завершён!",
-      "completeAllActivities": "Завершите все задания для разблокировки",
+      "completeAllActivities": "Завершите все учебные задачи для разблокировки",
       "earnCertificate": "Получить сертификат",
       "viewCertificate": "Просмотреть сертификат"
     },
@@ -900,7 +901,7 @@
       "defaultCertificationDescription": "Успешное завершение курса подтверждено.",
       "downloadCertificate": "Скачать сертификат",
       "earnedCertificate": "Ваш сертификат",
-      "encouragementMessage": "Вы отлично справляетесь! Завершите оставшиеся задания, чтобы получить сертификат о прохождении курса.",
+      "encouragementMessage": "Вы отлично справляетесь! Завершите оставшиеся учебные задачи, чтобы получить сертификат о прохождении курса.",
       "errorGeneratingPDF": "Не удалось сгенерировать PDF. Повторите попытку.",
       "exploreCourses": "Изучить другие курсы",
       "instructor": "Преподаватель",
@@ -913,7 +914,7 @@
       "noCertificateAvailable": "Нет сертификата",
       "noCertificateFound": "Сертификат для этого курса не найден",
       "progress": "Прогресс",
-      "progressCompleted": "{completed} из {total} заданий выполнено",
+      "progressCompleted": "{completed} из {total} учебных задач выполнено",
       "progressPercentage": "{percentage}% завершено",
       "qrCodeAlt": "QR-код",
       "shareAchievement": "Поделитесь своим достижением",
@@ -1504,8 +1505,8 @@
         "typeGeneral": "Практика",
         "typeGeneralHint": "Студенты могут отправлять решения без рейтинга"
       },
-      "assignments": "Задания",
-      "assignmentsDesc": "Создайте задание с текстовыми или файловыми ответами",
+      "assignments": "Учебные задачи",
+      "assignmentsDesc": "Создайте учебная задача с текстовыми или файловыми ответами",
       "backToActivities": "Вернуться к активностям",
       "chooseType": "Выберите тип активности",
       "codeChallenge": "Код задача",
@@ -1536,22 +1537,22 @@
     },
     "NewAssignmentModal": {
       "alphabet": "Алфавитный",
-      "assignmentDescription": "Описание задания",
-      "assignmentTitle": "Название задания",
+      "assignmentDescription": "Описание учебные задачи",
+      "assignmentTitle": "Название учебные задачи",
       "createActivity": "Создать активность",
-      "createError": "Не удалось создать задание: {error}",
-      "createSuccess": "Задание успешно создано",
-      "creatingAssignment": "Создание задания...",
+      "createError": "Не удалось создать учебная задача: {error}",
+      "createSuccess": "Учебная задача успешно создано",
+      "creatingAssignment": "Создание учебные задачи...",
       "dueDate": "Срок сдачи",
       "gradingType": "Тип оценивания",
       "numeric": "Числовой",
       "percentage": "Процентный",
-      "selectDeadline": "Выберите крайний срок выполнения задания",
+      "selectDeadline": "Выберите крайний срок выполнения учебные задачи",
       "selectGradingType": "Выберите тип оценивания",
       "unexpectedError": "Произошла непредвиденная ошибка",
       "unknownError": "Неизвестная ошибка",
-      "valueMissingDescription": "Пожалуйста, предоставьте описание задания",
-      "valueMissingDueDate": "Пожалуйста, укажите срок сдачи задания",
+      "valueMissingDescription": "Пожалуйста, предоставьте описание учебные задачи",
+      "valueMissingDueDate": "Пожалуйста, укажите срок сдачи учебные задачи",
       "valueMissingGradingType": "Пожалуйста, укажите тип оценивания",
       "valueMissingTitle": "Пожалуйста, укажите название"
     },
@@ -1604,7 +1605,7 @@
       "step2Desc": "Курсы являются основными строительными блоками Ashyk Bilim, они всегда содержат Главы, а Главы содержат Активности.",
       "step2Title": "Создание курсов",
       "step3Button": "Узнать больше об Активностях",
-      "step3Desc": "Активности - это элементы, которые вы можете добавлять в свои Курсы через Главы: Динамические страницы, Видео, Документы, Задания и многое другое в ближайшее время.",
+      "step3Desc": "Активности - это элементы, которые вы можете добавлять в свои Курсы через Главы: Динамические страницы, Видео, Документы, Учебные задачи и многое другое в ближайшее время.",
       "step3Title": "Активности",
       "step4Button": "Узнать больше о Динамических страницах и Редакторе",
       "step4Desc": "Динамические страницы - это страницы с динамическим контентом, подобным страницам Notion, они могут включать различные компоненты, такие как Тесты, Изображения, Видео, Документы и т. д.",
@@ -1617,9 +1618,9 @@
       "step6Title": "Группируйте студентов и упрощайте доступ",
       "step7Desc": "Вы можете сделать Курсы доступными для поисковых систем и неаутентифицированных пользователей или предоставить доступ только аутентифицированным пользователям",
       "step7Title": "Выберите, следует ли делать Курсы публично доступными в Интернете",
-      "step8Button": "Создать задание",
-      "step8Desc": "Вовлекайте студентов в выполнение заданий, отслеживайте их прогресс и предоставляйте обратную связь с помощью интуитивно понятной системы оценивания.",
-      "step8Title": "Создание и оценка заданий",
+      "step8Button": "Создать учебная задача",
+      "step8Desc": "Вовлекайте студентов в выполнение учебных задач, отслеживайте их прогресс и предоставляйте обратную связь с помощью интуитивно понятной системы оценивания.",
+      "step8Title": "Создание и оценка учебных задач",
       "triggerText": "Онбординг"
     },
     "NavMenu": {
@@ -2087,9 +2088,9 @@
       "expected": "Ожидалось:",
       "fillBlanksError": "Пожалуйста, заполните хотя бы один пропуск перед отправкой.",
       "fillInTheBlanks": "Заполните пропуски",
-      "gradeAssignment": "Оценить задание",
-      "gradeError": "Ошибка при оценивании задания, пожалуйста, попробуйте позже.",
-      "gradedSuccessfully": "Задание успешно оценено на {finalGrade} баллов ({correctAnswers}/{totalBlanks} верно)",
+      "gradeAssignment": "Оценить учебная задача",
+      "gradeError": "Ошибка при оценивании учебные задачи, пожалуйста, попробуйте позже.",
+      "gradedSuccessfully": "Учебная задача успешно оценено на {finalGrade} баллов ({correctAnswers}/{totalBlanks} верно)",
       "hint": "Подсказка (необязательно)",
       "hintIcon": "💡",
       "hintLabel": "Подсказка",
@@ -2105,8 +2106,8 @@
       "removeBlank": "Удалить пропуск",
       "removeBlankError": "Нельзя удалить последний пропуск. Требуется как минимум один пропуск.",
       "removeQuestion": "Удалить вопрос",
-      "saveError": "Ошибка при сохранении задания, пожалуйста, попробуйте позже.",
-      "savedSuccessfully": "Задание успешно сохранено",
+      "saveError": "Ошибка при сохранении учебные задачи, пожалуйста, попробуйте позже.",
+      "savedSuccessfully": "Учебная задача успешно сохранено",
       "submissionSummary": "Итоги выполнения",
       "submitError": "Ошибка при отправке формы, пожалуйста, попробуйте позже.",
       "submitForGrading": "Отправить на проверку",
@@ -2308,7 +2309,7 @@
   },
   "Contexts": {
     "Assignment": {
-      "loadError": "Не удалось загрузить данные задания"
+      "loadError": "Не удалось загрузить данные учебные задачи"
     },
     "Course": {
       "loadError": "Не удалось загрузить структуру курса"
@@ -2328,7 +2329,7 @@
   "CourseEdit": {
     "ActivityElement": {
       "ActivityTypes": {
-        "assignment": "Задание",
+        "assignment": "Учебная задача",
         "codeChallenge": "Код задача",
         "document": "Документ",
         "dynamic": "Динамический",
@@ -2348,7 +2349,7 @@
       "deleteTitle": "Удалить {name}?",
       "deleting": "Удаление...",
       "deletingActivity": "Удаление активности...",
-      "editAssignmentButton": "Редактировать задание",
+      "editAssignmentButton": "Редактировать учебная задача",
       "editPageButton": "Редактировать страницу",
       "openEditPage": "Открыть страницу редактирования",
       "failedToUpdateActivityName": "Не удалось обновить название активности",
@@ -2501,7 +2502,7 @@
       "selectItemHint": "Нажмите + Добавить активность под главой, чтобы начать",
       "selectItemHintDescription": "Выберите тип активности и заполните детали. Изменения сохраняются сразу.",
       "emptyStateTitle": "Создайте учебный план",
-      "emptyStateDescription": "Добавьте первый раздел, чтобы организовать уроки и задания.",
+      "emptyStateDescription": "Добавьте первый раздел, чтобы организовать уроки и учебные задачи.",
       "emptyStateAction": "Добавить первый раздел",
       "activity": "Активность",
       "chapter": "Глава"
@@ -2522,7 +2523,7 @@
     },
     "activityNamePlaceholder": "Название активности",
     "activityTypes": {
-      "assignment": "Задание",
+      "assignment": "Учебная задача",
       "document": "Документ",
       "dynamic": "Динамический",
       "video": "Видео"
@@ -2542,7 +2543,7 @@
     "editButton": "Редактировать",
     "noActivities": "Пока нет активностей",
     "deleteChapterConfirmationBreakdown": "Это безвозвратно удалит раздел и его {count, plural, =0 {0 занятий} one {# занятие} few {# занятия} other {# занятий}} ({published} опубликованных, {drafts} черновиков).",
-    "noActivitiesHint": "Добавьте первое задание ниже",
+    "noActivitiesHint": "Добавьте первое учебная задача ниже",
     "save": "Сохранить",
     "cancel": "Отмена"
   },
@@ -2555,19 +2556,19 @@
   "CoursePage": {
     "about": "О курсе",
     "access": "Доступ",
-    "activitiesCount": "{count} заданий",
-    "activityCount": "{count, plural, =0 {0 заданий} one {# задание} few {# задания} other {# заданий}}",
+    "activitiesCount": "{count} учебных задач",
+    "activityCount": "{count, plural, =0 {0 учебных задач} one {# учебная задача} few {# учебные задачи} other {# учебных задач}}",
     "activityCounter": "{current} из {total}",
-    "activityNotPublished": "Это задание еще не опубликовано",
+    "activityNotPublished": "Это учебная задача еще не опубликовано",
     "admin": "Админ",
-    "assignment": "Задание",
+    "assignment": "Учебная задача",
     "fileSubmission": "Отправка файлов",
     "cancel": "Отмена",
     "confirmDelete": "Вы уверены, что хотите удалить это?",
     "confirmDeletePost": "Вы уверены, что хотите удалить этот пост?",
     "confirmDeleteReply": "Вы уверены, что хотите удалить этот ответ?",
     "content": "Содержание",
-    "contributeToActivity": "Внести вклад в задание",
+    "contributeToActivity": "Внести вклад в учебная задача",
     "contributors": "Участники",
     "courseContent": "Содержание курса",
     "courseDiscussions": "Обсуждения курса",
@@ -2593,8 +2594,8 @@
     "nextActivityTitle": "Далее: {name}",
     "noDiscussions": "Пока нет обсуждений",
     "noDiscussionsDesc": "Станьте первым, кто начнет разговор об этом курсе!",
-    "noNextActivity": "Следующего задания нет",
-    "noPrevActivity": "Предыдущего задания нет",
+    "noNextActivity": "Следующего учебные задачи нет",
+    "noPrevActivity": "Предыдущего учебные задачи нет",
     "noReplies": "Пока нет ответов",
     "page": "Страница",
     "postDiscussion": "Опубликовать",
@@ -2608,11 +2609,11 @@
     "statusComplete": "Завершено",
     "statusGraded": "Оценено",
     "statusGradingInProgress": "Идет проверка",
-    "submitButton": "Отправить задание",
-    "submitConfirmationMessage": "Вы уверены, что хотите отправить задание на проверку? После отправки вы не сможете вносить изменения.",
-    "submitConfirmationTitle": "Отправить задание на проверку",
-    "submitErrorToast": "Не удалось отправить задание на проверку",
-    "submitSuccessToast": "Задание отправлено на проверку",
+    "submitButton": "Отправить учебная задача",
+    "submitConfirmationMessage": "Вы уверены, что хотите отправить учебная задача на проверку? После отправки вы не сможете вносить изменения.",
+    "submitConfirmationTitle": "Отправить учебная задача на проверку",
+    "submitErrorToast": "Не удалось отправить учебная задача на проверку",
+    "submitSuccessToast": "Учебная задача отправлено на проверку",
     "submitTrigger": "Отправить на проверку",
     "thumbnailTypeImage": "Изображение",
     "thumbnailTypeVideo": "Видео",
@@ -3227,7 +3228,7 @@
         "title": "Настройки аккаунта"
       },
       "Courses": {
-        "description": "Создавайте и управляйте курсами, главами и заданиями",
+        "description": "Создавайте и управляйте курсами, главами и учебные задачими",
         "errorOccurred": "Произошла ошибка",
         "title": "Курсы"
       },
@@ -3693,7 +3694,7 @@
             "permissions": {
               "cannotChangeAccess": "Не может менять доступ",
               "cannotManageContributors": "Не может управлять авторами",
-              "createActivities": "Создавать задания",
+              "createActivities": "Создавать учебные задачи",
               "editCourseContent": "Редактировать материалы"
             }
           },
@@ -3737,9 +3738,9 @@
             "description": "Может создавать курсы, но для контента требуется владение",
             "name": "Преподаватель",
             "permissions": {
-              "createAssignments": "Создавать задания",
+              "createAssignments": "Создавать учебные задачи",
               "createCourses": "Создавать курсы",
-              "gradeAssignments": "Оценивать задания",
+              "gradeAssignments": "Оценивать учебные задачи",
               "manageOwnCourses": "Управлять своими курсами"
             }
           },
@@ -3747,7 +3748,7 @@
             "description": "Менеджер среднего уровня с широкими правами",
             "name": "Модератор",
             "permissions": {
-              "manageAssignments": "Управлять заданиями",
+              "manageAssignments": "Управлять учебные задачими",
               "manageCourses": "Управлять курсами",
               "manageUsers": "Управлять пользователями"
             }
@@ -3756,7 +3757,7 @@
             "description": "Обучающийся с правом только чтения",
             "name": "Пользователь",
             "permissions": {
-              "submitAssignments": "Сдавать задания",
+              "submitAssignments": "Сдавать учебные задачи",
               "takeAssessments": "Проходить тесты",
               "viewCourses": "Просматривать курсы"
             }
@@ -3859,7 +3860,7 @@
       "InlineQuizExtension": {
         "title": "Встроенный тест",
         "editQuestions": "Редактировать вопросы",
-        "itemEditorComingSoon": "Редактор заданий для оценивания {assessmentUuid} (будет в Фазе 2)",
+        "itemEditorComingSoon": "Редактор учебных задач для оценивания {assessmentUuid} (будет в Фазе 2)",
         "score": "Балл: {score}%",
         "quizInfo": "Встроенный тест ({id}…)",
         "submit": "Отправить",
@@ -4397,11 +4398,11 @@
           },
           "soundcloud": {
             "label": "SoundCloud",
-            "description": "Примеры аудио, уроки музыки и задания на прослушивание."
+            "description": "Примеры аудио, уроки музыки и учебные задачи на прослушивание."
           },
           "suno": {
             "label": "Suno",
-            "description": "Песни, созданные ИИ, и творческие аудиозадания."
+            "description": "Песни, созданные ИИ, и творческие аудиоучебные задачи."
           },
           "sodaphonic": {
             "label": "Sodaphonic",
@@ -4425,7 +4426,7 @@
           },
           "deezer": {
             "label": "Deezer",
-            "description": "Музыкальные и подкаст-плейлисты для заданий на понимание."
+            "description": "Музыкальные и подкаст-плейлисты для учебных задач на понимание."
           },
           "mixcloud": {
             "label": "Mixcloud",
@@ -4441,7 +4442,7 @@
           },
           "h5p": {
             "label": "H5P",
-            "description": "Интерактивный контент LMS, такой как викторины и задания."
+            "description": "Интерактивный контент LMS, такой как викторины и учебные задачи."
           },
           "genially": {
             "label": "Genially",
@@ -4505,7 +4506,7 @@
           },
           "wordwall": {
             "label": "Wordwall",
-            "description": "Геймифицированные задания по лексике и грамматике."
+            "description": "Геймифицированные учебные задачи по лексике и грамматике."
           },
           "poll-everywhere": {
             "label": "Poll Everywhere",
@@ -4778,7 +4779,7 @@
     },
     "Metrics": {
       "desktopOnlyMessage1": "Эта страница доступна только на настольном устройстве.",
-      "desktopOnlyMessage2": "Пожалуйста, переключитесь на настольное устройство для просмотра и управления заданием.",
+      "desktopOnlyMessage2": "Пожалуйста, переключитесь на настольное устройство для просмотра и управления учебная задачам.",
       "desktopOnlyTitle": "Только для настольных устройств",
       "generalDescription": "Статистика",
       "generalTitle": "Статистика",
@@ -5310,7 +5311,7 @@
           "failedToSave": "Не удалось сохранить настройку",
           "lockedFeature": "Разблокируется на уровне {level}",
           "noAccessorySelected": "Аксессуар не выбран",
-          "noDataMessage": "Выполните задания, чтобы разблокировать настройку аватара!",
+          "noDataMessage": "Выполните учебные задачи, чтобы разблокировать настройку аватара!",
           "noFrameSelected": "Рамка не выбрана",
           "preview": "Предпросмотр",
           "previewChanges": "Просмотр изменений",
@@ -5413,13 +5414,13 @@
         },
         "emptyStates": {
           "noActivity": "Пока нет активности",
-          "noActivityDescription": "Выполняйте задания, чтобы начать зарабатывать опыт и подниматься в таблице лидеров!",
+          "noActivityDescription": "Выполняйте учебные задачи, чтобы начать зарабатывать опыт и подниматься в таблице лидеров!",
           "noLeaderboard": "Нет данных таблицы лидеров",
           "noLeaderboardDescription": "Станьте первым, кто заработает опыт в этой организации!",
           "noProgress": "Нет данных о прогрессе",
           "noProgressDescription": "Начните обучение, чтобы отслеживать свой прогресс здесь.",
           "noTransactions": "Нет недавней активности",
-          "noTransactionsDescription": "Ваши транзакции опыта будут отображаться здесь по мере выполнения заданий."
+          "noTransactionsDescription": "Ваши транзакции опыта будут отображаться здесь по мере выполнения учебных задач."
         },
         "engagement": {
           "activeDays": "Активные дни",
@@ -5569,7 +5570,7 @@
             "xpToGo": "ОП осталось"
           },
           "requirements": {
-            "activitiesCompleted": "Завершено заданий: {count}",
+            "activitiesCompleted": "Завершено учебных задач: {count}",
             "level": "Уровень {level}",
             "streakDays": "Необходима серия {count} дн.",
             "xpRequired": "Требуется {xp} ОП"
@@ -5676,7 +5677,7 @@
           "learningStreak": "Серия обучения",
           "loginStreak": "Серия входов",
           "noData": "Нет данных о сериях",
-          "noDataSubtext": "Выполняйте задания, чтобы начать серию!",
+          "noDataSubtext": "Выполняйте учебные задачи, чтобы начать серию!",
           "personalBest": "Личный рекорд: {count} дн.",
           "retry": "Повторить",
           "retryLimit": "Достигнуто максимальное количество попыток. Обновите страницу.",
@@ -5684,7 +5685,7 @@
             "active": "{count} дн. подряд! 🔥",
             "atRisk": "Не прерывайте серию! {action} сегодня.",
             "broken": "Начните свою серию-{type} сегодня!",
-            "completeAction": "Выполните задание",
+            "completeAction": "Выполните учебная задача",
             "learning": "обучения",
             "login": "входа",
             "loginAction": "Войти"
@@ -5699,8 +5700,8 @@
           "titleCompact": "Серии",
           "tooltips": {
             "invalidDate": "Неверная дата",
-            "lastActivity": "Последнее задание",
-            "learning": "Выполняйте задания ежедневно, чтобы сохранять серию обучения!",
+            "lastActivity": "Последнее учебная задача",
+            "learning": "Выполняйте учебные задачи ежедневно, чтобы сохранять серию обучения!",
             "login": "Входите ежедневно, чтобы поддерживать серию и получать бонусные ОП!",
             "noActivity": "Еще нет активности"
           }
@@ -5764,11 +5765,11 @@
           "xpText": "ОП"
         },
         "xpSources": {
-          "activity_completion": "Задание выполнено",
-          "assignment_submission": "Задание отправлено",
+          "activity_completion": "Учебная задача выполнено",
+          "assignment_submission": "Учебная задача отправлено",
           "course_completion": "Курс завершен",
           "discussion_post": "Сообщение в обсуждении",
-          "first_activity": "Первое задание",
+          "first_activity": "Первое учебная задача",
           "forum_participation": "Участие в форуме",
           "learning_streak_bonus": "Бонус за серию обучения",
           "login_bonus": "Ежедневный вход",
@@ -6860,7 +6861,7 @@
       "alertsEmpty": "Нет активных уведомлений для выбранных фильтров.",
       "showingCourses": "Показано 8 из {total} курсов.",
       "viewAllCourses": "Смотреть все →",
-      "showingAssessments": "Показано 8 из {total} заданий.",
+      "showingAssessments": "Показано 8 из {total} учебных задач.",
       "viewAllAssessments": "Смотреть все →",
       "watchlistTitle": "Срочный список наблюдения",
       "watchlistDescription": "Учащиеся с наибольшим риском, которым, вероятно, нужна помощь на этой неделе.",
@@ -6916,7 +6917,7 @@
         "none": "Без сравнения"
       },
       "assessmentType": {
-        "assignment": "Задание",
+        "assignment": "Учебная задача",
         "quiz": "Тест",
         "exam": "Экзамен",
         "codeChallenge": "Задача по коду"
@@ -6982,7 +6983,7 @@
         "activeLearners": "Уникальные учащиеся, выполнившие хотя бы одно действие за выбранный период.",
         "returningLearners": "Учащиеся, которые также были активны в предшествующем периоде равной длины.",
         "completionRate": "Доля зачисленных учащихся, полностью завершивших курс.",
-        "atRisk": "Учащиеся с оценкой 40+ по сводному индексу риска (неактивность + прогресс + неудачи + пропущенные задания + ожидание проверки).",
+        "atRisk": "Учащиеся с оценкой 40+ по сводному индексу риска (неактивность + прогресс + неудачи + пропущенные учебные задачи + ожидание проверки).",
         "ungradedSubmissions": "Работы, ожидающие проверки и оценки преподавателя.",
         "negativeCourses": "Курсы, в которых количество активных учащихся снизилось по сравнению с предыдущим периодом."
       }
@@ -7065,7 +7066,7 @@
     },
     "histogram": {
       "learners": "Учащиеся",
-      "emptyState": "Данные гистограммы недоступны для выбранного задания.",
+      "emptyState": "Данные гистограммы недоступны для выбранного учебные задачи.",
       "passLabel": "Проходной"
     },
     "courseHealth": {
@@ -7085,20 +7086,20 @@
       "emptyMessage": "Нет курсов, соответствующих текущему охвату аналитики."
     },
     "assessmentOutliers": {
-      "title": "Проблемные задания",
-      "description": "Ранжированные задания, тесты, экзамены и задачи по коду, требующие внимания.",
-      "colAssessment": "Задание",
+      "title": "Проблемные учебные задачи",
+      "description": "Ранжированные учебные задачи, тесты, экзамены и задачи по коду, требующие внимания.",
+      "colAssessment": "Учебная задача",
       "colCourse": "Курс",
       "colSubmission": "Отправки",
       "colPass": "Прохождение",
       "colMedian": "Медиана",
       "colDifficulty": "Сложность",
       "colSignals": "Сигналы",
-      "viewAssessment": "Просмотр задания {title}",
+      "viewAssessment": "Просмотр учебные задачи {title}",
       "healthy": "В норме",
-      "searchPlaceholder": "Поиск по заданиям...",
-      "emptyMessage": "Нет проблемных заданий для текущего охвата.",
-      "rowCount": "{count} проблемных заданий"
+      "searchPlaceholder": "Поиск по учебные задачим...",
+      "emptyMessage": "Нет проблемных учебных задач для текущего охвата.",
+      "rowCount": "{count} проблемных учебных задач"
     },
     "atRisk": {
       "defaultTitle": "Учащиеся в зоне риска",
@@ -7147,12 +7148,12 @@
       "overviewDisabledTitle": "Аналитика недоступна",
       "overviewDisabledDesc": "В этой организации аналитика отключена или текущий сеанс не имеет доступа к аналитическим данным.",
       "overviewLoadError": "Не удалось загрузить службу аналитики.",
-      "assessmentsUnavailableTitle": "Аналитика заданий недоступна",
-      "assessmentsUnavailableDesc": "Для просмотра аналитики заданий требуется аутентифицированный сеанс.",
-      "assessmentsLoadError": "Не удалось загрузить представление аналитики заданий.",
-      "assessmentDetailTitle": "Детали задания недоступны",
-      "assessmentDetailDesc": "Для проверки аналитики задания требуется аутентифицированный сеанс.",
-      "assessmentDetailLoadError": "Не удалось загрузить детальное представление аналитики задания.",
+      "assessmentsUnavailableTitle": "Аналитика учебных задач недоступна",
+      "assessmentsUnavailableDesc": "Для просмотра аналитики учебных задач требуется аутентифицированный сеанс.",
+      "assessmentsLoadError": "Не удалось загрузить представление аналитики учебных задач.",
+      "assessmentDetailTitle": "Детали учебные задачи недоступны",
+      "assessmentDetailDesc": "Для проверки аналитики учебные задачи требуется аутентифицированный сеанс.",
+      "assessmentDetailLoadError": "Не удалось загрузить детальное представление аналитики учебные задачи.",
       "coursesUnavailableTitle": "Аналитика курсов недоступна",
       "coursesUnavailableDesc": "Для просмотра аналитики курсов требуется аутентифицированный сеанс.",
       "coursesLoadError": "Не удалось загрузить представление аналитики курсов.",
@@ -7179,17 +7180,17 @@
       "courseContentHealthTitle": "Здоровье контента",
       "courseAtRiskTitle": "Учащиеся в зоне риска в этом курсе",
       "courseAtRiskDescription": "Учащиеся с наибольшим риском, ограниченные выбранным курсом.",
-      "assessmentDetailBadge": "Задание #{id}",
+      "assessmentDetailBadge": "Учебная задача #{id}",
       "assessmentStatSubmissionRate": "Процент отправок",
       "assessmentStatPassRate": "Процент прохождения",
       "assessmentStatMedianScore": "Медиана баллов",
       "assessmentStatAvgAttempts": "Среднее количество попыток",
       "assessmentScoreDistTitle": "Распределение баллов",
-      "assessmentScoreDistDesc": "Гистограмма успеваемости учащихся по этому заданию.",
+      "assessmentScoreDistDesc": "Гистограмма успеваемости учащихся по этому учебной задаче.",
       "assessmentAttemptDistTitle": "Распределение попыток",
-      "assessmentAttemptDistDesc": "Сколько раз учащиеся пытались выполнить задание.",
+      "assessmentAttemptDistDesc": "Сколько раз учащиеся пытались выполнить учебная задача.",
       "assessmentQuestionTitle": "Сложность вопросов",
-      "assessmentQuestionDesc": "Низкая точность указывает на неясные или слишком сложные задания.",
+      "assessmentQuestionDesc": "Низкая точность указывает на неясные или слишком сложные учебные задачи.",
       "assessmentCommonFailuresTitle": "Частые ошибки",
       "assessmentNoCommonFailures": "В текущих данных не обнаружено кластера частых ошибок.",
       "assessmentOpsTitle": "Операционная готовность",
@@ -7289,8 +7290,8 @@
         "backToGradebook": "Назад к журналу",
         "submissionReview": "Проверка работы",
         "searchLearner": "Поиск студента",
-        "activityType": "Тип задания",
-        "allActivityTypes": "Все типы заданий",
+        "activityType": "Тип учебные задачи",
+        "allActivityTypes": "Все типы учебных задач",
         "learner": "Студент",
         "email": "Email",
         "selectCell": "Выбрать ячейку прогресса",
@@ -7304,7 +7305,7 @@
         "defaultCohort": "Список курса",
         "summary": {
           "learners": "Студенты",
-          "activities": "Задания",
+          "activities": "Учебные задачи",
           "needsGrading": "На проверке",
           "overdue": "Просрочено",
           "notStarted": "Не начато",
@@ -7331,14 +7332,14 @@
         },
         "rollups": {
           "title": "Сводки прогресса",
-          "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и заданиям.",
-          "assignment_group": "Группы",
+          "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и учебные задачим.",
+          "activity_category": "Группы",
           "cohort": "Когорты",
           "learner": "Студенты",
-          "activity": "Задания"
+          "activity": "Учебные задачи"
         },
         "activityTypes": {
-          "assignment": "Задание",
+          "assignment": "Учебная задача",
           "exam": "Экзамен",
           "codeChallenge": "Задача по коду",
           "quiz": "Тест",
@@ -7460,7 +7461,7 @@
             "notSet": "Не задано",
             "noReason": "Причина не указана",
             "selectedHiddenSubmissions": "Выбранные скрытые работы",
-            "releaseHiddenDescription": "Это применит действие публикации оценок на уровне задания и откроет все уже проверенные, но ещё скрытые работы."
+            "releaseHiddenDescription": "Это применит действие публикации оценок на уровне учебные задачи и откроет все уже проверенные, но ещё скрытые работы."
           },
           "dialogs": {
             "publishTitle": "Опубликовать выбранные оценки",
@@ -7470,7 +7471,7 @@
             "extendTitle": "Продлить сроки",
             "extendDescription": "Поставьте в очередь продление срока для выбранных студентов.",
             "releaseTitle": "Открыть скрытые оценки",
-            "releaseDescription": "Сделать скрытые проверенные работы видимыми для студентов по этому заданию.",
+            "releaseDescription": "Сделать скрытые проверенные работы видимыми для студентов по этому учебной задаче.",
             "defaultTitle": "Массовое действие",
             "defaultDescription": "Подтвердите выбранное массовое действие."
           }
@@ -7565,7 +7566,7 @@
     "Assessments": {
       "Studio": {
         "kinds": {
-          "ASSIGNMENT": "Задание",
+          "ASSIGNMENT": "Учебная задача",
           "EXAM": "Тест",
           "CODE_CHALLENGE": "Код задача",
           "QUIZ": "Квиз",
@@ -7608,7 +7609,7 @@
         "NativeItemStudio": {
           "itemNouns": {
             "question": "Вопрос",
-            "task": "Задание"
+            "task": "Учебная задача"
           },
           "outlineTitle": "Структура {itemNoun}",
           "outlinePoints": "Всего баллов: {points}",
@@ -7675,7 +7676,7 @@
           "releaseStepLabel": "Публикация",
           "releaseStepDescription": "Проверьте предпросмотр, расписание или публикацию после успешных проверок.",
           "validation": {
-            "assessment_empty": "Оценка не содержит заданий.",
+            "assessment_empty": "Оценка не содержит учебных задач.",
             "assessment_title_missing": "Название обязательно.",
             "policy_max_attempts_invalid": "Лимит попыток должен быть не менее 1.",
             "policy_time_limit_invalid": "Ограничение по времени должно быть больше нуля.",
@@ -7697,7 +7698,7 @@
             "open_text_prompt_missing": "Требуется формулировка вопроса свободного ответа.",
             "open_text_min_words_invalid": "Минимальное количество слов не может быть отрицательным.",
             "file_prompt_missing": "Требуется формулировка вопроса загрузки файла.",
-            "file_max_files_invalid": "Задание загрузки файлов должно разрешать загрузку хотя бы одного файла.",
+            "file_max_files_invalid": "Учебная задача загрузки файлов должно разрешать загрузку хотя бы одного файла.",
             "file_max_mb_invalid": "Максимальный размер файла должен быть больше нуля.",
             "file_mime_invalid": "Допустимые типы файлов не могут быть пустыми.",
             "form_prompt_missing": "Требуется формулировка вопроса формы.",
@@ -7710,7 +7711,7 @@
           "duplicate": "Дублировать",
           "delete": "Удалить",
           "descriptionLabel": "Описание",
-          "failedToSaveSettings": "Не удалось сохранить параметры задания",
+          "failedToSaveSettings": "Не удалось сохранить параметры учебные задачи",
           "failedToSaveItem": "Не удалось сохранить {itemNoun}",
           "defaultItemTitle": "Элемент без названия",
           "copyOf": "Копия {title}",
@@ -8271,8 +8272,8 @@
           "backToGradebook": "Назад к журналу",
           "submissionReview": "Проверка работы",
           "searchLearner": "Поиск студента",
-          "activityType": "Тип задания",
-          "allActivityTypes": "Все типы заданий",
+          "activityType": "Тип учебные задачи",
+          "allActivityTypes": "Все типы учебных задач",
           "learner": "Студент",
           "email": "Email",
           "selectCell": "Выбрать ячейку прогресса",
@@ -8286,7 +8287,7 @@
           "defaultCohort": "Список курса",
           "summary": {
             "learners": "Студенты",
-            "activities": "Задания",
+            "activities": "Учебные задачи",
             "needsGrading": "На проверке",
             "overdue": "Просрочено",
             "notStarted": "Не начато",
@@ -8313,14 +8314,14 @@
           },
           "rollups": {
             "title": "Сводки прогресса",
-            "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и заданиям.",
-            "assignment_group": "Группы",
+            "description": "Переключайте разрезы, чтобы сравнивать прогресс по группам, когортам, студентам и учебные задачим.",
+            "activity_category": "Группы",
             "cohort": "Когорты",
             "learner": "Студенты",
-            "activity": "Задания"
+            "activity": "Учебные задачи"
           },
           "activityTypes": {
-            "assignment": "Задание",
+            "assignment": "Учебная задача",
             "exam": "Экзамен",
             "codeChallenge": "Задача по коду",
             "quiz": "Тест",
@@ -8336,19 +8337,19 @@
       "unlimited": "Без ограничений",
       "attempts": "Попытки",
       "dueDate": "Срок сдачи",
-      "assessmentBlocked": "Это задание сейчас недоступно для вас.",
+      "assessmentBlocked": "Это учебная задача сейчас недоступно для вас.",
       "waitingForRelease": "Ваша работа получена. Оценка будет опубликована после проверки преподавателем.",
-      "startAssessment": "Начать задание",
+      "startAssessment": "Начать учебная задача",
       "startRevision": "Начать пересдачу",
       "revision": "Пересдача",
       "returnedForRevision": "Возвращено на доработку",
       "passed": "Пройдено",
       "failed": "Не пройдено",
       "pendingGrade": "Ожидание оценки",
-      "assessmentSubmitted": "Задание отправлено",
+      "assessmentSubmitted": "Учебная задача отправлено",
       "gradeNotYetReleased": "Оценка ещё не опубликована. Проверьте позже.",
-      "retryAssessment": "Повторить задание",
-      "nextActivity": "Следующее задание"
+      "retryAssessment": "Повторить учебная задача",
+      "nextActivity": "Следующее учебная задача"
     }
   },
   "Themes": {
@@ -8813,8 +8814,8 @@
   "Validation": {
     "activityDescriptionRequired": "Требуется описание активности",
     "activityNameRequired": "Требуется название активности",
-    "assignmentDescriptionRequired": "Требуется описание задания",
-    "assignmentTitleRequired": "Требуется название задания",
+    "assignmentDescriptionRequired": "Требуется описание учебные задачи",
+    "assignmentTitleRequired": "Требуется название учебные задачи",
     "chapterDescriptionRequired": "Требуется описание главы",
     "chapterNameRequired": "Требуется название главы",
     "contentRequired": "Требуется контент",
@@ -8892,8 +8893,8 @@
     "noAction": "Действие недоступно",
     "blocked": "Доступ заблокирован",
     "blockedReasons": {
-      "NOT_PUBLISHED": "Задание ещё не опубликовано.",
-      "BEFORE_WINDOW": "Задание ещё не доступно.",
+      "NOT_PUBLISHED": "Учебная задача ещё не опубликовано.",
+      "BEFORE_WINDOW": "Учебная задача ещё не доступно.",
       "AFTER_WINDOW": "Окно сдачи закрыто.",
       "MAX_ATTEMPTS_REACHED": "Вы использовали все попытки.",
       "NOT_ENROLLED": "Вы не записаны на этот курс.",
@@ -8929,7 +8930,7 @@
   },
   "PolicyPreset": {
     "title": "Шаблон политики",
-    "description": "Применить рекомендуемую конфигурацию для данного типа задания.",
+    "description": "Применить рекомендуемую конфигурацию для данного типа учебные задачи.",
     "apply": "Применить шаблон",
     "applied": "Шаблон применён",
     "failed": "Не удалось применить шаблон"

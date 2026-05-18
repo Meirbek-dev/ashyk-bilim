@@ -1,14 +1,12 @@
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext';
 import { buildCourseActivityIndex, normalizeActivityUuid } from '@/lib/course-activity-index';
+import {
+  type StudentPrimaryAction,
+  type StudentActivityState,
+  derivePrimaryAction,
+} from '@/features/student-activity/domain';
 
-export type StudentActivityStatus =
-  | 'course_end'
-  | 'unavailable'
-  | 'not_started'
-  | 'complete'
-  | 'submitted'
-  | 'needs_revision'
-  | 'assessment';
+export type StudentActivityStatus = StudentActivityState;
 
 export interface ActivityNavItem {
   id?: number | null;
@@ -43,6 +41,8 @@ export interface StudentActivityViewModel {
   title: string;
   chapterTitle: string | null;
   status: StudentActivityStatus;
+  primaryAction: StudentPrimaryAction;
+  isAssessable: boolean;
   progress: {
     totalActivities: number;
     completedActivities: number;
@@ -95,6 +95,23 @@ export function buildStudentActivityViewModel(options: {
   const current = currentIndexed ? toNavItem(currentIndexed, currentIndex, completedActivityIds) : null;
   const currentComplete = current?.complete ?? false;
   const canView = activityId === 'end' || !activity || activity.published === true || canContribute;
+  const isCourseEnd = activityId === 'end';
+  const isAssessable = isAssessableActivityType(activity?.activity_type);
+  const status = getStatus({ activity, canView, currentComplete, isAssessable, isCourseEnd });
+  const next =
+    currentIndex >= 0 && currentIndex < activityIndex.allActivities.length - 1
+      ? toNavItem(activityIndex.allActivities[currentIndex + 1], currentIndex + 1, completedActivityIds)
+      : null;
+  const canMarkComplete = Boolean(current && isAuthenticated && canView && !isCourseEnd && !isAssessable);
+  const primaryAction = derivePrimaryAction({
+    canMarkComplete,
+    currentComplete,
+    hasNext: Boolean(next),
+    isAssessable,
+    isCourseEnd,
+    nextActivityUuid: next?.cleanUuid,
+    state: status,
+  });
 
   return {
     course: {
@@ -106,7 +123,9 @@ export function buildStudentActivityViewModel(options: {
     activity: current,
     title: activityId === 'end' ? course.name ?? '' : activity?.name ?? current?.title ?? '',
     chapterTitle: currentIndexed?.chapterName ?? null,
-    status: getStatus({ activity, canView, currentComplete, isCourseEnd: activityId === 'end' }),
+    status,
+    primaryAction,
+    isAssessable,
     progress: {
       totalActivities: activityIndex.allActivities.length,
       completedActivities: activityIndex.allActivities.filter((candidate) =>
@@ -114,10 +133,7 @@ export function buildStudentActivityViewModel(options: {
       ).length,
       currentComplete,
       previous: currentIndex > 0 ? toNavItem(activityIndex.allActivities[currentIndex - 1], currentIndex - 1, completedActivityIds) : null,
-      next:
-        currentIndex >= 0 && currentIndex < activityIndex.allActivities.length - 1
-          ? toNavItem(activityIndex.allActivities[currentIndex + 1], currentIndex + 1, completedActivityIds)
-          : null,
+      next,
       chapters,
     },
     permissions: {
@@ -126,7 +142,7 @@ export function buildStudentActivityViewModel(options: {
       canContribute,
     },
     state: {
-      isCourseEnd: activityId === 'end',
+      isCourseEnd,
     },
   };
 }
@@ -167,10 +183,21 @@ function getStatus(options: {
   activity: Activity | null;
   canView: boolean;
   currentComplete: boolean;
+  isAssessable: boolean;
   isCourseEnd: boolean;
 }): StudentActivityStatus {
   if (options.isCourseEnd) return 'course_end';
   if (!options.activity || !options.canView) return 'unavailable';
   if (options.currentComplete) return 'complete';
+  if (options.isAssessable) return 'not_started';
   return 'not_started';
+}
+
+function isAssessableActivityType(type?: string | null): boolean {
+  return (
+    type === 'TYPE_EXAM' ||
+    type === 'TYPE_CODE_CHALLENGE' ||
+    type === 'TYPE_CUSTOM' ||
+    type === 'TYPE_FILE_SUBMISSION'
+  );
 }

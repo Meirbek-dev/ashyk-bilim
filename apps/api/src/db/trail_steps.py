@@ -95,5 +95,3 @@ class TrailStepRead(PydanticStrictBaseModel):
             return 0
 
 
-# note : prepare assignments support
-# An assignment object will be linked to a trail step object in the future

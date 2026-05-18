@@ -101,13 +101,13 @@
       "teacherView": "Teacher view"
     },
     "AssignmentStudentActivity": {
-      "assignment": "Assignment",
+      "assignment": "Assessment task",
       "blankLabel": "Field {index}",
-      "descriptionTitle": "Assignment Description",
+      "descriptionTitle": "Assessment task Description",
       "dueDate": "Due Date",
       "emptyOption": "Empty option",
       "hint": "Hint",
-      "loadSubmissionError": "Could not load your assignment answer.",
+      "loadSubmissionError": "Could not load your assessment task answer.",
       "noTasks": "No tasks available",
       "points": "{count, plural, =0 {# points} one {# point} other {# points}}",
       "progressSaved": "Progress saved",
@@ -127,7 +127,7 @@
       "recoveredSavedAnswers": "Recovered saved answers.",
       "readyToRevise": "Ready to revise",
       "readyToBegin": "Ready to begin",
-      "readyToBeginDescription": "Start your assignment and submit when you're ready.",
+      "readyToBeginDescription": "Start your assessment task and submit when you're ready.",
       "readyToReviseDescription": "A revision draft is ready. Update your answers and submit again.",
       "startRevision": "Start revision",
       "startAssessment": "Start assessment",
@@ -153,8 +153,8 @@
       "untitledQuestion": "Untitled question",
       "unsavedChanges": "Unsaved changes",
       "allowedFormats": "Allowed formats: pdf, docx, mp4, mkv, jpg, jpeg, png, pptx, zip",
-      "ariaLabel": "Choose file to upload for assignment",
-      "missingAssignmentInfo": "Missing required assignment information",
+      "ariaLabel": "Choose file to upload for assessment task",
+      "missingAssignmentInfo": "Missing required assessment task information",
       "selectFile": "Select File",
       "submitFile": "Submit File",
       "uploadFailed": "Upload failed",
@@ -514,7 +514,7 @@
   },
   "ActivityIndicators": {
     "activityTypes": {
-      "assignment": "Assignment",
+      "assignment": "Assessment task",
       "codeChallenge": "Code Challenge",
       "document": "Document",
       "exam": "Exam",
@@ -539,7 +539,7 @@
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",
     "activityTypes": {
-      "assignment": "Assignment",
+      "assignment": "Assessment task",
       "document": "Document",
       "dynamic": "Page",
       "exam": "Exam",
@@ -550,9 +550,9 @@
     },
     "assignmentActions": {
       "submit": "Submit",
-      "submitConfirm": "Are you sure you want to submit the assignment for grading? You will not be able to make changes after submission.",
+      "submitConfirm": "Are you sure you want to submit the assessment task for grading? You will not be able to make changes after submission.",
       "submitForGrading": "Submit",
-      "submitYourAssingmentForGrading": "Submit your assignment for grading"
+      "submitYourAssingmentForGrading": "Submit your assessment task for grading"
     },
     "assignmentStatus": {
       "graded": "Graded",
@@ -607,8 +607,8 @@
     "statusComplete": "Complete",
     "submitted": "Submitted",
     "support": "Support",
-    "submitErrorToast": "Failed to submit assignment for grading",
-    "submitSuccessToast": "Assignment submitted for grading",
+    "submitErrorToast": "Failed to submit assessment task for grading",
+    "submitSuccessToast": "Assessment task submitted for grading",
     "unknownGradingType": "Unknown grading type",
     "unmarkActivity": "Unmark Activity",
     "unmarkAsComplete": "Unmark as complete",
@@ -618,7 +618,8 @@
     "unpublishedActivity": "This activity is not published yet",
     "viewAllActivities": "View all activities",
     "viewAssessment": "View Assessment",
-    "viewResult": "View Result"
+    "viewResult": "View Result",
+    "onThisPage": "On this page"
   },
   "AdminUtils": {
     "priority": {
@@ -1514,7 +1515,7 @@
         "typeGeneral": "Practice",
         "typeGeneralHint": "Students can submit multiple times without ranking"
       },
-      "assignments": "Assignments",
+      "assignments": "Assessment tasks",
       "assignmentsDesc": "Create a task with written or file-based submissions",
       "backToActivities": "Back to Activities",
       "chooseType": "Choose activity type",
@@ -1546,12 +1547,12 @@
     },
     "NewAssignmentModal": {
       "alphabet": "Alphabetical",
-      "assignmentDescription": "Assignment Description",
-      "assignmentTitle": "Assignment Title",
+      "assignmentDescription": "Assessment task Description",
+      "assignmentTitle": "Assessment task Title",
       "createActivity": "Create Activity",
-      "createError": "Failed to create assignment: {error}",
-      "createSuccess": "Assignment created successfully",
-      "creatingAssignment": "Creating assignment...",
+      "createError": "Failed to create assessment task: {error}",
+      "createSuccess": "Assessment task created successfully",
+      "creatingAssignment": "Creating assessment task...",
       "dueDate": "Due Date",
       "gradingType": "Grading Type",
       "numeric": "Numeric",
@@ -1560,10 +1561,10 @@
       "selectGradingType": "Select grading type",
       "unexpectedError": "An unexpected error occurred",
       "unknownError": "Unknown error",
-      "valueMissingDescription": "Please provide a description for your assignment",
-      "valueMissingDueDate": "Please provide a due date for your assignment",
-      "valueMissingGradingType": "Please provide a grading type for your assignment",
-      "valueMissingTitle": "Please provide a title for your assignment"
+      "valueMissingDescription": "Please provide a description for your assessment task",
+      "valueMissingDueDate": "Please provide a due date for your assessment task",
+      "valueMissingGradingType": "Please provide a grading type for your assessment task",
+      "valueMissingTitle": "Please provide a title for your assessment task"
     },
     "NewChapterModal": {
       "chapterDescription": "Chapter Description",
@@ -1614,7 +1615,7 @@
       "step2Desc": "Courses are the main building blocks of Ashyk Bilim, they always contain Chapters and Chapters contain Activities.",
       "step2Title": "Create Courses",
       "step3Button": "Learn more about Activities",
-      "step3Desc": "Activities are the elements you can add to your Courses via Chapters: Dynamic Pages, Videos, Documents, Assignments and more coming soon.",
+      "step3Desc": "Activities are the elements you can add to your Courses via Chapters: Dynamic Pages, Videos, Documents, Assessment tasks and more coming soon.",
       "step3Title": "Activities",
       "step4Button": "Learn more about Dynamic Pages and the Editor",
       "step4Desc": "Dynamic pages are pages with dynamic content like Notion pages, they can include different components like Quizzes, Images, Videos, Documents, etc.",
@@ -1627,9 +1628,9 @@
       "step6Title": "Group Students and Simplify Access",
       "step7Desc": "You can make your Courses available to search engines and non authenticated users or only grant access to authenticated users",
       "step7Title": "Choose whether or not to make Courses available on the Internet",
-      "step8Button": "Create an Assignment",
-      "step8Desc": "Engage students with assignments, track their progress, and provide feedback through our intuitive grading system.",
-      "step8Title": "Create and Grade Assignments",
+      "step8Button": "Create an Assessment task",
+      "step8Desc": "Engage students with assessment tasks, track their progress, and provide feedback through our intuitive grading system.",
+      "step8Title": "Create and Grade Assessment tasks",
       "triggerText": "Onboarding"
     },
     "NavMenu": {
@@ -2081,7 +2082,7 @@
       "expected": "Expected:",
       "fillBlanksError": "Please fill in at least one blank before submitting.",
       "fillInTheBlanks": "Fill in the blanks",
-      "gradeAssignment": "Grade Assignment",
+      "gradeAssignment": "Grade Assessment task",
       "gradeError": "Error grading task, please retry later.",
       "gradedSuccessfully": "Task graded successfully with {finalGrade} points ({correctAnswers}/{totalBlanks} correct)",
       "hint": "Hint (optional)",
@@ -2302,7 +2303,7 @@
   },
   "Contexts": {
     "Assignment": {
-      "loadError": "Failed to load assignment data"
+      "loadError": "Failed to load assessment task data"
     },
     "Course": {
       "loadError": "Failed to load course structure"
@@ -2322,7 +2323,7 @@
   "CourseEdit": {
     "ActivityElement": {
       "ActivityTypes": {
-        "assignment": "Assignment",
+        "assignment": "Assessment task",
         "codeChallenge": "Code Challenge",
         "document": "Document",
         "dynamic": "Dynamic",
@@ -2342,7 +2343,7 @@
       "deleteTitle": "Delete {name}?",
       "deleting": "Deleting...",
       "deletingActivity": "Deleting activity...",
-      "editAssignmentButton": "Edit Assignment",
+      "editAssignmentButton": "Edit Assessment task",
       "editPageButton": "Edit Page",
       "openEditPage": "Open edit page",
       "failedToUpdateActivityName": "Failed to update activity name",
@@ -2516,7 +2517,7 @@
     },
     "activityNamePlaceholder": "Activity name",
     "activityTypes": {
-      "assignment": "Assignment",
+      "assignment": "Assessment task",
       "document": "Document",
       "dynamic": "Dynamic",
       "video": "Video"
@@ -2554,7 +2555,7 @@
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",
     "admin": "Admin",
-    "assignment": "Assignment",
+    "assignment": "Assessment task",
     "fileSubmission": "File Submission",
     "cancel": "Cancel",
     "confirmDelete": "Are you sure you want to delete this?",
@@ -2602,11 +2603,11 @@
     "statusComplete": "Complete",
     "statusGraded": "Graded",
     "statusGradingInProgress": "Grading in progress",
-    "submitButton": "Submit assignment",
-    "submitConfirmationMessage": "Are you sure you want to submit the assignment for review? You will not be able to make changes after submission.",
-    "submitConfirmationTitle": "Submit your assignment for review",
-    "submitErrorToast": "Failed to submit assignment for review",
-    "submitSuccessToast": "Assignment submitted for review",
+    "submitButton": "Submit assessment task",
+    "submitConfirmationMessage": "Are you sure you want to submit the assessment task for review? You will not be able to make changes after submission.",
+    "submitConfirmationTitle": "Submit your assessment task for review",
+    "submitErrorToast": "Failed to submit assessment task for review",
+    "submitSuccessToast": "Assessment task submitted for review",
     "submitTrigger": "Submit for review",
     "thumbnailTypeImage": "Image",
     "thumbnailTypeVideo": "Video",
@@ -3206,7 +3207,7 @@
         "title": "Account Settings"
       },
       "Courses": {
-        "description": "Create and manage courses, chapters, and assignments",
+        "description": "Create and manage courses, chapters, and assessment tasks",
         "errorOccurred": "An error occurred",
         "title": "Courses"
       },
@@ -3716,9 +3717,9 @@
             "description": "Can create courses but need ownership for content creation",
             "name": "Instructor",
             "permissions": {
-              "createAssignments": "Create assignments",
+              "createAssignments": "Create assessment tasks",
               "createCourses": "Create courses",
-              "gradeAssignments": "Grade assignments",
+              "gradeAssignments": "Grade assessment tasks",
               "manageOwnCourses": "Manage own courses"
             }
           },
@@ -3726,7 +3727,7 @@
             "description": "Mid-level manager with wide permissions",
             "name": "Maintainer",
             "permissions": {
-              "manageAssignments": "Manage assignments",
+              "manageAssignments": "Manage assessment tasks",
               "manageCourses": "Manage courses",
               "manageUsers": "Manage users"
             }
@@ -3735,7 +3736,7 @@
             "description": "Read-Only Learner",
             "name": "User",
             "permissions": {
-              "submitAssignments": "Submit assignments",
+              "submitAssignments": "Submit assessment tasks",
               "takeAssessments": "Take assessments",
               "viewCourses": "View courses"
             }
@@ -4380,7 +4381,7 @@
           },
           "suno": {
             "label": "Suno",
-            "description": "AI-generated songs and creative audio assignments."
+            "description": "AI-generated songs and creative audio assessment tasks."
           },
           "sodaphonic": {
             "label": "Sodaphonic",
@@ -4616,7 +4617,7 @@
           },
           "flip": {
             "label": "Flip",
-            "description": "Asynchronous video discussion boards for reflective assignments."
+            "description": "Asynchronous video discussion boards for reflective assessment tasks."
           }
         }
       },
@@ -4757,7 +4758,7 @@
     },
     "Metrics": {
       "desktopOnlyMessage1": "This page is only available on a desktop device.",
-      "desktopOnlyMessage2": "Please switch to a desktop device to view and manage the assignment.",
+      "desktopOnlyMessage2": "Please switch to a desktop device to view and manage the assessment task.",
       "desktopOnlyTitle": "Desktop Only",
       "generalDescription": "Metrics",
       "generalTitle": "Metrics",
@@ -5744,7 +5745,7 @@
         },
         "xpSources": {
           "activity_completion": "Activity Completed",
-          "assignment_submission": "Assignment Submitted",
+          "assignment_submission": "Assessment task Submitted",
           "course_completion": "Course Completed",
           "discussion_post": "Discussion Post",
           "first_activity": "First Activity",
@@ -6890,7 +6891,7 @@
         "none": "No comparison"
       },
       "assessmentType": {
-        "assignment": "Assignment",
+        "assignment": "Assessment task",
         "quiz": "Quiz",
         "exam": "Exam",
         "codeChallenge": "Code challenge"
@@ -6957,7 +6958,7 @@
         "returningLearners": "Learners who were also active in the immediately preceding period of equal length.",
         "completionRate": "Percentage of enrolled learners who have fully completed the course.",
         "atRisk": "Learners scoring 40+ on the composite risk index (inactivity + progress gap + failures + missing assessments + grading blocks).",
-        "ungradedSubmissions": "Assignment submissions currently awaiting teacher review and grading.",
+        "ungradedSubmissions": "Assessment task submissions currently awaiting teacher review and grading.",
         "negativeCourses": "Courses where the active learner count has declined compared to the previous period."
       }
     },
@@ -7050,7 +7051,7 @@
     },
     "assessmentOutliers": {
       "title": "Assessment outliers",
-      "description": "Ranked assignments, quizzes, exams, and code challenges needing attention.",
+      "description": "Ranked assessment tasks, quizzes, exams, and code challenges needing attention.",
       "colAssessment": "Assessment",
       "colCourse": "Course",
       "colSubmission": "Submission",
@@ -7295,14 +7296,14 @@
         },
         "rollups": {
           "title": "Progress rollups",
-          "description": "Switch views to compare course progress by group, cohort, learner, or activity.",
-          "assignment_group": "Groups",
+          "description": "Switch views to compare course progress by activity category, cohort, learner, or activity.",
+          "activity_category": "Activity categories",
           "cohort": "Cohorts",
           "learner": "Learners",
           "activity": "Activities"
         },
         "activityTypes": {
-          "assignment": "Assignment",
+          "assignment": "Assessment task",
           "exam": "Exam",
           "codeChallenge": "Code Challenge",
           "quiz": "Quiz",
@@ -8027,7 +8028,7 @@
         "outlineEmptyMessage": "No items yet. Click + to add your first question or block.",
         "itemInfo": "{kind} • {max_score} pts",
         "kinds": {
-          "ASSIGNMENT": "Assignment",
+          "ASSIGNMENT": "Assessment task",
           "EXAM": "Exam",
           "CODE_CHALLENGE": "Code Challenge",
           "QUIZ": "Quiz",
@@ -8258,14 +8259,14 @@
           },
           "rollups": {
             "title": "Progress rollups",
-            "description": "Switch views to compare course progress by group, cohort, learner, or activity.",
-            "assignment_group": "Groups",
+            "description": "Switch views to compare course progress by activity category, cohort, learner, or activity.",
+            "activity_category": "Activity categories",
             "cohort": "Cohorts",
             "learner": "Learners",
             "activity": "Activities"
           },
           "activityTypes": {
-            "assignment": "Assignment",
+            "assignment": "Assessment task",
             "exam": "Exam",
             "codeChallenge": "Code Challenge",
             "quiz": "Quiz",
@@ -8757,8 +8758,8 @@
   "Validation": {
     "activityDescriptionRequired": "Activity description is required",
     "activityNameRequired": "Activity name is required",
-    "assignmentDescriptionRequired": "Assignment description is required",
-    "assignmentTitleRequired": "Assignment title is required",
+    "assignmentDescriptionRequired": "Assessment task description is required",
+    "assignmentTitleRequired": "Assessment task title is required",
     "chapterDescriptionRequired": "Chapter description is required",
     "chapterNameRequired": "Chapter name is required",
     "contentRequired": "Content is required",

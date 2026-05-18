@@ -11449,6 +11449,543 @@
         "title": "StreakUpdateRead",
         "type": "object"
       },
+      "StudentActivityActionRequest": {
+        "properties": {
+          "command": {
+            "enum": [
+              "start",
+              "mark_viewed",
+              "mark_complete",
+              "unmark_complete",
+              "start_attempt",
+              "save_draft",
+              "submit",
+              "request_revision_start",
+              "acknowledge_feedback"
+            ],
+            "title": "Command",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          }
+        },
+        "required": [
+          "command"
+        ],
+        "title": "StudentActivityActionRequest",
+        "type": "object"
+      },
+      "StudentActivityContentRuntime": {
+        "properties": {
+          "assessment_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Uuid"
+          },
+          "content": {
+            "additionalProperties": true,
+            "title": "Content",
+            "type": "object"
+          },
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          },
+          "file_submission_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Submission Uuid"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "title": "Settings",
+            "type": "object"
+          },
+          "subtype": {
+            "title": "Subtype",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "subtype"
+        ],
+        "title": "StudentActivityContentRuntime",
+        "type": "object"
+      },
+      "StudentActivityCourseHeader": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "public": {
+            "title": "Public",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "uuid",
+          "title",
+          "public"
+        ],
+        "title": "StudentActivityCourseHeader",
+        "type": "object"
+      },
+      "StudentActivityHeader": {
+        "properties": {
+          "chapter_id": {
+            "title": "Chapter Id",
+            "type": "integer"
+          },
+          "chapter_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Title"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "order": {
+            "default": 0,
+            "title": "Order",
+            "type": "integer"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "subtype": {
+            "title": "Subtype",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "uuid",
+          "title",
+          "type",
+          "subtype",
+          "published",
+          "chapter_id"
+        ],
+        "title": "StudentActivityHeader",
+        "type": "object"
+      },
+      "StudentActivityNavItem": {
+        "properties": {
+          "complete": {
+            "default": false,
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "state": {
+            "default": "not_started",
+            "enum": [
+              "not_started",
+              "in_progress",
+              "viewed",
+              "draft",
+              "submitted",
+              "needs_grading",
+              "graded_hidden",
+              "published",
+              "returned",
+              "passed",
+              "failed",
+              "complete",
+              "locked",
+              "unavailable",
+              "attempt_exhausted",
+              "course_end"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "uuid",
+          "title",
+          "type",
+          "published"
+        ],
+        "title": "StudentActivityNavItem",
+        "type": "object"
+      },
+      "StudentActivityOutlineChapter": {
+        "properties": {
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/StudentActivityNavItem"
+            },
+            "title": "Activities",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "index"
+        ],
+        "title": "StudentActivityOutlineChapter",
+        "type": "object"
+      },
+      "StudentActivityPermissions": {
+        "properties": {
+          "can_contribute": {
+            "default": false,
+            "title": "Can Contribute",
+            "type": "boolean"
+          },
+          "can_update": {
+            "default": false,
+            "title": "Can Update",
+            "type": "boolean"
+          },
+          "can_view": {
+            "title": "Can View",
+            "type": "boolean"
+          },
+          "is_authenticated": {
+            "title": "Is Authenticated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_authenticated",
+          "can_view"
+        ],
+        "title": "StudentActivityPermissions",
+        "type": "object"
+      },
+      "StudentActivityProgressRuntime": {
+        "properties": {
+          "attempt_count": {
+            "default": 0,
+            "title": "Attempt Count",
+            "type": "integer"
+          },
+          "canonical_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityProgressState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "complete": {
+            "default": false,
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "graded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graded At"
+          },
+          "is_late": {
+            "default": false,
+            "title": "Is Late",
+            "type": "boolean"
+          },
+          "latest_submission_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Submission Status"
+          },
+          "latest_submission_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Submission Uuid"
+          },
+          "passed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passed"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "state": {
+            "enum": [
+              "not_started",
+              "in_progress",
+              "viewed",
+              "draft",
+              "submitted",
+              "needs_grading",
+              "graded_hidden",
+              "published",
+              "returned",
+              "passed",
+              "failed",
+              "complete",
+              "locked",
+              "unavailable",
+              "attempt_exhausted",
+              "course_end"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Reason"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "teacher_action_required": {
+            "default": false,
+            "title": "Teacher Action Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "StudentActivityProgressRuntime",
+        "type": "object"
+      },
+      "StudentActivityRuntime": {
+        "properties": {
+          "activity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StudentActivityHeader"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StudentActivityContentRuntime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "course": {
+            "$ref": "#/components/schemas/StudentActivityCourseHeader"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StudentActivityNavItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outline": {
+            "items": {
+              "$ref": "#/components/schemas/StudentActivityOutlineChapter"
+            },
+            "title": "Outline",
+            "type": "array"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/StudentActivityPermissions"
+          },
+          "policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StudentVisiblePolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StudentActivityNavItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "primary_action": {
+            "$ref": "#/components/schemas/StudentPrimaryAction"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/StudentActivityProgressRuntime"
+          }
+        },
+        "required": [
+          "course",
+          "activity",
+          "content",
+          "progress",
+          "permissions",
+          "primary_action"
+        ],
+        "title": "StudentActivityRuntime",
+        "type": "object"
+      },
       "StudentPolicyOverrideCreate": {
         "properties": {
           "due_at_override": {
@@ -11682,6 +12219,60 @@
         "title": "StudentPolicyOverrideUpdate",
         "type": "object"
       },
+      "StudentPrimaryAction": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "enum": [
+              "start",
+              "continue",
+              "mark_complete",
+              "unmark_complete",
+              "submit",
+              "view_receipt",
+              "view_feedback",
+              "revise",
+              "next_activity",
+              "review_policy",
+              "back_to_course",
+              "none"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "target_activity_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Activity Uuid"
+          }
+        },
+        "required": [
+          "id",
+          "enabled"
+        ],
+        "title": "StudentPrimaryAction",
+        "type": "object"
+      },
       "StudentSubmissionRead": {
         "properties": {
           "activity_id": {
@@ -11897,6 +12488,90 @@
           "updated_at"
         ],
         "title": "StudentSubmissionRead",
+        "type": "object"
+      },
+      "StudentVisiblePolicy": {
+        "properties": {
+          "completion_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Rule"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "grade_release_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade Release Mode"
+          },
+          "grading_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grading Mode"
+          },
+          "max_attempts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts"
+          },
+          "passing_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passing Score"
+          },
+          "time_limit_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit Seconds"
+          }
+        },
+        "title": "StudentVisiblePolicy",
         "type": "object"
       },
       "SubmissionListResponse": {
@@ -23778,6 +24453,128 @@
         ]
       }
     },
+    "/api/v1/courses/{course_uuid}/activities/{activity_uuid}/actions": {
+      "post": {
+        "operationId": "api_run_student_activity_action_api_v1_courses__course_uuid__activities__activity_uuid__actions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentActivityActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentActivityRuntime"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Run Student Activity Action",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v1/courses/{course_uuid}/activities/{activity_uuid}/runtime": {
+      "get": {
+        "operationId": "api_get_student_activity_runtime_api_v1_courses__course_uuid__activities__activity_uuid__runtime_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "course_uuid",
+            "required": true,
+            "schema": {
+              "title": "Course Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "activity_uuid",
+            "required": true,
+            "schema": {
+              "title": "Activity Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentActivityRuntime"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Student Activity Runtime",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
     "/api/v1/courses/{course_uuid}/apply-contributor": {
       "post": {
         "description": "Apply to be a contributor for a course",
@@ -24747,7 +25544,7 @@
     },
     "/api/v1/courses/{course_uuid}/rights": {
       "get": {
-        "description": "Get detailed user rights for a specific course.\n\nThis endpoint returns comprehensive rights information that can be used\nby the UI to enable/disable features based on user permissions.\n\n\n\n**Response Structure:**\n```json\n{\n    \"course_uuid\": \"course_123\",\n    \"user_id\": 456,\n    \"is_anonymous\": false,\n    \"permissions\": {\n        \"read\": true,\n        \"create\": false,\n        \"update\": true,\n        \"delete\": false,\n        \"create_content\": true,\n        \"update_content\": true,\n        \"delete_content\": true,\n        \"manage_contributors\": true,\n        \"manage_access\": true,\n        \"assessment_grade\": true,\n        \"mark_activities_done\": true,\n        \"create_certifications\": true\n    },\n    \"ownership\": {\n        \"is_owner\": true,\n        \"is_creator\": true,\n        \"is_maintainer\": false,\n        \"is_contributor\": false,\n        \"authorship_status\": \"ACTIVE\"\n    },\n    \"roles\": {\n        \"is_admin\": false,\n        \"is_maintainer_role\": false,\n        \"is_instructor\": true,\n        \"is_user\": true\n    }\n}\n```\n\n**Permissions Explained:**\n- `read`: Can read the course content\n- `create`: Can create new courses (instructor role or higher)\n- `update`: Can update course settings (title, description, etc.)\n- `delete`: Can delete the course\n- `create_content`: Can create activities, assignments, chapters, etc.\n- `update_content`: Can update course content\n- `delete_content`: Can delete course content\n- `manage_contributors`: Can add/remove contributors\n- `manage_access`: Can change course access settings (public, open_to_contributors)\n- `assessment_grade`: Can grade student assignments\n- `mark_activities_done`: Can mark activities as done for other users\n- `create_certifications`: Can create course certifications\n\n**Ownership Information:**\n- `is_owner`: Is course owner (CREATOR, MAINTAINER, or CONTRIBUTOR)\n- `is_creator`: Is course creator\n- `is_maintainer`: Is course maintainer\n- `is_contributor`: Is course contributor\n- `authorship_status`: Current authorship status (ACTIVE, PENDING, INACTIVE)\n\n**Role Information:**\n- `is_admin`: Has admin role (role 1)\n- `is_maintainer_role`: Has maintainer role (role 2)\n- `is_instructor`: Has instructor role (role 3)\n- `is_user`: Has basic user role (role 4)\n\n**Security Notes:**\n- Returns rights based on course ownership and user roles\n- Safe to expose to UI as it only returns permission information\n- Anonymous users can only read public courses\n- All permissions are calculated based on current user context",
+        "description": "Get detailed user rights for a specific course.\n\nThis endpoint returns comprehensive rights information that can be used\nby the UI to enable/disable features based on user permissions.\n\n\n\n**Response Structure:**\n```json\n{\n    \"course_uuid\": \"course_123\",\n    \"user_id\": 456,\n    \"is_anonymous\": false,\n    \"permissions\": {\n        \"read\": true,\n        \"create\": false,\n        \"update\": true,\n        \"delete\": false,\n        \"create_content\": true,\n        \"update_content\": true,\n        \"delete_content\": true,\n        \"manage_contributors\": true,\n        \"manage_access\": true,\n        \"assessment_grade\": true,\n        \"mark_activities_done\": true,\n        \"create_certifications\": true\n    },\n    \"ownership\": {\n        \"is_owner\": true,\n        \"is_creator\": true,\n        \"is_maintainer\": false,\n        \"is_contributor\": false,\n        \"authorship_status\": \"ACTIVE\"\n    },\n    \"roles\": {\n        \"is_admin\": false,\n        \"is_maintainer_role\": false,\n        \"is_instructor\": true,\n        \"is_user\": true\n    }\n}\n```\n\n**Permissions Explained:**\n- `read`: Can read the course content\n- `create`: Can create new courses (instructor role or higher)\n- `update`: Can update course settings (title, description, etc.)\n- `delete`: Can delete the course\n- `create_content`: Can create activities, assessments, chapters, etc.\n- `update_content`: Can update course content\n- `delete_content`: Can delete course content\n- `manage_contributors`: Can add/remove contributors\n- `manage_access`: Can change course access settings (public, open_to_contributors)\n- `assessment_grade`: Can grade student assessment work\n- `mark_activities_done`: Can mark activities as done for other users\n- `create_certifications`: Can create course certifications\n\n**Ownership Information:**\n- `is_owner`: Is course owner (CREATOR, MAINTAINER, or CONTRIBUTOR)\n- `is_creator`: Is course creator\n- `is_maintainer`: Is course maintainer\n- `is_contributor`: Is course contributor\n- `authorship_status`: Current authorship status (ACTIVE, PENDING, INACTIVE)\n\n**Role Information:**\n- `is_admin`: Has admin role (role 1)\n- `is_maintainer_role`: Has maintainer role (role 2)\n- `is_instructor`: Has instructor role (role 3)\n- `is_user`: Has basic user role (role 4)\n\n**Security Notes:**\n- Returns rights based on course ownership and user roles\n- Safe to expose to UI as it only returns permission information\n- Anonymous users can only read public courses\n- All permissions are calculated based on current user context",
         "operationId": "api_get_course_user_rights_api_v1_courses__course_uuid__rights_get",
         "parameters": [
           {

@@ -8,7 +8,7 @@ import type {
 } from './types';
 
 export type GradebookSavedFilterId = 'all' | 'needs_grading' | 'overdue' | 'returned' | 'failed' | 'not_started';
-export type GradebookRollupKind = 'assignment_group' | 'cohort' | 'learner' | 'activity';
+export type GradebookRollupKind = 'activity_category' | 'cohort' | 'learner' | 'activity';
 
 export interface GradebookFilters {
   savedFilter: GradebookSavedFilterId;
@@ -114,7 +114,7 @@ export function buildGradebookRollups(data: CourseGradebookResponse, kind: Grade
     );
   }
 
-  if (kind === 'assignment_group') {
+  if (kind === 'activity_category') {
     const groups = new Map<string, ActivityProgressCell[]>();
     for (const activity of data.activities) {
       const group = gradebookActivityKind(activity);

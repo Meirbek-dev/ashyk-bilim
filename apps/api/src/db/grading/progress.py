@@ -397,7 +397,7 @@ class CourseProgress(SQLModelStrictBaseModel, table=True):
         sa_column=Column(Float, nullable=False, server_default="0"),
     )
     grade_average: float | None = None
-    # Weighted average using Assignment.weight.  NULL when no graded scores exist.
+    # Weighted average using activity grade weights. NULL when no graded scores exist.
     weighted_grade_average: float | None = Field(
         default=None,
         sa_column=Column("weighted_grade_average", Float, nullable=True),

@@ -101,14 +101,14 @@
       "teacherView": "Мұғалім көрінісі"
     },
     "AssignmentStudentActivity": {
-      "assignment": "Тапсырма",
+      "assignment": "Оқу әрекеті",
       "blankLabel": "Өріс {index}",
-      "descriptionTitle": "Тапсырма сипаттамасы",
+      "descriptionTitle": "Оқу әрекеті сипаттамасы",
       "dueDate": "Тапсыру мерзімі",
       "emptyOption": "Бос нұсқа",
       "hint": "Кеңес",
-      "loadSubmissionError": "Тапсырма жауабыңызды жүктеу мүмкін болмады.",
-      "noTasks": "Қол жетімді тапсырмалар жоқ",
+      "loadSubmissionError": "Оқу әрекеті жауабыңызды жүктеу мүмкін болмады.",
+      "noTasks": "Қол жетімді оқу әрекеттері жоқ",
       "points": "{count, plural, =0 {# ұпай} one {# ұпай} few {# ұпай} many {# ұпай} other {# ұпай}}",
       "progressSaved": "Прогресс сақталды",
       "questionLabel": "Сұрақ {index}",
@@ -122,13 +122,13 @@
       "revisionDraftCreated": "Қайта өңдеу үшін жобалық нұсқа жасалды.",
       "recoveredSavedAnswers": "Сақталған жауаптар қалпына келтірілді.",
       "readyToRevise": "Қайта қарау үшін дайын",
-      "readyToBeginDescription": "Тапсырманы бастаңыз және дайын болғанда жіберіңіз.",
+      "readyToBeginDescription": "Оқу әрекетіны бастаңыз және дайын болғанда жіберіңіз.",
       "readyToReviseDescription": "Қайта өңдеу жобасы дайын. Жауаптарыңызды жаңартып, қайта жіберіңіз.",
       "startRevision": "Қайта өңдеуді бастау",
       "startAssessment": "Бағалауды бастау",
       "scoreLabel": "Баға",
-      "task": "Тапсырма {index}",
-      "taskContentUnavailable": "Бұл тапсырманың мазмұны студент режимінде әзірге қолжетімсіз.",
+      "task": "Оқу әрекеті {index}",
+      "taskContentUnavailable": "Бұл оқу әрекетіның мазмұны студент режимінде әзірге қолжетімсіз.",
       "taskTypeFile": "Файл жүктеу",
       "taskTypeForm": "Форма",
       "taskTypeOther": "Басқа",
@@ -136,8 +136,8 @@
       "untitledQuestion": "Мәтінсіз сұрақ",
       "unsavedChanges": "Сақталмаған өзгерістер бар",
       "allowedFormats": "Рұқсат етілген форматтар: pdf, docx, mp4, mkv, jpg, jpeg, png, pptx, zip",
-      "ariaLabel": "Тапсырма үшін жүктеу файлын таңдаңыз",
-      "missingAssignmentInfo": "Тапсырма туралы қажетті ақпарат жоқ",
+      "ariaLabel": "Оқу әрекеті үшін жүктеу файлын таңдаңыз",
+      "missingAssignmentInfo": "Оқу әрекеті туралы қажетті ақпарат жоқ",
       "selectFile": "Файл таңдаңыз",
       "submitFile": "Файлды жіберу",
       "uploadFailed": "Файлды жүктеу мүмкін болмады",
@@ -146,8 +146,8 @@
       "workProgressTitle": "Жұмыс прогресі",
       "answeredProgress": "{answered}/{total} жауап берілді",
       "unansweredProgress": "{count, plural, =0 {Барлық сұраққа жауап бар} one {# сұрақ қалды} few {# сұрақ қалды} many {# сұрақ қалды} other {# сұрақ қалды}}",
-      "taskNavigatorTitle": "Тапсырмалар навигациясы",
-      "itemsLabel": "Тапсырмалар",
+      "taskNavigatorTitle": "Оқу әрекеттері навигациясы",
+      "itemsLabel": "Оқу әрекеттері",
       "timeLimit": "Уақыт шектеуі",
       "unlimited": "Шектеусіз",
       "attemptsLabel": "Талпыныстар",
@@ -178,12 +178,12 @@
       "authRequired": "Авторизация қажет",
       "bestSubmission": "Ең жақсы жіберу",
       "cancel": "Болдырмау",
-      "challengeSaved": "Тапсырма сәтті сақталды",
+      "challengeSaved": "Оқу әрекеті сәтті сақталды",
       "competitive": "Жарыс",
       "compilationOutput": "Компиляция шығаруы",
       "configSaveFailed": "Параметрлерді сақтау мүмкін болмады",
       "configSaved": "Параметрлер сәтті сақталды",
-      "configureChallenge": "Код тапсырмасын баптау",
+      "configureChallenge": "Код оқу әрекетісын баптау",
       "configureDescription": "Тест жағдайларын, уақыт шектерін және рұқсат етілген бағдарламалау тілдерін орнатыңыз",
       "customInput": "Өз енгізу",
       "deselectAll": "Барлығын алып тастау",
@@ -204,9 +204,9 @@
         "allowedLanguagesHint": "Студенттер үшін бағдарламалау тілдерін таңдаңыз",
         "basicInfo": "Негізгі ақпарат",
         "cancel": "Болдырмау",
-        "description": "Тапсырма сипаттамасы",
+        "description": "Оқу әрекеті сипаттамасы",
         "descriptionHint": "Markdown пішімдеуін қолдайды",
-        "descriptionPlaceholder": "Тапсырманы, шектеулерді және мысалдарды сипаттаңыз...",
+        "descriptionPlaceholder": "Оқу әрекетіны, шектеулерді және мысалдарды сипаттаңыз...",
         "difficulty": "Қиындық",
         "enableHints": "Кеңестерді қосу",
         "enableHintsDescription": "Студенттерге штрафпен кеңес сұрауға рұқсат беру",
@@ -224,7 +224,7 @@
         "noLanguagesFound": "Тілдер табылмады",
         "penalty": "Штраф",
         "points": "Ұпайлар",
-        "save": "Тапсырманы сақтау",
+        "save": "Оқу әрекетіны сақтау",
         "saving": "Сақталуда...",
         "searchLanguages": "Тілдерді іздеу...",
         "selectDifficulty": "Қиындықты таңдаңыз",
@@ -238,13 +238,13 @@
         "testDescriptionPlaceholder": "мыс., Бос енгізумен шекаралық жағдай",
         "timeLimit": "Уақыт шегі (мс)",
         "timeLimitHint": "Тесттің максималды орындалу уақыты (100-30000мс)",
-        "title": "Тапсырма атауы",
+        "title": "Оқу әрекеті атауы",
         "titlePlaceholder": "мыс., Екі санның қосындысы",
         "unlimitedSubmissions": "Шексіз",
         "visible": "Көрінетін"
       },
       "generalSettings": "Жалпы параметрлер",
-      "generalSettingsDescription": "Негізгі тапсырма параметрлерін конфигурациялаңыз",
+      "generalSettingsDescription": "Негізгі оқу әрекеті параметрлерін конфигурациялаңыз",
       "gradingStrategyDescription": "Қорытынды баллды қалай есептеу керек",
       "gradingStrategyLabel": "Бағалау стратегиясы",
       "gradingStrategyOptions": {
@@ -275,14 +275,14 @@
       "noResultsYet": "Нәтижелерді көру үшін кодты іске қосыңыз немесе жіберіңіз",
       "noSubmissionsYet": "Әзірге жіберулер жоқ",
       "noVisibleTestCases": "Көрінетін тест-кейстер жоқ. Жасырын тесттерді тексеру үшін шешімді жіберіңіз.",
-      "notConfigured": "Тапсырма бапталмаған",
-      "notConfiguredDescription": "Бұл код тапсырмасы әлі бапталмаған. Оқытушыңызға хабарласыңыз.",
+      "notConfigured": "Оқу әрекеті бапталмаған",
+      "notConfiguredDescription": "Бұл код оқу әрекетісы әлі бапталмаған. Оқытушыңызға хабарласыңыз.",
       "otherLanguages": "Басқа тілдер",
       "output": "Шығару",
       "partialCredit": "Ішінара несие",
       "passed": "Өтті",
       "points": "Ұпайлар",
-      "pointsDescription": "Бұл тапсырма үшін максималды ұпайлар",
+      "pointsDescription": "Бұл оқу әрекеті үшін максималды ұпайлар",
       "pointsShort": "ұпай",
       "popularLanguages": "Танымал",
       "removeTestCase": "Жою",
@@ -292,7 +292,7 @@
       "runTests": "Тесттерді орындау",
       "runningTests": "Тесттер орындалуда...",
       "saveConfig": "Параметрлерді сақтау",
-      "saveFailed": "Тапсырманы сақтау сәтсіз аяқталды",
+      "saveFailed": "Оқу әрекетіны сақтау сәтсіз аяқталды",
       "savingConfig": "Параметрлер сақталуда...",
       "searchLanguage": "Тілді іздеу...",
       "searchLanguages": "Тілдерді іздеу...",
@@ -396,7 +396,7 @@
       "confirmSubmission": "Тапсыруды растау",
       "confirmSubmissionCheckbox": "Мен сынақты аяқтауға дайын екенімді растаймын. Бұл әрекетті қайтару мүмкін емес екенін түсінемін.",
       "confirmSubmissionHint": "Жіберуді қосу үшін жоғарыдағы құсбелгіні қойыңыз",
-      "confirmSubmissionMessage": "Тапсырмас бұрын емтиханыңызды қарап шығыңыз. Бұл әрекетті болдырмауға болмайды.",
+      "confirmSubmissionMessage": "Оқу әрекетіс бұрын емтиханыңызды қарап шығыңыз. Бұл әрекетті болдырмауға болмайды.",
       "correct": "Дұрыс",
       "correctAnswer": "Дұрыс жауап",
       "current": "Ағымдағы",
@@ -426,7 +426,7 @@
       "instruction5": "Көшіру және қою функциялары өшірілген",
       "instructions": "Нұсқаулар",
       "invalidAnswer": "Жарамсыз жауап",
-      "keyboardShortcutsHelp": "Оңтайлы пернелер: ← / → сұрақтар арасында өту, 1-9 жауап таңдау, Ctrl/Cmd+Enter - тапсырманы растау, ? - бұл хабарды көрсету",
+      "keyboardShortcutsHelp": "Оңтайлы пернелер: ← / → сұрақтар арасында өту, 1-9 жауап таңдау, Ctrl/Cmd+Enter - оқу әрекетіны растау, ? - бұл хабарды көрсету",
       "manageExam": "Емтихан сұрақтары мен параметрлерін басқару",
       "manageQuestions": "Сұрақтарды басқару",
       "minutes": "{count, plural, =1 {# минут} other {# минут}}",
@@ -506,7 +506,7 @@
       "violationDialogDescription": "{type} бұзушылығы анықталды ({count}/{max}). Бұл тіркелді және автоматты түрде тапсырылуы мүмкін.",
       "violationDialogGuidance": "Қалай сақтануға болады: қажет болса толық экранда болыңыз, қойындалған терезелерге ауыспаңыз және емтихан кезінде әзірлеушілер құралдарын немесе көшіру/қоюды пайдаланбаңыз. Егер шағым жасау қажет болса, төмендегі сілтемені пайдаланыңыз.",
       "violationDialogTitle": "Қауіпсіздік бұзушылығы анықталды",
-      "violationWarning": "Бұзушылықтар: {count}/{max}. Автоматты тапсырмаға дейін {remaining} қалды. Егер бұл қате деп ойласаңыз, {appealLink}.",
+      "violationWarning": "Бұзушылықтар: {count}/{max}. Автоматты оқу әрекетіға дейін {remaining} қалды. Егер бұл қате деп ойласаңыз, {appealLink}.",
       "violationsRecorded": "Осы емтихан кезінде {count} бұзушылық тіркелді",
       "yourAnswer": "Сіздің жауабыңыз",
       "latestSubmission": "Соңғы жіберілім"
@@ -514,8 +514,8 @@
   },
   "ActivityIndicators": {
     "activityTypes": {
-      "assignment": "Тапсырма",
-      "codeChallenge": "Код тапсырма",
+      "assignment": "Оқу әрекеті",
+      "codeChallenge": "Код оқу әрекеті",
       "document": "Құжат",
       "exam": "Емтихан",
       "fileSubmission": "Файл жіберу",
@@ -539,7 +539,7 @@
     "activityCounter": "{current} / {total}",
     "activityNotPublished": "Бұл белсенділік әлі жарияланған жоқ",
     "activityTypes": {
-      "assignment": "Тапсырма",
+      "assignment": "Оқу әрекеті",
       "document": "Құжат",
       "dynamic": "Бет",
       "exam": "Емтихан",
@@ -549,10 +549,10 @@
       "codeChallenge": "Code challenge"
     },
     "assignmentActions": {
-      "submit": "Тапсырманы жіберу",
-      "submitConfirm": "Тапсырманы тексеруге жібергіңіз келетініне сенімдісіз бе? Жібергеннен кейін өзгерістер енгізе алмайсыз.",
+      "submit": "Оқу әрекетіны жіберу",
+      "submitConfirm": "Оқу әрекетіны тексеруге жібергіңіз келетініне сенімдісіз бе? Жібергеннен кейін өзгерістер енгізе алмайсыз.",
       "submitForGrading": "Жіберу",
-      "submitYourAssingmentForGrading": "Тапсырмаңызды тексеруге жіберіңіз"
+      "submitYourAssingmentForGrading": "Оқу әрекетіңызды тексеруге жіберіңіз"
     },
     "assignmentStatus": {
       "graded": "Бағаланды",
@@ -598,8 +598,8 @@
     "openAssessment": "Бағалауды ашу",
     "status": "Күйі",
     "statusComplete": "Аяқталды",
-    "submitErrorToast": "Тапсырманы тексеруге жіберу мүмкін болмады",
-    "submitSuccessToast": "Тапсырма тексеруге сәтті жіберілді",
+    "submitErrorToast": "Оқу әрекетіны тексеруге жіберу мүмкін болмады",
+    "submitSuccessToast": "Оқу әрекеті тексеруге сәтті жіберілді",
     "unknownGradingType": "Белгісіз бағалау түрі",
     "unmarkActivity": "Аяқтау белгісін алып тастау",
     "unmarkAsComplete": "Аяқтау белгісін алып тастау",
@@ -617,8 +617,9 @@
     "notStarted": "Not started",
     "submitted": "Submitted",
     "support": "Support",
-    "viewAssessment": "Тапсырмаға өту",
-    "viewResult": "Нәтижені көру"
+    "viewAssessment": "Оқу әрекетіға өту",
+    "viewResult": "Нәтижені көру",
+    "onThisPage": "Осы бетте"
   },
   "AdminUtils": {
     "priority": {
@@ -752,7 +753,7 @@
   "Certificates": {
     "ActivityIndicators": {
       "certificationAvailable": "Курс аяқталды!",
-      "completeAllActivities": "Ашу үшін барлық тапсырмаларды аяқтаңыз",
+      "completeAllActivities": "Ашу үшін барлық оқу әрекеттеріды аяқтаңыз",
       "earnCertificate": "Сертификат алу",
       "viewCertificate": "Сертификатты қарау"
     },
@@ -894,7 +895,7 @@
       "defaultCertificationDescription": "Курстың сәтті аяқталғаны расталады.",
       "downloadCertificate": "Сертификатты жүктеу",
       "earnedCertificate": "Сіздің сертификатыңыз",
-      "encouragementMessage": "Сіз керемет жұмыс істеп жатырсыз! Курсты аяқтау сертификатын алу үшін қалған тапсырмаларды орындаңыз.",
+      "encouragementMessage": "Сіз керемет жұмыс істеп жатырсыз! Курсты аяқтау сертификатын алу үшін қалған оқу әрекеттеріды орындаңыз.",
       "errorGeneratingPDF": "PDF жасау сәтсіз аяқталды. Қайталап көріңіз.",
       "exploreCourses": "Басқа курстарды қарау",
       "instructor": "Оқытушы",
@@ -907,7 +908,7 @@
       "noCertificateAvailable": "Сертификат жоқ",
       "noCertificateFound": "Бұл курсқа сертификат табылмады",
       "progress": "Прогресс",
-      "progressCompleted": "{completed} / {total} тапсырма аяқталды",
+      "progressCompleted": "{completed} / {total} оқу әрекеті аяқталды",
       "progressPercentage": "{percentage}% аяқталды",
       "qrCodeAlt": "QR код",
       "shareAchievement": "Жетістігіңізбен бөлісіңіз",
@@ -1091,7 +1092,7 @@
     },
     "PolicyInspector": {
       "title": "Саясат",
-      "description": "Осы тапсырма үшін кесте, әрекеттер, алаяққа қарсы бақылау, баға және қолжетімділік параметрлері.",
+      "description": "Осы оқу әрекеті үшін кесте, әрекеттер, алаяққа қарсы бақылау, баға және қолжетімділік параметрлері.",
       "schedule": "Жоспар",
       "due": "Аяқтау мерзімі",
       "notSet": "Белгіленбеген",
@@ -1158,7 +1159,7 @@
         "course": "Курс",
         "waiting": "Күту",
         "oldest": "Ең ескі",
-        "noSubmissions": "Тексеруді күткен тапсырма жоқ.",
+        "noSubmissions": "Тексеруді күткен оқу әрекеті жоқ.",
         "na": "N/A",
         "assessment": "Бағалау"
       },
@@ -1231,7 +1232,7 @@
       },
       "drillThroughAuditPanel": {
         "title": "Деректер аудиті",
-        "description": "Тақырыптық көрсеткіштердің артындағы оқушылар немесе тапсырма жолдарын зерттеңіз.",
+        "description": "Тақырыптық көрсеткіштердің артындағы оқушылар немесе оқу әрекеті жолдарын зерттеңіз.",
         "metrics": {
           "active_learners": "Белсенді оқушылар",
           "completion_rate": "Аяқтау көрсеткіші",
@@ -1476,34 +1477,34 @@
     "NewActivity": {
       "CodeChallenge": {
         "cancel": "Болдырмау",
-        "challengeDescriptionRequired": "Тапсырма сипаттамасы міндетті",
-        "challengeNameRequired": "Тапсырма атауы міндетті",
-        "create": "Тапсырма жасау",
-        "description": "Тапсырма сипаттамасы",
+        "challengeDescriptionRequired": "Оқу әрекеті сипаттамасы міндетті",
+        "challengeNameRequired": "Оқу әрекеті атауы міндетті",
+        "create": "Оқу әрекеті жасау",
+        "description": "Оқу әрекеті сипаттамасы",
         "descriptionHint": "Markdown пішімдеуін қолдайды. Мысалдар мен шектеулерді қосуға болады.",
         "descriptionPlaceholder": "Студенттер шешуі керек мәселені сипаттаңыз...",
         "difficulty": "Қиындық",
         "difficultyEasy": "Оңай",
         "difficultyHard": "Қиын",
         "difficultyMedium": "Орташа",
-        "name": "Тапсырма атауы",
+        "name": "Оқу әрекеті атауы",
         "namePlaceholder": "мыс., Екі санның қосындысы",
         "selectDifficulty": "Қиындықты таңдаңыз",
         "selectType": "Түрін таңдаңыз",
-        "subtitle": "Автоматты тексерумен бағдарламалау тапсырмасын жасаңыз",
-        "title": "Код тапсырма жасау",
-        "type": "Тапсырма түрі",
+        "subtitle": "Автоматты тексерумен бағдарламалау оқу әрекетісын жасаңыз",
+        "title": "Код оқу әрекеті жасау",
+        "type": "Оқу әрекеті түрі",
         "typeCompetitive": "Жарыс",
         "typeCompetitiveHint": "Ұпай мен уақыт бойынша көшбасшылар тақтасы бар",
         "typeGeneral": "Жаттығу",
         "typeGeneralHint": "Студенттер рейтингсіз бірнеше рет жібере алады"
       },
-      "assignments": "Тапсырмалар",
-      "assignmentsDesc": "Жазбаша немесе файлдық жауаптары бар тапсырма жасаңыз",
+      "assignments": "Оқу әрекеттері",
+      "assignmentsDesc": "Жазбаша немесе файлдық жауаптары бар оқу әрекеті жасаңыз",
       "backToActivities": "Активтіктерге оралу",
       "chooseType": "Белсенділік түрін таңдаңыз",
-      "codeChallenge": "Код тапсырма",
-      "codeChallengeDesc": "Автоматты тексерумен бағдарламалау тапсырмасын жасаңыз",
+      "codeChallenge": "Код оқу әрекеті",
+      "codeChallengeDesc": "Автоматты тексерумен бағдарламалау оқу әрекетісын жасаңыз",
       "document": "Құжат",
       "documentDesc": "Студенттер үшін PDF немесе құжат жүктеңіз",
       "dynamicPage": "Динамикалық бет",
@@ -1530,22 +1531,22 @@
     },
     "NewAssignmentModal": {
       "alphabet": "Әліпбилік",
-      "assignmentDescription": "Тапсырма сипаттамасы",
-      "assignmentTitle": "Тапсырма атауы",
+      "assignmentDescription": "Оқу әрекеті сипаттамасы",
+      "assignmentTitle": "Оқу әрекеті атауы",
       "createActivity": "Белсенділік жасау",
-      "createError": "Тапсырманы жасау мүмкін болмады: {error}",
-      "createSuccess": "Тапсырма сәтті жасалды",
-      "creatingAssignment": "Тапсырма жасалуда...",
+      "createError": "Оқу әрекетіны жасау мүмкін болмады: {error}",
+      "createSuccess": "Оқу әрекеті сәтті жасалды",
+      "creatingAssignment": "Оқу әрекеті жасалуда...",
       "dueDate": "Тапсыру мерзімі",
       "gradingType": "Бағалау түрі",
       "numeric": "Сандық",
       "percentage": "Пайыздық",
-      "selectDeadline": "Тапсырманың соңғы мерзімін таңдаңыз",
+      "selectDeadline": "Оқу әрекетіның соңғы мерзімін таңдаңыз",
       "selectGradingType": "Бағалау түрін таңдаңыз",
       "unexpectedError": "Күтпеген қате орын алды",
       "unknownError": "Белгісіз қате",
-      "valueMissingDescription": "Тапсырма сипаттамасын беріңіз",
-      "valueMissingDueDate": "Тапсырманың тапсыру мерзімін көрсетіңіз",
+      "valueMissingDescription": "Оқу әрекеті сипаттамасын беріңіз",
+      "valueMissingDueDate": "Оқу әрекетіның тапсыру мерзімін көрсетіңіз",
       "valueMissingGradingType": "Бағалау түрін көрсетіңіз",
       "valueMissingTitle": "Атауын көрсетіңіз"
     },
@@ -1598,7 +1599,7 @@
       "step2Desc": "Курстар Ashyk Bilim-тің негізгі құрылыс блоктары болып табылады, олар әрқашан Тарауларды, ал Тараулар Белсенділіктерді қамтиды.",
       "step2Title": "Курстарды жасау",
       "step3Button": "Белсенділіктер туралы көбірек білу",
-      "step3Desc": "Белсенділіктер - бұл сіз өз курстарыңызға Тараулар арқылы қоса алатын элементтер: Динамикалық беттер, Бейнелер, Құжаттар, Тапсырмалар және т.б. жақын арада.",
+      "step3Desc": "Белсенділіктер - бұл сіз өз курстарыңызға Тараулар арқылы қоса алатын элементтер: Динамикалық беттер, Бейнелер, Құжаттар, Оқу әрекеттері және т.б. жақын арада.",
       "step3Title": "Белсенділіктер",
       "step4Button": "Динамикалық беттер мен Редактор туралы көбірек білу",
       "step4Desc": "Динамикалық беттер - Notion беттері сияқты динамикалық мазмұны бар беттер, олар Тесттер, Суреттер, Бейнелер, Құжаттар және т.б. сияқты әртүрлі компоненттерді қамтуы мүмкін.",
@@ -1611,9 +1612,9 @@
       "step6Title": "Студенттерді топтастырыңыз және қол жеткізуді жеңілдетіңіз",
       "step7Desc": "Сіз Курстарды іздеу жүйелері мен аутентификацияланбаған пайдаланушылар үшін қолжетімді ете аласыз немесе тек аутентификацияланған пайдаланушыларға қол жеткізуді қамтамасыз ете аласыз",
       "step7Title": "Курстарды Интернетте көпшілікке қолжетімді ету керек пе екенін таңдаңыз",
-      "step8Button": "Тапсырма жасау",
-      "step8Desc": "Студенттерді тапсырмаларды орындауға тарту, олардың үлгерімін бақылау және интуитивті бағалау жүйесі арқылы кері байланыс беру.",
-      "step8Title": "Тапсырмаларды жасау және бағалау",
+      "step8Button": "Оқу әрекеті жасау",
+      "step8Desc": "Студенттерді оқу әрекеттеріды орындауға тарту, олардың үлгерімін бақылау және интуитивті бағалау жүйесі арқылы кері байланыс беру.",
+      "step8Title": "Оқу әрекеттеріды жасау және бағалау",
       "triggerText": "Онбординг"
     },
     "NavMenu": {
@@ -1674,7 +1675,7 @@
             "name": "Контент жасаушы"
           },
           "courseManager": {
-            "description": "Курстарды, бөлімдерді және тапсырмаларды басқара алады",
+            "description": "Курстарды, бөлімдерді және оқу әрекеттеріды басқара алады",
             "name": "Курс менеджері"
           },
           "guest": {
@@ -1686,7 +1687,7 @@
             "name": "Оқытушы"
           },
           "moderator": {
-            "description": "Контентті модерациялап, тапсырмаларды басқара алады",
+            "description": "Контентті модерациялап, оқу әрекеттеріды басқара алады",
             "name": "Модератор"
           },
           "userManager": {
@@ -1750,7 +1751,7 @@
             "name": "Контент жасаушы"
           },
           "courseManager": {
-            "description": "Курстарды, бөлімдерді және тапсырмаларды басқара алады",
+            "description": "Курстарды, бөлімдерді және оқу әрекеттеріды басқара алады",
             "name": "Курс менеджері"
           },
           "guest": {
@@ -1762,7 +1763,7 @@
             "name": "Оқытушы"
           },
           "moderator": {
-            "description": "Контентті модерациялап, тапсырмаларды басқара алады",
+            "description": "Контентті модерациялап, оқу әрекеттеріды басқара алады",
             "name": "Модератор"
           },
           "userManager": {
@@ -2081,9 +2082,9 @@
       "expected": "Күтілген:",
       "fillBlanksError": "Жібермес бұрын кем дегенде бір бос орынды толтырыңыз.",
       "fillInTheBlanks": "Бос орындарды толтырыңыз",
-      "gradeAssignment": "Тапсырманы бағалау",
-      "gradeError": "Тапсырманы бағалау кезінде қате кетті, кейінірек қайталап көріңіз.",
-      "gradedSuccessfully": "Тапсырма сәтті бағаланды: {finalGrade} балл ({correctAnswers}/{totalBlanks} дұрыс)",
+      "gradeAssignment": "Оқу әрекетіны бағалау",
+      "gradeError": "Оқу әрекетіны бағалау кезінде қате кетті, кейінірек қайталап көріңіз.",
+      "gradedSuccessfully": "Оқу әрекеті сәтті бағаланды: {finalGrade} балл ({correctAnswers}/{totalBlanks} дұрыс)",
       "hint": "Нұсқау (міндетті емес)",
       "hintIcon": "💡",
       "hintLabel": "Нұсқау",
@@ -2099,8 +2100,8 @@
       "removeBlank": "Бос орынды жою",
       "removeBlankError": "Соңғы бос орынды жою мүмкін емес. Кем дегенде бір бос орын болуы керек.",
       "removeQuestion": "Сұрақты жою",
-      "saveError": "Тапсырманы сақтау кезінде қате кетті, кейінірек қайталап көріңіз.",
-      "savedSuccessfully": "Тапсырма сәтті сақталды",
+      "saveError": "Оқу әрекетіны сақтау кезінде қате кетті, кейінірек қайталап көріңіз.",
+      "savedSuccessfully": "Оқу әрекеті сәтті сақталды",
       "submissionSummary": "Орындау қорытындысы",
       "submitError": "Форманы жіберу кезінде қате кетті, кейінірек қайталап көріңіз.",
       "submitForGrading": "Тексеруге жіберу",
@@ -2302,7 +2303,7 @@
   },
   "Contexts": {
     "Assignment": {
-      "loadError": "Тапсырма деректерін жүктеу мүмкін болмады"
+      "loadError": "Оқу әрекеті деректерін жүктеу мүмкін болмады"
     },
     "Course": {
       "loadError": "Курс құрылымын жүктеу мүмкін болмады"
@@ -2322,8 +2323,8 @@
   "CourseEdit": {
     "ActivityElement": {
       "ActivityTypes": {
-        "assignment": "Тапсырма",
-        "codeChallenge": "Код тапсырма",
+        "assignment": "Оқу әрекеті",
+        "codeChallenge": "Код оқу әрекеті",
         "document": "Құжат",
         "dynamic": "Динамикалық",
         "exam": "Емтихан",
@@ -2342,7 +2343,7 @@
       "deleteTitle": "{name} жою керек пе?",
       "deleting": "Жойылуда...",
       "deletingActivity": "Белсенділік жойылуда...",
-      "editAssignmentButton": "Тапсырманы өңдеу",
+      "editAssignmentButton": "Оқу әрекетіны өңдеу",
       "editPageButton": "Бетті өңдеу",
       "openEditPage": "Өңдеу бетін ашу",
       "failedToUpdateActivityName": "Белсенділік атауын жаңарту мүмкін болмады",
@@ -2468,7 +2469,7 @@
       "buttonText": "Белсенділік қосу",
       "description": "Осы тарау үшін жаңа белсенділік жасаңыз.",
       "quickCreate": {
-        "codeChallengeName": "Жаңа код тапсырмасы",
+        "codeChallengeName": "Жаңа код оқу әрекетісы",
         "dynamicPageName": "Жаңа динамикалық бет"
       },
       "title": "Белсенділік қосу"
@@ -2494,7 +2495,7 @@
       "selectItemHint": "Тарау астындағы + Белсенділік қосу батырмасын басыңыз",
       "selectItemHintDescription": "Белсенділік түрін таңдап, мәліметтерді толтырыңыз. Өзгерістер бірден сақталады.",
       "emptyStateTitle": "Оқу бағдарламасын жасаңыз",
-      "emptyStateDescription": "Сабақтар мен тапсырмаларды ұйымдастыру үшін бірінші тарауды қосыңыз.",
+      "emptyStateDescription": "Сабақтар мен оқу әрекеттеріды ұйымдастыру үшін бірінші тарауды қосыңыз.",
       "emptyStateAction": "Бірінші тарауды қосу",
       "activity": "Сабақ",
       "chapter": "Тарау"
@@ -2515,7 +2516,7 @@
     },
     "activityNamePlaceholder": "Белсенділік атауы",
     "activityTypes": {
-      "assignment": "Тапсырма",
+      "assignment": "Оқу әрекеті",
       "document": "Құжат",
       "dynamic": "Динамикалық",
       "video": "Бейне"
@@ -2535,7 +2536,7 @@
     "editButton": "Өңдеу",
     "noActivities": "Белсенділіктер әлі жоқ",
     "deleteChapterConfirmationBreakdown": "Бұл тарауды және оның {count, plural, =0 {0 сабақты} one {# сабақты} other {# сабақты}} ({published} жарияланған, {drafts} жоба) біржола жояды.",
-    "noActivitiesHint": "Төменде бірінші тапсырманы қосыңыз",
+    "noActivitiesHint": "Төменде бірінші оқу әрекетіны қосыңыз",
     "save": "Сақтау",
     "cancel": "Болдырмау",
     "dragChapter": "Тарауды қайта реттеу үшін сүйреңіз"
@@ -2554,7 +2555,7 @@
     "activityCounter": "{current} дан {total}",
     "activityNotPublished": "Бұл белсенділік әлі жарияланбаған",
     "admin": "Әкімші",
-    "assignment": "Тапсырма",
+    "assignment": "Оқу әрекеті",
     "fileSubmission": "Файл жіберу",
     "cancel": "Бас тарту",
     "confirmDelete": "Мұны жойғыңыз келетініне сенімдісіз бе?",
@@ -2602,11 +2603,11 @@
     "statusComplete": "Аяқталды",
     "statusGraded": "Бағаланды",
     "statusGradingInProgress": "Бағалау үрдісі",
-    "submitButton": "Тапсырманы жіберу",
-    "submitConfirmationMessage": "Тапсырманы тексеруге жібергіңіз келетініне сенімдісіз бе? Жібергеннен кейін өзгерістер енгізу мүмкін болмайды.",
-    "submitConfirmationTitle": "Тапсырманы тексеруге жіберу",
-    "submitErrorToast": "Тапсырманы тексеруге жіберу сәтсіз болды",
-    "submitSuccessToast": "Тапсырма тексеруге жіберілді",
+    "submitButton": "Оқу әрекетіны жіберу",
+    "submitConfirmationMessage": "Оқу әрекетіны тексеруге жібергіңіз келетініне сенімдісіз бе? Жібергеннен кейін өзгерістер енгізу мүмкін болмайды.",
+    "submitConfirmationTitle": "Оқу әрекетіны тексеруге жіберу",
+    "submitErrorToast": "Оқу әрекетіны тексеруге жіберу сәтсіз болды",
+    "submitSuccessToast": "Оқу әрекеті тексеруге жіберілді",
     "submitTrigger": "Тексеруге жіберу",
     "thumbnailTypeImage": "Сурет",
     "thumbnailTypeVideo": "Бейне",
@@ -2743,10 +2744,10 @@
       "leftCourseSuccess": "Курстан сәтті шықтыңыз",
       "moreAuthors": "& тағы {count}",
       "progressCard": {
-        "activitiesCompletedLabel": "тапсырма орындалды",
-        "chapterActivitiesCount": "{completed}/{total} тапсырма",
+        "activitiesCompletedLabel": "оқу әрекеті орындалды",
+        "chapterActivitiesCount": "{completed}/{total} оқу әрекеті",
         "complete": "Аяқталды",
-        "completedAllActivities": "Тамаша! Сіз барлық тапсырмаларды орындадыңыз.",
+        "completedAllActivities": "Тамаша! Сіз барлық оқу әрекеттеріды орындадыңыз.",
         "courseCompleted": "Курс аяқталды!"
       },
       "readyToBegin": "Бастауға дайынсыз ба?",
@@ -2826,7 +2827,7 @@
         "successful": "Сәтті",
         "systemAlerts": "Жүйелік ескертулер",
         "systemManagement": "Жүйені басқару",
-        "systemManagementDescription": "Экспорт, импорт және техникалық қызмет тапсырмалары",
+        "systemManagementDescription": "Экспорт, импорт және техникалық қызмет оқу әрекеттеріы",
         "totalAlerts": "Барлық ескертулер",
         "userListNotAvailable": "Пайдаланушылар тізімі қолжетімді емес",
         "users": "пайдаланушы",
@@ -3221,7 +3222,7 @@
         "title": "Аккаунт баптаулары"
       },
       "Courses": {
-        "description": "Курстарды, тарауларды және тапсырмаларды жасаңыз және басқарыңыз",
+        "description": "Курстарды, тарауларды және оқу әрекеттеріды жасаңыз және басқарыңыз",
         "errorOccurred": "Қате пайда болды",
         "title": "Курстар"
       },
@@ -3406,7 +3407,7 @@
         "governanceSnapshot": "Басқару көрінісі",
         "nextStep": "Келесі қадам",
         "nextStepDescription": "Құрылымды жылдам өңдеу үшін оқу жоспары бөлімін пайдаланыңыз. Бұл кезең жедел әрекеттерді анық көрсетеді және қалпына келтіруге мүмкіндік береді.",
-        "notReadyDescription": "Енді бұл жұмыс кеңістігі өмірлік цикл кезеңдеріне сай ұйымдастырылған. Қай бөлім қай тапсырмаға жауапты екенін болжаусыз, жетіспейтін баптауды чек-парақ арқылы аяқтаңыз.",
+        "notReadyDescription": "Енді бұл жұмыс кеңістігі өмірлік цикл кезеңдеріне сай ұйымдастырылған. Қай бөлім қай оқу әрекетіға жауапты екенін болжаусыз, жетіспейтін баптауды чек-парақ арқылы аяқтаңыз.",
         "notReadyTitle": "Курсқа әлі де баптау жұмысы қажет",
         "openCurriculum": "Оқу жоспарын ашу",
         "readyDescription": "Негізгі баптаулар, құрылым және қолжетімділік тексерістері дайын. Енді көрінуі мен іске қосу күйін растау үшін тексеру бөліміне өтіңіз.",
@@ -3687,7 +3688,7 @@
             "permissions": {
               "cannotChangeAccess": "Қолжетімділікті өзгерте алмайды",
               "cannotManageContributors": "Қатысушыларды басқара алмайды",
-              "createActivities": "Тапсырмалар жасау",
+              "createActivities": "Оқу әрекеттері жасау",
               "editCourseContent": "Мазмұнын өңдеу"
             }
           },
@@ -3731,9 +3732,9 @@
             "description": "Курстар жасай алады, бірақ мазмұн үшін иелік қажет",
             "name": "Оқытушы",
             "permissions": {
-              "createAssignments": "Тапсырмалар жасау",
+              "createAssignments": "Оқу әрекеттері жасау",
               "createCourses": "Курстар жасау",
-              "gradeAssignments": "Тапсырмаларды бағалау",
+              "gradeAssignments": "Оқу әрекеттеріды бағалау",
               "manageOwnCourses": "Өз курстарын басқару"
             }
           },
@@ -3741,7 +3742,7 @@
             "description": "Кең құқықтары бар орта деңгейлі менеджер",
             "name": "Мейнтейнер",
             "permissions": {
-              "manageAssignments": "Тапсырмаларды басқару",
+              "manageAssignments": "Оқу әрекеттеріды басқару",
               "manageCourses": "Курстарды басқару",
               "manageUsers": "Пайдаланушыларды басқару"
             }
@@ -3750,7 +3751,7 @@
             "description": "Тек оқуға арналған пайдаланушы",
             "name": "Пайдаланушы",
             "permissions": {
-              "submitAssignments": "Тапсырмаларды тапсыру",
+              "submitAssignments": "Оқу әрекеттеріды тапсыру",
               "takeAssessments": "Тест тапсыру",
               "viewCourses": "Курстарды көру"
             }
@@ -3853,7 +3854,7 @@
       "InlineQuizExtension": {
         "title": "Кірістірілген тест",
         "editQuestions": "Сұрақтарды өңдеу",
-        "itemEditorComingSoon": "Бағалауға арналған тапсырмалар редакторы {assessmentUuid} (2-кезеңде болады)",
+        "itemEditorComingSoon": "Бағалауға арналған оқу әрекеттері редакторы {assessmentUuid} (2-кезеңде болады)",
         "score": "Ұпай: {score}%",
         "quizInfo": "Кірістірілген тест ({id}…)",
         "submit": "Жіберу",
@@ -4391,11 +4392,11 @@
           },
           "soundcloud": {
             "label": "SoundCloud",
-            "description": "Аудио мысалдар, музыка сабақтары және тыңдау тапсырмалары."
+            "description": "Аудио мысалдар, музыка сабақтары және тыңдау оқу әрекеттеріы."
           },
           "suno": {
             "label": "Suno",
-            "description": "ЖИ арқылы жасалған әндер және шығармашылық аудио тапсырмалар."
+            "description": "ЖИ арқылы жасалған әндер және шығармашылық аудио оқу әрекеттері."
           },
           "sodaphonic": {
             "label": "Sodaphonic",
@@ -4419,7 +4420,7 @@
           },
           "deezer": {
             "label": "Deezer",
-            "description": "Тыңдау тапсырмаларына арналған музыкалық және подкаст плейлисттер."
+            "description": "Тыңдау оқу әрекеттеріына арналған музыкалық және подкаст плейлисттер."
           },
           "mixcloud": {
             "label": "Mixcloud",
@@ -4435,7 +4436,7 @@
           },
           "h5p": {
             "label": "H5P",
-            "description": "Викториналар мен тапсырмалар сияқты интерактивті LMS мазмұны."
+            "description": "Викториналар мен оқу әрекеттері сияқты интерактивті LMS мазмұны."
           },
           "genially": {
             "label": "Genially",
@@ -4475,7 +4476,7 @@
           },
           "quizizz": {
             "label": "Quizizz",
-            "description": "Интерактивті викториналар мен асинхронды үй тапсырмасы режимі."
+            "description": "Интерактивті викториналар мен асинхронды үй оқу әрекетісы режимі."
           },
           "edpuzzle": {
             "label": "Edpuzzle",
@@ -4499,7 +4500,7 @@
           },
           "wordwall": {
             "label": "Wordwall",
-            "description": "Лексика мен грамматика бойынша геймификацияланған тапсырмалар."
+            "description": "Лексика мен грамматика бойынша геймификацияланған оқу әрекеттері."
           },
           "poll-everywhere": {
             "label": "Poll Everywhere",
@@ -4535,7 +4536,7 @@
           },
           "clickup": {
             "label": "ClickUp",
-            "description": "Топтық жұмысқа арналған жобалар мен тапсырмаларды басқару."
+            "description": "Топтық жұмысқа арналған жобалар мен оқу әрекеттеріды басқару."
           },
           "wakelet": {
             "label": "Wakelet",
@@ -4772,7 +4773,7 @@
     },
     "Metrics": {
       "desktopOnlyMessage1": "Бұл бет тек жұмыс үстелі құрылғысында қолжетімді.",
-      "desktopOnlyMessage2": "Тапсырманы көру және басқару үшін жұмыс үстелі құрылғысына өтіңіз.",
+      "desktopOnlyMessage2": "Оқу әрекетіны көру және басқару үшін жұмыс үстелі құрылғысына өтіңіз.",
       "desktopOnlyTitle": "Тек жұмыс үстелі",
       "generalDescription": "Метрикалар",
       "generalTitle": "Метрикалар",
@@ -5304,7 +5305,7 @@
           "failedToSave": "Баптауды сақтау мүмкін болмады",
           "lockedFeature": "{level} деңгейінде ашылады",
           "noAccessorySelected": "Аксессуар таңдалмаған",
-          "noDataMessage": "Аватарды баптау үшін тапсырмаларды орындаңыз!",
+          "noDataMessage": "Аватарды баптау үшін оқу әрекеттеріды орындаңыз!",
           "noFrameSelected": "Жақтау таңдалмаған",
           "preview": "Алдын ала қарау",
           "previewChanges": "Өзгерістерді қарау",
@@ -5563,7 +5564,7 @@
             "xpToGo": "ТӨ қалды"
           },
           "requirements": {
-            "activitiesCompleted": "{count} тапсырма аяқталды",
+            "activitiesCompleted": "{count} оқу әрекеті аяқталды",
             "level": "Деңгей {level}",
             "streakDays": "{count} күндік серия қажет",
             "xpRequired": "{xp} ТӨ қажет"
@@ -5670,7 +5671,7 @@
           "learningStreak": "Оқу сериясы",
           "loginStreak": "Кіру сериясы",
           "noData": "Серия деректері жоқ",
-          "noDataSubtext": "Серия бастау үшін тапсырмаларды орындаңыз!",
+          "noDataSubtext": "Серия бастау үшін оқу әрекеттеріды орындаңыз!",
           "personalBest": "Жеке рекорд: {count} күн",
           "retry": "Қайта көру",
           "retryLimit": "Қайта көру әрекеттерінің шегі жетті. Бетті жаңартыңыз.",
@@ -5678,7 +5679,7 @@
             "active": "{count} күн қатарынан! 🔥",
             "atRisk": "Серияны үзбеңіз! {action} бүгін орындаңыз.",
             "broken": "Бүгін өзіңіздің {type} серияңызды бастаңыз!",
-            "completeAction": "Тапсырманы орындау",
+            "completeAction": "Оқу әрекетіны орындау",
             "learning": "оқу",
             "login": "кіру",
             "loginAction": "Кіру"
@@ -5693,8 +5694,8 @@
           "titleCompact": "Сериялар",
           "tooltips": {
             "invalidDate": "Қате күн",
-            "lastActivity": "Соңғы тапсырма",
-            "learning": "Күн сайын оқу тапсырмаларын орындап, оқу сериясын жасаңыз!",
+            "lastActivity": "Соңғы оқу әрекеті",
+            "learning": "Күн сайын оқу оқу әрекеттеріын орындап, оқу сериясын жасаңыз!",
             "login": "Күн сайын кіріп, серияны сақтаңыз және қосымша ТӨ алыңыз!",
             "noActivity": "Әзірге белсенділік жоқ"
           }
@@ -5758,11 +5759,11 @@
           "xpText": "ТӨ"
         },
         "xpSources": {
-          "activity_completion": "Тапсырма аяқталды",
-          "assignment_submission": "Тапсырма жіберілді",
+          "activity_completion": "Оқу әрекеті аяқталды",
+          "assignment_submission": "Оқу әрекеті жіберілді",
           "course_completion": "Курс аяқталды",
           "discussion_post": "Талқылауға жазба",
-          "first_activity": "Бірінші тапсырма",
+          "first_activity": "Бірінші оқу әрекеті",
           "forum_participation": "Форумға қатысу",
           "learning_streak_bonus": "Оқу сериясы бонусы",
           "login_bonus": "Күнделікті кіру",
@@ -6524,7 +6525,7 @@
       "studentAnswer": "Студенттің жауабы",
       "itemScore": "Баға",
       "itemFeedback": "Пікір",
-      "itemFeedbackPlaceholder": "Тапсырма бойынша пікір қосыңыз...",
+      "itemFeedbackPlaceholder": "Оқу әрекеті бойынша пікір қосыңыз...",
       "correctAnswer": "Дұрыс жауап",
       "title": "Бағалау панелі",
       "grade": "Баға",
@@ -6841,7 +6842,7 @@
       "exportAtRisk": "Тәуекелдегі оқушыларды экспорттау",
       "exportGradingBacklog": "Бағалау кезегін экспорттау",
       "trendTitle": "Белсенділік пен орындау тенденциясы",
-      "trendDescription": "Таңдалған уақыт аралығындағы белсенді оқушылар, аяқтаулар, тапсырмалар және аяқталған бағалаулар.",
+      "trendDescription": "Таңдалған уақыт аралығындағы белсенді оқушылар, аяқтаулар, оқу әрекеттері және аяқталған бағалаулар.",
       "freshnessTitle": "Жаңалық және аумақ",
       "freshnessDescription": "Ағымдағы аналитика көрінісіне арналған деректер шыққан жер.",
       "labelGenerated": "Жасалды",
@@ -6910,10 +6911,10 @@
         "none": "Салыстыру жоқ"
       },
       "assessmentType": {
-        "assignment": "Тапсырма",
+        "assignment": "Оқу әрекеті",
         "quiz": "Тест",
         "exam": "Емтихан",
-        "codeChallenge": "Код тапсырмасы"
+        "codeChallenge": "Код оқу әрекетісы"
       },
       "severity": {
         "info": "Ақпарат",
@@ -6977,7 +6978,7 @@
         "returningLearners": "Learners who were also active in the immediately preceding period of equal length.",
         "completionRate": "Percentage of enrolled learners who have fully completed the course.",
         "atRisk": "Learners scoring 40+ on the composite risk index (inactivity + progress gap + failures + missing assessments + grading blocks).",
-        "ungradedSubmissions": "Assignment submissions currently awaiting teacher review and grading.",
+        "ungradedSubmissions": "Assessment task submissions currently awaiting teacher review and grading.",
         "negativeCourses": "Courses where the active learner count has declined compared to the previous period."
       }
     },
@@ -6990,7 +6991,7 @@
       "remaining": "Қалған",
       "ungradedSubs": "Бағаланбаған",
       "negativeEngagement": "Төмен белсенді курстар",
-      "submissions": "Тапсырмалар",
+      "submissions": "Оқу әрекеттері",
       "gradingCompleted": "Бағалау аяқталды",
       "currentPeriod": "Ағымдағы кезең",
       "previousPeriod": "Алдыңғы кезең",
@@ -7046,7 +7047,7 @@
       "columns": "Бағандар",
       "exportCSV": "CSV экспорттау",
       "exportStarted": "Жүктеу басталды",
-      "submissions": "Тапсырмалар",
+      "submissions": "Оқу әрекеттері",
       "gradingCompleted": "Бағалау аяқталды",
       "emptyState": "Таңдалған аналитика терезесінде белсенділік пайда болғаннан кейін тренд деректері шығады."
     },
@@ -7080,10 +7081,10 @@
     },
     "assessmentOutliers": {
       "title": "Бағалауларды тексеру",
-      "description": "Назар аударуды қажет ететін тапсырмалар, тесттер, емтихандар мен код тапсырмалары.",
+      "description": "Назар аударуды қажет ететін оқу әрекеттері, тесттер, емтихандар мен код оқу әрекеттеріы.",
       "colAssessment": "Бағалау",
       "colCourse": "Курс",
-      "colSubmission": "Тапсырма",
+      "colSubmission": "Оқу әрекеті",
       "colPass": "Өту",
       "colMedian": "Медиана",
       "colDifficulty": "Қиындық",
@@ -7119,7 +7120,7 @@
     },
     "gradingBacklog": {
       "title": "Бағалау кезегі",
-      "description": "Оқушыларға кері байланысты баяулататын аяқталмаған тапсырмалар.",
+      "description": "Оқушыларға кері байланысты баяулататын аяқталмаған оқу әрекеттері.",
       "noAlert": "Бағалау ескертуі жоқ"
     },
     "radar": {
@@ -7163,7 +7164,7 @@
       "courseDetailBadge": "Курс мәліметтері",
       "courseStatCompletion": "Аяқтау",
       "courseStatAvgProgress": "Орташа прогресс",
-      "courseStatUngraded": "Бағаланбаған тапсырмалар",
+      "courseStatUngraded": "Бағаланбаған оқу әрекеттері",
       "courseEngagementTitle": "Белсенділік тенденциясы",
       "courseEngagementDesc": "Осы курс бойынша уақыт бойынша ерекше белсенді оқушылар.",
       "courseFunnelTitle": "Аяқтау шұңқыры",
@@ -7174,7 +7175,7 @@
       "courseAtRiskTitle": "Осы курстағы тәуекелдегі оқушылар",
       "courseAtRiskDescription": "Таңдалған курсқа аумақтас ең жоғары тәуекелдегі оқушылар.",
       "assessmentDetailBadge": "Бағалау #{id}",
-      "assessmentStatSubmissionRate": "Тапсырма пайызы",
+      "assessmentStatSubmissionRate": "Оқу әрекеті пайызы",
       "assessmentStatPassRate": "Өту пайызы",
       "assessmentStatMedianScore": "Медиана балл",
       "assessmentStatAvgAttempts": "Орташа әрекеттер саны",
@@ -7183,7 +7184,7 @@
       "assessmentAttemptDistTitle": "Әрекет таралымы",
       "assessmentAttemptDistDesc": "Оқушылардың тоқтамас бұрын қанша рет тырысқаны.",
       "assessmentQuestionTitle": "Сұрақ қиындығы",
-      "assessmentQuestionDesc": "Төмен дәлдік нақты емес немесе тым қиын тапсырмаларды белгілейді.",
+      "assessmentQuestionDesc": "Төмен дәлдік нақты емес немесе тым қиын оқу әрекеттеріды белгілейді.",
       "assessmentCommonFailuresTitle": "Жалпы қателіктер",
       "assessmentNoCommonFailures": "Ағымдағы деректерде жалпы қателік кластері табылмады.",
       "assessmentOpsTitle": "Операциялық дайындық",
@@ -7283,8 +7284,8 @@
         "backToGradebook": "Журналға қайту",
         "submissionReview": "Жұмысты тексеру",
         "searchLearner": "Білім алушыны іздеу",
-        "activityType": "Тапсырма түрі",
-        "allActivityTypes": "Барлық тапсырма түрлері",
+        "activityType": "Оқу әрекеті түрі",
+        "allActivityTypes": "Барлық оқу әрекеті түрлері",
         "learner": "Білім алушы",
         "email": "Email",
         "selectCell": "Прогресс ұяшығын таңдау",
@@ -7298,7 +7299,7 @@
         "defaultCohort": "Курс тізімі",
         "summary": {
           "learners": "Білім алушылар",
-          "activities": "Тапсырмалар",
+          "activities": "Оқу әрекеттері",
           "needsGrading": "Тексеру керек",
           "overdue": "Мерзімі өтті",
           "notStarted": "Басталмаған",
@@ -7325,16 +7326,16 @@
         },
         "rollups": {
           "title": "Прогресс жиынтығы",
-          "description": "Прогресті топ, когорта, білім алушы және тапсырма бойынша салыстыру үшін көріністі ауыстырыңыз.",
-          "assignment_group": "Топтар",
+          "description": "Прогресті топ, когорта, білім алушы және оқу әрекеті бойынша салыстыру үшін көріністі ауыстырыңыз.",
+          "activity_category": "Топтар",
           "cohort": "Когорталар",
           "learner": "Білім алушылар",
-          "activity": "Тапсырмалар"
+          "activity": "Оқу әрекеттері"
         },
         "activityTypes": {
-          "assignment": "Тапсырма",
+          "assignment": "Оқу әрекеті",
           "exam": "Емтихан",
-          "codeChallenge": "Код тапсырмасы",
+          "codeChallenge": "Код оқу әрекетісы",
           "quiz": "Тест",
           "form": "Форма",
           "file": "Файл"
@@ -7429,7 +7430,7 @@
             "notSet": "Орнатылмаған",
             "noReason": "Себеп көрсетілмеген",
             "selectedHiddenSubmissions": "Таңдалған жасырын жұмыстар",
-            "releaseHiddenDescription": "Бұл әрекет тапсырма деңгейіндегі бағаларды жариялап, әлі жасырын тұрған бағаланған жұмыстарды көрсетеді."
+            "releaseHiddenDescription": "Бұл әрекет оқу әрекеті деңгейіндегі бағаларды жариялап, әлі жасырын тұрған бағаланған жұмыстарды көрсетеді."
           },
           "dialogs": {
             "publishTitle": "Таңдалған бағаларды жариялау",
@@ -7498,7 +7499,7 @@
           "studentAnswer": "Студенттің жауабы",
           "itemScore": "Баға",
           "itemFeedback": "Пікір",
-          "itemFeedbackPlaceholder": "Тапсырма бойынша пікір қосыңыз...",
+          "itemFeedbackPlaceholder": "Оқу әрекеті бойынша пікір қосыңыз...",
           "correctAnswer": "Дұрыс жауап",
           "title": "Бағалау панелі",
           "grade": "Баға",
@@ -7559,18 +7560,18 @@
     "Assessments": {
       "Studio": {
         "kinds": {
-          "ASSIGNMENT": "Тапсырма",
+          "ASSIGNMENT": "Оқу әрекеті",
           "EXAM": "Емтихан",
-          "CODE_CHALLENGE": "Код тапсырмасы",
+          "CODE_CHALLENGE": "Код оқу әрекетісы",
           "QUIZ": "Тест",
           "TYPE_FILE_SUBMISSION": "Файл жіберу",
           "TYPE_EXAM": "Емтихан",
-          "TYPE_CODE_CHALLENGE": "Код тапсырмасы"
+          "TYPE_CODE_CHALLENGE": "Код оқу әрекетісы"
         },
         "NativeItemStudio": {
           "itemNouns": {
             "question": "Сұрақ",
-            "task": "Тапсырма"
+            "task": "Оқу әрекеті"
           },
           "outlineTitle": "{itemNoun} құрылымы",
           "outlinePoints": "Барлығы: {points} балл",
@@ -7594,7 +7595,7 @@
           "deleteFailed": "{itemNoun} жою мүмкін болмады",
           "duplicateFailed": "{itemNoun} көшіру мүмкін болмады",
           "copyOfItem": "{itemNoun} көшірмесі",
-          "assessmentDetailsTitle": "Тапсырма мәліметтері",
+          "assessmentDetailsTitle": "Оқу әрекеті мәліметтері",
           "assessmentDetailsExamDescription": "Атауы, нұсқаулықтар, кесте және емтихан саясаты.",
           "assessmentDetailsAssignmentDescription": "Атауы, нұсқаулықтар, кесте және бағалау параметрлері.",
           "itemMetadataTitle": "{itemNoun} метадеректері",
@@ -7644,25 +7645,25 @@
             "item_title_missing": "Элемент атауы міндетті.",
             "item_prompt_missing": "Элемент сұрағы міндетті.",
             "item_max_score_invalid": "Элемент баллы нөлден көп болуы керек.",
-            "choice_prompt_missing": "Таңдау тапсырмасының сұрағы міндетті.",
-            "choice_options_missing": "Таңдау тапсырмасында кем дегенде екі нұсқа болуы керек.",
+            "choice_prompt_missing": "Таңдау оқу әрекетісының сұрағы міндетті.",
+            "choice_options_missing": "Таңдау оқу әрекетісында кем дегенде екі нұсқа болуы керек.",
             "choice_option_text_missing": "Әр нұсқаның мәтіні болуы керек.",
             "choice_option_duplicate": "Таңдау нұсқалары бірегей болуы керек.",
             "choice_correct_missing": "Кем дегенде бір дұрыс жауапты белгілеңіз.",
-            "choice_too_many_correct": "Жалғыз таңдаулы тапсырмаларда тек бір дұрыс жауап болуы мүмкін.",
-            "matching_prompt_missing": "Сәйкестендіру тапсырмасының сұрағы міндетті.",
-            "matching_pairs_missing": "Сәйкестендіру тапсырмасында кем дегенде бір жұп болуы керек.",
+            "choice_too_many_correct": "Жалғыз таңдаулы оқу әрекеттеріда тек бір дұрыс жауап болуы мүмкін.",
+            "matching_prompt_missing": "Сәйкестендіру оқу әрекетісының сұрағы міндетті.",
+            "matching_pairs_missing": "Сәйкестендіру оқу әрекетісында кем дегенде бір жұп болуы керек.",
             "matching_pair_value_missing": "Әр жұптың сол және оң мәні болуы керек.",
             "matching_left_duplicate": "Сол жақ сұрақтар бірегей болуы керек.",
             "matching_right_duplicate": "Оң жақ жауаптар бірегей болуы керек.",
-            "open_text_prompt_missing": "Ашық мәтін тапсырмасының сұрағы міндетті.",
+            "open_text_prompt_missing": "Ашық мәтін оқу әрекетісының сұрағы міндетті.",
             "open_text_min_words_invalid": "Сөздердің минималды саны теріс болмауы керек.",
-            "file_prompt_missing": "Файл жүктеу тапсырмасының сұрағы міндетті.",
-            "file_max_files_invalid": "Файл жүктеу тапсырмасы кем дегенде бір файлға рұқсат беруі керек.",
+            "file_prompt_missing": "Файл жүктеу оқу әрекетісының сұрағы міндетті.",
+            "file_max_files_invalid": "Файл жүктеу оқу әрекетісы кем дегенде бір файлға рұқсат беруі керек.",
             "file_max_mb_invalid": "Орнатылған максималды файл өлшемі нөлден көп болуы керек.",
             "file_mime_invalid": "Рұқсат етілген файл түрлері бос болмауы керек.",
-            "form_prompt_missing": "Форма тапсырмасының сұрағы міндетті.",
-            "form_fields_missing": "Форма тапсырмасында кем дегенде бір өріс болуы керек.",
+            "form_prompt_missing": "Форма оқу әрекетісының сұрағы міндетті.",
+            "form_fields_missing": "Форма оқу әрекетісында кем дегенде бір өріс болуы керек.",
             "form_field_label_missing": "Әр форма өрісінің жазбасы болуы керек.",
             "form_field_id_duplicate": "Форма өрістерінің бірегей идентификаторлары болуы керек.",
             "code_languages_missing": "Кем дегенде бір рұқсат етілген тілді таңдаңыз",
@@ -7755,7 +7756,7 @@
       },
       "ReviewWorkspace": {
         "loading": "Тексеру жұмыс кеңістігі жүктелуде...",
-        "reviewUnavailable": "Бұл тапсырма үшін тексеру қолжетімді емес."
+        "reviewUnavailable": "Бұл оқу әрекеті үшін тексеру қолжетімді емес."
       },
       "Items": {
         "Choice": {
@@ -7926,7 +7927,7 @@
           "confirmSubmission": "Тапсыруды растау",
           "confirmSubmissionCheckbox": "Мен сынақты аяқтауға дайын екенімді растаймын. Бұл әрекетті қайтару мүмкін емес екенін түсінемін.",
           "confirmSubmissionHint": "Жіберуді қосу үшін жоғарыдағы құсбелгіні қойыңыз",
-          "confirmSubmissionMessage": "Тапсырмас бұрын емтиханыңызды қарап шығыңыз. Бұл әрекетті болдырмауға болмайды.",
+          "confirmSubmissionMessage": "Оқу әрекетіс бұрын емтиханыңызды қарап шығыңыз. Бұл әрекетті болдырмауға болмайды.",
           "correct": "Дұрыс",
           "correctAnswer": "Дұрыс жауап",
           "current": "Ағымдағы",
@@ -7958,7 +7959,7 @@
           "instruction5": "Көшіру және қою функциялары өшірілген",
           "instructions": "Нұсқаулар",
           "invalidAnswer": "Жарамсыз жауап",
-          "keyboardShortcutsHelp": "Оңтайлы пернелер: ← / → сұрақтар арасында өту, 1-9 жауап таңдау, Ctrl/Cmd+Enter - тапсырманы растау, ? - бұл хабарды көрсету",
+          "keyboardShortcutsHelp": "Оңтайлы пернелер: ← / → сұрақтар арасында өту, 1-9 жауап таңдау, Ctrl/Cmd+Enter - оқу әрекетіны растау, ? - бұл хабарды көрсету",
           "manageExam": "Емтихан сұрақтары мен параметрлерін басқару",
           "manageQuestions": "Сұрақтарды басқару",
           "minutes": "{count, plural, =1 {# минут} other {# минут}}",
@@ -8037,7 +8038,7 @@
           "violationDialogDescription": "{type} бұзушылығы анықталды ({count}/{max}). Бұл тіркелді және автоматты түрде тапсырылуы мүмкін.",
           "violationDialogGuidance": "Қалай сақтануға болады: қажет болса толық экранда болыңыз, қойындалған терезелерге ауыспаңыз және емтихан кезінде әзірлеушілер құралдарын немесе көшіру/қоюды пайдаланбаңыз. Егер шағым жасау қажет болса, төмендегі сілтемені пайдаланыңыз.",
           "violationDialogTitle": "Қауіпсіздік бұзушылығы анықталды",
-          "violationWarning": "Бұзушылықтар: {count}/{max}. Автоматты тапсырмаға дейін {remaining} қалды. Егер бұл қате деп ойласаңыз, {appealLink}.",
+          "violationWarning": "Бұзушылықтар: {count}/{max}. Автоматты оқу әрекетіға дейін {remaining} қалды. Егер бұл қате деп ойласаңыз, {appealLink}.",
           "violationsRecorded": "Осы емтихан кезінде {count} бұзушылық тіркелді",
           "yourAnswer": "Сіздің жауабыңыз",
           "focus": "Фокус",
@@ -8067,12 +8068,12 @@
           "authRequired": "Авторизация қажет",
           "bestSubmission": "Ең жақсы жіберу",
           "cancel": "Болдырмау",
-          "challengeSaved": "Тапсырма сәтті сақталды",
+          "challengeSaved": "Оқу әрекеті сәтті сақталды",
           "competitive": "Жарыс",
           "compilationOutput": "Компиляция шығаруы",
           "configSaveFailed": "Параметрлерді сақтау мүмкін болмады",
           "configSaved": "Параметрлер сәтті сақталды",
-          "configureChallenge": "Код тапсырмасын баптау",
+          "configureChallenge": "Код оқу әрекетісын баптау",
           "configureDescription": "Тест жағдайларын, уақыт шектерін және рұқсат етілген бағдарламалау тілдерін орнатыңыз",
           "customInput": "Өз енгізу",
           "deselectAll": "Барлығын алып тастау",
@@ -8093,9 +8094,9 @@
             "allowedLanguagesHint": "Студенттер үшін бағдарламалау тілдерін таңдаңыз",
             "basicInfo": "Негізгі ақпарат",
             "cancel": "Болдырмау",
-            "description": "Тапсырма сипаттамасы",
+            "description": "Оқу әрекеті сипаттамасы",
             "descriptionHint": "Markdown пішімдеуін қолдайды",
-            "descriptionPlaceholder": "Тапсырманы, шектеулерді және мысалдарды сипаттаңыз...",
+            "descriptionPlaceholder": "Оқу әрекетіны, шектеулерді және мысалдарды сипаттаңыз...",
             "difficulty": "Қиындық",
             "enableHints": "Кеңестерді қосу",
             "enableHintsDescription": "Студенттерге штрафпен кеңес сұрауға рұқсат беру",
@@ -8113,7 +8114,7 @@
             "noLanguagesFound": "Тілдер табылмады",
             "penalty": "Штраф",
             "points": "Ұпайлар",
-            "save": "Тапсырманы сақтау",
+            "save": "Оқу әрекетіны сақтау",
             "saving": "Сақталуда...",
             "searchLanguages": "Тілдерді іздеу...",
             "selectDifficulty": "Қиындықты таңдаңыз",
@@ -8127,13 +8128,13 @@
             "testDescriptionPlaceholder": "мыс., Бос енгізумен шекаралық жағдай",
             "timeLimit": "Уақыт шегі (мс)",
             "timeLimitHint": "Тесттің максималды орындалу уақыты (100-30000мс)",
-            "title": "Тапсырма атауы",
+            "title": "Оқу әрекеті атауы",
             "titlePlaceholder": "мыс., Екі санның қосындысы",
             "unlimitedSubmissions": "Шексіз",
             "visible": "Көрінетін"
           },
           "generalSettings": "Жалпы параметрлер",
-          "generalSettingsDescription": "Негізгі тапсырма параметрлерін конфигурациялаңыз",
+          "generalSettingsDescription": "Негізгі оқу әрекеті параметрлерін конфигурациялаңыз",
           "gradingStrategyDescription": "Қорытынды баллды қалай есептеу керек",
           "gradingStrategyLabel": "Бағалау стратегиясы",
           "gradingStrategyOptions": {
@@ -8163,8 +8164,8 @@
           "noResultsYet": "Нәтижелерді көру үшін кодты іске қосыңыз немесе жіберіңіз",
           "noSubmissionsYet": "Әзірге жіберулер жоқ",
           "noVisibleTestCases": "Көрінетін тест-кейстер жоқ. Жасырын тесттерді тексеру үшін шешімді жіберіңіз.",
-          "notConfigured": "Тапсырма бапталмаған",
-          "notConfiguredDescription": "Бұл код тапсырмасы әлі бапталмаған. Оқытушыңызға хабарласыңыз.",
+          "notConfigured": "Оқу әрекеті бапталмаған",
+          "notConfiguredDescription": "Бұл код оқу әрекетісы әлі бапталмаған. Оқытушыңызға хабарласыңыз.",
           "underConstructionIcon": "🛠️",
           "timeLimitValue": "{value} мс",
           "memoryLimitValue": "{value} МБ",
@@ -8173,7 +8174,7 @@
           "partialCredit": "Ішінара несие",
           "passed": "Өтті",
           "points": "Ұпайлар",
-          "pointsDescription": "Бұл тапсырма үшін максималды ұпайлар",
+          "pointsDescription": "Бұл оқу әрекеті үшін максималды ұпайлар",
           "pointsShort": "ұпай",
           "popularLanguages": "Танымал",
           "removeTestCase": "Жою",
@@ -8183,7 +8184,7 @@
           "runTests": "Тесттерді орындау",
           "runningTests": "Тесттер орындалуда...",
           "saveConfig": "Параметрлерді сақтау",
-          "saveFailed": "Тапсырманы сақтау сәтсіз аяқталды",
+          "saveFailed": "Оқу әрекетіны сақтау сәтсіз аяқталды",
           "savingConfig": "Параметрлер сақталуда...",
           "searchLanguage": "Тілді іздеу...",
           "searchLanguages": "Тілдерді іздеу...",
@@ -8243,28 +8244,28 @@
       },
       "Assignment": {
         "AssignmentPage": {
-          "assignmentTools": "Тапсырмаларға арналған құралдар",
+          "assignmentTools": "Оқу әрекеттеріға арналған құралдар",
           "desktopOnlyMessage1": "Бұл бет тек жұмыс үстелі құрылғысында қол жетімді.",
-          "desktopOnlyMessage2": "Тапсырманы көру және басқару үшін жұмыс үстелі құрылғысына ауысыңыз.",
+          "desktopOnlyMessage2": "Оқу әрекетіны көру және басқару үшін жұмыс үстелі құрылғысына ауысыңыз.",
           "desktopOnlyTitle": "Тек жұмыс үстелі құрылғылары үшін",
           "edit": "Өңдеу",
-          "editDetailsTooltip": "Тапсырма мәліметтерін өңдеу",
+          "editDetailsTooltip": "Оқу әрекеті мәліметтерін өңдеу",
           "editor": "Редактор",
           "preview": "Алдын ала қарау",
-          "previewTooltip": "Тапсырманы студент ретінде алдын ала қарау",
+          "previewTooltip": "Оқу әрекетіны студент ретінде алдын ала қарау",
           "publish": "Жариялау",
-          "publishTooltip": "Тапсырмаңызды көпшілікке және студенттерге қол жетімді ету",
+          "publishTooltip": "Оқу әрекетіңызды көпшілікке және студенттерге қол жетімді ету",
           "published": "Жарияланды",
           "submissions": "Жіберілген жұмыстар",
           "unpublish": "Жариялаудан алу",
-          "unpublishTooltip": "Тапсырмаңызды студенттерге қол жетімсіз ету",
+          "unpublishTooltip": "Оқу әрекетіңызды студенттерге қол жетімсіз ету",
           "unpublished": "Жарияланбаған",
-          "updateError": "Тапсырманы жаңартуда қате шықты, кейінірек қайталап көріңіз.",
-          "updateLoading": "Тапсырма жаңартылуда...",
-          "updateSuccess": "Тапсырма сәтті жаңартылды"
+          "updateError": "Оқу әрекетіны жаңартуда қате шықты, кейінірек қайталап көріңіз.",
+          "updateLoading": "Оқу әрекеті жаңартылуда...",
+          "updateSuccess": "Оқу әрекеті сәтті жаңартылды"
         },
         "EvaluateModal": {
-          "assignmentDataMissing": "Тапсырма деректері жоқ.",
+          "assignmentDataMissing": "Оқу әрекеті деректері жоқ.",
           "gradeFinalError": "{message}",
           "gradeFinalSuccess": "{message}",
           "hint": "Кеңес",
@@ -8272,64 +8273,64 @@
           "markDoneError": "{message}",
           "markDoneSuccess": "{message}",
           "refDoc": "Анықтамалық құжат",
-          "rejectAssignment": "Тапсырмадан бас тарту",
-          "rejectSuccess": "Тапсырмадан сәтті бас тартылды",
+          "rejectAssignment": "Оқу әрекетідан бас тарту",
+          "rejectSuccess": "Оқу әрекетідан сәтті бас тартылды",
           "setFinalGrade": "Қорытынды бағаны қою",
-          "taskLabel": "{index} тапсырмасы"
+          "taskLabel": "{index} оқу әрекетісы"
         },
         "HomePage": {
-          "assignment": "Тапсырма",
-          "assignments": "Тапсырмалар",
+          "assignment": "Оқу әрекеті",
+          "assignments": "Оқу әрекеттері",
           "course": "Курс",
           "courseEditor": "Курс редакторы",
           "editor": "Редактор",
-          "noAssignments": "Бұл курс үшін қол жетімді тапсырмалар жоқ, курс редакторында тапсырмалар жасаңыз",
+          "noAssignments": "Бұл курс үшін қол жетімді оқу әрекеттері жоқ, курс редакторында оқу әрекеттері жасаңыз",
           "noCourses": "Өңдеуге болатын курстарыңыз жоқ. Курс жасаңыз немесе әкімшіден соавтор ретінде қосуды сұраңыз.",
           "submissions": "Жіберілген жұмыстар",
           "viewCourseAria": "{courseName} курсын көру"
         },
         "NewTaskModal": {
-          "createSuccess": "Тапсырма сәтті жасалды",
-          "fileSubmissionDescription": "Студенттер осы тапсырма үшін файлдарды жібере алады",
+          "createSuccess": "Оқу әрекеті сәтті жасалды",
+          "fileSubmissionDescription": "Студенттер осы оқу әрекеті үшін файлдарды жібере алады",
           "fileSubmissionTitle": "Файлды жіберу",
           "formDescription": "Студенттер толтыратын нысандар",
           "formNotSupported": "Нысандар әзірге қолдау көрсетілмейді",
           "formTitle": "Нысан",
           "quizDescription": "Көп таңдаулы сұрақтар",
           "quizTitle": "Тест",
-          "reminderToast": "Тапсырмаларды өңдегенде/қосқанда, студенттерде проблема туындамас үшін тапсырманы жариялаудан алып тастағаныңызға көз жеткізіңіз. Дайын болған кезде қайта жариялай аласыз.",
-          "untitledTaskTitle": "Атауы жоқ тапсырма"
+          "reminderToast": "Оқу әрекеттеріды өңдегенде/қосқанда, студенттерде проблема туындамас үшін оқу әрекетіны жариялаудан алып тастағаныңызға көз жеткізіңіз. Дайын болған кезде қайта жариялай аласыз.",
+          "untitledTaskTitle": "Атауы жоқ оқу әрекеті"
         },
         "TaskEditor": {
-          "assignmentObjectMissingError": "Тапсырма нысаны немесе оның UUID-і жоқ. Тапсырманы жою мүмкін емес.",
+          "assignmentObjectMissingError": "Оқу әрекеті нысаны немесе оның UUID-і жоқ. Оқу әрекетіны жою мүмкін емес.",
           "content": "Мазмұны",
-          "deleteError": "Тапсырманы жоюда қате шықты, кейінірек қайталап көріңіз.",
-          "deleteSuccess": "Тапсырма сәтті жойылды",
-          "deleteTask": "Тапсырманы жою",
+          "deleteError": "Оқу әрекетіны жоюда қате шықты, кейінірек қайталап көріңіз.",
+          "deleteSuccess": "Оқу әрекеті сәтті жойылды",
+          "deleteTask": "Оқу әрекетіны жою",
           "general": "Жалпы",
-          "noTaskSelected": "Тапсырма таңдалмаған"
+          "noTaskSelected": "Оқу әрекеті таңдалмаған"
         },
         "TaskFileObject": {
           "allowedFormats": "Рұқсат етілген форматтар: pdf, docx, mp4, mkv, jpg, jpeg, png, pptx, zip",
-          "ariaLabel": "Тапсырма беру үшін файлды таңдаңыз",
-          "authRequiredSubmit": "Аутентификация қажет. Тапсырманы жіберу үшін кіріңіз.",
+          "ariaLabel": "Оқу әрекеті беру үшін файлды таңдаңыз",
+          "authRequiredSubmit": "Аутентификация қажет. Оқу әрекетіны жіберу үшін кіріңіз.",
           "authRequiredUpload": "Аутентификация қажет. Файлдарды жүктеу үшін кіріңіз.",
           "chooseFile": "Файлды таңдаңыз",
-          "errorSaving": "Тапсырманы сақтауда қате шықты, кейінірек қайталап көріңіз.",
-          "gradeError": "Тапсырманы бағалауда қате шықты, кейінірек қайталап көріңіз.",
+          "errorSaving": "Оқу әрекетіны сақтауда қате шықты, кейінірек қайталап көріңіз.",
+          "gradeError": "Оқу әрекетіны бағалауда қате шықты, кейінірек қайталап көріңіз.",
           "gradeRangeError": "Баға 0-ден {maxGradeValue} баллға дейін болуы тиіс",
-          "gradeSuccess": "Тапсырма {grade} баллмен сәтті бағаланды",
+          "gradeSuccess": "Оқу әрекеті {grade} баллмен сәтті бағаланды",
           "gradedByTeacher": "Мұғалім бағалады: @{username}",
           "gradingViewInfo": "Файлды жүктеп алып, оны қолмен бағалаңыз, содан кейін жоғарыдағы бағаны енгізіңіз",
           "loading": "Жүктелуде",
-          "missingAssignmentInfo": "Тапсырма туралы қажетті ақпарат жоқ",
+          "missingAssignmentInfo": "Оқу әрекеті туралы қажетті ақпарат жоқ",
           "missingGradingInfo": "Бағалау үшін қажетті ақпарат жоқ",
           "missingOrgCourseInfo": "Ұйым немесе курс туралы қажетті ақпарат жоқ",
-          "saveSuccess": "Тапсырма сәтті сақталды",
+          "saveSuccess": "Оқу әрекеті сәтті сақталды",
           "selectFile": "Файл таңдаңыз",
           "signInToUpload": "Файлдарды жүктеу үшін кіріңіз",
           "submitFile": "Файлды жіберу",
-          "teacherViewInfo": "Пайдаланушы осы тапсырма үшін файлды жібере алады, сіз оны «Жіберілген жұмыстар» қойындысынан тексере аласыз",
+          "teacherViewInfo": "Пайдаланушы осы оқу әрекеті үшін файлды жібере алады, сіз оны «Жіберілген жұмыстар» қойындысынан тексере аласыз",
           "uploadFailed": "Файлды жүктеу мүмкін болмады",
           "uploadUnexpectedError": "Жүктеу кезінде күтпеген қате орын алды"
         },
@@ -8340,46 +8341,46 @@
           "chooseFile": "Файлды таңдау",
           "delete": "Жою",
           "description": "Сипаттама",
-          "descriptionPlaceholder": "Тапсырманың сипаттамасын енгізіңіз",
+          "descriptionPlaceholder": "Оқу әрекетіның сипаттамасын енгізіңіз",
           "descriptionRequired": "Сипаттаманы толтыру қажет",
           "descriptionTooLong": "Сипаттама 5000 таңбадан аспауы керек",
           "download": "Жүктеп алу",
           "dragDropFile": "Файлды осы жерге сүйреп апарыңыз",
-          "editTask": "Тапсырманы редакциялау",
-          "editTaskDescription": "Төмендегі тапсырма мәліметтері мен параметрлерін жаңартыңыз",
+          "editTask": "Оқу әрекетіны редакциялау",
+          "editTaskDescription": "Төмендегі оқу әрекеті мәліметтері мен параметрлерін жаңартыңыз",
           "fileTooLarge": "Файл өлшемі 50 МБ шегінен асады",
           "gradeRange": "20 мен 100 аралығындағы мәнді енгізіңіз",
           "gradeValidationError": "Мән 20 мен 100 аралығында болуы керек",
           "hint": "Нұсқау",
-          "hintDescription": "Студенттерге тапсырманы орындауға көмектесетін қосымша нұсқау",
-          "hintPlaceholder": "Тапсырма нұсқауын енгізіңіз",
+          "hintDescription": "Студенттерге оқу әрекетіны орындауға көмектесетін қосымша нұсқау",
+          "hintPlaceholder": "Оқу әрекеті нұсқауын енгізіңіз",
           "hintTooLong": "Нұсқау 1000 таңбадан аспауы керек",
           "invalidFileType": "Файл түрі жарамсыз. Қолдау көрсетілетін файл форматын жүктеңіз",
           "loading": "Жүктелуде",
-          "loadingTask": "Тапсырма мәліметтері жүктелуде...",
+          "loadingTask": "Оқу әрекеті мәліметтері жүктелуде...",
           "maxFileSize": "Максималды файл өлшемі: 50 МБ",
           "maxGradeValue": "Максималды балл мәні",
-          "noTaskSelected": "Тапсырма таңдалмады",
+          "noTaskSelected": "Оқу әрекеті таңдалмады",
           "orClickToSelect": "немесе таңдау үшін басыңыз",
           "refFileUpdateSuccess": "Анықтамалық файл сәтті жаңартылды",
           "referenceFile": "Анықтамалық файл",
           "replace": "Ауыстыру",
           "reset": "Қалпына келтіру",
           "save": "Өзгерістерді сақтау",
-          "saveError": "Тапсырманы сақтау кезінде қате кетті",
-          "saveSuccess": "Тапсырма сәтті сақталды",
+          "saveError": "Оқу әрекетіны сақтау кезінде қате кетті",
+          "saveSuccess": "Оқу әрекеті сәтті сақталды",
           "saving": "Сақталуда...",
           "selectFile": "Файлды таңдау",
-          "selectTaskToEdit": "Редакциялау үшін тізімнен тапсырманы таңдаңыз",
-          "taskNotLoaded": "Тапсырма жүктелмеді. Қайталап көріңіз",
+          "selectTaskToEdit": "Редакциялау үшін тізімнен оқу әрекетіны таңдаңыз",
+          "taskNotLoaded": "Оқу әрекеті жүктелмеді. Қайталап көріңіз",
           "title": "Тақырыбы",
-          "titlePlaceholder": "Тапсырманың тақырыбын енгізіңіз",
+          "titlePlaceholder": "Оқу әрекетіның тақырыбын енгізіңіз",
           "titleRequired": "Тақырыпты толтыру қажет",
           "titleTooLong": "Тақырып 200 таңбадан аспауы керек",
           "unsavedChanges": "Сақталмаған өзгерістер бар",
           "unsavedChangesDescription": "Бұл беттен шықпас бұрын өзгерістерді сақтауды ұмытпаңыз",
-          "updateError": "Тапсырманы жаңарту кезінде қате кетті, кейінірек қайталап көріңіз",
-          "updateSuccess": "Тапсырма сәтті жаңартылды",
+          "updateError": "Оқу әрекетіны жаңарту кезінде қате кетті, кейінірек қайталап көріңіз",
+          "updateSuccess": "Оқу әрекеті сәтті жаңартылды",
           "uploadError": "Файлды жүктеу сәтсіз аяқталды. Қайталап көріңіз",
           "uploaded": "Жүктелді",
           "uploading": "Файл жүктелуде..."
@@ -8393,8 +8394,8 @@
           "deleteQuestionDescription": "Бұл сұрақты жойғыңыз келетініне сенімдісіз бе? Бұл әрекетті қайтару мүмкін емес.",
           "deleteQuestionTitle": "Сұрақты жою",
           "false": "Жалған",
-          "gradeError": "Тапсырманы бағалау кезінде қате кетті, кейінірек қайталап көріңіз.",
-          "gradeSuccess": "Тапсырма сәтті бағаланды: {finalGrade} балл",
+          "gradeError": "Оқу әрекетіны бағалау кезінде қате кетті, кейінірек қайталап көріңіз.",
+          "gradeSuccess": "Оқу әрекеті сәтті бағаланды: {finalGrade} балл",
           "markedAsFalse": "Жалған деп белгіленген",
           "markedAsTrue": "Ақиқат деп белгіленген",
           "noQuestionsFound": "Сұрақтар табылмады",
@@ -8402,8 +8403,8 @@
           "optionDeleteError": "Соңғы нұсқаны жою мүмкін емес. Кем дегенде бір нұсқа болуы керек.",
           "optionPlaceholder": "Нұсқа мәтінін енгізіңіз",
           "questionPlaceholder": "Сұрақ мәтінін енгізіңіз",
-          "saveError": "Тапсырманы сақтау кезінде қате кетті, кейінірек қайталап көріңіз.",
-          "saveSuccess": "Тапсырма сәтті сақталды",
+          "saveError": "Оқу әрекетіны сақтау кезінде қате кетті, кейінірек қайталап көріңіз.",
+          "saveSuccess": "Оқу әрекеті сәтті сақталды",
           "saving": "Сақталуда...",
           "settings": {
             "antiCheat": "Көшіруге қарсы параметрлер",
@@ -8433,18 +8434,18 @@
               "points": "балл",
               "refresh": "Жаңарту",
               "score": "Баға: {score}",
-              "subtitle": "Сіздің тапсырмаңыз бағаланды.",
-              "title": "Тапсырма бағаланды"
+              "subtitle": "Сіздің оқу әрекетіңыз бағаланды.",
+              "title": "Оқу әрекеті бағаланды"
             },
             "noAttemptsLeft": "Әрекеттер таусылды",
             "penalty": "Балға айыппұл",
             "perAttempt": "әрекет үшін",
             "questions": "Барлық сұрақтар",
             "review": {
-              "description": "Тапсырма бағаланған кезде сізге хабарланады. Тапсырмаңыздың жауаптары мен мәртебесін төменде қарауға болады.",
+              "description": "Оқу әрекеті бағаланған кезде сізге хабарланады. Оқу әрекетіңыздың жауаптары мен мәртебесін төменде қарауға болады.",
               "refresh": "Мәртебені жаңарту",
-              "subtitle": "Сіздің тапсырмаңыз алынды және оқытушы тарапынан тексеріліп жатыр.",
-              "title": "Тапсырма тексеріліп жатыр"
+              "subtitle": "Сіздің оқу әрекетіңыз алынды және оқытушы тарапынан тексеріліп жатыр.",
+              "title": "Оқу әрекеті тексеріліп жатыр"
             },
             "timeLimit": "Уақыт шектеуі",
             "title": "Бастауға дайынсыз ба?"
@@ -8466,10 +8467,10 @@
           }
         },
         "Tasks": {
-          "addTask": "Тапсырма қосу",
-          "addTaskModalDescription": "Жаңа тапсырма жасаңыз",
-          "addTaskModalTitle": "Тапсырма қосу",
-          "openTask": "Тапсырманы ашу"
+          "addTask": "Оқу әрекеті қосу",
+          "addTaskModalDescription": "Жаңа оқу әрекеті жасаңыз",
+          "addTaskModalTitle": "Оқу әрекеті қосу",
+          "openTask": "Оқу әрекетіны ашу"
         },
         "addQuestion": "Сұрақ қосу",
         "evaluate": "Бағалау",
@@ -8482,16 +8483,16 @@
         "noQuestionsFound": "Сұрақтар табылмады",
         "optionPlaceholder": "Нұсқа мәтінін енгізіңіз",
         "questionPlaceholder": "Сұрақ мәтінін енгізіңіз",
-        "assignmentStatusDescription": "Тапсырма деңгейіндегі жіберу барысын тексеріп, содан кейін тапсырма ішіндегі бағалауға өтіңіз.",
-        "assignmentStatusEmpty": "Тапсырма деңгейіндегі мәртебелер әлі қолжетімді емес.",
+        "assignmentStatusDescription": "Оқу әрекеті деңгейіндегі жіберу барысын тексеріп, содан кейін оқу әрекеті ішіндегі бағалауға өтіңіз.",
+        "assignmentStatusEmpty": "Оқу әрекеті деңгейіндегі мәртебелер әлі қолжетімді емес.",
         "assignmentStatusGrade": "Баға",
         "assignmentStatusGraded": "Бағаланды",
         "assignmentStatusGradedCount": "Бағаланғаны: {count}",
         "assignmentStatusLearner": "Білім алушы",
         "assignmentStatusLate": "Кешігіп тапсырылды",
-        "assignmentStatusLoadErrorDescription": "Тапсырма деңгейіндегі мәртебелерді жүктеу мүмкін болмады.",
+        "assignmentStatusLoadErrorDescription": "Оқу әрекеті деңгейіндегі мәртебелерді жүктеу мүмкін болмады.",
         "assignmentStatusLoadErrorTitle": "Мәртебе панелі қолжетімсіз",
-        "assignmentStatusLoading": "Тапсырма деңгейіндегі мәртебелер жүктелуде...",
+        "assignmentStatusLoading": "Оқу әрекеті деңгейіндегі мәртебелер жүктелуде...",
         "assignmentStatusNotSubmitted": "Тапсырылмады",
         "assignmentStatusNotYetSubmitted": "Әлі тапсырылмаған",
         "assignmentStatusPending": "Күтуде",
@@ -8499,12 +8500,12 @@
         "assignmentStatusSubmitted": "Тапсырылды",
         "assignmentStatusSubmittedAt": "Тапсырылған уақыты",
         "assignmentStatusSubmittedCount": "Тапсырылғаны: {count}",
-        "assignmentStatusTitle": "Тапсырма мәртебесінің шолуы",
+        "assignmentStatusTitle": "Оқу әрекеті мәртебесінің шолуы",
         "assignmentStatusTotal": "Білім алушылар: {count}",
         "submission": "Жіберілген жұмыс",
         "submitted": "Жіберілді",
-        "tasks": "Тапсырмалар",
-        "title": "Тапсырмалар",
+        "tasks": "Оқу әрекеттері",
+        "title": "Оқу әрекеттері",
         "submissionsTitle": "Студенттердің жұмыстары"
       },
       "Review": {
@@ -8559,15 +8560,15 @@
           "rollups": {
             "title": "Үлгерім жиынтықтары",
             "description": "Топ, когорта, оқушы немесе сабақ бойынша курс үлгерімін салыстыру.",
-            "assignment_group": "Топтар",
+            "activity_category": "Топтар",
             "cohort": "Когорталар",
             "learner": "Оқушылар",
             "activity": "Сабақтар"
           },
           "activityTypes": {
-            "assignment": "Тапсырма",
+            "assignment": "Оқу әрекеті",
             "exam": "Емтихан",
-            "codeChallenge": "Код тапсырмасы",
+            "codeChallenge": "Код оқу әрекетісы",
             "quiz": "Тест",
             "form": "Форма",
             "file": "Файл"
@@ -8674,8 +8675,8 @@
         "backToGradebook": "Журналға қайту",
         "submissionReview": "Жұмысты тексеру",
         "searchLearner": "Білім алушыны іздеу",
-        "activityType": "Тапсырма түрі",
-        "allActivityTypes": "Барлық тапсырма түрлері",
+        "activityType": "Оқу әрекеті түрі",
+        "allActivityTypes": "Барлық оқу әрекеті түрлері",
         "learner": "Білім алушы",
         "email": "Email",
         "selectCell": "Прогресс ұяшығын таңдау",
@@ -8689,7 +8690,7 @@
         "defaultCohort": "Курс тізімі",
         "summary": {
           "learners": "Білім алушылар",
-          "activities": "Тапсырмалар",
+          "activities": "Оқу әрекеттері",
           "needsGrading": "Тексеру керек",
           "overdue": "Мерзімі өтті",
           "notStarted": "Басталмаған",
@@ -8716,16 +8717,16 @@
         },
         "rollups": {
           "title": "Прогресс жиынтығы",
-          "description": "Прогресті топ, когорта, білім алушы және тапсырма бойынша салыстыру үшін көріністі ауыстырыңыз.",
-          "assignment_group": "Топтар",
+          "description": "Прогресті топ, когорта, білім алушы және оқу әрекеті бойынша салыстыру үшін көріністі ауыстырыңыз.",
+          "activity_category": "Топтар",
           "cohort": "Когорталар",
           "learner": "Білім алушылар",
-          "activity": "Тапсырмалар"
+          "activity": "Оқу әрекеттері"
         },
         "activityTypes": {
-          "assignment": "Тапсырма",
+          "assignment": "Оқу әрекеті",
           "exam": "Емтихан",
-          "codeChallenge": "Код тапсырмасы",
+          "codeChallenge": "Код оқу әрекетісы",
           "quiz": "Тест",
           "form": "Форма",
           "file": "Файл"
@@ -8738,19 +8739,19 @@
       "unlimited": "Шексіз",
       "attempts": "Әрекеттер",
       "dueDate": "Тапсыру мерзімі",
-      "assessmentBlocked": "Бұл тапсырма қазір сізге қолжетімді емес.",
+      "assessmentBlocked": "Бұл оқу әрекеті қазір сізге қолжетімді емес.",
       "waitingForRelease": "Жұмысыңыз қабылданды. Оқытушы бағаны жариялағаннан кейін нәтижені көресіз.",
-      "startAssessment": "Тапсырманы бастау",
+      "startAssessment": "Оқу әрекетіны бастау",
       "startRevision": "Қайта тапсыруды бастау",
       "revision": "Қайта тапсыру",
       "returnedForRevision": "Түзетуге қайтарылды",
       "passed": "Өтті",
       "failed": "Өтпеді",
       "pendingGrade": "Баға күтілуде",
-      "assessmentSubmitted": "Тапсырма жіберілді",
+      "assessmentSubmitted": "Оқу әрекеті жіберілді",
       "gradeNotYetReleased": "Баға әлі жарияланған жоқ. Кейінірек тексеріңіз.",
-      "retryAssessment": "Тапсырманы қайталау",
-      "nextActivity": "Келесі тапсырма"
+      "retryAssessment": "Оқу әрекетіны қайталау",
+      "nextActivity": "Келесі оқу әрекеті"
     }
   },
   "Themes": {
@@ -9214,8 +9215,8 @@
   "Validation": {
     "activityDescriptionRequired": "Белсенділік сипаттамасы қажет",
     "activityNameRequired": "Белсенділік атауы қажет",
-    "assignmentDescriptionRequired": "Тапсырма сипаттамасы қажет",
-    "assignmentTitleRequired": "Тапсырма атауы қажет",
+    "assignmentDescriptionRequired": "Оқу әрекеті сипаттамасы қажет",
+    "assignmentTitleRequired": "Оқу әрекеті атауы қажет",
     "chapterDescriptionRequired": "Тарау сипаттамасы қажет",
     "chapterNameRequired": "Тарау атауы қажет",
     "contentRequired": "Мазмұн қажет",
@@ -9280,7 +9281,7 @@
   "platformLogo": "Ashyk Bilim логотипі",
   "previous": "Алдыңғы",
   "seconds": "Секунд",
-  "selectDeadline": "Тапсырманы аяқтау үшін мерзімді таңдаңыз",
+  "selectDeadline": "Оқу әрекетіны аяқтау үшін мерзімді таңдаңыз",
   "touUniversity": "Торайғыров университеті",
   "webPreview": "Веб алдын ала қарау",
   "AttemptActions": {
@@ -9293,8 +9294,8 @@
     "noAction": "Іс-әрекет қолжетімсіз",
     "blocked": "Қол жеткізу бұғатталды",
     "blockedReasons": {
-      "NOT_PUBLISHED": "Тапсырма әлі жарияланмаған.",
-      "BEFORE_WINDOW": "Тапсырма әлі қолжетімді емес.",
+      "NOT_PUBLISHED": "Оқу әрекеті әлі жарияланмаған.",
+      "BEFORE_WINDOW": "Оқу әрекеті әлі қолжетімді емес.",
       "AFTER_WINDOW": "Тапсыру терезесі жабылды.",
       "MAX_ATTEMPTS_REACHED": "Сіз барлық мүмкіндіктерді пайдаландыңыз.",
       "NOT_ENROLLED": "Сіз бұл курсқа жазылмаған.",
@@ -9330,7 +9331,7 @@
   },
   "PolicyPreset": {
     "title": "Саясат үлгісі",
-    "description": "Бұл тапсырма түріне ұсынылған конфигурацияны қолдану.",
+    "description": "Бұл оқу әрекеті түріне ұсынылған конфигурацияны қолдану.",
     "apply": "Үлгіні қолдану",
     "applied": "Үлгі қолданылды",
     "failed": "Үлгіні қолдану сәтсіз болды"

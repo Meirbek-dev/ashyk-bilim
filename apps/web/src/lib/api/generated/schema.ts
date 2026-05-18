@@ -1690,6 +1690,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/courses/{course_uuid}/activities/{activity_uuid}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Api Run Student Activity Action */
+        post: operations["api_run_student_activity_action_api_v1_courses__course_uuid__activities__activity_uuid__actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses/{course_uuid}/activities/{activity_uuid}/runtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Get Student Activity Runtime */
+        get: operations["api_get_student_activity_runtime_api_v1_courses__course_uuid__activities__activity_uuid__runtime_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/courses/{course_uuid}/apply-contributor": {
         parameters: {
             query?: never;
@@ -2008,12 +2042,12 @@ export interface paths {
          *     - `create`: Can create new courses (instructor role or higher)
          *     - `update`: Can update course settings (title, description, etc.)
          *     - `delete`: Can delete the course
-         *     - `create_content`: Can create activities, assignments, chapters, etc.
+         *     - `create_content`: Can create activities, assessments, chapters, etc.
          *     - `update_content`: Can update course content
          *     - `delete_content`: Can delete course content
          *     - `manage_contributors`: Can add/remove contributors
          *     - `manage_access`: Can change course access settings (public, open_to_contributors)
-         *     - `assessment_grade`: Can grade student assignments
+         *     - `assessment_grade`: Can grade student assessment work
          *     - `mark_activities_done`: Can mark activities as done for other users
          *     - `create_certifications`: Can create course certifications
          *
@@ -8441,6 +8475,189 @@ export interface components {
             /** Streak Type */
             streak_type: string;
         };
+        /** StudentActivityActionRequest */
+        StudentActivityActionRequest: {
+            /**
+             * Command
+             * @enum {string}
+             */
+            command: "start" | "mark_viewed" | "mark_complete" | "unmark_complete" | "start_attempt" | "save_draft" | "submit" | "request_revision_start" | "acknowledge_feedback";
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            };
+        };
+        /** StudentActivityContentRuntime */
+        StudentActivityContentRuntime: {
+            /** Assessment Uuid */
+            assessment_uuid?: string | null;
+            /** Content */
+            content?: {
+                [key: string]: unknown;
+            };
+            /** Details */
+            details?: {
+                [key: string]: unknown;
+            };
+            /** File Submission Uuid */
+            file_submission_uuid?: string | null;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
+            /** Subtype */
+            subtype: string;
+            /** Type */
+            type: string;
+        };
+        /** StudentActivityCourseHeader */
+        StudentActivityCourseHeader: {
+            /** Id */
+            id: number;
+            /** Public */
+            public: boolean;
+            /** Title */
+            title: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** StudentActivityHeader */
+        StudentActivityHeader: {
+            /** Chapter Id */
+            chapter_id: number;
+            /** Chapter Title */
+            chapter_title?: string | null;
+            /** Id */
+            id: number;
+            /**
+             * Order
+             * @default 0
+             */
+            order: number;
+            /** Published */
+            published: boolean;
+            /** Subtype */
+            subtype: string;
+            /** Title */
+            title: string;
+            /** Type */
+            type: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** StudentActivityNavItem */
+        StudentActivityNavItem: {
+            /**
+             * Complete
+             * @default false
+             */
+            complete: boolean;
+            /** Id */
+            id: number;
+            /** Published */
+            published: boolean;
+            /**
+             * State
+             * @default not_started
+             * @enum {string}
+             */
+            state: "not_started" | "in_progress" | "viewed" | "draft" | "submitted" | "needs_grading" | "graded_hidden" | "published" | "returned" | "passed" | "failed" | "complete" | "locked" | "unavailable" | "attempt_exhausted" | "course_end";
+            /** Title */
+            title: string;
+            /** Type */
+            type: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** StudentActivityOutlineChapter */
+        StudentActivityOutlineChapter: {
+            /** Activities */
+            activities?: components["schemas"]["StudentActivityNavItem"][];
+            /** Id */
+            id: number;
+            /** Index */
+            index: number;
+            /** Title */
+            title: string;
+        };
+        /** StudentActivityPermissions */
+        StudentActivityPermissions: {
+            /**
+             * Can Contribute
+             * @default false
+             */
+            can_contribute: boolean;
+            /**
+             * Can Update
+             * @default false
+             */
+            can_update: boolean;
+            /** Can View */
+            can_view: boolean;
+            /** Is Authenticated */
+            is_authenticated: boolean;
+        };
+        /** StudentActivityProgressRuntime */
+        StudentActivityProgressRuntime: {
+            /**
+             * Attempt Count
+             * @default 0
+             */
+            attempt_count: number;
+            canonical_state?: components["schemas"]["ActivityProgressState"] | null;
+            /**
+             * Complete
+             * @default false
+             */
+            complete: boolean;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Due At */
+            due_at?: string | null;
+            /** Graded At */
+            graded_at?: string | null;
+            /**
+             * Is Late
+             * @default false
+             */
+            is_late: boolean;
+            /** Latest Submission Status */
+            latest_submission_status?: string | null;
+            /** Latest Submission Uuid */
+            latest_submission_uuid?: string | null;
+            /** Passed */
+            passed?: boolean | null;
+            /** Score */
+            score?: number | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "not_started" | "in_progress" | "viewed" | "draft" | "submitted" | "needs_grading" | "graded_hidden" | "published" | "returned" | "passed" | "failed" | "complete" | "locked" | "unavailable" | "attempt_exhausted" | "course_end";
+            /** Status Reason */
+            status_reason?: string | null;
+            /** Submitted At */
+            submitted_at?: string | null;
+            /**
+             * Teacher Action Required
+             * @default false
+             */
+            teacher_action_required: boolean;
+        };
+        /** StudentActivityRuntime */
+        StudentActivityRuntime: {
+            activity: components["schemas"]["StudentActivityHeader"] | null;
+            content: components["schemas"]["StudentActivityContentRuntime"] | null;
+            course: components["schemas"]["StudentActivityCourseHeader"];
+            next?: components["schemas"]["StudentActivityNavItem"] | null;
+            /** Outline */
+            outline?: components["schemas"]["StudentActivityOutlineChapter"][];
+            permissions: components["schemas"]["StudentActivityPermissions"];
+            policy?: components["schemas"]["StudentVisiblePolicy"] | null;
+            previous?: components["schemas"]["StudentActivityNavItem"] | null;
+            primary_action: components["schemas"]["StudentPrimaryAction"];
+            progress: components["schemas"]["StudentActivityProgressRuntime"];
+        };
         /** StudentPolicyOverrideCreate */
         StudentPolicyOverrideCreate: {
             /** Due At Override */
@@ -8507,6 +8724,20 @@ export interface components {
             time_limit_override_seconds?: number | null;
             /** Waive Late Penalty */
             waive_late_penalty?: boolean | null;
+        };
+        /** StudentPrimaryAction */
+        StudentPrimaryAction: {
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "start" | "continue" | "mark_complete" | "unmark_complete" | "submit" | "view_receipt" | "view_feedback" | "revise" | "next_activity" | "review_policy" | "back_to_course" | "none";
+            /** Reason */
+            reason?: string | null;
+            /** Target Activity Uuid */
+            target_activity_uuid?: string | null;
         };
         /** StudentSubmissionRead */
         StudentSubmissionRead: {
@@ -8596,6 +8827,23 @@ export interface components {
              * @default 1
              */
             version: number;
+        };
+        /** StudentVisiblePolicy */
+        StudentVisiblePolicy: {
+            /** Completion Rule */
+            completion_rule?: string | null;
+            /** Due At */
+            due_at?: string | null;
+            /** Grade Release Mode */
+            grade_release_mode?: string | null;
+            /** Grading Mode */
+            grading_mode?: string | null;
+            /** Max Attempts */
+            max_attempts?: number | null;
+            /** Passing Score */
+            passing_score?: number | null;
+            /** Time Limit Seconds */
+            time_limit_seconds?: number | null;
         };
         /**
          * SubmissionListResponse
@@ -13469,6 +13717,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CourseRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_run_student_activity_action_api_v1_courses__course_uuid__activities__activity_uuid__actions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_uuid: string;
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudentActivityActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentActivityRuntime"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_student_activity_runtime_api_v1_courses__course_uuid__activities__activity_uuid__runtime_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_uuid: string;
+                activity_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentActivityRuntime"];
                 };
             };
             /** @description Validation Error */

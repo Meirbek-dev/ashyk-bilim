@@ -103,7 +103,7 @@ v1_router.include_router(
     tags=["code-execution"],
 )
 
-# Unified grading system (replaces fragmented assignment/quiz grading)
+# Unified grading system for assessment and submission workflows.
 v1_router.include_router(grading_teacher_router, prefix="/grading", tags=["grading"])
 v1_router.include_router(grading_feedback_router, prefix="/grading", tags=["grading"])
 v1_router.include_router(grading_sse_router, prefix="/grading", tags=["grading"])
