@@ -616,7 +616,9 @@
     "noAction": "No action available",
     "notStarted": "Not started",
     "submitted": "Submitted",
-    "support": "Support"
+    "support": "Support",
+    "viewAssessment": "Тапсырмаға өту",
+    "viewResult": "Нәтижені көру"
   },
   "AdminUtils": {
     "priority": {
@@ -6545,6 +6547,9 @@
       "keyboardHintPrevKey": "k",
       "keyboardHintForward": "Келесі студент",
       "keyboardHintBackward": "Алдыңғы студент",
+      "keyboardHintFocusGrade": "Баға енгізу өрісіне өту",
+      "keyboardHintSave": "Жобаны сақтау",
+      "keyboardHintPublish": "Жариялау",
       "keyboardHint": "Пернелер тіркесімі",
       "loadingSubmission": "Жіберім жүктелуде...",
       "formUnavailable": "Бағалау формасы қолжетімді емес."
@@ -7397,6 +7402,7 @@
             "published": "Таңдалған бағалар жарияланды",
             "returned": "Таңдалған жұмыстар қайтарылды",
             "bulkActionFailed": "Жаппай әрекет сәтсіз аяқталды",
+            "bulkPartialFailure": "{failed} жұмыс(ы) жаңарту мүмкін болмады — төмендегі мәліметті қараңыз.",
             "deadlineQueued": "Мерзімді ұзарту кезекке қойылды",
             "extendFailed": "Мерзімді ұзарту сәтсіз аяқталды",
             "hiddenReleased": "Жасырын бағалар жарияланды",
@@ -7411,6 +7417,7 @@
             "releaseFinished": "Бағаларды жариялау аяқталды",
             "releaseDetail": "Жаңадан көрінгені: {published}. Бұрыннан көрінгені: {alreadyVisible}."
           },
+          "failedSubmissionsTitle": "{count} жұмыс(ы) жаңарту мүмкін болмады:",
           "preview": {
             "selectedSubmissions": "Таңдалған жұмыстар",
             "gradeReady": "Бағалауға дайын",
@@ -8724,6 +8731,26 @@
           "file": "Файл"
         }
       }
+    },
+    "ActivityWorkspace": {
+      "questions": "Сұрақтар",
+      "timeLimit": "Уақыт шегі",
+      "unlimited": "Шексіз",
+      "attempts": "Әрекеттер",
+      "dueDate": "Тапсыру мерзімі",
+      "assessmentBlocked": "Бұл тапсырма қазір сізге қолжетімді емес.",
+      "waitingForRelease": "Жұмысыңыз қабылданды. Оқытушы бағаны жариялағаннан кейін нәтижені көресіз.",
+      "startAssessment": "Тапсырманы бастау",
+      "startRevision": "Қайта тапсыруды бастау",
+      "revision": "Қайта тапсыру",
+      "returnedForRevision": "Түзетуге қайтарылды",
+      "passed": "Өтті",
+      "failed": "Өтпеді",
+      "pendingGrade": "Баға күтілуде",
+      "assessmentSubmitted": "Тапсырма жіберілді",
+      "gradeNotYetReleased": "Баға әлі жарияланған жоқ. Кейінірек тексеріңіз.",
+      "retryAssessment": "Тапсырманы қайталау",
+      "nextActivity": "Келесі тапсырма"
     }
   },
   "Themes": {

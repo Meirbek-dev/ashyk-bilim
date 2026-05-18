@@ -19,7 +19,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY, FOCUS_MODE_CHANGE_EVENT } from '@/lib/constants';
+import { ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY } from '@/lib/constants';
 import type { AttemptConflictState } from './AssessmentActionBar';
 import { DEFAULT_POLICY_VIEW, isAntiCheatEnabled } from '@/features/assessments/domain/policy';
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
@@ -108,7 +108,6 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
     const next = !focusMode;
     setFocusMode(next);
     globalThis.localStorage?.setItem(ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY, String(next));
-    globalThis.dispatchEvent?.(new CustomEvent(FOCUS_MODE_CHANGE_EVENT, { detail: { enabled: next } }));
   }, [focusMode]);
 
   // ── Policy / guard ─────────────────────────────────────────────────────────
@@ -175,7 +174,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
       ) : null}
 
       {/* ── Main layout ─────────────────────────────────────────────────── */}
-      <div className={cn('min-h-screen bg-background pb-28', focusMode && 'fixed inset-0 z-[60] overflow-auto')}>
+      <div className={cn('min-h-screen bg-background pb-28', focusMode && 'fixed inset-0 z-60 overflow-auto')}>
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5">
           <AssessmentChrome
             kindLabel={kindModule?.label ?? 'Assessment'}

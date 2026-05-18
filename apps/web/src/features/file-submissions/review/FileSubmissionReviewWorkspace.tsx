@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, FileText, Loader2, RefreshCw, RotateCcw, Search, Send } from 'lucide-react';
+import { Download, ExternalLink, Eye, FileText, Loader2, RefreshCw, RotateCcw, Search, Send, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   fileSubmissionExportUrl,
@@ -17,6 +18,33 @@ import {
   gradeFileSubmissionAttempt,
 } from '@/features/file-submissions/services/file-submissions';
 import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions';
+
+// ── Rubric types (convention-based schema stored in rubric_json) ──────────────
+
+interface RubricCriterionLevel {
+  label: string;
+  score: number;
+  description?: string;
+}
+
+interface RubricCriterion {
+  criterion_id: string;
+  label: string;
+  max_score: number;
+  levels?: RubricCriterionLevel[];
+}
+
+function parseRubricCriteria(rubric: Record<string, unknown>): RubricCriterion[] {
+  const criteria = (rubric as { criteria?: unknown }).criteria;
+  if (!Array.isArray(criteria)) return [];
+  return criteria.filter(
+    (c): c is RubricCriterion =>
+      typeof c === 'object' &&
+      c !== null &&
+      typeof (c as RubricCriterion).criterion_id === 'string' &&
+      typeof (c as RubricCriterion).label === 'string',
+  );
+}
 
 interface FileSubmissionReviewWorkspaceProps {
   activityUuid: string;
@@ -36,6 +64,10 @@ export default function FileSubmissionReviewWorkspace({
   const [selectedUuid, setSelectedUuid] = useState<string | null>(initialAttemptUuid ?? null);
   const [score, setScore] = useState<string>('');
   const [feedback, setFeedback] = useState('');
+  const [rubricScores, setRubricScores] = useState<Record<string, number>>({});
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFilename, setPreviewFilename] = useState<string | null>(null);
+  const [isFetchingPreview, setIsFetchingPreview] = useState<string | null>(null); // attemptFileUuid
 
   const { data: config, isLoading: isConfigLoading } = useQuery({
     queryKey: activityQueryKey(cleanActivityUuid),
@@ -65,12 +97,24 @@ export default function FileSubmissionReviewWorkspace({
   const gradeMutation = useMutation({
     mutationFn: async ({ status }: { status: 'GRADED' | 'PUBLISHED' | 'RETURNED' }) => {
       if (!config || !selected) throw new Error('Submission is unavailable');
+      const rubricPayload =
+        parsedCriteria.length > 0
+          ? {
+              criteria: parsedCriteria.map((c) => ({
+                criterion_id: c.criterion_id,
+                label: c.label,
+                score: rubricScores[c.criterion_id] ?? 0,
+                max_score: c.max_score,
+              })),
+            }
+          : {};
       return await gradeFileSubmissionAttempt(
         config.file_submission_uuid,
         selected.attempt_uuid,
         {
           final_score: score.trim() === '' ? null : Number(score),
           feedback,
+          rubric: rubricPayload,
           status,
         },
         selected.version,
@@ -88,10 +132,32 @@ export default function FileSubmissionReviewWorkspace({
     },
   });
 
+  const parsedCriteria = useMemo(
+    () => (config?.rubric ? parseRubricCriteria(config.rubric) : []),
+    [config?.rubric],
+  );
+
+  // Auto-fill score from rubric criterion scores
+  const rubricTotalScore = useMemo(() => {
+    if (parsedCriteria.length === 0) return null;
+    return parsedCriteria.reduce((acc, c) => acc + (rubricScores[c.criterion_id] ?? 0), 0);
+  }, [parsedCriteria, rubricScores]);
+
   function selectAttempt(attempt: FileSubmissionAttempt) {
     setSelectedUuid(attempt.attempt_uuid);
     setScore(attempt.final_score === null ? '' : String(attempt.final_score));
     setFeedback(typeof attempt.feedback?.feedback === 'string' ? attempt.feedback.feedback : '');
+    // Restore rubric scores from saved feedback.rubric
+    const savedRubric = attempt.feedback?.rubric;
+    if (savedRubric && typeof savedRubric === 'object' && 'criteria' in savedRubric) {
+      const criteriaScores: Record<string, number> = {};
+      for (const c of (savedRubric as { criteria: Array<{ criterion_id: string; score: number }> }).criteria) {
+        criteriaScores[c.criterion_id] = c.score;
+      }
+      setRubricScores(criteriaScores);
+    } else {
+      setRubricScores({});
+    }
   }
 
   async function openFile(attemptFileUuid: string) {
@@ -100,6 +166,19 @@ export default function FileSubmissionReviewWorkspace({
       window.open(result.get_url, '_blank', 'noopener,noreferrer');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to open file');
+    }
+  }
+
+  async function previewFile(attemptFileUuid: string, filename: string) {
+    setIsFetchingPreview(attemptFileUuid);
+    try {
+      const result = await getFileSubmissionFileUrl(attemptFileUuid);
+      setPreviewUrl(result.get_url);
+      setPreviewFilename(filename);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to preview file');
+    } finally {
+      setIsFetchingPreview(null);
     }
   }
 
@@ -210,46 +289,133 @@ export default function FileSubmissionReviewWorkspace({
                 {selected.files.length === 0 ? (
                   <p className="text-muted-foreground p-4 text-sm">No files attached.</p>
                 ) : (
-                  selected.files.map((file) => (
-                    <div
-                      key={file.attempt_file_uuid}
-                      className="flex flex-wrap items-center justify-between gap-3 p-4"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <FileText className="text-muted-foreground size-5 shrink-0" />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{file.filename}</p>
-                          <p className="text-muted-foreground text-xs">
-                            {formatBytes(file.size_bytes ?? 0)} · {file.scan_status.toLowerCase()}
-                          </p>
+                  selected.files.map((file) => {
+                    const previewable = isPreviewable(file.filename);
+                    return (
+                      <div
+                        key={file.attempt_file_uuid}
+                        className="flex flex-wrap items-center justify-between gap-3 p-4"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <FileText className="text-muted-foreground size-5 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{file.filename}</p>
+                            <p className="text-muted-foreground text-xs">
+                              {formatBytes(file.size_bytes ?? 0)} · {file.scan_status.toLowerCase()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {previewable && (
+                            <Button
+                              size="sm"
+                              variant={previewUrl !== null && previewFilename === file.filename ? 'default' : 'outline'}
+                              disabled={isFetchingPreview === file.attempt_file_uuid}
+                              onClick={() => {
+                                if (previewUrl !== null && previewFilename === file.filename) {
+                                  setPreviewUrl(null);
+                                  setPreviewFilename(null);
+                                } else {
+                                  previewFile(file.attempt_file_uuid, file.filename);
+                                }
+                              }}
+                            >
+                              {isFetchingPreview === file.attempt_file_uuid ? (
+                                <Loader2 className="size-4 animate-spin" />
+                              ) : (
+                                <Eye className="size-4" />
+                              )}
+                              Preview
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openFile(file.attempt_file_uuid)}
+                          >
+                            {previewable ? (
+                              <ExternalLink className="size-4" />
+                            ) : (
+                              <Download className="size-4" />
+                            )}
+                            {previewable ? 'Open' : 'Download'}
+                          </Button>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openFile(file.attempt_file_uuid)}
-                      >
-                        <Download className="size-4" />
-                        Open
-                      </Button>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
+
+              {/* ── Inline file preview ──────────────────────────────────── */}
+              {previewUrl && (
+                <div className="rounded-md border">
+                  <div className="flex items-center justify-between border-b p-3">
+                    <p className="truncate text-sm font-medium">{previewFilename}</p>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-7 shrink-0"
+                      onClick={() => { setPreviewUrl(null); setPreviewFilename(null); }}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                  <FilePreviewPane url={previewUrl} filename={previewFilename ?? ''} />
+                </div>
+              )}
             </section>
 
             <aside className="space-y-4">
               <section className="rounded-md border p-4">
                 <h3 className="mb-3 text-sm font-semibold">Grade and feedback</h3>
                 <div className="space-y-3">
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={score}
-                    onChange={(event) => setScore(event.target.value)}
-                    placeholder="Score out of 100"
-                  />
+
+                  {/* ── Rubric grid (shown when rubric criteria are defined) ── */}
+                  {parsedCriteria.length > 0 && (
+                    <RubricGrid
+                      criteria={parsedCriteria}
+                      scores={rubricScores}
+                      onChange={(criterionId, criterionScore) => {
+                        setRubricScores((prev) => ({ ...prev, [criterionId]: criterionScore }));
+                        // Auto-fill overall score from rubric total
+                        const newScores = { ...rubricScores, [criterionId]: criterionScore };
+                        const total = parsedCriteria.reduce((acc, c) => acc + (newScores[c.criterion_id] ?? 0), 0);
+                        const maxTotal = parsedCriteria.reduce((acc, c) => acc + c.max_score, 0);
+                        if (maxTotal > 0) {
+                          setScore(String(Math.round((total / maxTotal) * 100)));
+                        }
+                      }}
+                    />
+                  )}
+
+                  <div className="space-y-1">
+                    <Label htmlFor="fs-review-score">Final score</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="fs-review-score"
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={score}
+                        onChange={(event) => setScore(event.target.value)}
+                        placeholder="0–100"
+                        className="w-24"
+                      />
+                      <span className="text-muted-foreground text-sm">/ 100</span>
+                      {rubricTotalScore !== null && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="link"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => setScore(String(rubricTotalScore))}
+                        >
+                          Use rubric total ({rubricTotalScore})
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   <Textarea
                     value={feedback}
                     onChange={(event) => setFeedback(event.target.value)}
@@ -300,6 +466,101 @@ function displayUser(attempt: FileSubmissionAttempt) {
   const { user } = attempt;
   const fullName = `${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim();
   return fullName || user?.username || user?.email || 'Learner';
+}
+
+function isPreviewable(filename: string): boolean {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+  return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext);
+}
+
+function RubricGrid({
+  criteria,
+  scores,
+  onChange,
+}: {
+  criteria: RubricCriterion[];
+  scores: Record<string, number>;
+  onChange: (criterionId: string, score: number) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-medium">Rubric</p>
+      {criteria.map((c) => {
+        const current = scores[c.criterion_id] ?? null;
+        return (
+          <div
+            key={c.criterion_id}
+            className="space-y-1.5"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm">{c.label}</span>
+              <span className="text-muted-foreground text-xs">
+                {current ?? '—'} / {c.max_score}
+              </span>
+            </div>
+            {c.levels && c.levels.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {c.levels.map((level) => (
+                  <button
+                    key={level.score}
+                    type="button"
+                    title={level.description}
+                    className={`rounded border px-2 py-0.5 text-xs transition-colors ${
+                      current === level.score
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'hover:bg-muted'
+                    }`}
+                    onClick={() => onChange(c.criterion_id, level.score)}
+                  >
+                    {level.label} ({level.score})
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <Input
+                type="number"
+                min={0}
+                max={c.max_score}
+                step={0.5}
+                value={current ?? ''}
+                placeholder="0"
+                className="h-7 w-20 text-sm"
+                onChange={(e) => {
+                  const v = Number.parseFloat(e.target.value);
+                  if (!Number.isNaN(v)) onChange(c.criterion_id, Math.min(v, c.max_score));
+                }}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FilePreviewPane({ url, filename }: { url: string; filename: string }) {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext);
+
+  if (isImage) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={url}
+        alt={filename}
+        className="max-h-[600px] w-full rounded-b-md object-contain p-2"
+      />
+    );
+  }
+  // PDF / fallback iframe
+  return (
+    <iframe
+      src={url}
+      title={filename}
+      className="h-[600px] w-full rounded-b-md border-0"
+      sandbox="allow-scripts allow-same-origin"
+    />
+  );
 }
 
 function AttemptStatusBadge({ status }: { status: string }) {

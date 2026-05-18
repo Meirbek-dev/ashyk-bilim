@@ -24,9 +24,6 @@ import { HeaderProfileBox } from '@/components/Security/HeaderProfileBox';
 import { useSession } from '@/hooks/useSession';
 import { getAbsoluteUrl } from '@/services/config/config';
 import {
-  ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY,
-  COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY,
-  FOCUS_MODE_CHANGE_EVENT,
   NAVBAR_HEIGHT,
 } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -68,42 +65,25 @@ function useIsActive(href: string): boolean {
 }
 
 // ----------------------------------------------------------------------
-// Focus mode — SSR-safe, reads localStorage only after mount
+// Layout-mode awareness — hides nav when data-layout-mode="active-attempt"
+// Uses MutationObserver so there is no localStorage or CustomEvent coupling.
 // ----------------------------------------------------------------------
-function useFocusMode(enabled: boolean, storageKey: string | null): boolean {
-  const [isFocusMode, setIsFocusMode] = useState(false);
+function useLayoutModeHidden(): boolean {
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    if (!enabled || !storageKey) {
-      setIsFocusMode(false);
-      return;
-    }
+    const read = () => document.documentElement.dataset.layoutMode === 'active-attempt';
+    setHidden(read());
 
-    const read = (): boolean => {
-      try {
-        return localStorage.getItem(storageKey) === 'true';
-      } catch {
-        return false;
-      }
-    };
+    const observer = new MutationObserver(() => setHidden(read()));
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-layout-mode'],
+    });
+    return () => observer.disconnect();
+  }, []);
 
-    setIsFocusMode(read());
-
-    const sync = () => setIsFocusMode(read());
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === storageKey) sync();
-    };
-
-    globalThis.addEventListener('storage', onStorage);
-    globalThis.addEventListener(FOCUS_MODE_CHANGE_EVENT, sync);
-
-    return () => {
-      globalThis.removeEventListener('storage', onStorage);
-      globalThis.removeEventListener(FOCUS_MODE_CHANGE_EVENT, sync);
-    };
-  }, [enabled, storageKey]);
-
-  return isFocusMode;
+  return hidden;
 }
 
 // ----------------------------------------------------------------------
@@ -226,13 +206,7 @@ export default function NavBar() {
   const { resolvedTheme } = useTheme();
   const logoSrc = resolvedTheme === 'dark' ? platformLogoLightFull : platformLogoFull;
 
-  const isOnActivityPage = pathname?.includes('/activity/') ?? false;
-  const isOnAssessmentAttemptPage = pathname?.startsWith('/assessments/') ?? false;
-  const focusModeStorageKey = isOnAssessmentAttemptPage
-    ? ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY
-    : COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY;
-  const focusModeEligible = isOnActivityPage || isOnAssessmentAttemptPage;
-  const isFocusMode = useFocusMode(focusModeEligible, focusModeStorageKey);
+  const isLayoutModeHidden = useLayoutModeHidden();
   const isScrolled = useScrollElevation();
 
   const visibleLinks = useMemo(() => NAV_LINKS.filter((l) => !l.authRequired || isAuthenticated), [isAuthenticated]);
@@ -244,7 +218,7 @@ export default function NavBar() {
 
   const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
-  if (focusModeEligible && isFocusMode) return null;
+  if (isLayoutModeHidden) return null;
 
   return (
     <header

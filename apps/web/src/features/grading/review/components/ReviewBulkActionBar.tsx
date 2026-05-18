@@ -48,6 +48,7 @@ export default function ReviewBulkActionBar({
   const [reason, setReason] = useState('');
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [lastSummary, setLastSummary] = useState<BulkActionSummary | null>(null);
+  const [failedSubmissions, setFailedSubmissions] = useState<Array<{ name: string; error: string }>>([]);
 
   const gradeable = submissions.filter((submission) => submission.final_score !== null);
   const userIds = submissions
@@ -82,7 +83,12 @@ export default function ReviewBulkActionBar({
     startTransition(async () => {
       try {
         const result = await saveGradesWithinAssessment(assessmentUuid, gradeable, status);
-        toast.success(status === 'PUBLISHED' ? t('toasts.published') : t('toasts.returned'));
+        setFailedSubmissions(result.failures);
+        if (result.failures.length > 0) {
+          toast.warning(t('toasts.bulkPartialFailure', { failed: result.failures.length }));
+        } else {
+          toast.success(status === 'PUBLISHED' ? t('toasts.published') : t('toasts.returned'));
+        }
         setLastSummary({
           label: status === 'PUBLISHED' ? t('summaries.publishFinished') : t('summaries.returnFinished'),
           detail: t('summaries.resultDetail', { succeeded: result.succeeded, failed: result.failed }),
@@ -309,6 +315,25 @@ export default function ReviewBulkActionBar({
             {lastSummary ? (
               <p className="text-muted-foreground text-xs">{t('lastResult', { detail: lastSummary.detail })}</p>
             ) : null}
+            {failedSubmissions.length > 0 ? (
+              <div className="space-y-1 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950">
+                <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                  {t('failedSubmissionsTitle', { count: failedSubmissions.length })}
+                </p>
+                <ul className="space-y-0.5">
+                  {failedSubmissions.map((f) => (
+                    <li
+                      key={f.name}
+                      className="text-xs text-amber-800 dark:text-amber-300"
+                    >
+                      <span className="font-medium">{f.name}</span>
+                      {' — '}
+                      {f.error}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
           <DialogFooter>
             <Button
@@ -366,10 +391,27 @@ async function saveGradesWithinAssessment(
     ),
   );
 
+  const failures: Array<{ name: string; error: string }> = [];
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    if (result.status === 'rejected') {
+      const sub = submissions[i];
+      const name =
+        sub.user
+          ? `${sub.user.first_name ?? ''} ${sub.user.last_name ?? ''}`.trim() || sub.user.username || sub.user.email || sub.submission_uuid
+          : sub.submission_uuid;
+      failures.push({
+        name,
+        error: result.reason instanceof Error ? result.reason.message : 'Unknown error',
+      });
+    }
+  }
+
   const succeeded = results.filter((result) => result.status === 'fulfilled').length;
   return {
     succeeded,
     failed: results.length - succeeded,
+    failures,
   };
 }
 

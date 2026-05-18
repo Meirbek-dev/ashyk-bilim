@@ -231,12 +231,15 @@ async def _submit_assessment_inner(
         answers_payload=final_payload,
         now=now,
         policy=policy,
+        assessment_type=assessment_type,
     )
 
     # Update progress
     progress_submissions.submit_activity(draft, db_session)
 
     # 11. Emit events (post-commit, non-blocking)
+    _is_code_challenge = assessment_type == AssessmentType.CODE_CHALLENGE
+    _immediate_release = policy is None or policy.grade_release_mode == GradeReleaseMode.IMMEDIATE
     await emit_submission_events(
         draft,
         file_keys=_extract_file_keys(final_payload),
@@ -245,10 +248,7 @@ async def _submit_assessment_inner(
             now
             if (
                 not result.needs_manual_review
-                and (
-                    policy is None
-                    or policy.grade_release_mode == GradeReleaseMode.IMMEDIATE
-                )
+                and (_is_code_challenge or _immediate_release)
             )
             else None
         ),

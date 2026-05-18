@@ -616,7 +616,9 @@
     "unmarkConfirmation": "Are you sure you want to unmark this activity as complete?",
     "unmarkDialogTitle": "Unmark Activity?",
     "unpublishedActivity": "This activity is not published yet",
-    "viewAllActivities": "View all activities"
+    "viewAllActivities": "View all activities",
+    "viewAssessment": "View Assessment",
+    "viewResult": "View Result"
   },
   "AdminUtils": {
     "priority": {
@@ -6525,6 +6527,9 @@
       "keyboardHintPrevKey": "k",
       "keyboardHintForward": "Next student",
       "keyboardHintBackward": "Previous student",
+      "keyboardHintFocusGrade": "Focus grade",
+      "keyboardHintSave": "Save draft",
+      "keyboardHintPublish": "Publish",
       "keyboardHint": "Keyboard shortcuts",
       "loadingSubmission": "Loading submission...",
       "formUnavailable": "Grading form is unavailable."
@@ -7392,6 +7397,7 @@
             "published": "Selected grades published",
             "returned": "Selected submissions returned",
             "bulkActionFailed": "Bulk action failed",
+            "bulkPartialFailure": "{failed} submission(s) could not be updated — see details below.",
             "deadlineQueued": "Deadline extension queued",
             "extendFailed": "Failed to extend deadline",
             "hiddenReleased": "Hidden grades released",
@@ -7406,6 +7412,7 @@
             "releaseFinished": "Grade release finished",
             "releaseDetail": "Newly visible: {published}. Already visible: {alreadyVisible}."
           },
+          "failedSubmissionsTitle": "{count} submission(s) failed to update:",
           "preview": {
             "selectedSubmissions": "Selected submissions",
             "gradeReady": "Grade-ready",
@@ -8267,6 +8274,26 @@
           }
         }
       }
+    },
+    "ActivityWorkspace": {
+      "questions": "Questions",
+      "timeLimit": "Time limit",
+      "unlimited": "Unlimited",
+      "attempts": "Attempts",
+      "dueDate": "Due date",
+      "assessmentBlocked": "This assessment is not available to you at this time.",
+      "waitingForRelease": "Your submission has been received. Your grade will be released once the teacher publishes results.",
+      "startAssessment": "Start assessment",
+      "startRevision": "Start revision",
+      "revision": "Revision",
+      "returnedForRevision": "Returned for revision",
+      "passed": "Passed",
+      "failed": "Failed",
+      "pendingGrade": "Pending grade",
+      "assessmentSubmitted": "Assessment submitted",
+      "gradeNotYetReleased": "Your grade has not been released yet. Check back later.",
+      "retryAssessment": "Retry assessment",
+      "nextActivity": "Next activity"
     }
   },
   "Themes": {

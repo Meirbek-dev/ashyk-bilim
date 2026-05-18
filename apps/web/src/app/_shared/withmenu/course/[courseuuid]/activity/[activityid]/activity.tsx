@@ -9,9 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Circle,
-  ClipboardList,
   Code2,
-  FileArchive,
   FileText,
   Focus,
   Layers,
@@ -34,7 +32,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useContributorStatus } from '@/hooks/useContributorStatus';
 import { useSession } from '@/hooks/useSession';
-import { COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY, FOCUS_MODE_CHANGE_EVENT } from '@/lib/constants';
+import { ActivityLayoutProvider, useActivityLayout } from '@/features/assessments/shell/ActivityLayoutContext';
 import { cn } from '@/lib/utils';
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail';
 import { ActivityContentRenderer } from './ActivityContentRenderer';
@@ -77,12 +75,15 @@ export default function ActivityClient({ activityid, assessmentUuid, courseuuid,
   return (
     <CourseProvider courseuuid={course.course_uuid}>
       <ActivityAIChatProvider activityUuid={activity?.activity_uuid ?? ''}>
-        <StudentActivityPageShell
-          activity={activity}
-          course={course}
-          courseuuid={courseuuid}
-          vm={vm}
-        />
+        <ActivityLayoutProvider>
+          <StudentActivityPageShell
+            activity={activity}
+            assessmentUuid={assessmentUuid ?? null}
+            course={course}
+            courseuuid={courseuuid}
+            vm={vm}
+          />
+        </ActivityLayoutProvider>
       </ActivityAIChatProvider>
     </CourseProvider>
   );
@@ -90,25 +91,26 @@ export default function ActivityClient({ activityid, assessmentUuid, courseuuid,
 
 function StudentActivityPageShell({
   activity,
+  assessmentUuid,
   course,
   courseuuid,
   vm,
 }: {
   activity: Activity | null;
+  assessmentUuid: string | null;
   course: CourseStructure;
   courseuuid: string;
   vm: StudentActivityViewModel;
 }) {
   const [readingMode, setReadingMode] = useState(false);
+  const { mode } = useActivityLayout();
+  const isAttemptActive = mode === 'ACTIVE_ATTEMPT';
 
+  // Sync reading-mode focus state via data attribute — no localStorage or CustomEvent
   useEffect(() => {
-    setReadingMode(globalThis.localStorage?.getItem(COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY) === 'true');
-  }, []);
-
-  useEffect(() => {
-    globalThis.localStorage?.setItem(COURSE_ACTIVITY_FOCUS_MODE_STORAGE_KEY, String(readingMode));
-    globalThis.dispatchEvent?.(new CustomEvent(FOCUS_MODE_CHANGE_EVENT, { detail: { enabled: readingMode } }));
-  }, [readingMode]);
+    if (isAttemptActive) return; // ACTIVE_ATTEMPT already sets its own data-layout-mode
+    document.documentElement.dataset.layoutMode = readingMode ? 'focus' : 'content';
+  }, [readingMode, isAttemptActive]);
 
   useEffect(() => {
     if (!readingMode) return;
@@ -119,20 +121,25 @@ function StudentActivityPageShell({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [readingMode]);
 
+  const isFullWidth = isAttemptActive || readingMode;
+
   return (
     <div className="bg-background text-foreground min-h-[calc(100dvh-4rem)]">
-      <ActivityHeader
-        onToggleReadingMode={() => setReadingMode((value) => !value)}
-        readingMode={readingMode}
-        vm={vm}
-      />
+      {!isAttemptActive ? (
+        <ActivityHeader
+          onToggleReadingMode={() => setReadingMode((value) => !value)}
+          readingMode={readingMode}
+          vm={vm}
+        />
+      ) : null}
       <main
         className={cn(
           'mx-auto grid w-full max-w-[100rem] gap-6 px-4 pb-28 pt-4 sm:px-6 lg:px-8',
-          readingMode ? 'grid-cols-1 xl:max-w-5xl' : 'lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)_19rem]',
+          isFullWidth ? 'grid-cols-1' : 'lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)_19rem]',
+          isAttemptActive && 'max-w-none px-0 pb-0 pt-0 sm:px-0 lg:px-0',
         )}
       >
-        {!readingMode ? (
+        {!isFullWidth ? (
           <aside className="hidden lg:block">
             <ActivityOutline
               vm={vm}
@@ -141,8 +148,10 @@ function StudentActivityPageShell({
           </aside>
         ) : null}
 
-        <section className="min-w-0">
-          {readingMode ? (
+        <section
+          id="activity-main-content"
+          className={cn('min-w-0', isAttemptActive && 'w-full')}>
+          {readingMode && !isAttemptActive ? (
             <ReadingModeBar
               onExit={() => setReadingMode(false)}
               vm={vm}
@@ -150,7 +159,7 @@ function StudentActivityPageShell({
           ) : null}
           <ActivityContentRenderer
             activity={activity}
-            assessmentUrl={vm.state.assessmentUrl}
+            assessmentUuid={assessmentUuid}
             canView={vm.permissions.canView}
             course={course}
             courseuuid={courseuuid}
@@ -158,7 +167,7 @@ function StudentActivityPageShell({
           />
         </section>
 
-        {!readingMode ? (
+        {!isFullWidth ? (
           <aside className="hidden xl:block">
             <ActivityActionPanel
               activity={activity}
@@ -168,7 +177,7 @@ function StudentActivityPageShell({
           </aside>
         ) : null}
       </main>
-      {!readingMode ? (
+      {!isAttemptActive ? (
         <ActivityMobileActionBar
           activity={activity}
           vm={vm}
@@ -421,32 +430,6 @@ function PrimaryAction({
     );
   }
 
-  if (vm.state.isAssessmentHandoff && vm.state.assessmentUrl) {
-    return (
-      <Button
-        className="w-full"
-        nativeButton={false}
-        render={<Link href={vm.state.assessmentUrl} />}
-      >
-        <ClipboardList className="size-4" />
-        {t('openAssessment')}
-      </Button>
-    );
-  }
-
-  if (vm.activity?.type === 'TYPE_FILE_SUBMISSION') {
-    return (
-      <Button
-        className="w-full"
-        variant="secondary"
-        disabled
-      >
-        <FileArchive className="size-4" />
-        {t('fileSubmissionInlineAction')}
-      </Button>
-    );
-  }
-
   if (vm.progress.currentComplete && vm.progress.next) {
     return (
       <Button
@@ -487,6 +470,17 @@ function ActivityMobileActionBar({ activity, vm }: { activity: Activity | null; 
   const completion = useActivityCompletion(vm);
   const t = useTranslations('ActivityPage');
   const router = useRouter();
+  const { mode } = useActivityLayout();
+
+  const isAssessmentType =
+    activity?.activity_type === 'TYPE_EXAM' ||
+    activity?.activity_type === 'TYPE_CODE_CHALLENGE' ||
+    activity?.activity_type === 'TYPE_CUSTOM' ||
+    activity?.activity_type === 'TYPE_FILE_SUBMISSION';
+
+  function scrollToContent() {
+    document.getElementById('activity-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   return (
     <div className="border-border bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t p-3 backdrop-blur xl:hidden">
@@ -497,23 +491,7 @@ function ActivityMobileActionBar({ activity, vm }: { activity: Activity | null; 
           vm={vm}
         />
         <div className="min-w-0 flex-1">
-          {vm.state.isAssessmentHandoff && vm.state.assessmentUrl ? (
-            <Button
-              className="w-full"
-              nativeButton={false}
-              render={<Link href={vm.state.assessmentUrl} />}
-            >
-              {t('openAssessment')}
-            </Button>
-          ) : vm.activity?.type === 'TYPE_FILE_SUBMISSION' ? (
-            <Button
-              className="w-full"
-              variant="secondary"
-              disabled
-            >
-              {t('fileSubmissionInlineAction')}
-            </Button>
-          ) : completion.canMarkComplete ? (
+          {completion.canMarkComplete ? (
             <Button
               className="w-full"
               onClick={vm.progress.currentComplete ? completion.unmarkComplete : completion.markComplete}
@@ -521,6 +499,23 @@ function ActivityMobileActionBar({ activity, vm }: { activity: Activity | null; 
             >
               {completion.isPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
               {vm.progress.currentComplete ? t('statusComplete') : t('markAsComplete')}
+            </Button>
+          ) : isAssessmentType && mode === 'PREFLIGHT' ? (
+            <Button
+              className="w-full"
+              onClick={scrollToContent}
+            >
+              <Layers className="size-4" />
+              {t('viewAssessment')}
+            </Button>
+          ) : isAssessmentType && mode === 'RESULT' ? (
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={scrollToContent}
+            >
+              <CheckCircle2 className="size-4" />
+              {t('viewResult')}
             </Button>
           ) : activity && vm.progress.next ? (
             <Button

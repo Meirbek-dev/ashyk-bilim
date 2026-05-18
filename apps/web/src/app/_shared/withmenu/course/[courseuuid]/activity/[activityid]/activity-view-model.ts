@@ -58,8 +58,6 @@ export interface StudentActivityViewModel {
   };
   state: {
     isCourseEnd: boolean;
-    isAssessmentHandoff: boolean;
-    assessmentUrl: string | null;
   };
 }
 
@@ -72,7 +70,7 @@ export function buildStudentActivityViewModel(options: {
   isAuthenticated: boolean;
   trailData?: any;
 }): StudentActivityViewModel {
-  const { activity, activityId, assessmentUuid, canContribute, course, isAuthenticated, trailData } = options;
+  const { activity, activityId, canContribute, course, isAuthenticated, trailData } = options;
   const cleanCourseUuid = normalizeCourseUuid(course.course_uuid);
   const cleanCurrentActivityId = normalizeActivityUuid(activityId);
   const activityIndex = buildCourseActivityIndex<Activity>(course.chapters);
@@ -97,13 +95,6 @@ export function buildStudentActivityViewModel(options: {
   const current = currentIndexed ? toNavItem(currentIndexed, currentIndex, completedActivityIds) : null;
   const currentComplete = current?.complete ?? false;
   const canView = activityId === 'end' || !activity || activity.published === true || canContribute;
-  const isAssessmentHandoff = Boolean(
-    activity &&
-      assessmentUuid &&
-      (activity.activity_type === 'TYPE_EXAM' ||
-        activity.activity_type === 'TYPE_CODE_CHALLENGE' ||
-        activity.activity_type === 'TYPE_CUSTOM'),
-  );
 
   return {
     course: {
@@ -115,7 +106,7 @@ export function buildStudentActivityViewModel(options: {
     activity: current,
     title: activityId === 'end' ? course.name ?? '' : activity?.name ?? current?.title ?? '',
     chapterTitle: currentIndexed?.chapterName ?? null,
-    status: getStatus({ activity, canView, currentComplete, isAssessmentHandoff, isCourseEnd: activityId === 'end' }),
+    status: getStatus({ activity, canView, currentComplete, isCourseEnd: activityId === 'end' }),
     progress: {
       totalActivities: activityIndex.allActivities.length,
       completedActivities: activityIndex.allActivities.filter((candidate) =>
@@ -136,8 +127,6 @@ export function buildStudentActivityViewModel(options: {
     },
     state: {
       isCourseEnd: activityId === 'end',
-      isAssessmentHandoff,
-      assessmentUrl: assessmentUuid ? `/assessments/${assessmentUuid.replace(/^assessment_/, '')}` : null,
     },
   };
 }
@@ -178,12 +167,10 @@ function getStatus(options: {
   activity: Activity | null;
   canView: boolean;
   currentComplete: boolean;
-  isAssessmentHandoff: boolean;
   isCourseEnd: boolean;
 }): StudentActivityStatus {
   if (options.isCourseEnd) return 'course_end';
   if (!options.activity || !options.canView) return 'unavailable';
-  if (options.isAssessmentHandoff) return 'assessment';
   if (options.currentComplete) return 'complete';
   return 'not_started';
 }

@@ -621,7 +621,9 @@
     "noAction": "No action available",
     "notStarted": "Not started",
     "submitted": "Submitted",
-    "support": "Support"
+    "support": "Support",
+    "viewAssessment": "Перейти к заданию",
+    "viewResult": "Смотреть результат"
   },
   "AdminUtils": {
     "priority": {
@@ -6551,6 +6553,9 @@
       "keyboardHintPrevKey": "k",
       "keyboardHintForward": "Следующий студент",
       "keyboardHintBackward": "Предыдущий студент",
+      "keyboardHintFocusGrade": "Фокус на поле оценки",
+      "keyboardHintSave": "Сохранить черновик",
+      "keyboardHintPublish": "Опубликовать",
       "keyboardHint": "Горячие клавиши",
       "loadingSubmission": "Загрузка работы...",
       "formUnavailable": "Форма оценивания недоступна."
@@ -7428,6 +7433,7 @@
             "published": "Выбранные оценки опубликованы",
             "returned": "Выбранные работы возвращены",
             "bulkActionFailed": "Массовое действие не удалось",
+            "bulkPartialFailure": "{failed} работа(ы) не удалось обновить — смотрите подробности ниже.",
             "deadlineQueued": "Продление срока поставлено в очередь",
             "extendFailed": "Не удалось продлить срок",
             "hiddenReleased": "Скрытые оценки опубликованы",
@@ -7442,6 +7448,7 @@
             "releaseFinished": "Публикация оценок завершена",
             "releaseDetail": "Новых видимых: {published}. Уже видимых: {alreadyVisible}."
           },
+          "failedSubmissionsTitle": "{count} работа(ы) не удалось обновить:",
           "preview": {
             "selectedSubmissions": "Выбранные работы",
             "gradeReady": "Готово к оценке",
@@ -8322,6 +8329,26 @@
           }
         }
       }
+    },
+    "ActivityWorkspace": {
+      "questions": "Вопросы",
+      "timeLimit": "Ограничение по времени",
+      "unlimited": "Без ограничений",
+      "attempts": "Попытки",
+      "dueDate": "Срок сдачи",
+      "assessmentBlocked": "Это задание сейчас недоступно для вас.",
+      "waitingForRelease": "Ваша работа получена. Оценка будет опубликована после проверки преподавателем.",
+      "startAssessment": "Начать задание",
+      "startRevision": "Начать пересдачу",
+      "revision": "Пересдача",
+      "returnedForRevision": "Возвращено на доработку",
+      "passed": "Пройдено",
+      "failed": "Не пройдено",
+      "pendingGrade": "Ожидание оценки",
+      "assessmentSubmitted": "Задание отправлено",
+      "gradeNotYetReleased": "Оценка ещё не опубликована. Проверьте позже.",
+      "retryAssessment": "Повторить задание",
+      "nextActivity": "Следующее задание"
     }
   },
   "Themes": {

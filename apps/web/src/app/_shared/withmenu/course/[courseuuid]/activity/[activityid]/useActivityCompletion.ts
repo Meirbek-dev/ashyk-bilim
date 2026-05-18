@@ -25,9 +25,7 @@ export function useActivityCompletion(vm: StudentActivityViewModel) {
         vm.activity &&
           vm.permissions.isAuthenticated &&
           vm.permissions.canView &&
-          !vm.state.isCourseEnd &&
-          !vm.state.isAssessmentHandoff &&
-          vm.activity.type !== 'TYPE_FILE_SUBMISSION',
+          !vm.state.isCourseEnd,
       ),
     [vm],
   );

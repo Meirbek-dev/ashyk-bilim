@@ -1,78 +1,65 @@
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { cache } from 'react';
 
 import { getSession } from '@/lib/auth/session';
-import { SessionProvider } from '@/components/providers/session-provider';
-import { jetBrainsMono } from '@/lib/fonts';
 import { getAssessmentByUuid } from '@services/assessments/assessments';
-import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
-import { assessmentByActivityQueryOptions } from '@/features/assessments/queries';
-import AssessmentAttemptClient from './AssessmentAttemptClient';
 
 interface Props {
   params: Promise<{ assessmentUuid: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
-
-const fetchAssessment = cache((assessmentUuid: string) => getAssessmentByUuid(assessmentUuid));
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const { assessmentUuid } = await props.params;
-  const assessment = await fetchAssessment(assessmentUuid);
-  if (!assessment) {
-    return { title: 'Assessment not found' };
-  }
-  return {
-    title: assessment.title,
-    description: assessment.description,
-    openGraph: {
-      title: assessment.title,
-      description: assessment.description,
-    },
-    robots: { index: false },
-  };
+  const assessment = await getAssessmentByUuid(assessmentUuid);
+  if (!assessment) return { title: 'Assessment not found' };
+  return { title: assessment.title, robots: { index: false } };
 }
 
+/**
+ * Standalone /assessments/:uuid route — redirects to the canonical activity
+ * URL so the student stays within the course context.
+ *
+ * The inline InlineAssessmentWorkspace on the activity page handles the actual
+ * attempt UI; this route exists only for backward-compatible deep-links.
+ *
+ * Redirect target:
+ *  - Student: /course/{courseUuid}/activity/{activityUuid}
+ *  - Teacher (review param): /editor/course/{courseUuid}/activity/{activityUuid}?tab=review&submission={submissionUuid}
+ * Fallback (no course): notFound()
+ */
 export default async function AssessmentAttemptPage(props: Props) {
   const { assessmentUuid } = await props.params;
+  const searchParams = await props.searchParams;
+  const reviewSubmissionUuid = typeof searchParams.review === 'string' ? searchParams.review : null;
 
-  const [assessment, initialSession] = await Promise.all([fetchAssessment(assessmentUuid), getSession()]);
+  const [assessment, initialSession] = await Promise.all([getAssessmentByUuid(assessmentUuid), getSession()]);
 
-  if (!assessment) {
-    notFound();
-  }
+  if (!assessment) notFound();
 
-  // If no session, redirect to login
   if (!initialSession) {
-    redirect(`/auth/login?callbackUrl=/assessments/${assessmentUuid}`);
+    const callbackUrl = reviewSubmissionUuid
+      ? `/assessments/${assessmentUuid}?review=${reviewSubmissionUuid}`
+      : `/assessments/${assessmentUuid}`;
+    redirect(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
-  console.info('[ASSESSMENT_FLOW_ROUTE]', {
-    routeMode: 'canonical',
-    surface: 'attempt',
-    assessmentUuid: assessment.assessment_uuid,
-    activityUuid: assessment.activity_uuid,
-    kind: assessment.kind,
-  });
+  // Redirect to canonical URL when course context is available
+  if (assessment.course_uuid && assessment.activity_uuid) {
+    const cleanCourse = assessment.course_uuid.replace(/^course_/, '');
+    const cleanActivity = assessment.activity_uuid.replace(/^activity_/, '');
 
-  const queryClient = new QueryClient();
+    // Teacher review deep-link: ?review={submissionUuid} → editor review tab
+    if (reviewSubmissionUuid) {
+      const cleanSubmission = reviewSubmissionUuid.replace(/^submission_/, '');
+      redirect(
+        `/editor/course/${cleanCourse}/activity/${cleanActivity}?tab=review&submission=${cleanSubmission}`,
+      );
+    }
 
-  // Prefetch the activity-keyed assessment data that AssessmentLayout will need,
-  // so the client doesn't duplicate this fetch after hydration.
-  if (assessment.activity_uuid) {
-    await queryClient.prefetchQuery(assessmentByActivityQueryOptions(assessment.activity_uuid));
+    redirect(`/course/${cleanCourse}/activity/${cleanActivity}`);
   }
 
-  return (
-    <div className={jetBrainsMono.variable}>
-      <SessionProvider initialSession={initialSession}>
-        <HydrationBoundary state={dehydrate(queryClient)}>
-          <AssessmentAttemptClient
-            activityUuid={assessment.activity_uuid}
-            courseUuid={assessment.course_uuid ?? ''}
-          />
-        </HydrationBoundary>
-      </SessionProvider>
-    </div>
-  );
+  // No course context — render a minimal standalone shell (future: teacher preview)
+  notFound();
 }

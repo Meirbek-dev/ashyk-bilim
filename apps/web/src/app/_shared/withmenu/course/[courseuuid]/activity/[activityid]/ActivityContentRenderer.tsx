@@ -1,13 +1,11 @@
 'use client';
 
-import { ClipboardList, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext';
 import CourseEndView from '@components/Pages/Activity/CourseEndView';
-import { Button } from '@/components/ui/button';
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail';
 
 const InteractiveViewer = dynamic(
@@ -28,21 +26,26 @@ const DocumentPdfActivity = dynamic(() => import('@components/Objects/Activities
   ssr: false,
 });
 
-const FileSubmissionActivity = dynamic(() => import('@/features/file-submissions/student/FileSubmissionActivity'), {
+const FileSubmissionWorkspace = dynamic(() => import('@/features/file-submissions/student/FileSubmissionWorkspace'), {
   loading: () => <LoadingFallback />,
   ssr: false,
 });
 
+const InlineAssessmentWorkspace = dynamic(
+  () => import('@/features/assessments/shell/InlineAssessmentWorkspace'),
+  { loading: () => <LoadingFallback />, ssr: false },
+);
+
 export function ActivityContentRenderer({
   activity,
-  assessmentUrl,
+  assessmentUuid,
   canView,
   course,
   courseuuid,
   isCourseEnd,
 }: {
   activity: Activity | null;
-  assessmentUrl: string | null;
+  assessmentUuid: string | null;
   canView: boolean;
   course: CourseStructure;
   courseuuid: string;
@@ -101,7 +104,7 @@ export function ActivityContentRenderer({
     case 'TYPE_FILE_SUBMISSION': {
       return (
         <section className="mx-auto w-full max-w-5xl">
-          <FileSubmissionActivity
+          <FileSubmissionWorkspace
             course={course}
             activity={activity}
           />
@@ -111,10 +114,11 @@ export function ActivityContentRenderer({
     case 'TYPE_EXAM':
     case 'TYPE_CODE_CHALLENGE':
     case 'TYPE_CUSTOM': {
+      const cleanActivityUuid = activity.activity_uuid?.replace(/^activity_/, '') ?? '';
       return (
-        <AssessmentHandoff
-          assessmentUrl={assessmentUrl}
-          type={activity.activity_type}
+        <InlineAssessmentWorkspace
+          activityUuid={cleanActivityUuid}
+          courseUuid={courseuuid}
         />
       );
     }
@@ -126,34 +130,6 @@ export function ActivityContentRenderer({
       );
     }
   }
-}
-
-function AssessmentHandoff({ assessmentUrl, type }: { assessmentUrl: string | null; type: string }) {
-  const t = useTranslations('ActivityPage');
-  return (
-    <div className="mx-auto flex min-h-[28rem] max-w-2xl flex-col items-center justify-center gap-5 text-center">
-      <div className="bg-muted flex size-14 items-center justify-center rounded-lg">
-        <ClipboardList className="size-7 text-muted-foreground" />
-      </div>
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold tracking-tight">{getAssessmentTitle(type, t)}</h2>
-        <p className="text-muted-foreground text-sm leading-6">{t('assessmentDescription')}</p>
-      </div>
-      {assessmentUrl ? (
-        <Button
-          nativeButton={false}
-          render={<Link href={assessmentUrl} />}
-          size="lg"
-        >
-          {t('openAssessment')}
-        </Button>
-      ) : (
-        <p className="border-border bg-muted/30 rounded-md border px-3 py-2 text-sm text-muted-foreground">
-          {t('assessmentUnavailable')}
-        </p>
-      )}
-    </div>
-  );
 }
 
 function CourseEndPanel({ course, courseuuid }: { course: CourseStructure; courseuuid: string }) {
@@ -175,12 +151,6 @@ export function LoadingFallback() {
       <Loader2 className="size-6 animate-spin" />
     </div>
   );
-}
-
-function getAssessmentTitle(type: string, t: (key: string) => string): string {
-  if (type === 'TYPE_CODE_CHALLENGE') return t('activityTypes.codeChallenge');
-  if (type === 'TYPE_CUSTOM') return t('activityTypes.learningMaterial');
-  return t('assessmentTitle');
 }
 
 function getValidTiptapContent(content: any): any {

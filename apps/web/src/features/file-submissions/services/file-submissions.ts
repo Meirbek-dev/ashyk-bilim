@@ -197,6 +197,17 @@ export async function submitFileSubmission(
 }
 
 export async function uploadSubmissionFile(file: File): Promise<{ upload_uuid: string; filename: string }> {
+  return uploadSubmissionFileWithProgress(file);
+}
+
+/**
+ * Upload a file with optional per-byte progress callback.
+ * Uses XMLHttpRequest for the PUT step so the `onprogress` event fires.
+ */
+export async function uploadSubmissionFileWithProgress(
+  file: File,
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<{ upload_uuid: string; filename: string }> {
   const createResponse = await apiFetch('uploads', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -210,13 +221,26 @@ export async function uploadSubmissionFile(file: File): Promise<{ upload_uuid: s
     upload_uuid: string;
     put_url: string;
   }>(createResponse);
-  const putResponse = await apiFetch(created.put_url, {
-    method: 'PUT',
-    headers: file.type ? { 'Content-Type': file.type } : undefined,
-    body: file,
-    timeoutMs: false,
+
+  // Use XHR for progress events on the large-binary PUT step
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', created.put_url);
+    if (file.type) xhr.setRequestHeader('Content-Type', file.type);
+    if (onProgress) {
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) onProgress(event.loaded, event.total);
+      });
+    }
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Upload failed: ${xhr.statusText || xhr.status}`));
+    });
+    xhr.addEventListener('error', () => reject(new Error('Upload network error')));
+    xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
+    xhr.send(file);
   });
-  await readJsonOrThrow<unknown>(putResponse);
+
   const digest = await sha256(file);
   const finalizeResponse = await apiFetch(`uploads/${created.upload_uuid}/finalize`, {
     method: 'POST',

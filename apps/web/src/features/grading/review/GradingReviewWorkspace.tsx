@@ -130,6 +130,15 @@ export default function GradingReviewWorkspace({
         event.preventDefault();
         selectByOffset(-1);
       }
+      if (event.key === 'g' || event.key === 'G') {
+        event.preventDefault();
+        // Focus the score input in GradeForm (or first item score input)
+        const scoreEl =
+          (document.getElementById('review-score') as HTMLInputElement | null) ??
+          (document.querySelector('[data-grade-input]') as HTMLInputElement | null);
+        scoreEl?.focus();
+        scoreEl?.select();
+      }
     };
     globalThis.addEventListener('keydown', handleKeyDown);
     return () => globalThis.removeEventListener('keydown', handleKeyDown);

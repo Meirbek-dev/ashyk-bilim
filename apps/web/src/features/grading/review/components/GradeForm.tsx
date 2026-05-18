@@ -12,7 +12,7 @@ import {
   RotateCcw,
   Send,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 
@@ -204,6 +204,28 @@ export default function GradeForm({
     'release_state' in submission && submission.release_state
       ? submission.release_state
       : getReleaseState(submission.status);
+
+  // Ctrl+Enter saves draft; Ctrl+Shift+Enter publishes
+  const handleCtrlEnter = useCallback(
+    (event: KeyboardEvent) => {
+      if (!editable || isSaving) return;
+      const isCtrl = event.ctrlKey || event.metaKey;
+      if (!isCtrl || event.key !== 'Enter') return;
+      event.preventDefault();
+      if (hasItemGrading) {
+        saveWithItemGrading(event.shiftKey ? 'publish' : 'save');
+      } else {
+        saveOverallScore(event.shiftKey ? 'PUBLISHED' : 'GRADED');
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [editable, isSaving, hasItemGrading],
+  );
+
+  useEffect(() => {
+    globalThis.addEventListener('keydown', handleCtrlEnter);
+    return () => globalThis.removeEventListener('keydown', handleCtrlEnter);
+  }, [handleCtrlEnter]);
 
   return (
     <aside className="space-y-5 p-4 xl:sticky xl:top-0 xl:h-[calc(100vh-96px)] xl:overflow-y-auto">
@@ -515,12 +537,18 @@ export default function GradeForm({
 
       {/* ── Keyboard legend ────────────────────────────────────────────── */}
       <div className="border-t pt-3">
-        <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+        <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           <Keyboard className="size-3.5" />
           <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintNextKey')}</kbd>{' '}
           {t('keyboardHintForward')}
           <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintPrevKey')}</kbd>{' '}
           {t('keyboardHintBackward')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">G</kbd>{' '}
+          {t('keyboardHintFocusGrade')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">Ctrl↵</kbd>{' '}
+          {t('keyboardHintSave')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">Ctrl⇧↵</kbd>{' '}
+          {t('keyboardHintPublish')}
         </div>
       </div>
     </aside>
