@@ -19,7 +19,6 @@
 
 import { testAsTeacher as test, expect } from '../fixtures';
 import { COURSE } from '../fixtures/test-data';
-import { ensureFixtureFiles } from '../utils/fixtures';
 import { ActivityStudioPage } from '../page-objects/ActivityStudioPage';
 
 // Persist course UUID across serial tests

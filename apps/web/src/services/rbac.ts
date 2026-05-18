@@ -12,7 +12,6 @@ import type {
   Role,
   RoleAuditListResponse,
   UpdateRoleBody,
-  UserRBACData,
   UserRoleAssignment,
 } from '@/types/permissions';
 import { apiFetch } from '@/lib/api-client';

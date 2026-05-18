@@ -1,4 +1,3 @@
-import { getAPIUrl } from '@services/config/config';
 import { logoutAction } from '@/app/actions/auth';
 import { apiFetch } from '@/lib/api-client';
 import { broadcastLogout } from '@/components/providers/session-provider';

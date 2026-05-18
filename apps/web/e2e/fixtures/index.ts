@@ -7,7 +7,7 @@
  * fixture usage.
  */
 
-import { test as base, expect, type Page } from '@playwright/test';
+import { test as base, expect } from '@playwright/test';
 import { STORAGE_STATE } from '../auth-states';
 import { LoginPage } from '../page-objects/LoginPage';
 import { SignupPage } from '../page-objects/SignupPage';

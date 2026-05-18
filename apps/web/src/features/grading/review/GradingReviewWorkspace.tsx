@@ -135,7 +135,7 @@ export default function GradingReviewWorkspace({
         // Focus the score input in GradeForm (or first item score input)
         const scoreEl =
           (document.getElementById('review-score') as HTMLInputElement | null) ??
-          (document.querySelector('[data-grade-input]') as HTMLInputElement | null);
+          (document.querySelector('[data-grade-input]'));
         scoreEl?.focus();
         scoreEl?.select();
       }

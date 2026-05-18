@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 const DashShell = ({ children }: { children: ReactNode }) => {
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen>
       <DashSidebar className="z-50" />
       <SidebarInset className={cn('bg-background flex min-w-0 flex-1 flex-col')}>
         {/* Main Content Area - Rendered exactly once */}

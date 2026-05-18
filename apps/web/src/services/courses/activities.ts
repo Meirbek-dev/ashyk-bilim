@@ -1,9 +1,8 @@
 'use server';
-import { after } from 'next/server';
 
 import { errorHandling, getResponseMetadata } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
-import { shouldUseChunkedUpload, uploadFileChunked } from '@services/utils/chunked-upload';
+import { uploadFileChunked } from '@services/utils/chunked-upload';
 import type { CustomResponseTyping } from '@/lib/api-client';
 import type { components } from '@/lib/api/generated';
 import { getAPIUrl } from '@services/config/config';

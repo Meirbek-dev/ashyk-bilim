@@ -81,6 +81,30 @@ export default function GradeForm({
 
   const maxPossible = useMemo(() => gradedItems.reduce((acc, item) => acc + item.max_score, 0), [gradedItems]);
 
+  const editable = submission ? canTeacherEditGrade(submission.status) : false;
+
+  // Ctrl+Enter saves draft; Ctrl+Shift+Enter publishes
+  const handleCtrlEnter = useCallback(
+    (event: KeyboardEvent) => {
+      if (!editable || isSaving) return;
+      const isCtrl = event.ctrlKey || event.metaKey;
+      if (!isCtrl || event.key !== 'Enter') return;
+      event.preventDefault();
+      if (hasItemGrading) {
+        saveWithItemGrading(event.shiftKey ? 'publish' : 'save');
+      } else {
+        saveOverallScore(event.shiftKey ? 'PUBLISHED' : 'GRADED');
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [editable, isSaving, hasItemGrading],
+  );
+
+  useEffect(() => {
+    globalThis.addEventListener('keydown', handleCtrlEnter);
+    return () => globalThis.removeEventListener('keydown', handleCtrlEnter);
+  }, [handleCtrlEnter]);
+
   useEffect(() => {
     // Sync overall draft from server
     setDraft({
@@ -197,35 +221,12 @@ export default function GradeForm({
     return <aside className="text-muted-foreground p-4 text-sm">{t('formUnavailable')}</aside>;
   }
 
-  const editable = canTeacherEditGrade(submission.status);
   const canPublishNow = canPublishGrade(submission.status);
   const canReturnNow = canReturnSubmission(submission.status);
   const releaseState =
     'release_state' in submission && submission.release_state
       ? submission.release_state
       : getReleaseState(submission.status);
-
-  // Ctrl+Enter saves draft; Ctrl+Shift+Enter publishes
-  const handleCtrlEnter = useCallback(
-    (event: KeyboardEvent) => {
-      if (!editable || isSaving) return;
-      const isCtrl = event.ctrlKey || event.metaKey;
-      if (!isCtrl || event.key !== 'Enter') return;
-      event.preventDefault();
-      if (hasItemGrading) {
-        saveWithItemGrading(event.shiftKey ? 'publish' : 'save');
-      } else {
-        saveOverallScore(event.shiftKey ? 'PUBLISHED' : 'GRADED');
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [editable, isSaving, hasItemGrading],
-  );
-
-  useEffect(() => {
-    globalThis.addEventListener('keydown', handleCtrlEnter);
-    return () => globalThis.removeEventListener('keydown', handleCtrlEnter);
-  }, [handleCtrlEnter]);
 
   return (
     <aside className="space-y-5 p-4 xl:sticky xl:top-0 xl:h-[calc(100vh-96px)] xl:overflow-y-auto">

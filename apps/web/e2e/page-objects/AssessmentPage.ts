@@ -1,5 +1,4 @@
 import type { Page, Locator } from '@playwright/test';
-import { expect } from '@playwright/test';
 
 /**
  * Page Object for the Assessment activity from the student perspective.
