@@ -38,7 +38,7 @@ const runtimeCases = [
     expectedType: 'blockMathEquation',
   },
   { title: 'pdf block', run: (editor: Editor) => editor.commands.insertPDFBlock(), expectedType: 'blockPDF' },
-  { title: 'quiz block', run: (editor: Editor) => editor.commands.insertUserBlock(), expectedType: 'blockQuiz' },
+  { title: 'inline quiz', run: (editor: Editor) => editor.commands.insertInlineQuiz(), expectedType: 'inlineQuiz' },
   { title: 'scenario block', run: (editor: Editor) => editor.commands.insertScenarios(), expectedType: 'scenarios' },
   { title: 'user block', run: (editor: Editor) => editor.commands.insertUserBlock(), expectedType: 'blockUser' },
   { title: 'video block', run: (editor: Editor) => editor.commands.insertVideoBlock(), expectedType: 'blockVideo' },

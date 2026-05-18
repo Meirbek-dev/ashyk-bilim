@@ -22,7 +22,7 @@ from src.db.grading.progress import (
     ActivityProgressState,
     AssessmentPolicy,
 )
-from src.db.grading.submissions import Submission
+from src.db.grading.submissions import AssessmentType, Submission
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.trail_runs import TrailRun
 from src.db.usergroup_resources import UserGroupResource
@@ -291,7 +291,7 @@ def _build_activity(
         activity_uuid=activity.activity_uuid,
         name=activity.name,
         activity_type=str(activity.activity_type),
-        assessment_type=policy.assessment_type if policy else None,
+        assessment_type=_gradebook_assessment_type(policy),
         order=activity.order,
         due_at=getattr(file_config, "due_at", None)
         if file_config
@@ -299,6 +299,18 @@ def _build_activity(
         if policy
         else None,
     )
+
+
+def _gradebook_assessment_type(
+    policy: AssessmentPolicy | None,
+) -> AssessmentType | None:
+    if policy is None:
+        return None
+
+    try:
+        return AssessmentType(policy.assessment_type)
+    except ValueError:
+        return None
 
 
 def _build_cell(

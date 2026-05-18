@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext';
+import { normalizeTiptapJsonContent } from '@components/Objects/Editor/core/editor-content';
 import CourseEndView from '@components/Pages/Activity/CourseEndView';
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail';
 
@@ -31,10 +32,10 @@ const FileSubmissionWorkspace = dynamic(() => import('@/features/file-submission
   ssr: false,
 });
 
-const InlineAssessmentWorkspace = dynamic(
-  () => import('@/features/assessments/shell/InlineAssessmentWorkspace'),
-  { loading: () => <LoadingFallback />, ssr: false },
-);
+const InlineAssessmentWorkspace = dynamic(() => import('@/features/assessments/shell/InlineAssessmentWorkspace'), {
+  loading: () => <LoadingFallback />,
+  ssr: false,
+});
 
 export function ActivityContentRenderer({
   activity,
@@ -124,7 +125,7 @@ export function ActivityContentRenderer({
     }
     default: {
       return (
-        <div className="border-border bg-muted/30 rounded-lg border p-6 text-sm text-muted-foreground">
+        <div className="border-border bg-muted/30 text-muted-foreground rounded-lg border p-6 text-sm">
           {t('unsupportedActivityType', { type: activity.activity_type ?? 'unknown' })}
         </div>
       );
@@ -153,16 +154,6 @@ export function LoadingFallback() {
   );
 }
 
-function getValidTiptapContent(content: any): any {
-  if (typeof content === 'string') {
-    try {
-      content = JSON.parse(content);
-    } catch {
-      return { type: 'doc', content: [{ type: 'paragraph' }] };
-    }
-  }
-  if (content && typeof content === 'object' && content.type === 'doc' && Array.isArray(content.content)) {
-    return content;
-  }
-  return { type: 'doc', content: [{ type: 'paragraph' }] };
+function getValidTiptapContent(content: unknown) {
+  return normalizeTiptapJsonContent(content);
 }
