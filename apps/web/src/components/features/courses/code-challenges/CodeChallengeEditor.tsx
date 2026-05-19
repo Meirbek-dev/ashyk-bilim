@@ -314,15 +314,19 @@ export function CodeChallengeEditor({
     }
   }, [code, onSubmit, selectedLanguageId, submitCodeChallengeMutation, t]);
 
-  useEffect(() => {
-    onSubmitControlChange?.({
+  const submitControl = useMemo<CodeChallengeSubmitControl>(
+    () => ({
       canSubmit: !disabled && selectedLanguageId > 0 && Boolean(code.trim()) && !isRunning && !isSubmitting,
       isSubmitting,
       submit: handleSubmit,
-    });
+    }),
+    [code, disabled, handleSubmit, isRunning, isSubmitting, selectedLanguageId],
+  );
 
+  useEffect(() => {
+    onSubmitControlChange?.(submitControl);
     return () => onSubmitControlChange?.(null);
-  }, [code, disabled, handleSubmit, isRunning, isSubmitting, onSubmitControlChange, selectedLanguageId]);
+  }, [submitControl, onSubmitControlChange]);
 
   // Get language name from ID
   const getLanguageName = (languageId: number): string => {

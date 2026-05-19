@@ -1,13 +1,10 @@
 'use client';
 
 import { useCallback, useMemo, useRef } from 'react';
-import type { OnChange, OnMount } from '@monaco-editor/react';
-import dynamic from 'next/dynamic';
+import Editor, { type OnChange, type OnMount } from '@monaco-editor/react';
 
 import { useTheme } from '@/components/providers/theme-provider';
 import { cn } from '@/lib/utils';
-
-const MonacoEditor = dynamic(() => import('@monaco-editor/react').then((mod) => mod.Editor), { ssr: false });
 
 export interface Language {
   id: number;
@@ -83,7 +80,6 @@ export function CodeEditor({
       smoothScrolling: true,
       padding: { top: 16, bottom: 16 },
       readOnly,
-      domReadOnly: readOnly,
       readOnlyMessage: readOnlyMessage ? { value: readOnlyMessage } : undefined,
       ...options,
     }),
@@ -97,7 +93,7 @@ export function CodeEditor({
           {readOnlyMessage}
         </div>
       ) : null}
-      <MonacoEditor
+      <Editor
         height={height}
         language={monacoLanguage ?? getMonacoLanguage(languageId)}
         value={value}
