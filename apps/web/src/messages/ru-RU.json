@@ -548,7 +548,12 @@
     "submittedAt": "Отправлено: {date}",
     "gradedAt": "Оценено: {date}",
     "unmarkComplete": "Снять отметку",
-    "onThisPage": "На этой странице"
+    "onThisPage": "На этой странице",
+    "statusGradingInProgress": "Оценка выполняется",
+    "lockedTitle": "Этот материал недоступен",
+    "lockedReasonLocked": "Для доступа к этому материалу необходимо выполнить предыдущие обязательные задания.",
+    "attemptsUsed": "Использовано {used} из {max} попыток",
+    "attemptsUnlimited": "Неограниченное количество попыток"
   },
   "AdminUtils": {
     "priority": {
@@ -8232,7 +8237,13 @@
       "assessmentSubmitted": "Учебная задача отправлено",
       "gradeNotYetReleased": "Оценка ещё не опубликована. Проверьте позже.",
       "retryAssessment": "Повторить учебная задача",
-      "nextActivity": "Следующее учебная задача"
+      "nextActivity": "Следующее учебная задача",
+      "breakdown": "Посмотреть ответы",
+      "attempt": "Попытка",
+      "attemptHistory": "История попыток",
+      "antiCheatNotice": "Это задание отслеживает активность браузера. Не переключайте вкладки во время выполнения.",
+      "passingScore": "Проходной балл",
+      "submittedOn": "Отправлено {date}"
     }
   },
   "Themes": {

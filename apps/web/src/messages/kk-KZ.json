@@ -543,7 +543,12 @@
     "submittedAt": "Жіберілді: {date}",
     "gradedAt": "Бағаланды: {date}",
     "unmarkComplete": "Аяқтау белгісін алу",
-    "onThisPage": "Осы бетте"
+    "onThisPage": "Осы бетте",
+    "statusGradingInProgress": "Бағалануда",
+    "lockedTitle": "Бұл материал қолжетімсіз",
+    "lockedReasonLocked": "Бұл материалға қатынасу үшін алдыңғы міндетті тапсырмаларды аяқтаңыз.",
+    "attemptsUsed": "{max} әрекеттің {used} пайдаланылды",
+    "attemptsUnlimited": "Өлшеусіз әрекет"
   },
   "AdminUtils": {
     "priority": {
@@ -8367,7 +8372,13 @@
       "assessmentSubmitted": "Оқу әрекеті жіберілді",
       "gradeNotYetReleased": "Баға әлі жарияланған жоқ. Кейінірек тексеріңіз.",
       "retryAssessment": "Оқу әрекетіны қайталау",
-      "nextActivity": "Келесі оқу әрекеті"
+      "nextActivity": "Келесі оқу әрекеті",
+      "breakdown": "Жауаптарды қарау",
+      "attempt": "Әрекет",
+      "attemptHistory": "Әрекет тарихы",
+      "antiCheatNotice": "Бұл тапсырма браузер белсенділігін бақылайды. Орындау кезінде қойындыларды ауыстырмаңыз.",
+      "passingScore": "Өту балы",
+      "submittedOn": "Жіберілді {date}"
     }
   },
   "Themes": {

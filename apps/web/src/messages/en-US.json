@@ -544,7 +544,12 @@
     "submittedAt": "Submitted {date}",
     "gradedAt": "Graded {date}",
     "unmarkComplete": "Unmark complete",
-    "onThisPage": "On this page"
+    "onThisPage": "On this page",
+    "statusGradingInProgress": "Grading in progress",
+    "lockedTitle": "This activity is not available",
+    "lockedReasonLocked": "You need to complete prerequisite activities before you can access this one.",
+    "attemptsUsed": "{used} of {max} attempts used",
+    "attemptsUnlimited": "Unlimited attempts"
   },
   "AdminUtils": {
     "priority": {
@@ -8178,7 +8183,13 @@
       "assessmentSubmitted": "Assessment submitted",
       "gradeNotYetReleased": "Your grade has not been released yet. Check back later.",
       "retryAssessment": "Retry assessment",
-      "nextActivity": "Next activity"
+      "nextActivity": "Next activity",
+      "breakdown": "View answers",
+      "attempt": "Attempt",
+      "attemptHistory": "Attempt history",
+      "antiCheatNotice": "This assessment monitors browser activity. Do not switch tabs or windows during the attempt.",
+      "passingScore": "Pass",
+      "submittedOn": "Submitted {date}"
     }
   },
   "Themes": {
