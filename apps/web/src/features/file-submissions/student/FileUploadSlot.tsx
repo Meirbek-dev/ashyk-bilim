@@ -1,6 +1,7 @@
 'use client';
 
 import { CheckCircle2, FileWarning, Loader2, Paperclip, Trash2, XCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { cn } from '@/lib/utils';
 
@@ -39,6 +40,7 @@ interface FileUploadSlotProps {
  * A single row showing a file's upload state with a progress bar.
  */
 export default function FileUploadSlot({ slot, onRemove, readonly = false }: FileUploadSlotProps) {
+  const t = useTranslations('FileSubmission');
   const isUploading = slot.status === 'uploading';
   const isSaved = slot.status === 'saved';
   const isFailed = slot.status === 'failed';
@@ -51,7 +53,7 @@ export default function FileUploadSlot({ slot, onRemove, readonly = false }: Fil
           {isUploading ? (
             <Loader2 className="text-primary size-4 animate-spin" />
           ) : isSaved ? (
-            <CheckCircle2 className="size-4 text-green-600" />
+            <CheckCircle2 className="text-primary size-4" />
           ) : isFailed ? (
             <XCircle className="text-destructive size-4" />
           ) : (
@@ -76,7 +78,7 @@ export default function FileUploadSlot({ slot, onRemove, readonly = false }: Fil
             type="button"
             className="text-muted-foreground hover:text-destructive rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
             onClick={() => onRemove(slot.id)}
-            aria-label={`Remove ${slot.file.name}`}
+            aria-label={t('removeFile', { name: slot.file.name })}
             disabled={isUploading}
           >
             <Trash2 className="size-4" />

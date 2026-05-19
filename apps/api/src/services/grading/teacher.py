@@ -67,8 +67,9 @@ _ALLOWED_TEACHER_TRANSITIONS: dict[SubmissionStatus, frozenset[SubmissionStatus]
         SubmissionStatus.PUBLISHED,
     }),
     SubmissionStatus.PUBLISHED: frozenset({
-        SubmissionStatus.PUBLISHED,  # Idempotent publish should be allowed
-        SubmissionStatus.RETURNED,  # allow recalling a published grade for correction
+        # Published grades are student-visible records. Corrections stay
+        # published and write a new GradingEntry audit revision.
+        SubmissionStatus.PUBLISHED,
     }),
 }
 

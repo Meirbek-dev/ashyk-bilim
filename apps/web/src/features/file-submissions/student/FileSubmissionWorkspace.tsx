@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CalendarClock, CheckCircle2, Clock, FileArchive, LoaderCircle, Paperclip, Send } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import type { Activity, CourseStructure } from '@components/Contexts/CourseContext';
@@ -17,7 +18,7 @@ import {
   submitFileSubmission,
   uploadSubmissionFileWithProgress,
 } from '@/features/file-submissions/services/file-submissions';
-import type { FileSubmissionAttemptFile } from '@/features/file-submissions/services/file-submissions';
+import type { FileSubmissionAttempt, FileSubmissionAttemptFile } from '@/features/file-submissions/services/file-submissions';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import FileUploadSlot from './FileUploadSlot';
 import type { PendingFileSlot } from './FileUploadSlot';
@@ -33,6 +34,14 @@ interface FileSubmissionWorkspaceProps {
 
 const queryKey = (activityUuid: string) => ['file-submission', 'activity', activityUuid] as const;
 
+function fileSubmissionQueryOptions(activityUuid: string) {
+  return queryOptions({
+    queryKey: queryKey(activityUuid),
+    queryFn: () => getFileSubmissionByActivity(activityUuid),
+    enabled: Boolean(activityUuid),
+  });
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function isAllowedFile(file: File, allowedMimes: string[], maxMb?: number | null): boolean {
@@ -42,13 +51,6 @@ function isAllowedFile(file: File, allowedMimes: string[], maxMb?: number | null
     if (mime.endsWith('/*')) return file.type.startsWith(mime.slice(0, -1));
     return file.type === mime;
   });
-}
-
-function buildRequirements(maxFiles: number, maxMb?: number | null, mimes?: string[]): string[] {
-  const list = [`Up to ${maxFiles} file${maxFiles === 1 ? '' : 's'}`];
-  if (maxMb) list.push(`${maxMb} MB each`);
-  if (mimes?.length) list.push(mimes.map(getFriendlyMimeName).join(', '));
-  return list;
 }
 
 function formatDueDate(value: string): string {
@@ -72,6 +74,7 @@ function formatDueDate(value: string): string {
  * Files are uploaded using XHR so per-byte progress events are available.
  */
 export default function FileSubmissionWorkspace({ activity }: FileSubmissionWorkspaceProps) {
+  const t = useTranslations('FileSubmission');
   const activityUuid = activity.activity_uuid?.replace(/^activity_/, '') ?? '';
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -80,11 +83,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
   // ── Query ─────────────────────────────────────────────────────────────────
 
-  const { data, isLoading } = useQuery({
-    queryKey: queryKey(activityUuid),
-    queryFn: () => getFileSubmissionByActivity(activityUuid),
-    enabled: Boolean(activityUuid),
-  });
+  const { data, isLoading } = useQuery(fileSubmissionQueryOptions(activityUuid));
 
   const activeAttempt = data?.current_attempt ?? null;
   const status = activeAttempt?.status ?? null;
@@ -94,8 +93,13 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 
   const canEdit = !status || status === 'DRAFT' || status === 'RETURNED';
   const requirements = useMemo(
-    () => buildRequirements(maxFiles, data?.max_file_size_mb, data?.allowed_mime_types),
-    [maxFiles, data?.max_file_size_mb, data?.allowed_mime_types],
+    () => {
+      const list = [t('requirementMaxFiles', { count: maxFiles })];
+      if (data?.max_file_size_mb) list.push(t('requirementMaxSize', { size: data.max_file_size_mb }));
+      if (data?.allowed_mime_types?.length) list.push(data.allowed_mime_types.map(getFriendlyMimeName).join(', '));
+      return list;
+    },
+    [data?.allowed_mime_types, data?.max_file_size_mb, maxFiles, t],
   );
 
   // Invalidate trail XP when grade is published so the progress bar updates
@@ -115,8 +119,8 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
       const rejected = [...fileList].slice(available);
       const valid = accepted.filter((f) => isAllowedFile(f, data.allowed_mime_types, data.max_file_size_mb));
       const invalid = accepted.filter((f) => !isAllowedFile(f, data.allowed_mime_types, data.max_file_size_mb));
-      if (rejected.length) toast.error(`Maximum ${maxFiles} file${maxFiles === 1 ? '' : 's'} allowed`);
-      if (invalid.length) toast.error('Some files do not meet activity requirements');
+      if (rejected.length) toast.error(t('maxFilesAllowed', { count: maxFiles }));
+      if (invalid.length) toast.error(t('invalidFiles'));
       setSlots((prev) => [
         ...prev,
         ...valid.map((f) => ({
@@ -127,14 +131,14 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
         })),
       ]);
     },
-    [data, maxFiles, totalSelected],
+    [data, maxFiles, t, totalSelected],
   );
 
   // ── Upload + save/submit ──────────────────────────────────────────────────
 
   const saveMutation = useMutation({
     mutationFn: async ({ submit }: { submit: boolean }) => {
-      if (!data) throw new Error('File submission not available');
+      if (!data) throw new Error(t('notAvailable'));
       setIsUploading(true);
 
       // Ensure draft exists
@@ -159,7 +163,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
           setSlots((prev) => prev.map((s) => (s.id === slot.id ? done : s)));
           uploaded.push(done);
         } catch (err) {
-          const msg = err instanceof Error ? err.message : 'Upload failed';
+          const msg = err instanceof Error ? err.message : t('uploadFailed');
           setSlots((prev) => prev.map((s) => (s.id === slot.id ? { ...s, status: 'failed', error: msg } : s)));
           throw err;
         }
@@ -178,17 +182,17 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
       setSlots([]);
       setIsUploading(false);
       await queryClient.invalidateQueries({ queryKey: queryKey(activityUuid) });
-      toast.success(submit ? 'Files submitted successfully' : 'Draft saved');
+      toast.success(submit ? t('submittedToast') : t('draftSavedToast'));
     },
     onError: (err) => {
       setIsUploading(false);
-      toast.error(err instanceof Error ? err.message : 'Unable to save submission');
+      toast.error(err instanceof Error ? err.message : t('saveFailed'));
     },
   });
 
   const startMutation = useMutation({
     mutationFn: async () => {
-      if (!data) throw new Error('File submission not available');
+      if (!data) throw new Error(t('notAvailable'));
       return startFileSubmissionDraft(data.file_submission_uuid);
     },
     onSuccess: async () => {
@@ -196,7 +200,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
       inputRef.current?.click();
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Unable to start draft');
+      toast.error(err instanceof Error ? err.message : t('startDraftFailed'));
     },
   });
 
@@ -227,7 +231,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
     return (
       <div className="flex min-h-52 flex-col items-center justify-center gap-3">
         <Clock className="text-muted-foreground size-8" />
-        <p className="text-muted-foreground text-sm">Your submission has been graded. Grade release is pending.</p>
+        <p className="text-muted-foreground text-sm">{t('gradedReleasePending')}</p>
       </div>
     );
   }
@@ -302,15 +306,16 @@ function Header({
   dueAt?: string | null;
   requirements: string[];
   lifecycle: string;
-  attempt: import('@/features/file-submissions/services/file-submissions').FileSubmissionAttempt | null;
+  attempt: FileSubmissionAttempt | null;
 }) {
+  const t = useTranslations('FileSubmission');
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div className="min-w-0 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={lifecycle === 'PUBLISHED' ? 'default' : 'secondary'}>{lifecycle.toLowerCase()}</Badge>
           {attempt ? <StatusBadge status={attempt.status} /> : null}
-          {attempt?.is_late ? <Badge variant="destructive">Late</Badge> : null}
+          {attempt?.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
         </div>
         <p className="text-sm leading-6 whitespace-pre-wrap">{instructions}</p>
       </div>
@@ -318,7 +323,7 @@ function Header({
         {dueAt ? (
           <div className="flex items-center gap-2">
             <CalendarClock className="text-muted-foreground size-4" />
-            <span>Due {formatDueDate(dueAt)}</span>
+            <span>{t('due', { date: formatDueDate(dueAt) })}</span>
           </div>
         ) : null}
         {requirements.map((req) => (
@@ -326,7 +331,7 @@ function Header({
             key={req}
             className="text-muted-foreground flex items-center gap-2"
           >
-            <CheckCircle2 className="size-4 text-emerald-600" />
+            <CheckCircle2 className="text-primary size-4" />
             <span>{req}</span>
           </div>
         ))}
@@ -366,8 +371,9 @@ function DraftEditor({
   totalSelected: number;
   isUploading: boolean;
   canEdit: boolean;
-  activeAttempt: import('@/features/file-submissions/services/file-submissions').FileSubmissionAttempt | null;
+  activeAttempt: FileSubmissionAttempt | null;
 }) {
+  const t = useTranslations('FileSubmission');
   const busy = saveMutation.isPending || startMutation.isPending || isUploading;
   const canSubmit = canEdit && (attachedFiles.length > 0 || slots.length > 0) && !busy;
 
@@ -395,8 +401,8 @@ function DraftEditor({
             onChange={(e) => addFiles(e.target.files)}
           />
           <FileArchive className="text-muted-foreground mb-3 size-8" />
-          <p className="text-sm font-medium">Drop files here or choose from your device</p>
-          <p className="text-muted-foreground mt-1 text-xs">{requirements.join(' · ')}</p>
+          <p className="text-sm font-medium">{t('dropzoneTitle')}</p>
+          <p className="text-muted-foreground mt-1 text-xs">{requirements.join(' / ')}</p>
           <Button
             className="mt-4"
             variant="outline"
@@ -411,12 +417,12 @@ function DraftEditor({
             ) : (
               <Paperclip className="size-4" />
             )}
-            Choose files
+            {t('chooseFiles')}
           </Button>
         </div>
       ) : (
         <div className="border-border bg-muted/30 rounded-md border p-4 text-sm">
-          Your latest attempt has been submitted. New files can be added if the teacher returns it for revision.
+          {t('submittedLocked')}
         </div>
       )}
 
@@ -428,7 +434,7 @@ function DraftEditor({
               key={file.attempt_file_uuid}
               className="flex items-center gap-3 border-b p-3 text-sm last:border-b-0"
             >
-              <CheckCircle2 className="size-4 shrink-0 text-green-600" />
+              <CheckCircle2 className="text-primary size-4 shrink-0" />
               <span className="min-w-0 truncate">{file.filename}</span>
             </div>
           ))}
@@ -453,7 +459,7 @@ function DraftEditor({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-muted-foreground flex items-center gap-2 text-xs">
           <AlertCircle className="size-3.5" />
-          Submit only final files. Saving a draft keeps files private until you submit.
+          {t('submitHelp')}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -462,14 +468,14 @@ function DraftEditor({
             onClick={() => saveMutation.mutate({ submit: false })}
           >
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            Save draft
+            {t('saveDraft')}
           </Button>
           <Button
             disabled={!canSubmit}
             onClick={() => saveMutation.mutate({ submit: true })}
           >
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}
-            Submit files
+            {t('submitFiles')}
           </Button>
         </div>
       </div>
@@ -482,12 +488,13 @@ function DraftEditor({
 function SubmissionHistory({
   attempts,
 }: {
-  attempts: import('@/features/file-submissions/services/file-submissions').FileSubmissionAttempt[];
+  attempts: FileSubmissionAttempt[];
 }) {
+  const t = useTranslations('FileSubmission');
   if (attempts.length === 0) return null;
   return (
     <section className="space-y-3">
-      <h3 className="text-sm font-semibold">Submission history</h3>
+      <h3 className="text-sm font-semibold">{t('submissionHistory')}</h3>
       <div className="divide-border border-border rounded-md border">
         {attempts.map((attempt) => (
           <div
@@ -495,12 +502,12 @@ function SubmissionHistory({
             className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm"
           >
             <div>
-              <p className="font-medium">Attempt {attempt.attempt_number}</p>
+              <p className="font-medium">{t('attemptNumber', { number: attempt.attempt_number })}</p>
               <p className="text-muted-foreground text-xs">
                 {attempt.submitted_at
                   ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(attempt.submitted_at))
-                  : 'Draft'}{' '}
-                · {attempt.files.length} file{attempt.files.length === 1 ? '' : 's'}
+                  : t('draft')}{' '}
+                / {t('fileCount', { count: attempt.files.length })}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -517,7 +524,8 @@ function SubmissionHistory({
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const t = useTranslations('FileSubmission');
   const variant =
     status === 'SUBMITTED' ? 'default' : status === 'RETURNED' ? 'destructive' : 'secondary';
-  return <Badge variant={variant}>{status.toLowerCase()}</Badge>;
+  return <Badge variant={variant}>{t(`status.${status.toLowerCase()}`)}</Badge>;
 }

@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { CodeItemAttempt, CodeItemLoading, useCodeSubmitControl } from '@/features/assessments/items/code';
@@ -10,8 +9,6 @@ import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/i
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
 import { useAttemptShellControls } from '@/features/assessments/shell';
 import type { AttemptSaveState } from '@/features/assessments/shell';
-import { apiFetch } from '@/lib/api-client';
-import { queryKeys } from '@/lib/react-query/queryKeys';
 import type { KindAttemptProps } from '../index';
 
 interface CodeChallengeTestCase {
@@ -26,13 +23,11 @@ interface CodeChallengeTestCase {
 export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAttemptProps) {
   const t = useTranslations('Activities.CodeChallenges');
   const normalizedActivityUuid = activityUuid.replace(/^activity_/, '');
-  const queryClient = useQueryClient();
   const assessmentUuid = vm?.assessmentUuid ?? null;
   const codeItem = useMemo(() => vm?.items.find((item) => item.body.kind === 'CODE') ?? null, [vm?.items]);
   const settings = useMemo(() => (codeItem ? codeItemToSettings(codeItem) : null), [codeItem]);
   const submissionState = useAssessmentSubmission(assessmentUuid, normalizedActivityUuid);
   const { submitControl, handleSubmitControlChange } = useCodeSubmitControl();
-  const startedRef = useRef<string | null>(null);
 
   const primaryLanguageId = settings?.allowed_languages?.[0];
   const savedAnswer = codeItem ? submissionState.answers[codeItem.item_uuid] : undefined;
@@ -69,47 +64,6 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
     [submissionState, submitControl, vm?.canSaveDraft, vm?.canSubmit],
   );
   useAttemptShellControls(shellControls);
-
-  useEffect(() => {
-    if (
-      !isConfigured ||
-      !assessmentUuid ||
-      submissionState.isLoading ||
-      submissionState.draft ||
-      startedRef.current === assessmentUuid ||
-      !(vm?.canStart || vm?.canStartRevision || vm?.canEdit)
-    ) {
-      return;
-    }
-
-    startedRef.current = assessmentUuid;
-
-    void apiFetch(`assessments/${assessmentUuid}/start`, { method: 'POST' })
-      .then(async (response) => {
-        if (!response.ok) {
-          startedRef.current = null;
-          return;
-        }
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(assessmentUuid) }),
-          queryClient.invalidateQueries({ queryKey: queryKeys.assessments.activity(normalizedActivityUuid) }),
-          queryClient.invalidateQueries({ queryKey: queryKeys.assessments.draft(assessmentUuid) }),
-        ]);
-      })
-      .catch(() => {
-        startedRef.current = null;
-      });
-  }, [
-    assessmentUuid,
-    isConfigured,
-    normalizedActivityUuid,
-    queryClient,
-    submissionState.draft,
-    submissionState.isLoading,
-    vm?.canEdit,
-    vm?.canStart,
-    vm?.canStartRevision,
-  ]);
 
   useEffect(() => {
     if (!codeItem || !submissionState.draft || codeAnswer) return;

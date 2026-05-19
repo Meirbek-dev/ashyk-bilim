@@ -70,6 +70,94 @@ def publish_grade(submission: Submission, db_session: Session) -> None:
     _record_submission_change(submission, db_session)
 
 
+def mark_manual_activity_complete(
+    activity_id: int,
+    user_id: int,
+    db_session: Session,
+    *,
+    commit: bool = True,
+) -> ActivityProgress | None:
+    """Mark a non-submission activity complete in canonical progress.
+
+    Assessments and file submissions are completed by their own submission
+    pipelines. This helper is for learning content such as dynamic lessons,
+    videos, and documents where the student explicitly marks completion.
+    """
+
+    activity = db_session.get(Activity, activity_id)
+    if activity is None or activity.course_id is None:
+        return None
+
+    now = datetime.now(UTC)
+    progress = db_session.exec(
+        select(ActivityProgress).where(
+            ActivityProgress.activity_id == activity_id,
+            ActivityProgress.user_id == user_id,
+        )
+    ).first()
+    if progress is None:
+        progress = ActivityProgress(
+            course_id=activity.course_id,
+            activity_id=activity_id,
+            user_id=user_id,
+        )
+
+    progress.required = True
+    progress.state = ActivityProgressState.COMPLETED
+    progress.completed_at = now
+    progress.last_activity_at = now
+    progress.teacher_action_required = False
+    progress.status_reason = None
+    progress.updated_at = now
+    db_session.add(progress)
+
+    recalculate_course_progress(activity.course_id, user_id, db_session, commit=False)
+
+    if commit:
+        db_session.commit()
+        db_session.refresh(progress)
+    return progress
+
+
+def unmark_manual_activity_complete(
+    activity_id: int,
+    user_id: int,
+    db_session: Session,
+    *,
+    commit: bool = True,
+) -> ActivityProgress | None:
+    """Remove explicit completion for a non-submission activity."""
+
+    activity = db_session.get(Activity, activity_id)
+    if activity is None or activity.course_id is None:
+        return None
+
+    progress = db_session.exec(
+        select(ActivityProgress).where(
+            ActivityProgress.activity_id == activity_id,
+            ActivityProgress.user_id == user_id,
+        )
+    ).first()
+    if progress is None:
+        return None
+
+    now = datetime.now(UTC)
+    progress.state = ActivityProgressState.NOT_STARTED
+    progress.completed_at = None
+    progress.last_activity_at = now
+    progress.teacher_action_required = False
+    progress.status_reason = None
+    progress.updated_at = now
+    db_session.add(progress)
+
+    recalculate_course_progress(activity.course_id, user_id, db_session, commit=False)
+
+    if commit:
+        db_session.commit()
+        db_session.refresh(progress)
+    return progress
+
+
 def recalculate_activity_progress(
     activity_id: int,
     user_id: int,
@@ -804,10 +892,9 @@ def _recalculate_file_submission_progress(
         elif latest_status == FileSubmissionAttemptStatus.RETURNED.value:
             state = ActivityProgressState.RETURNED
             status_reason = "returned_for_revision"
-        elif latest_status in {
-            FileSubmissionAttemptStatus.GRADED.value,
-            FileSubmissionAttemptStatus.PUBLISHED.value,
-        }:
+        elif latest_status == FileSubmissionAttemptStatus.GRADED.value:
+            state = ActivityProgressState.GRADED
+        elif latest_status == FileSubmissionAttemptStatus.PUBLISHED.value:
             state = (
                 ActivityProgressState.PASSED if passed else ActivityProgressState.FAILED
             )

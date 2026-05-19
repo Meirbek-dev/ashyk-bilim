@@ -9,7 +9,7 @@ from src.db.assessments import Assessment
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.chapters import Chapter
 from src.db.file_submissions import FileSubmissionActivity
-from src.db.grading.progress import ActivityProgress, AssessmentPolicy
+from src.db.grading.progress import ActivityProgress, ActivityProgressState, AssessmentPolicy
 from src.db.grading.submissions import Submission
 from src.db.student_activity_runtime import (
     StudentActivityActionRequest,
@@ -27,6 +27,11 @@ from src.db.student_activity_runtime import (
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.courses.courses import _get_course_by_uuid
+from src.services.progress.submissions import (
+    mark_manual_activity_complete,
+    recalculate_course_progress,
+    unmark_manual_activity_complete,
+)
 from src.services.trail.trail import add_activity_to_trail, remove_activity_from_trail
 
 
@@ -127,8 +132,12 @@ async def run_student_activity_action(
 
     if action.command == "mark_complete":
         await add_activity_to_trail(request, current_user, activity.activity_uuid, db_session)
+        if activity.id is not None:
+            mark_manual_activity_complete(activity.id, current_user.id, db_session, commit=True)
     elif action.command == "unmark_complete":
         await remove_activity_from_trail(request, current_user, activity.activity_uuid, db_session)
+        if activity.id is not None:
+            unmark_manual_activity_complete(activity.id, current_user.id, db_session, commit=True)
     else:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -176,6 +185,7 @@ def _get_progress_by_activity(
 ) -> dict[int, ActivityProgress]:
     if isinstance(current_user, AnonymousUser):
         return {}
+    recalculate_course_progress(course_id, current_user.id, db_session, commit=True)
     rows = db_session.exec(
         select(ActivityProgress).where(ActivityProgress.course_id == course_id, ActivityProgress.user_id == current_user.id)
     ).all()
@@ -227,7 +237,7 @@ def _build_progress(progress: ActivityProgress | None, db_session: Session | Non
     state_value = _progress_state_value(progress.state)
     return StudentActivityProgressRuntime(
         state=_normalize_state(progress),
-        canonical_state=progress.state,
+        canonical_state=ActivityProgressState(progress.state),
         complete=bool(progress.completed_at) or state_value in {"PASSED", "COMPLETED"},
         score=progress.score,
         passed=progress.passed,
@@ -245,9 +255,13 @@ def _build_progress(progress: ActivityProgress | None, db_session: Session | Non
 
 
 def _normalize_state(progress: ActivityProgress) -> str:
-    if progress.completed_at is not None:
-        return "complete"
     state = _progress_state_value(progress.state)
+    if progress.completed_at is not None and state in {
+        "NOT_STARTED",
+        "IN_PROGRESS",
+        "COMPLETED",
+    }:
+        return "complete"
     return {
         "NOT_STARTED": "not_started",
         "IN_PROGRESS": "in_progress",

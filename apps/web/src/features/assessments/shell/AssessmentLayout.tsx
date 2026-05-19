@@ -19,7 +19,6 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY } from '@/lib/constants';
 import type { AttemptConflictState } from './AssessmentActionBar';
 import { DEFAULT_POLICY_VIEW, isAntiCheatEnabled } from '@/features/assessments/domain/policy';
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
@@ -88,11 +87,6 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
   // ── Focus mode (persisted across page loads) ───────────────────────────────
 
   useEffect(() => {
-    const stored = globalThis.localStorage?.getItem(ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY);
-    setFocusMode(stored === 'true');
-  }, []);
-
-  useEffect(() => {
     if (typeof navigator === 'undefined') return;
     const update = () => setIsOnline(navigator.onLine);
     update();
@@ -105,10 +99,8 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
   }, []);
 
   const toggleFocusMode = useCallback(() => {
-    const next = !focusMode;
-    setFocusMode(next);
-    globalThis.localStorage?.setItem(ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY, String(next));
-  }, [focusMode]);
+    setFocusMode((value) => !value);
+  }, []);
 
   // ── Policy / guard ─────────────────────────────────────────────────────────
 

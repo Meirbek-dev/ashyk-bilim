@@ -1,6 +1,7 @@
 'use client';
 
 import { CheckCircle2, MessageSquare, RotateCcw, XCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions';
@@ -8,7 +9,7 @@ import type { FileSubmissionAttempt } from '@/features/file-submissions/services
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatScore(score: number | null | undefined): string {
-  if (score === null || score === undefined) return '—';
+  if (score === null || score === undefined) return '-';
   return `${Math.round(score * 100) / 100}%`;
 }
 
@@ -25,6 +26,7 @@ interface FileSubmissionResultProps {
  * Shows score, late deduction, teacher feedback, and revision CTA.
  */
 export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissionResultProps) {
+  const t = useTranslations('FileSubmission');
   const { status, final_score, late_penalty_pct, feedback } = attempt;
   const isReturned = status === 'RETURNED';
   const passing = final_score !== null && final_score !== undefined && final_score >= 60;
@@ -35,10 +37,10 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
       {/* Score block */}
       <div className="bg-muted/30 border-border flex items-center justify-between gap-4 rounded-xl border p-6">
         <div>
-          <p className="text-muted-foreground text-sm">Your score</p>
+          <p className="text-muted-foreground text-sm">{t('yourScore')}</p>
           <p className="text-4xl font-bold tabular-nums">{formatScore(final_score)}</p>
           {late_penalty_pct > 0 ? (
-            <p className="text-muted-foreground mt-1 text-xs">Late penalty: −{late_penalty_pct}%</p>
+            <p className="text-muted-foreground mt-1 text-xs">{t('latePenalty', { percent: late_penalty_pct })}</p>
           ) : null}
         </div>
 
@@ -49,15 +51,15 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
               className="gap-1.5 border-amber-500 text-amber-600 dark:text-amber-400"
             >
               <RotateCcw className="size-3" />
-              Returned for revision
+              {t('returnedForRevision')}
             </Badge>
           ) : passing ? (
             <Badge
               variant="outline"
-              className="gap-1.5 border-green-500 text-green-600"
+              className="border-primary text-primary gap-1.5"
             >
               <CheckCircle2 className="size-3" />
-              Passed
+              {t('passed')}
             </Badge>
           ) : (
             <Badge
@@ -65,7 +67,7 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
               className="gap-1.5 border-destructive text-destructive"
             >
               <XCircle className="size-3" />
-              Failed
+              {t('failed')}
             </Badge>
           )}
         </div>
@@ -76,7 +78,7 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
         <div className="border-border bg-muted/20 rounded-xl border p-5">
           <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
             <MessageSquare className="size-4" />
-            Teacher feedback
+            {t('teacherFeedback')}
           </h4>
           <p className="text-sm leading-6 whitespace-pre-wrap">{feedbackText}</p>
         </div>
@@ -91,7 +93,7 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
             onClick={onRevise}
           >
             <RotateCcw className="size-4" />
-            Start revision
+            {t('startRevision')}
           </button>
         </div>
       ) : null}

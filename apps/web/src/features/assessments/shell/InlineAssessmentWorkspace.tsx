@@ -10,7 +10,9 @@ import { useActivityLayout } from '@/features/assessments/shell/ActivityLayoutCo
 import AssessmentLayout from '@/features/assessments/shell/AssessmentLayout';
 import AttemptEntryCard from '@/features/assessments/shell/AttemptEntryCard';
 import AttemptResultCard from '@/features/assessments/shell/AttemptResultCard';
+import { apiFetch } from '@/lib/api-client';
 import { queryKeys } from '@/lib/react-query/queryKeys';
+import { toast } from 'sonner';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -75,16 +77,31 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
         vm={vm}
         isPending={isPending}
         onStart={async () => {
-          // The actual start happens inside the AttemptShell/kind module when
-          // it calls the backend to create a draft. We just need to flip the
-          // layout mode to ACTIVE_ATTEMPT so the full shell renders.
+          if (!vm.assessmentUuid) return;
           setIsPending(true);
-          setMode('ACTIVE_ATTEMPT');
-          // Re-fetch so recommendedAction moves to continueDraft
-          await queryClient.invalidateQueries({
-            queryKey: queryKeys.assessments.activity(activityUuid),
-          });
-          setIsPending(false);
+          try {
+            const response = await apiFetch(`assessments/${vm.assessmentUuid}/start`, { method: 'POST' });
+            if (!response.ok) {
+              throw new Error(await response.text());
+            }
+            await Promise.all([
+              queryClient.invalidateQueries({ queryKey: queryKeys.assessments.activity(activityUuid) }),
+              queryClient.invalidateQueries({ queryKey: queryKeys.assessments.detail(vm.assessmentUuid) }),
+              queryClient.invalidateQueries({ queryKey: queryKeys.assessments.draft(vm.assessmentUuid) }),
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.studentActivity.runtime(
+                  courseUuid.replace(/^course_/, ''),
+                  activityUuid.replace(/^activity_/, ''),
+                ),
+              }),
+            ]);
+            setMode('ACTIVE_ATTEMPT');
+            router.refresh();
+          } catch {
+            toast.error('Unable to start this activity. Please refresh and try again.');
+          } finally {
+            setIsPending(false);
+          }
         }}
       />
     );

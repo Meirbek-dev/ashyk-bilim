@@ -1,181 +1,303 @@
-# Student Workflow System Modernization Plan
+# Student And Teacher Workflow System Modernization Plan
 
-## Intent
+Status: Draft for product/architecture review  
+Date: 2026-05-19  
+Scope: Student activity workflow, assessment/file-submission runtime, teacher review workflow, gradebook, assignment-domain removal
 
-Rebuild the student learning workflow and teacher grading workflow as one coherent LMS operating model. This is not a visual refresh and not a compatibility pass. The target system has one canonical activity runtime, one canonical assessment/submission runtime, one progress model, one grading model, and one design language.
+## 1. Intent
 
-The current activity route has already moved toward a new shell, but the surrounding product surface still contains deprecated assignment terminology, old navigation components, duplicated grading concepts, and inconsistent student states. The rewrite must remove those boundaries entirely.
+Rebuild Ashyk Bilim around one coherent LMS workflow:
 
-## Non-Negotiables
+- One canonical student activity workspace.
+- One canonical student progress state machine.
+- One canonical assessment/submission runtime.
+- One canonical teacher review and gradebook workflow.
+- One design language for course learning, assessment, submission, feedback, and grading.
+- Zero deprecated assignment domain in live application code, database state, API contracts, generated schemas, UI copy, analytics labels, or teacher/student workflows.
 
-- No assignment domain remains in application code, database tables, API contracts, route names, messages, analytics labels, or gradebook rollups, except where "assignment" is the unrelated RBAC meaning of a role-to-user or permission-to-role assignment.
-- No wrapper or adapter keeps deprecated assignment tables alive.
-- No route-level split where the same activity type can be rendered by two competing student runtimes.
-- No DOM-query layout behavior for core navigation or sticky UI.
-- No generic bordered activity box for every content type.
-- No student workflow state that exists only in client memory when it affects grading, progress, or teacher work.
-- No hidden grading policy. Attempt penalty, late penalty, release mode, passing rule, completion rule, and manual-review state must be visible and traceable.
+This plan is not a visual polish pass and not a set of incremental fixes. The target is a subsystem replacement with a controlled cutover. Existing incomplete rewrite pieces can be reused only when they already match the target architecture; no wrapper or compatibility layer may preserve deprecated behavior.
 
-## Audit Summary
+## 2. Non-Negotiables
 
-### Activity Runtime
+- No student-facing activity type may have two competing runtimes.
+- No assessment may force the student out of course context.
+- No primary action may be inferred from shallow client-only route state when server state affects grading, progress, attempts, release policy, or teacher work.
+- No "assignment" domain may remain except RBAC role/permission assignment language.
+- No deprecated assignment tables, activity types, metadata keys, API schemas, generated frontend contracts, route concepts, gradebook groups, teacher copy, or student copy.
+- No generic activity card wraps every content type.
+- No nested page-structure cards.
+- No duplicate navigation model.
+- No hidden grading policy.
+- No DOM-query or custom-event side channel for core layout state.
+- No student workflow state that exists only in client memory when it changes grading, progress, anti-cheat, submissions, or teacher queues.
+
+## 3. Audit Scope
 
 Primary files audited:
 
-- `apps/web/src/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/page.tsx`
 - `apps/web/src/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity.tsx`
 - `apps/web/src/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/ActivityContentRenderer.tsx`
 - `apps/web/src/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity-view-model.ts`
-- `apps/web/src/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/useActivityCompletion.ts`
-
-Findings:
-
-- The route now has a `StudentActivityPageShell`, view model, outline rail, progress summary, mobile action bar, inline assessment workspace, and type-specific renderer. That is the correct direction.
-- The shell still derives only a shallow activity status: `course_end`, `unavailable`, `complete`, or `not_started`. It does not yet expose submitted, needs grading, returned, grade hidden, failed, passed, overdue, locked, or attempt states for all activity types.
-- Completion is still a manual trail mutation for many activities. Assessable activities and file submissions use separate progress sources, so the primary CTA can be wrong or unavailable.
-- The course outline shows completion but not teacher-action-required, returned, overdue, locked, failed, grade-hidden, or attempt-exhausted states.
-- The shell still has two side concepts, course outline and action panel, but the content renderer owns much of the activity-specific state. The action panel cannot reliably choose the next best action for submissions and assessments.
-- The old route components still exist outside the activity shell: `ActivityIndicators`, `ActivityChapterDropdown`, and `FixedActivitySecondaryBar`. Even if unused on the activity route, they keep an old mental model alive and should be removed from the student activity surface.
-
-### Dynamic Lecture Layout
-
-Primary files audited:
-
-- `apps/web/src/components/Objects/Editor/views/InteractiveViewer.tsx`
-- `apps/web/src/components/Objects/Activities/DynamicCanva/TableOfContents.tsx`
-- `apps/web/src/components/Objects/Editor/styles/prosemirror.css`
-- `apps/web/src/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/ActivityContentRenderer.tsx`
-
-Current problem:
-
-- `ActivityContentRenderer` constrains dynamic lecture content to `max-w-4xl`.
-- Inside that constrained region, `InteractiveViewer` adds a fixed/sticky TOC column with `width: clamp(15rem, 20vw, 22rem)`.
-- On common desktop widths, the TOC can consume a disproportionate share of the already constrained content area. This matches the reported failure where actual lecture content receives roughly 25 to 30 percent of the page width.
-
-Target behavior:
-
-- Dynamic lectures use the full activity content column, not a nested narrow `max-w-4xl` shell.
-- TOC is an optional navigation rail with a strict max width and collapse threshold.
-- The reading column keeps a comfortable text measure, but rich blocks, embeds, tables, images, and interactive widgets can break out to the available width.
-- On desktop, the lecture grid should be `minmax(0, 1fr) minmax(12rem, 16rem)` or content-first with TOC on the right, not TOC-first.
-- Below large desktop, TOC becomes a sheet/drawer or inline compact "On this page" menu. It must not compete with reading width.
-
-### Assessment And Submission Runtime
-
-Primary files audited:
-
+- `apps/web/src/features/student-activity/domain/runtime.ts`
+- `apps/web/src/features/student-activity/api/runtime.ts`
 - `apps/web/src/features/assessments/shell/InlineAssessmentWorkspace.tsx`
+- `apps/web/src/features/assessments/shell/AssessmentLayout.tsx`
+- `apps/web/src/features/assessments/shell/AttemptEntryCard.tsx`
 - `apps/web/src/features/file-submissions/student/FileSubmissionWorkspace.tsx`
-- `apps/api/src/services/grading/pipeline/orchestrator.py`
-- `apps/api/src/services/grading/pipeline/grade.py`
-- `apps/api/src/services/grading/pipeline/penalize.py`
-- `apps/api/src/services/grading/pipeline/persist.py`
-- `apps/api/src/services/grading/registry.py`
-- `apps/api/src/services/grading/quiz_grader.py`
-- `apps/api/src/services/grading/teacher.py`
-- `apps/api/src/services/progress/submissions.py`
+- `apps/api/src/db/student_activity_runtime.py`
+- `apps/api/src/services/student_activity_runtime.py`
+- `apps/api/migrations/versions/2026_05_18_1a2b3c4d5e6f_student_workflow_invariants.py`
+- message catalogs in `apps/web/src/messages/*.json`
 
-Findings:
+Screenshot surfaces audited:
 
-- Assessments are mostly canonical: `Submission`, `AssessmentPolicy`, `GradingEntry`, item registry, and a grading pipeline exist.
-- File submissions are separate from assessment submissions. This can be acceptable, but student progress and teacher gradebook states must be normalized into one student workflow contract.
-- Manual completion, assessment submission, and file submission currently use different state machines.
-- Gradebook still exposes `assignment_group` as a rollup kind in `apps/web/src/features/grading/domain/gradebook.ts` and `CourseGradebookCommandCenter.tsx`. This must be renamed to an activity-category or assessment-kind concept.
-- Translation files still contain many assignment-facing strings. Any student-facing "Assignment" copy must be replaced with "Assessment", "Task", "File submission", "Practice", or a type-specific label.
+- Completed dynamic lesson.
+- Inline quiz preflight.
+- Exam preflight with integrity banner.
+- Code challenge workspace.
 
-### Database And Deprecated Assignment Removal
+## 4. Current State Summary
 
-Primary migration audited:
+The rewrite has moved in the right direction:
 
-- `apps/api/migrations/versions/2026_05_14_f1c2d3e4a5b6_purge_legacy_assignment_artifacts.py`
+- The activity page now has a three-region shell: outline, main content, action/support panel.
+- Assessment handoff is mostly removed from the activity renderer.
+- `InlineAssessmentWorkspace` renders assessment preflight, attempt, and result states on the activity route.
+- `/assessments/[assessmentUuid]` redirects to the canonical activity route.
+- A backend `StudentActivityRuntime` contract and runtime endpoint already exist.
+- Assignment cleanup and invariant migrations already exist.
 
-Current state:
+The rewrite is not yet system-complete:
 
-- There is already a cleanup migration that retypes `TYPE_ASSIGNMENT` activities to `TYPE_FILE_SUBMISSION`, strips assignment metadata keys from `submission.metadata_json`, and drops `assignmenttasksubmission`, `assignmentusersubmission`, `assignmenttask`, `assignment_task`, and `assignment`.
-- Application code search no longer shows active assignment DB models, but old assignment copy and old comments remain.
+- The activity page still builds its own `StudentActivityViewModel` from course structure and trail data instead of consuming the backend runtime endpoint.
+- The frontend view model returns only `complete`, `unavailable`, and `not_started` for most activity states; it does not reflect submitted, needs grading, returned, grade hidden, published, failed, passed, locked, attempt exhausted, or overdue states in the visible shell.
+- Assessments and file submissions fetch their own state separately, so the right action panel and mobile action bar can contradict the real activity state.
+- The code still contains dead assessment client code, unused focus constants, assignment message namespaces, and assignment migration history.
+- File-submission student UI still has inline English, hardcoded status colors, and local state that is not integrated into the canonical activity action model.
+- Assessment attempt focus mode still persists through `localStorage`.
+- The screenshots show contradictory status, progress, and access states.
 
-Required end state:
+## 5. Screenshot UX Diagnosis
 
-- Database has no assignment tables.
-- `activity.activity_type` contains no `TYPE_ASSIGNMENT`.
-- Submission metadata contains no assignment keys.
-- OpenAPI schema contains no assignment contract.
-- Generated frontend schema contains no assignment contract.
-- Messages contain no student or teacher workflow assignment wording.
-- Gradebook taxonomy contains no `assignment_group`.
-- Tests assert these invariants.
+### Dynamic Lesson
 
-## Clarification Required Before Grading Rewrite
+Observed:
 
-I found grading behavior that needs a product decision before implementation:
+- The top header consumes a large amount of vertical space before content begins.
+- Progress is semantically unclear: the header shows current position, completed count, and a right-side count that read as different concepts.
+- The left outline truncates almost every meaningful title.
+- The right status panel duplicates navigation and support rather than explaining the next best action.
+- The lesson body is readable, but it is visually separated from course context by large gutters and competing side panels.
+- The floating gamification/action bubble competes with the bottom-right page affordance.
 
-1. Quiz attempt penalty appears to be applied twice.
-   `QuizGrader` applies `apply_attempt_penalty(...)`, and the pipeline later calls `apply_penalties(...)`, which applies attempt penalty again. Should attempt penalty be applied only once in the pipeline after raw grading?
+Target:
 
-2. Manual-review submissions do not snapshot late penalty at submit time.
-   `apply_penalties(...)` returns `late_penalty_pct=0` when `needs_manual_review` is true. Later, teacher grading applies `submission.late_penalty_pct`, so late manual submissions may avoid late penalty. Should late penalty be calculated at submit time for every submitted attempt, including manual review?
+- Header answers location, status, and policy in one compact band.
+- Progress has one meaning: course completion, with current activity position displayed separately.
+- Outline uses state indicators and tooltips, not only truncation.
+- Right panel is a decision panel: status, one primary action, policy summary, result/receipt if relevant, help.
 
-3. File submission pass threshold is hardcoded to `60` in progress calculation.
-   Assessment progress uses policy passing score. Should file submissions use the same `AssessmentPolicy`-style passing rule, or a file-submission-specific policy field?
+### Inline Quiz Preflight
 
-4. Published grade correction is allowed by sending `PUBLISHED -> RETURNED`.
-   Should teachers be allowed to recall an already published grade into returned/revision state, or should corrections produce a new grade revision while preserving published audit history?
+Observed:
 
-## Target Architecture
+- The primary CTA says "go to learning task" even though the student is already on the learning task.
+- The bottom bar says access is blocked while the preflight card presents a startable assessment surface.
+- Metric cards overflow or collide on long Russian labels and "Unlimited".
+- "No available draft for editing" is teacher/editor language, not student language.
+- The attempt history empty state takes space but does not help the student decide what to do.
 
-### Domain Model
+Target:
 
-Canonical concepts:
+- CTA is type-specific: "Start quiz", "Continue quiz", "View result", "Awaiting release", or "Try again".
+- Access-blocked state is rendered only when the primary action is actually blocked.
+- Preflight metrics use stable columns, smaller labels, and no text overflow.
+- Student language uses attempt, draft, result, review, and feedback, not editor phrasing.
 
-- Course
-- Chapter
-- Activity
-- ActivityContent
-- Assessment
-- AssessmentItem
-- SubmissionAttempt
-- FileSubmissionAttempt
-- ActivityProgress
-- CourseProgress
-- GradebookEntry
-- TeacherReviewQueue
+### Exam Preflight
 
-Deprecated concepts to remove:
+Observed:
 
-- Assignment table
-- Assignment task table
-- Assignment user submission table
-- Assignment task submission table
-- `TYPE_ASSIGNMENT`
-- `SUBTYPE_ASSIGNMENT_ANY`
-- Student-facing "Assignment" copy
-- Gradebook `assignment_group`
-- Any migration or runtime metadata that depends on assignment IDs after the cleanup migration has run
+- A red integrity warning appears before the attempt and says a violation was already recorded.
+- The status panel says complete while the body says ready to start and history says no attempts.
+- The bottom locked state contradicts the visible route content.
+- Anti-cheat copy is loud but not structured into policy, requirement, and consequence.
 
-### Student Activity Contract
+Target:
 
-Create one server-built view model for the activity route:
+- Exam preflight has a calm policy summary: time, attempts, fullscreen, tab-switching, copy/paste, late policy, release policy.
+- Violations are per attempt and never shown as existing unless the current attempt actually has recorded violations.
+- Completion, result visibility, and attempt readiness come from the same server state.
 
-```ts
-type StudentActivityRuntime = {
-  course: CourseHeader;
-  activity: ActivityHeader | null;
-  content: ActivityContentRuntime;
-  outline: CourseOutlineRuntime;
-  progress: ActivityProgressRuntime;
-  submission: SubmissionRuntime | null;
-  policy: StudentVisiblePolicy | null;
-  permissions: StudentActivityPermissions;
-  primaryAction: StudentPrimaryAction;
-  secondaryActions: StudentSecondaryAction[];
-};
+### Code Challenge
+
+Observed:
+
+- The title is too long for the header and pushes status into awkward placement.
+- The editor is empty and disabled with a tooltip, while the test scenario panel is visible and the CTA remains ambiguous.
+- The language selector is detached from the locked editor state.
+- The right status panel says not started, while the bottom bar says access blocked.
+- The student cannot tell whether they need to click start, choose a language, write code, or view tests first.
+
+Target:
+
+- Code challenge has a first-class workspace: prompt, language selector, editor, tests, run, submit, result, feedback.
+- Locked/not-started state has an explicit start action. The editor does not look broken.
+- Test cases are readable but secondary until the student starts or selects a language.
+- Long challenge titles are clamped in header and fully available in the main prompt.
+
+## 6. Root Causes
+
+1. Split state ownership remains.
+   The backend runtime exists, but the current route does not consume it. The route derives progress from trail data, assessments derive attempt state from assessment queries, and file submissions derive status from file-submission queries.
+
+2. Primary action is not server authoritative.
+   The action panel uses `vm.primaryAction` from a local client builder. Assessment and file-submission components know richer state than the shell, so the shell cannot reliably show the correct next action.
+
+3. Progress is still fragmented.
+   The backend has `ActivityProgress`, trail steps, assessment submissions, and file submission attempts. The UI still shows some trail-derived completion rather than canonical activity progress.
+
+4. Assessment inline rendering is incomplete at the boundary.
+   `InlineAssessmentWorkspace` changes layout mode based on `recommendedAction`, but the preflight `onStart` only invalidates a query and flips layout locally. The start command is owned later by kind-specific attempt code.
+
+5. Dead route/client code remains.
+   `AssessmentAttemptClient.tsx` still exists even though the route is redirect-only. `FOCUS_MODE_CHANGE_EVENT` and `ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY` still exist. This keeps old concepts alive.
+
+6. The design system lacks enough semantic state tokens.
+   Success/warning/grade/review states often use direct green/emerald classes. Some UI primitives define semantic variants, but the activity workflow does not consistently consume them.
+
+7. Legacy assignment language remains in message catalogs.
+   There are still `Assignment*`, `NewAssignmentModal`, `assignmentActions`, `assignmentStatus`, and many assignment-keyed strings in `en-US`, `ru-RU`, and `kk-KZ`. Some values have been renamed to "Assessment task" or "Учебная задача", but the domain keys and namespaces remain assignment-based.
+
+## 7. Required Clarifications
+
+These product/architecture decisions are ambiguous and must be resolved before implementation:
+
+1. Historical Alembic migrations:
+   Should old assignment migration files remain as historical upgrade steps, or should the migration chain be squashed into a new baseline so the repository itself contains no assignment-domain migration code?
+
+2. Screenshot role:
+   The screenshots show an admin user viewing student workflow. Should admin/teacher preview use the exact student UI with a preview banner, or should staff controls remain visible while previewing?
+
+3. Access blocked:
+   What does the blue bottom "access blocked" state mean in the screenshots: unauthenticated access, unpublished content, anti-cheat lock, missing attempt draft, or disabled editor?
+
+4. Code challenge start behavior:
+   Should the student editor be unavailable until an explicit "Start challenge" action creates a draft attempt, or should selecting a language immediately create the attempt?
+
+5. Exam integrity violations:
+   Are integrity violations scoped per attempt and reset before start, or can previous violations carry into a new preflight?
+
+6. File submission completion:
+   Is completion achieved only when a teacher publishes a grade, or can a submitted-but-ungraded file task count as complete for course progression?
+
+7. Grade correction:
+   Should a published grade be recallable into `RETURNED`, or should corrections create a new auditable grade revision while preserving the published history?
+
+## 8. Target Product Model
+
+### Student Mental Model
+
+Every activity answers:
+
+- Where am I?
+- What is this activity?
+- What is my current state?
+- What policy applies?
+- What exactly should I do next?
+
+The answer is shown through:
+
+- Compact header.
+- Course outline.
+- Content-specific workspace.
+- One status/action panel.
+- One mobile bottom action bar.
+
+### Teacher Mental Model
+
+Every teacher workflow answers:
+
+- What needs attention?
+- Which students are blocked, late, returned, failed, or awaiting feedback?
+- What did this student submit?
+- What is the grading policy?
+- What will the student see if I publish or return this?
+- What changed in the audit history?
+
+The answer is shown through:
+
+- Course command center.
+- Review queue.
+- Submission inspector.
+- Grading panel.
+- Gradebook matrix.
+- Analytics and intervention queue.
+
+## 9. Target Architecture
+
+### Canonical Student Runtime
+
+The activity route must consume:
+
+```text
+GET /courses/{course_uuid}/activities/{activity_uuid}/runtime
 ```
+
+The frontend route becomes a thin renderer:
+
+```text
+route wrapper
+  -> fetch StudentActivityRuntime
+  -> hydrate activity-specific query data when needed
+  -> render StudentActivityWorkspace
+```
+
+The route must not rebuild completion state from trail data.
+
+### Canonical Action Endpoint
+
+All activity-level actions go through:
+
+```text
+POST /courses/{course_uuid}/activities/{activity_uuid}/actions
+```
+
+Allowed commands:
+
+- `mark_viewed`
+- `mark_complete`
+- `unmark_complete`
+- `start_attempt`
+- `save_draft`
+- `submit`
+- `request_revision_start`
+- `acknowledge_feedback`
+
+Assessment and file-submission internals may perform specialized work, but the activity action endpoint must remain the state machine gate. If an action is owned by a sub-runtime, the runtime response still owns the shell state after completion.
+
+### Canonical Progress Reducer
+
+Create one reducer:
+
+```py
+def reduce_activity_progress(activity, policy, attempts, file_attempts, manual_events) -> ActivityProgressSnapshot:
+    ...
+```
+
+Rules:
+
+- It maps every activity type into `ActivityProgress`.
+- Trail/course completion is derived from `ActivityProgress`, not the reverse.
+- Assessment submissions and file-submission attempts feed normalized attempt snapshots.
+- Progress state names are shared by student shell, teacher gradebook, review queue, and analytics.
+- State transitions write audit events.
 
 Required states:
 
 - `not_started`
-- `in_progress`
 - `viewed`
+- `in_progress`
 - `draft`
 - `submitted`
 - `needs_grading`
@@ -189,11 +311,37 @@ Required states:
 - `unavailable`
 - `attempt_exhausted`
 
-The client shell should render this contract. It should not infer grading state from unrelated query fragments.
+### Canonical Assessment Runtime
 
-### Teacher Workflow Contract
+The activity shell owns the URL and layout. Assessment modules own only the task-specific attempt body:
 
-Create one teacher-facing review contract:
+```text
+StudentActivityWorkspace
+  -> AssessmentActivityRenderer
+    -> AssessmentPreflight
+    -> AssessmentAttemptLayout
+    -> AssessmentResult
+```
+
+`/assessments/[uuid]` remains a redirect only. Delete the standalone client surface.
+
+### Canonical File Submission Runtime
+
+File submission becomes an activity-native workflow, not a repackaged assignment:
+
+- Preflight requirements.
+- Draft upload.
+- Submit receipt.
+- Awaiting review.
+- Published result.
+- Returned revision.
+- Attempt history.
+
+The shell primary action is derived from file-submission state through the same runtime contract.
+
+### Teacher Review Runtime
+
+Create one teacher review contract:
 
 ```ts
 type TeacherReviewRuntime = {
@@ -201,407 +349,526 @@ type TeacherReviewRuntime = {
   activity: ReviewActivityHeader;
   queue: ReviewQueue;
   selectedAttempt: ReviewAttempt | null;
+  policy: TeacherVisiblePolicy;
   rubric: RubricRuntime | null;
-  gradingPolicy: TeacherVisiblePolicy;
   actions: TeacherReviewAction[];
   audit: GradeAuditTrail;
 };
 ```
 
-Teacher workflow must support:
+Teacher review and gradebook must consume the same progress vocabulary as student activity.
 
-- Queue triage by needs grading, returned, late, failed, high-risk, and stale draft.
-- Side-by-side student work and grading form.
-- Per-item feedback and overall feedback.
-- Batch publish only when grade-release policy supports it.
-- Explicit return for revision with required feedback.
-- Grade correction as an auditable revision, not silent overwrite.
-- Student-visible preview before publishing.
+## 10. Target Student UI
 
-## Student UX Rewrite
+### Desktop Shell
 
-### Activity Shell
-
-Keep the shell concept, but promote it to the canonical student workspace:
-
-- Header: course breadcrumb, title, chapter position, status, due/attempt info.
-- Left rail: course outline with activity state indicators and current position.
-- Main surface: type-specific content renderer.
-- Right panel: primary action, policy summary, submission/result status, help, next activity.
-- Mobile: compact header, content-first flow, bottom action bar, outline drawer, help drawer.
-
-The right panel must be driven by `primaryAction`, not by local component heuristics.
-
-### Dynamic Lecture
-
-Replace the current nested TOC layout with:
+Use a stable, dense LMS workspace:
 
 ```text
-desktop xl:
-content column: minmax(0, 1fr)
-toc column: clamp(12rem, 16vw, 16rem)
-
-desktop lg:
-content column only
-toc in popover or sheet
-
-mobile:
-content column only
-toc as sheet
+header: breadcrumb, title, position, status, policy chips
+body:   outline rail | activity workspace | action/status panel
 ```
 
-Implementation rules:
+Grid:
 
-- Remove `max-w-4xl` from the dynamic activity renderer wrapper.
-- Make text blocks readable through ProseMirror content styles, not by shrinking the whole activity.
-- Give TOC a max width of 16rem and place it after content in DOM order.
-- Hide TOC automatically when there are fewer than two headings.
-- Keep anchors accessible with visible focus state and current-heading tracking.
-- Support rich block full width via CSS utilities such as `.lesson-wide` and `.lesson-full`.
+- `xl`: `17rem minmax(0, 1fr) 18rem`
+- `lg`: `15rem minmax(0, 1fr)`
+- active attempt: full-width attempt layout with task navigation
+- reading mode: content-focused layout with slim top bar
 
-### Assessment Experience
+### Mobile Shell
 
-All assessment-like activity types render in the activity shell:
+Use a content-first workflow:
 
-- Quiz and exam: preflight, active attempt, autosave, submit, result, feedback.
-- Code challenge: editor/test runner/result inside full-width attempt mode.
-- Custom assessment: registry-driven renderer.
-- File submission: instructions, requirements, draft uploads, receipt, grade/result, revision.
+- Compact sticky header.
+- Outline drawer.
+- Main content.
+- One bottom action bar.
+- Help drawer.
+- Attempt/task navigation drawer during active assessment.
 
-The `/assessments/[assessmentUuid]` route should become an internal deep link or redirect to the canonical activity workspace. It should not be a competing student experience.
+No desktop toolbar wrapping on mobile.
 
-### Progress And Next Action
+### Header
 
-Every activity has one primary action:
+Header must show:
 
-- `Start`
+- Course and chapter.
+- Activity title clamped to two lines.
+- Current position.
+- Status badge.
+- Due/attempt/time chips when relevant.
+
+Header must not show:
+
+- Conflicting completed/current counts.
+- Admin-only controls during student preview unless preview mode is explicit.
+- Repeated focus buttons in multiple regions.
+
+### Outline
+
+The outline must show:
+
+- Chapter progress.
+- Activity icon.
+- Activity state.
+- Locked/unpublished reason.
+- Current row with `aria-current="page"`.
+- Full title in tooltip or accessible label.
+
+The outline must not be only a list of checkmarks. It is the student's map.
+
+### Action Panel
+
+The action panel is driven only by `StudentActivityRuntime.primary_action`.
+
+Primary actions:
+
+- `Start lesson`
 - `Continue`
 - `Mark complete`
 - `Submit`
+- `Start quiz`
+- `Continue attempt`
 - `View receipt`
 - `View feedback`
 - `Revise`
-- `Next activity`
 - `Review policy`
+- `Next activity`
+- `Back to course`
 
-The action must be computed from server state and policy. The client can optimistically update local UI, but the server remains the source of truth.
+Secondary actions:
 
-## Teacher UX Rewrite
+- Previous.
+- Next.
+- Ask AI.
+- Focus/reading mode.
+- Report issue.
+
+If the primary action is disabled, the reason must be visible.
+
+### Dynamic Lesson
+
+- Use readable prose width for text, not a narrow global content wrapper.
+- Let media, tables, embeds, and interactive blocks use available width.
+- Hide table of contents when fewer than two headings exist.
+- If TOC exists, use a bounded rail or drawer. It must never consume reading width.
+
+### Quiz And Exam
+
+Preflight shows:
+
+- Questions.
+- Time limit.
+- Attempts remaining, not only maximum attempts.
+- Due date.
+- Passing score.
+- Release policy.
+- Anti-cheat requirements.
+- Draft/revision status.
+
+Active attempt shows:
+
+- Question navigation.
+- Timer.
+- Save state.
+- Online/offline state.
+- Submit control.
+- Policy/guard status.
+
+Result shows:
+
+- Score.
+- Pass/fail.
+- Visible feedback.
+- Hidden-grade explanation if release is delayed.
+- Retry or revision action when policy allows.
+- Next activity.
+
+### Code Challenge
+
+The code challenge workspace must include:
+
+- Prompt and constraints.
+- Language selector.
+- Starter code.
+- Editor.
+- Test cases.
+- Custom input.
+- Run tests.
+- Submit.
+- Results and feedback.
+- Attempt history.
+
+The editor may be disabled only in an explicit locked state with a clear start or unlock action.
+
+### File Submission
+
+The file submission workspace must include:
+
+- Instructions and requirements.
+- Due date and late policy.
+- Drag/drop and file picker.
+- Per-file upload progress.
+- Draft save.
+- Submit confirmation.
+- Immutable receipt.
+- Teacher feedback and rubric.
+- Revision flow when returned.
+- History with attempts.
+
+All user-visible strings must be localized. No inline English remains.
+
+## 11. Target Teacher UI
 
 ### Course Command Center
 
-Teachers need one course operations surface:
+Teachers need one operational surface:
 
-- Curriculum structure
-- Publish readiness
-- Student progress
-- Review queue
-- Gradebook
-- Analytics
-- Access and cohorts
+- Curriculum.
+- Publish readiness.
+- Progress health.
+- Review queue.
+- Gradebook.
+- Analytics.
+- Access/cohorts.
 
-Avoid separate pages that force teachers to understand implementation categories. The teacher should move from "what needs attention" to the exact grading/review workspace in one click.
+The teacher should move from "what needs attention" to the exact grading workspace in one click.
 
 ### Review Workspace
 
-Target layout:
+Layout:
 
 ```text
-queue rail | student work | grading and feedback panel
+queue rail | submitted work | grading panel
 ```
 
-Rules:
+Requirements:
 
-- Queue rail is filterable and keyboard navigable.
-- Center pane shows the submitted artifact, answers, code output, files, and attempt history.
-- Right panel shows score, rubric/item feedback, release mode, return/publish actions.
-- Autosave teacher draft feedback locally and server-side as review draft if long forms are involved.
-- Publishing must show exactly what the student will see.
+- Queue filters: needs grading, returned, late, failed, high risk, stale draft.
+- Keyboard navigation through queue and grading fields.
+- Inline file preview.
+- Code output/test result preview.
+- Per-item feedback.
+- Overall feedback.
+- Rubric scoring.
+- Save draft feedback.
+- Return for revision with required feedback.
+- Publish with student-visible preview.
+- Grade correction as auditable revision.
 
 ### Gradebook
 
-Rewrite gradebook terminology and grouping:
+Gradebook must:
 
-- Rename `assignment_group` to `activity_category` or `assessment_kind`.
-- Group by activity type, chapter, cohort, learner, and status.
-- Use state chips that match the student activity shell.
-- Make every cell explain why it is in that state.
-- Batch actions must be policy-aware and disabled with reasons.
+- Group by learner, activity, chapter, assessment kind, status, and cohort.
+- Use the same state chips as student activity.
+- Explain every disabled batch action.
+- Export the same states visible in the UI.
+- Contain no `assignment_group` or assignment-language taxonomy.
 
-## API And Backend Rewrite
+## 12. Assignment Domain Removal
 
-### Activity Runtime Endpoint
+### Live Database
 
-Add one endpoint for the activity workspace:
+Required invariant:
 
-```text
-GET /courses/{course_uuid}/activities/{activity_uuid}/runtime
-```
+- No `assignment`, `assignment_task`, `assignmenttask`, `assignmentusersubmission`, or `assignmenttasksubmission` tables.
+- No `TYPE_ASSIGNMENT` rows in `activity`.
+- No assignment metadata keys in `submission.metadata_json`.
+- No foreign keys referencing deprecated assignment tables.
+- No assessment rows that depend on legacy assignment IDs.
 
-It returns the `StudentActivityRuntime` contract with:
+Existing migration `2026_05_18_1a2b3c4d5e6f_student_workflow_invariants.py` is directionally correct and must remain a hard failure if deprecated database state survives.
 
-- Course and chapter context.
-- Activity content metadata.
-- Assessment or file-submission state.
-- Progress state.
-- Policy state.
-- Primary action.
-- Next/previous navigation.
-- Permissions.
+### Application Code
 
-### Action Endpoint
+Remove:
 
-Add one command endpoint:
+- Assignment namespaces in message catalogs.
+- `NewAssignmentModal` copy and routes if not RBAC.
+- Student/teacher "Assignment" labels.
+- Assignment comments in active code.
+- Dead standalone assessment client.
+- Unused focus constants and events.
+- Any old activity page component no longer used by the new shell.
 
-```text
-POST /courses/{course_uuid}/activities/{activity_uuid}/actions
-```
+### Generated Contracts
 
-Commands:
+OpenAPI and generated TypeScript schema must contain no assignment workflow contract. RBAC user-role assignment is allowed and must be explicitly excluded from the ban.
 
-- `start`
-- `mark_viewed`
-- `mark_complete`
-- `unmark_complete`
-- `start_attempt`
-- `save_draft`
-- `submit`
-- `request_revision_start`
-- `acknowledge_feedback`
+### Migration History Policy
 
-Each command validates against the same state machine that produced the primary action.
+This requires clarification. If "no legacy" includes repository migration history, create a new squashed baseline migration and delete old assignment-era migrations. If deployed upgrade history must be preserved, keep historical migrations but add a repository check that allows assignment terms only in migrations before the invariant migration.
 
-### Progress Engine
+## 13. Frontend Replacement Plan
 
-Create a single progress reducer:
-
-```py
-def reduce_activity_progress(activity, policy, attempts, file_attempts, manual_events) -> ActivityProgressSnapshot:
-    ...
-```
-
-Rules:
-
-- One reducer owns state names.
-- Assessment and file-submission adapters feed normalized attempts into the reducer.
-- The reducer writes `ActivityProgress`.
-- Course progress is recalculated from activity snapshots.
-- Trail completion is derived from progress, not parallel manual state for assessable activities.
-
-### Grading Pipeline
-
-Target pipeline:
-
-1. Validate attempt and policy.
-2. Normalize submitted answers/files/code output.
-3. Grade raw work.
-4. Apply policy penalties once.
-5. Persist submission, grade entry, progress, and audit event in one transaction.
-6. Emit non-critical notifications after commit.
-
-Required cleanup:
-
-- Remove duplicate attempt penalty from the quiz grader or the pipeline after clarification.
-- Calculate late penalty consistently for auto-graded and manual-review submissions.
-- Make grade release status explicit: `needs_review`, `graded_hidden`, `published`.
-- Use one passing score source per activity.
-- Store raw score, penalty, final score, and visible score separately.
-- Make every teacher override an auditable grading revision.
-
-## Database Plan
-
-### Cleanup Migration
-
-Add a final invariant migration after current cleanup migrations:
-
-- Assert no deprecated assignment tables exist.
-- Assert no `TYPE_ASSIGNMENT` activity rows exist.
-- Assert no assignment metadata keys remain in `submission.metadata_json`.
-- Assert no assessment rows depend on assignment IDs.
-- Assert no foreign keys reference dropped assignment tables.
-- Fail the migration if any invariant is violated.
-
-### Schema Convergence
-
-- Store activity UUIDs as native UUID where feasible, or consistently prefixed strings with explicit constraints.
-- Remove duplicated hierarchy columns that can drift, especially activity/course/chapter denormalization where joins are authoritative.
-- Normalize file submission policy into the same policy visibility model as assessments.
-- Add indexes for runtime endpoint lookup:
-  - activity by UUID
-  - progress by `(user_id, activity_id)`
-  - submissions by `(user_id, activity_id, status, attempt_number)`
-  - file attempts by `(user_id, activity_id, status, updated_at)`
-
-## Frontend Plan
-
-### Module Boundaries
-
-Create feature modules:
+Create/complete:
 
 ```text
 features/student-activity/
-  api/
-  domain/
-  shell/
-  renderers/
-  actions/
-  tests/
-
-features/teacher-workflow/
-  course-command-center/
-  review-workspace/
-  gradebook/
-  analytics/
+  api/runtime.ts
+  domain/runtime.ts
+  shell/StudentActivityWorkspace.tsx
+  shell/ActivityHeader.tsx
+  shell/ActivityOutline.tsx
+  shell/ActivityActionPanel.tsx
+  shell/ActivityMobileActionBar.tsx
+  renderers/DynamicRenderer.tsx
+  renderers/AssessmentRenderer.tsx
+  renderers/FileSubmissionRenderer.tsx
+  renderers/VideoRenderer.tsx
+  renderers/DocumentRenderer.tsx
 ```
 
-The activity route should become thin:
+Rewrite route:
 
-- Fetch runtime contract.
-- Hydrate query cache only for interactive subfeatures.
+- Fetch backend runtime.
+- Stop calling `buildStudentActivityViewModel`.
+- Stop using trail data directly in the route.
+- Stop deriving assessable state locally.
+- Hydrate child query data only as an implementation detail.
 - Render `StudentActivityWorkspace`.
 
-### Component Removal
+Delete:
 
-Remove from the student activity route and then delete if no longer used:
+- `AssessmentAttemptClient.tsx`
+- unused `FOCUS_MODE_CHANGE_EVENT`
+- `ASSESSMENT_ATTEMPT_FOCUS_MODE_STORAGE_KEY` if no longer needed
+- old activity route-only components after replacement
+- assignment message namespaces
+- any standalone assessment UI that competes with activity workspace
 
-- `ActivityIndicators`
-- `ActivityChapterDropdown`
-- `FixedActivitySecondaryBar`
-- any duplicated activity toolbar
-- any assessment redirect/handoff card that competes with inline rendering
+Replace:
 
-### Design System Rules
+- `AssessmentLayout` focus persistence with activity layout state.
+- localStorage attempt-focus preference with explicit per-session layout state unless a user preference is product-approved.
+- hardcoded green/emerald status classes with semantic tokens or badge variants.
+- inline English strings in file-submission UI with message catalog keys.
 
-- Use semantic tokens from `components/ui`.
-- Cards only for repeated items, modals, receipts, file rows, feedback blocks, and contained tools.
-- No nested cards for page structure.
-- Activity pages use bands, rails, and panels, not stacked decorative boxes.
-- Icons for common actions, with tooltips where needed.
-- Stable dimensions for outline rows, bottom bars, attempt nav, grade cells, upload slots, and code runner panes.
+## 14. Backend Replacement Plan
 
-## Internationalization Plan
+Complete runtime endpoint:
 
-Remove or rewrite student and teacher workflow strings containing assignment terminology:
+- Include complete outline state.
+- Include current position and total count.
+- Include policy summary.
+- Include submission/file-submission state.
+- Include result/release state.
+- Include primary and secondary actions.
+- Include disabled reasons.
+- Include next/previous navigation.
 
-- Activity type labels.
-- File submission copy.
-- Old assignment modal strings.
-- Gradebook rollup copy.
-- Submit confirmation copy.
-- Permission descriptions that refer to grading assignments when the permission is assessment grading.
+Complete action endpoint:
 
-Keep RBAC "assignment" only where it means assigning roles or permissions.
+- Implement all commands in the runtime contract.
+- Validate command against the same state machine that produced the action.
+- Return refreshed runtime after command.
 
-## Testing Plan
+Complete progress reducer:
+
+- Normalize assessment submissions.
+- Normalize file submission attempts.
+- Normalize manual completion.
+- Update `ActivityProgress`.
+- Update course progress derived from activity progress.
+- Emit audit events.
+
+Complete grading pipeline:
+
+- Apply attempt penalty once.
+- Apply late penalty consistently for auto and manual review submissions.
+- Store raw score, penalty, final score, visible score, and release status separately.
+- Publish auto-graded results when policy allows.
+- Publish code challenge results immediately if that remains the product rule.
+- Make teacher overrides auditable revisions.
+
+## 15. Design System Rules
+
+- Use semantic tokens for state: success, warning, info, destructive, muted, pending, returned, hidden grade.
+- Use `Badge`, `Button`, `Sheet`, `Tooltip`, `ScrollArea`, `Progress`, `Alert`, and `Separator` consistently.
+- Keep cards for repeated items, receipts, result blocks, file rows, modals, and contained tools only.
+- Do not nest page-structure cards.
+- Keep card radius at existing system scale.
+- Use icons for common actions.
+- Give long Russian and Kazakh strings stable containers.
+- Use fixed dimensions for progress bars, outline icons, status badges, file rows, metrics, and bottom bars.
+- No hardcoded `text-green-*`, `text-emerald-*`, `bg-gray-*`, or `text-neutral-*` in the workflow.
+
+## 16. Internationalization
+
+Replace assignment-keyed namespaces with domain names:
+
+- `ActivityWorkspace`
+- `AssessmentWorkspace`
+- `FileSubmission`
+- `TeacherReview`
+- `Gradebook`
+- `CourseCommandCenter`
+
+All new and rewritten components must use `next-intl`. Inline English is prohibited.
+
+Russian and Kazakh labels must be reviewed for grammar and length. Current examples such as "Описание учебные задачи" and "Оқу әрекетіны" are not production-quality.
+
+## 17. Accessibility
+
+Required:
+
+- `aria-current="page"` for current outline item.
+- Keyboard navigable outline and review queue.
+- Disabled actions expose reasons.
+- Progress has text alternatives.
+- Bottom bar does not cover focused inputs.
+- Focus/reading mode exits with Escape.
+- Assessment guard dialogs are reachable and non-trapping.
+- File upload supports keyboard and screen reader operation.
+- Timer and save-state updates use polite live regions.
+
+## 18. Performance
+
+Apply Next.js and React performance rules:
+
+- Route remains server-first where possible.
+- Fetch runtime and session in parallel.
+- Avoid client waterfalls for trail, contributor status, activity state, and assessment state.
+- Dynamically import heavy renderers.
+- Keep the shell as a small client island.
+- Split assessment kind modules.
+- Use Suspense around heavy content, not around the whole page.
+- Avoid rebuilding course indexes on every client render.
+
+## 19. Cutover Tracks
+
+These are replacement tracks, not incremental fixes. A track is complete only when the old runtime path is deleted or made redirect-only.
+
+### Track A: State Authority Cutover
+
+Deliver:
+
+- Frontend consumes `StudentActivityRuntime`.
+- Local `buildStudentActivityViewModel` is removed from the route.
+- Primary action comes from server runtime.
+- Trail-derived route state is removed.
+
+Exit:
+
+- Screenshots cannot show contradictory "complete", "not started", and "access blocked" states.
+
+### Track B: Student Workspace Cutover
+
+Deliver:
+
+- New `StudentActivityWorkspace`.
+- Type-specific renderers.
+- New action panel and mobile bar.
+- Dynamic, assessment, code, file, video, and document states wired.
+
+Exit:
+
+- One URL owns every activity type.
+- Mobile and desktop have one primary action.
+
+### Track C: Assessment And Code Runtime Cutover
+
+Deliver:
+
+- Preflight, active attempt, result, feedback, retry/revision.
+- Code challenge editor/test runner/result as first-class workspace.
+- Standalone assessment client deleted.
+
+Exit:
+
+- `/assessments/[uuid]` is redirect-only.
+- Assessment attempt focus does not rely on old storage constants.
+
+### Track D: File Submission Cutover
+
+Deliver:
+
+- Fully localized file-submission workspace.
+- Receipt, result, revision, rubric, history.
+- Server runtime owns shell state.
+
+Exit:
+
+- File submission no longer behaves like a migrated assignment.
+
+### Track E: Teacher Workflow Cutover
+
+Deliver:
+
+- Course command center.
+- Review workspace.
+- Gradebook state alignment.
+- Audit-grade correction.
+
+Exit:
+
+- Teacher can triage, review, return, publish, and correct without leaving the coherent workflow.
+
+### Track F: Legacy Removal Cutover
+
+Deliver:
+
+- Assignment copy removed.
+- Dead files removed.
+- Constants/events removed.
+- Database invariants enforced.
+- Generated contracts clean.
+- Repository checks added.
+
+Exit:
+
+- No assignment workflow survives outside allowed RBAC language and approved historical migrations.
+
+## 20. Testing Plan
 
 ### Backend
 
-- Migration invariant test for assignment table removal.
 - Runtime endpoint contract tests for every activity type.
-- Progress reducer tests for all student states.
-- Grading pipeline tests for attempt penalty, late penalty, release mode, manual review, returned revision, and published correction.
-- File submission progress tests using policy passing score.
-- Permission tests for student, teacher, contributor, and admin.
+- Action endpoint state matrix tests.
+- Progress reducer tests for all states.
+- File submission completion tests.
+- Assessment grading/release tests.
+- Late and attempt penalty tests.
+- Grade correction audit tests.
+- Assignment invariant migration tests.
+- OpenAPI no-assignment contract test.
 
 ### Frontend
 
-- Student activity workspace view-model tests.
+- `StudentActivityWorkspace` state rendering tests.
 - Primary action matrix tests.
-- Dynamic lecture layout tests with headings, no headings, long headings, embeds, and mobile.
-- Assessment inline runtime tests.
-- File submission draft/submit/result/revise tests.
-- Gradebook terminology test that rejects student/teacher assignment labels.
+- Outline state tests.
+- Dynamic layout tests.
+- Assessment preflight/attempt/result tests.
+- Code challenge workspace tests.
+- File submission draft/submit/receipt/result/revision tests.
+- i18n no-inline-English checks for rewritten workflow.
+- Design-token checks for hardcoded color classes.
 
 ### End To End
 
-- Student starts a course, opens lecture, uses TOC, completes activity, continues.
-- Student submits quiz, sees held or published grade based on policy.
-- Student submits manual review work, teacher returns it, student revises.
-- Student submits file work, teacher grades and publishes.
-- Teacher opens course command center, reviews queue, grades, publishes, and sees gradebook update.
-- Migration test proves no deprecated assignment artifacts remain after upgrade.
+- Student completes dynamic lesson and continues.
+- Student starts quiz, submits, sees result or release hold.
+- Student starts exam with anti-cheat policy and submits.
+- Student solves code challenge, runs tests, submits, sees result.
+- Student uploads file, receives receipt, teacher publishes, student sees feedback.
+- Teacher returns work, student revises, teacher republishes.
+- Teacher opens gradebook and sees same state as student.
+- Mobile workflow for all activity types at `390x844`.
+- Desktop workflow at `1440x900` and `1280x800`.
 
-## Rollout Plan
+## 21. Acceptance Criteria
 
-This rollout uses replacement milestones, not incremental UI patches.
-
-### Milestone 1: Canonical Contracts
-
-- Define `StudentActivityRuntime`.
-- Define `TeacherReviewRuntime`.
-- Define normalized progress states.
-- Lock grading policy decisions from the clarification section.
-- Add backend tests for current and target state machines.
-
-Exit criteria:
-
-- Runtime contracts compile.
-- State/action matrix is documented and tested.
-- Assignment-removal invariants are encoded as tests.
-
-### Milestone 2: Backend Runtime Rewrite
-
-- Build activity runtime endpoint.
-- Build action endpoint.
-- Build single progress reducer.
-- Normalize file submission progress into the same state vocabulary.
-- Fix grading penalty/release ambiguity after clarification.
-
-Exit criteria:
-
-- Student progress is correct from server state for all activity types.
-- Teacher queue and gradebook consume the same progress states.
-- Deprecated assignment tables and metadata cannot reappear.
-
-### Milestone 3: Student Workspace Rewrite
-
-- Replace route internals with `StudentActivityWorkspace`.
-- Move primary action selection to runtime contract.
-- Replace dynamic lecture layout.
-- Inline all assessment/file submission activity types in the shell.
-- Convert `/assessments/[assessmentUuid]` into canonical activity deep link behavior.
-
-Exit criteria:
-
-- One activity route owns the student workflow.
-- Lecture content never collapses behind the TOC.
-- Mobile workflow is content-first with a single bottom primary action.
-
-### Milestone 4: Teacher Workflow Rewrite
-
-- Build course command center.
-- Build review workspace.
-- Rewrite gradebook taxonomy and filters.
-- Add publish/return/correction audit UI.
-- Remove assignment wording from teacher workflow.
-
-Exit criteria:
-
-- Teacher can triage and grade without leaving the workflow.
-- Grade state is clear to teacher and student.
-- Batch actions are policy-aware.
-
-### Milestone 5: Removal And Verification
-
-- Delete old activity components not used by the new route.
-- Delete old assessment route UI that competes with the activity workspace.
-- Remove deprecated messages.
-- Run schema, OpenAPI, generated client, and repository text checks.
-- Run Playwright layout verification for desktop and mobile.
-
-Exit criteria:
-
-- No deprecated assignment domain remains.
-- No old student activity runtime remains.
-- Tests and visual checks pass.
-
-## Acceptance Criteria
-
-- Student can understand location, task, status, and next action within five seconds on every activity.
-- Dynamic lecture content uses the majority of the content area; TOC never consumes more than a bounded rail.
-- Every activity type has one canonical student runtime.
-- Every assessable activity has traceable policy, submission, grading, progress, and result state.
-- Teacher review queue and student status use the same state vocabulary.
-- No assignment tables, activity types, metadata, generated API contracts, UI labels, or gradebook group names remain.
-- Migration fails loudly if deprecated assignment data still exists.
-- All grading penalties are applied exactly once and are visible in audit history.
+- A student understands location, task, status, policy, and next action within five seconds.
+- Every activity type uses the same canonical route.
+- Every visible status comes from the backend runtime or an activity sub-runtime synchronized into it.
+- Every primary action is server-authorized.
+- Assessment, code challenge, and file submission never contradict the shell status.
+- Teacher review and student status use the same vocabulary.
+- Gradebook explains state and disabled actions.
+- Assignment workflow is gone from live DB, API, generated contracts, UI, analytics, and active code.
+- Visual layout has no overlapping labels, no metric overflow, no contradictory bottom bars, and no nested page-structure cards.
+- Russian and Kazakh strings fit and read naturally.
+- Tests and Playwright visual checks pass.

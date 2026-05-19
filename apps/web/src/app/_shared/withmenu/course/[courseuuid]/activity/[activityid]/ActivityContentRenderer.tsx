@@ -39,14 +39,12 @@ const InlineAssessmentWorkspace = dynamic(() => import('@/features/assessments/s
 
 export function ActivityContentRenderer({
   activity,
-  assessmentUuid,
   canView,
   course,
   courseuuid,
   isCourseEnd,
 }: {
   activity: Activity | null;
-  assessmentUuid: string | null;
   canView: boolean;
   course: CourseStructure;
   courseuuid: string;

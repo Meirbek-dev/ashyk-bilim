@@ -563,6 +563,59 @@ def test_save_grade_and_publish_immediately(
     assert data["final_score"] == 92
 
 
+def test_published_grade_correction_stays_published_and_adds_audit_revision(
+    api_client: TestClient, db_session_factory
+) -> None:
+    """Published grade corrections remain visible and append a grading audit entry."""
+    assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
+
+    first = api_client.patch(
+        f"/assessments/{assessment_uuid}/submissions/submission_alice_grade",
+        json={"final_score": 92, "feedback": "Initial published grade.", "status": "PUBLISHED"},
+    )
+    assert first.status_code == 200
+
+    correction = api_client.patch(
+        f"/assessments/{assessment_uuid}/submissions/submission_alice_grade",
+        json={"final_score": 96, "feedback": "Corrected rubric total.", "status": "PUBLISHED"},
+    )
+
+    assert correction.status_code == 200
+    assert correction.json()["status"] == "PUBLISHED"
+    assert correction.json()["final_score"] == 96
+
+    with db_session_factory() as session:
+        submission = session.exec(
+            select(Submission).where(Submission.submission_uuid == "submission_alice_grade")
+        ).one()
+        entries = session.exec(
+            select(GradingEntry).where(GradingEntry.submission_id == submission.id)
+        ).all()
+
+    assert len(entries) == 2
+    assert all(entry.published_at is not None for entry in entries)
+
+
+def test_published_grade_cannot_be_returned_for_hidden_correction(
+    api_client: TestClient, db_session_factory
+) -> None:
+    """After publication, teachers must correct by publishing a new revision."""
+    assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
+
+    published = api_client.patch(
+        f"/assessments/{assessment_uuid}/submissions/submission_alice_grade",
+        json={"final_score": 92, "feedback": "Published.", "status": "PUBLISHED"},
+    )
+    assert published.status_code == 200
+
+    response = api_client.patch(
+        f"/assessments/{assessment_uuid}/submissions/submission_alice_grade",
+        json={"final_score": 0, "feedback": "Hide this result.", "status": "RETURNED"},
+    )
+
+    assert response.status_code == 422
+
+
 def test_save_grade_return_for_revision(
     api_client: TestClient, db_session_factory
 ) -> None:

@@ -87,84 +87,6 @@
       "stop": "Stop",
       "writerPlaceholder": "Write about..."
     },
-    "AssignmentBoxUI": {
-      "currentPoints": "Current points: {points}",
-      "enterGradePlaceholder": "Enter grade (max {max})",
-      "fileSubmissionTitle": "File Submission",
-      "formTitle": "Form",
-      "grade": "Grade",
-      "points": "{count, plural, =0 {# points} one {# point} other {# points}}",
-      "quizTitle": "Quiz",
-      "save": "Save draft",
-      "saveProgress": "Save your progress",
-      "savingDisclaimer": "Don't forget to save your progress",
-      "teacherView": "Teacher view"
-    },
-    "AssignmentStudentActivity": {
-      "assignment": "Assessment task",
-      "blankLabel": "Field {index}",
-      "descriptionTitle": "Assessment task Description",
-      "dueDate": "Due Date",
-      "emptyOption": "Empty option",
-      "hint": "Hint",
-      "loadSubmissionError": "Could not load your assessment task answer.",
-      "noTasks": "No tasks available",
-      "points": "{count, plural, =0 {# points} one {# point} other {# points}}",
-      "progressSaved": "Progress saved",
-      "questionLabel": "Question {index}",
-      "referenceDocument": "Reference Document",
-      "saveProgress": "Save draft",
-      "saveSubmissionError": "Could not save your answer.",
-      "itemsLabel": "Items",
-      "minutesShort": "min",
-      "unlimited": "Unlimited",
-      "attemptsLabel": "Attempts",
-      "attemptsRemaining": "{remaining} left",
-      "noAssessmentFound": "No assessment found.",
-      "failedToStartAssessment": "Failed to start assessment.",
-      "assessmentStarted": "Assessment started.",
-      "revisionDraftCreated": "Revision draft created.",
-      "recoveredSavedAnswers": "Recovered saved answers.",
-      "readyToRevise": "Ready to revise",
-      "readyToBegin": "Ready to begin",
-      "readyToBeginDescription": "Start your assessment task and submit when you're ready.",
-      "readyToReviseDescription": "A revision draft is ready. Update your answers and submit again.",
-      "startRevision": "Start revision",
-      "startAssessment": "Start assessment",
-      "scoreLabel": "Score",
-      "timeLimit": "Time Limit",
-      "noEditableDraft": "No editable draft available",
-      "submissionReceivedTitle": "Submission received",
-      "submissionReceivedDescription": "Submitted. Your teacher will release the grade when review is complete.",
-      "submissionReceivedWithDateDescription": "Submitted on {date}. Your teacher will release the grade when review is complete.",
-      "resultsWaitingForReleaseTitle": "Results are waiting for release",
-      "resultsWaitingForReleaseDescription": "Your latest submission has been graded. Scores and feedback will appear after your teacher releases them.",
-      "returnedForRevision": "Returned for revision",
-      "resultAvailable": "Result available",
-      "resumedDraft": "Resumed draft",
-      "resumedDraftDescription": "Last saved at {time}",
-      "pointsShort": "pts",
-      "task": "Task {index}",
-      "taskContentUnavailable": "This task content is not available in student mode yet.",
-      "taskTypeFile": "File upload",
-      "taskTypeForm": "Form",
-      "taskTypeOther": "Other",
-      "taskTypeQuiz": "Quiz",
-      "untitledQuestion": "Untitled question",
-      "unsavedChanges": "Unsaved changes",
-      "allowedFormats": "Allowed formats: pdf, docx, mp4, mkv, jpg, jpeg, png, pptx, zip",
-      "ariaLabel": "Choose file to upload for assessment task",
-      "missingAssignmentInfo": "Missing required assessment task information",
-      "selectFile": "Select File",
-      "submitFile": "Submit File",
-      "uploadFailed": "Upload failed",
-      "attemptNumber": "Attempt #{number}",
-      "latestSubmission": "Latest submission",
-      "workProgressTitle": "Work progress",
-      "answeredProgress": "{answered} of {total} answered",
-      "unansweredProgress": "{count, plural, =0 {All questions have an answer} one {# question left} other {# questions left}}",
-      "taskNavigatorTitle": "Task navigator"
-    },
     "CodeChallenges": {
       "actualOutput": "Your Output",
       "addTestCase": "Add Test Case",
@@ -514,7 +436,6 @@
   },
   "ActivityIndicators": {
     "activityTypes": {
-      "assignment": "Assessment task",
       "codeChallenge": "Code Challenge",
       "document": "Document",
       "exam": "Exam",
@@ -539,7 +460,6 @@
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",
     "activityTypes": {
-      "assignment": "Assessment task",
       "document": "Document",
       "dynamic": "Page",
       "exam": "Exam",
@@ -547,16 +467,6 @@
       "fileSubmission": "File Submission",
       "learningMaterial": "Learning Material",
       "video": "Video"
-    },
-    "assignmentActions": {
-      "submit": "Submit",
-      "submitConfirm": "Are you sure you want to submit the assessment task for grading? You will not be able to make changes after submission.",
-      "submitForGrading": "Submit",
-      "submitYourAssingmentForGrading": "Submit your assessment task for grading"
-    },
-    "assignmentStatus": {
-      "graded": "Graded",
-      "grading": "Grading in progress"
     },
     "chapter": "Chapter",
     "chapters": "Chapters",
@@ -619,6 +529,21 @@
     "viewAllActivities": "View all activities",
     "viewAssessment": "View Assessment",
     "viewResult": "View Result",
+    "startActivity": "Start activity",
+    "continueActivity": "Continue",
+    "submitButton": "Submit",
+    "viewReceipt": "View receipt",
+    "draft": "Draft",
+    "failed": "Failed",
+    "accessBlocked": "Access blocked",
+    "attemptExhausted": "Attempts exhausted",
+    "signInRequired": "Sign in to continue",
+    "attemptLimit": "{count, plural, one {# attempt} other {# attempts}} allowed",
+    "passingScore": "Passing score: {score}%",
+    "releaseMode": "Release: {mode}",
+    "submittedAt": "Submitted {date}",
+    "gradedAt": "Graded {date}",
+    "unmarkComplete": "Unmark complete",
     "onThisPage": "On this page"
   },
   "AdminUtils": {
@@ -1515,8 +1440,6 @@
         "typeGeneral": "Practice",
         "typeGeneralHint": "Students can submit multiple times without ranking"
       },
-      "assignments": "Assessment tasks",
-      "assignmentsDesc": "Create a task with written or file-based submissions",
       "backToActivities": "Back to Activities",
       "chooseType": "Choose activity type",
       "codeChallenge": "Code Challenge",
@@ -1544,27 +1467,6 @@
       "maxSize": "Max size (MB)",
       "requiredFields": "Title and instructions are required",
       "title": "Title"
-    },
-    "NewAssignmentModal": {
-      "alphabet": "Alphabetical",
-      "assignmentDescription": "Assessment task Description",
-      "assignmentTitle": "Assessment task Title",
-      "createActivity": "Create Activity",
-      "createError": "Failed to create assessment task: {error}",
-      "createSuccess": "Assessment task created successfully",
-      "creatingAssignment": "Creating assessment task...",
-      "dueDate": "Due Date",
-      "gradingType": "Grading Type",
-      "numeric": "Numeric",
-      "percentage": "Percentage",
-      "selectDeadline": "Select a deadline for completing the task",
-      "selectGradingType": "Select grading type",
-      "unexpectedError": "An unexpected error occurred",
-      "unknownError": "Unknown error",
-      "valueMissingDescription": "Please provide a description for your assessment task",
-      "valueMissingDueDate": "Please provide a due date for your assessment task",
-      "valueMissingGradingType": "Please provide a grading type for your assessment task",
-      "valueMissingTitle": "Please provide a title for your assessment task"
     },
     "NewChapterModal": {
       "chapterDescription": "Chapter Description",
@@ -2082,7 +1984,6 @@
       "expected": "Expected:",
       "fillBlanksError": "Please fill in at least one blank before submitting.",
       "fillInTheBlanks": "Fill in the blanks",
-      "gradeAssignment": "Grade Assessment task",
       "gradeError": "Error grading task, please retry later.",
       "gradedSuccessfully": "Task graded successfully with {finalGrade} points ({correctAnswers}/{totalBlanks} correct)",
       "hint": "Hint (optional)",
@@ -2302,9 +2203,6 @@
     }
   },
   "Contexts": {
-    "Assignment": {
-      "loadError": "Failed to load assessment task data"
-    },
     "Course": {
       "loadError": "Failed to load course structure"
     },
@@ -2323,7 +2221,6 @@
   "CourseEdit": {
     "ActivityElement": {
       "ActivityTypes": {
-        "assignment": "Assessment task",
         "codeChallenge": "Code Challenge",
         "document": "Document",
         "dynamic": "Dynamic",
@@ -2343,7 +2240,6 @@
       "deleteTitle": "Delete {name}?",
       "deleting": "Deleting...",
       "deletingActivity": "Deleting activity...",
-      "editAssignmentButton": "Edit Assessment task",
       "editPageButton": "Edit Page",
       "openEditPage": "Open edit page",
       "failedToUpdateActivityName": "Failed to update activity name",
@@ -2517,7 +2413,6 @@
     },
     "activityNamePlaceholder": "Activity name",
     "activityTypes": {
-      "assignment": "Assessment task",
       "document": "Document",
       "dynamic": "Dynamic",
       "video": "Video"
@@ -2555,7 +2450,6 @@
     "activityCounter": "{current} of {total}",
     "activityNotPublished": "This activity is not published yet",
     "admin": "Admin",
-    "assignment": "Assessment task",
     "fileSubmission": "File Submission",
     "cancel": "Cancel",
     "confirmDelete": "Are you sure you want to delete this?",
@@ -3717,9 +3611,7 @@
             "description": "Can create courses but need ownership for content creation",
             "name": "Instructor",
             "permissions": {
-              "createAssignments": "Create assessment tasks",
               "createCourses": "Create courses",
-              "gradeAssignments": "Grade assessment tasks",
               "manageOwnCourses": "Manage own courses"
             }
           },
@@ -3727,7 +3619,6 @@
             "description": "Mid-level manager with wide permissions",
             "name": "Maintainer",
             "permissions": {
-              "manageAssignments": "Manage assessment tasks",
               "manageCourses": "Manage courses",
               "manageUsers": "Manage users"
             }
@@ -3736,7 +3627,6 @@
             "description": "Read-Only Learner",
             "name": "User",
             "permissions": {
-              "submitAssignments": "Submit assessment tasks",
               "takeAssessments": "Take assessments",
               "viewCourses": "View courses"
             }
@@ -5745,7 +5635,6 @@
         },
         "xpSources": {
           "activity_completion": "Activity Completed",
-          "assignment_submission": "Assessment task Submitted",
           "course_completion": "Course Completed",
           "discussion_post": "Discussion Post",
           "first_activity": "First Activity",
@@ -6891,7 +6780,6 @@
         "none": "No comparison"
       },
       "assessmentType": {
-        "assignment": "Assessment task",
         "quiz": "Quiz",
         "exam": "Exam",
         "codeChallenge": "Code challenge"
@@ -7303,7 +7191,6 @@
           "activity": "Activities"
         },
         "activityTypes": {
-          "assignment": "Assessment task",
           "exam": "Exam",
           "codeChallenge": "Code Challenge",
           "quiz": "Quiz",
@@ -8028,7 +7915,6 @@
         "outlineEmptyMessage": "No items yet. Click + to add your first question or block.",
         "itemInfo": "{kind} • {max_score} pts",
         "kinds": {
-          "ASSIGNMENT": "Assessment task",
           "EXAM": "Exam",
           "CODE_CHALLENGE": "Code Challenge",
           "QUIZ": "Quiz",
@@ -8096,7 +7982,6 @@
           "copyOfItem": "Copy of {itemNoun}",
           "assessmentDetailsTitle": "Assessment details",
           "assessmentDetailsExamDescription": "Title, instructions, schedule, and exam policy.",
-          "assessmentDetailsAssignmentDescription": "Title, instructions, schedule, and grading settings.",
           "itemMetadataTitle": "{itemNoun} metadata",
           "itemMetadataDescription": "Shared title, prompt, and point value.",
           "titleLabel": "Title",
@@ -8266,7 +8151,6 @@
             "activity": "Activities"
           },
           "activityTypes": {
-            "assignment": "Assessment task",
             "exam": "Exam",
             "codeChallenge": "Code Challenge",
             "quiz": "Quiz",
@@ -8758,8 +8642,6 @@
   "Validation": {
     "activityDescriptionRequired": "Activity description is required",
     "activityNameRequired": "Activity name is required",
-    "assignmentDescriptionRequired": "Assessment task description is required",
-    "assignmentTitleRequired": "Assessment task title is required",
     "chapterDescriptionRequired": "Chapter description is required",
     "chapterNameRequired": "Chapter name is required",
     "contentRequired": "Content is required",
@@ -8904,6 +8786,51 @@
       "published": "Grade published",
       "returned": "Returned for revision",
       "failed": "Failed to save grading"
+    }
+  },
+  "FileSubmission": {
+    "requirementMaxFiles": "{count, plural, one {Up to # file} other {Up to # files}}",
+    "requirementMaxSize": "{size} MB each",
+    "maxFilesAllowed": "{count, plural, one {Maximum # file allowed} other {Maximum # files allowed}}",
+    "invalidFiles": "Some files do not meet activity requirements",
+    "notAvailable": "File submission is not available",
+    "uploadFailed": "Upload failed",
+    "submittedToast": "Files submitted successfully",
+    "draftSavedToast": "Draft saved",
+    "saveFailed": "Unable to save submission",
+    "startDraftFailed": "Unable to start draft",
+    "gradedReleasePending": "Your submission has been graded. Grade release is pending.",
+    "late": "Late",
+    "due": "Due {date}",
+    "dropzoneTitle": "Drop files here or choose from your device",
+    "chooseFiles": "Choose files",
+    "submittedLocked": "Your latest attempt has been submitted. New files can be added if the teacher returns it for revision.",
+    "submitHelp": "Submit only final files. Saving a draft keeps files private until you submit.",
+    "saveDraft": "Save draft",
+    "submitFiles": "Submit files",
+    "submissionHistory": "Submission history",
+    "attemptNumber": "Attempt {number}",
+    "draft": "Draft",
+    "fileCount": "{count, plural, one {# file} other {# files}}",
+    "submissionReceived": "Submission received",
+    "attempt": "Attempt",
+    "files": "Files",
+    "statusLabel": "Status",
+    "awaitingReview": "Awaiting review",
+    "yourScore": "Your score",
+    "latePenalty": "Late penalty: -{percent}%",
+    "returnedForRevision": "Returned for revision",
+    "passed": "Passed",
+    "failed": "Failed",
+    "teacherFeedback": "Teacher feedback",
+    "startRevision": "Start revision",
+    "removeFile": "Remove {name}",
+    "status": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "graded": "Graded",
+      "published": "Published",
+      "returned": "Returned"
     }
   }
 }

@@ -88,7 +88,9 @@ export function normalizeProgressState(
   state: ActivityProgressCell['state'] | undefined,
   cell?: Pick<ActivityProgressCell, 'latest_submission_status' | 'passed' | 'completed_at'> | null,
 ): StudentActivityState {
-  if (cell?.completed_at) return 'complete';
+  if (cell?.completed_at && (!state || state === 'NOT_STARTED' || state === 'IN_PROGRESS' || state === 'COMPLETED')) {
+    return 'complete';
+  }
   switch (state) {
     case 'IN_PROGRESS':
       return 'in_progress';

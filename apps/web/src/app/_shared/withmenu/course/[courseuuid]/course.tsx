@@ -449,10 +449,10 @@ const CourseClient = (props: any) => {
                                     {/* Completion indicator */}
                                     <div className="shrink-0">
                                       {done ? (
-                                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15">
+                                        <div className="bg-primary/15 flex h-5 w-5 items-center justify-center rounded-full">
                                           <Check
                                             size={10}
-                                            className="stroke-3 text-emerald-600"
+                                            className="text-primary stroke-3"
                                           />
                                         </div>
                                       ) : (

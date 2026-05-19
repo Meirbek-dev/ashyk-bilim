@@ -46,7 +46,7 @@ export default function AttemptResultCard({
           !showScore
             ? 'border-muted-foreground/30 text-muted-foreground'
             : passing
-              ? 'border-green-500 text-green-600 dark:text-green-400'
+              ? 'border-primary text-primary'
               : 'border-destructive text-destructive',
         )}
       >
@@ -67,7 +67,7 @@ export default function AttemptResultCard({
           passing ? (
             <Badge
               variant="outline"
-              className="gap-1.5 border-green-500 text-green-600"
+              className="border-primary text-primary gap-1.5"
             >
               <CheckCircle2 className="size-3" />
               {t('passed')}

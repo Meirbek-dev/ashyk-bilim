@@ -87,85 +87,6 @@
       "stop": "Остановить",
       "writerPlaceholder": "Написать о..."
     },
-    "AssignmentBoxUI": {
-      "currentPoints": "Текущие баллы: {points}",
-      "enterGradePlaceholder": "Введите оценку (макс. {max})",
-      "fileSubmissionTitle": "Загрузка файла",
-      "formTitle": "Форма",
-      "grade": "Оценка",
-      "points": "{count, plural, =0 {# баллов} one {# балл} few {# балла} many {# баллов} other {# баллов}}",
-      "quizTitle": "Тест",
-      "save": "Сохранить",
-      "saveProgress": "Сохранить прогресс",
-      "savingDisclaimer": "Не забудьте сохранить свой прогресс",
-      "teacherView": "Просмотр для преподавателя"
-    },
-    "AssignmentStudentActivity": {
-      "assignment": "Учебная задача",
-      "blankLabel": "Поле {index}",
-      "descriptionTitle": "Описание учебные задачи",
-      "dueDate": "Срок сдачи",
-      "emptyOption": "Пустой вариант",
-      "hint": "Подсказка",
-      "loadSubmissionError": "Не удалось загрузить ваш ответ по учебной задаче.",
-      "noTasks": "Нет доступных учебных задач",
-      "points": "{count, plural, =0 {# баллов} one {# балл} few {# балла} many {# баллов} other {# баллов}}",
-      "progressSaved": "Прогресс сохранён",
-      "questionLabel": "Вопрос {index}",
-      "referenceDocument": "Справочный документ",
-      "saveProgress": "Сохранить прогресс",
-      "saveSubmissionError": "Не удалось сохранить ваш ответ.",
-      "signInToSave": "Войдите в систему, чтобы сохранить ответ.",
-      "noAssessmentFound": "Оценка не найдена.",
-      "failedToStartAssessment": "Не удалось начать учебная задача.",
-      "assessmentStarted": "Учебная задача начато.",
-      "revisionDraftCreated": "Черновик для доработки создан.",
-      "recoveredSavedAnswers": "Сохраненные ответы восстановлены.",
-      "readyToRevise": "Готово к доработке",
-      "readyToBeginDescription": "Начните учебная задача и отправьте его, когда будете готовы.",
-      "readyToReviseDescription": "Черновик для доработки готов. Обновите ответы и отправьте снова.",
-      "startRevision": "Начать доработку",
-      "startAssessment": "Начать учебная задача",
-      "scoreLabel": "Оценка",
-      "task": "Учебная задача {index}",
-      "taskContentUnavailable": "Содержимое этого учебные задачи пока недоступно в режиме студента.",
-      "taskTypeFile": "Загрузка файла",
-      "taskTypeForm": "Форма",
-      "taskTypeOther": "Другое",
-      "taskTypeQuiz": "Тест",
-      "untitledQuestion": "Вопрос без текста",
-      "unsavedChanges": "Есть несохранённые изменения",
-      "allowedFormats": "Разрешенные форматы: pdf, docx, mp4, mkv, jpg, jpeg, png, pptx, zip",
-      "ariaLabel": "Выберите файл для загрузки для учебные задачи",
-      "missingAssignmentInfo": "Отсутствует необходимая информация о задании",
-      "selectFile": "Выберите файл",
-      "submitFile": "Отправить файл",
-      "uploadFailed": "Не удалось загрузить файл",
-      "attemptNumber": "Попытка #{number}",
-      "latestSubmission": "Последняя отправка",
-      "workProgressTitle": "Прогресс работы",
-      "answeredProgress": "Отвечено {answered} из {total}",
-      "unansweredProgress": "{count, plural, =0 {На все вопросы есть ответ} one {Остался # вопрос} few {Осталось # вопроса} many {Осталось # вопросов} other {Осталось # вопроса}}",
-      "taskNavigatorTitle": "Навигация по учебные задачим",
-      "itemsLabel": "Учебные задачи",
-      "timeLimit": "Ограничение времени",
-      "unlimited": "Неограниченно",
-      "attemptsLabel": "Попытки",
-      "readyToBegin": "Готовы начать",
-      "noEditableDraft": "Нет доступного для редактирования черновика",
-      "minutesShort": "мин",
-      "attemptsRemaining": "осталось {remaining}",
-      "submissionReceivedTitle": "Ответ принят",
-      "submissionReceivedDescription": "Отправлено. Преподаватель опубликует оценку после проверки.",
-      "submissionReceivedWithDateDescription": "Отправлено {date}. Преподаватель опубликует оценку после проверки.",
-      "resultsWaitingForReleaseTitle": "Результаты ожидают публикации",
-      "resultsWaitingForReleaseDescription": "Ваш последний ответ проверен. Оценка и комментарии появятся после публикации преподавателем.",
-      "returnedForRevision": "Возвращено на доработку",
-      "resultAvailable": "Результат доступен",
-      "resumedDraft": "Черновик восстановлен",
-      "resumedDraftDescription": "Последнее сохранение: {time}",
-      "pointsShort": "балл(ов)"
-    },
     "CodeChallenges": {
       "actualOutput": "Ваш вывод",
       "addTestCase": "Добавить тестовый случай",
@@ -519,7 +440,6 @@
   },
   "ActivityIndicators": {
     "activityTypes": {
-      "assignment": "Учебная задача",
       "codeChallenge": "Код задача",
       "document": "Документ",
       "exam": "Тест",
@@ -544,7 +464,6 @@
     "activityCounter": "{current} из {total}",
     "activityNotPublished": "Эта активность еще не опубликована",
     "activityTypes": {
-      "assignment": "Учебная задача",
       "document": "Документ",
       "dynamic": "Страница",
       "exam": "Тест",
@@ -552,16 +471,6 @@
       "learningMaterial": "Учебный материал",
       "video": "Видео",
       "codeChallenge": "Code challenge"
-    },
-    "assignmentActions": {
-      "submit": "Отправить учебная задача",
-      "submitConfirm": "Вы уверены, что хотите отправить учебная задача на проверку? Вы не сможете внести изменения после отправки.",
-      "submitForGrading": "Отправить на проверку",
-      "submitYourAssingmentForGrading": "Отправьте учебная задача на проверку"
-    },
-    "assignmentStatus": {
-      "graded": "Оценено",
-      "grading": "Оценка в процессе"
     },
     "chapter": "Глава",
     "chapters": "Главы",
@@ -624,6 +533,21 @@
     "support": "Support",
     "viewAssessment": "Перейти к учебной задаче",
     "viewResult": "Смотреть результат",
+    "startActivity": "Начать",
+    "continueActivity": "Продолжить",
+    "submitButton": "Отправить",
+    "viewReceipt": "Посмотреть квитанцию",
+    "draft": "Черновик",
+    "failed": "Не пройдено",
+    "accessBlocked": "Доступ заблокирован",
+    "attemptExhausted": "Попытки исчерпаны",
+    "signInRequired": "Войдите, чтобы продолжить",
+    "attemptLimit": "Попыток доступно: {count}",
+    "passingScore": "Проходной балл: {score}%",
+    "releaseMode": "Публикация: {mode}",
+    "submittedAt": "Отправлено: {date}",
+    "gradedAt": "Оценено: {date}",
+    "unmarkComplete": "Снять отметку",
     "onThisPage": "На этой странице"
   },
   "AdminUtils": {
@@ -1505,8 +1429,6 @@
         "typeGeneral": "Практика",
         "typeGeneralHint": "Студенты могут отправлять решения без рейтинга"
       },
-      "assignments": "Учебные задачи",
-      "assignmentsDesc": "Создайте учебная задача с текстовыми или файловыми ответами",
       "backToActivities": "Вернуться к активностям",
       "chooseType": "Выберите тип активности",
       "codeChallenge": "Код задача",
@@ -1534,27 +1456,6 @@
       "maxSize": "Максимальный размер (МБ)",
       "requiredFields": "Название и инструкции обязательны",
       "title": "Название"
-    },
-    "NewAssignmentModal": {
-      "alphabet": "Алфавитный",
-      "assignmentDescription": "Описание учебные задачи",
-      "assignmentTitle": "Название учебные задачи",
-      "createActivity": "Создать активность",
-      "createError": "Не удалось создать учебная задача: {error}",
-      "createSuccess": "Учебная задача успешно создано",
-      "creatingAssignment": "Создание учебные задачи...",
-      "dueDate": "Срок сдачи",
-      "gradingType": "Тип оценивания",
-      "numeric": "Числовой",
-      "percentage": "Процентный",
-      "selectDeadline": "Выберите крайний срок выполнения учебные задачи",
-      "selectGradingType": "Выберите тип оценивания",
-      "unexpectedError": "Произошла непредвиденная ошибка",
-      "unknownError": "Неизвестная ошибка",
-      "valueMissingDescription": "Пожалуйста, предоставьте описание учебные задачи",
-      "valueMissingDueDate": "Пожалуйста, укажите срок сдачи учебные задачи",
-      "valueMissingGradingType": "Пожалуйста, укажите тип оценивания",
-      "valueMissingTitle": "Пожалуйста, укажите название"
     },
     "NewChapterModal": {
       "chapterDescription": "Описание главы",
@@ -2088,7 +1989,6 @@
       "expected": "Ожидалось:",
       "fillBlanksError": "Пожалуйста, заполните хотя бы один пропуск перед отправкой.",
       "fillInTheBlanks": "Заполните пропуски",
-      "gradeAssignment": "Оценить учебная задача",
       "gradeError": "Ошибка при оценивании учебные задачи, пожалуйста, попробуйте позже.",
       "gradedSuccessfully": "Учебная задача успешно оценено на {finalGrade} баллов ({correctAnswers}/{totalBlanks} верно)",
       "hint": "Подсказка (необязательно)",
@@ -2308,9 +2208,6 @@
     }
   },
   "Contexts": {
-    "Assignment": {
-      "loadError": "Не удалось загрузить данные учебные задачи"
-    },
     "Course": {
       "loadError": "Не удалось загрузить структуру курса"
     },
@@ -2329,7 +2226,6 @@
   "CourseEdit": {
     "ActivityElement": {
       "ActivityTypes": {
-        "assignment": "Учебная задача",
         "codeChallenge": "Код задача",
         "document": "Документ",
         "dynamic": "Динамический",
@@ -2349,7 +2245,6 @@
       "deleteTitle": "Удалить {name}?",
       "deleting": "Удаление...",
       "deletingActivity": "Удаление активности...",
-      "editAssignmentButton": "Редактировать учебная задача",
       "editPageButton": "Редактировать страницу",
       "openEditPage": "Открыть страницу редактирования",
       "failedToUpdateActivityName": "Не удалось обновить название активности",
@@ -2523,7 +2418,6 @@
     },
     "activityNamePlaceholder": "Название активности",
     "activityTypes": {
-      "assignment": "Учебная задача",
       "document": "Документ",
       "dynamic": "Динамический",
       "video": "Видео"
@@ -2561,7 +2455,6 @@
     "activityCounter": "{current} из {total}",
     "activityNotPublished": "Это учебная задача еще не опубликовано",
     "admin": "Админ",
-    "assignment": "Учебная задача",
     "fileSubmission": "Отправка файлов",
     "cancel": "Отмена",
     "confirmDelete": "Вы уверены, что хотите удалить это?",
@@ -3738,9 +3631,7 @@
             "description": "Может создавать курсы, но для контента требуется владение",
             "name": "Преподаватель",
             "permissions": {
-              "createAssignments": "Создавать учебные задачи",
               "createCourses": "Создавать курсы",
-              "gradeAssignments": "Оценивать учебные задачи",
               "manageOwnCourses": "Управлять своими курсами"
             }
           },
@@ -3748,7 +3639,6 @@
             "description": "Менеджер среднего уровня с широкими правами",
             "name": "Модератор",
             "permissions": {
-              "manageAssignments": "Управлять учебные задачими",
               "manageCourses": "Управлять курсами",
               "manageUsers": "Управлять пользователями"
             }
@@ -3757,7 +3647,6 @@
             "description": "Обучающийся с правом только чтения",
             "name": "Пользователь",
             "permissions": {
-              "submitAssignments": "Сдавать учебные задачи",
               "takeAssessments": "Проходить тесты",
               "viewCourses": "Просматривать курсы"
             }
@@ -5766,7 +5655,6 @@
         },
         "xpSources": {
           "activity_completion": "Учебная задача выполнено",
-          "assignment_submission": "Учебная задача отправлено",
           "course_completion": "Курс завершен",
           "discussion_post": "Сообщение в обсуждении",
           "first_activity": "Первое учебная задача",
@@ -6917,7 +6805,6 @@
         "none": "Без сравнения"
       },
       "assessmentType": {
-        "assignment": "Учебная задача",
         "quiz": "Тест",
         "exam": "Экзамен",
         "codeChallenge": "Задача по коду"
@@ -7339,7 +7226,6 @@
           "activity": "Учебные задачи"
         },
         "activityTypes": {
-          "assignment": "Учебная задача",
           "exam": "Экзамен",
           "codeChallenge": "Задача по коду",
           "quiz": "Тест",
@@ -7566,7 +7452,6 @@
     "Assessments": {
       "Studio": {
         "kinds": {
-          "ASSIGNMENT": "Учебная задача",
           "EXAM": "Тест",
           "CODE_CHALLENGE": "Код задача",
           "QUIZ": "Квиз",
@@ -7635,7 +7520,6 @@
           "copyOfItem": "Копия {itemNoun}",
           "assessmentDetailsTitle": "Детали активности",
           "assessmentDetailsExamDescription": "Название, инструкции, расписание и политика экзамена.",
-          "assessmentDetailsAssignmentDescription": "Название, инструкции, расписание и настройки оценивания.",
           "itemMetadataTitle": "Метаданные {itemNoun}",
           "itemMetadataDescription": "Общее название, инструкция и количество баллов.",
           "titleLabel": "Название",
@@ -8321,7 +8205,6 @@
             "activity": "Учебные задачи"
           },
           "activityTypes": {
-            "assignment": "Учебная задача",
             "exam": "Экзамен",
             "codeChallenge": "Задача по коду",
             "quiz": "Тест",
@@ -8814,8 +8697,6 @@
   "Validation": {
     "activityDescriptionRequired": "Требуется описание активности",
     "activityNameRequired": "Требуется название активности",
-    "assignmentDescriptionRequired": "Требуется описание учебные задачи",
-    "assignmentTitleRequired": "Требуется название учебные задачи",
     "chapterDescriptionRequired": "Требуется описание главы",
     "chapterNameRequired": "Требуется название главы",
     "contentRequired": "Требуется контент",
@@ -8960,6 +8841,51 @@
       "published": "Оценка опубликована",
       "returned": "Возвращено на доработку",
       "failed": "Не удалось сохранить оценку"
+    }
+  },
+  "FileSubmission": {
+    "requirementMaxFiles": "{count, plural, one {До # файла} few {До # файлов} many {До # файлов} other {До # файла}}",
+    "requirementMaxSize": "До {size} МБ каждый",
+    "maxFilesAllowed": "{count, plural, one {Можно загрузить не больше # файла} few {Можно загрузить не больше # файлов} many {Можно загрузить не больше # файлов} other {Можно загрузить не больше # файла}}",
+    "invalidFiles": "Некоторые файлы не соответствуют требованиям",
+    "notAvailable": "Загрузка файлов недоступна",
+    "uploadFailed": "Не удалось загрузить файл",
+    "submittedToast": "Файлы отправлены",
+    "draftSavedToast": "Черновик сохранен",
+    "saveFailed": "Не удалось сохранить отправку",
+    "startDraftFailed": "Не удалось начать черновик",
+    "gradedReleasePending": "Работа проверена. Оценка появится после публикации преподавателем.",
+    "late": "С опозданием",
+    "due": "Срок: {date}",
+    "dropzoneTitle": "Перетащите файлы сюда или выберите на устройстве",
+    "chooseFiles": "Выбрать файлы",
+    "submittedLocked": "Последняя попытка отправлена. Новые файлы можно добавить, если преподаватель вернет работу на доработку.",
+    "submitHelp": "Отправляйте только финальные файлы. Черновик остается приватным до отправки.",
+    "saveDraft": "Сохранить черновик",
+    "submitFiles": "Отправить файлы",
+    "submissionHistory": "История отправок",
+    "attemptNumber": "Попытка {number}",
+    "draft": "Черновик",
+    "fileCount": "{count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}",
+    "submissionReceived": "Отправка получена",
+    "attempt": "Попытка",
+    "files": "Файлы",
+    "statusLabel": "Статус",
+    "awaitingReview": "Ожидает проверки",
+    "yourScore": "Ваш результат",
+    "latePenalty": "Штраф за опоздание: -{percent}%",
+    "returnedForRevision": "Возвращено на доработку",
+    "passed": "Зачтено",
+    "failed": "Не зачтено",
+    "teacherFeedback": "Комментарий преподавателя",
+    "startRevision": "Начать доработку",
+    "removeFile": "Удалить {name}",
+    "status": {
+      "draft": "Черновик",
+      "submitted": "Отправлено",
+      "graded": "Проверено",
+      "published": "Опубликовано",
+      "returned": "Возвращено"
     }
   }
 }

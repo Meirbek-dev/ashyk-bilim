@@ -9,15 +9,15 @@ from src.db.grading.submissions import AssessmentType
 from src.services.grading.gradebook import _build_activity, _gradebook_assessment_type
 
 
-def test_gradebook_ignores_legacy_assignment_policy_type() -> None:
-    policy = SimpleNamespace(assessment_type="ASSIGNMENT", due_at=None)
+def test_gradebook_ignores_unsupported_policy_type() -> None:
+    policy = SimpleNamespace(assessment_type="UNSUPPORTED_TASK", due_at=None)
 
     assert _gradebook_assessment_type(policy) is None
 
     activity = SimpleNamespace(
         id=1,
         activity_uuid="activity_1",
-        name="Legacy file submission",
+        name="File submission",
         activity_type="TYPE_FILE_SUBMISSION",
         order=1,
     )

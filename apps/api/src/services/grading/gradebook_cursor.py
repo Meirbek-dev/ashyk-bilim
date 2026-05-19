@@ -106,7 +106,7 @@ async def get_gradebook_cursor(
             ActivityProgressCell(
                 user_id=progress.user_id,
                 activity_id=progress.activity_id,
-                state=progress.state,
+                state=ActivityProgressState(progress.state),
                 score=progress.score,
                 passed=progress.passed,
                 is_late=progress.is_late,

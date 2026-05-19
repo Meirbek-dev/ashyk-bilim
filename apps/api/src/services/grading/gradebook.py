@@ -332,7 +332,7 @@ def _build_cell(
     return ActivityProgressCell(
         user_id=user_id,
         activity_id=activity_id,
-        state=progress.state,
+        state=ActivityProgressState(progress.state),
         score=progress.score,
         passed=progress.passed,
         is_late=progress.is_late,

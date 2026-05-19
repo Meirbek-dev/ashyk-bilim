@@ -28,9 +28,15 @@ def test_normalize_state_uses_enum_values() -> None:
 
 
 def test_normalize_state_prefers_completed_timestamp() -> None:
-    progress = SimpleNamespace(state=ActivityProgressState.NEEDS_GRADING, completed_at=object())
+    progress = SimpleNamespace(state=ActivityProgressState.COMPLETED, completed_at=object())
 
     assert _normalize_state(progress) == "complete"
+
+
+def test_normalize_state_preserves_published_result_state() -> None:
+    progress = SimpleNamespace(state=ActivityProgressState.PASSED, completed_at=object())
+
+    assert _normalize_state(progress) == "passed"
 
 
 def test_primary_action_blocks_unavailable_content() -> None:

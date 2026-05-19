@@ -65,6 +65,10 @@ export const queryKeys = {
   search: {
     content: (query: string, page: number, limit: number) => ['search', 'content', { query, page, limit }] as const,
   },
+  studentActivity: {
+    runtime: (courseUuid: string, activityUuid: string) =>
+      ['student-activity', 'runtime', courseUuid, activityUuid] as const,
+  },
   platform: {
     config: () => ['platform', 'config'] as const,
     courses: () => ['platform', 'courses'] as const,
