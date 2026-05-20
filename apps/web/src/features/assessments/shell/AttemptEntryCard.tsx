@@ -1,15 +1,7 @@
 'use client';
 
-import {
-  AlertTriangle,
-  BookOpen,
-  Clock,
-  FileEdit,
-  Layers,
-  Lock,
-  RotateCcw,
-  Timer,
-} from 'lucide-react';
+import type { ReactNode } from 'react';
+import { AlertTriangle, BookOpen, Clock, FileEdit, Layers, Lock, RotateCcw, Timer } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -17,8 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
 import { isAntiCheatEnabled } from '@/features/assessments/domain/policy';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatSeconds(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -31,22 +21,10 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 interface AttemptEntryCardProps {
   vm: AttemptViewModel;
 }
 
-/**
- * Assessment pre-flight card.
- *
- * Single full-width card showing all the information the student needs before
- * starting. **No CTA inside this card** — the primary action button lives
- * exclusively in BottomActionBar (registered via ActivityLayoutContext by
- * InlineAssessmentWorkspace).
- *
- * Replaces the old two-card split (metric card + "ready" card).
- */
 export default function AttemptEntryCard({ vm }: AttemptEntryCardProps) {
   const t = useTranslations('Features.ActivityWorkspace');
 
@@ -59,12 +37,10 @@ export default function AttemptEntryCard({ vm }: AttemptEntryCardProps) {
   const timeLimitSeconds = policy.timeLimitSeconds;
   const maxAttempts = policy.maxAttempts;
 
-  // ── Blocked state ───────────────────────────────────────────────────────────
-
   if (isBlocked) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-5 py-10 text-center">
-        <div className="bg-destructive/10 flex size-16 items-center justify-center rounded-xl">
+        <div className="bg-destructive/10 flex size-16 items-center justify-center rounded-lg">
           <Lock className="text-destructive size-8" />
         </div>
         <h2 className="text-xl font-semibold tracking-tight">{vm.title}</h2>
@@ -73,12 +49,10 @@ export default function AttemptEntryCard({ vm }: AttemptEntryCardProps) {
     );
   }
 
-  // ── Waiting for release ─────────────────────────────────────────────────────
-
   if (isWaiting) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-5 py-10 text-center">
-        <div className="bg-primary/10 flex size-16 items-center justify-center rounded-xl">
+        <div className="bg-primary/10 flex size-16 items-center justify-center rounded-lg">
           <Timer className="text-primary size-8" />
         </div>
         <h2 className="text-xl font-semibold tracking-tight">{vm.title}</h2>
@@ -87,107 +61,95 @@ export default function AttemptEntryCard({ vm }: AttemptEntryCardProps) {
     );
   }
 
-  // ── Normal pre-flight ───────────────────────────────────────────────────────
-
   const Icon = isRevision ? RotateCcw : BookOpen;
 
   return (
-    <div className="mx-auto w-full max-w-2xl py-6">
-      {/* Kind + title */}
-      <div className="mb-6 flex items-start gap-4">
-        <div className="bg-primary/10 flex size-12 shrink-0 items-center justify-center rounded-xl">
-          <Icon className="text-primary size-6" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="mb-1 flex flex-wrap items-center gap-2">
-            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-              {getKindLabel(vm.kind)}
-            </span>
-            {isRevision ? (
-              <Badge
-                variant="secondary"
-                className="gap-1 text-xs"
-              >
-                <RotateCcw className="size-3" />
-                {t('revision')}
-              </Badge>
-            ) : null}
+    <section className="mx-auto w-full max-w-6xl py-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="space-y-6">
+          <div className="flex items-start gap-4">
+            <div className="bg-primary/10 flex size-12 shrink-0 items-center justify-center rounded-lg">
+              <Icon className="text-primary size-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                  {getKindLabel(vm.kind)}
+                </span>
+                {isRevision ? (
+                  <Badge
+                    variant="secondary"
+                    className="gap-1 text-xs"
+                  >
+                    <RotateCcw className="size-3" />
+                    {t('revision')}
+                  </Badge>
+                ) : null}
+              </div>
+              <h2 className="text-2xl font-semibold tracking-tight">{vm.title}</h2>
+              {vm.description ? (
+                <p className="text-muted-foreground mt-2 max-w-4xl text-sm leading-6">{vm.description}</p>
+              ) : null}
+            </div>
           </div>
-          <h2 className="text-2xl font-semibold tracking-tight">{vm.title}</h2>
-          {vm.description ? (
-            <p className="text-muted-foreground mt-1 text-sm leading-6">{vm.description}</p>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <MetricCard
+              icon={<Layers className="size-4" />}
+              label={t('questions')}
+              value={questionCount > 0 ? String(questionCount) : '-'}
+            />
+            <MetricCard
+              icon={<Clock className="size-4" />}
+              label={t('timeLimit')}
+              value={timeLimitSeconds ? formatSeconds(timeLimitSeconds) : t('unlimited')}
+            />
+            <MetricCard
+              icon={<FileEdit className="size-4" />}
+              label={t('attempts')}
+              value={maxAttempts ? String(maxAttempts) : t('unlimited')}
+            />
+          </div>
+
+          {isAntiCheatEnabled(vm.policy.antiCheat) ? (
+            <Alert>
+              <AlertTriangle className="size-4" />
+              <AlertDescription>{t('antiCheatNotice')}</AlertDescription>
+            </Alert>
           ) : null}
         </div>
+
+        <aside className="space-y-4">
+          <div className="rounded-lg border p-4">
+            <div className="text-sm font-semibold">{isRevision ? t('revision') : t('readyToStart')}</div>
+            <p className="text-muted-foreground mt-1 text-sm">{t('readyToStartSubtitle')}</p>
+          </div>
+
+          {policy.dueAt ? (
+            <div className="rounded-lg border p-4">
+              <div className="text-muted-foreground text-xs font-medium uppercase tracking-wide">{t('dueDate')}</div>
+              <div
+                className={cn('mt-1 text-sm font-medium', new Date(policy.dueAt) < new Date() && 'text-destructive')}
+              >
+                {formatDate(policy.dueAt)}
+              </div>
+            </div>
+          ) : null}
+        </aside>
       </div>
-
-      {/* Metrics row */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <MetricCard
-          icon={<Layers className="size-4" />}
-          label={t('questions')}
-          value={questionCount > 0 ? String(questionCount) : '—'}
-        />
-        <MetricCard
-          icon={<Clock className="size-4" />}
-          label={t('timeLimit')}
-          value={timeLimitSeconds ? formatSeconds(timeLimitSeconds) : t('unlimited')}
-        />
-        <MetricCard
-          icon={<FileEdit className="size-4" />}
-          label={t('attempts')}
-          value={maxAttempts ? String(maxAttempts) : t('unlimited')}
-        />
-      </div>
-
-      {/* Due date */}
-      {policy.dueAt ? (
-        <p className="text-muted-foreground mb-4 text-sm">
-          {t('dueDate')}:{' '}
-          <span
-            className={cn(
-              'font-medium',
-              new Date(policy.dueAt) < new Date() && 'text-destructive',
-            )}
-          >
-            {formatDate(policy.dueAt)}
-          </span>
-        </p>
-      ) : null}
-
-      {/* Anti-cheat notice */}
-      {isAntiCheatEnabled(vm.policy.antiCheat) ? (
-        <Alert className="mb-4">
-          <AlertTriangle className="size-4" />
-          <AlertDescription>{t('antiCheatNotice')}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {/* Attempt history — not available from AttemptViewModel; omit */}
-    </div>
+    </section>
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function MetricCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
+function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="bg-muted/40 flex flex-col items-center gap-1.5 rounded-lg p-3 text-center">
+    <div className="bg-muted/40 flex min-h-28 flex-col justify-between rounded-lg p-4">
       <span className="text-muted-foreground">{icon}</span>
-      <span className="text-lg font-semibold tabular-nums">{value}</span>
+      <span className="mt-3 text-2xl font-semibold tabular-nums">{value}</span>
       <span className="text-muted-foreground text-xs">{label}</span>
     </div>
   );
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getKindLabel(kind: string): string {
   switch (kind) {
@@ -203,4 +165,3 @@ function getKindLabel(kind: string): string {
       return kind;
   }
 }
-

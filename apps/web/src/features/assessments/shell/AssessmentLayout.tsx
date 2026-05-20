@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, LoaderCircle, Maximize2 } from 'lucide-react';
@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import type { AttemptConflictState } from './AssessmentActionBar';
 import { DEFAULT_POLICY_VIEW, isAntiCheatEnabled } from '@/features/assessments/domain/policy';
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
@@ -47,7 +46,6 @@ interface AssessmentLayoutProps {
  *
  * Responsibilities:
  * - Loads the kind module and renders its `Attempt` slot.
- * - Owns focus-mode state.
  * - Applies policy enforcement (timer, anti-cheat) via `useAttemptGuard`.
  * - Renders fullscreen gate when required.
  * - Provides `ActionBarContext` so kind components can register controls.
@@ -66,7 +64,6 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
   const vm = resolved?.vm ?? null;
 
   const [kindModule, setKindModule] = useState<KindModule | null>(null);
-  const [focusMode, setFocusMode] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const { controls, contextValue } = useActionBarState();
   const t = useTranslations('Features.Assessments.Attempt.Exam');
@@ -96,10 +93,6 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
       globalThis.removeEventListener('online', update);
       globalThis.removeEventListener('offline', update);
     };
-  }, []);
-
-  const toggleFocusMode = useCallback(() => {
-    setFocusMode((value) => !value);
   }, []);
 
   // ── Policy / guard ─────────────────────────────────────────────────────────
@@ -157,7 +150,7 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
               <span className="text-foreground min-w-0 truncate text-sm font-semibold">{vm.title}</span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              {guard.remainingSeconds != null ? (
+              {guard.remainingSeconds !== null && guard.remainingSeconds !== undefined ? (
                 <span className="tabular-nums text-sm font-medium">
                   {formatTimerDisplay(guard.remainingSeconds)}
                 </span>
@@ -211,16 +204,14 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
       ) : null}
 
       {/* ── Main layout ─────────────────────────────────────────────────── */}
-      <div className={cn('min-h-screen bg-background pb-28', focusMode && 'fixed inset-0 z-60 overflow-auto')}>
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5">
+      <div className="bg-background pb-28">
+        <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-4">
           <AssessmentChrome
             kindLabel={kindModule?.label ?? 'Assessment'}
             title={vm.title}
             description={vm.description}
             dueAt={vm.dueAt}
             returned={returned}
-            focusMode={focusMode}
-            onToggleFocusMode={toggleFocusMode}
             timerSeconds={guard.remainingSeconds}
             antiCheatEnabled={antiCheatEnabled}
             violationCount={guard.violationCount}

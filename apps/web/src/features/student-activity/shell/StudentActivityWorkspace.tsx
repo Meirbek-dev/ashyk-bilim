@@ -35,18 +35,21 @@ export default function StudentActivityWorkspace({
   const isAttemptActive = mode === 'ACTIVE_ATTEMPT';
   const activityType = runtime.activity?.type ?? '';
 
-  const focusContentClassName = useMemo(() => {
+  const contentFrameClassName = useMemo(() => {
     switch (activityType) {
+      case 'TYPE_DYNAMIC':
+        return 'mx-auto w-full max-w-[112rem]';
       case 'TYPE_VIDEO':
       case 'TYPE_DOCUMENT':
       case 'TYPE_CODE_CHALLENGE':
-        return 'max-w-7xl';
+        return 'mx-auto w-full max-w-[112rem]';
       case 'TYPE_FILE_SUBMISSION':
+        return 'mx-auto w-full max-w-[80rem]';
       case 'TYPE_EXAM':
       case 'TYPE_CUSTOM':
-        return 'max-w-5xl';
+        return 'mx-auto w-full max-w-[96rem]';
       default:
-        return 'max-w-3xl';
+        return 'mx-auto w-full max-w-[86rem]';
     }
   }, [activityType]);
 
@@ -165,7 +168,8 @@ export default function StudentActivityWorkspace({
           id="activity-main-content"
           className={cn(
             'min-w-0 flex-1 px-4 sm:px-6 lg:px-8',
-            focusMode ? ['mx-auto w-full pb-10 pt-6', focusContentClassName] : 'pb-24 pt-4',
+            contentFrameClassName,
+            focusMode ? 'pb-10 pt-6' : 'pb-24 pt-4',
           )}
         >
           {!isAttemptActive && !isLocked && !focusMode ? <InlineStatusStrip runtime={runtime} /> : null}

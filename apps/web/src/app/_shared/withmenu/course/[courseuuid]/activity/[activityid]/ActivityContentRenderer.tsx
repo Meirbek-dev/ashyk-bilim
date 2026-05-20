@@ -102,7 +102,7 @@ export function ActivityContentRenderer({
     }
     case 'TYPE_FILE_SUBMISSION': {
       return (
-        <section className="mx-auto w-full max-w-5xl">
+        <section className="w-full">
           <FileSubmissionWorkspace
             course={course}
             activity={activity}

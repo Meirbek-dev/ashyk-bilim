@@ -168,7 +168,7 @@ function FocusHeader({
 
   return (
     <header className="border-border/70 bg-background/95 sticky top-0 z-50 border-b backdrop-blur">
-      <div className="relative mx-auto flex h-12 max-w-5xl items-center gap-2 px-3 sm:px-4">
+      <div className="relative mx-auto flex h-12 max-w-[96rem] items-center gap-2 px-3 sm:px-4">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <span className="bg-primary/10 text-primary flex size-7 shrink-0 items-center justify-center rounded-md">
             <Focus className="size-4" />

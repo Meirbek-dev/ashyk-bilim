@@ -6,6 +6,7 @@ import {
   PLAIN_TEXT_CODE_BLOCK_LANGUAGE,
 } from '../../components/Objects/Editor/core/code-block-languages';
 import { createAuthoringEditorExtensions } from '../../components/Objects/Editor/core';
+import { normalizeTiptapJsonContent } from '../../components/Objects/Editor/core/editor-content';
 
 const activity = {
   activity_uuid: 'activity_123',
@@ -83,6 +84,25 @@ describe('custom block runtime commands', () => {
   it('normalizes kotlin code block aliases', () => {
     expect(normalizeCodeBlockLanguage('kt')).toBe('kotlin');
     expect(normalizeCodeBlockLanguage('kts')).toBe('kotlin');
+    expect(normalizeCodeBlockLanguage('Kotlin')).toBe('kotlin');
     expect(normalizeCodeBlockLanguage('')).toBe(PLAIN_TEXT_CODE_BLOCK_LANGUAGE);
+  });
+
+  it('normalizes saved kotlin code block language attributes', () => {
+    const content = normalizeTiptapJsonContent({
+      type: 'doc',
+      content: [
+        {
+          type: 'codeBlock',
+          attrs: { language: 'Kotlin' },
+          content: [{ type: 'text', text: 'class Book' }],
+        },
+      ],
+    });
+
+    expect(content).toMatchObject({
+      type: 'doc',
+      content: [{ type: 'codeBlock', attrs: { language: 'kotlin' } }],
+    });
   });
 });

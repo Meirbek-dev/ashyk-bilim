@@ -386,6 +386,7 @@
   gap: clamp(1rem, 2vw, 2rem);
   width: 100%;
   max-width: 100%;
+  margin-inline: auto;
   align-items: start;
 }
 
@@ -411,8 +412,16 @@
   width: 100%;
 }
 
+.prosemirror-interactive-layout-content .ProseMirror {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: clamp(1rem, 2vw, 2rem);
+}
+
 .prosemirror-interactive-layout-content .ProseMirror > * {
-  max-width: min(72ch, 100%);
+  width: min(92ch, 100%);
+  max-width: 100%;
+  justify-self: start;
 }
 
 .prosemirror-interactive-layout-content .ProseMirror > .tableWrapper,
@@ -424,7 +433,9 @@
 .prosemirror-interactive-layout-content .ProseMirror > pre,
 .prosemirror-interactive-layout-content .ProseMirror > .lesson-wide,
 .prosemirror-interactive-layout-content .ProseMirror > .lesson-full {
+  width: 100%;
   max-width: 100%;
+  justify-self: stretch;
 }
 
 .prosemirror-interactive-layout-content .ProseMirror > .lesson-full {
@@ -433,7 +444,7 @@
 
 @media (min-width: 1280px) {
   .prosemirror-interactive--with-toc .prosemirror-interactive-layout {
-    grid-template-columns: minmax(0, 1fr) 240px;
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 17rem);
   }
 
   .prosemirror-interactive--with-toc .prosemirror-interactive-layout-toc {

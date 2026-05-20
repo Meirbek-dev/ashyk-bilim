@@ -1,10 +1,9 @@
 'use client';
 
-import { AlertTriangle, Clock, Focus, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Clock, RotateCcw } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import type { PolicyView } from '@/features/assessments/domain/policy';
@@ -22,9 +21,6 @@ export interface AssessmentChromeProps {
   dueAt?: string | null;
   /** Whether this attempt was returned for revision. */
   returned?: boolean;
-  /** Whether focus mode is currently active. */
-  focusMode: boolean;
-  onToggleFocusMode: () => void;
   /** Remaining seconds for a timed assessment. `null` = no timer. */
   timerSeconds?: number | null;
   /** Whether anti-cheat checks are active. */
@@ -45,7 +41,7 @@ export interface AssessmentChromeProps {
  * The header card for every assessment attempt surface.
  *
  * Renders the kind label, title, description, due-date badge, timer badge,
- * focus-mode toggle, returned-for-revision alert, and anti-cheat notice.
+ * returned-for-revision alert, and anti-cheat notice.
  *
  * Deliberately does NOT render a save-state badge — that lives exclusively in
  * AssessmentActionBar so students see it in exactly one place.
@@ -56,8 +52,6 @@ export function AssessmentChrome({
   description,
   dueAt,
   returned = false,
-  focusMode,
-  onToggleFocusMode,
   timerSeconds = null,
   antiCheatEnabled = false,
   violationCount = 0,
@@ -73,12 +67,12 @@ export function AssessmentChrome({
   return (
     <div className={cn('flex flex-col gap-4', className)}>
       {/* ── Title card ────────────────────────────────────────────────────── */}
-      <header className="bg-card rounded-lg border p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <header className="bg-card rounded-lg border px-4 py-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <div className="text-muted-foreground text-xs font-medium uppercase">{kindLabel}</div>
-            <h1 className="mt-1 text-2xl font-semibold">{title}</h1>
-            {description ? <p className="text-muted-foreground mt-2 max-w-3xl text-sm">{description}</p> : null}
+            <h1 className="mt-1 text-xl font-semibold tracking-tight">{title}</h1>
+            {description ? <p className="text-muted-foreground mt-1 max-w-4xl text-sm">{description}</p> : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -89,15 +83,6 @@ export function AssessmentChrome({
                 {t('dueLabel')} {formatDate(dueAt)}
               </Badge>
             ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onToggleFocusMode}
-            >
-              <Focus className="size-4" />
-              {focusMode ? t('exitFocus') : t('focus')}
-            </Button>
           </div>
         </div>
       </header>

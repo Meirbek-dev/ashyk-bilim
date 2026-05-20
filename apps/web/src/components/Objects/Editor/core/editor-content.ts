@@ -1,4 +1,5 @@
 import type { Content, JSONContent } from '@tiptap/core';
+import { toCodeBlockLanguageAttribute } from './code-block-languages';
 
 export type TiptapJsonDoc = JSONContent & {
   type: 'doc';
@@ -52,17 +53,40 @@ function legacyBlockQuizToInlineQuiz(node: JSONContent): JSONContent {
 }
 
 function removeLegacyNodes(node: JSONContent): JSONContent {
-  if (node.type === 'blockQuiz') {
-    return legacyBlockQuizToInlineQuiz(node);
+  let normalizedNode = node;
+
+  if (normalizedNode.type === 'blockQuiz') {
+    return legacyBlockQuizToInlineQuiz(normalizedNode);
   }
 
-  if (!Array.isArray(node.content)) {
+  if (normalizedNode.type === 'codeBlock') {
+    normalizedNode = normalizeCodeBlockNode(normalizedNode);
+  }
+
+  if (!Array.isArray(normalizedNode.content)) {
+    return normalizedNode;
+  }
+
+  return {
+    ...normalizedNode,
+    content: normalizedNode.content.map(removeLegacyNodes),
+  };
+}
+
+function normalizeCodeBlockNode(node: JSONContent): JSONContent {
+  const attrs = isRecord(node.attrs) ? node.attrs : null;
+  const language = readStringAttr(attrs, 'language');
+
+  if (!attrs || !language) {
     return node;
   }
 
   return {
     ...node,
-    content: node.content.map(removeLegacyNodes),
+    attrs: {
+      ...attrs,
+      language: toCodeBlockLanguageAttribute(language),
+    },
   };
 }
 

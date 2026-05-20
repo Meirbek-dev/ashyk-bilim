@@ -152,7 +152,7 @@ export function AssessmentActionBar({ controls, returned, primaryButtonLabelKey 
 
   return (
     <div className="bg-background/95 fixed right-0 bottom-0 left-0 z-40 border-t backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mx-auto flex max-w-[96rem] flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
         {/* Left: state badge + progress counter */}
         <div className="flex flex-wrap items-center gap-2">
           <SaveStateBadge

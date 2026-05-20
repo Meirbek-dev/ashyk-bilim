@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { ChevronLeft, ChevronRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -15,6 +16,8 @@ import { queryKeys } from '@/lib/react-query/queryKeys';
 
 type RuntimeNavItem = NonNullable<StudentActivityRuntime['next']>;
 type RuntimeActionId = StudentActivityRuntime['primary_action']['id'];
+
+const PRIMARY_BUTTON_CLASSNAME = 'h-11 min-w-0 w-full max-w-[20rem] px-4 shadow-sm sm:h-10';
 
 function cleanUuid(uuid: string | null | undefined, prefix: 'course_' | 'activity_') {
   return uuid?.replace(new RegExp(`^${prefix}`), '') ?? '';
@@ -42,22 +45,22 @@ interface BottomActionBarProps {
  */
 export default function BottomActionBar({ courseUuid, focusMode = false, runtime }: BottomActionBarProps) {
   const { mode, bottomBarAction } = useActivityLayout();
+  const outlineProgress = useMemo(() => getOutlineProgress(runtime), [runtime]);
 
   // ACTIVE_ATTEMPT: the AssessmentLayout renders its own action controls
   if (mode === 'ACTIVE_ATTEMPT' || focusMode) return null;
 
   return (
-    <div className="bottom-action-bar border-border bg-background/95 fixed inset-x-0 bottom-0 z-40 h-16 border-t backdrop-blur">
-      <div className="mx-auto flex h-full max-w-4xl items-center gap-3 px-4">
-        {/* Prev nav */}
+    <div className="bottom-action-bar border-border/70 bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+      <ProgressFill percent={outlineProgress} />
+      <div className="mx-auto grid min-h-16 max-w-[96rem] grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-2 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,20rem)_minmax(0,1fr)] sm:gap-3 sm:px-4">
         <NavChevron
           courseUuid={courseUuid}
           item={runtime.previous ?? null}
           side="prev"
         />
 
-        {/* Primary CTA */}
-        <div className="flex flex-1 justify-center">
+        <div className="flex min-w-0 justify-center">
           {bottomBarAction ? (
             <OverrideCTA action={bottomBarAction} />
           ) : (
@@ -68,7 +71,6 @@ export default function BottomActionBar({ courseUuid, focusMode = false, runtime
           )}
         </div>
 
-        {/* Next nav */}
         <NavChevron
           courseUuid={courseUuid}
           item={runtime.next ?? null}
@@ -85,18 +87,18 @@ function OverrideCTA({ action }: { action: NonNullable<ReturnType<typeof useActi
   return (
     <Button
       size="lg"
-      className="w-full max-w-xs"
+      className={PRIMARY_BUTTON_CLASSNAME}
       onClick={action.handler}
       disabled={action.disabled ?? action.isPending}
       title={action.disabledReason}
     >
       {action.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-      {action.label}
+      <span className="min-w-0 truncate">{action.label}</span>
     </Button>
   );
 }
 
-// ── Runtime CTA (driven by StudentActivityRuntime.primary_action) ────────────
+// Runtime CTA (driven by StudentActivityRuntime.primary_action)
 
 function RuntimeCTA({ courseUuid, runtime }: { courseUuid: string; runtime: StudentActivityRuntime }) {
   const t = useTranslations('ActivityPage');
@@ -108,11 +110,12 @@ function RuntimeCTA({ courseUuid, runtime }: { courseUuid: string; runtime: Stud
     return (
       <Button
         size="lg"
-        className="w-full max-w-xs"
+        className={PRIMARY_BUTTON_CLASSNAME}
         nativeButton={false}
         render={<Link href={`/course/${cleanUuid(runtime.course.uuid, 'course_')}`} />}
       >
-        {t('backToCourse')}
+        <ChevronLeft className="size-4" />
+        <span className="min-w-0 truncate">{t('backToCourse')}</span>
       </Button>
     );
   }
@@ -121,14 +124,14 @@ function RuntimeCTA({ courseUuid, runtime }: { courseUuid: string; runtime: Stud
     return (
       <Button
         size="lg"
-        className="w-full max-w-xs"
+        className={PRIMARY_BUTTON_CLASSNAME}
         onClick={() =>
           router.push(
             `/course/${cleanUuid(runtime.course.uuid, 'course_')}/activity/${cleanUuid(action.target_activity_uuid, 'activity_')}`,
           )
         }
       >
-        {t('next')}
+        <span className="min-w-0 truncate">{t('next')}</span>
         <ChevronRight className="size-4" />
       </Button>
     );
@@ -138,12 +141,12 @@ function RuntimeCTA({ courseUuid, runtime }: { courseUuid: string; runtime: Stud
     return (
       <Button
         size="lg"
-        className="w-full max-w-xs"
+        className={PRIMARY_BUTTON_CLASSNAME}
         onClick={() => completion.mutate(action.id === 'mark_complete' ? 'mark_complete' : 'unmark_complete')}
         disabled={!action.enabled || completion.isPending}
       >
         {completion.isPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-        {getPrimaryActionText(action.id, t)}
+        <span className="min-w-0 truncate">{getPrimaryActionText(action.id, t)}</span>
       </Button>
     );
   }
@@ -154,12 +157,12 @@ function RuntimeCTA({ courseUuid, runtime }: { courseUuid: string; runtime: Stud
     return (
       <Button
         size="lg"
-        className="w-full max-w-xs"
+        className={PRIMARY_BUTTON_CLASSNAME}
         onClick={() =>
           document.getElementById('activity-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
         }
       >
-        {getPrimaryActionText(action.id, t)}
+        <span className="min-w-0 truncate">{getPrimaryActionText(action.id, t)}</span>
       </Button>
     );
   }
@@ -169,7 +172,7 @@ function RuntimeCTA({ courseUuid, runtime }: { courseUuid: string; runtime: Stud
     <Button
       size="lg"
       className={cn(
-        'w-full max-w-xs',
+        PRIMARY_BUTTON_CLASSNAME,
         (action.reason === 'locked' || action.reason === 'unavailable') &&
           'border-destructive text-destructive hover:bg-destructive/10',
       )}
@@ -177,12 +180,12 @@ function RuntimeCTA({ courseUuid, runtime }: { courseUuid: string; runtime: Stud
       disabled
       title={action.reason ? getDisabledReason(action.reason, t) : undefined}
     >
-      {action.reason ? getDisabledReason(action.reason, t) : t('noAction')}
+      <span className="min-w-0 truncate">{action.reason ? getDisabledReason(action.reason, t) : t('noAction')}</span>
     </Button>
   );
 }
 
-// ── Nav chevron ───────────────────────────────────────────────────────────────
+// Nav controls
 
 function NavChevron({
   courseUuid,
@@ -193,16 +196,32 @@ function NavChevron({
   item: RuntimeNavItem | null;
   side: 'prev' | 'next';
 }) {
+  const t = useTranslations('ActivityPage');
+  const label = side === 'prev' ? t('previous') : t('next');
+  const unavailableLabel = side === 'prev' ? t('noPreviousActivity') : t('noNextActivity');
+  const Icon = side === 'prev' ? ChevronLeft : ChevronRight;
+
   if (!item) {
     return (
       <Button
         variant="ghost"
-        size="icon"
+        size="lg"
         disabled
-        className="shrink-0"
-        aria-hidden
+        className={cn('h-11 min-w-0 px-0 sm:h-12 sm:w-full sm:px-2', side === 'prev' ? 'justify-start' : 'justify-end')}
+        aria-label={unavailableLabel}
+        title={unavailableLabel}
       >
-        {side === 'prev' ? <ChevronLeft className="size-5" /> : <ChevronRight className="size-5" />}
+        {side === 'prev' ? <Icon className="size-5 sm:size-4" /> : null}
+        <span
+          className={cn(
+            'hidden min-w-0 flex-col sm:flex',
+            side === 'prev' ? 'items-start text-left' : 'items-end text-right',
+          )}
+        >
+          <span className="text-xs font-medium">{label}</span>
+          <span className="text-muted-foreground max-w-40 truncate text-xs">{unavailableLabel}</span>
+        </span>
+        {side === 'next' ? <Icon className="size-5 sm:size-4" /> : null}
       </Button>
     );
   }
@@ -210,23 +229,38 @@ function NavChevron({
   const href = `/course/${cleanUuid(courseUuid, 'course_')}/activity/${cleanUuid(item.uuid, 'activity_')}`;
 
   return (
-    <div className="flex shrink-0 items-center gap-1">
-      <Button
-        variant="ghost"
-        size="icon"
-        nativeButton={false}
-        render={<Link href={href} />}
-        title={item.title}
+    <Button
+      variant="ghost"
+      size="lg"
+      nativeButton={false}
+      render={<Link href={href} />}
+      className={cn(
+        'group h-11 min-w-0 px-0 text-muted-foreground hover:text-foreground sm:h-12 sm:w-full sm:border sm:border-border/60 sm:bg-background/60 sm:px-2 sm:hover:border-primary/30 sm:hover:bg-muted/70',
+        side === 'prev' ? 'justify-start' : 'justify-end',
+      )}
+      aria-label={
+        side === 'prev'
+          ? t('previousActivityTooltip', { activityName: item.title })
+          : t('nextActivityTooltip', { activityName: item.title })
+      }
+      title={item.title}
+    >
+      {side === 'prev' ? <Icon className="size-5 sm:size-4" /> : null}
+      <span
+        className={cn(
+          'hidden min-w-0 flex-col sm:flex',
+          side === 'prev' ? 'items-start text-left' : 'items-end text-right',
+        )}
       >
-        {side === 'prev' ? <ChevronLeft className="size-5" /> : <ChevronRight className="size-5" />}
-      </Button>
-      {/* Activity title — shown on sm+ */}
-      <span className="text-muted-foreground hidden max-w-[9rem] truncate text-xs sm:block">{item.title}</span>
-    </div>
+        <span className="text-xs font-medium">{label}</span>
+        <span className="text-foreground max-w-40 truncate text-xs font-semibold">{item.title}</span>
+      </span>
+      {side === 'next' ? <Icon className="size-5 sm:size-4" /> : null}
+    </Button>
   );
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
   const queryClient = useQueryClient();
@@ -241,7 +275,10 @@ function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.studentActivity.runtime(cleanUuid(courseUuid, 'course_'), cleanUuid(activityUuid, 'activity_')),
+        queryKey: queryKeys.studentActivity.runtime(
+          cleanUuid(courseUuid, 'course_'),
+          cleanUuid(activityUuid, 'activity_'),
+        ),
       });
       await queryClient.invalidateQueries({ queryKey: queryKeys.trail.current() });
       router.refresh();
@@ -251,6 +288,30 @@ function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
       toast.error(error instanceof Error ? error.message : t('markCompleteError'));
     },
   });
+}
+
+function ProgressFill({ percent }: { percent: number }) {
+  if (percent <= 0) return null;
+
+  return (
+    <div
+      className="bg-border/40 absolute inset-x-0 top-0 h-[2px]"
+      aria-hidden
+    >
+      <div
+        className="bg-primary h-full transition-[width] duration-500"
+        style={{ width: `${percent}%` }}
+      />
+    </div>
+  );
+}
+
+function getOutlineProgress(runtime: StudentActivityRuntime) {
+  const items = (runtime.outline ?? []).flatMap((chapter) => chapter.activities ?? []);
+  if (items.length === 0) return 0;
+
+  const complete = items.filter((item) => item.complete || item.state === 'complete' || item.state === 'passed').length;
+  return Math.round((complete / items.length) * 100);
 }
 
 function getPrimaryActionText(actionId: RuntimeActionId, t: (key: string) => string): string {

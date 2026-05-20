@@ -31,7 +31,7 @@ export function InteractiveViewer(props: InteractiveViewerProps) {
     <EditorOptionsProvider options={{ isEditable: false, mode: 'interactive' }}>
       <div
         className={cn(
-          'prosemirror-interactive relative mx-auto w-full px-1 py-2 sm:px-2 xl:px-4',
+          'prosemirror-interactive relative w-full px-1 py-2 sm:px-2 xl:px-4',
           hasToc && 'prosemirror-interactive--with-toc',
         )}
       >
