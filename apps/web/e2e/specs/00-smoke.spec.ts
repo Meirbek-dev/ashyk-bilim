@@ -52,7 +52,10 @@ test.describe('Smoke – Public pages', () => {
     // Either the status is 404 or the page contains a not-found message
     const isNotFound =
       response?.status() === 404 ||
-      (await page.getByText(/not found|404|page not found/i).isVisible().catch(() => false));
+      (await page
+        .getByText(/not found|404|page not found/i)
+        .isVisible()
+        .catch(() => false));
     expect(isNotFound).toBe(true);
   });
 });

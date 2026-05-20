@@ -6,7 +6,11 @@ import { useTranslations } from 'next-intl';
 import * as Si from '@icons-pack/react-simple-icons';
 import { cn } from '@/lib/utils';
 import { EMBED_CATEGORIES, EMBED_PROVIDERS } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
-import type { EmbedCategoryId, EmbedProvider, EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
+import type {
+  EmbedCategoryId,
+  EmbedProvider,
+  EmbedType,
+} from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options';
 
 interface EmbedTypeSelectorProps {
   selectedType: EmbedType | null;
@@ -34,7 +38,6 @@ export function EmbedTypeSelector({ selectedType, onSelect, error }: EmbedTypeSe
       );
     });
   }, [activeCategory, query, t]);
-
 
   return (
     <div className="space-y-3">
@@ -135,4 +138,3 @@ export function EmbedTypeSelector({ selectedType, onSelect, error }: EmbedTypeSe
     </div>
   );
 }
-

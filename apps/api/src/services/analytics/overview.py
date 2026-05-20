@@ -239,7 +239,9 @@ def _build_grading_slo_alerts(workload) -> list[AlertItem]:
         return alerts
 
     leading_backlog = (
-        workload.backlog_by_manual_assessment[0] if workload.backlog_by_manual_assessment else None
+        workload.backlog_by_manual_assessment[0]
+        if workload.backlog_by_manual_assessment
+        else None
     )
     if (
         leading_backlog is not None

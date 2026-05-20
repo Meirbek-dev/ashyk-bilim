@@ -146,11 +146,7 @@ class MatchingItemBody(PydanticStrictBaseModel):
 
 
 type ItemBody = Annotated[
-    ChoiceItemBody
-    | OpenTextItemBody
-    | FormItemBody
-    | CodeItemBody
-    | MatchingItemBody,
+    ChoiceItemBody | OpenTextItemBody | FormItemBody | CodeItemBody | MatchingItemBody,
     Field(discriminator="kind"),
 ]
 

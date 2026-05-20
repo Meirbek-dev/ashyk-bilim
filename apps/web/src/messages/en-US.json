@@ -8838,6 +8838,7 @@
     "teacherFeedback": "Teacher feedback",
     "startRevision": "Start revision",
     "removeFile": "Remove {name}",
+    "allowedTypes": "Accepted formats",
     "status": {
       "draft": "Draft",
       "submitted": "Submitted",

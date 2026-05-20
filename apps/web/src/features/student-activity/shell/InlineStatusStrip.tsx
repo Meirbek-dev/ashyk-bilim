@@ -79,7 +79,11 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
   return (
     <div className="mb-4 flex flex-wrap items-center gap-1.5">
       {items.map((item, i) => (
-        <Badge key={i} variant="secondary" className="text-xs font-normal">
+        <Badge
+          key={i}
+          variant="secondary"
+          className="text-xs font-normal"
+        >
           {item}
         </Badge>
       ))}

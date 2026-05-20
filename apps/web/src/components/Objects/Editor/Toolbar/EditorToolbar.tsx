@@ -148,7 +148,7 @@ export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
       {/* Embed button — media insert group (Requirements 3.1, 11.4) */}
       <TooltipProvider delay={150}>
         <div
-          className="border-border/70 bg-muted/30 flex items-center gap-1 rounded-xl border ml-3 px-1 py-1"
+          className="border-border/70 bg-muted/30 ml-3 flex items-center gap-1 rounded-xl border px-1 py-1"
           role="group"
           aria-label={t('insertGroups.media')}
         >

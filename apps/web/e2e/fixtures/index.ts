@@ -69,17 +69,23 @@ export const test = base.extend<LmsFixtures>({
 
 /** Playwright `test` pre-authenticated as Admin. */
 export const testAsAdmin = test.extend<{ storageState: string }>({
-  storageState: async ({}, use) => { await use(STORAGE_STATE.admin); },
+  storageState: async ({}, use) => {
+    await use(STORAGE_STATE.admin);
+  },
 });
 
 /** Playwright `test` pre-authenticated as Teacher. */
 export const testAsTeacher = test.extend<{ storageState: string }>({
-  storageState: async ({}, use) => { await use(STORAGE_STATE.teacher); },
+  storageState: async ({}, use) => {
+    await use(STORAGE_STATE.teacher);
+  },
 });
 
 /** Playwright `test` pre-authenticated as Student. */
 export const testAsStudent = test.extend<{ storageState: string }>({
-  storageState: async ({}, use) => { await use(STORAGE_STATE.student); },
+  storageState: async ({}, use) => {
+    await use(STORAGE_STATE.student);
+  },
 });
 
 export { expect };

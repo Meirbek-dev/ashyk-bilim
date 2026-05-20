@@ -9,7 +9,13 @@ describe('student activity runtime domain', () => {
     expect(normalizeProgressState('NEEDS_GRADING')).toBe('needs_grading');
     expect(normalizeProgressState('GRADED')).toBe('graded_hidden');
     expect(normalizeProgressState('PASSED')).toBe('passed');
-    expect(normalizeProgressState('PASSED', { completed_at: '2026-05-19T00:00:00Z', passed: true, latest_submission_status: 'PUBLISHED' })).toBe('passed');
+    expect(
+      normalizeProgressState('PASSED', {
+        completed_at: '2026-05-19T00:00:00Z',
+        passed: true,
+        latest_submission_status: 'PUBLISHED',
+      }),
+    ).toBe('passed');
     expect(normalizeProgressState('FAILED')).toBe('failed');
     expect(normalizeProgressState('COMPLETED')).toBe('complete');
   });
@@ -48,7 +54,14 @@ describe('gradebook rollup taxonomy', () => {
       course_name: 'Course',
       students: [],
       activities: [
-        { id: 1, activity_uuid: 'activity_1', name: 'Quiz', activity_type: 'TYPE_DYNAMIC', assessment_type: 'QUIZ', order: 0 },
+        {
+          id: 1,
+          activity_uuid: 'activity_1',
+          name: 'Quiz',
+          activity_type: 'TYPE_DYNAMIC',
+          assessment_type: 'QUIZ',
+          order: 0,
+        },
       ],
       cells: [],
       teacher_actions: [],

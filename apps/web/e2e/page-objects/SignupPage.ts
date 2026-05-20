@@ -31,12 +31,7 @@ export class SignupPage {
     await expect(this.firstNameInput).toBeVisible();
   }
 
-  public async signup(opts: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-  }): Promise<void> {
+  public async signup(opts: { firstName: string; lastName: string; email: string; password: string }): Promise<void> {
     await this.firstNameInput.fill(opts.firstName);
     await this.lastNameInput.fill(opts.lastName);
     await this.emailInput.fill(opts.email);

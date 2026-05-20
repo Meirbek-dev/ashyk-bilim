@@ -910,102 +910,101 @@ function AssessmentMetadataForm({
             onChange={(event) => onChange({ ...state, dueAt: event.target.value })}
           />
         </div>
-
       </div>
 
       <>
-          <div className="rounded-lg border p-4">
-            <div className="mb-4 flex items-center gap-2">
-              <ShieldAlert className="size-4" />
-              <h4 className="text-sm font-semibold">{t('examPolicyTitle')}</h4>
+        <div className="rounded-lg border p-4">
+          <div className="mb-4 flex items-center gap-2">
+            <ShieldAlert className="size-4" />
+            <h4 className="text-sm font-semibold">{t('examPolicyTitle')}</h4>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="exam-max-attempts">{t('attemptLimitLabel')}</Label>
+              <Input
+                id="exam-max-attempts"
+                type="number"
+                min={1}
+                value={state.maxAttempts}
+                disabled={disabled}
+                aria-invalid={hasIssue('maxAttempts')}
+                className={cn(hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40')}
+                onChange={(event) => onChange({ ...state, maxAttempts: event.target.value })}
+              />
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="exam-max-attempts">{t('attemptLimitLabel')}</Label>
-                <Input
-                  id="exam-max-attempts"
-                  type="number"
-                  min={1}
-                  value={state.maxAttempts}
-                  disabled={disabled}
-                  aria-invalid={hasIssue('maxAttempts')}
-                  className={cn(hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-                  onChange={(event) => onChange({ ...state, maxAttempts: event.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="exam-time-limit">{t('timeLimitLabel')}</Label>
-                <Input
-                  id="exam-time-limit"
-                  type="number"
-                  min={1}
-                  value={state.timeLimitMinutes}
-                  disabled={disabled}
-                  aria-invalid={hasIssue('timeLimitMinutes')}
-                  className={cn(hasIssue('timeLimitMinutes') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-                  onChange={(event) => onChange({ ...state, timeLimitMinutes: event.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="exam-violation-threshold">{t('violationThresholdLabel')}</Label>
-                <Input
-                  id="exam-violation-threshold"
-                  type="number"
-                  min={1}
-                  value={state.violationThreshold}
-                  disabled={disabled}
-                  aria-invalid={hasIssue('violationThreshold')}
-                  className={cn(hasIssue('violationThreshold') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-                  onChange={(event) => onChange({ ...state, violationThreshold: event.target.value })}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="exam-time-limit">{t('timeLimitLabel')}</Label>
+              <Input
+                id="exam-time-limit"
+                type="number"
+                min={1}
+                value={state.timeLimitMinutes}
+                disabled={disabled}
+                aria-invalid={hasIssue('timeLimitMinutes')}
+                className={cn(hasIssue('timeLimitMinutes') && 'border-amber-500 focus-visible:ring-amber-500/40')}
+                onChange={(event) => onChange({ ...state, timeLimitMinutes: event.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="exam-violation-threshold">{t('violationThresholdLabel')}</Label>
+              <Input
+                id="exam-violation-threshold"
+                type="number"
+                min={1}
+                value={state.violationThreshold}
+                disabled={disabled}
+                aria-invalid={hasIssue('violationThreshold')}
+                className={cn(hasIssue('violationThreshold') && 'border-amber-500 focus-visible:ring-amber-500/40')}
+                onChange={(event) => onChange({ ...state, violationThreshold: event.target.value })}
+              />
             </div>
           </div>
+        </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <ToggleRow
-              label={t('copyPasteProtectionLabel')}
-              checked={state.copyPasteProtection}
-              disabled={disabled}
-              onChange={(checked) => onChange({ ...state, copyPasteProtection: checked })}
-            />
-            <ToggleRow
-              label={t('tabSwitchDetectionLabel')}
-              checked={state.tabSwitchDetection}
-              disabled={disabled}
-              onChange={(checked) => onChange({ ...state, tabSwitchDetection: checked })}
-            />
-            <ToggleRow
-              label={t('devtoolsDetectionLabel')}
-              checked={state.devtoolsDetection}
-              disabled={disabled}
-              onChange={(checked) => onChange({ ...state, devtoolsDetection: checked })}
-            />
-            <ToggleRow
-              label={t('rightClickDisabledLabel')}
-              checked={state.rightClickDisable}
-              disabled={disabled}
-              onChange={(checked) => onChange({ ...state, rightClickDisable: checked })}
-            />
-            <ToggleRow
-              label={t('fullscreenEnforcementLabel')}
-              checked={state.fullscreenEnforcement}
-              disabled={disabled}
-              onChange={(checked) => onChange({ ...state, fullscreenEnforcement: checked })}
-            />
-            <ToggleRow
-              label={t('allowResultReviewLabel')}
-              checked={state.allowResultReview}
-              disabled={disabled}
-              onChange={(checked) => onChange({ ...state, allowResultReview: checked })}
-            />
-            <ToggleRow
-              label={t('showCorrectAnswersLabel')}
-              checked={state.showCorrectAnswers}
-              disabled={disabled}
-              onChange={(checked) => onChange({ ...state, showCorrectAnswers: checked })}
-            />
-          </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <ToggleRow
+            label={t('copyPasteProtectionLabel')}
+            checked={state.copyPasteProtection}
+            disabled={disabled}
+            onChange={(checked) => onChange({ ...state, copyPasteProtection: checked })}
+          />
+          <ToggleRow
+            label={t('tabSwitchDetectionLabel')}
+            checked={state.tabSwitchDetection}
+            disabled={disabled}
+            onChange={(checked) => onChange({ ...state, tabSwitchDetection: checked })}
+          />
+          <ToggleRow
+            label={t('devtoolsDetectionLabel')}
+            checked={state.devtoolsDetection}
+            disabled={disabled}
+            onChange={(checked) => onChange({ ...state, devtoolsDetection: checked })}
+          />
+          <ToggleRow
+            label={t('rightClickDisabledLabel')}
+            checked={state.rightClickDisable}
+            disabled={disabled}
+            onChange={(checked) => onChange({ ...state, rightClickDisable: checked })}
+          />
+          <ToggleRow
+            label={t('fullscreenEnforcementLabel')}
+            checked={state.fullscreenEnforcement}
+            disabled={disabled}
+            onChange={(checked) => onChange({ ...state, fullscreenEnforcement: checked })}
+          />
+          <ToggleRow
+            label={t('allowResultReviewLabel')}
+            checked={state.allowResultReview}
+            disabled={disabled}
+            onChange={(checked) => onChange({ ...state, allowResultReview: checked })}
+          />
+          <ToggleRow
+            label={t('showCorrectAnswersLabel')}
+            checked={state.showCorrectAnswers}
+            disabled={disabled}
+            onChange={(checked) => onChange({ ...state, showCorrectAnswers: checked })}
+          />
+        </div>
       </>
 
       {issues.length > 0 ? <InlineIssueList issues={issues} /> : null}

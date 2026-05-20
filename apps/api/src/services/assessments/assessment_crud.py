@@ -105,7 +105,6 @@ def _is_assessment_locked(assessment: Assessment, db_session: Session) -> bool:
     return active_submission is not None
 
 
-
 # ── Public assessment CRUD ────────────────────────────────────────────────────
 
 

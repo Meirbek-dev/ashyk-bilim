@@ -23,9 +23,7 @@ import { HeaderProfileBox } from '@/components/Security/HeaderProfileBox';
 // Hooks & Config
 import { useSession } from '@/hooks/useSession';
 import { getAbsoluteUrl } from '@/services/config/config';
-import {
-  NAVBAR_HEIGHT,
-} from '@/lib/constants';
+import { NAVBAR_HEIGHT } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 // Assets

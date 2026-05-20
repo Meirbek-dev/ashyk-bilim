@@ -95,20 +95,20 @@ export default function ActivityHeader({
           >
             <Link
               href={courseHref}
-              className="text-muted-foreground hover:text-foreground min-w-0 max-w-[8rem] truncate"
+              className="text-muted-foreground hover:text-foreground max-w-[8rem] min-w-0 truncate"
             >
               {runtime.course.title}
             </Link>
             {runtime.activity?.chapter_title ? (
               <>
                 <span className="text-muted-foreground shrink-0">/</span>
-                <span className="text-muted-foreground min-w-0 max-w-[8rem] truncate">
+                <span className="text-muted-foreground max-w-[8rem] min-w-0 truncate">
                   {runtime.activity.chapter_title}
                 </span>
               </>
             ) : null}
             <span className="text-muted-foreground shrink-0">/</span>
-            <span className="text-foreground min-w-0 max-w-xs truncate font-medium">
+            <span className="text-foreground max-w-xs min-w-0 truncate font-medium">
               {runtime.activity?.title ?? runtime.course.title}
             </span>
           </nav>

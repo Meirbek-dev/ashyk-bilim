@@ -64,7 +64,7 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
           ) : (
             <Badge
               variant="outline"
-              className="gap-1.5 border-destructive text-destructive"
+              className="border-destructive text-destructive gap-1.5"
             >
               <XCircle className="size-3" />
               {t('failed')}

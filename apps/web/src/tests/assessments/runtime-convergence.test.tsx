@@ -215,5 +215,4 @@ describe('assessment runtime convergence', () => {
     fireEvent.click(screen.getByRole('button', { name: 'useLatestSavedVersion' }));
     expect(mocks.applyServerMock).toHaveBeenCalledTimes(1);
   });
-
 });

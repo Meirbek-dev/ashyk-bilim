@@ -20,8 +20,8 @@ def coerce_date_to_end_of_day(value: Any) -> Any:
                 pass
         else:
             try:
-                # Handle full ISO 8601 strings. Even in strict mode, 
-                # returning a datetime object from a 'before' validator 
+                # Handle full ISO 8601 strings. Even in strict mode,
+                # returning a datetime object from a 'before' validator
                 # will satisfy Pydantic's type check.
                 return datetime.fromisoformat(value.replace("Z", "+00:00"))
             except ValueError:

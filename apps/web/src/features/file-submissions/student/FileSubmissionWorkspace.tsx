@@ -2,7 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, CalendarClock, CheckCircle2, Clock, FileArchive, LoaderCircle, Paperclip, Send } from 'lucide-react';
+import {
+  AlertCircle,
+  CalendarClock,
+  CheckCircle2,
+  Clock,
+  FileArchive,
+  FileCode2,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
+  FileVideo,
+  LoaderCircle,
+  Paperclip,
+  Send,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -10,7 +24,6 @@ import type { Activity, CourseStructure } from '@components/Contexts/CourseConte
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { getFriendlyMimeName } from '@/lib/file-validation';
 import {
   getFileSubmissionByActivity,
   saveFileSubmissionDraft,
@@ -18,7 +31,10 @@ import {
   submitFileSubmission,
   uploadSubmissionFileWithProgress,
 } from '@/features/file-submissions/services/file-submissions';
-import type { FileSubmissionAttempt, FileSubmissionAttemptFile } from '@/features/file-submissions/services/file-submissions';
+import type {
+  FileSubmissionAttempt,
+  FileSubmissionAttemptFile,
+} from '@/features/file-submissions/services/file-submissions';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import FileUploadSlot from './FileUploadSlot';
 import type { PendingFileSlot } from './FileUploadSlot';
@@ -57,6 +73,107 @@ function formatDueDate(value: string): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
+// ── File category detection ───────────────────────────────────────────────────
+
+/** Groups raw MIME types into human-readable category labels with icons. */
+interface FileCategory {
+  label: string;
+  icon: React.ElementType;
+}
+
+const MIME_CATEGORY_MAP: Array<{ prefix: string; category: FileCategory }> = [
+  { prefix: 'image/', category: { label: 'Images', icon: FileImage } },
+  { prefix: 'video/', category: { label: 'Videos', icon: FileVideo } },
+  { prefix: 'audio/', category: { label: 'Audio', icon: FileVideo } },
+  {
+    prefix: 'text/x-python',
+    category: { label: 'Code', icon: FileCode2 },
+  },
+  {
+    prefix: 'text/javascript',
+    category: { label: 'Code', icon: FileCode2 },
+  },
+  {
+    prefix: 'text/typescript',
+    category: { label: 'Code', icon: FileCode2 },
+  },
+  { prefix: 'text/x-c', category: { label: 'Code', icon: FileCode2 } },
+  { prefix: 'text/x-java', category: { label: 'Code', icon: FileCode2 } },
+  { prefix: 'text/css', category: { label: 'Code', icon: FileCode2 } },
+  { prefix: 'text/html', category: { label: 'Code', icon: FileCode2 } },
+  { prefix: 'application/xml', category: { label: 'Code', icon: FileCode2 } },
+  { prefix: 'text/plain', category: { label: 'Text', icon: FileText } },
+  { prefix: 'text/markdown', category: { label: 'Text', icon: FileText } },
+  { prefix: 'application/json', category: { label: 'Text', icon: FileText } },
+  { prefix: 'application/pdf', category: { label: 'Documents', icon: FileText } },
+  { prefix: 'application/msword', category: { label: 'Documents', icon: FileText } },
+  {
+    prefix: 'application/vnd.openxmlformats-officedocument.wordprocessingml',
+    category: { label: 'Documents', icon: FileText },
+  },
+  { prefix: 'application/vnd.oasis.opendocument.text', category: { label: 'Documents', icon: FileText } },
+  { prefix: 'application/rtf', category: { label: 'Documents', icon: FileText } },
+  { prefix: 'application/epub', category: { label: 'Documents', icon: FileText } },
+  { prefix: 'application/x-mobipocket', category: { label: 'Documents', icon: FileText } },
+  { prefix: 'text/csv', category: { label: 'Spreadsheets', icon: FileSpreadsheet } },
+  { prefix: 'application/vnd.ms-excel', category: { label: 'Spreadsheets', icon: FileSpreadsheet } },
+  {
+    prefix: 'application/vnd.openxmlformats-officedocument.spreadsheetml',
+    category: { label: 'Spreadsheets', icon: FileSpreadsheet },
+  },
+  {
+    prefix: 'application/vnd.oasis.opendocument.spreadsheet',
+    category: { label: 'Spreadsheets', icon: FileSpreadsheet },
+  },
+  { prefix: 'application/vnd.ms-powerpoint', category: { label: 'Presentations', icon: FileText } },
+  {
+    prefix: 'application/vnd.openxmlformats-officedocument.presentationml',
+    category: { label: 'Presentations', icon: FileText },
+  },
+  { prefix: 'application/zip', category: { label: 'Archives', icon: FileArchive } },
+  { prefix: 'application/x-zip', category: { label: 'Archives', icon: FileArchive } },
+  { prefix: 'application/x-rar', category: { label: 'Archives', icon: FileArchive } },
+  { prefix: 'application/vnd.rar', category: { label: 'Archives', icon: FileArchive } },
+  { prefix: 'application/x-7z', category: { label: 'Archives', icon: FileArchive } },
+  { prefix: 'application/x-tar', category: { label: 'Archives', icon: FileArchive } },
+  { prefix: 'application/gzip', category: { label: 'Archives', icon: FileArchive } },
+  { prefix: 'application/x-gzip', category: { label: 'Archives', icon: FileArchive } },
+];
+
+function getMimeCategories(mimes: string[]): FileCategory[] {
+  if (mimes.length === 0) return [{ label: 'Any file', icon: FileArchive }];
+  const seen = new Set<string>();
+  const result: FileCategory[] = [];
+  for (const mime of mimes) {
+    const match = MIME_CATEGORY_MAP.find((m) => mime.startsWith(m.prefix) || mime === m.prefix);
+    if (match && !seen.has(match.category.label)) {
+      seen.add(match.category.label);
+      result.push(match.category);
+    }
+  }
+  // Fallback: if nothing matched show a generic label
+  if (result.length === 0) return [{ label: 'Any file', icon: FileArchive }];
+  return result;
+}
+
+// ── Status badge config ───────────────────────────────────────────────────────
+
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
+
+const STATUS_BADGE: Record<string, BadgeVariant> = {
+  DRAFT: 'secondary',
+  SUBMITTED: 'default',
+  GRADED: 'secondary',
+  PUBLISHED: 'default',
+  RETURNED: 'destructive',
+};
+
+const LIFECYCLE_BADGE: Record<string, BadgeVariant> = {
+  PUBLISHED: 'default',
+  DRAFT: 'secondary',
+  ARCHIVED: 'outline',
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 /**
@@ -92,15 +209,6 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
   const totalSelected = attachedFiles.length + slots.length;
 
   const canEdit = !status || status === 'DRAFT' || status === 'RETURNED';
-  const requirements = useMemo(
-    () => {
-      const list = [t('requirementMaxFiles', { count: maxFiles })];
-      if (data?.max_file_size_mb) list.push(t('requirementMaxSize', { size: data.max_file_size_mb }));
-      if (data?.allowed_mime_types?.length) list.push(data.allowed_mime_types.map(getFriendlyMimeName).join(', '));
-      return list;
-    },
-    [data?.allowed_mime_types, data?.max_file_size_mb, maxFiles, t],
-  );
 
   // Invalidate trail XP when grade is published so the progress bar updates
   useEffect(() => {
@@ -170,7 +278,10 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
       }
 
       const files = [
-        ...attachedFiles.map((f: FileSubmissionAttemptFile) => ({ upload_uuid: f.upload_uuid, display_name: f.filename })),
+        ...attachedFiles.map((f: FileSubmissionAttemptFile) => ({
+          upload_uuid: f.upload_uuid,
+          display_name: f.filename,
+        })),
         ...uploaded.map((s) => ({ upload_uuid: s.upload_uuid!, display_name: s.file.name })),
       ];
       const version = activeAttempt?.version ?? null;
@@ -255,7 +366,25 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
             }
           />
         ) : null}
-        {canRevise ? <DraftEditor {...{ data, attachedFiles, slots, setSlots, addFiles, inputRef, saveMutation, startMutation, requirements, maxFiles, totalSelected, isUploading, canEdit: true, activeAttempt }} /> : null}
+        {canRevise ? (
+          <DraftEditor
+            {...{
+              data,
+              attachedFiles,
+              slots,
+              setSlots,
+              addFiles,
+              inputRef,
+              saveMutation,
+              startMutation,
+              maxFiles,
+              totalSelected,
+              isUploading,
+              canEdit: true,
+              activeAttempt,
+            }}
+          />
+        ) : null}
         <SubmissionHistory attempts={data.attempts} />
       </div>
     );
@@ -268,7 +397,9 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
       <Header
         instructions={data.instructions}
         dueAt={data.due_at}
-        requirements={requirements}
+        allowedMimes={data.allowed_mime_types}
+        maxFiles={maxFiles}
+        maxFileSizeMb={data.max_file_size_mb}
         lifecycle={data.lifecycle}
         attempt={activeAttempt}
       />
@@ -281,7 +412,6 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
         inputRef={inputRef}
         saveMutation={saveMutation}
         startMutation={startMutation}
-        requirements={requirements}
         maxFiles={maxFiles}
         totalSelected={totalSelected}
         isUploading={isUploading}
@@ -298,43 +428,90 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
 function Header({
   instructions,
   dueAt,
-  requirements,
+  allowedMimes,
+  maxFiles,
+  maxFileSizeMb,
   lifecycle,
   attempt,
 }: {
   instructions: string;
   dueAt?: string | null;
-  requirements: string[];
+  allowedMimes: string[];
+  maxFiles: number;
+  maxFileSizeMb?: number | null;
   lifecycle: string;
   attempt: FileSubmissionAttempt | null;
 }) {
   const t = useTranslations('FileSubmission');
+  const categories = useMemo(() => getMimeCategories(allowedMimes), [allowedMimes]);
+
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div className="min-w-0 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={lifecycle === 'PUBLISHED' ? 'default' : 'secondary'}>{lifecycle.toLowerCase()}</Badge>
-          {attempt ? <StatusBadge status={attempt.status} /> : null}
-          {attempt?.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
-        </div>
-        <p className="text-sm leading-6 whitespace-pre-wrap">{instructions}</p>
+    <div className="space-y-4">
+      {/* ── Status strip ─────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge
+          variant={LIFECYCLE_BADGE[lifecycle] ?? 'secondary'}
+          className="capitalize"
+        >
+          {lifecycle.toLowerCase()}
+        </Badge>
+        {attempt ? <StatusBadge status={attempt.status} /> : null}
+        {attempt?.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
       </div>
-      <div className="border-border bg-muted/20 grid min-w-64 gap-2 rounded-md border p-4 text-sm">
+
+      {/* ── Instructions ─────────────────────────────────────── */}
+      {instructions ? (
+        <p className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">{instructions}</p>
+      ) : null}
+
+      {/* ── Metadata bar ─────────────────────────────────────── */}
+      <div className="border-border bg-muted/30 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border px-4 py-3">
+        {/* Due date */}
         {dueAt ? (
-          <div className="flex items-center gap-2">
-            <CalendarClock className="text-muted-foreground size-4" />
-            <span>{t('due', { date: formatDueDate(dueAt) })}</span>
+          <div className="flex items-center gap-1.5 text-sm">
+            <CalendarClock className="text-muted-foreground size-3.5 shrink-0" />
+            <span className="font-medium">{t('due', { date: formatDueDate(dueAt) })}</span>
           </div>
         ) : null}
-        {requirements.map((req) => (
-          <div
-            key={req}
-            className="text-muted-foreground flex items-center gap-2"
-          >
-            <CheckCircle2 className="text-primary size-4" />
-            <span>{req}</span>
-          </div>
-        ))}
+
+        {/* Divider */}
+        {dueAt ? <div className="bg-border hidden h-4 w-px sm:block" /> : null}
+
+        {/* Max files */}
+        <div className="flex items-center gap-1.5 text-sm">
+          <CheckCircle2 className="text-primary size-3.5 shrink-0" />
+          <span className="text-muted-foreground">{t('requirementMaxFiles', { count: maxFiles })}</span>
+        </div>
+
+        {/* Max size */}
+        {maxFileSizeMb ? (
+          <>
+            <div className="bg-border hidden h-4 w-px sm:block" />
+            <div className="flex items-center gap-1.5 text-sm">
+              <CheckCircle2 className="text-primary size-3.5 shrink-0" />
+              <span className="text-muted-foreground">{t('requirementMaxSize', { size: maxFileSizeMb })}</span>
+            </div>
+          </>
+        ) : null}
+
+        {/* Accepted formats */}
+        {categories.length > 0 ? (
+          <>
+            <div className="bg-border hidden h-4 w-px sm:block" />
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-muted-foreground text-xs font-medium">{t('allowedTypes')}:</span>
+              {categories.map(({ label, icon: Icon }) => (
+                <span
+                  key={label}
+                  className="bg-background border-border text-foreground/70 flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium shadow-sm"
+                >
+                  <Icon className="size-3 shrink-0" />
+                  {label}
+                </span>
+              ))}
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );
@@ -351,7 +528,6 @@ function DraftEditor({
   inputRef,
   saveMutation,
   startMutation,
-  requirements,
   maxFiles,
   totalSelected,
   isUploading,
@@ -366,7 +542,6 @@ function DraftEditor({
   inputRef: React.RefObject<HTMLInputElement | null>;
   saveMutation: ReturnType<typeof useMutation<unknown, Error, { submit: boolean }>>;
   startMutation: ReturnType<typeof useMutation<unknown, Error, void>>;
-  requirements: string[];
   maxFiles: number;
   totalSelected: number;
   isUploading: boolean;
@@ -402,7 +577,15 @@ function DraftEditor({
           />
           <FileArchive className="text-muted-foreground mb-3 size-8" />
           <p className="text-sm font-medium">{t('dropzoneTitle')}</p>
-          <p className="text-muted-foreground mt-1 text-xs">{requirements.join(' / ')}</p>
+          {/* Only show concise constraint summary — no raw extension list */}
+          <p className="text-muted-foreground mt-1 text-xs">
+            {[
+              t('requirementMaxFiles', { count: maxFiles }),
+              data.max_file_size_mb ? t('requirementMaxSize', { size: data.max_file_size_mb }) : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
           <Button
             className="mt-4"
             variant="outline"
@@ -421,9 +604,7 @@ function DraftEditor({
           </Button>
         </div>
       ) : (
-        <div className="border-border bg-muted/30 rounded-md border p-4 text-sm">
-          {t('submittedLocked')}
-        </div>
+        <div className="border-border bg-muted/30 rounded-md border p-4 text-sm">{t('submittedLocked')}</div>
       )}
 
       {/* Persisted files */}
@@ -485,11 +666,7 @@ function DraftEditor({
 
 // ── SubmissionHistory ──────────────────────────────────────────────────────────
 
-function SubmissionHistory({
-  attempts,
-}: {
-  attempts: FileSubmissionAttempt[];
-}) {
+function SubmissionHistory({ attempts }: { attempts: FileSubmissionAttempt[] }) {
   const t = useTranslations('FileSubmission');
   if (attempts.length === 0) return null;
   return (
@@ -505,7 +682,9 @@ function SubmissionHistory({
               <p className="font-medium">{t('attemptNumber', { number: attempt.attempt_number })}</p>
               <p className="text-muted-foreground text-xs">
                 {attempt.submitted_at
-                  ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(attempt.submitted_at))
+                  ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
+                      new Date(attempt.submitted_at),
+                    )
                   : t('draft')}{' '}
                 / {t('fileCount', { count: attempt.files.length })}
               </p>
@@ -525,7 +704,13 @@ function SubmissionHistory({
 
 function StatusBadge({ status }: { status: string }) {
   const t = useTranslations('FileSubmission');
-  const variant =
-    status === 'SUBMITTED' ? 'default' : status === 'RETURNED' ? 'destructive' : 'secondary';
-  return <Badge variant={variant}>{t(`status.${status.toLowerCase()}`)}</Badge>;
+  const variant: BadgeVariant = STATUS_BADGE[status] ?? 'secondary';
+  return (
+    <Badge
+      variant={variant}
+      className="capitalize"
+    >
+      {t(`status.${status.toLowerCase()}`)}
+    </Badge>
+  );
 }

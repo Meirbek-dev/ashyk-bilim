@@ -224,4 +224,3 @@ const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
 };
 
 export default ExcalidrawNodeView;
-

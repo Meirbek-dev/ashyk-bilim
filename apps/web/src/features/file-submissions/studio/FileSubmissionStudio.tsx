@@ -312,7 +312,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
                       className="mt-0.5"
                     />
                     <div className="grid gap-0.5">
-                      <span className="text-sm font-medium leading-none">{preset.label}</span>
+                      <span className="text-sm leading-none font-medium">{preset.label}</span>
                     </div>
                   </label>
                 );

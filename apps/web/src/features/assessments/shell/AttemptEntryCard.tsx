@@ -73,7 +73,7 @@ export default function AttemptEntryCard({ vm }: AttemptEntryCardProps) {
             </div>
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex flex-wrap items-center gap-2">
-                <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                   {getKindLabel(vm.kind)}
                 </span>
                 {isRevision ? (
@@ -127,7 +127,7 @@ export default function AttemptEntryCard({ vm }: AttemptEntryCardProps) {
 
           {policy.dueAt ? (
             <div className="rounded-lg border p-4">
-              <div className="text-muted-foreground text-xs font-medium uppercase tracking-wide">{t('dueDate')}</div>
+              <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{t('dueDate')}</div>
               <div
                 className={cn('mt-1 text-sm font-medium', new Date(policy.dueAt) < new Date() && 'text-destructive')}
               >

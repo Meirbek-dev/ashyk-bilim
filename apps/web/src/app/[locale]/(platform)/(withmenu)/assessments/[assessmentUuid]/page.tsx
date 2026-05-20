@@ -52,9 +52,7 @@ export default async function AssessmentAttemptPage(props: Props) {
     // Teacher review deep-link: ?review={submissionUuid} → editor review tab
     if (reviewSubmissionUuid) {
       const cleanSubmission = reviewSubmissionUuid.replace(/^submission_/, '');
-      redirect(
-        `/editor/course/${cleanCourse}/activity/${cleanActivity}?tab=review&submission=${cleanSubmission}`,
-      );
+      redirect(`/editor/course/${cleanCourse}/activity/${cleanActivity}?tab=review&submission=${cleanSubmission}`);
     }
 
     redirect(`/course/${cleanCourse}/activity/${cleanActivity}`);

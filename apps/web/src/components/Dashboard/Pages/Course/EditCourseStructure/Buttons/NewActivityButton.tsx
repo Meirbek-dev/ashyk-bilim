@@ -14,11 +14,12 @@ import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management';
 import { useCourse } from '@components/Contexts/CourseContext';
 import { apiFetch } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { courseKeys } from '@/hooks/courses/courseKeys';
 
 interface NewActivityButtonProps {
   chapterId: number;
@@ -27,7 +28,7 @@ interface NewActivityButtonProps {
 const NewActivityButton = (props: NewActivityButtonProps) => {
   const [newActivityModal, setNewActivityModal] = useState(false);
   const course = useCourse();
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const activityMutations = useActivityMutations(course.courseStructure.course_uuid, true);
   const t = useTranslations('CourseEdit.NewActivityModal');
   const tNotify = useTranslations('DashPage.Notifications');
@@ -126,15 +127,13 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
           throw new Error(payload.detail?.message || payload.detail || tNotify('uploadFailed'));
         }
 
+        // Invalidate course structure queries so the new activity appears on the page
+        await queryClient.invalidateQueries({
+          queryKey: courseKeys.structure(course.courseStructure.course_uuid, true),
+        });
+
         toast.success(tNotify('activityCreatedSuccess'));
         setNewActivityModal(false);
-
-        const createdActivityUuid = payload.activity_uuid;
-        if (!createdActivityUuid) return;
-
-        const cleanCourse = cleanCourseUuid(course.courseStructure.course_uuid);
-        const cleanActivity = cleanActivityUuid(createdActivityUuid);
-        router.push(`/dash/courses/${cleanCourse}/activity/${cleanActivity}/studio`);
       } catch (error: any) {
         toast.error(error?.message || tNotify('uploadFailed'));
         throw error;
@@ -151,18 +150,7 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
       activity_sub_type: 'SUBTYPE_DYNAMIC_PAGE',
     };
 
-    const response = await submitActivity(activityPayload);
-    const createdActivityUuid = response?.data?.activity_uuid;
-
-    if (!createdActivityUuid) {
-      return;
-    }
-
-    const cleanCourse = cleanCourseUuid(course.courseStructure.course_uuid);
-    const cleanActivity = cleanActivityUuid(createdActivityUuid);
-    const destination = `/course/${cleanCourse}/activity/${cleanActivity}/edit`;
-
-    router.push(destination);
+    await submitActivity(activityPayload);
   };
 
   return (

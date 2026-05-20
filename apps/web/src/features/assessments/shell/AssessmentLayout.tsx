@@ -140,20 +140,18 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
     return (
       <ActionBarContext.Provider value={contextValue}>
         {/* Full-viewport fixed shell — no scroll, fills below global nav (56px) */}
-        <div className="bg-background fixed inset-x-0 bottom-0 top-14 flex flex-col">
+        <div className="bg-background fixed inset-x-0 top-14 bottom-0 flex flex-col">
           {/* Compact header */}
           <div className="flex h-11 shrink-0 items-center justify-between border-b px-4">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+              <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                 {kindModule?.label ?? 'Code Challenge'}
               </span>
               <span className="text-foreground min-w-0 truncate text-sm font-semibold">{vm.title}</span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {guard.remainingSeconds !== null && guard.remainingSeconds !== undefined ? (
-                <span className="tabular-nums text-sm font-medium">
-                  {formatTimerDisplay(guard.remainingSeconds)}
-                </span>
+                <span className="text-sm font-medium tabular-nums">{formatTimerDisplay(guard.remainingSeconds)}</span>
               ) : null}
             </div>
           </div>

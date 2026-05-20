@@ -301,7 +301,9 @@ def _seed_course_stack(
     return course, chapter, activity, policy
 
 
-def _make_context_for_manual_assessment(session, assessment_id: int) -> AnalyticsContext:
+def _make_context_for_manual_assessment(
+    session, assessment_id: int
+) -> AnalyticsContext:
     course = session.get(Course, 1)
     activity = session.get(Activity, 1)
     assessment = session.get(Assessment, assessment_id)
@@ -623,7 +625,9 @@ def test_manual_assessment_detail_endpoint_returns_operational_fields(
 
     monkeypatch.setattr(
         "src.services.analytics.assessments.load_analytics_context",
-        lambda db_session, _course_ids: _make_context_for_manual_assessment(db_session, 1),
+        lambda db_session, _course_ids: _make_context_for_manual_assessment(
+            db_session, 1
+        ),
     )
     monkeypatch.setattr(
         "src.services.analytics.assessments.progress_snapshots",

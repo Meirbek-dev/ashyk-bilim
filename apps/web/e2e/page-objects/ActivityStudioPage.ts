@@ -33,25 +33,15 @@ export class ActivityStudioPage {
   constructor(page: Page) {
     this.page = page;
 
-    this.activityNameInput = page
-      .locator('input[placeholder*="Activity name"], input[name*="name"]')
-      .first();
+    this.activityNameInput = page.locator('input[placeholder*="Activity name"], input[name*="name"]').first();
 
-    this.editorContent = page
-      .locator('.ProseMirror, [contenteditable="true"], [data-lexical-editor]')
-      .first();
+    this.editorContent = page.locator('.ProseMirror, [contenteditable="true"], [data-lexical-editor]').first();
 
-    this.addBlockButton = page
-      .getByRole('button', { name: /add block|\+ block|insert/i })
-      .first();
+    this.addBlockButton = page.getByRole('button', { name: /add block|\+ block|insert/i }).first();
 
-    this.addQuestionButton = page
-      .getByRole('button', { name: /add question|new question|\+ question/i })
-      .first();
+    this.addQuestionButton = page.getByRole('button', { name: /add question|new question|\+ question/i }).first();
 
-    this.questionTypeSelect = page
-      .getByRole('combobox', { name: /question type|type/i })
-      .first();
+    this.questionTypeSelect = page.getByRole('combobox', { name: /question type|type/i }).first();
 
     this.saveButton = page.getByRole('button', { name: /save/i }).first();
     this.savedBadge = page.locator('text=Saved').first();
@@ -82,9 +72,9 @@ export class ActivityStudioPage {
     // Trigger the slash-command / block insert menu
     await this.editorContent.click();
     await this.page.keyboard.type('/');
-    await expect(
-      this.page.getByRole('option', { name: new RegExp(blockTypeLabel, 'i') }),
-    ).toBeVisible({ timeout: 5_000 });
+    await expect(this.page.getByRole('option', { name: new RegExp(blockTypeLabel, 'i') })).toBeVisible({
+      timeout: 5_000,
+    });
     await this.page.getByRole('option', { name: new RegExp(blockTypeLabel, 'i') }).click();
   }
 
@@ -113,15 +103,11 @@ export class ActivityStudioPage {
     }
 
     // Wait for the question editor to appear
-    const questionEditor = this.page
-      .locator('[data-question-editor], .question-editor, .assessment-item')
-      .last();
+    const questionEditor = this.page.locator('[data-question-editor], .question-editor, .assessment-item').last();
     await expect(questionEditor).toBeVisible({ timeout: 8_000 });
 
     // Fill the question text
-    const questionInput = questionEditor
-      .locator('input[type="text"], textarea, [contenteditable="true"]')
-      .first();
+    const questionInput = questionEditor.locator('input[type="text"], textarea, [contenteditable="true"]').first();
     await questionInput.fill(opts.questionText);
 
     // Fill choices if provided
@@ -141,10 +127,7 @@ export class ActivityStudioPage {
 
       // Mark correct answer(s)
       if (opts.correctIndex !== undefined) {
-        await questionEditor
-          .locator('input[type="radio"]')
-          .nth(opts.correctIndex)
-          .check();
+        await questionEditor.locator('input[type="radio"]').nth(opts.correctIndex).check();
       }
       if (opts.correctIndices) {
         for (const idx of opts.correctIndices) {
@@ -157,8 +140,6 @@ export class ActivityStudioPage {
   /** Save and confirm success badge or toast */
   async save(): Promise<void> {
     await this.saveButton.click();
-    await expect(
-      this.page.locator('[data-sonner-toast]').first().or(this.savedBadge),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(this.page.locator('[data-sonner-toast]').first().or(this.savedBadge)).toBeVisible({ timeout: 10_000 });
   }
 }

@@ -544,12 +544,9 @@ export default function GradeForm({
           {t('keyboardHintForward')}
           <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintPrevKey')}</kbd>{' '}
           {t('keyboardHintBackward')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">G</kbd>{' '}
-          {t('keyboardHintFocusGrade')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">Ctrl↵</kbd>{' '}
-          {t('keyboardHintSave')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">Ctrl⇧↵</kbd>{' '}
-          {t('keyboardHintPublish')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">G</kbd> {t('keyboardHintFocusGrade')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">Ctrl↵</kbd> {t('keyboardHintSave')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">Ctrl⇧↵</kbd> {t('keyboardHintPublish')}
         </div>
       </div>
     </aside>

@@ -8893,6 +8893,7 @@
     "teacherFeedback": "Комментарий преподавателя",
     "startRevision": "Начать доработку",
     "removeFile": "Удалить {name}",
+    "allowedTypes": "Допустимые форматы",
     "status": {
       "draft": "Черновик",
       "submitted": "Отправлено",

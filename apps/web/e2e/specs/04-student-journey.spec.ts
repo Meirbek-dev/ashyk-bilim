@@ -27,9 +27,7 @@ test.describe.serial('Student – Learning Journey', () => {
   test.beforeAll(async () => {
     courseUuid = process.env.E2E_COURSE_UUID ?? '';
     if (!courseUuid) {
-      throw new Error(
-        'E2E_COURSE_UUID not set. Run the course-creation spec first, or set it manually.',
-      );
+      throw new Error('E2E_COURSE_UUID not set. Run the course-creation spec first, or set it manually.');
     }
     ensureFixtureFiles();
   });
@@ -53,9 +51,7 @@ test.describe.serial('Student – Learning Journey', () => {
     }
 
     // After enroll, the course content / activity list should be accessible
-    await expect(
-      page.locator('nav, aside, [aria-label*="activities"]').first(),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('nav, aside, [aria-label*="activities"]').first()).toBeVisible({ timeout: 10_000 });
   });
 
   // ── 2. Complete the lecture activity ────────────────────────────────────
@@ -94,9 +90,7 @@ test.describe.serial('Student – Learning Journey', () => {
     await coursePlayerPage.markComplete();
 
     // A visual indication of completion should appear (checkmark, "Completed" text, etc.)
-    await expect(
-      page.getByText(/completed|done|marked/i).first(),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/completed|done|marked/i).first()).toBeVisible({ timeout: 10_000 });
   });
 
   // ── 3. File submission ──────────────────────────────────────────────────
@@ -123,10 +117,7 @@ test.describe.serial('Student – Learning Journey', () => {
    * BUG PROTOCOL: If the file upload input is not rendered or the submission
    * POST fails, this test MUST remain failing. The feature is broken.
    */
-  test('student can upload a PDF and submit the file submission activity', async ({
-    page,
-    fileSubmissionPage,
-  }) => {
+  test('student can upload a PDF and submit the file submission activity', async ({ page, fileSubmissionPage }) => {
     const activityId = process.env.E2E_FILE_SUBMISSION_ACTIVITY_ID;
     if (!activityId) test.skip(true, 'File submission activity ID not captured in prior test');
 
@@ -171,9 +162,7 @@ test.describe.serial('Student – Learning Journey', () => {
     await assessmentPage.startAttempt();
 
     // After starting, question content must be visible
-    await expect(
-      page.locator('[data-question], .question-block, fieldset').first(),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-question], .question-block, fieldset').first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('student can answer exam questions and submit', async ({ page, assessmentPage }) => {
@@ -201,17 +190,12 @@ test.describe.serial('Student – Learning Journey', () => {
     await assessmentPage.submitAttempt();
 
     // A result / score should be displayed after submission
-    await expect(
-      page.getByText(/score|result|passed|completed/i).first(),
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/score|result|passed|completed/i).first()).toBeVisible({ timeout: 15_000 });
   });
 
   // ── 5. Code challenge ───────────────────────────────────────────────────
 
-  test('student can navigate to and submit the coding challenge', async ({
-    page,
-    assessmentPage,
-  }) => {
+  test('student can navigate to and submit the coding challenge', async ({ page, assessmentPage }) => {
     await page.goto(`/en/course/${courseUuid}`);
     await page.waitForLoadState('networkidle');
 
@@ -239,9 +223,7 @@ test.describe.serial('Student – Learning Journey', () => {
       await assessmentPage.submitCode();
 
       // Wait for evaluation result
-      await expect(
-        page.getByText(/passed|correct|submitted/i).first(),
-      ).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByText(/passed|correct|submitted/i).first()).toBeVisible({ timeout: 30_000 });
     } else {
       // BUG PROTOCOL: Code editor not visible — test must fail
       await expect(assessmentPage.codeEditor).toBeVisible({ timeout: 1 });
@@ -254,10 +236,7 @@ test.describe.serial('Student – Learning Journey', () => {
    * Certificate should NOT be available before the teacher grades the submission.
    * This test documents the expected (correct) state.
    */
-  test('certificate is not yet available before teacher grades work', async ({
-    page,
-    coursePlayerPage,
-  }) => {
+  test('certificate is not yet available before teacher grades work', async ({ page, coursePlayerPage }) => {
     await coursePlayerPage.gotoCourseLanding(courseUuid);
 
     // The download certificate button should NOT be present yet

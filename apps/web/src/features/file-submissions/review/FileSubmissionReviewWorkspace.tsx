@@ -132,10 +132,7 @@ export default function FileSubmissionReviewWorkspace({
     },
   });
 
-  const parsedCriteria = useMemo(
-    () => (config?.rubric ? parseRubricCriteria(config.rubric) : []),
-    [config?.rubric],
-  );
+  const parsedCriteria = useMemo(() => (config?.rubric ? parseRubricCriteria(config.rubric) : []), [config?.rubric]);
 
   // Auto-fill score from rubric criterion scores
   const rubricTotalScore = useMemo(() => {
@@ -333,11 +330,7 @@ export default function FileSubmissionReviewWorkspace({
                             variant="outline"
                             onClick={() => openFile(file.attempt_file_uuid)}
                           >
-                            {previewable ? (
-                              <ExternalLink className="size-4" />
-                            ) : (
-                              <Download className="size-4" />
-                            )}
+                            {previewable ? <ExternalLink className="size-4" /> : <Download className="size-4" />}
                             {previewable ? 'Open' : 'Download'}
                           </Button>
                         </div>
@@ -356,12 +349,18 @@ export default function FileSubmissionReviewWorkspace({
                       size="icon"
                       variant="ghost"
                       className="size-7 shrink-0"
-                      onClick={() => { setPreviewUrl(null); setPreviewFilename(null); }}
+                      onClick={() => {
+                        setPreviewUrl(null);
+                        setPreviewFilename(null);
+                      }}
                     >
                       <X className="size-4" />
                     </Button>
                   </div>
-                  <FilePreviewPane url={previewUrl} filename={previewFilename ?? ''} />
+                  <FilePreviewPane
+                    url={previewUrl}
+                    filename={previewFilename ?? ''}
+                  />
                 </div>
               )}
             </section>
@@ -370,7 +369,6 @@ export default function FileSubmissionReviewWorkspace({
               <section className="rounded-md border p-4">
                 <h3 className="mb-3 text-sm font-semibold">Grade and feedback</h3>
                 <div className="space-y-3">
-
                   {/* ── Rubric grid (shown when rubric criteria are defined) ── */}
                   {parsedCriteria.length > 0 && (
                     <RubricGrid
@@ -506,9 +504,7 @@ function RubricGrid({
                     type="button"
                     title={level.description}
                     className={`rounded border px-2 py-0.5 text-xs transition-colors ${
-                      current === level.score
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'hover:bg-muted'
+                      current === level.score ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'
                     }`}
                     onClick={() => onChange(c.criterion_id, level.score)}
                   >

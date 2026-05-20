@@ -201,7 +201,9 @@ def build_risk_rows(
     course_manual_assessment_ids: dict[int, set[int]] = defaultdict(set)
     for manual_assessment in context.manual_assessments:
         if manual_assessment.id is not None:
-            course_manual_assessment_ids[manual_assessment.course_id].add(manual_assessment.id)
+            course_manual_assessment_ids[manual_assessment.course_id].add(
+                manual_assessment.id
+            )
 
     course_exam_ids: dict[int, set[int]] = defaultdict(set)
     exam_thresholds: dict[int, float] = {}

@@ -92,9 +92,7 @@ class QuizAssessmentSettings(PydanticStrictBaseModel):
 
 
 type AssessmentSettings = Annotated[
-    ExamAssessmentSettings
-    | QuizAssessmentSettings
-    | CodeAssessmentSettings,
+    ExamAssessmentSettings | QuizAssessmentSettings | CodeAssessmentSettings,
     PydanticField(discriminator="kind"),
 ]
 

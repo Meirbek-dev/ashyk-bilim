@@ -27,18 +27,11 @@ export class GradingReviewPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.submissionList = page
-      .locator('[data-submission-list], aside ul, .submission-list')
-      .first();
-    this.submissionItems = page
-      .locator('[data-submission-item], .submission-item, [role="listitem"]');
+    this.submissionList = page.locator('[data-submission-list], aside ul, .submission-list').first();
+    this.submissionItems = page.locator('[data-submission-item], .submission-item, [role="listitem"]');
     this.scoreInput = page.locator('input[name*="score"], input[type="number"]').first();
-    this.feedbackTextarea = page
-      .locator('textarea[name*="feedback"], textarea[placeholder*="feedback" i]')
-      .first();
-    this.publishButton = page
-      .getByRole('button', { name: /publish grade|save grade|approve|release/i })
-      .first();
+    this.feedbackTextarea = page.locator('textarea[name*="feedback"], textarea[placeholder*="feedback" i]').first();
+    this.publishButton = page.getByRole('button', { name: /publish grade|save grade|approve|release/i }).first();
     this.statusBadge = page.locator('[data-status-badge], .grade-status, .submission-status').first();
     this.toast = page.locator('[data-sonner-toast]').first();
   }
@@ -74,9 +67,10 @@ export class GradingReviewPage {
     await this.publishButton.click();
     // Wait for success signal
     await expect(
-      this.page.locator('[data-sonner-toast]').first().or(
-        this.page.getByText(/graded|published|released/i).first(),
-      ),
+      this.page
+        .locator('[data-sonner-toast]')
+        .first()
+        .or(this.page.getByText(/graded|published|released/i).first()),
     ).toBeVisible({ timeout: 10_000 });
   }
 
@@ -84,8 +78,6 @@ export class GradingReviewPage {
    * Assert that the submission status shows "Graded" or "Released".
    */
   async assertGradedStatus(): Promise<void> {
-    await expect(
-      this.page.getByText(/graded|released/i).first(),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(this.page.getByText(/graded|released/i).first()).toBeVisible({ timeout: 10_000 });
   }
 }

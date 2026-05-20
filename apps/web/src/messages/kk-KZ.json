@@ -9027,6 +9027,7 @@
     "teacherFeedback": "Мұғалім пікірі",
     "startRevision": "Түзетуді бастау",
     "removeFile": "{name} файлын жою",
+    "allowedTypes": "Рұқсат етілген форматтар",
     "status": {
       "draft": "Нобай",
       "submitted": "Тапсырылды",

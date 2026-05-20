@@ -35,12 +35,7 @@ interface AttemptResultCardProps {
  * they are secondary actions. The BottomActionBar handles the primary
  * "Next Activity" CTA via runtime.primary_action.
  */
-export default function AttemptResultCard({
-  vm,
-  onRetry,
-  onNext,
-  onStartRevision,
-}: AttemptResultCardProps) {
+export default function AttemptResultCard({ vm, onRetry, onNext, onStartRevision }: AttemptResultCardProps) {
   const t = useTranslations('Features.ActivityWorkspace');
   const [breakdownOpen, setBreakdownOpen] = useState(false);
 
@@ -56,11 +51,7 @@ export default function AttemptResultCard({
         <div
           className={cn(
             'flex size-12 shrink-0 items-center justify-center rounded-xl',
-            !showScore
-              ? 'bg-muted'
-              : passing
-                ? 'bg-primary/10'
-                : 'bg-destructive/10',
+            !showScore ? 'bg-muted' : passing ? 'bg-primary/10' : 'bg-destructive/10',
           )}
         >
           {!showScore ? (
@@ -94,7 +85,7 @@ export default function AttemptResultCard({
               ) : (
                 <Badge
                   variant="outline"
-                  className="gap-1.5 border-destructive text-destructive"
+                  className="border-destructive text-destructive gap-1.5"
                 >
                   <XCircle className="size-3" />
                   {t('failed')}
@@ -150,7 +141,7 @@ export default function AttemptResultCard({
                   <span className="text-muted-foreground line-clamp-2 flex-1 pr-4">
                     {i + 1}. {item.title}
                   </span>
-                  <span className="text-muted-foreground shrink-0 tabular-nums text-xs">
+                  <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
                     {item.max_score > 0 ? `/ ${item.max_score}` : '—'}
                   </span>
                 </div>

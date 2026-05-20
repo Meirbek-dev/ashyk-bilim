@@ -22,15 +22,9 @@ export class FileSubmissionPage {
   constructor(page: Page) {
     this.page = page;
     this.fileInput = page.locator('input[type="file"]').first();
-    this.dropZone = page
-      .locator('[data-dropzone], [aria-label*="upload"], .upload-zone')
-      .first();
-    this.submitButton = page
-      .getByRole('button', { name: /submit|upload|send/i })
-      .first();
-    this.statusBadge = page
-      .locator('[data-status-badge], .submission-status, [aria-label*="status"]')
-      .first();
+    this.dropZone = page.locator('[data-dropzone], [aria-label*="upload"], .upload-zone').first();
+    this.submitButton = page.getByRole('button', { name: /submit|upload|send/i }).first();
+    this.statusBadge = page.locator('[data-status-badge], .submission-status, [aria-label*="status"]').first();
     this.toast = page.locator('[data-sonner-toast]').first();
   }
 
@@ -41,22 +35,15 @@ export class FileSubmissionPage {
   async uploadAndSubmit(filePath: string): Promise<void> {
     // Use setInputFiles for reliable headless file uploads
     await this.fileInput.setInputFiles(filePath);
-    await expect(
-      this.page.getByText(path.basename(filePath)),
-    ).toBeVisible({ timeout: 8_000 });
+    await expect(this.page.getByText(path.basename(filePath))).toBeVisible({ timeout: 8_000 });
 
     await this.submitButton.click();
-    await this.page.waitForResponse(
-      (r) => r.url().includes('/file-submissions') && r.request().method() === 'POST',
-      { timeout: 15_000 },
-    );
+    await this.page.waitForResponse((r) => r.url().includes('/file-submissions') && r.request().method() === 'POST', {
+      timeout: 15_000,
+    });
   }
 
   async assertSubmitted(): Promise<void> {
-    await expect(
-      this.page
-        .getByText(/submitted|awaiting grade|pending/i)
-        .first(),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(this.page.getByText(/submitted|awaiting grade|pending/i).first()).toBeVisible({ timeout: 10_000 });
   }
 }

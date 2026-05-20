@@ -28,13 +28,17 @@ def test_normalize_state_uses_enum_values() -> None:
 
 
 def test_normalize_state_prefers_completed_timestamp() -> None:
-    progress = SimpleNamespace(state=ActivityProgressState.COMPLETED, completed_at=object())
+    progress = SimpleNamespace(
+        state=ActivityProgressState.COMPLETED, completed_at=object()
+    )
 
     assert _normalize_state(progress) == "complete"
 
 
 def test_normalize_state_preserves_published_result_state() -> None:
-    progress = SimpleNamespace(state=ActivityProgressState.PASSED, completed_at=object())
+    progress = SimpleNamespace(
+        state=ActivityProgressState.PASSED, completed_at=object()
+    )
 
     assert _normalize_state(progress) == "passed"
 
@@ -89,7 +93,9 @@ def test_final_invariant_migration_targets_deprecated_tables() -> None:
         / "versions"
         / "2026_05_18_1a2b3c4d5e6f_student_workflow_invariants.py"
     )
-    spec = importlib.util.spec_from_file_location("student_workflow_invariants", migration_path)
+    spec = importlib.util.spec_from_file_location(
+        "student_workflow_invariants", migration_path
+    )
     assert spec is not None
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None

@@ -571,13 +571,21 @@ def test_published_grade_correction_stays_published_and_adds_audit_revision(
 
     first = api_client.patch(
         f"/assessments/{assessment_uuid}/submissions/submission_alice_grade",
-        json={"final_score": 92, "feedback": "Initial published grade.", "status": "PUBLISHED"},
+        json={
+            "final_score": 92,
+            "feedback": "Initial published grade.",
+            "status": "PUBLISHED",
+        },
     )
     assert first.status_code == 200
 
     correction = api_client.patch(
         f"/assessments/{assessment_uuid}/submissions/submission_alice_grade",
-        json={"final_score": 96, "feedback": "Corrected rubric total.", "status": "PUBLISHED"},
+        json={
+            "final_score": 96,
+            "feedback": "Corrected rubric total.",
+            "status": "PUBLISHED",
+        },
     )
 
     assert correction.status_code == 200
@@ -586,7 +594,9 @@ def test_published_grade_correction_stays_published_and_adds_audit_revision(
 
     with db_session_factory() as session:
         submission = session.exec(
-            select(Submission).where(Submission.submission_uuid == "submission_alice_grade")
+            select(Submission).where(
+                Submission.submission_uuid == "submission_alice_grade"
+            )
         ).one()
         entries = session.exec(
             select(GradingEntry).where(GradingEntry.submission_id == submission.id)

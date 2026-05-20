@@ -120,7 +120,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
         ) : (
           <div className="bg-muted/30 flex h-full min-h-[240px] flex-col items-center justify-center gap-4 p-6 text-center">
             {Icon && (
-              <div className="bg-background flex size-16 items-center justify-center rounded-2xl border shadow-sm transition-colors group-hover:bg-accent">
+              <div className="bg-background group-hover:bg-accent flex size-16 items-center justify-center rounded-2xl border shadow-sm transition-colors">
                 <Icon className="size-8" />
               </div>
             )}
@@ -197,4 +197,3 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
     </NodeViewWrapper>
   );
 }
-

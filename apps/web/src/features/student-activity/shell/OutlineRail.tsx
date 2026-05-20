@@ -32,9 +32,7 @@ export default function OutlineRail({ runtime, open, onClose }: OutlineRailProps
           'h-[calc(100dvh-6.25rem)] w-[300px]',
           'flex flex-col border-r border-border bg-background shadow-xl',
           'transition-[transform,opacity] duration-200 ease-out will-change-transform',
-          open
-            ? 'translate-x-0 opacity-100'
-            : '-translate-x-full opacity-0 pointer-events-none',
+          open ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none',
         )}
         aria-label="Course outline"
         role="navigation"

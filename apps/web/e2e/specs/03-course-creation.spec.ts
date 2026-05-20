@@ -33,10 +33,7 @@ test.describe.serial('Teacher – Course Creation', () => {
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({ timeout: 10_000 });
   });
 
-  test('teacher can create a new course via the wizard', async ({
-    page,
-    courseCreatePage,
-  }) => {
+  test('teacher can create a new course via the wizard', async ({ page, courseCreatePage }) => {
     await courseCreatePage.goto();
 
     courseUuid = await courseCreatePage.createCourse({
@@ -134,10 +131,7 @@ test.describe.serial('Teacher – Course Creation', () => {
 
   test('teacher can add a File Submission activity', async ({ page, curriculumEditorPage }) => {
     await curriculumEditorPage.goto(courseUuid);
-    await curriculumEditorPage.addActivityToChapter(
-      COURSE.chapters.assessments,
-      'File Submission',
-    );
+    await curriculumEditorPage.addActivityToChapter(COURSE.chapters.assessments, 'File Submission');
     await expect(page.getByText(/file submission|file/i).first()).toBeVisible({ timeout: 10_000 });
   });
 
@@ -224,10 +218,7 @@ test.describe.serial('Teacher – Course Creation', () => {
 
   test('teacher can add a Code Challenge activity', async ({ page, curriculumEditorPage }) => {
     await curriculumEditorPage.goto(courseUuid);
-    await curriculumEditorPage.addActivityToChapter(
-      COURSE.chapters.assessments,
-      'Code Challenge',
-    );
+    await curriculumEditorPage.addActivityToChapter(COURSE.chapters.assessments, 'Code Challenge');
     await expect(page.getByText(/code challenge|coding/i).first()).toBeVisible({ timeout: 10_000 });
   });
 
@@ -256,22 +247,16 @@ test.describe.serial('Teacher – Course Creation', () => {
     }
 
     // The course status should update to "Published" (visible in the page heading/badge)
-    await expect(
-      page.getByText(/published|live/i).first(),
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/published|live/i).first()).toBeVisible({ timeout: 15_000 });
   });
 
   // ── 8. Course details page ──────────────────────────────────────────────
 
-  test('teacher can update course details (title) on the details page', async ({
-    page,
-    courseDetailsPage,
-  }) => {
+  test('teacher can update course details (title) on the details page', async ({ page, courseDetailsPage }) => {
     await courseDetailsPage.goto(courseUuid);
     // Verify the course title is pre-filled
-    await expect(page.getByRole('textbox', { name: /title|name/i }).first()).toHaveValue(
-      COURSE.title,
-      { timeout: 10_000 },
-    );
+    await expect(page.getByRole('textbox', { name: /title|name/i }).first()).toHaveValue(COURSE.title, {
+      timeout: 10_000,
+    });
   });
 });

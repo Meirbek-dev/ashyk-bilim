@@ -17,9 +17,7 @@ export class CurriculumEditorPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.addChapterButton = page
-      .getByRole('button', { name: /add chapter|new chapter|\+ chapter/i })
-      .first();
+    this.addChapterButton = page.getByRole('button', { name: /add chapter|new chapter|\+ chapter/i }).first();
     // The new-chapter inline input — rendered when showChapterInput===true
     this.chapterNameInput = page.locator('input[placeholder*="chapter"], input[placeholder*="Chapter"]').last();
     this.toast = page.locator('[data-sonner-toast]').first();
@@ -60,9 +58,7 @@ export class CurriculumEditorPage {
     if (await expandButton.isVisible()) await expandButton.click();
 
     // Click the "Add activity" button inside the chapter
-    const addActivityBtn = chapterRow
-      .getByRole('button', { name: /add activity|add lesson|\+ activity/i })
-      .first();
+    const addActivityBtn = chapterRow.getByRole('button', { name: /add activity|add lesson|\+ activity/i }).first();
     await addActivityBtn.click();
 
     // A dropdown/menu should appear

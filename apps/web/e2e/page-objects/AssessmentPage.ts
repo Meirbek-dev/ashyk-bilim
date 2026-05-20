@@ -25,32 +25,21 @@ export class AssessmentPage {
   constructor(page: Page) {
     this.page = page;
     this.startButton = page.getByRole('button', { name: /start|begin attempt|take exam/i }).first();
-    this.submitButton = page
-      .getByRole('button', { name: /submit exam|submit attempt|finish/i })
-      .first();
-    this.resultDisplay = page
-      .locator('[data-result], .result, .score, [aria-label*="score"]')
-      .first();
-    this.codeEditor = page
-      .locator('.cm-editor .cm-content, .monaco-editor textarea, textarea[name*="code"]')
-      .first();
+    this.submitButton = page.getByRole('button', { name: /submit exam|submit attempt|finish/i }).first();
+    this.resultDisplay = page.locator('[data-result], .result, .score, [aria-label*="score"]').first();
+    this.codeEditor = page.locator('.cm-editor .cm-content, .monaco-editor textarea, textarea[name*="code"]').first();
     this.runCodeButton = page.getByRole('button', { name: /run|test code/i }).first();
-    this.submitCodeButton = page
-      .getByRole('button', { name: /submit solution|submit code/i })
-      .first();
-    this.attemptStatus = page
-      .locator('text=Graded, text=Submitted, text=Pending, [data-status]')
-      .first();
+    this.submitCodeButton = page.getByRole('button', { name: /submit solution|submit code/i }).first();
+    this.attemptStatus = page.locator('text=Graded, text=Submitted, text=Pending, [data-status]').first();
   }
 
   // ── Exam helpers ─────────────────────────────────────────────────────────
 
   async startAttempt(): Promise<void> {
     await this.startButton.click();
-    await this.page.waitForResponse(
-      (r) => r.url().includes('/assessments') && r.request().method() === 'POST',
-      { timeout: 10_000 },
-    );
+    await this.page.waitForResponse((r) => r.url().includes('/assessments') && r.request().method() === 'POST', {
+      timeout: 10_000,
+    });
   }
 
   /**
@@ -59,9 +48,7 @@ export class AssessmentPage {
    * @param answerIndex - 0-based index of the answer to select
    */
   async answerChoiceQuestion(questionIndex: number, answerIndex: number): Promise<void> {
-    const questionBlock = this.page
-      .locator('[data-question], .question-block, fieldset')
-      .nth(questionIndex);
+    const questionBlock = this.page.locator('[data-question], .question-block, fieldset').nth(questionIndex);
     await questionBlock.locator('input[type="radio"]').nth(answerIndex).check();
   }
 
@@ -71,9 +58,7 @@ export class AssessmentPage {
    * @param answerIndices - array of 0-based indices to check
    */
   async answerMultiSelectQuestion(questionIndex: number, answerIndices: number[]): Promise<void> {
-    const questionBlock = this.page
-      .locator('[data-question], .question-block, fieldset')
-      .nth(questionIndex);
+    const questionBlock = this.page.locator('[data-question], .question-block, fieldset').nth(questionIndex);
     for (const idx of answerIndices) {
       await questionBlock.locator('input[type="checkbox"]').nth(idx).check();
     }
@@ -86,10 +71,9 @@ export class AssessmentPage {
     if (await confirmBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
       await confirmBtn.click();
     }
-    await this.page.waitForResponse(
-      (r) => r.url().includes('/assessments') && r.request().method() !== 'GET',
-      { timeout: 15_000 },
-    );
+    await this.page.waitForResponse((r) => r.url().includes('/assessments') && r.request().method() !== 'GET', {
+      timeout: 15_000,
+    });
   }
 
   // ── Code challenge helpers ───────────────────────────────────────────────
@@ -103,9 +87,8 @@ export class AssessmentPage {
 
   async submitCode(): Promise<void> {
     await this.submitCodeButton.click();
-    await this.page.waitForResponse(
-      (r) => r.url().includes('/code-execution') || r.url().includes('/assessments'),
-      { timeout: 30_000 },
-    );
+    await this.page.waitForResponse((r) => r.url().includes('/code-execution') || r.url().includes('/assessments'), {
+      timeout: 30_000,
+    });
   }
 }

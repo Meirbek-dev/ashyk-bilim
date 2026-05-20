@@ -439,7 +439,10 @@ def test_update_assessment_metadata(api_client, db_session_factory) -> None:
 
     response = api_client.patch(
         f"/assessments/{assessment_uuid}",
-        json={"title": "Renamed ManualAssessment", "description": "Updated description"},
+        json={
+            "title": "Renamed ManualAssessment",
+            "description": "Updated description",
+        },
     )
 
     assert response.status_code == 200
@@ -756,7 +759,9 @@ def test_readiness_check_flags_missing_items(api_client, db_session_factory) -> 
 # ---------------------------------------------------------------------------
 
 
-def test_policy_preset_manual_assessment_has_defaults(api_client, db_session_factory) -> None:
+def test_policy_preset_manual_assessment_has_defaults(
+    api_client, db_session_factory
+) -> None:
     """GET /assessments/policy-preset/EXAM returns a sensible default policy."""
     _seed_course_and_chapter(db_session_factory)
 

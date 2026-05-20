@@ -26,9 +26,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
     examActivityId = process.env.E2E_EXAM_ACTIVITY_ID ?? '';
 
     if (!courseUuid) {
-      throw new Error(
-        'E2E_COURSE_UUID not set. Run spec 03 (course creation) first.',
-      );
+      throw new Error('E2E_COURSE_UUID not set. Run spec 03 (course creation) first.');
     }
   });
 
@@ -41,16 +39,13 @@ test.describe.serial('Teacher – Grading Loop', () => {
     });
   });
 
-  test('gradebook shows the student submission that needs grading', async ({
-    page,
-    gradebookPage,
-  }) => {
+  test('gradebook shows the student submission that needs grading', async ({ page, gradebookPage }) => {
     await gradebookPage.goto(courseUuid);
 
     // The student's name or email should appear somewhere in the table
-    await expect(
-      page.getByText(new RegExp(USERS.student.email.split('@')[0]!, 'i')).first(),
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(new RegExp(USERS.student.email.split('@')[0]!, 'i')).first()).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   // ── 2. Grade file submission ──────────────────────────────────────────────
@@ -67,16 +62,14 @@ test.describe.serial('Teacher – Grading Loop', () => {
 
     // The submission list should show at least one submission
     await expect(
-      page.locator('[data-submission-item], .submission-item, [role="listitem"], li')
+      page
+        .locator('[data-submission-item], .submission-item, [role="listitem"], li')
         .filter({ hasText: new RegExp(USERS.student.firstName, 'i') })
         .first(),
     ).toBeVisible({ timeout: 15_000 });
   });
 
-  test('teacher can select the student submission and see the uploaded file', async ({
-    page,
-    gradingReviewPage,
-  }) => {
+  test('teacher can select the student submission and see the uploaded file', async ({ page, gradingReviewPage }) => {
     if (!fileSubmissionActivityId) {
       test.skip(true, 'File submission activity ID not captured — run student journey first');
     }
@@ -85,15 +78,10 @@ test.describe.serial('Teacher – Grading Loop', () => {
     await gradingReviewPage.selectSubmission(USERS.student.firstName);
 
     // The uploaded file name should be visible in the inspector pane
-    await expect(
-      page.getByText(/sample\.pdf|\.pdf/i).first(),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/sample\.pdf|\.pdf/i).first()).toBeVisible({ timeout: 10_000 });
   });
 
-  test('teacher can assign a score and feedback to the file submission', async ({
-    page,
-    gradingReviewPage,
-  }) => {
+  test('teacher can assign a score and feedback to the file submission', async ({ page, gradingReviewPage }) => {
     if (!fileSubmissionActivityId) {
       test.skip(true, 'File submission activity ID not captured — run student journey first');
     }
@@ -106,10 +94,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
     });
   });
 
-  test('file submission status updates to Graded after teacher review', async ({
-    page,
-    gradingReviewPage,
-  }) => {
+  test('file submission status updates to Graded after teacher review', async ({ page, gradingReviewPage }) => {
     if (!fileSubmissionActivityId) {
       test.skip(true, 'File submission activity ID not captured — run student journey first');
     }
@@ -120,10 +105,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
 
   // ── 3. Grade the exam submission ──────────────────────────────────────────
 
-  test('teacher can navigate to the exam review page via gradebook', async ({
-    page,
-    gradebookPage,
-  }) => {
+  test('teacher can navigate to the exam review page via gradebook', async ({ page, gradebookPage }) => {
     if (!examActivityId) {
       test.skip(true, 'Exam activity ID not set — run course creation spec first');
     }
@@ -131,10 +113,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
     await expect(page.url()).toContain(`/activity/${examActivityId}/review`);
   });
 
-  test('teacher can release the exam grade to the student', async ({
-    page,
-    gradingReviewPage,
-  }) => {
+  test('teacher can release the exam grade to the student', async ({ page, gradingReviewPage }) => {
     if (!examActivityId) {
       test.skip(true, 'Exam activity ID not set — run course creation spec first');
     }
@@ -154,9 +133,10 @@ test.describe.serial('Teacher – Grading Loop', () => {
       await releaseBtn.click();
 
       await expect(
-        page.locator('[data-sonner-toast]').first().or(
-          page.getByText(/released|published|graded/i).first(),
-        ),
+        page
+          .locator('[data-sonner-toast]')
+          .first()
+          .or(page.getByText(/released|published|graded/i).first()),
       ).toBeVisible({ timeout: 10_000 });
     } else {
       // BUG: No student submission found despite student completing the exam
@@ -172,10 +152,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
 import { testAsStudent as studentTest } from '../fixtures';
 
 studentTest.describe.serial('Student – Certificate After Grading', () => {
-  test('certificate download button appears after teacher grades all work', async ({
-    page,
-    coursePlayerPage,
-  }) => {
+  test('certificate download button appears after teacher grades all work', async ({ page, coursePlayerPage }) => {
     const courseUuid = process.env.E2E_COURSE_UUID ?? '';
     if (!courseUuid) test.skip(true, 'Course UUID not set');
 

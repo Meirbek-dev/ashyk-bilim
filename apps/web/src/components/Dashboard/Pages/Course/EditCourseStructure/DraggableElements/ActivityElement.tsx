@@ -320,16 +320,18 @@ const ActivityElement = ({
               size="icon"
               variant="outline"
               className={ACTION_ICON_BUTTON_CLASS}
-              onClick={() =>
-                window.open(
-                  `${getAbsoluteUrl('')}/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`,
-                  '_blank',
-                  'noopener,noreferrer',
-                )
+              nativeButton={false}
+              render={
+                <a
+                  href={`${getAbsoluteUrl('')}/course/${cleanCourseUuid(course_uuid)}/activity/${cleanActivityUuid(activity.activity_uuid)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Eye className="h-4 w-4" />
+                  <span className="sr-only">{t('previewTooltip')}</span>
+                </a>
               }
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
+            />
           </ToolTip>
 
           {/* Publish toggle */}

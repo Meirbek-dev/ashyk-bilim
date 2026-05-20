@@ -39,9 +39,7 @@ def persist_submission(
     """
     # Determine post-submission status
     grade_release = (
-        policy.grade_release_mode
-        if policy is not None
-        else GradeReleaseMode.IMMEDIATE
+        policy.grade_release_mode if policy is not None else GradeReleaseMode.IMMEDIATE
     )
     new_status = _resolve_status(result, grade_release, assessment_type)
 
@@ -58,7 +56,11 @@ def persist_submission(
     draft.status = new_status
     draft.is_late = effective.due_at is not None and now > effective.due_at
     draft.submitted_at = now
-    draft.graded_at = now if new_status in (SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED) else None
+    draft.graded_at = (
+        now
+        if new_status in (SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED)
+        else None
+    )
     draft.updated_at = now
 
     # Ensure policy is attached for progress calculation

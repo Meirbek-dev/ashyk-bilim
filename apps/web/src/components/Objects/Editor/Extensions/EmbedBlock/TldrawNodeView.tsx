@@ -176,4 +176,3 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
 };
 
 export default TldrawNodeView;
-

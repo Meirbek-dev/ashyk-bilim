@@ -439,9 +439,11 @@ def _build_submission_diagnostics(
     stale_backlog = sum(
         1
         for submission in submissions
-        if manual_assessment_submission_status(submission) == SubmissionStatus.PENDING.value
+        if manual_assessment_submission_status(submission)
+        == SubmissionStatus.PENDING.value
         and (
-            hours_between(manual_assessment_submitted_at(submission), datetime.now(UTC)) or 0.0
+            hours_between(manual_assessment_submitted_at(submission), datetime.now(UTC))
+            or 0.0
         )
         > 72
     )
@@ -930,10 +932,15 @@ def _build_manual_assessment_rows(
     for submission, manual_assessment in context.manual_assessment_submissions:
         if not _is_allowed(submission.user_id, allowed_user_ids):
             continue
-        if not _in_bucket_window(manual_assessment_submitted_at(submission), bucket_window):
+        if not _in_bucket_window(
+            manual_assessment_submitted_at(submission), bucket_window
+        ):
             continue
         if manual_assessment.id is not None:
-            submissions_by_manual_assessment[manual_assessment.id].append((submission, manual_assessment))
+            submissions_by_manual_assessment[manual_assessment.id].append((
+                submission,
+                manual_assessment,
+            ))
 
     rows: list[AssessmentOutlierRow] = []
     for manual_assessment in context.manual_assessments:
@@ -1143,7 +1150,8 @@ def _build_quiz_rows(
         submitted_users = {
             submission.user_id
             for submission, _ in submissions
-            if manual_assessment_submission_status(submission) != SubmissionStatus.DRAFT.value
+            if manual_assessment_submission_status(submission)
+            != SubmissionStatus.DRAFT.value
         }
         scores = [
             score
@@ -1302,7 +1310,9 @@ def build_assessment_rows(
     snapshots = progress_snapshots(context, allowed_user_ids)
     bucket_window = _selected_bucket_window(filters)
     rows = [
-        *_build_manual_assessment_rows(context, snapshots, allowed_user_ids, bucket_window),
+        *_build_manual_assessment_rows(
+            context, snapshots, allowed_user_ids, bucket_window
+        ),
         *_build_quiz_rows(context, snapshots, allowed_user_ids, bucket_window),
         *_build_exam_rows(context, snapshots, allowed_user_ids, bucket_window),
         *_build_code_rows(context, snapshots, allowed_user_ids, bucket_window),
@@ -1432,7 +1442,8 @@ def get_teacher_assessment_detail(
 
     if assessment_type == "manual_assessment":
         manual_assessment = next(
-            (item for item in context.manual_assessments if item.id == assessment_id), None
+            (item for item in context.manual_assessments if item.id == assessment_id),
+            None,
         )
         if manual_assessment is None:
             msg = f"Задание не найдено: {assessment_id}"
@@ -1733,7 +1744,8 @@ def get_teacher_assessment_detail(
         submitted_users = {
             submission.user_id
             for submission, _activity in records
-            if manual_assessment_submission_status(submission) != SubmissionStatus.DRAFT.value
+            if manual_assessment_submission_status(submission)
+            != SubmissionStatus.DRAFT.value
         }
         quality_by_question = _quality_by_question_from_quiz_submissions([
             submission for submission, _activity in records

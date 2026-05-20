@@ -105,4 +105,3 @@ export default function RichContentRenderer({ content, className = '' }: RichCon
     />
   );
 }
-

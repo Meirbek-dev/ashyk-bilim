@@ -32,9 +32,7 @@ test.describe('Admin – User Roles Panel', () => {
   test('admin can see the list of existing role assignments', async ({ page }) => {
     await page.goto('/en/dash/admin/users');
     // After loading, the table / list of assignments should render
-    await expect(
-      page.locator('table, [role="table"], .data-table').first(),
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('table, [role="table"], .data-table').first()).toBeVisible({ timeout: 15_000 });
   });
 
   test('admin can open the Add Role dialog', async ({ page }) => {
@@ -58,9 +56,9 @@ test.describe('Admin – User Roles Panel', () => {
     await adminUsersPage.assignRole(USERS.teacher.email, 'Teacher');
 
     // After assignment, the table should show the teacher with the Teacher role
-    await expect(
-      page.getByRole('cell', { name: new RegExp(USERS.teacher.email, 'i') }).first(),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('cell', { name: new RegExp(USERS.teacher.email, 'i') }).first()).toBeVisible({
+      timeout: 10_000,
+    });
   });
 
   test('admin cannot access roles panel as a non-admin', async ({ browser }) => {
@@ -72,10 +70,9 @@ test.describe('Admin – User Roles Panel', () => {
     await page.goto('/en/dash/admin/users');
 
     // Should be redirected or show an unauthorized/access-denied page
-    await page.waitForURL(
-      (url) => url.pathname.includes('/unauthorized') || url.pathname.includes('/login'),
-      { timeout: 10_000 },
-    );
+    await page.waitForURL((url) => url.pathname.includes('/unauthorized') || url.pathname.includes('/login'), {
+      timeout: 10_000,
+    });
     await context.close();
   });
 });

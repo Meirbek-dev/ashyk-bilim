@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ShortcutRow {
   key: string;
@@ -29,12 +24,7 @@ export default function KeyboardShortcutsModal() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key === '?' &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        !isTypingTarget(event.target)
-      ) {
+      if (event.key === '?' && !event.ctrlKey && !event.metaKey && !isTypingTarget(event.target)) {
         setOpen((value) => !value);
       }
     };
@@ -61,9 +51,7 @@ export default function KeyboardShortcutsModal() {
                   className="border-border border-b last:border-0"
                 >
                   <td className="py-2 pr-4 font-mono">
-                    <kbd className="bg-muted rounded px-1.5 py-0.5 text-xs font-semibold">
-                      {shortcut.key}
-                    </kbd>
+                    <kbd className="bg-muted rounded px-1.5 py-0.5 text-xs font-semibold">{shortcut.key}</kbd>
                   </td>
                   <td className="text-muted-foreground py-2">{shortcut.description}</td>
                 </tr>

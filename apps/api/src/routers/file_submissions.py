@@ -115,7 +115,9 @@ async def api_download_file_submission_file(
     return StreamingResponse(
         iter([body]),
         media_type=upload.content_type or "application/octet-stream",
-        headers={"Content-Disposition": get_content_disposition_header(upload.filename)},
+        headers={
+            "Content-Disposition": get_content_disposition_header(upload.filename)
+        },
     )
 
 

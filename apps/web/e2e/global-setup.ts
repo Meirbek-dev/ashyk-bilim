@@ -39,7 +39,10 @@ function loadEnvFile(filePath: string): void {
     const eqIdx = trimmed.indexOf('=');
     if (eqIdx === -1) continue;
     const key = trimmed.slice(0, eqIdx).trim();
-    const value = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+    const value = trimmed
+      .slice(eqIdx + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '');
     if (key && !(key in process.env)) process.env[key] = value;
   }
 }
@@ -78,7 +81,7 @@ async function registerUser(opts: {
 
   if (res.status === 400) {
     // Handle "already exists" responses — both FastAPI-Users and platform-custom formats
-    const body = await res.json().catch(() => ({})) as Record<string, unknown>;
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     const alreadyExists =
       body?.detail === 'REGISTER_USER_ALREADY_EXISTS' ||
       (body as { error_code?: string })?.error_code === 'email_taken' ||
@@ -126,7 +129,12 @@ async function getMe(cookieHeader: string): Promise<{ id: number; email: string;
     headers: { Cookie: cookieHeader },
   });
   if (!res.ok) throw new Error(`[setup] /auth/me failed: ${res.status}`);
-  const data = await res.json() as { user?: { id: number; email: string; user_uuid: string }; id?: number; email?: string; user_uuid?: string };
+  const data = (await res.json()) as {
+    user?: { id: number; email: string; user_uuid: string };
+    id?: number;
+    email?: string;
+    user_uuid?: string;
+  };
   // The endpoint wraps the user object: { user: { id, email, ... }, roles, ... }
   return data.user ?? (data as { id: number; email: string; user_uuid: string });
 }
@@ -155,11 +163,7 @@ async function findUserIdByEmail(cookieHeader: string, email: string): Promise<n
  * Fall back to fetching the user's own session after they log in,
  * since non-admin calls to user-roles may not include the user.
  */
-async function findOrFetchUserId(
-  adminCookie: string,
-  userCookie: string,
-  email: string,
-): Promise<number> {
+async function findOrFetchUserId(adminCookie: string, userCookie: string, email: string): Promise<number> {
   const fromRoles = await findUserIdByEmail(adminCookie, email);
   if (fromRoles !== null) return fromRoles;
 
@@ -172,7 +176,7 @@ async function findOrFetchUserId(
 async function assignRole(cookieHeader: string, userId: number, roleId: number): Promise<void> {
   const res = await fetch(`${API_URL}/rbac/roles/assign`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: cookieHeader },
+    headers: { 'Content-Type': 'application/json', 'Cookie': cookieHeader },
     body: JSON.stringify({ user_id: userId, role_id: roleId }),
   });
   if (!res.ok) {
@@ -188,11 +192,7 @@ async function assignRole(cookieHeader: string, userId: number, roleId: number):
  * This is needed because Next.js server-side auth cookies are HttpOnly and
  * cannot be captured via fetch alone.
  */
-async function captureStorageState(
-  email: string,
-  password: string,
-  outputPath: string,
-): Promise<void> {
+async function captureStorageState(email: string, password: string, outputPath: string): Promise<void> {
   const browser = await chromium.launch();
   const context = await browser.newContext({ baseURL: BASE_URL });
   const page = await context.newPage();
@@ -255,9 +255,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   // 3. Resolve the teacher role id (configurable via E2E_TEACHER_ROLE_SLUG, default: 'instructor')
   const roles = await listRoles(adminCookie);
   const teacherRoleSlug = process.env.E2E_TEACHER_ROLE_SLUG ?? 'instructor';
-  const teacherRole = roles.find(
-    (r) => r.slug === teacherRoleSlug,
-  );
+  const teacherRole = roles.find((r) => r.slug === teacherRoleSlug);
   if (!teacherRole) {
     throw new Error(
       `[setup] Could not find role with slug "${teacherRoleSlug}". Available roles: ${roles.map((r) => `${r.slug}(${r.name})`).join(', ')}`,

@@ -17,7 +17,16 @@ export const FILE_TYPES = {
   },
   audio: {
     extensions: ['.mp3', '.wav', '.ogg', '.m4a', '.opus', '.oga', '.flac'],
-    mimeTypes: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/opus', 'audio/mp4', 'audio/x-m4a', 'audio/flac'],
+    mimeTypes: [
+      'audio/mpeg',
+      'audio/wav',
+      'audio/x-wav',
+      'audio/ogg',
+      'audio/opus',
+      'audio/mp4',
+      'audio/x-m4a',
+      'audio/flac',
+    ],
     maxSize: 200 * 1024 * 1024, // 200MB
   },
   document: {
@@ -60,7 +69,22 @@ export const FILE_TYPES = {
     maxSize: 1000 * 1024 * 1024, // 1GB
   },
   text: {
-    extensions: ['.txt', '.md', '.json', '.srt', '.vtt', '.py', '.js', '.ts', '.css', '.html', '.xml', '.cpp', '.c', '.java'],
+    extensions: [
+      '.txt',
+      '.md',
+      '.json',
+      '.srt',
+      '.vtt',
+      '.py',
+      '.js',
+      '.ts',
+      '.css',
+      '.html',
+      '.xml',
+      '.cpp',
+      '.c',
+      '.java',
+    ],
     mimeTypes: [
       'text/plain',
       'text/markdown',

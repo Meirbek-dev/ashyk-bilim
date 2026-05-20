@@ -82,8 +82,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
       return;
     }
 
-    const label =
-      recommendedAction === 'startRevision' ? t('startRevision') : t('startAssessment');
+    const label = recommendedAction === 'startRevision' ? t('startRevision') : t('startAssessment');
 
     const handler = async () => {
       if (!vm.assessmentUuid) return;
@@ -118,7 +117,20 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     return () => {
       setBottomBarAction(null);
     };
-  }, [isPreflightMode, canAct, recommendedAction, vm, isPending, activityUuid, courseUuid, queryClient, router, setBottomBarAction, setMode, t]);
+  }, [
+    isPreflightMode,
+    canAct,
+    recommendedAction,
+    vm,
+    isPending,
+    activityUuid,
+    courseUuid,
+    queryClient,
+    router,
+    setBottomBarAction,
+    setMode,
+    t,
+  ]);
 
   // ── Loading ─────────────────────────────────────────────────────────────────
 
@@ -170,4 +182,3 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     />
   );
 }
-

@@ -14,7 +14,10 @@ function loadEnv(file: string): void {
     const eq = t.indexOf('=');
     if (eq === -1) continue;
     const k = t.slice(0, eq).trim();
-    const v = t.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+    const v = t
+      .slice(eq + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '');
     if (k && !(k in process.env)) process.env[k] = v;
   }
 }

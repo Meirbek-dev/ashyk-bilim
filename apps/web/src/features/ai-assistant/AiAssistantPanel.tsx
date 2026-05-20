@@ -41,17 +41,15 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
           'h-[calc(100dvh-3.5rem)] w-[min(400px,100vw)]',
           'flex flex-col border-l border-border bg-background shadow-xl',
           'transition-[transform,opacity] duration-200 ease-out will-change-transform',
-          open
-            ? 'translate-x-0 opacity-100'
-            : 'translate-x-full opacity-0 pointer-events-none',
+          open ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none',
         )}
         role="complementary"
         aria-label="AI Assistant"
       >
         {/* Header */}
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
+        <div className="border-border flex h-12 shrink-0 items-center justify-between border-b px-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="size-4 text-primary" />
+            <Sparkles className="text-primary size-4" />
             <span className="text-sm font-semibold">AI Assistant</span>
           </div>
           <Button
@@ -68,9 +66,7 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
         {/* Suggestions */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="mb-4">
-            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
-              Suggested prompts
-            </p>
+            <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">Suggested prompts</p>
           </div>
           <div className="flex flex-col gap-2">
             {suggestions.map((suggestion, i) => (
@@ -94,7 +90,7 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
         </div>
 
         {/* Chat input placeholder */}
-        <div className="border-t border-border p-4">
+        <div className="border-border border-t p-4">
           <div className="border-border bg-muted/30 flex items-center gap-2 rounded-lg border p-3">
             <Bot className="text-muted-foreground size-4 shrink-0" />
             <span className="text-muted-foreground text-sm">Ask anything about this activity...</span>
@@ -140,17 +136,9 @@ function getSuggestions(activityType: string): string[] {
         'What topic should I review for this?',
       ];
     case 'TYPE_FILE_SUBMISSION':
-      return [
-        'What should I include in my submission?',
-        'What are the grading criteria?',
-        'Help me structure my work',
-      ];
+      return ['What should I include in my submission?', 'What are the grading criteria?', 'Help me structure my work'];
     case 'TYPE_VIDEO':
-      return [
-        'Summarize what I just watched',
-        'Explain a concept from this video',
-        'What are the key points?',
-      ];
+      return ['Summarize what I just watched', 'Explain a concept from this video', 'What are the key points?'];
     default:
       return [
         'Help me understand this activity',

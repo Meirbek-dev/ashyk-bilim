@@ -227,7 +227,10 @@ def manual_assessment_submission_status(submission: Submission) -> str:
 
 
 def manual_assessment_is_reviewable(submission: Submission) -> bool:
-    return manual_assessment_submission_status(submission) == SubmissionStatus.PENDING.value
+    return (
+        manual_assessment_submission_status(submission)
+        == SubmissionStatus.PENDING.value
+    )
 
 
 def manual_assessment_is_graded(submission: Submission) -> bool:
@@ -562,7 +565,8 @@ def load_analytics_context(
     user_ids.update(progress.user_id for progress in activity_progress)
     user_ids.update(progress.user_id for progress in course_progress)
     user_ids.update(
-        submission.user_id for submission, _manual_assessment in manual_assessment_submissions
+        submission.user_id
+        for submission, _manual_assessment in manual_assessment_submissions
     )
     user_ids.update(attempt.user_id for attempt, _exam in exam_attempts)
     user_ids.update(submission.user_id for submission, _activity in quiz_submissions)

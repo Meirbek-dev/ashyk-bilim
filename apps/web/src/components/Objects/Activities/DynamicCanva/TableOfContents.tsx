@@ -66,7 +66,9 @@ const TableOfContents = ({ className, editor, minItems = 2 }: TableOfContentsPro
   if (visibleHeadings.length < minItems) return null;
 
   return (
-    <div className={cn('m-0 flex h-fit w-full flex-col items-stretch border-0 bg-transparent p-0 shadow-none', className)}>
+    <div
+      className={cn('m-0 flex h-fit w-full flex-col items-stretch border-0 bg-transparent p-0 shadow-none', className)}
+    >
       <ul className="m-0 !list-none !p-0">
         {visibleHeadings.map((heading) => (
           <li

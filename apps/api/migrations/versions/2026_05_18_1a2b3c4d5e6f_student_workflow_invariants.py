@@ -83,7 +83,9 @@ def _assert_no_deprecated_activity_types(conn: sa.Connection) -> None:
 def _assert_no_deprecated_submission_metadata(conn: sa.Connection) -> None:
     if not _table_exists(conn, "submission"):
         return
-    key_checks = " OR ".join(f"metadata_json::jsonb ? '{key}'" for key in DEPRECATED_METADATA_KEYS)
+    key_checks = " OR ".join(
+        f"metadata_json::jsonb ? '{key}'" for key in DEPRECATED_METADATA_KEYS
+    )
     count = conn.execute(
         sa.text(
             "SELECT COUNT(*) FROM submission "
@@ -91,7 +93,9 @@ def _assert_no_deprecated_submission_metadata(conn: sa.Connection) -> None:
         )
     ).scalar_one()
     if count:
-        raise RuntimeError(f"Deprecated assignment metadata remains in submission rows: {count}")
+        raise RuntimeError(
+            f"Deprecated assignment metadata remains in submission rows: {count}"
+        )
 
 
 def _assert_no_deprecated_foreign_keys(conn: sa.Connection) -> None:
@@ -116,13 +120,15 @@ def _assert_no_deprecated_foreign_keys(conn: sa.Connection) -> None:
             f"{row.table_name}.{row.constraint_name}->{row.referenced_table}"
             for row in rows
         )
-        raise RuntimeError(f"Foreign keys still reference deprecated assignment tables: {formatted}")
+        raise RuntimeError(
+            f"Foreign keys still reference deprecated assignment tables: {formatted}"
+        )
 
 
 def _add_runtime_indexes(conn: sa.Connection) -> None:
     statements = (
         "CREATE INDEX IF NOT EXISTS ix_activity_activity_uuid ON activity(activity_uuid)",
-        "CREATE INDEX IF NOT EXISTS ix_activity_course_uuid_order ON activity(course_id, chapter_id, \"order\", id)",
+        'CREATE INDEX IF NOT EXISTS ix_activity_course_uuid_order ON activity(course_id, chapter_id, "order", id)',
         "CREATE INDEX IF NOT EXISTS ix_submission_user_activity_status_attempt ON submission(user_id, activity_id, status, attempt_number)",
         "CREATE INDEX IF NOT EXISTS ix_file_submission_attempt_user_activity_status_updated ON file_submission_attempt(user_id, activity_id, status, updated_at)",
     )

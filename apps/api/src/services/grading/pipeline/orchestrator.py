@@ -239,7 +239,9 @@ async def _submit_assessment_inner(
 
     # 11. Emit events (post-commit, non-blocking)
     _is_code_challenge = assessment_type == AssessmentType.CODE_CHALLENGE
-    _immediate_release = policy is None or policy.grade_release_mode == GradeReleaseMode.IMMEDIATE
+    _immediate_release = (
+        policy is None or policy.grade_release_mode == GradeReleaseMode.IMMEDIATE
+    )
     await emit_submission_events(
         draft,
         file_keys=_extract_file_keys(final_payload),
