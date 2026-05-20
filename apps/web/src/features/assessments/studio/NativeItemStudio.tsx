@@ -3,15 +3,13 @@
 import {
   AlertTriangle,
   BookOpen,
-  CalendarClock,
   CheckCircle2,
-  Copy,
   GitCompareArrows,
   ListTodo,
   LoaderCircle,
-  Rows3,
-  ShieldAlert,
-  Sparkles,
+  PanelLeft,
+  Rocket,
+  Settings2,
   TextCursorInput,
   Trash2,
 } from 'lucide-react';
@@ -35,8 +33,11 @@ import {
 import type { ValidationIssue } from '@/features/assessments/domain/view-models';
 import { ChoiceItemAuthor } from '@/features/assessments/items/choice';
 import type { ChoiceAuthorValue } from '@/features/assessments/items/choice';
-import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge';
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge';
+import type { AssessmentEditorState, EditableItem, StudioTab } from '@/features/assessments/studio/studioTypes';
+import GeneralSettingsTab from '@/features/assessments/studio/tabs/GeneralSettingsTab';
+import BuilderCanvasTab from '@/features/assessments/studio/tabs/BuilderCanvasTab';
+import PublishDashboardTab from '@/features/assessments/studio/tabs/PublishDashboardTab';
 import ErrorUI from '@/components/Objects/Elements/Error/Error';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
 import { Badge } from '@/components/ui/badge';
@@ -48,8 +49,12 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
+export type { AssessmentEditorState, EditableItem, StudioTab };
+export type { SaveState };
+
 type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>;
 type StudioMode = 'exam';
+type AssessmentLifecycle = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
 
 interface AssessmentPolicyDetail {
   due_at?: string | null;
@@ -338,28 +343,12 @@ interface NativeItemAuthorProps {
   mode: StudioMode;
   itemNoun: string;
   itemNounKey?: 'question' | 'task';
+  allowedKinds?: SupportedStudioItemKind[];
 }
 
-interface AssessmentEditorState {
-  title: string;
-  description: string;
-  dueAt: string;
-  gradingType: 'NUMERIC' | 'PERCENTAGE';
-  maxAttempts: string;
-  timeLimitMinutes: string;
-  copyPasteProtection: boolean;
-  tabSwitchDetection: boolean;
-  devtoolsDetection: boolean;
-  rightClickDisable: boolean;
-  fullscreenEnforcement: boolean;
-  violationThreshold: string;
-  allowResultReview: boolean;
-  showCorrectAnswers: boolean;
-}
+type EditableItemInternal = EditableItem;
 
-type EditableItem = Pick<AssessmentItem, 'item_uuid' | 'kind' | 'title' | 'max_score' | 'body'>;
-
-export function NativeItemAuthor({ mode, itemNoun, itemNounKey }: NativeItemAuthorProps) {
+export function NativeItemAuthor({ mode, itemNoun, itemNounKey, allowedKinds = ['CHOICE', 'MATCHING'] }: NativeItemAuthorProps) {
   const {
     assessment,
     items,
@@ -371,22 +360,30 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey }: NativeItemAuth
     validationIssues,
   } = useAssessmentStudioContext();
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
+  const tTabs = useTranslations('Features.Assessments.Studio.Tabs');
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}` as any) : itemNoun;
-  const kindLabels: Record<SupportedStudioItemKind, string> = {
-    CHOICE: t('kindLabels.choice'),
-    OPEN_TEXT: t('kindLabels.openText'),
-    FORM: t('kindLabels.form'),
-    MATCHING: t('kindLabels.matching'),
-  };
-  const item = items.find((candidate) => candidate.item_uuid === selectedItemUuid) ?? items[0] ?? null;
+
+  const [activeTab, setActiveTab] = useState<StudioTab>('BUILDER');
+  const [localOrderedUuids, setLocalOrderedUuids] = useState<string[]>([]);
+
+  // Sync local order with server items
+  useEffect(() => {
+    setLocalOrderedUuids(items.map((item) => item.item_uuid));
+  }, [items]);
+
+  // Produce the displayed items in local order
+  const orderedItems = localOrderedUuids
+    .map((uuid) => items.find((item) => item.item_uuid === uuid))
+    .filter((item): item is AssessmentItem => Boolean(item));
+
+  const item = orderedItems.find((candidate) => candidate.item_uuid === selectedItemUuid) ?? orderedItems[0] ?? null;
+
   const [assessmentState, setAssessmentState] = useState<AssessmentEditorState>(() =>
     toAssessmentEditorState(assessment),
   );
   const [itemState, setItemState] = useState<EditableItem | null>(item ? toEditableItem(item) : null);
   const [assessmentSaveState, setAssessmentSaveState] = useState<SaveState>('idle');
   const [itemSaveState, setItemSaveState] = useState<SaveState>('idle');
-  const [isDuplicating, startDuplicateTransition] = useTransition();
-  const [isDeleting, startDeleteTransition] = useTransition();
   const lastSavedAssessmentRef = useRef('');
   const lastSavedItemRef = useRef('');
 
@@ -413,11 +410,7 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey }: NativeItemAuth
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(buildAssessmentPatch(mode, assessment, nextState)),
         });
-
-        if (!response.ok) {
-          throw new Error(await responseError(response, 'Failed to save assessment settings'));
-        }
-
+        if (!response.ok) throw new Error(await responseError(response, 'Failed to save assessment settings'));
         lastSavedAssessmentRef.current = serializeAssessmentState(nextState);
         setAssessmentSaveState('saved');
         await refresh();
@@ -443,21 +436,14 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey }: NativeItemAuth
             body: nextItem.body,
           }),
         });
-
-        if (!response.ok) {
-          throw new Error(
-            await responseError(response, t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() })),
-          );
-        }
-
+        if (!response.ok)
+          throw new Error(await responseError(response, t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() })));
         lastSavedItemRef.current = serializeItemState(nextItem);
         setItemSaveState('saved');
         await refresh();
       } catch (error) {
         setItemSaveState('error');
-        toast.error(
-          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
-        );
+        toast.error(error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }));
       }
     },
     [assessment.assessment_uuid, displayItemNoun, refresh, t],
@@ -468,9 +454,7 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey }: NativeItemAuth
     const serialized = serializeAssessmentState(assessmentState);
     if (serialized === lastSavedAssessmentRef.current) return;
     setAssessmentSaveState('dirty');
-    const timeout = setTimeout(() => {
-      void saveAssessment(assessmentState);
-    }, 900);
+    const timeout = setTimeout(() => { void saveAssessment(assessmentState); }, 900);
     return () => clearTimeout(timeout);
   }, [assessmentState, isEditable, saveAssessment]);
 
@@ -479,535 +463,154 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey }: NativeItemAuth
     const serialized = serializeItemState(itemState);
     if (serialized === lastSavedItemRef.current) return;
     setItemSaveState('dirty');
-    const timeout = setTimeout(() => {
-      void saveItem(itemState);
-    }, 900);
+    const timeout = setTimeout(() => { void saveItem(itemState); }, 900);
     return () => clearTimeout(timeout);
   }, [isEditable, itemState, saveItem]);
 
-  const handleDelete = () => {
-    if (!itemState) return;
-    startDeleteTransition(async () => {
-      try {
-        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${itemState.item_uuid}`, {
-          method: 'DELETE',
-        });
-        if (!response.ok) {
-          throw new Error(
-            await responseError(response, t('deleteFailed', { itemNoun: displayItemNoun.toLowerCase() })),
-          );
-        }
-        toast.success(t('itemDeleted', { itemNoun: displayItemNoun }));
-        setSelectedItemUuid(null);
-        await refresh();
-      } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : t('deleteFailed', { itemNoun: displayItemNoun.toLowerCase() }),
-        );
-      }
-    });
-  };
+  const handleReorder = useCallback(async (orderedUuids: string[]) => {
+    setLocalOrderedUuids(orderedUuids);
+    try {
+      await apiFetch(`assessments/${assessment.assessment_uuid}/items/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_uuids: orderedUuids }),
+      });
+      await refresh();
+    } catch {
+      // Reorder persists visually; server sync is best-effort
+    }
+  }, [assessment.assessment_uuid, refresh]);
 
-  const handleDuplicate = () => {
-    if (!itemState) return;
-    startDuplicateTransition(async () => {
+  const setLifecycle = useCallback(
+    async (lifecycle: AssessmentLifecycle, scheduledAt?: string | null) => {
       try {
-        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items`, {
+        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/lifecycle`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            kind: itemState.kind,
-            title: itemState.title
-              ? t('copyOf', { title: itemState.title })
-              : t('copyOfItem', { itemNoun: displayItemNoun }),
-            max_score: itemState.max_score,
-            body: structuredClone(itemState.body),
-          }),
+          body: JSON.stringify({ to: lifecycle, scheduled_at: scheduledAt ?? null }),
         });
-
-        if (!response.ok) {
-          throw new Error(
-            await responseError(response, t('duplicateFailed', { itemNoun: displayItemNoun.toLowerCase() })),
-          );
-        }
-
-        const created = (await response.json()) as { item_uuid?: string };
-        toast.success(t('itemDuplicated', { itemNoun: displayItemNoun }));
+        if (!response.ok) throw new Error(await responseError(response, 'Failed to update lifecycle'));
         await refresh();
-        if (typeof created.item_uuid === 'string') {
-          setSelectedItemUuid(created.item_uuid);
-        }
+        toast.success(t('lifecycleChanged', { state: lifecycle }));
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : t('duplicateFailed', { itemNoun: displayItemNoun.toLowerCase() }),
-        );
+        toast.error(error instanceof Error ? error.message : t('updateLifecycleFailed'));
       }
-    });
-  };
+    },
+    [assessment.assessment_uuid, refresh, t],
+  );
 
-  const itemIssues = itemState
+  const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState, t).map(classifyValidationIssue);
+  const itemIssueList = itemState
     ? dedupeIssues([
         ...localItemValidationIssues(itemState),
         ...persistedItemIssues(validationIssues, itemState.item_uuid),
       ]).map(classifyValidationIssue)
     : [];
-  const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState, t).map(classifyValidationIssue);
-  const itemMetadataIssues = itemIssues.filter((issue) => issue.area === 'item-metadata');
-  const itemContentIssues = itemIssues.filter((issue) => issue.area === 'item-content' || issue.area === 'item-kind');
-  const readinessIssueCount = dedupeIssues([...validationIssues, ...assessmentIssues]).length;
-  const readyForPublish = items.length > 0 && readinessIssueCount === 0;
+  const itemContentIssues = itemIssueList.filter(
+    (issue) => issue.area === 'item-content' || issue.area === 'item-kind',
+  );
+  const allIssues = dedupeIssues([...validationIssues, ...assessmentIssues]);
+
+  const TAB_CONFIG: { id: StudioTab; label: string; icon: typeof Settings2; issueCount?: number }[] = [
+    { id: 'SETUP', label: tTabs('setup'), icon: Settings2 },
+    { id: 'BUILDER', label: tTabs('builder'), icon: PanelLeft, issueCount: itemIssueList.length },
+    { id: 'PUBLISH', label: tTabs('publish'), icon: Rocket, issueCount: allIssues.length },
+  ];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
-      <StudioOverviewPanel
-        mode={mode}
-        itemNoun={displayItemNoun}
-        itemCount={items.length}
-        totalPoints={totalPoints}
-        dueAt={assessmentState.dueAt}
-        lifecycle={assessment.lifecycle}
-        readyForPublish={readyForPublish}
-        issueCount={readinessIssueCount}
-      />
+    <div className="flex flex-col">
+      {/* ── Tab Navigation ─────────────────────────────────────── */}
+      <div className="bg-card/80 sticky top-[61px] z-20 border-b backdrop-blur">
+        <div className="flex items-center gap-1 px-4 py-1.5 md:px-6">
+          {TAB_CONFIG.map(({ id, label, icon: Icon, issueCount }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveTab(id)}
+              className={cn(
+                'relative flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150',
+                activeTab === id
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+              )}
+            >
+              <Icon className="size-4 shrink-0" />
+              <span>{label}</span>
+              {issueCount ? (
+                <span
+                  className={cn(
+                    'ml-0.5 flex size-4 items-center justify-center rounded-full text-[10px] font-bold',
+                    activeTab === id
+                      ? 'bg-white/20 text-white'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                  )}
+                >
+                  {issueCount > 9 ? '9+' : issueCount}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      <EditorSection
-        title={t('assessmentDetailsTitle')}
-        description={t('assessmentDetailsExamDescription')}
-        actions={<SaveStateBadge state={assessmentSaveState} />}
-      >
-        <AssessmentMetadataForm
-          mode={mode}
+      {/* ── Tab Content ───────────────────────────────────────── */}
+      {activeTab === 'SETUP' && (
+        <GeneralSettingsTab
           state={assessmentState}
+          saveState={assessmentSaveState}
           disabled={!isEditable}
           issues={assessmentIssues}
           onChange={setAssessmentState}
         />
-      </EditorSection>
+      )}
 
-      {!itemState ? (
-        <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-dashed p-8">
-          <div className="max-w-sm text-center">
-            <BookOpen className="text-muted-foreground mx-auto size-10" />
-            <h2 className="mt-3 text-lg font-semibold">
-              {t('noItemSelectedTitle', { itemNoun: displayItemNoun.toLowerCase() })}
-            </h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {t('noItemSelectedDescription', { itemNoun: displayItemNoun.toLowerCase() })}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">
-                  {kindLabels[itemState.kind as SupportedStudioItemKind] ?? itemState.kind}
-                </Badge>
-                <SaveStateBadge state={itemSaveState} />
-                {!isEditable ? <Badge variant="secondary">{t('readOnlyBadge')}</Badge> : null}
-              </div>
-              <h2 className="mt-2 text-xl font-semibold">
-                {itemState.title || t('untitledItem', { itemNoun: displayItemNoun.toLowerCase() })}
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                {itemState.max_score || 0} {t('pointsAbbreviation')} ·{' '}
-                {totalPoints > 0 ? Math.round((itemState.max_score / totalPoints) * 100) : 0}% {t('weightLabel')}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={!isEditable || isDuplicating}
-                onClick={handleDuplicate}
-              >
-                {isDuplicating ? <LoaderCircle className="size-4 animate-spin" /> : <Copy className="size-4" />}
-                {t('duplicate')}
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                disabled={!isEditable || isDeleting}
-                onClick={handleDelete}
-              >
-                {isDeleting ? <LoaderCircle className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
-                {t('delete')}
-              </Button>
-            </div>
-          </div>
-
-          <EditorSection
-            title={t('itemMetadataTitle', { itemNoun: displayItemNoun })}
-            description={t('itemMetadataDescription')}
-          >
-            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem]">
-              <div className="space-y-2">
-                <Label htmlFor="native-item-title">{t('titleLabel')}</Label>
-                <Input
-                  id="native-item-title"
-                  value={itemState.title}
-                  disabled={!isEditable}
-                  aria-invalid={itemMetadataIssues.some((issue) => issue.field === 'title')}
-                  className={cn(
-                    itemMetadataIssues.some((issue) => issue.field === 'title') &&
-                      'border-amber-500 focus-visible:ring-amber-500/40',
-                  )}
-                  onChange={(event) => setItemState({ ...itemState, title: event.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="native-item-points">{t('pointsLabel')}</Label>
-                <Input
-                  id="native-item-points"
-                  type="number"
-                  min={0.01}
-                  step={0.5}
-                  value={itemState.max_score}
-                  disabled={!isEditable}
-                  aria-invalid={itemMetadataIssues.some((issue) => issue.field === 'max_score')}
-                  className={cn(
-                    itemMetadataIssues.some((issue) => issue.field === 'max_score') &&
-                      'border-amber-500 focus-visible:ring-amber-500/40',
-                  )}
-                  onChange={(event) =>
-                    setItemState({
-                      ...itemState,
-                      max_score: event.target.value ? Number(event.target.value) : 0,
-                    })
-                  }
-                />
-              </div>
-            </div>
-            {itemMetadataIssues.length > 0 ? <InlineIssueList issues={itemMetadataIssues} /> : null}
-          </EditorSection>
-
-          <EditorSection
-            title={t('itemContentTitle', { itemNoun: displayItemNoun })}
-            description={t('itemContentDescription')}
-          >
+      {activeTab === 'BUILDER' && (
+        <BuilderCanvasTab
+          assessmentUuid={assessment.assessment_uuid}
+          items={orderedItems}
+          selectedItemUuid={selectedItemUuid}
+          allowedKinds={allowedKinds as SupportedStudioItemKind[]}
+          itemNoun={displayItemNoun}
+          isEditable={isEditable}
+          validationIssues={validationIssues}
+          totalPoints={totalPoints}
+          itemState={itemState}
+          itemSaveState={itemSaveState}
+          onSelectItem={setSelectedItemUuid}
+          onItemCreated={async (uuid) => { await refresh(); setSelectedItemUuid(uuid); }}
+          onItemDeleted={async () => { setSelectedItemUuid(null); await refresh(); }}
+          onItemDuplicated={async (uuid) => { await refresh(); setSelectedItemUuid(uuid); }}
+          onReorder={handleReorder}
+          onItemChange={setItemState}
+          renderItemBodyEditor={(currentItem) => (
             <NativeItemBodyEditor
-              item={itemState}
+              item={currentItem}
               disabled={!isEditable}
               issues={itemContentIssues}
               onChange={setItemState}
             />
-          </EditorSection>
-        </>
+          )}
+        />
       )}
-    </div>
-  );
-}
 
-function StudioOverviewPanel({
-  mode,
-  itemNoun,
-  itemCount,
-  totalPoints,
-  dueAt,
-  lifecycle,
-  readyForPublish,
-  issueCount,
-}: {
-  mode: StudioMode;
-  itemNoun: string;
-  itemCount: number;
-  totalPoints: number;
-  dueAt: string;
-  lifecycle: AssessmentStudioDetail['lifecycle'];
-  readyForPublish: boolean;
-  issueCount: number;
-}) {
-  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
-  const dueDateLabel = dueAt ? formatStudioDate(dueAt) : t('noDueDate');
-
-  return (
-    <section className="bg-card rounded-lg border p-4 md:p-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={readyForPublish ? 'success' : 'warning'}>
-              {readyForPublish ? <CheckCircle2 className="size-3" /> : <AlertTriangle className="size-3" />}
-              {readyForPublish ? t('readyToPublish') : t('needsWork')}
-            </Badge>
-            <Badge variant="outline">{t('examPolicyTitle')}</Badge>
-          </div>
-          <h2 className="mt-3 text-lg font-semibold">{t('workflowTitle', { itemNoun: itemNoun.toLowerCase() })}</h2>
-          <p className="text-muted-foreground mt-1 max-w-2xl text-sm">{t('workflowDescription')}</p>
-        </div>
-
-        <div className="grid gap-2 sm:grid-cols-2 lg:min-w-[26rem]">
-          <StudioMetric
-            icon={Rows3}
-            label={t('itemsMetricLabel', { itemNoun })}
-            value={String(itemCount)}
-          />
-          <StudioMetric
-            icon={Sparkles}
-            label={t('pointsMetricLabel')}
-            value={String(totalPoints)}
-          />
-          <StudioMetric
-            icon={CalendarClock}
-            label={t('dueDateLabel')}
-            value={dueDateLabel}
-          />
-          <StudioMetric
-            icon={readyForPublish ? CheckCircle2 : AlertTriangle}
-            label={t('publishReadinessLabel')}
-            value={readyForPublish ? t('readyToPublish') : t('issuesMetricValue', { count: issueCount })}
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-2 md:grid-cols-3">
-        <WorkflowStep
-          active
-          complete={itemCount > 0}
-          label={t('setupStepLabel')}
-          description={t('setupStepDescription')}
+      {activeTab === 'PUBLISH' && (
+        <PublishDashboardTab
+          assessmentUuid={assessment.assessment_uuid}
+          lifecycle={assessment.lifecycle}
+          items={orderedItems}
+          totalPoints={totalPoints}
+          assessmentState={assessmentState}
+          validationIssues={allIssues}
+          canPublish={items.length > 0 && allIssues.length === 0}
+          canSchedule={assessment.lifecycle !== 'ARCHIVED'}
+          canArchive={assessment.lifecycle !== 'ARCHIVED'}
+          onSwitchToBuilder={(itemUuid) => {
+            setActiveTab('BUILDER');
+            if (itemUuid) setSelectedItemUuid(itemUuid);
+          }}
+          onLifecycleChange={setLifecycle}
         />
-        <WorkflowStep
-          active={itemCount > 0}
-          complete={readyForPublish}
-          label={t('contentStepLabel')}
-          description={t('contentStepDescription')}
-        />
-        <WorkflowStep
-          active={readyForPublish || lifecycle === 'PUBLISHED' || lifecycle === 'SCHEDULED'}
-          complete={lifecycle === 'PUBLISHED' || lifecycle === 'SCHEDULED'}
-          label={t('releaseStepLabel')}
-          description={t('releaseStepDescription')}
-        />
-      </div>
-    </section>
-  );
-}
-
-function StudioMetric({ icon: Icon, label, value }: { icon: typeof Rows3; label: string; value: string }) {
-  return (
-    <div className="bg-background rounded-md border px-3 py-2">
-      <div className="text-muted-foreground flex items-center gap-2 text-xs">
-        <Icon className="size-3.5" />
-        <span className="truncate">{label}</span>
-      </div>
-      <div className="mt-1 truncate text-sm font-semibold">{value}</div>
-    </div>
-  );
-}
-
-function WorkflowStep({
-  active,
-  complete,
-  label,
-  description,
-}: {
-  active: boolean;
-  complete: boolean;
-  label: string;
-  description: string;
-}) {
-  return (
-    <div
-      className={cn(
-        'rounded-md border p-3',
-        active ? 'bg-background' : 'bg-muted/30 text-muted-foreground',
-        complete &&
-          'border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100',
       )}
-    >
-      <div className="flex items-center gap-2 text-sm font-medium">
-        {complete ? (
-          <CheckCircle2 className="size-4" />
-        ) : (
-          <span className="bg-muted-foreground/60 size-2 rounded-full" />
-        )}
-        <span>{label}</span>
-      </div>
-      <p className="text-muted-foreground mt-1 text-xs">{description}</p>
-    </div>
-  );
-}
-
-function EditorSection({
-  title,
-  description,
-  actions,
-  children,
-}: {
-  title: string;
-  description: string;
-  actions?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="bg-card rounded-lg border p-4 md:p-5">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold">{title}</h3>
-          <p className="text-muted-foreground text-xs">{description}</p>
-        </div>
-        {actions ? <div className="shrink-0">{actions}</div> : null}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function AssessmentMetadataForm({
-  mode,
-  state,
-  disabled,
-  issues,
-  onChange,
-}: {
-  mode: StudioMode;
-  state: AssessmentEditorState;
-  disabled: boolean;
-  issues: ReturnType<typeof classifyValidationIssue>[];
-  onChange: (nextState: AssessmentEditorState) => void;
-}) {
-  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
-  const hasIssue = (field: string) => issues.some((issue) => issue.field === field);
-
-  return (
-    <div className="grid gap-6">
-      <div className="space-y-2">
-        <Label htmlFor="assessment-title">{t('titleLabel')}</Label>
-        <Input
-          id="assessment-title"
-          value={state.title}
-          disabled={disabled}
-          aria-invalid={hasIssue('title')}
-          className={cn(hasIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-          onChange={(event) => onChange({ ...state, title: event.target.value })}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="assessment-description">{t('descriptionLabel')}</Label>
-        <Textarea
-          id="assessment-description"
-          value={state.description}
-          disabled={disabled}
-          className="min-h-28"
-          onChange={(event) => onChange({ ...state, description: event.target.value })}
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="assessment-due-at">{t('dueDateLabel')}</Label>
-          <Input
-            id="assessment-due-at"
-            type="datetime-local"
-            value={state.dueAt}
-            disabled={disabled}
-            aria-invalid={hasIssue('dueAt')}
-            className={cn(hasIssue('dueAt') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-            onChange={(event) => onChange({ ...state, dueAt: event.target.value })}
-          />
-        </div>
-      </div>
-
-      <>
-        <div className="rounded-lg border p-4">
-          <div className="mb-4 flex items-center gap-2">
-            <ShieldAlert className="size-4" />
-            <h4 className="text-sm font-semibold">{t('examPolicyTitle')}</h4>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="exam-max-attempts">{t('attemptLimitLabel')}</Label>
-              <Input
-                id="exam-max-attempts"
-                type="number"
-                min={1}
-                value={state.maxAttempts}
-                disabled={disabled}
-                aria-invalid={hasIssue('maxAttempts')}
-                className={cn(hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-                onChange={(event) => onChange({ ...state, maxAttempts: event.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="exam-time-limit">{t('timeLimitLabel')}</Label>
-              <Input
-                id="exam-time-limit"
-                type="number"
-                min={1}
-                value={state.timeLimitMinutes}
-                disabled={disabled}
-                aria-invalid={hasIssue('timeLimitMinutes')}
-                className={cn(hasIssue('timeLimitMinutes') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-                onChange={(event) => onChange({ ...state, timeLimitMinutes: event.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="exam-violation-threshold">{t('violationThresholdLabel')}</Label>
-              <Input
-                id="exam-violation-threshold"
-                type="number"
-                min={1}
-                value={state.violationThreshold}
-                disabled={disabled}
-                aria-invalid={hasIssue('violationThreshold')}
-                className={cn(hasIssue('violationThreshold') && 'border-amber-500 focus-visible:ring-amber-500/40')}
-                onChange={(event) => onChange({ ...state, violationThreshold: event.target.value })}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2">
-          <ToggleRow
-            label={t('copyPasteProtectionLabel')}
-            checked={state.copyPasteProtection}
-            disabled={disabled}
-            onChange={(checked) => onChange({ ...state, copyPasteProtection: checked })}
-          />
-          <ToggleRow
-            label={t('tabSwitchDetectionLabel')}
-            checked={state.tabSwitchDetection}
-            disabled={disabled}
-            onChange={(checked) => onChange({ ...state, tabSwitchDetection: checked })}
-          />
-          <ToggleRow
-            label={t('devtoolsDetectionLabel')}
-            checked={state.devtoolsDetection}
-            disabled={disabled}
-            onChange={(checked) => onChange({ ...state, devtoolsDetection: checked })}
-          />
-          <ToggleRow
-            label={t('rightClickDisabledLabel')}
-            checked={state.rightClickDisable}
-            disabled={disabled}
-            onChange={(checked) => onChange({ ...state, rightClickDisable: checked })}
-          />
-          <ToggleRow
-            label={t('fullscreenEnforcementLabel')}
-            checked={state.fullscreenEnforcement}
-            disabled={disabled}
-            onChange={(checked) => onChange({ ...state, fullscreenEnforcement: checked })}
-          />
-          <ToggleRow
-            label={t('allowResultReviewLabel')}
-            checked={state.allowResultReview}
-            disabled={disabled}
-            onChange={(checked) => onChange({ ...state, allowResultReview: checked })}
-          />
-          <ToggleRow
-            label={t('showCorrectAnswersLabel')}
-            checked={state.showCorrectAnswers}
-            disabled={disabled}
-            onChange={(checked) => onChange({ ...state, showCorrectAnswers: checked })}
-          />
-        </div>
-      </>
-
-      {issues.length > 0 ? <InlineIssueList issues={issues} /> : null}
     </div>
   );
 }

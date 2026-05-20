@@ -7454,6 +7454,8 @@
             "matching": "Matching"
           },
           "toggleCorrectAnswer": "Toggle correct answer",
+          "correctLabel": "Correct",
+          "removeOption": "Remove option",
           "optionPlaceholder": "Option {label}",
           "addOption": "Add option",
           "matching": {
@@ -8098,7 +8100,79 @@
             }
           }
         },
-        "policyTitle": "{kind} policy"
+        "policyTitle": "{kind} policy",
+        "Tabs": {
+          "setup": "Setup & Policies",
+          "builder": "Questions Builder",
+          "publish": "Review & Publish"
+        },
+        "GeneralSettingsTab": {
+          "detailsTitle": "Details & Description",
+          "detailsDescription": "General information about this exam.",
+          "timingTitle": "Access & Timing",
+          "timingDescription": "Due date, attempt limits, and time constraints.",
+          "resultReviewTitle": "Result Review",
+          "resultReviewDescription": "Control what students see after submission.",
+          "allowResultReviewDesc": "Allow students to view their graded results after submission.",
+          "showCorrectAnswersDesc": "Show which answers were correct during review.",
+          "integrityTitle": "Integrity Suite",
+          "integrityDescription": "Anti-cheat and proctoring controls.",
+          "copyPasteProtectionDesc": "Block clipboard operations during the exam.",
+          "tabSwitchDetectionDesc": "Log and penalize switching browser tabs.",
+          "devtoolsDetectionDesc": "Detect and alert when browser DevTools are opened.",
+          "rightClickDisabledDesc": "Disable right-click context menu during exam.",
+          "fullscreenEnforcementDesc": "Require fullscreen mode; exit counts as a violation.",
+          "violationThresholdDesc": "Number of violations allowed before auto-submission."
+        },
+        "BuilderCanvas": {
+          "addShort": "{kind}",
+          "noItems": "No questions yet",
+          "noItemsDesc": "Add a question to get started.",
+          "noItemSelected": "Select a question",
+          "noItemSelectedDesc": "Choose a question from the outline to edit it.",
+          "deleteConfirm": "Delete question?",
+          "deleteConfirmDesc": "This action cannot be undone.",
+          "outlinePoints": "{points} pts total"
+        },
+        "PublishDashboard": {
+          "metricsTitle": "Exam Metrics",
+          "totalQuestions": "Questions",
+          "totalPoints": "Total Points",
+          "timeLimit": "Time Limit",
+          "timeLimitValue": "{minutes} min",
+          "attemptLimit": "Attempt Limit",
+          "unlimited": "Unlimited",
+          "questionTypes": "Question Types",
+          "preflightTitle": "Pre-flight Checklist",
+          "noIssues": "All checks passed",
+          "noIssuesDesc": "This exam is ready to publish.",
+          "assessmentIssues": "Assessment Issues",
+          "questionIssues": "Question Issues",
+          "goToSetup": "Fix",
+          "goToQuestion": "Fix",
+          "statusPublished": "Published",
+          "statusPublishedDesc": "Students can now access this exam.",
+          "statusScheduled": "Scheduled",
+          "statusScheduledDesc": "This exam will be published at the scheduled time.",
+          "statusHasIssues": "{count} {count, plural, =1 {issue} other {issues}} must be fixed before publishing",
+          "statusHasIssuesDesc": "Resolve all issues in the checklist to unlock publishing.",
+          "statusReadyToPublish": "Ready to Publish",
+          "statusReadyDesc": "All checks passed. You can publish now or schedule.",
+          "revertToDraft": "Revert to Draft",
+          "publishNow": "Publish Now",
+          "schedulePublication": "Schedule Publication",
+          "schedule": "Schedule",
+          "archiveTitle": "Archive",
+          "archiveDesc": "This exam will no longer be accessible to students."
+        },
+        "SecurityShield": {
+          "low": "Low Security",
+          "lowDescription": "Enable anti-cheat features to increase exam integrity.",
+          "medium": "Medium Security",
+          "mediumDescription": "Some protections are active. Consider enabling more.",
+          "high": "Secure Proctoring",
+          "highDescription": "Strong anti-cheat protections are active."
+        }
       },
       "Review": {
         "Gradebook": {

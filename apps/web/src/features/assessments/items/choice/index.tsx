@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Plus, Trash2, X } from 'lucide-react';
+import { Check, Circle, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Checkbox } from '@/components/ui/checkbox';
@@ -210,14 +210,16 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">
         <div className="space-y-2">
           <Label htmlFor="choice-prompt">{t('prompt')}</Label>
-          <Input
+          <textarea
             id="choice-prompt"
+            rows={3}
             value={value.prompt}
             disabled={disabled}
+            className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[76px] w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             onChange={(event) => onChange({ ...value, prompt: event.target.value })}
           />
         </div>
@@ -260,15 +262,17 @@ function OptionsAuthor({
   onChange,
 }: ItemAuthorProps<Extract<ChoiceAuthorValue, { options: ChoiceOption[] }>>) {
   const t = useTranslations('Features.Assessments.Items.Choice');
+  const isMultiple = value.kind === 'CHOICE_MULTIPLE';
+  const isTrueFalse = value.kind === 'TRUE_FALSE';
+
   const toggleCorrect = (index: number) => {
     const options = value.options.map((option, candidateIndex) => ({
       ...option,
-      isCorrect:
-        value.kind === 'CHOICE_MULTIPLE'
-          ? candidateIndex === index
-            ? !option.isCorrect
-            : option.isCorrect
-          : candidateIndex === index,
+      isCorrect: isMultiple
+        ? candidateIndex === index
+          ? !option.isCorrect
+          : option.isCorrect
+        : candidateIndex === index,
     }));
     onChange({ ...value, options });
   };
@@ -278,22 +282,55 @@ function OptionsAuthor({
       {value.options.map((option, index) => (
         <div
           key={String(option.id)}
-          className="flex items-center gap-2"
+          className={cn(
+            'group relative flex items-center gap-3 rounded-xl border-2 p-3.5 transition-all duration-200',
+            option.isCorrect
+              ? 'border-emerald-400 bg-emerald-50/60 shadow-sm dark:border-emerald-700 dark:bg-emerald-950/20'
+              : 'border-border bg-card hover:border-border/80 hover:bg-muted/30',
+          )}
         >
-          <Button
+          {/* Correct toggle button */}
+          <button
             type="button"
-            variant={option.isCorrect ? 'default' : 'outline'}
-            size="icon"
             disabled={disabled}
             onClick={() => toggleCorrect(index)}
             aria-label={t('toggleCorrectAnswer')}
+            className={cn(
+              'flex size-7 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
+              option.isCorrect
+                ? 'border-emerald-500 bg-emerald-500 text-white dark:border-emerald-600 dark:bg-emerald-600'
+                : 'border-border text-muted-foreground hover:border-emerald-400 hover:text-emerald-600',
+              disabled && 'cursor-not-allowed opacity-60',
+            )}
           >
-            {option.isCorrect ? <Check className="size-4" /> : <X className="size-4" />}
-          </Button>
-          <Input
+            {option.isCorrect ? (
+              <Check className="size-3.5" />
+            ) : isMultiple ? (
+              <span className="size-2 rounded-sm border border-current" />
+            ) : (
+              <Circle className="size-3" />
+            )}
+          </button>
+
+          {/* Option letter */}
+          <span
+            className={cn(
+              'w-5 shrink-0 text-center text-sm font-semibold',
+              option.isCorrect ? 'text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground',
+            )}
+          >
+            {String.fromCodePoint(65 + index)}
+          </span>
+
+          {/* Option text input */}
+          <input
             value={option.text}
             placeholder={t('optionPlaceholder', { label: String.fromCodePoint(65 + index) })}
-            disabled={disabled || value.kind === 'TRUE_FALSE'}
+            disabled={disabled || isTrueFalse}
+            className={cn(
+              'min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60',
+              disabled && 'cursor-not-allowed',
+            )}
             onChange={(event) =>
               onChange({
                 ...value,
@@ -303,24 +340,34 @@ function OptionsAuthor({
               })
             }
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            disabled={disabled || value.kind === 'TRUE_FALSE' || value.options.length <= 1}
-            onClick={() =>
-              onChange({ ...value, options: value.options.filter((_, candidateIndex) => candidateIndex !== index) })
-            }
-          >
-            <Trash2 className="size-4" />
-          </Button>
+
+          {/* Correct badge */}
+          {option.isCorrect ? (
+            <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+              {t('correctLabel')}
+            </span>
+          ) : null}
+
+          {/* Delete button */}
+          {!isTrueFalse ? (
+            <button
+              type="button"
+              disabled={disabled || value.options.length <= 1}
+              onClick={() =>
+                onChange({ ...value, options: value.options.filter((_, i) => i !== index) })
+              }
+              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-0"
+              aria-label={t('removeOption')}
+            >
+              <Trash2 className="text-muted-foreground hover:text-destructive size-4 transition-colors" />
+            </button>
+          ) : null}
         </div>
       ))}
-      {value.kind !== 'TRUE_FALSE' ? (
-        <Button
+
+      {!isTrueFalse ? (
+        <button
           type="button"
-          variant="outline"
-          size="sm"
           disabled={disabled}
           onClick={() =>
             onChange({
@@ -328,10 +375,15 @@ function OptionsAuthor({
               options: [...value.options, { id: `option_${crypto.randomUUID()}`, text: '', isCorrect: false }],
             })
           }
+          className={cn(
+            'flex w-full items-center gap-2 rounded-xl border-2 border-dashed p-3.5 text-sm text-muted-foreground transition-colors',
+            'hover:border-border hover:text-foreground',
+            disabled && 'cursor-not-allowed opacity-50',
+          )}
         >
-          <Plus className="size-4" />
+          <Plus className="size-4 shrink-0" />
           {t('addOption')}
-        </Button>
+        </button>
       ) : null}
     </div>
   );

@@ -7636,7 +7636,79 @@
             }
           }
         },
-        "policyTitle": "Политика {kind}"
+        "policyTitle": "Политика {kind}",
+        "Tabs": {
+          "setup": "Настройки и политики",
+          "builder": "Конструктор вопросов",
+          "publish": "Проверка и публикация"
+        },
+        "GeneralSettingsTab": {
+          "detailsTitle": "Детали и описание",
+          "detailsDescription": "Общая информация об этом экзамене.",
+          "timingTitle": "Доступ и сроки",
+          "timingDescription": "Дата сдачи, ограничения на попытки и время.",
+          "resultReviewTitle": "Просмотр результатов",
+          "resultReviewDescription": "Управление тем, что видят студенты после сдачи.",
+          "allowResultReviewDesc": "Разрешить студентам просматривать результаты после сдачи.",
+          "showCorrectAnswersDesc": "Показывать правильные ответы при проверке.",
+          "integrityTitle": "Система контроля",
+          "integrityDescription": "Защита от списывания и прокторинг.",
+          "copyPasteProtectionDesc": "Блокировать операции с буфером обмена во время экзамена.",
+          "tabSwitchDetectionDesc": "Фиксировать и штрафовать за переключение вкладок.",
+          "devtoolsDetectionDesc": "Обнаруживать открытие DevTools браузера.",
+          "rightClickDisabledDesc": "Отключить контекстное меню правой кнопки мыши.",
+          "fullscreenEnforcementDesc": "Требовать полноэкранный режим; выход считается нарушением.",
+          "violationThresholdDesc": "Количество нарушений до автоматической сдачи."
+        },
+        "BuilderCanvas": {
+          "addShort": "{kind}",
+          "noItems": "Вопросов пока нет",
+          "noItemsDesc": "Добавьте вопрос для начала.",
+          "noItemSelected": "Выберите вопрос",
+          "noItemSelectedDesc": "Выберите вопрос из списка для редактирования.",
+          "deleteConfirm": "Удалить вопрос?",
+          "deleteConfirmDesc": "Это действие нельзя отменить.",
+          "outlinePoints": "{points} пт всего"
+        },
+        "PublishDashboard": {
+          "metricsTitle": "Метрики экзамена",
+          "totalQuestions": "Вопросы",
+          "totalPoints": "Всего баллов",
+          "timeLimit": "Ограничение по времени",
+          "timeLimitValue": "{minutes} мин",
+          "attemptLimit": "Ограничение попыток",
+          "unlimited": "Не ограничено",
+          "questionTypes": "Типы вопросов",
+          "preflightTitle": "Предполётный контроль",
+          "noIssues": "Все проверки пройдены",
+          "noIssuesDesc": "Этот экзамен готов к публикации.",
+          "assessmentIssues": "Проблемы экзамена",
+          "questionIssues": "Проблемы вопросов",
+          "goToSetup": "Исправить",
+          "goToQuestion": "Исправить",
+          "statusPublished": "Опубликован",
+          "statusPublishedDesc": "Студенты теперь могут получить доступ к этому экзамену.",
+          "statusScheduled": "Запланирован",
+          "statusScheduledDesc": "Этот экзамен будет опубликован в запланированное время.",
+          "statusHasIssues": "{count} {count, plural, =1 {проблема} few {проблемы} other {проблем}} нужно устранить перед публикацией",
+          "statusHasIssuesDesc": "Устраните все проблемы в списке для разблокировки публикации.",
+          "statusReadyToPublish": "Готов к публикации",
+          "statusReadyDesc": "Все проверки пройдены. Вы можете опубликовать сейчас или запланировать.",
+          "revertToDraft": "Вернуть в черновики",
+          "publishNow": "Опубликовать",
+          "schedulePublication": "Запланировать публикацию",
+          "schedule": "Запланировать",
+          "archiveTitle": "Архивировать",
+          "archiveDesc": "Экзамен больше не будет доступен студентам."
+        },
+        "SecurityShield": {
+          "low": "Низкая защита",
+          "lowDescription": "Включите функции защиты для повышения безопасности экзамена.",
+          "medium": "Средняя защита",
+          "mediumDescription": "Некоторые защиты активны. Рассмотрите включение большего числа.",
+          "high": "Безопасный прокторинг",
+          "highDescription": "Активна надёжная защита от списывания."
+        }
       },
       "Shared": {
         "AntiCheatOverlay": {
@@ -7669,6 +7741,8 @@
             "matching": "Сопоставление"
           },
           "toggleCorrectAnswer": "Переключить правильный ответ",
+          "correctLabel": "Верно",
+          "removeOption": "Удалить вариант",
           "optionPlaceholder": "Вариант {label}",
           "addOption": "Добавить вариант",
           "selectMatch": "Выберите соответствие",

@@ -32,6 +32,7 @@ registerKind('TYPE_EXAM', async () => {
       mode="exam"
       itemNoun="Question"
       itemNounKey="question"
+      allowedKinds={['CHOICE', 'MATCHING']}
     />
   );
 

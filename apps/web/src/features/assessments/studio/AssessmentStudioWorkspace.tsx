@@ -1,18 +1,12 @@
 'use client';
 
 import {
-  AlertTriangle,
   Archive,
-  CalendarClock,
-  ChevronDown,
   Eye,
   LoaderCircle,
   MoreHorizontal,
-  PanelRight,
-  Send,
-  Undo2,
 } from 'lucide-react';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -21,16 +15,11 @@ import { loadKindModule } from '@/features/assessments/registry';
 import type { KindModule } from '@/features/assessments/registry';
 import { useAssessmentStudio } from '@/features/assessments/hooks/useAssessment';
 import type { AssessmentLifecycle } from '@/features/assessments/domain';
-import PolicyInspector from '@/features/assessments/shared/PolicyInspector';
-import StudentOverridesPanel from '@/features/assessments/studio/StudentOverridesPanel';
-import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/domain/readiness';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { apiFetch } from '@/lib/api-client';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from '@components/ui/AppLink';
-import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +27,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface AssessmentStudioWorkspaceProps {
   courseUuid: string;
@@ -54,15 +42,10 @@ const LIFECYCLE_BADGE_VARIANT: Record<AssessmentLifecycle, 'default' | 'secondar
 
 export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: AssessmentStudioWorkspaceProps) {
   const t = useTranslations('Features.Assessments.Studio');
-  const tValidation = useTranslations('Features.Assessments.Studio.NativeItemStudio.validation');
   const { vm, isLoading, error } = useAssessmentStudio(activityUuid);
   const [kindModule, setKindModule] = useState<KindModule | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isMounted, setIsMounted] = useState(false);
-  const [inspectorOpen, setInspectorOpen] = useState(true);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [scheduledAt, setScheduledAt] = useState('');
-  const scheduleInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -103,46 +86,20 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
 
   const { vm: studio } = vm;
   const previewHref = `/assessments/${studio.assessmentUuid}`;
-  const classifiedIssues = dedupeIssues(studio.validationIssues).map(classifyValidationIssue);
-  const hasIssues = classifiedIssues.length > 0;
-  const assessmentIssues = classifiedIssues.filter((issue) => !issue.itemUuid);
-  const itemIssues = classifiedIssues.filter((issue) => Boolean(issue.itemUuid));
 
-  const setLifecycle = (lifecycle: AssessmentLifecycle, nextScheduledAt?: string | null) => {
+  const archiveAssessment = () => {
     startTransition(async () => {
       try {
         const response = await apiFetch(`assessments/${studio.assessmentUuid}/lifecycle`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: lifecycle,
-            scheduled_at: nextScheduledAt ?? null,
-          }),
+          body: JSON.stringify({ to: 'ARCHIVED', scheduled_at: null }),
         });
-        if (!response.ok) {
-          const payload = await response.json().catch(() => null);
-          const issues = Array.isArray(payload?.detail?.issues)
-            ? payload.detail.issues
-                .map((issue: { message?: string }) => issue.message)
-                .filter(Boolean)
-                .join(' ')
-            : '';
-          const message =
-            issues ||
-            (typeof payload?.detail === 'string'
-              ? payload.detail
-              : response.statusText || 'Failed to update lifecycle');
-          throw new Error(message);
-        }
+        if (!response.ok) throw new Error(response.statusText || 'Failed to archive');
         await queryClient.invalidateQueries({
           queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
         });
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.assessments.readiness(studio.assessmentUuid),
-        });
-        toast.success(t('lifecycleChanged', { state: lifecycleLabels[lifecycle] }));
-        setScheduleOpen(false);
-        setScheduledAt('');
+        toast.success(t('lifecycleChanged', { state: lifecycleLabels['ARCHIVED'] }));
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('updateLifecycleFailed'));
       }
@@ -151,8 +108,6 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
 
   // Resolve slots
   const Author = kindModule?.Author;
-  const Outline = kindModule?.Outline;
-  const Inspector = kindModule?.Inspector;
   const Provider = kindModule?.Provider ?? (({ children }: { children: React.ReactNode }) => <>{children}</>);
 
   const slotProps = { activityUuid, courseUuid };
@@ -160,8 +115,8 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   return (
     <div className="bg-background min-h-screen">
       {/* ── Topbar ──────────────────────────────────────────────────────── */}
-      <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur">
-        <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+      <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur" style={{ height: '61px' }}>
+        <div className="flex h-full items-center justify-between gap-4 px-4 md:px-6">
           {/* Left: breadcrumb + title + lifecycle badge */}
           <div className="min-w-0">
             <div className="text-muted-foreground flex flex-wrap items-center gap-1 text-xs">
@@ -176,115 +131,31 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
               <span>/</span>
               <span>{t('breadcrumb.studio')}</span>
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-semibold">{studio.title}</h1>
-              <Badge variant={LIFECYCLE_BADGE_VARIANT[studio.lifecycle]}>{lifecycleLabels[studio.lifecycle]}</Badge>
-              {hasIssues && (
-                <Badge
-                  variant="outline"
-                  className="border-amber-400 text-amber-700 dark:text-amber-300"
-                >
-                  <AlertTriangle className="mr-1 size-3" />
-                  {t('issueCount', { count: studio.validationIssues.length })}
-                </Badge>
-              )}
+            <div className="mt-0.5 flex flex-wrap items-center gap-2">
+              <h1 className="truncate text-base font-semibold">{studio.title}</h1>
+              <Badge variant={LIFECYCLE_BADGE_VARIANT[studio.lifecycle]} className="text-xs">
+                {lifecycleLabels[studio.lifecycle]}
+              </Badge>
             </div>
           </div>
 
-          {/* Right: action buttons */}
-          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0 lg:justify-end">
+          {/* Right: preview + overflow */}
+          <div className="flex shrink-0 items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
               nativeButton={false}
-              render={
-                <Link
-                  href={previewHref}
-                  target="_blank"
-                />
-              }
+              render={<Link href={previewHref} target="_blank" />}
             >
               <Eye className="size-4" />
               {t('preview')}
             </Button>
 
-            {/* Publish + schedule dropdown */}
-            <div className="flex min-w-0 items-center">
-              <Button
-                size="sm"
-                disabled={isPending || !studio.canPublish || hasIssues}
-                onClick={() => setLifecycle('PUBLISHED')}
-                className="rounded-r-none"
-              >
-                <Send className="size-4" />
-                {t('publishNow')}
-              </Button>
-              <Popover
-                open={scheduleOpen}
-                onOpenChange={setScheduleOpen}
-              >
-                <PopoverTrigger
-                  nativeButton
-                  render={
-                    <Button
-                      size="sm"
-                      variant="default"
-                      disabled={isPending || studio.lifecycle === 'ARCHIVED'}
-                      className="rounded-l-none border-l border-l-white/20 px-2"
-                      aria-label={t('scheduleOptions')}
-                    >
-                      <ChevronDown className="size-4" />
-                    </Button>
-                  }
-                />
-                <PopoverContent
-                  align="end"
-                  className="w-64 space-y-3 p-3"
-                >
-                  <p className="text-sm font-medium">{t('schedulePublication')}</p>
-                  <input
-                    ref={scheduleInputRef}
-                    type="datetime-local"
-                    value={scheduledAt}
-                    onChange={(e) => setScheduledAt(e.target.value)}
-                    className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                  />
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    disabled={isPending || !scheduledAt || !studio.canSchedule}
-                    onClick={() => setLifecycle('SCHEDULED', new Date(scheduledAt).toISOString())}
-                  >
-                    <CalendarClock className="mr-1 size-4" />
-                    {t('schedule')}
-                  </Button>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Save as draft (when published/scheduled) */}
-            {(studio.lifecycle === 'PUBLISHED' || studio.lifecycle === 'SCHEDULED') && (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={isPending}
-                onClick={() => setLifecycle('DRAFT')}
-              >
-                <Undo2 className="size-4" />
-                {t('saveAsDraft')}
-              </Button>
-            )}
-
-            {/* Overflow: archive */}
             <DropdownMenu>
               <DropdownMenuTrigger
                 nativeButton
                 render={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-label={t('moreOptions')}
-                  >
+                  <Button variant="outline" size="sm" aria-label={t('moreOptions')}>
                     <MoreHorizontal className="size-4" />
                   </Button>
                 }
@@ -293,7 +164,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   disabled={isPending || !studio.canArchive}
-                  onSelect={() => setLifecycle('ARCHIVED')}
+                  onSelect={archiveAssessment}
                   className="text-destructive focus:text-destructive"
                 >
                   <Archive className="mr-2 size-4" />
@@ -301,16 +172,6 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
-            {/* Inspector toggle */}
-            <Button
-              variant={inspectorOpen ? 'secondary' : 'outline'}
-              size="sm"
-              aria-label={inspectorOpen ? t('hideInspector') : t('showInspector')}
-              onClick={() => setInspectorOpen((v) => !v)}
-            >
-              <PanelRight className="size-4" />
-            </Button>
           </div>
         </div>
       </header>
@@ -318,94 +179,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
       {/* ── Content ─────────────────────────────────────────────────────── */}
       {Author ? (
         <Provider {...slotProps}>
-          <div className={cn('grid grid-cols-1', inspectorOpen && 'xl:grid-cols-[minmax(0,1fr)_22rem]')}>
-            <main className="min-w-0">
-              <Author {...slotProps} />
-            </main>
-
-            {inspectorOpen && (
-              <aside className="bg-muted/20 space-y-4 border-l p-4 xl:sticky xl:top-[73px] xl:h-[calc(100vh-73px)] xl:overflow-y-auto">
-                {Outline ? (
-                  <section>
-                    <Outline {...slotProps} />
-                  </section>
-                ) : null}
-
-                {/* Lifecycle preflight — always shown when issues exist */}
-                {hasIssues && (
-                  <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
-                    <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
-                    <AlertDescription className="text-amber-900 dark:text-amber-200">
-                      <p className="mb-2 text-sm font-medium">{t('issueBlocks', { count: classifiedIssues.length })}</p>
-                      {assessmentIssues.length > 0 ? (
-                        <div className="mb-3">
-                          <p className="mb-1 text-xs font-semibold tracking-wide uppercase">{t('assessmentLabel')}</p>
-                          <ul className="space-y-1">
-                            {assessmentIssues.map((issue, idx) => (
-                              <li
-                                key={`assessment-${idx}`}
-                                className="flex items-start gap-2 text-sm"
-                              >
-                                <span>·</span>
-                                <span className="flex-1">{tValidation(issue.code.replace('.', '_'))}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-                      {itemIssues.length > 0 ? (
-                        <div>
-                          <p className="mb-1 text-xs font-semibold tracking-wide uppercase">{t('itemsLabel')}</p>
-                          <ul className="space-y-1">
-                            {itemIssues.map((issue, idx) => (
-                              <li
-                                key={`item-${idx}`}
-                                className="flex items-start gap-2 text-sm"
-                              >
-                                <span>·</span>
-                                <span className="flex-1">{tValidation(issue.code.replace('.', '_'))}</span>
-                                {issue.itemUuid ? (
-                                  <a
-                                    href={`#item-${issue.itemUuid}`}
-                                    className="shrink-0 text-xs text-amber-700 underline dark:text-amber-300"
-                                  >
-                                    {t('jumpToItem')}
-                                  </a>
-                                ) : null}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {assessmentIssues.length > 0 ? (
-                  <Alert>
-                    <AlertTriangle className="size-4" />
-                    <AlertDescription>{t('blockerAlertDescription')}</AlertDescription>
-                  </Alert>
-                ) : null}
-
-                {Inspector ? (
-                  <Inspector {...slotProps} />
-                ) : (
-                  <PolicyInspector
-                    policy={studio.policy}
-                    title={t('policyTitle', { kind: t(`kinds.${studio.kind}`) })}
-                  />
-                )}
-
-                {/* Student overrides */}
-                {studio.lifecycle !== 'ARCHIVED' && (
-                  <section className="border-t pt-4">
-                    <StudentOverridesPanel assessmentUuid={studio.assessmentUuid} />
-                  </section>
-                )}
-              </aside>
-            )}
-          </div>
+          <Author {...slotProps} />
         </Provider>
       ) : (
         <div className="text-muted-foreground flex min-h-[360px] items-center justify-center text-sm">
