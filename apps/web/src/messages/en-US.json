@@ -550,7 +550,8 @@
     "lockedTitle": "This activity is not available",
     "lockedReasonLocked": "You need to complete prerequisite activities before you can access this one.",
     "attemptsUsed": "{used} of {max} attempts used",
-    "attemptsUnlimited": "Unlimited attempts"
+    "attemptsUnlimited": "Unlimited attempts",
+    "dueDate": "Due date"
   },
   "AdminUtils": {
     "priority": {

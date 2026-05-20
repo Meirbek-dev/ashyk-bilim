@@ -9,14 +9,23 @@ from sqlmodel import SQLModel
 
 def coerce_date_to_end_of_day(value: Any) -> Any:
     """Coerce date strings (YYYY-MM-DD) to end-of-day datetimes (UTC)."""
-    if isinstance(value, str) and len(value) == 10:
-        try:
-            d = date.fromisoformat(value)
-            return datetime.combine(
-                d, datetime.max.time().replace(microsecond=0), tzinfo=UTC
-            )
-        except ValueError:
-            pass
+    if isinstance(value, str):
+        if len(value) == 10:
+            try:
+                d = date.fromisoformat(value)
+                return datetime.combine(
+                    d, datetime.max.time().replace(microsecond=0), tzinfo=UTC
+                )
+            except ValueError:
+                pass
+        else:
+            try:
+                # Handle full ISO 8601 strings. Even in strict mode, 
+                # returning a datetime object from a 'before' validator 
+                # will satisfy Pydantic's type check.
+                return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError:
+                pass
     return value
 
 

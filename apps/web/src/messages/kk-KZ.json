@@ -549,7 +549,8 @@
     "lockedTitle": "Бұл материал қолжетімсіз",
     "lockedReasonLocked": "Бұл материалға қатынасу үшін алдыңғы міндетті тапсырмаларды аяқтаңыз.",
     "attemptsUsed": "{max} әрекеттің {used} пайдаланылды",
-    "attemptsUnlimited": "Өлшеусіз әрекет"
+    "attemptsUnlimited": "Өлшеусіз әрекет",
+    "dueDate": "Тапсыру мерзімі"
   },
   "AdminUtils": {
     "priority": {
