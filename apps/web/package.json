@@ -117,9 +117,9 @@
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "^7.0.0-dev.20260519.1",
     "@vitejs/plugin-react": "^6.0.2",
-    "@vitest/browser-playwright": "^4.1.6",
-    "@vitest/coverage-v8": "4.1.6",
-    "@vitest/ui": "4.1.6",
+    "@vitest/browser-playwright": "^4.1.7",
+    "@vitest/coverage-v8": "4.1.7",
+    "@vitest/ui": "4.1.7",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^10.4.0",
     "eslint-plugin-i18next": "^6.1.4",
@@ -140,6 +140,6 @@
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.4",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.7"
   }
 }

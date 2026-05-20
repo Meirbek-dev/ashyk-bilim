@@ -226,6 +226,7 @@ export async function uploadSubmissionFileWithProgress(
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', created.put_url);
+    xhr.withCredentials = true;
     if (file.type) xhr.setRequestHeader('Content-Type', file.type);
     if (onProgress) {
       xhr.upload.addEventListener('progress', (event) => {
