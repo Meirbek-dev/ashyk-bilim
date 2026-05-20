@@ -76,8 +76,9 @@ function removeLegacyNodes(node: JSONContent): JSONContent {
 function normalizeCodeBlockNode(node: JSONContent): JSONContent {
   const attrs = isRecord(node.attrs) ? node.attrs : null;
   const language = readStringAttr(attrs, 'language');
+  const normalizedLanguage = toCodeBlockLanguageAttribute(language) ?? inferCodeBlockLanguage(node);
 
-  if (!attrs || !language) {
+  if (!normalizedLanguage && !attrs) {
     return node;
   }
 
@@ -85,9 +86,48 @@ function normalizeCodeBlockNode(node: JSONContent): JSONContent {
     ...node,
     attrs: {
       ...attrs,
-      language: toCodeBlockLanguageAttribute(language),
+      language: normalizedLanguage,
     },
   };
+}
+
+function inferCodeBlockLanguage(node: JSONContent): ReturnType<typeof toCodeBlockLanguageAttribute> {
+  const text = collectTextContent(node);
+
+  if (looksLikeKotlin(text)) {
+    return 'kotlin';
+  }
+
+  return null;
+}
+
+function collectTextContent(node: JSONContent): string {
+  if (typeof node.text === 'string') {
+    return node.text;
+  }
+
+  if (!Array.isArray(node.content)) {
+    return '';
+  }
+
+  return node.content.map(collectTextContent).join('\n');
+}
+
+function looksLikeKotlin(text: string): boolean {
+  let score = 0;
+
+  if (/\bdata\s+class\b/.test(text)) score += 3;
+  if (/\b(listOf|mutableListOf|mapOf|mutableMapOf|setOf|firstOrNull)\b/.test(text)) score += 2;
+  if (/\b(groupBy|sortedBy|sortedByDescending)\s*\{/.test(text)) score += 2;
+  if (/\{\s*it\./.test(text)) score += 2;
+  if (/^\s*object\s+\w+/m.test(text)) score += 2;
+  if (/\{\s*\w+\s*->/.test(text)) score += 2;
+  if (/\w+\s*:\s*\([^)]*\)\s*->\s*\w+/.test(text)) score += 2;
+  if (/^\s*(val|var)\s+\w+/m.test(text)) score += 1;
+  if (/\bfun\s+\w+\s*\(/.test(text)) score += 1;
+  if (/\bcompanion\s+object\b/.test(text)) score += 1;
+
+  return score >= 2;
 }
 
 export function removeLegacyBlockQuizNodes(content: TiptapJsonDoc): TiptapJsonDoc {

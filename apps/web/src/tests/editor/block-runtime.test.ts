@@ -105,4 +105,30 @@ describe('custom block runtime commands', () => {
       content: [{ type: 'codeBlock', attrs: { language: 'kotlin' } }],
     });
   });
+
+  it('infers kotlin for legacy code blocks without a language attribute', () => {
+    const examples = [
+      'val topClassics = books.filter { it.rating >= 4.5 }',
+      'object AppConfig {\n  const val BASE_URL = "https://openlibrary.org/"\n}',
+      'val double: (Int) -> Int = { x -> x * 2 }',
+    ];
+
+    for (const example of examples) {
+      const content = normalizeTiptapJsonContent({
+        type: 'doc',
+        content: [
+          {
+            type: 'codeBlock',
+            attrs: {},
+            content: [{ type: 'text', text: example }],
+          },
+        ],
+      });
+
+      expect(content).toMatchObject({
+        type: 'doc',
+        content: [{ type: 'codeBlock', attrs: { language: 'kotlin' } }],
+      });
+    }
+  });
 });
