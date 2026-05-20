@@ -76,7 +76,6 @@ export function ActivityContentRenderer({
           <InteractiveViewer
             content={getValidTiptapContent(activity.content)}
             activity={activity}
-            showDesktopTableOfContents={false}
           />
         </div>
       );
@@ -93,7 +92,7 @@ export function ActivityContentRenderer({
     }
     case 'TYPE_DOCUMENT': {
       return (
-        <section className="border-border bg-background min-h-[70vh] overflow-hidden rounded-lg border">
+        <section className="border-border bg-background h-[calc(100dvh-6.25rem-3.5rem)] overflow-hidden rounded-lg border">
           <DocumentPdfActivity
             course={course}
             activity={activity}

@@ -139,6 +139,51 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
     );
   }
 
+  // ── Code Challenge: full-viewport fixed layout ────────────────────────────
+  // Code challenge needs to fill the entire viewport below the global nav
+  // so Monaco + ResizablePanel can use all available space.
+
+  if (vm.kind === 'TYPE_CODE_CHALLENGE') {
+    return (
+      <ActionBarContext.Provider value={contextValue}>
+        {/* Full-viewport fixed shell — no scroll, fills below global nav (56px) */}
+        <div className="bg-background fixed inset-x-0 bottom-0 top-14 flex flex-col">
+          {/* Compact header */}
+          <div className="flex h-11 shrink-0 items-center justify-between border-b px-4">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                {kindModule?.label ?? 'Code Challenge'}
+              </span>
+              <span className="text-foreground min-w-0 truncate text-sm font-semibold">{vm.title}</span>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              {guard.remainingSeconds != null ? (
+                <span className="tabular-nums text-sm font-medium">
+                  {formatTimerDisplay(guard.remainingSeconds)}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          {/* Editor fills remaining height; pb-16 leaves space for fixed AssessmentActionBar */}
+          <div className="min-h-0 flex-1 overflow-hidden pb-16">
+            <AttemptContent
+              activityUuid={vm.activityUuid}
+              courseUuid={courseUuid}
+              vm={vm}
+            />
+          </div>
+        </div>
+        <AssessmentActionBar
+          controls={controls}
+          returned={returned}
+          primaryButtonLabelKey={controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null}
+        />
+        <RecoveryDialog recovery={controls.recovery ?? null} />
+        <ConflictDialog conflict={controls.conflict ?? null} />
+      </ActionBarContext.Provider>
+    );
+  }
+
   return (
     <ActionBarContext.Provider value={contextValue}>
       {/* ── Fullscreen gate ─────────────────────────────────────────────── */}
@@ -283,4 +328,14 @@ function formatDate(value: string | number): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+}
+
+function formatTimerDisplay(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) {
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }

@@ -55,7 +55,7 @@ export function CodeItemAttempt({
   onAnswerChange,
 }: ItemAttemptProps<CodeAttemptItem, Extract<ItemAnswer, { kind: 'CODE' }> | undefined>) {
   return (
-    <div className="bg-card min-h-[650px] overflow-hidden rounded-md border">
+    <div className="bg-card h-full overflow-hidden">
       <CodeChallengeEditor
         activityUuid={item.activityUuid}
         settings={item.settings}

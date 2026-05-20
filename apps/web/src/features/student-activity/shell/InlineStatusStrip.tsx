@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { Badge } from '@/components/ui/badge';
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime';
 import { useActivityLayout } from '@/features/assessments/shell/ActivityLayoutContext';
 
@@ -76,9 +77,13 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
   if (items.length === 0) return null;
 
   return (
-    <p className="text-muted-foreground mb-4 text-sm">
-      {items.join(' · ')}
-    </p>
+    <div className="mb-4 flex flex-wrap items-center gap-1.5">
+      {items.map((item, i) => (
+        <Badge key={i} variant="secondary" className="text-xs font-normal">
+          {item}
+        </Badge>
+      ))}
+    </div>
   );
 }
 

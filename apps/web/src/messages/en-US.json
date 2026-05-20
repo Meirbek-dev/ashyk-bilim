@@ -482,6 +482,7 @@
     "enterFocusMode": "Enter focus mode",
     "exitFocusMode": "Exit focus mode",
     "focusMode": "Focus Mode",
+    "keyboardShortcuts": "Keyboard shortcuts",
     "lastUpdated": "Last updated",
     "markAsComplete": "Mark as complete",
     "markCompleteError": "Failed to mark activity as complete",

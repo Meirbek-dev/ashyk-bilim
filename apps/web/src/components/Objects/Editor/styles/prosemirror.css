@@ -412,7 +412,7 @@
 }
 
 .prosemirror-interactive-layout-content .ProseMirror > * {
-  max-width: min(100%, 92ch);
+  max-width: min(72ch, 100%);
 }
 
 .prosemirror-interactive-layout-content .ProseMirror > .tableWrapper,
@@ -433,7 +433,7 @@
 
 @media (min-width: 1280px) {
   .prosemirror-interactive--with-toc .prosemirror-interactive-layout {
-    grid-template-columns: minmax(0, 1fr) clamp(12rem, 16vw, 16rem);
+    grid-template-columns: minmax(0, 1fr) 240px;
   }
 
   .prosemirror-interactive--with-toc .prosemirror-interactive-layout-toc {

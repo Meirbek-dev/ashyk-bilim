@@ -22,6 +22,7 @@ function cleanUuid(uuid: string | null | undefined, prefix: 'course_' | 'activit
 
 interface BottomActionBarProps {
   courseUuid: string;
+  focusMode?: boolean;
   runtime: StudentActivityRuntime;
 }
 
@@ -39,11 +40,11 @@ interface BottomActionBarProps {
  * Hidden when ACTIVE_ATTEMPT mode (AssessmentLayout handles its own bar).
  * Hidden when focus mode (data-layout-mode="focus").
  */
-export default function BottomActionBar({ courseUuid, runtime }: BottomActionBarProps) {
+export default function BottomActionBar({ courseUuid, focusMode = false, runtime }: BottomActionBarProps) {
   const { mode, bottomBarAction } = useActivityLayout();
 
   // ACTIVE_ATTEMPT: the AssessmentLayout renders its own action controls
-  if (mode === 'ACTIVE_ATTEMPT') return null;
+  if (mode === 'ACTIVE_ATTEMPT' || focusMode) return null;
 
   return (
     <div className="bottom-action-bar border-border bg-background/95 fixed inset-x-0 bottom-0 z-40 h-16 border-t backdrop-blur">

@@ -68,17 +68,19 @@ function useIsActive(href: string): boolean {
 // Layout-mode awareness — hides nav when data-layout-mode="active-attempt"
 // Uses MutationObserver so there is no localStorage or CustomEvent coupling.
 // ----------------------------------------------------------------------
-function useLayoutModeHidden(): boolean {
+function useActivityChromeHidden(): boolean {
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    const read = () => document.documentElement.dataset.layoutMode === 'active-attempt';
+    const read = () =>
+      document.documentElement.dataset.layoutMode === 'active-attempt' ||
+      document.documentElement.dataset.activityFocus === 'true';
     setHidden(read());
 
     const observer = new MutationObserver(() => setHidden(read()));
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['data-layout-mode'],
+      attributeFilter: ['data-layout-mode', 'data-activity-focus'],
     });
     return () => observer.disconnect();
   }, []);
@@ -206,7 +208,7 @@ export default function NavBar() {
   const { resolvedTheme } = useTheme();
   const logoSrc = resolvedTheme === 'dark' ? platformLogoLightFull : platformLogoFull;
 
-  const isLayoutModeHidden = useLayoutModeHidden();
+  const isActivityChromeHidden = useActivityChromeHidden();
   const isScrolled = useScrollElevation();
 
   const visibleLinks = useMemo(() => NAV_LINKS.filter((l) => !l.authRequired || isAuthenticated), [isAuthenticated]);
@@ -218,7 +220,7 @@ export default function NavBar() {
 
   const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
-  if (isLayoutModeHidden) return null;
+  if (isActivityChromeHidden) return null;
 
   return (
     <header

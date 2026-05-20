@@ -486,6 +486,7 @@
     "enterFocusMode": "Войти в режим фокусировки",
     "exitFocusMode": "Выйти из режима фокусировки",
     "focusMode": "Режим фокусировки",
+    "keyboardShortcuts": "Сочетания клавиш",
     "lastUpdated": "Последнее обновление",
     "markAsComplete": "Отметить как завершенное",
     "markCompleteError": "Не удалось отметить активность как завершенную",
