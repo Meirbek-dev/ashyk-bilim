@@ -94,10 +94,6 @@ class GeneralConfig(PlatformSectionSettings):
     )
     color_logs: bool = Field(default=True, validation_alias="PLATFORM_COLOR_LOGS")
     timezone: str = Field(default="UTC", validation_alias="PLATFORM_TIMEZONE")
-    deprecated_permissions_enabled: bool = Field(
-        default=True,
-        validation_alias="PLATFORM_DEPRECATED_PERMISSIONS_ENABLED",
-    )
 
     @field_validator("timezone", mode="before")
     @classmethod
@@ -568,6 +564,22 @@ class PlatformConfig(PydanticStrictBaseModel):
 
     @model_validator(mode="after")
     def validate_security_posture(self) -> PlatformConfig:
+        if not self.general_config.development_mode:
+            if (
+                self.hosting_config.ssl
+                and not self.hosting_config.cookies_use_secure_transport()
+            ):
+                raise ValueError(
+                    "Secure cookies are required when SSL is enabled. "
+                    "Set PLATFORM_COOKIE_SECURE=true or remove PLATFORM_SSL."
+                )
+            broad_cors = {".*", r"\b((?:https?://)[^\s/$.?#].[^\s]*)\b", ""}
+            if self.hosting_config.allowed_regexp in broad_cors:
+                raise ValueError(
+                    "Broad CORS regex is not allowed in production. "
+                    "Set PLATFORM_ALLOWED_REGEXP to a specific pattern or "
+                    "use PLATFORM_ALLOWED_ORIGINS instead."
+                )
         return self
 
 

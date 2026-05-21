@@ -10,6 +10,8 @@ The checker determines which scope applies.
 
 from __future__ import annotations
 
+import json
+import logging
 import time
 from typing import Annotated
 
@@ -17,6 +19,55 @@ from fastapi import Depends, HTTPException, Request, status
 from sqlmodel import Session, select
 
 from src.infra.db.session import get_db_session
+from src.services.cache.redis_client import get_redis_client
+
+_logger = logging.getLogger(__name__)
+
+_PERM_CACHE_TTL = 300  # seconds
+
+
+def _redis_perms_key(user_id: int) -> str:
+    return f"perms:{user_id}"
+
+
+def _redis_load_permissions(user_id: int) -> set[str] | None:
+    """Try to load user permissions from Redis. Returns None on miss or error."""
+    redis = get_redis_client()
+    if redis is None:
+        return None
+    try:
+        raw = redis.get(_redis_perms_key(user_id))
+        if raw is not None:
+            return set(json.loads(raw))
+    except Exception:
+        _logger.debug("Redis permission cache miss for user %s", user_id)
+    return None
+
+
+def _redis_store_permissions(user_id: int, perms: set[str]) -> None:
+    """Store user permissions in Redis with TTL."""
+    redis = get_redis_client()
+    if redis is None:
+        return
+    try:
+        redis.setex(
+            _redis_perms_key(user_id),
+            _PERM_CACHE_TTL,
+            json.dumps(list(perms)),
+        )
+    except Exception:
+        _logger.debug("Failed to cache permissions for user %s", user_id)
+
+
+def _redis_invalidate_permissions(user_id: int) -> None:
+    """Remove cached permissions for a user (call on role assign/revoke)."""
+    redis = get_redis_client()
+    if redis is None:
+        return
+    try:
+        redis.delete(_redis_perms_key(user_id))
+    except Exception:
+        _logger.debug("Failed to invalidate permission cache for user %s", user_id)
 
 # ============================================================================
 # Assessment Permission Constants
@@ -328,6 +379,7 @@ class PermissionChecker:
         )
         self.db.flush()
         self._cache.pop(user_id, None)
+        _redis_invalidate_permissions(user_id)
 
     def revoke_role(
         self,
@@ -359,6 +411,7 @@ class PermissionChecker:
         self.db.delete(user_role)
         self.db.flush()
         self._cache.pop(user_id, None)
+        _redis_invalidate_permissions(user_id)
 
     # ------------------------------------------------------------------
     # Internal
@@ -372,7 +425,14 @@ class PermissionChecker:
                 # correctly through the normal RBAC path.
                 self._cache[user_id] = self._load_guest_permissions()
             else:
-                self._cache[user_id] = self._load_permissions(user_id)
+                # Try Redis cross-request cache first to skip the DB query.
+                cached = _redis_load_permissions(user_id)
+                if cached is not None:
+                    self._cache[user_id] = cached
+                else:
+                    perms = self._load_permissions(user_id)
+                    self._cache[user_id] = perms
+                    _redis_store_permissions(user_id, perms)
         return self._cache[user_id]
 
     def _load_guest_permissions(self) -> set[str]:

@@ -1,10 +1,9 @@
-"""Student-facing grading SSE stream."""
-
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
+from collections import defaultdict
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
@@ -33,6 +32,9 @@ router = APIRouter()
 _MAX_CONNECTIONS_PER_USER = 5
 # Seconds between keepalive comments sent to the client.
 _KEEPALIVE_INTERVAL = 30
+
+# In-process fallback counter used when Redis is unavailable.
+_local_conn_counts: dict[int, int] = defaultdict(int)
 
 
 def _conn_key(user_id: int) -> str:
@@ -93,8 +95,31 @@ async def api_feedback_stream(
 
     # ── Connection limit check ────────────────────────────────────────────────
     if redis is not None:
-        current_conn_count = await redis.get(conn_key)
-        if current_conn_count and int(current_conn_count) >= _MAX_CONNECTIONS_PER_USER:
+        try:
+            current_conn_count = await redis.get(conn_key)
+            if current_conn_count and int(current_conn_count) >= _MAX_CONNECTIONS_PER_USER:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail={
+                        "code": "SSE_CONNECTION_LIMIT",
+                        "message": (
+                            f"Too many concurrent SSE connections "
+                            f"(limit: {_MAX_CONNECTIONS_PER_USER})."
+                        ),
+                        "limit": _MAX_CONNECTIONS_PER_USER,
+                    },
+                    headers={"Retry-After": "60"},
+                )
+        except HTTPException:
+            raise
+        except Exception:
+            # Redis unavailable — fall through to in-process counter
+            logger.warning("Redis unavailable for SSE connection check", exc_info=True)
+            redis = None
+
+    if redis is None:
+        # In-process fallback: enforce limit without Redis to prevent DoS.
+        if _local_conn_counts[user_id] >= _MAX_CONNECTIONS_PER_USER:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail={
@@ -111,7 +136,7 @@ async def api_feedback_stream(
     async def event_generator():
         nonlocal redis
 
-        # Increment connection counter
+        # Increment connection counter (Redis or in-process fallback)
         if redis is not None:
             try:
                 await redis.incr(conn_key)
@@ -120,6 +145,8 @@ async def api_feedback_stream(
                 logger.warning(
                     "Failed to increment SSE connection counter", exc_info=True
                 )
+        else:
+            _local_conn_counts[user_id] += 1
 
         try:
             # ── Replay missed events ──────────────────────────────────────────
@@ -183,6 +210,10 @@ async def api_feedback_stream(
                     logger.warning(
                         "Failed to decrement SSE connection counter", exc_info=True
                     )
+            else:
+                _local_conn_counts[user_id] = max(0, _local_conn_counts[user_id] - 1)
+                if _local_conn_counts[user_id] == 0:
+                    _local_conn_counts.pop(user_id, None)
 
     return StreamingResponse(
         event_generator(),

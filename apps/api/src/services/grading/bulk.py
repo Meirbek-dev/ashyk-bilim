@@ -1,5 +1,6 @@
 """Bulk grading operations with persisted audit state."""
 
+import asyncio
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
@@ -248,14 +249,16 @@ def execute_deadline_extension(
             action.target_user_ids,
             db_session,
         ):
-            publish_grading_event(
-                "deadline.extended",
-                submission_uuid,
-                {
-                    "submission_uuid": submission_uuid,
-                    "activity_id": action.activity_id,
-                    "new_due_at": new_due_at.isoformat(),
-                },
+            asyncio.run(
+                publish_grading_event(
+                    "deadline.extended",
+                    submission_uuid,
+                    {
+                        "submission_uuid": submission_uuid,
+                        "activity_id": action.activity_id,
+                        "new_due_at": new_due_at.isoformat(),
+                    },
+                )
             )
     except Exception as exc:
         db_session.rollback()

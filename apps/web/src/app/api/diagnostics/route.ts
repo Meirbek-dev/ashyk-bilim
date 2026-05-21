@@ -3,6 +3,11 @@ import { connection, NextResponse } from 'next/server';
 import { getAppConfigResult, getPublicConfigResult, getServerConfigResult } from '@/services/config/env';
 
 export async function GET() {
+  // Diagnostics expose internal URLs, config, and connectivity — block in production.
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   await connection();
 
   const diagnostics = {

@@ -38,6 +38,7 @@ from src.services.grading.bulk import (
     run_deadline_extension_action,
 )
 from src.services.grading.gradebook import get_course_gradebook
+from src.services.grading.gradebook_cursor import GradebookCursorPage, get_gradebook_cursor
 from src.services.grading.teacher import (
     batch_grade_submissions,
     bulk_publish_grades,
@@ -65,17 +66,15 @@ async def api_get_course_gradebook(
     )
 
 
-@router.get("/courses/{course_uuid}/gradebook/cursor")
+@router.get("/courses/{course_uuid}/gradebook/cursor", response_model=GradebookCursorPage)
 async def api_get_course_gradebook_cursor(
     course_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     cursor: Annotated[str | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=2000)] = 500,
-):
+) -> GradebookCursorPage:
     """Return cursor-paginated gradebook cells for large classes."""
-    from src.services.grading.gradebook_cursor import get_gradebook_cursor
-
     return await get_gradebook_cursor(
         course_uuid=course_uuid,
         current_user=current_user,

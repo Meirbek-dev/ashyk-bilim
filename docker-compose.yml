@@ -14,7 +14,7 @@ services:
   # Edge
   # ---------------------------------------------------------------------------
   nginx:
-    image: nginx:1.29.8-alpine
+    image: nginx:latest-alpine
     restart: unless-stopped
     ports:
       - "80:80"
@@ -70,8 +70,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1g
-          cpus: "1.0"
+          memory: 2g
+          cpus: "2.0"
 
   # ---------------------------------------------------------------------------
   # Backend — FastAPI
@@ -161,7 +161,7 @@ services:
   # Cache
   # ---------------------------------------------------------------------------
   redis:
-    image: redis:8.8-m03-alpine
+    image: redis:8.8-rc1-alpine
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -237,7 +237,7 @@ services:
   # Backup
   # ---------------------------------------------------------------------------
   backup:
-    image: offen/docker-volume-backup:v2.47.0
+    image: offen/docker-volume-backup:v2.48.0
     restart: unless-stopped
     environment:
       BACKUP_CRON_EXPRESSION: "0 2 * * *"

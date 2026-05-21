@@ -191,7 +191,7 @@ async def api_create_item_feedback(
     db_session.add(row)
     db_session.commit()
     db_session.refresh(row)
-    publish_grading_event(
+    await publish_grading_event(
         "feedback.created",
         submission.submission_uuid,
         ItemFeedbackRead.model_validate(row).model_dump(mode="json"),
@@ -228,7 +228,7 @@ async def api_update_item_feedback(
     db_session.add(row)
     db_session.commit()
     db_session.refresh(row)
-    publish_grading_event(
+    await publish_grading_event(
         "feedback.updated",
         submission.submission_uuid,
         ItemFeedbackRead.model_validate(row).model_dump(mode="json"),
@@ -262,4 +262,4 @@ async def api_delete_item_feedback(
     payload = ItemFeedbackRead.model_validate(row).model_dump(mode="json")
     db_session.delete(row)
     db_session.commit()
-    publish_grading_event("feedback.deleted", submission.submission_uuid, payload)
+    await publish_grading_event("feedback.deleted", submission.submission_uuid, payload)

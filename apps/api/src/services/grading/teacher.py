@@ -470,7 +470,7 @@ async def save_grade(
         resource_owner_id=activity.creator_id,
     )
 
-    return _save_teacher_grade(
+    return await _save_teacher_grade(
         submission=submission,
         grade_input=grade_input,
         submission_uuid=submission_uuid,
@@ -589,7 +589,7 @@ async def batch_grade_submissions(
                 feedback=grade.feedback or "",
                 item_feedback=grade.item_feedback or [],
             )
-            _save_teacher_grade(
+            await _save_teacher_grade(
                 submission=submission,
                 grade_input=grade_input,
                 submission_uuid=grade.submission_uuid,
@@ -639,7 +639,7 @@ async def batch_grade_submissions(
     return BatchGradeResponse(results=results, succeeded=succeeded, failed=failed)
 
 
-def _save_teacher_grade(
+async def _save_teacher_grade(
     *,
     submission: Submission,
     grade_input: TeacherGradeInput,
@@ -797,7 +797,7 @@ def _save_teacher_grade(
         )
 
     if requested_status == SubmissionStatus.PUBLISHED:
-        publish_grading_event(
+        await publish_grading_event(
             "grade.published",
             submission_uuid,
             {
@@ -807,7 +807,7 @@ def _save_teacher_grade(
             },
         )
     elif requested_status == SubmissionStatus.RETURNED:
-        publish_grading_event(
+        await publish_grading_event(
             "submission.returned",
             submission_uuid,
             {
@@ -976,7 +976,7 @@ async def bulk_publish_grades(
         for submission in submissions:
             if submission.id in already_published_ids:
                 continue
-            publish_grading_event(
+            await publish_grading_event(
                 "grade.published",
                 submission.submission_uuid,
                 {

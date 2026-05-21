@@ -41,6 +41,8 @@ mprocs.log
 __pycache__/
 *.py[cod]
 *$py.class
+**/.mypy_cache
+**/.ruff_cache
 
 # vscode
 .vscode/
@@ -69,3 +71,7 @@ tmpclaude-*-cwd
 **/.turbo
 **/.pytest_cache
 temp-restore
+
+# AI
+.antigravitycli
+.kiro

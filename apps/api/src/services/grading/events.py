@@ -49,25 +49,25 @@ def encode_sse(event: str, data: dict[str, Any]) -> str:
     return f"{id_line}event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
 
 
-def publish_grading_event(
+async def publish_grading_event(
     event_type: str,
     submission_uuid: str,
     payload: dict[str, Any] | None = None,
 ) -> None:
     """Publish a grading event to Redis pub/sub and store it in the replay log."""
-    client = redis_infra.get_sync()
+    client = redis_infra.get_async()
     if client is None:
         return
     message = grading_event(event_type, submission_uuid, payload)
     serialized = json.dumps(message, default=str)
     try:
-        client.publish(grading_channel(submission_uuid), serialized)
+        await client.publish(grading_channel(submission_uuid), serialized)
 
         # Persist event in sorted set (score = UNIX timestamp) for Last-Event-ID replay.
         replay_key = _replay_key(submission_uuid)
         score = datetime.now(UTC).timestamp()
-        client.zadd(replay_key, {serialized: score})
-        client.expire(replay_key, _REPLAY_TTL_SECONDS)
+        await client.zadd(replay_key, {serialized: score})
+        await client.expire(replay_key, _REPLAY_TTL_SECONDS)
     except Exception:
         logger.warning("Failed to publish grading event %s", event_type, exc_info=True)
 

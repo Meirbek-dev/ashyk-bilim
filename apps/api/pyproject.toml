@@ -29,6 +29,7 @@ dependencies = [
   "tiktoken>=0.13.0",
   "granian[reload,uvloop]>=2.7.4",
   "python-multipart>=0.0.29",
+  "taskiq>=0.12.4",
 ]
 
 [dependency-groups]
