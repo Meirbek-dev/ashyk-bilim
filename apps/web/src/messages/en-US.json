@@ -7979,6 +7979,7 @@
           },
           "addKind": "Add {kind}",
           "outlineEmptyMessage": "Add a {itemNoun} to begin.",
+          "newQuestion": "New question",
           "noItemSelectedTitle": "No {itemNoun} selected",
           "noItemSelectedDescription": "Create or select a {itemNoun} from the outline.",
           "untitledItem": "Untitled {itemNoun}",
@@ -7995,6 +7996,8 @@
           "itemMetadataDescription": "Shared title, prompt, and point value.",
           "titleLabel": "Title",
           "pointsLabel": "Points",
+          "pointsCompact": "{points} pts",
+          "moreIssues": "...and {count} more",
           "itemContentTitle": "{itemNoun} content",
           "itemContentDescription": "Canonical item authoring.",
           "pointsAbbreviation": "pts",
@@ -8104,6 +8107,8 @@
         "Tabs": {
           "setup": "Setup & Policies",
           "builder": "Questions Builder",
+          "access": "Access",
+          "results": "Results",
           "publish": "Review & Publish"
         },
         "GeneralSettingsTab": {
@@ -8126,6 +8131,9 @@
         },
         "BuilderCanvas": {
           "addShort": "{kind}",
+          "newQuestion": "New question",
+          "pointsCompact": "{points} pts",
+          "moreIssues": "...and {count} more",
           "noItems": "No questions yet",
           "noItemsDesc": "Add a question to get started.",
           "noItemSelected": "Select a question",
@@ -8164,6 +8172,41 @@
           "schedule": "Schedule",
           "archiveTitle": "Archive",
           "archiveDesc": "This exam will no longer be accessible to students."
+        },
+        "AccessManagement": {
+          "title": "Test access",
+          "description": "Restrict this test to selected learners or groups that already have access to the course.",
+          "eligible": "Eligible",
+          "effective": "Effective",
+          "allCourseLearners": "All course learners",
+          "allCourseLearnersDesc": "Every learner with course access can take this test.",
+          "restricted": "Selected learners and groups",
+          "restrictedDesc": "Only selected course learners and selected course groups can take this test.",
+          "students": "Students",
+          "usergroups": "Usergroups",
+          "searchStudents": "Search students",
+          "searchGroups": "Search groups",
+          "noGroupDescription": "No description",
+          "loading": "Loading access",
+          "loadFailed": "Failed to load access settings.",
+          "save": "Save access",
+          "saved": "Access saved.",
+          "saveFailed": "Failed to save access."
+        },
+        "ResultsReview": {
+          "title": "Results review",
+          "description": "Review submissions, scoring health, release state, and question quality from one operations surface.",
+          "openReview": "Open review queue",
+          "submissions": "Submissions",
+          "needsReview": "Needs review",
+          "averageScore": "Average score",
+          "passRate": "Pass rate",
+          "queueTitle": "Review queue",
+          "queueBody": "Grade manual items, publish completed results, and return attempts that need revision.",
+          "questionQualityTitle": "Question quality",
+          "questionQualityBody": "Use item-level analytics to identify confusing, too easy, or too difficult questions.",
+          "releaseTitle": "Release control",
+          "releaseBody": "Keep grades hidden while reviewing, then publish results when the cohort is ready."
         },
         "SecurityShield": {
           "low": "Low Security",

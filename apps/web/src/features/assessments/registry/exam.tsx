@@ -21,7 +21,7 @@ registerKind('TYPE_EXAM', async () => {
 
   const OutlineSlot: ComponentType<KindAuthorProps> = (_props) => (
     <NativeItemOutline
-      allowedKinds={['CHOICE', 'MATCHING']}
+      allowedKinds={['CHOICE', 'MATCHING', 'OPEN_TEXT', 'FORM']}
       itemNoun="Question"
       itemNounKey="question"
     />
@@ -32,7 +32,7 @@ registerKind('TYPE_EXAM', async () => {
       mode="exam"
       itemNoun="Question"
       itemNounKey="question"
-      allowedKinds={['CHOICE', 'MATCHING']}
+      allowedKinds={['CHOICE', 'MATCHING', 'OPEN_TEXT', 'FORM']}
     />
   );
 

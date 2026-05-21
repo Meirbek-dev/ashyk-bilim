@@ -1,6 +1,6 @@
 import type { AssessmentItem } from '@/features/assessments/domain/items';
 
-export type StudioTab = 'SETUP' | 'BUILDER' | 'PUBLISH';
+export type StudioTab = 'SETUP' | 'BUILDER' | 'ACCESS' | 'RESULTS' | 'PUBLISH';
 
 export interface AssessmentEditorState {
   title: string;

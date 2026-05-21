@@ -672,11 +672,6 @@ def _get_chapter_or_404(chapter_id: int, db_session: Session) -> Chapter:
 
 
 def _require_author(user: PublicUser, course: Course, db_session: Session) -> None:
-    if not _assessment_access_allows_user(activity.id or 0, user.id, db_session):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This assessment is restricted to selected course learners.",
-        )
     checker = PermissionChecker(db_session)
     if checker.check(user.id, "assessment:author", resource_owner_id=course.creator_id):
         return

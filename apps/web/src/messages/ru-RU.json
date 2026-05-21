@@ -7515,6 +7515,7 @@
           },
           "addKind": "Добавить {kind}",
           "outlineEmptyMessage": "Добавьте {itemNoun}, чтобы начать.",
+          "newQuestion": "Новый вопрос",
           "noItemSelectedTitle": "{itemNoun} не выбран",
           "noItemSelectedDescription": "Создайте или выберите {itemNoun} из списка.",
           "untitledItem": "Элемент без названия ({itemNoun})",
@@ -7531,6 +7532,8 @@
           "itemMetadataDescription": "Общее название, инструкция и количество баллов.",
           "titleLabel": "Название",
           "pointsLabel": "Баллы",
+          "pointsCompact": "{points} б.",
+          "moreIssues": "...и еще {count}",
           "itemContentTitle": "Содержимое {itemNoun}",
           "itemContentDescription": "Редактирование содержимого.",
           "pointsAbbreviation": "б.",
@@ -7640,6 +7643,8 @@
         "Tabs": {
           "setup": "Настройки и политики",
           "builder": "Конструктор вопросов",
+          "access": "Доступ",
+          "results": "Результаты",
           "publish": "Проверка и публикация"
         },
         "GeneralSettingsTab": {
@@ -7662,6 +7667,9 @@
         },
         "BuilderCanvas": {
           "addShort": "{kind}",
+          "newQuestion": "Новый вопрос",
+          "pointsCompact": "{points} б.",
+          "moreIssues": "...и еще {count}",
           "noItems": "Вопросов пока нет",
           "noItemsDesc": "Добавьте вопрос для начала.",
           "noItemSelected": "Выберите вопрос",
@@ -7700,6 +7708,41 @@
           "schedule": "Запланировать",
           "archiveTitle": "Архивировать",
           "archiveDesc": "Экзамен больше не будет доступен студентам."
+        },
+        "AccessManagement": {
+          "title": "Доступ к тесту",
+          "description": "Ограничьте тест выбранными учащимися или группами, у которых уже есть доступ к курсу.",
+          "eligible": "Доступны",
+          "effective": "Итог",
+          "allCourseLearners": "Все учащиеся курса",
+          "allCourseLearnersDesc": "Каждый учащийся с доступом к курсу может пройти этот тест.",
+          "restricted": "Выбранные учащиеся и группы",
+          "restrictedDesc": "Только выбранные учащиеся курса и группы могут пройти этот тест.",
+          "students": "Студенты",
+          "usergroups": "Группы",
+          "searchStudents": "Поиск студентов",
+          "searchGroups": "Поиск групп",
+          "noGroupDescription": "Нет описания",
+          "loading": "Загрузка доступа",
+          "loadFailed": "Не удалось загрузить настройки доступа.",
+          "save": "Сохранить доступ",
+          "saved": "Доступ сохранен.",
+          "saveFailed": "Не удалось сохранить доступ."
+        },
+        "ResultsReview": {
+          "title": "Проверка результатов",
+          "description": "Проверяйте сдачи, качество оценивания, публикацию и качество вопросов в одном рабочем месте.",
+          "openReview": "Открыть очередь проверки",
+          "submissions": "Сдачи",
+          "needsReview": "Требуют проверки",
+          "averageScore": "Средний балл",
+          "passRate": "Процент прохождения",
+          "queueTitle": "Очередь проверки",
+          "queueBody": "Оценивайте ручные задания, публикуйте завершенные результаты и возвращайте попытки на доработку.",
+          "questionQualityTitle": "Качество вопросов",
+          "questionQualityBody": "Используйте аналитику вопросов, чтобы находить непонятные, слишком легкие или слишком сложные вопросы.",
+          "releaseTitle": "Управление публикацией",
+          "releaseBody": "Держите оценки скрытыми во время проверки, затем публикуйте результаты, когда группа готова."
         },
         "SecurityShield": {
           "low": "Низкая защита",

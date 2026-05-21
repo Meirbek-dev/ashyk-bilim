@@ -1347,6 +1347,150 @@
         "title": "AnomalyItem",
         "type": "object"
       },
+      "AssessmentAccessMode": {
+        "enum": [
+          "ALL_COURSE_LEARNERS",
+          "RESTRICTED"
+        ],
+        "title": "AssessmentAccessMode",
+        "type": "string"
+      },
+      "AssessmentAccessRead": {
+        "properties": {
+          "effective_user_count": {
+            "default": 0,
+            "title": "Effective User Count",
+            "type": "integer"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AssessmentAccessMode",
+            "default": "ALL_COURSE_LEARNERS"
+          },
+          "usergroups": {
+            "items": {
+              "$ref": "#/components/schemas/AssessmentAccessUserGroupRead"
+            },
+            "title": "Usergroups",
+            "type": "array"
+          },
+          "users": {
+            "items": {
+              "$ref": "#/components/schemas/AssessmentAccessUserRead"
+            },
+            "title": "Users",
+            "type": "array"
+          }
+        },
+        "title": "AssessmentAccessRead",
+        "type": "object"
+      },
+      "AssessmentAccessUpdate": {
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/AssessmentAccessMode",
+            "default": "ALL_COURSE_LEARNERS"
+          },
+          "user_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "User Ids",
+            "type": "array"
+          },
+          "usergroup_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Usergroup Ids",
+            "type": "array"
+          }
+        },
+        "title": "AssessmentAccessUpdate",
+        "type": "object"
+      },
+      "AssessmentAccessUserGroupRead": {
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "member_count": {
+            "default": 0,
+            "title": "Member Count",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "usergroup_uuid": {
+            "title": "Usergroup Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "usergroup_uuid",
+          "name"
+        ],
+        "title": "AssessmentAccessUserGroupRead",
+        "type": "object"
+      },
+      "AssessmentAccessUserRead": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "user_uuid": {
+            "title": "User Uuid",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "user_uuid",
+          "username",
+          "email"
+        ],
+        "title": "AssessmentAccessUserRead",
+        "type": "object"
+      },
       "AssessmentAnswerPatch": {
         "properties": {
           "answer": {
@@ -20518,6 +20662,210 @@
           }
         ],
         "summary": "Api Update Assessment",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v1/assessments/{assessment_uuid}/access": {
+      "get": {
+        "operationId": "api_get_access_api_v1_assessments__assessment_uuid__access_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentAccessRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Access",
+        "tags": [
+          "assessments"
+        ]
+      },
+      "put": {
+        "operationId": "api_update_access_api_v1_assessments__assessment_uuid__access_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentAccessUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentAccessRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Update Access",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v1/assessments/{assessment_uuid}/access/eligible-learners": {
+      "get": {
+        "operationId": "api_list_access_eligible_learners_api_v1_assessments__assessment_uuid__access_eligible_learners_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AssessmentAccessUserRead"
+                  },
+                  "title": "Response Api List Access Eligible Learners Api V1 Assessments  Assessment Uuid  Access Eligible Learners Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api List Access Eligible Learners",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v1/assessments/{assessment_uuid}/access/eligible-usergroups": {
+      "get": {
+        "operationId": "api_list_access_eligible_usergroups_api_v1_assessments__assessment_uuid__access_eligible_usergroups_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AssessmentAccessUserGroupRead"
+                  },
+                  "title": "Response Api List Access Eligible Usergroups Api V1 Assessments  Assessment Uuid  Access Eligible Usergroups Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api List Access Eligible Usergroups",
         "tags": [
           "assessments"
         ]

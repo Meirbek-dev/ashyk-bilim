@@ -30,6 +30,11 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.db.assessment_access import (
+    AssessmentAccessPolicy,
+    AssessmentAccessUser,
+    AssessmentAccessUserGroup,
+)
 from src.db.assessments import (
     Assessment,
     AssessmentGradingType,
@@ -55,6 +60,8 @@ from src.db.grading.progress import (
     LatePolicyNone,
 )
 from src.db.grading.submissions import AssessmentType, Submission
+from src.db.resource_authors import ResourceAuthor
+from src.db.usergroups import UserGroup
 from src.db.users import PublicUser, User
 from src.infra.db.engine import build_engine, build_session_factory
 from src.infra.db.session import get_db_session
@@ -74,6 +81,8 @@ STUDENT_ID = 2
 
 _ALL_TABLES = [
     User.__table__,
+    ResourceAuthor.__table__,
+    UserGroup.__table__,
     Course.__table__,
     Chapter.__table__,
     Activity.__table__,
@@ -82,6 +91,9 @@ _ALL_TABLES = [
     FileSubmissionAttempt.__table__,
     FileSubmissionAttemptFile.__table__,
     Assessment.__table__,
+    AssessmentAccessPolicy.__table__,
+    AssessmentAccessUser.__table__,
+    AssessmentAccessUserGroup.__table__,
     AssessmentItem.__table__,
     StudentPolicyOverride.__table__,
     Submission.__table__,

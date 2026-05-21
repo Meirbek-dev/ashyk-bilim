@@ -50,8 +50,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>;
@@ -211,28 +216,37 @@ export default function BuilderCanvasTab({
           </div>
         </div>
 
-        {/* Add buttons */}
+        {/* New question menu */}
         {isEditable ? (
           <div className="border-b p-3">
-            <div className="flex flex-wrap gap-1.5">
-              {allowedKinds.map((kind) => {
-                const Icon = KIND_ICONS[kind];
-                return (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
                   <Button
-                    key={kind}
                     type="button"
-                    variant="outline"
-                    size="sm"
+                    className="w-full justify-center"
                     disabled={isCreating}
-                    className="h-7 gap-1.5 px-2 text-xs"
-                    onClick={() => createItem(kind)}
                   >
-                    {isCreating ? <LoaderCircle className="size-3 animate-spin" /> : <Icon className="size-3" />}
-                    <span>{tBuilder('addShort', { kind: kindLabels[kind] })}</span>
+                    {isCreating ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                    {tBuilder('newQuestion')}
                   </Button>
-                );
-              })}
-            </div>
+                }
+              />
+              <DropdownMenuContent align="start" className="w-64">
+                {allowedKinds.map((kind) => {
+                  const Icon = KIND_ICONS[kind];
+                  return (
+                    <DropdownMenuItem
+                      key={kind}
+                      onSelect={() => createItem(kind)}
+                    >
+                      <Icon className="mr-2 size-4" />
+                      {kindLabels[kind]}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : null}
 
@@ -338,6 +352,7 @@ function SortableOutlineItem({
   disabled: boolean;
   onSelect: () => void;
 }) {
+  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.item_uuid,
     disabled,
@@ -394,7 +409,7 @@ function SortableOutlineItem({
               {index + 1}. {item.title || '—'}
             </p>
             <div className="text-muted-foreground mt-0.5 flex items-center gap-2 text-[10px]">
-              <span>{item.max_score ?? 0} pts</span>
+              <span>{t('pointsCompact', { points: item.max_score ?? 0 })}</span>
               <span>·</span>
               <span>{kindLabel}</span>
             </div>
@@ -407,7 +422,7 @@ function SortableOutlineItem({
                   {issues.slice(0, 3).map((issue, i) => (
                     <li key={i}>• {issue.message}</li>
                   ))}
-                  {issues.length > 3 && <li>…and {issues.length - 3} more</li>}
+                  {issues.length > 3 && <li>{t('moreIssues', { count: issues.length - 3 })}</li>}
                 </ul>
               </TooltipContent>
             </Tooltip>

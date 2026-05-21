@@ -7477,6 +7477,7 @@
           },
           "addKind": "{kind} қосу",
           "outlineEmptyMessage": "Бастау үшін {itemNoun} қосыңыз.",
+          "newQuestion": "Жаңа сұрақ",
           "noItemSelectedTitle": "{itemNoun} таңдалмады",
           "noItemSelectedDescription": "Тізімнен {itemNoun} жасаңыз немесе таңдаңыз.",
           "untitledItem": "Атаусыз элемент ({itemNoun})",
@@ -7493,6 +7494,8 @@
           "itemMetadataDescription": "Жалпы атауы, нұсқаулық және балл саны.",
           "titleLabel": "Атауы",
           "pointsLabel": "Баллдар",
+          "pointsCompact": "{points} ұпай",
+          "moreIssues": "...және тағы {count}",
           "itemContentTitle": "{itemNoun} мазмұны",
           "itemContentDescription": "Мазмұнды редакциялау.",
           "pointsAbbreviation": "б.",
@@ -7601,6 +7604,8 @@
         "Tabs": {
           "setup": "Баптаулар мен саясаттар",
           "builder": "Сұрақтар конструкторы",
+          "access": "Қолжетімділік",
+          "results": "Нәтижелер",
           "publish": "Тексеру және жариялау"
         },
         "GeneralSettingsTab": {
@@ -7623,6 +7628,9 @@
         },
         "BuilderCanvas": {
           "addShort": "{kind}",
+          "newQuestion": "Жаңа сұрақ",
+          "pointsCompact": "{points} ұпай",
+          "moreIssues": "...және тағы {count}",
           "noItems": "Сұрақтар жоқ",
           "noItemsDesc": "Бастау үшін сұрақ қосыңыз.",
           "noItemSelected": "Сұрақты таңдаңыз",
@@ -7661,6 +7669,41 @@
           "schedule": "Жоспарлау",
           "archiveTitle": "Мұрағаттау",
           "archiveDesc": "Емтихан студенттерге қолжетімді болмайды."
+        },
+        "AccessManagement": {
+          "title": "Тестке қолжетімділік",
+          "description": "Тестті курсқа қолжетімділігі бар таңдалған оқушыларға немесе топтарға шектеңіз.",
+          "eligible": "Қолжетімді",
+          "effective": "Нақты",
+          "allCourseLearners": "Курстың барлық оқушылары",
+          "allCourseLearnersDesc": "Курсқа қолжетімділігі бар әр оқушы бұл тестті тапсыра алады.",
+          "restricted": "Таңдалған оқушылар мен топтар",
+          "restrictedDesc": "Бұл тестті тек таңдалған курс оқушылары мен топтары тапсыра алады.",
+          "students": "Оқушылар",
+          "usergroups": "Топтар",
+          "searchStudents": "Оқушыларды іздеу",
+          "searchGroups": "Топтарды іздеу",
+          "noGroupDescription": "Сипаттама жоқ",
+          "loading": "Қолжетімділік жүктелуде",
+          "loadFailed": "Қолжетімділік баптауларын жүктеу мүмкін болмады.",
+          "save": "Қолжетімділікті сақтау",
+          "saved": "Қолжетімділік сақталды.",
+          "saveFailed": "Қолжетімділікті сақтау мүмкін болмады."
+        },
+        "ResultsReview": {
+          "title": "Нәтижелерді тексеру",
+          "description": "Жіберілімдерді, бағалау сапасын, жариялау күйін және сұрақ сапасын бір жұмыс орнында бақылаңыз.",
+          "openReview": "Тексеру кезегін ашу",
+          "submissions": "Жіберілімдер",
+          "needsReview": "Тексеруді қажет етеді",
+          "averageScore": "Орташа балл",
+          "passRate": "Өту пайызы",
+          "queueTitle": "Тексеру кезегі",
+          "queueBody": "Қолмен бағаланатын элементтерді бағалаңыз, дайын нәтижелерді жариялаңыз және әрекеттерді түзетуге қайтарыңыз.",
+          "questionQualityTitle": "Сұрақ сапасы",
+          "questionQualityBody": "Түсініксіз, тым оңай немесе тым қиын сұрақтарды табу үшін сұрақ аналитикасын пайдаланыңыз.",
+          "releaseTitle": "Жариялауды басқару",
+          "releaseBody": "Тексеру кезінде бағаларды жасырып, топ дайын болғанда нәтижелерді жариялаңыз."
         },
         "SecurityShield": {
           "low": "Төмен қауіпсіздік",

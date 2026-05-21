@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   BookOpen,
   CheckCircle2,
+  ChartColumn,
   GitCompareArrows,
   ListTodo,
   LoaderCircle,
@@ -12,6 +13,7 @@ import {
   Settings2,
   TextCursorInput,
   Trash2,
+  UsersRound,
 } from 'lucide-react';
 import { useQuery, useQueryClient, queryOptions } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useTransition } from 'react';
@@ -38,10 +40,17 @@ import type { AssessmentEditorState, EditableItem, StudioTab } from '@/features/
 import GeneralSettingsTab from '@/features/assessments/studio/tabs/GeneralSettingsTab';
 import BuilderCanvasTab from '@/features/assessments/studio/tabs/BuilderCanvasTab';
 import PublishDashboardTab from '@/features/assessments/studio/tabs/PublishDashboardTab';
+import AccessManagementTab from '@/features/assessments/studio/tabs/AccessManagementTab';
+import ResultsReviewTab from '@/features/assessments/studio/tabs/ResultsReviewTab';
 import ErrorUI from '@/components/Objects/Elements/Error/Error';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
@@ -259,24 +268,34 @@ export function NativeItemOutline({
 
       {isEditable ? (
         <div className="mb-4 space-y-2">
-          {allowedKinds.map((kind) => {
-            const Icon = KIND_ICONS[kind];
-            return (
-              <Button
-                key={kind}
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isCreating}
-                className="h-auto w-full justify-start px-3 py-2 text-left"
-                onClick={() => createItem(kind)}
-                title={t('addKind', { kind: kindLabels[kind] })}
-              >
-                {isCreating ? <LoaderCircle className="size-4 animate-spin" /> : <Icon className="size-4" />}
-                <span className="min-w-0 truncate">{t('addKind', { kind: kindLabels[kind] })}</span>
-              </Button>
-            );
-          })}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  className="w-full justify-center"
+                  disabled={isCreating}
+                >
+                  {isCreating ? <LoaderCircle className="size-4 animate-spin" /> : <ListTodo className="size-4" />}
+                  {t('newQuestion')}
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="start" className="w-64">
+              {allowedKinds.map((kind) => {
+                const Icon = KIND_ICONS[kind];
+                return (
+                  <DropdownMenuItem
+                    key={kind}
+                    onSelect={() => createItem(kind)}
+                  >
+                    <Icon className="mr-2 size-4" />
+                    {kindLabels[kind]}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ) : null}
 
@@ -348,7 +367,12 @@ interface NativeItemAuthorProps {
 
 type EditableItemInternal = EditableItem;
 
-export function NativeItemAuthor({ mode, itemNoun, itemNounKey, allowedKinds = ['CHOICE', 'MATCHING'] }: NativeItemAuthorProps) {
+export function NativeItemAuthor({
+  mode,
+  itemNoun,
+  itemNounKey,
+  allowedKinds = ['CHOICE', 'MATCHING', 'OPEN_TEXT', 'FORM'],
+}: NativeItemAuthorProps) {
   const {
     assessment,
     items,
@@ -470,10 +494,12 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey, allowedKinds = [
   const handleReorder = useCallback(async (orderedUuids: string[]) => {
     setLocalOrderedUuids(orderedUuids);
     try {
-      await apiFetch(`assessments/${assessment.assessment_uuid}/items/reorder`, {
+      await apiFetch(`assessments/${assessment.assessment_uuid}/items:reorder`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item_uuids: orderedUuids }),
+        body: JSON.stringify({
+          items: orderedUuids.map((item_uuid, index) => ({ item_uuid, order: index + 1 })),
+        }),
       });
       await refresh();
     } catch {
@@ -514,6 +540,8 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey, allowedKinds = [
   const TAB_CONFIG: { id: StudioTab; label: string; icon: typeof Settings2; issueCount?: number }[] = [
     { id: 'SETUP', label: tTabs('setup'), icon: Settings2 },
     { id: 'BUILDER', label: tTabs('builder'), icon: PanelLeft, issueCount: itemIssueList.length },
+    { id: 'ACCESS', label: tTabs('access'), icon: UsersRound },
+    { id: 'RESULTS', label: tTabs('results'), icon: ChartColumn },
     { id: 'PUBLISH', label: tTabs('publish'), icon: Rocket, issueCount: allIssues.length },
   ];
 
@@ -569,7 +597,7 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey, allowedKinds = [
           assessmentUuid={assessment.assessment_uuid}
           items={orderedItems}
           selectedItemUuid={selectedItemUuid}
-          allowedKinds={allowedKinds as SupportedStudioItemKind[]}
+          allowedKinds={allowedKinds}
           itemNoun={displayItemNoun}
           isEditable={isEditable}
           validationIssues={validationIssues}
@@ -609,6 +637,21 @@ export function NativeItemAuthor({ mode, itemNoun, itemNounKey, allowedKinds = [
             if (itemUuid) setSelectedItemUuid(itemUuid);
           }}
           onLifecycleChange={setLifecycle}
+        />
+      )}
+
+      {activeTab === 'ACCESS' && (
+        <AccessManagementTab
+          assessmentUuid={assessment.assessment_uuid}
+          disabled={!isEditable}
+        />
+      )}
+
+      {activeTab === 'RESULTS' && (
+        <ResultsReviewTab
+          assessmentUuid={assessment.assessment_uuid}
+          courseUuid={assessment.course_uuid}
+          activityUuid={assessment.activity_uuid}
         />
       )}
     </div>
