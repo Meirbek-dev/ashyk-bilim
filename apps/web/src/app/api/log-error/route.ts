@@ -3,7 +3,63 @@ import { NextResponse } from 'next/server';
 
 const MAX_BODY_BYTES = 8192; // 8 KB cap to prevent log-spam / memory exhaustion
 
+/**
+ * Simple in-process sliding-window rate limiter keyed by IP address.
+ *
+ * Limits each IP to MAX_LOG_REQUESTS per WINDOW_MS milliseconds.
+ * This prevents log-spam abuse on the unauthenticated error logging endpoint.
+ * Uses a Map with TTL-based entry expiry to avoid unbounded memory growth.
+ */
+const MAX_LOG_REQUESTS = 10;
+const WINDOW_MS = 60_000; // 1 minute
+
+interface RateEntry {
+  timestamps: number[];
+  lastSeen: number;
+}
+
+const _ipCounters = new Map<string, RateEntry>();
+let _lastEviction = Date.now();
+
+function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0]!.trim();
+  return 'unknown';
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const cutoff = now - WINDOW_MS;
+
+  // Periodic eviction of stale entries (~every 5 minutes) to prevent unbounded growth.
+  if (now - _lastEviction > 5 * 60_000) {
+    for (const [key, entry] of _ipCounters) {
+      if (entry.lastSeen < cutoff) _ipCounters.delete(key);
+    }
+    _lastEviction = now;
+  }
+
+  const entry = _ipCounters.get(ip) ?? { timestamps: [], lastSeen: now };
+  entry.timestamps = entry.timestamps.filter((ts) => ts > cutoff);
+  entry.lastSeen = now;
+
+  if (entry.timestamps.length >= MAX_LOG_REQUESTS) {
+    _ipCounters.set(ip, entry);
+    return true;
+  }
+
+  entry.timestamps.push(now);
+  _ipCounters.set(ip, entry);
+  return false;
+}
+
 export async function POST(request: NextRequest) {
+  // Rate limit: 10 requests per minute per IP.
+  const ip = getClientIp(request);
+  if (isRateLimited(ip)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   try {
     const contentLength = Number(request.headers.get('content-length') ?? '0');
     if (contentLength > MAX_BODY_BYTES) {

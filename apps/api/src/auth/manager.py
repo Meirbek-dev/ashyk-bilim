@@ -34,19 +34,26 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     async def on_after_forgot_password(
         self, user: User, token: str, request: Request | None = None
     ) -> None:
+        import asyncio
+
         from src.db.users import UserRead
         from src.services.users.emails import send_password_reset_email
 
         try:
             user_read = UserRead.model_validate(user)
-            send_password_reset_email(
-                generated_reset_code=token,
-                user=user_read,
-                email=str(user.email),
+            # Run synchronous SMTP/Resend call off the event loop to avoid
+            # blocking while the response is being sent.
+            asyncio.create_task(
+                asyncio.to_thread(
+                    send_password_reset_email,
+                    generated_reset_code=token,
+                    user=user_read,
+                    email=str(user.email),
+                )
             )
         except Exception:
             _logger.exception(
-                "Failed to send password reset email for user %s", user.id
+                "Failed to schedule password reset email for user %s", user.id
             )
 
     async def on_after_reset_password(

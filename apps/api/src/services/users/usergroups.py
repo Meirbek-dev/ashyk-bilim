@@ -298,8 +298,7 @@ async def add_users_to_usergroup(
             logger.error("User with id %s not found", user_id)
 
     if new_entries:
-        for entry in new_entries:
-            db_session.add(entry)
+        db_session.add_all(new_entries)
         db_session.commit()
 
     return "Users added to UserGroup successfully"

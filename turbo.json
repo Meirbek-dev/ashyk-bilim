@@ -31,7 +31,8 @@
       ]
     },
     "generate:contracts": {
-      "cache": false
+      "cache": false,
+      "outputs": ["src/lib/api/generated/**"]
     },
     "format": {
       "dependsOn": [

@@ -49,6 +49,7 @@ from src.db.grading.submissions import (
 )
 from src.db.users import AnonymousUser, PublicUser
 from src.infra.db.session import get_db_session
+from src.services.rate_limit import auth_or_ip_key, rate_limit_dependency
 from src.services.assessments.core import (
     check_publish_readiness,
     create_assessment,
@@ -208,6 +209,9 @@ async def api_list_access_eligible_usergroups(
     )
 
 
+# ── Items CRUD ─────────────────────────────────────────────────────────────────
+
+
 @router.post("/{assessment_uuid}/items", response_model=AssessmentReadItem)
 async def api_create_item(
     assessment_uuid: str,
@@ -259,6 +263,9 @@ async def api_delete_item(
     )
 
 
+# ── Student attempt flow ───────────────────────────────────────────────────────
+
+
 @router.post("/{assessment_uuid}/start", response_model=StudentSubmissionRead)
 async def api_start_assessment(
     assessment_uuid: str,
@@ -294,7 +301,20 @@ async def api_save_draft(
     )
 
 
-@router.post("/{assessment_uuid}/submit", response_model=StudentSubmissionRead)
+@router.post(
+    "/{assessment_uuid}/submit",
+    response_model=StudentSubmissionRead,
+    dependencies=[
+        Depends(
+            rate_limit_dependency(
+                namespace="assessment:submit",
+                max_requests=3,
+                window_seconds=10,
+                key_func=auth_or_ip_key,
+            )
+        )
+    ],
+)
 async def api_submit_assessment(
     assessment_uuid: str,
     payload: AssessmentDraftPatch | None = None,

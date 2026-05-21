@@ -249,16 +249,14 @@ def execute_deadline_extension(
             action.target_user_ids,
             db_session,
         ):
-            asyncio.run(
-                publish_grading_event(
-                    "deadline.extended",
-                    submission_uuid,
-                    {
-                        "submission_uuid": submission_uuid,
-                        "activity_id": action.activity_id,
-                        "new_due_at": new_due_at.isoformat(),
-                    },
-                )
+            _publish_event_safe(
+                "deadline.extended",
+                submission_uuid,
+                {
+                    "submission_uuid": submission_uuid,
+                    "activity_id": action.activity_id,
+                    "new_due_at": new_due_at.isoformat(),
+                },
             )
     except Exception as exc:
         db_session.rollback()
@@ -268,6 +266,33 @@ def execute_deadline_extension(
         db_session.add(action)
         db_session.commit()
         raise
+
+
+def _publish_event_safe(
+    event_type: str,
+    submission_uuid: str,
+    payload: dict,
+) -> None:
+    """Publish a grading event safely from a synchronous context.
+
+    ``execute_deadline_extension`` is a synchronous function that may be
+    called from a FastAPI ``BackgroundTasks`` executor thread.  Using
+    ``asyncio.run()`` inside a running event loop raises a ``RuntimeError``,
+    so we detect the current situation and act accordingly:
+
+    - If there IS a running event loop (e.g. called indirectly from async code),
+      schedule the coroutine as a fire-and-forget task.
+    - If there is NO running event loop (pure background thread), create a
+      temporary loop and run the coroutine to completion.
+    """
+    coro = publish_grading_event(event_type, submission_uuid, payload)
+    try:
+        loop = asyncio.get_running_loop()
+        # Already inside an async context — schedule without blocking.
+        loop.create_task(coro)
+    except RuntimeError:
+        # No running event loop — run synchronously in a fresh loop.
+        asyncio.run(coro)
 
 
 def _latest_submission_uuids(
