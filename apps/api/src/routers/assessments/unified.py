@@ -15,6 +15,10 @@ from src.auth.users import get_optional_public_user, get_public_user
 from src.core.http import get_content_disposition_header
 from src.db.assessments import (
     AssessmentAttemptProjection,
+    AssessmentAccessRead,
+    AssessmentAccessUpdate,
+    AssessmentAccessUserGroupRead,
+    AssessmentAccessUserRead,
     AssessmentCreate,
     AssessmentDraftPatch,
     AssessmentDraftRead,
@@ -54,6 +58,7 @@ from src.services.assessments.core import (
     delete_student_policy_override,
     duplicate_assessment,
     get_assessment,
+    get_assessment_access,
     get_assessment_by_activity_uuid,
     get_assessment_submission,
     get_assessment_submission_stats,
@@ -64,6 +69,8 @@ from src.services.assessments.core import (
     get_my_assessment_submissions,
     get_policy_preset,
     list_student_policy_overrides,
+    list_assessment_access_eligible_usergroups,
+    list_assessment_access_eligible_users,
     publish_assessment_grades,
     reorder_assessment_items,
     run_code_item,
@@ -74,6 +81,7 @@ from src.services.assessments.core import (
     submit_assessment,
     transition_assessment_lifecycle,
     update_assessment,
+    update_assessment_access,
     update_assessment_item,
     update_student_policy_override,
 )
@@ -149,6 +157,55 @@ async def api_check_readiness(
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssessmentReadiness:
     return await check_publish_readiness(assessment_uuid, current_user, db_session)
+
+
+@router.get("/{assessment_uuid}/access", response_model=AssessmentAccessRead)
+async def api_get_access(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AssessmentAccessRead:
+    return await get_assessment_access(assessment_uuid, current_user, db_session)
+
+
+@router.put("/{assessment_uuid}/access", response_model=AssessmentAccessRead)
+async def api_update_access(
+    assessment_uuid: str,
+    payload: AssessmentAccessUpdate,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> AssessmentAccessRead:
+    return await update_assessment_access(
+        assessment_uuid, payload, current_user, db_session
+    )
+
+
+@router.get(
+    "/{assessment_uuid}/access/eligible-learners",
+    response_model=list[AssessmentAccessUserRead],
+)
+async def api_list_access_eligible_learners(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+):
+    return await list_assessment_access_eligible_users(
+        assessment_uuid, current_user, db_session
+    )
+
+
+@router.get(
+    "/{assessment_uuid}/access/eligible-usergroups",
+    response_model=list[AssessmentAccessUserGroupRead],
+)
+async def api_list_access_eligible_usergroups(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+):
+    return await list_assessment_access_eligible_usergroups(
+        assessment_uuid, current_user, db_session
+    )
 
 
 @router.post("/{assessment_uuid}/items", response_model=AssessmentReadItem)

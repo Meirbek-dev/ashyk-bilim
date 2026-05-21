@@ -25,6 +25,7 @@ from sqlmodel import Field as SQLField
 from ulid import ULID
 
 from src.db.courses.activities import ActivityAssessmentPolicyRead
+from src.db.assessment_access import AssessmentAccessMode
 from src.db.grading.progress import (
     AssessmentCompletionRule,
     AssessmentGradingMode,
@@ -697,6 +698,50 @@ class TeacherSubmissionRead(SubmissionRead):
 class ReviewQueueRead(SubmissionListResponse):
     items: list[TeacherSubmissionRead]
     contract_version: int = 1
+
+
+class AssessmentAccessUserRead(PydanticStrictBaseModel):
+    id: int
+    user_uuid: str
+    username: str
+    first_name: str | None = None
+    last_name: str | None = None
+    email: str
+
+
+class AssessmentAccessUserGroupRead(PydanticStrictBaseModel):
+    id: int
+    usergroup_uuid: str
+    name: str
+    description: str = ""
+    member_count: int = 0
+
+
+class AssessmentAccessRead(PydanticStrictBaseModel):
+    mode: AssessmentAccessMode = AssessmentAccessMode.ALL_COURSE_LEARNERS
+    users: list[AssessmentAccessUserRead] = Field(default_factory=list)
+    usergroups: list[AssessmentAccessUserGroupRead] = Field(default_factory=list)
+    effective_user_count: int = 0
+
+    @field_validator("mode", mode="before")
+    @classmethod
+    def validate_mode(cls, value: object) -> object:
+        if isinstance(value, str):
+            return AssessmentAccessMode(value)
+        return value
+
+
+class AssessmentAccessUpdate(PydanticStrictBaseModel):
+    mode: AssessmentAccessMode = AssessmentAccessMode.ALL_COURSE_LEARNERS
+    user_ids: list[int] = Field(default_factory=list)
+    usergroup_ids: list[int] = Field(default_factory=list)
+
+    @field_validator("mode", mode="before")
+    @classmethod
+    def validate_mode(cls, value: object) -> object:
+        if isinstance(value, str):
+            return AssessmentAccessMode(value)
+        return value
 
 
 class AssessmentCreateResponse(PydanticStrictBaseModel):

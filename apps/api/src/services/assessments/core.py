@@ -88,6 +88,12 @@ from src.services.assessments.assessment_crud import (
     update_assessment,
     update_assessment_item,
 )
+from src.services.assessments.access_service import (
+    get_assessment_access,
+    list_assessment_access_eligible_usergroups,
+    list_assessment_access_eligible_users,
+    update_assessment_access,
+)
 from src.services.assessments.attempt_service import (
     get_attempt_state,
     get_code_item_run,
@@ -122,6 +128,7 @@ __all__ = [
     "delete_assessment_item",
     "delete_student_policy_override",
     "get_assessment",
+    "get_assessment_access",
     "get_assessment_by_activity_uuid",
     "get_assessment_submission",
     "get_assessment_submission_stats",
@@ -132,6 +139,8 @@ __all__ = [
     "get_my_assessment_submissions",
     "get_policy_preset",
     "list_student_policy_overrides",
+    "list_assessment_access_eligible_usergroups",
+    "list_assessment_access_eligible_users",
     "publish_assessment_grades",
     "reorder_assessment_items",
     "run_code_item",
@@ -142,6 +151,7 @@ __all__ = [
     "submit_assessment",
     "transition_assessment_lifecycle",
     "update_assessment",
+    "update_assessment_access",
     "update_assessment_item",
     "update_student_policy_override",
 ]

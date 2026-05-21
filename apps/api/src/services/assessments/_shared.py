@@ -50,6 +50,12 @@ from src.db.assessments import (
     StudentSubmissionRead,
     TeacherSubmissionRead,
 )
+from src.db.assessment_access import (
+    AssessmentAccessMode,
+    AssessmentAccessPolicy,
+    AssessmentAccessUser,
+    AssessmentAccessUserGroup,
+)
 from src.db.code_execution import CodeRunPurpose, CodeRunStatus
 from src.db.courses.activities import (
     Activity,
@@ -79,6 +85,7 @@ from src.db.grading.submissions import (
     TeacherGradeInput,
 )
 from src.db.users import AnonymousUser, PublicUser, User
+from src.db.usergroup_user import UserGroupUser
 from src.security.rbac import PermissionChecker
 from src.services.assessments.settings import validate_settings
 from src.services.code_execution import get_code_execution_service
@@ -665,6 +672,11 @@ def _get_chapter_or_404(chapter_id: int, db_session: Session) -> Chapter:
 
 
 def _require_author(user: PublicUser, course: Course, db_session: Session) -> None:
+    if not _assessment_access_allows_user(activity.id or 0, user.id, db_session):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This assessment is restricted to selected course learners.",
+        )
     checker = PermissionChecker(db_session)
     if checker.check(user.id, "assessment:author", resource_owner_id=course.creator_id):
         return
@@ -722,6 +734,11 @@ def _require_submit_access(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Вы должны быть зачислены на этот курс, чтобы отправлять работы",
         )
+    if not _assessment_access_allows_user(activity.id or 0, user.id, db_session):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This assessment is restricted to selected course learners.",
+        )
     checker = PermissionChecker(db_session)
     if checker.check(
         user.id,
@@ -748,6 +765,8 @@ def _has_submit_access(
         return False
     if not user_has_course_access(user.id, course, db_session):
         return False
+    if not _assessment_access_allows_user(activity.id or 0, user.id, db_session):
+        return False
     checker = PermissionChecker(db_session)
     return checker.check(
         user.id,
@@ -755,6 +774,53 @@ def _has_submit_access(
         resource_owner_id=activity.creator_id,
         is_assigned=True,
     )
+
+
+def _assessment_access_allows_user(
+    activity_id: int,
+    user_id: int,
+    db_session: Session,
+) -> bool:
+    assessment = db_session.exec(
+        select(Assessment).where(Assessment.activity_id == activity_id)
+    ).first()
+    if assessment is None or assessment.id is None:
+        return True
+
+    access_policy = db_session.exec(
+        select(AssessmentAccessPolicy).where(
+            AssessmentAccessPolicy.assessment_id == assessment.id
+        )
+    ).first()
+    if (
+        access_policy is None
+        or access_policy.mode == AssessmentAccessMode.ALL_COURSE_LEARNERS
+    ):
+        return True
+    if access_policy.id is None:
+        return False
+
+    direct = db_session.exec(
+        select(AssessmentAccessUser.id).where(
+            AssessmentAccessUser.policy_id == access_policy.id,
+            AssessmentAccessUser.user_id == user_id,
+        )
+    ).first()
+    if direct is not None:
+        return True
+
+    group_match = db_session.exec(
+        select(AssessmentAccessUserGroup.id)
+        .join(
+            UserGroupUser,
+            UserGroupUser.usergroup_id == AssessmentAccessUserGroup.usergroup_id,
+        )
+        .where(
+            AssessmentAccessUserGroup.policy_id == access_policy.id,
+            UserGroupUser.user_id == user_id,
+        )
+    ).first()
+    return group_match is not None
 
 
 def _ensure_authorable(assessment: Assessment, db_session: Session) -> None:

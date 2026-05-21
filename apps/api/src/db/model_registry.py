@@ -8,6 +8,7 @@ def import_orm_models() -> None:
         return
 
     import src.db.analytics
+    import src.db.assessment_access
     import src.db.assessments
     import src.db.auth_audit_log
     import src.db.auth_sessions
