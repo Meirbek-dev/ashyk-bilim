@@ -44,6 +44,11 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[
         app.state.engine = engine
         app.state.session_factory = session_factory
 
+        # Patch Judge0 compiler command flags dynamically on startup.
+        from src.app.judge0_patch import start_judge0_patcher
+
+        start_judge0_patcher(session_factory)
+
         configure_observability(app, settings, engine)
 
         # Register in-process event bus subscribers (analytics only).
