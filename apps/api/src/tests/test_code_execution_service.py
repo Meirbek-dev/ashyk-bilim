@@ -139,6 +139,61 @@ async def test_code_execution_reuses_idempotent_run(monkeypatch, db_session):
 
 
 @pytest.mark.asyncio
+async def test_code_execution_retries_failed_idempotent_run(monkeypatch, db_session):
+    calls = 0
+
+    def fake_run(**_kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return [
+                SimpleNamespace(
+                    status=Status.COMPILATION_ERROR,
+                    stdout=None,
+                    stderr=None,
+                    compile_output="old compiler failure",
+                    message=None,
+                    token="failed-token",
+                    time=None,
+                    memory=None,
+                )
+            ]
+        return [
+            SimpleNamespace(
+                status=Status.ACCEPTED,
+                stdout="ok\n",
+                stderr=None,
+                compile_output=None,
+                message=None,
+                token="accepted-token",
+                time=0.01,
+                memory=256,
+            )
+        ]
+
+    monkeypatch.setattr("src.services.code_execution.service.judge0.run", fake_run)
+    service = CodeExecutionService(client_factory=FakeFactory())
+
+    first = await async_run_service(
+        service,
+        db_session,
+        idempotency_key="retry-key",
+        single_case=True,
+    )
+    second = await async_run_service(
+        service,
+        db_session,
+        idempotency_key="retry-key",
+        single_case=True,
+    )
+
+    assert first.status == CodeRunStatus.COMPILE_ERROR
+    assert second.status == CodeRunStatus.ACCEPTED
+    assert first.run_uuid != second.run_uuid
+    assert calls == 2
+
+
+@pytest.mark.asyncio
 async def test_code_execution_truncates_output_and_passes_sandbox_policy(
     monkeypatch, db_session
 ):
@@ -190,9 +245,119 @@ async def test_code_execution_truncates_output_and_passes_sandbox_policy(
     assert captured_kwargs["max_file_size"] == 128
     assert captured_kwargs["wall_time_limit"] == 3.0
     assert captured_kwargs["memory_limit"] == 64 * 1024
+    assert captured_kwargs["enable_per_process_and_thread_time_limit"] is True
+    assert captured_kwargs["enable_per_process_and_thread_memory_limit"] is True
     assert result.details[0].stdout is not None
     assert len(result.details[0].stdout.encode()) <= 100_000
     assert result.details[0].stdout.endswith("[output truncated]")
+
+
+@pytest.mark.asyncio
+async def test_code_execution_raises_jvm_sandbox_limits(monkeypatch, db_session):
+    captured_kwargs = {}
+
+    def fake_run(**kwargs):
+        captured_kwargs.update(kwargs)
+        return [
+            SimpleNamespace(
+                status=Status.ACCEPTED,
+                stdout="2\n",
+                stderr=None,
+                compile_output=None,
+                message=None,
+                token="java-token",
+                time=0.1,
+                memory=1024,
+            )
+        ]
+
+    monkeypatch.setattr("src.services.code_execution.service.judge0.run", fake_run)
+    service = CodeExecutionService(client_factory=FakeFactory())
+
+    await async_run_service(
+        service,
+        db_session,
+        language_id=62,
+        memory_limit_mb=256,
+        single_case=True,
+    )
+
+    assert captured_kwargs["memory_limit"] == 1536 * 1024
+    assert captured_kwargs["stack_limit"] == 64 * 1024
+    assert captured_kwargs["max_processes_and_or_threads"] == 128
+    assert "-J-XX:MaxMetaspaceSize=96m" in captured_kwargs["compiler_options"]
+    assert "-J-Xmx96m" in captured_kwargs["compiler_options"]
+
+
+@pytest.mark.asyncio
+async def test_code_execution_raises_go_sandbox_limits(monkeypatch, db_session):
+    captured_kwargs = {}
+
+    def fake_run(**kwargs):
+        captured_kwargs.update(kwargs)
+        return [
+            SimpleNamespace(
+                status=Status.ACCEPTED,
+                stdout="2\n",
+                stderr=None,
+                compile_output=None,
+                message=None,
+                token="go-token",
+                time=0.1,
+                memory=1024,
+            )
+        ]
+
+    monkeypatch.setattr("src.services.code_execution.service.judge0.run", fake_run)
+    service = CodeExecutionService(client_factory=FakeFactory())
+
+    await async_run_service(
+        service,
+        db_session,
+        language_id=60,
+        memory_limit_mb=256,
+        single_case=True,
+    )
+
+    assert captured_kwargs["memory_limit"] == 512 * 1024
+    assert captured_kwargs["stack_limit"] == 64 * 1024
+    assert captured_kwargs["max_processes_and_or_threads"] == 128
+    assert captured_kwargs["compiler_options"] == "-p 1"
+
+
+@pytest.mark.asyncio
+async def test_code_execution_sets_kotlin_compiler_jvm_options(monkeypatch, db_session):
+    captured_kwargs = {}
+
+    def fake_run(**kwargs):
+        captured_kwargs.update(kwargs)
+        return [
+            SimpleNamespace(
+                status=Status.ACCEPTED,
+                stdout="2\n",
+                stderr=None,
+                compile_output=None,
+                message=None,
+                token="kotlin-token",
+                time=0.1,
+                memory=1024,
+            )
+        ]
+
+    monkeypatch.setattr("src.services.code_execution.service.judge0.run", fake_run)
+    service = CodeExecutionService(client_factory=FakeFactory())
+
+    await async_run_service(
+        service,
+        db_session,
+        language_id=78,
+        memory_limit_mb=256,
+        single_case=True,
+    )
+
+    assert captured_kwargs["memory_limit"] == 1536 * 1024
+    assert "-J-XX:MaxMetaspaceSize=256m" in captured_kwargs["compiler_options"]
+    assert "-J-Xmx512m" in captured_kwargs["compiler_options"]
 
 
 def test_code_execution_filters_allowed_languages():
@@ -264,31 +429,111 @@ async def async_run_service(
     db_session: Session,
     *,
     idempotency_key: str | None = None,
+    language_id: int = 71,
     time_limit_seconds: int | None = None,
     memory_limit_mb: int | None = None,
+    single_case: bool = False,
 ):
+    test_cases = [
+        CodeTestCase(
+            id="visible",
+            input="2",
+            expected_output="4",
+            description="visible case",
+            is_visible=True,
+            weight=2,
+        ),
+        CodeTestCase(
+            id="hidden", input="3", expected_output="9", is_visible=False, weight=3
+        ),
+    ]
     return await service.run(
         db_session=db_session,
         assessment_uuid="assessment_code",
         item_uuid="item_code",
         user_id=42,
         purpose=CodeRunPurpose.VISIBLE,
-        language_id=71,
+        language_id=language_id,
         source_code="print('ok')",
-        test_cases=[
-            CodeTestCase(
-                id="visible",
-                input="2",
-                expected_output="4",
-                description="visible case",
-                is_visible=True,
-                weight=2,
-            ),
-            CodeTestCase(
-                id="hidden", input="3", expected_output="9", is_visible=False, weight=3
-            ),
-        ],
+        test_cases=test_cases[:1] if single_case else test_cases,
         idempotency_key=idempotency_key,
         time_limit_seconds=time_limit_seconds,
         memory_limit_mb=memory_limit_mb,
     )
+
+
+@pytest.mark.asyncio
+async def test_code_execution_with_different_source_code_and_hash_in_key(monkeypatch, db_session):
+    calls = 0
+
+    def fake_run(**_kwargs):
+        nonlocal calls
+        calls += 1
+        return [
+            SimpleNamespace(
+                status=Status.ACCEPTED,
+                stdout="ok\n",
+                stderr=None,
+                compile_output=None,
+                message=None,
+                token="visible-token",
+                time=0.01,
+                memory=256,
+            )
+        ]
+
+    monkeypatch.setattr("src.services.code_execution.service.judge0.run", fake_run)
+    service = CodeExecutionService(client_factory=FakeFactory())
+
+    import hashlib
+    # Simulating the submission of "first version of code"
+    source_1 = "print('first')"
+    hash_1 = hashlib.sha256(source_1.encode("utf-8")).hexdigest()
+    key_1 = f"final:submission123:item_code:71:{hash_1}"
+
+    run_1 = await service.run(
+        db_session=db_session,
+        assessment_uuid="assessment_code",
+        item_uuid="item_code",
+        user_id=42,
+        purpose=CodeRunPurpose.FINAL,
+        language_id=71,
+        source_code=source_1,
+        test_cases=[CodeTestCase(id="visible", input="2", expected_output="4", is_visible=True, weight=2)],
+        idempotency_key=key_1,
+    )
+
+    # Simulating the submission of "second version of code" under same submission draft
+    source_2 = "print('second')"
+    hash_2 = hashlib.sha256(source_2.encode("utf-8")).hexdigest()
+    key_2 = f"final:submission123:item_code:71:{hash_2}"
+
+    run_2 = await service.run(
+        db_session=db_session,
+        assessment_uuid="assessment_code",
+        item_uuid="item_code",
+        user_id=42,
+        purpose=CodeRunPurpose.FINAL,
+        language_id=71,
+        source_code=source_2,
+        test_cases=[CodeTestCase(id="visible", input="2", expected_output="4", is_visible=True, weight=2)],
+        idempotency_key=key_2,
+    )
+
+    # Simulating a retry of the "second version of code" (should hit idempotency)
+    run_3 = await service.run(
+        db_session=db_session,
+        assessment_uuid="assessment_code",
+        item_uuid="item_code",
+        user_id=42,
+        purpose=CodeRunPurpose.FINAL,
+        language_id=71,
+        source_code=source_2,
+        test_cases=[CodeTestCase(id="visible", input="2", expected_output="4", is_visible=True, weight=2)],
+        idempotency_key=key_2,
+    )
+
+    # Verify that different code versions did not conflict and run_2 was executed
+    assert run_1.run_uuid != run_2.run_uuid
+    assert run_2.run_uuid == run_3.run_uuid
+    assert calls == 2  # run_1 and run_2 were sent to Judge0, run_3 reused run_2 from cache

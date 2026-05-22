@@ -8,6 +8,7 @@ emitted via the event bus after the main transaction commits.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -432,7 +433,7 @@ async def _run_final_code_answers(
             language_id=answer.language,
             source_code=answer.source,
             test_cases=item.body.tests,
-            idempotency_key=f"final:{draft.submission_uuid}:{item.item_uuid}:{answer.language}",
+            idempotency_key=f"final:{draft.submission_uuid}:{item.item_uuid}:{answer.language}:{hashlib.sha256(answer.source.encode('utf-8')).hexdigest()}",
             time_limit_seconds=item.body.time_limit_seconds,
             memory_limit_mb=item.body.memory_limit_mb,
         )

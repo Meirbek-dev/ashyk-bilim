@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { CodeItemAttempt, CodeItemLoading, useCodeSubmitControl } from '@/features/assessments/items/code';
@@ -27,6 +27,10 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   const codeItem = useMemo(() => vm?.items.find((item) => item.body.kind === 'CODE') ?? null, [vm?.items]);
   const settings = useMemo(() => (codeItem ? codeItemToSettings(codeItem) : null), [codeItem]);
   const submissionState = useAssessmentSubmission(assessmentUuid, normalizedActivityUuid);
+  const saveDraft = submissionState.save;
+  const saveState = submissionState.saveState;
+  const submissionStatus = submissionState.status;
+  const submitAssessment = submissionState.submit;
   const { submitControl, handleSubmitControlChange } = useCodeSubmitControl();
 
   const primaryLanguageId = settings?.allowed_languages?.[0];
@@ -75,19 +79,16 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   }, [codeAnswer, codeItem, initialCode, primaryLanguageId, submissionState]);
 
   useEffect(() => {
-    if (submissionState.status !== 'DRAFT' || submissionState.saveState !== 'dirty') return;
+    if (submissionStatus !== 'DRAFT' || saveState !== 'dirty') return;
     const timeout = setTimeout(() => {
-      void submissionState.save();
+      void saveDraft();
     }, 1000);
     return () => clearTimeout(timeout);
-  }, [submissionState]);
+  }, [saveDraft, saveState, submissionStatus]);
 
-  const handleCanonicalSubmit = useMemo(
-    () => async () => {
-      await submissionState.submit();
-    },
-    [submissionState],
-  );
+  const handleCanonicalSubmit = useCallback(async () => {
+    await submitAssessment();
+  }, [submitAssessment]);
 
   if (submissionState.isLoading) {
     return <CodeItemLoading />;

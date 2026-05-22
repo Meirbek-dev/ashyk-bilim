@@ -132,6 +132,9 @@ export function CodeChallengeEditor({
   const runCustomTestMutation = useRunCustomTest(activityUuid);
   const runCodeChallengeTestsMutation = useRunCodeChallengeTests(activityUuid);
   const submitCodeChallengeMutation = useSubmitCodeChallenge(activityUuid);
+  const runCustomTest = runCustomTestMutation.mutateAsync;
+  const runCodeChallengeTests = runCodeChallengeTestsMutation.mutateAsync;
+  const submitCodeChallenge = submitCodeChallengeMutation.mutateAsync;
   const { data: judge0Languages = [] } = useJudge0Languages();
   const isRunning = runCustomTestMutation.isPending || runCodeChallengeTestsMutation.isPending;
   const availableLanguages = useMemo(() => {
@@ -247,7 +250,7 @@ export function CodeChallengeEditor({
     setActiveTab('custom');
 
     try {
-      const result = await runCustomTestMutation.mutateAsync({
+      const result = await runCustomTest({
         sourceCode: code,
         languageId: selectedLanguageId,
         stdin: customInput,
@@ -257,7 +260,7 @@ export function CodeChallengeEditor({
       toast.error(error instanceof Error ? error.message : t('runFailed'));
       setCustomOutput(error instanceof Error ? error.message : t('runFailed'));
     }
-  }, [code, customInput, runCustomTestMutation, selectedLanguageId, t]);
+  }, [code, customInput, runCustomTest, selectedLanguageId, t]);
 
   // Run against sample test cases
   const handleTestAgainstSamples = useCallback(async () => {
@@ -270,7 +273,7 @@ export function CodeChallengeEditor({
     setActiveTab('results');
 
     try {
-      const result = await runCodeChallengeTestsMutation.mutateAsync({
+      const result = await runCodeChallengeTests({
         sourceCode: code,
         languageId: selectedLanguageId,
       });
@@ -278,7 +281,7 @@ export function CodeChallengeEditor({
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('testFailed'));
     }
-  }, [code, runCodeChallengeTestsMutation, selectedLanguageId, t]);
+  }, [code, runCodeChallengeTests, selectedLanguageId, t]);
 
   // Submit solution
   const handleSubmit = useCallback(async () => {
@@ -298,7 +301,7 @@ export function CodeChallengeEditor({
         return;
       }
 
-      const submission = await submitCodeChallengeMutation.mutateAsync({
+      const submission = await submitCodeChallenge({
         sourceCode: code,
         languageId: selectedLanguageId,
       });
@@ -312,7 +315,7 @@ export function CodeChallengeEditor({
       setIsSubmitting(false);
       toast.error(error instanceof Error ? error.message : t('submissionFailed'));
     }
-  }, [code, onSubmit, selectedLanguageId, submitCodeChallengeMutation, t]);
+  }, [code, onSubmit, selectedLanguageId, submitCodeChallenge, t]);
 
   const submitControl = useMemo<CodeChallengeSubmitControl>(
     () => ({
@@ -325,8 +328,11 @@ export function CodeChallengeEditor({
 
   useEffect(() => {
     onSubmitControlChange?.(submitControl);
-    return () => onSubmitControlChange?.(null);
   }, [submitControl, onSubmitControlChange]);
+
+  useEffect(() => {
+    return () => onSubmitControlChange?.(null);
+  }, [onSubmitControlChange]);
 
   // Get language name from ID
   const getLanguageName = (languageId: number): string => {

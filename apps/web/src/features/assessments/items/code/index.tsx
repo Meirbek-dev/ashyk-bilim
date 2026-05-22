@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { CodeChallengeEditor } from '@/components/features/courses/code-challenges';
 import type { CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges';
@@ -87,9 +87,32 @@ export function CodeItemLoading() {
 
 export function useCodeSubmitControl() {
   const [submitControl, setSubmitControl] = useState<CodeChallengeSubmitControl | null>(null);
+  const submitRef = useRef<CodeChallengeSubmitControl['submit'] | null>(null);
+  const submit = useCallback(() => submitRef.current?.(), []);
+
   const handleSubmitControlChange = useCallback((control: CodeChallengeSubmitControl | null) => {
-    setSubmitControl(control);
-  }, []);
+    submitRef.current = control?.submit ?? null;
+    setSubmitControl((prev) => {
+      if (!prev && !control) return null;
+      const next = control
+        ? {
+            canSubmit: control.canSubmit,
+            isSubmitting: control.isSubmitting,
+            submit,
+          }
+        : null;
+      if (
+        prev &&
+        next &&
+        prev.canSubmit === next.canSubmit &&
+        prev.isSubmitting === next.isSubmitting
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [submit]);
+
   return { submitControl, handleSubmitControlChange };
 }
 

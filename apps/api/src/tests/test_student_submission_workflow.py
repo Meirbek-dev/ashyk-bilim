@@ -52,6 +52,19 @@ from src.db.grading.submissions import (
     SubmissionStatus,
 )
 from src.db.users import PublicUser, User
+from src.db.usergroups import UserGroup
+from src.db.usergroup_user import UserGroupUser
+from src.db.assessment_access import (
+    AssessmentAccessPolicy,
+    AssessmentAccessUser,
+    AssessmentAccessUserGroup,
+)
+from src.db.file_submissions import (
+    FileSubmissionActivity,
+    FileSubmissionAttempt,
+    FileSubmissionAttemptFile,
+)
+from src.db.uploads import Upload
 from src.infra.db.engine import build_engine, build_session_factory
 from src.infra.db.session import get_db_session
 from src.infra.settings import get_settings
@@ -66,17 +79,26 @@ from src.services.grading import submission as submission_service
 
 _ALL_TABLES = [
     User.__table__,
+    UserGroup.__table__,
+    UserGroupUser.__table__,
     Course.__table__,
     Chapter.__table__,
     Activity.__table__,
     AssessmentPolicy.__table__,
     Assessment.__table__,
+    AssessmentAccessPolicy.__table__,
+    AssessmentAccessUser.__table__,
+    AssessmentAccessUserGroup.__table__,
     AssessmentItem.__table__,
     StudentPolicyOverride.__table__,
     Submission.__table__,
     GradingEntry.__table__,
     ActivityProgress.__table__,
     CourseProgress.__table__,
+    Upload.__table__,
+    FileSubmissionActivity.__table__,
+    FileSubmissionAttempt.__table__,
+    FileSubmissionAttemptFile.__table__,
 ]
 
 

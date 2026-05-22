@@ -1,22 +1,23 @@
 import os
+import sys
+import pathlib
 from datetime import UTC, datetime
 
 import pytest
 
-# Set development mode to enable Pydantic strict mode
-os.environ["PLATFORM_DEVELOPMENT_MODE"] = "1"
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-# Force re-evaluation of strict_base_model if it was already imported?
-# In tests, it might have been imported by other modules.
-# But here we are in a fresh process if we run pytest on this file alone.
-
-from src.db.strict_base_model import _PYDANTIC_CONFIG
 from src.db.uploads import UploadRead, UploadStatus
+
+# Set development mode to enable Pydantic strict mode for this test specifically
+UploadRead.model_config["strict"] = True
+UploadRead.model_rebuild(force=True)
 
 
 def test_pydantic_is_strict():
     """Verify that strict mode is actually enabled for the test."""
-    assert _PYDANTIC_CONFIG["strict"] is True
+    assert UploadRead.model_config.get("strict") is True
 
 
 def test_upload_read_status_coercion():

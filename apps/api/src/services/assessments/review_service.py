@@ -276,7 +276,7 @@ async def save_assessment_grade(
         db_session=db_session,
     )
     expected_version = _parse_if_match_version(if_match)
-    saved = _save_teacher_grade(
+    saved = await _save_teacher_grade(
         submission=submission,
         grade_input=payload,
         submission_uuid=submission_uuid,

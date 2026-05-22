@@ -25,10 +25,44 @@ from src.db.code_execution import CodeRun, CodeRunCase, CodeRunPurpose, CodeRunS
 
 logger = logging.getLogger(__name__)
 _OUTPUT_TRUNCATION_MARKER = "\n[output truncated]"
+_JVM_LANGUAGE_IDS = frozenset({26, 27, 28, 62, 78})
+_GO_LANGUAGE_IDS = frozenset({22, 60})
+_JVM_MIN_MEMORY_LIMIT_KB = 1536 * 1024
+_GO_MIN_MEMORY_LIMIT_KB = 512 * 1024
+_MANAGED_RUNTIME_STACK_LIMIT_KB = 64 * 1024
+_MANAGED_RUNTIME_MAX_PROCESSES_AND_THREADS = 128
+_JAVA_COMPILER_OPTIONS = (
+    "-J-Xmx96m -J-Xms16m -J-XX:MaxMetaspaceSize=96m "
+    "-J-XX:CompressedClassSpaceSize=16m -J-XX:ReservedCodeCacheSize=16m "
+    "-J-XX:+UseSerialGC -J-XX:TieredStopAtLevel=1"
+)
+_JAVA_7_COMPILER_OPTIONS = (
+    "-J-Xmx96m -J-Xms16m -J-XX:MaxPermSize=96m "
+    "-J-XX:ReservedCodeCacheSize=16m -J-XX:+UseSerialGC "
+    "-J-XX:TieredStopAtLevel=1"
+)
+_KOTLIN_COMPILER_OPTIONS = (
+    "-J-Xmx512m -J-Xms64m -J-XX:MaxMetaspaceSize=256m "
+    "-J-XX:CompressedClassSpaceSize=64m -J-XX:ReservedCodeCacheSize=64m "
+    "-J-XX:+UseSerialGC"
+)
+_IDEMPOTENT_REUSE_STATUSES = frozenset(
+    {
+        CodeRunStatus.ACCEPTED,
+        CodeRunStatus.WRONG_ANSWER,
+    }
+)
 
 
 class CodeExecutionDegradedError(Exception):
     """Raised when Judge0 cannot accept or complete a run."""
+
+
+@dataclass(frozen=True)
+class Judge0SandboxPolicy:
+    memory_limit_kb: int | None
+    stack_limit_kb: int | None = None
+    max_processes_and_or_threads: int | None = None
 
 
 @dataclass(frozen=True)
@@ -419,6 +453,7 @@ class CodeExecutionService:
     ) -> CodeExecutionResult:
         settings = get_settings().integrations.judge0
         client = self._client_factory.get_client()
+        sandbox_policy = _sandbox_policy_for_language(language_id, memory_limit_mb)
         started_at = time.monotonic()
         submissions = judge0.run(
             client=client,
@@ -432,7 +467,12 @@ class CodeExecutionService:
             wall_time_limit=float(time_limit_seconds + 1)
             if time_limit_seconds
             else None,
-            memory_limit=memory_limit_mb * 1024 if memory_limit_mb else None,
+            compiler_options=_compiler_options_for_language(language_id),
+            memory_limit=sandbox_policy.memory_limit_kb,
+            stack_limit=sandbox_policy.stack_limit_kb,
+            max_processes_and_or_threads=sandbox_policy.max_processes_and_or_threads,
+            enable_per_process_and_thread_time_limit=True,
+            enable_per_process_and_thread_memory_limit=True,
             max_file_size=settings.max_output_file_kb,
             enable_network=False,
         )
@@ -592,6 +632,11 @@ class CodeExecutionService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Idempotency key was already used for a different code run",
             )
+        if existing.status not in _IDEMPOTENT_REUSE_STATUSES:
+            existing.idempotency_key = None
+            db_session.add(existing)
+            db_session.commit()
+            return None
         return existing
 
     def _result_from_db(self, db_session: Session, run: CodeRun) -> CodeExecutionResult:
@@ -673,6 +718,42 @@ class CodeExecutionService:
                 )
             )
         db_session.commit()
+
+
+def _sandbox_policy_for_language(
+    language_id: int, memory_limit_mb: int | None
+) -> Judge0SandboxPolicy:
+    requested_memory_kb = memory_limit_mb * 1024 if memory_limit_mb else None
+
+    if language_id in _JVM_LANGUAGE_IDS:
+        return Judge0SandboxPolicy(
+            memory_limit_kb=max(requested_memory_kb or 0, _JVM_MIN_MEMORY_LIMIT_KB),
+            stack_limit_kb=_MANAGED_RUNTIME_STACK_LIMIT_KB,
+            max_processes_and_or_threads=_MANAGED_RUNTIME_MAX_PROCESSES_AND_THREADS,
+        )
+
+    if language_id in _GO_LANGUAGE_IDS:
+        return Judge0SandboxPolicy(
+            memory_limit_kb=max(requested_memory_kb or 0, _GO_MIN_MEMORY_LIMIT_KB),
+            stack_limit_kb=_MANAGED_RUNTIME_STACK_LIMIT_KB,
+            max_processes_and_or_threads=_MANAGED_RUNTIME_MAX_PROCESSES_AND_THREADS,
+        )
+
+    return Judge0SandboxPolicy(memory_limit_kb=requested_memory_kb)
+
+
+def _compiler_options_for_language(language_id: int) -> str | None:
+    if language_id in {27, 62}:
+        return _JAVA_COMPILER_OPTIONS
+    if language_id == 28:
+        return _JAVA_7_COMPILER_OPTIONS
+    if language_id == 26:
+        return "-J-Xmx96m"
+    if language_id == 78:
+        return _KOTLIN_COMPILER_OPTIONS
+    if language_id in _GO_LANGUAGE_IDS:
+        return "-p 1"
+    return None
 
 
 def normalize_status(value: object) -> CodeRunStatus:

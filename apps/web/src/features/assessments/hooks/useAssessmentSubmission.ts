@@ -57,6 +57,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const [conflictState, setConflictState] = useState<ConflictState | null>(null);
   const [reportedLoadError, setReportedLoadError] = useState<string | null>(null);
   const localAnswersRef = useRef<Record<string, ItemAnswer>>({});
+  const versionRef = useRef<number | undefined>(undefined);
   const lastSaveTimeRef = useRef<number>(0);
   const nextSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAnswersRef = useRef<Record<string, ItemAnswer> | null>(null);
@@ -122,6 +123,10 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     localAnswersRef.current = localAnswers;
   }, [localAnswers]);
 
+  useEffect(() => {
+    versionRef.current = version;
+  }, [version]);
+
   const syncLatestSubmission = useCallback(
     (latest: AssessmentSubmissionRead) => {
       if (!assessmentUuid) return;
@@ -169,7 +174,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          ...(version ? { 'If-Match': String(version) } : {}),
+          ...(versionRef.current ? { 'If-Match': String(versionRef.current) } : {}),
         },
         body: JSON.stringify({
           answers: Object.entries(answers).map(([item_uuid, answer]) => ({ item_uuid, answer })),
@@ -178,7 +183,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       return (await readJsonOrThrow(response)) as AssessmentSubmissionRead;
     },
     onMutate: () => setSaveState('saving'),
-    onSuccess: async () => {
+    onSuccess: async (latest) => {
+      versionRef.current = latest.version;
+      syncLatestSubmission(latest);
       setConflictState(null);
       setSaveState('saved');
       await invalidateAssessmentState();
@@ -187,11 +194,18 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       if (error.status === 409) {
         const latest = error.payload?.detail?.latest as AssessmentSubmissionRead | undefined;
         if (latest) {
+          versionRef.current = latest.version;
+          const latestAnswers = answersFromSubmission(latest);
+          if (areAnswersEqual(localAnswersRef.current, latestAnswers)) {
+            syncLatestSubmission(latest);
+            setConflictState(null);
+            setSaveState('saved');
+            return;
+          }
           openConflict(latest);
+        } else {
+          setSaveState('dirty');
         }
-        toast.error(
-          'Your draft changed in another tab. Choose whether to keep your local version or load the latest saved draft.',
-        );
         return;
       }
       if (error.status === 429) {
@@ -227,7 +241,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(version ? { 'If-Match': String(version) } : {}),
+          ...(versionRef.current ? { 'If-Match': String(versionRef.current) } : {}),
         },
         body: JSON.stringify({
           answers: Object.entries(answers).map(([item_uuid, answer]) => ({ item_uuid, answer })),
@@ -235,7 +249,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       });
       return (await readJsonOrThrow(response)) as AssessmentSubmissionRead;
     },
-    onSuccess: async () => {
+    onSuccess: async (latest) => {
+      versionRef.current = latest.version;
+      syncLatestSubmission(latest);
       setConflictState(null);
       setSaveState('saved');
       if (assessmentUuid) {
@@ -246,9 +262,10 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       if (error.status === 409) {
         const latest = error.payload?.detail?.latest as AssessmentSubmissionRead | undefined;
         if (latest) {
+          versionRef.current = latest.version;
           openConflict(latest);
         }
-        toast.error('Your draft changed in another tab. Resolve the conflict before submitting.');
+        toast.error('Your answers were updated elsewhere. Review the latest draft before submitting.');
         return;
       }
       setSaveState('error');
@@ -321,6 +338,9 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     setSaveState(conflictState.latest.status === 'DRAFT' ? 'saved' : 'idle');
   }, [conflictState]);
 
+  const { mutate: saveMutate, isPending: isSaving } = saveMutation;
+  const { mutateAsync: submitMutateAsync, isPending: isSubmitting } = submitMutation;
+
   const save = useCallback(() => {
     if (nextSaveTimeoutRef.current) {
       clearTimeout(nextSaveTimeoutRef.current);
@@ -331,13 +351,13 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     const now = Date.now();
     const timeSinceLastSave = now - lastSaveTimeRef.current;
     const isThrottled = timeSinceLastSave < 5000;
-    const isSaving = saveMutation.isPending;
+    const isSavingPending = saveMutation.isPending;
 
-    if (isSaving || isThrottled) {
+    if (isSavingPending || isThrottled) {
       pendingAnswersRef.current = answers;
 
       if (!nextSaveTimeoutRef.current) {
-        const delay = isSaving ? 1000 : 5000 - timeSinceLastSave;
+        const delay = isSavingPending ? 1000 : 5000 - timeSinceLastSave;
         nextSaveTimeoutRef.current = setTimeout(() => {
           nextSaveTimeoutRef.current = null;
           save();
@@ -347,7 +367,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     }
 
     pendingAnswersRef.current = null;
-    saveMutation.mutate(answers, {
+    saveMutate(answers, {
       onSuccess: () => {
         lastSaveTimeRef.current = Date.now();
         if (pendingAnswersRef.current) {
@@ -367,18 +387,20 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         }
       },
     });
-  }, [saveMutation]);
+  }, [saveMutate, saveMutation.isPending]);
 
-  const { isPending: isSaving } = saveMutation;
-  const { mutateAsync: submitMutateAsync, isPending: isSubmitting } = submitMutation;
+  const submit = useCallback(
+    (options?: SubmitOptions) =>
+      submitMutateAsync({ answers: localAnswersRef.current, violationCount: options?.violationCount }),
+    [submitMutateAsync],
+  );
 
   return useMemo(
     () => ({
       answers: localAnswers,
       setItemAnswer,
       save,
-      submit: (options?: SubmitOptions) =>
-        submitMutateAsync({ answers: localAnswers, violationCount: options?.violationCount }),
+      submit,
       draft,
       submission,
       submissions: submissionsQuery.data ?? [],
@@ -417,7 +439,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       submissionsQuery.isLoading,
       submission,
       useServerVersion,
-      submitMutateAsync,
+      submit,
       isSubmitting,
       version,
     ],
@@ -429,5 +451,9 @@ function cloneAnswers(answers: Record<string, ItemAnswer>): Record<string, ItemA
     return structuredClone(answers);
   }
   // Fallback for environments without structuredClone (e.g. older Safari/Node)
-  return structuredClone(answers);
+  return JSON.parse(JSON.stringify(answers)) as Record<string, ItemAnswer>;
+}
+
+function areAnswersEqual(left: Record<string, ItemAnswer>, right: Record<string, ItemAnswer>): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
 }

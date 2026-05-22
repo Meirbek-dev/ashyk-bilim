@@ -157,6 +157,7 @@ async def save_assessment_draft(
     db_session: Session,
     *,
     if_match: str | None = None,
+    enforce_throttle: bool = True,
 ) -> StudentSubmissionRead:
     DRAFT_THROTTLE_TTL = 5  # seconds
 
@@ -182,7 +183,7 @@ async def save_assessment_draft(
         # ── Redis rate-limiting: at most one save per 5 s per submission ──────
         redis = get_async_redis_client()
         throttle_key = f"draft_throttle:{draft.submission_uuid}"
-        if redis is not None and await redis.exists(throttle_key):
+        if enforce_throttle and redis is not None and await redis.exists(throttle_key):
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail={
@@ -220,7 +221,7 @@ async def save_assessment_draft(
         progress_submissions.save_activity_draft(draft, db_session)
 
         # ── Set throttle key after successful save ────────────────────────────
-        if redis is not None:
+        if enforce_throttle and redis is not None:
             await redis.set(throttle_key, "1", ex=DRAFT_THROTTLE_TTL)
 
         # ── Build response with progress metadata ─────────────────────────────
@@ -286,6 +287,7 @@ async def submit_assessment(
                 current_user,
                 db_session,
                 if_match=if_match,
+                enforce_throttle=False,
             )
             answers_payload = draft.answers_json
             submission_uuid = draft.submission_uuid
