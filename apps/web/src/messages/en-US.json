@@ -96,6 +96,8 @@
       "allowCustomInputDescription": "Let students test their code with custom input",
       "allowedLanguages": "Allowed Languages",
       "allowedLanguagesDescription": "Select which programming languages students can use",
+      "languageServiceUnavailableDescription": "Judge0 is not reachable from the API. Recreate the Judge0 service and reload this page.",
+      "languageServiceUnavailableTitle": "Code execution languages unavailable",
       "authRequired": "Authentication required",
       "bestSubmission": "Best Submission",
       "cancel": "Cancel",

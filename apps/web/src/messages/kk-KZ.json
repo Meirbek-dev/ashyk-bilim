@@ -96,6 +96,8 @@
       "allowCustomInputDescription": "Оқушыларға кодты өз деректерімен тексеруге мүмкіндік беріңіз",
       "allowedLanguages": "Рұқсат етілген тілдер",
       "allowedLanguagesDescription": "Студенттер пайдалана алатын бағдарламалау тілдерін таңдаңыз",
+      "languageServiceUnavailableDescription": "Judge0 API арқылы қолжетімсіз. Judge0 сервисін қайта жасап, бетті жаңартыңыз.",
+      "languageServiceUnavailableTitle": "Код орындау тілдері қолжетімсіз",
       "authRequired": "Авторизация қажет",
       "bestSubmission": "Ең жақсы жіберу",
       "cancel": "Болдырмау",

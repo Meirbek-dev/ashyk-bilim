@@ -57,6 +57,17 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const [conflictState, setConflictState] = useState<ConflictState | null>(null);
   const [reportedLoadError, setReportedLoadError] = useState<string | null>(null);
   const localAnswersRef = useRef<Record<string, ItemAnswer>>({});
+  const lastSaveTimeRef = useRef<number>(0);
+  const nextSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingAnswersRef = useRef<Record<string, ItemAnswer> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (nextSaveTimeoutRef.current) {
+        clearTimeout(nextSaveTimeoutRef.current);
+      }
+    };
+  }, []);
   const submissionsQueryKey = useMemo(
     () => ['assessments', 'submissions', 'me', assessmentUuid || 'missing'] as const,
     [assessmentUuid],
@@ -183,6 +194,10 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         );
         return;
       }
+      if (error.status === 429) {
+        setSaveState('dirty');
+        return;
+      }
       setSaveState('error');
       void reportClientError({
         scope: 'assessment-flow',
@@ -237,12 +252,14 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         return;
       }
       setSaveState('error');
-      void reportClientError({
-        scope: 'assessment-flow',
-        phase: 'submit-assessment',
-        assessmentUuid,
-        error: error.message || 'Failed to submit assessment',
-      }).catch(() => undefined);
+      if (error.status !== 429) {
+        void reportClientError({
+          scope: 'assessment-flow',
+          phase: 'submit-assessment',
+          assessmentUuid,
+          error: error.message || 'Failed to submit assessment',
+        }).catch(() => undefined);
+      }
       toast.error(error.message || 'Failed to submit');
     },
   });
@@ -250,6 +267,8 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   useEffect(() => {
     const loadError = draftQuery.error ?? submissionsQuery.error;
     if (!loadError) return;
+    const errorStatus = (loadError as any)?.status;
+    if (errorStatus === 429) return;
     const { message } = loadError;
     const key = `${assessmentUuid ?? 'missing'}:${message}`;
     if (reportedLoadError === key) return;
@@ -302,14 +321,62 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     setSaveState(conflictState.latest.status === 'DRAFT' ? 'saved' : 'idle');
   }, [conflictState]);
 
-  const { mutateAsync: saveMutateAsync, isPending: isSaving } = saveMutation;
+  const save = useCallback(() => {
+    if (nextSaveTimeoutRef.current) {
+      clearTimeout(nextSaveTimeoutRef.current);
+      nextSaveTimeoutRef.current = null;
+    }
+
+    const answers = localAnswersRef.current;
+    const now = Date.now();
+    const timeSinceLastSave = now - lastSaveTimeRef.current;
+    const isThrottled = timeSinceLastSave < 5000;
+    const isSaving = saveMutation.isPending;
+
+    if (isSaving || isThrottled) {
+      pendingAnswersRef.current = answers;
+
+      if (!nextSaveTimeoutRef.current) {
+        const delay = isSaving ? 1000 : 5000 - timeSinceLastSave;
+        nextSaveTimeoutRef.current = setTimeout(() => {
+          nextSaveTimeoutRef.current = null;
+          save();
+        }, Math.max(100, delay));
+      }
+      return;
+    }
+
+    pendingAnswersRef.current = null;
+    saveMutation.mutate(answers, {
+      onSuccess: () => {
+        lastSaveTimeRef.current = Date.now();
+        if (pendingAnswersRef.current) {
+          save();
+        }
+      },
+      onError: (error: any) => {
+        if (error.status === 429) {
+          lastSaveTimeRef.current = 0;
+          setSaveState('dirty');
+          if (!nextSaveTimeoutRef.current) {
+            nextSaveTimeoutRef.current = setTimeout(() => {
+              nextSaveTimeoutRef.current = null;
+              save();
+            }, 2000);
+          }
+        }
+      },
+    });
+  }, [saveMutation]);
+
+  const { isPending: isSaving } = saveMutation;
   const { mutateAsync: submitMutateAsync, isPending: isSubmitting } = submitMutation;
 
   return useMemo(
     () => ({
       answers: localAnswers,
       setItemAnswer,
-      save: () => saveMutateAsync(localAnswers),
+      save,
       submit: (options?: SubmitOptions) =>
         submitMutateAsync({ answers: localAnswers, violationCount: options?.violationCount }),
       draft,
@@ -341,7 +408,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       conflictState,
       keepLocalVersion,
       localAnswers,
-      saveMutateAsync,
+      save,
       isSaving,
       saveState,
       setItemAnswer,

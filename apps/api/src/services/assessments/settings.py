@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 
 from fastapi import HTTPException, status
 from pydantic import Field as PydanticField
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, field_validator
 from sqlmodel import Session, select
 
 from src.db.assessments import Assessment, AssessmentItem
@@ -54,6 +54,20 @@ class CodeAssessmentSettings(PydanticStrictBaseModel):
     published_at: str | None = None
     archived_at: str | None = None
 
+    @field_validator("grading_strategy", mode="before")
+    @classmethod
+    def validate_grading_strategy(cls, value: object) -> object:
+        if isinstance(value, str):
+            return GradingStrategy(value)
+        return value
+
+    @field_validator("execution_mode", mode="before")
+    @classmethod
+    def validate_execution_mode(cls, value: object) -> object:
+        if isinstance(value, str):
+            return ExecutionMode(value)
+        return value
+
 
 class ExamAssessmentSettings(PydanticStrictBaseModel):
     kind: Literal["EXAM"] = "EXAM"
@@ -77,6 +91,13 @@ class ExamAssessmentSettings(PydanticStrictBaseModel):
     scheduled_at: str | None = None
     published_at: str | None = None
     archived_at: str | None = None
+
+    @field_validator("access_mode", mode="before")
+    @classmethod
+    def validate_access_mode(cls, value: object) -> object:
+        if isinstance(value, str):
+            return AccessModeEnum(value)
+        return value
 
 
 class QuizAssessmentSettings(PydanticStrictBaseModel):

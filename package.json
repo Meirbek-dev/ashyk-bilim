@@ -10,7 +10,7 @@
     "check:contracts": "bun run generate:contracts && git diff --exit-code -- apps/api/openapi.json apps/web/src/lib/api/generated/schema.ts",
     "generate:contracts": "bun run --cwd apps/api generate:contracts && bun run --cwd apps/web generate:contracts",
     "services": "docker-compose up -d db redis",
-    "services:judge0": "docker-compose up -d db redis judge0-workers judge0-server",
+    "services:judge0": "docker-compose up -d db redis && docker-compose up -d --force-recreate judge0-workers judge0-server",
     "check-types": "turbo run check-types",
     "format": "turbo run format",
     "lint": "turbo run lint",

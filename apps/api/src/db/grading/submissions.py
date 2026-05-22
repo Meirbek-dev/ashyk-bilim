@@ -25,6 +25,12 @@ from src.db.strict_base_model import PydanticStrictBaseModel, SQLModelStrictBase
 # ── Submission metadata sub-shapes ────────────────────────────────────────────
 
 
+def _coerce_json_datetime(value: object) -> object:
+    if isinstance(value, str):
+        return datetime.fromisoformat(value)
+    return value
+
+
 class CodeRunRecord(PydanticStrictBaseModel):
     """Result of a single Judge0 run (non-finalising)."""
 
@@ -42,6 +48,11 @@ class CodeRunRecord(PydanticStrictBaseModel):
     details: list[dict] = Field(default_factory=list)
     created_at: datetime | None = None
 
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def validate_created_at(cls, value: object) -> object:
+        return _coerce_json_datetime(value)
+
 
 class AntiCheatViolation(PydanticStrictBaseModel):
     """A single anti-cheat event logged during an attempt."""
@@ -49,6 +60,11 @@ class AntiCheatViolation(PydanticStrictBaseModel):
     kind: str  # e.g. "TAB_SWITCH", "COPY_PASTE", "FULLSCREEN_EXIT"
     occurred_at: datetime
     count: int = 1
+
+    @field_validator("occurred_at", mode="before")
+    @classmethod
+    def validate_occurred_at(cls, value: object) -> object:
+        return _coerce_json_datetime(value)
 
 
 class PlagiarismScore(PydanticStrictBaseModel):
@@ -58,6 +74,11 @@ class PlagiarismScore(PydanticStrictBaseModel):
     checked_at: datetime
     flagged: bool = False
     details: dict = Field(default_factory=dict)
+
+    @field_validator("checked_at", mode="before")
+    @classmethod
+    def validate_checked_at(cls, value: object) -> object:
+        return _coerce_json_datetime(value)
 
 
 class SubmissionMetadata(PydanticStrictBaseModel):

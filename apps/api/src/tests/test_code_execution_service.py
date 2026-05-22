@@ -17,6 +17,7 @@ from src.db.code_execution import CodeRun, CodeRunCase, CodeRunPurpose, CodeRunS
 from src.services.code_execution.service import (
     CodeExecutionService,
     _ConfiguredJudge0Client,
+    _judge0_endpoint_candidates,
 )
 
 
@@ -210,6 +211,20 @@ def test_code_execution_filters_allowed_languages():
     assert [language["id"] for language in service._list_languages_sync()] == [71]
 
 
+@pytest.mark.asyncio
+async def test_code_execution_language_discovery_reports_service_unavailable():
+    class Factory:
+        def get_client(self):
+            raise RuntimeError("Judge0 unavailable")
+
+    service = CodeExecutionService(client_factory=Factory())
+
+    with pytest.raises(HTTPException) as exc_info:
+        await service.list_languages()
+
+    assert exc_info.value.status_code == 503
+
+
 def test_code_execution_rejects_disallowed_language():
     service = CodeExecutionService(client_factory=FakeFactory())
 
@@ -231,6 +246,17 @@ def test_judge0_configured_client_returns_fresh_retry_strategy():
 
     assert first.total_wait_time == 0.2
     assert second.total_wait_time == 0.0
+
+
+def test_judge0_endpoint_candidates_bridge_local_and_compose_hosts():
+    assert _judge0_endpoint_candidates("http://localhost:2358") == (
+        "http://localhost:2358",
+        "http://judge0-server:2358",
+    )
+    assert _judge0_endpoint_candidates("http://judge0-server:2358") == (
+        "http://judge0-server:2358",
+        "http://localhost:2358",
+    )
 
 
 async def async_run_service(

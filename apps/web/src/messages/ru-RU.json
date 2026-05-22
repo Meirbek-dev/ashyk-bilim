@@ -96,6 +96,8 @@
       "allowCustomInputDescription": "Позволить студентам тестировать код с собственными данными",
       "allowedLanguages": "Разрешённые языки",
       "allowedLanguagesDescription": "Выберите языки программирования, которые могут использовать студенты",
+      "languageServiceUnavailableDescription": "Judge0 недоступен из API. Пересоздайте сервис Judge0 и обновите страницу.",
+      "languageServiceUnavailableTitle": "Языки выполнения кода недоступны",
       "authRequired": "Требуется авторизация",
       "bestSubmission": "Лучшая отправка",
       "cancel": "Отмена",

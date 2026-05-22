@@ -10,6 +10,7 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 import httpx
 import judge0
@@ -142,8 +143,8 @@ class Judge0SdkClientFactory:
             if self._client is None or self._fingerprint != fingerprint:
                 if self._client is not None:
                     self._client.client.close()
-                self._client = _ConfiguredJudge0Client(
-                    endpoint=settings.base_url,
+                self._client = self._create_client(
+                    base_url=settings.base_url,
                     headers=headers,
                     timeout_seconds=settings.request_timeout_seconds,
                     poll_interval_seconds=settings.poll_interval_seconds,
@@ -151,6 +152,31 @@ class Judge0SdkClientFactory:
                 )
                 self._fingerprint = fingerprint
             return self._client
+
+    def _create_client(
+        self,
+        *,
+        base_url: str,
+        headers: dict[str, str],
+        timeout_seconds: float,
+        poll_interval_seconds: float,
+        poll_max_wait_seconds: float,
+    ) -> judge0.Client:
+        last_error: Exception | None = None
+        for endpoint in _judge0_endpoint_candidates(base_url):
+            try:
+                return _ConfiguredJudge0Client(
+                    endpoint=endpoint,
+                    headers=headers,
+                    timeout_seconds=timeout_seconds,
+                    poll_interval_seconds=poll_interval_seconds,
+                    poll_max_wait_seconds=poll_max_wait_seconds,
+                )
+            except Exception as exc:
+                last_error = exc
+                logger.info("Judge0 endpoint unavailable: %s", endpoint)
+
+        raise RuntimeError("Judge0 client initialization failed") from last_error
 
     def close(self) -> None:
         with self._lock:
@@ -231,7 +257,10 @@ class CodeExecutionService:
             logger.warning(
                 "ASSESSMENT_SUPPORT_ALERT Judge0 language discovery failed: %s", exc
             )
-            return []
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Judge0 is unavailable; code execution languages could not be loaded",
+            ) from exc
 
     def close(self) -> None:
         close = getattr(self._client_factory, "close", None)
@@ -697,6 +726,26 @@ def monaco_language_for(name: str) -> str:
     if "ruby" in normalized:
         return "ruby"
     return "plaintext"
+
+
+def _judge0_endpoint_candidates(base_url: str) -> tuple[str, ...]:
+    candidates = [base_url]
+    parsed = urlsplit(base_url)
+    hostname = parsed.hostname
+    if hostname in {"localhost", "127.0.0.1", "::1"}:
+        candidates.append(_replace_url_hostname(parsed, "judge0-server"))
+    elif hostname == "judge0-server":
+        candidates.append(_replace_url_hostname(parsed, "localhost"))
+
+    return tuple(dict.fromkeys(candidates))
+
+
+def _replace_url_hostname(parsed: SplitResult, hostname: str) -> str:
+    netloc = hostname
+    if parsed.port is not None:
+        netloc = f"{netloc}:{parsed.port}"
+
+    return urlunsplit(parsed._replace(netloc=netloc))
 
 
 def _sha256(value: str) -> str:

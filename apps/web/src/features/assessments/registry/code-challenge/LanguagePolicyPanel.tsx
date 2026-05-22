@@ -4,6 +4,7 @@ import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
 
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ComboboxMultiple from '@/components/ui/custom/multiple-combobox';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
@@ -16,7 +17,7 @@ import type { CodeChallengeSettingsForm } from './CodeChallengeStudio';
 export default function LanguagePolicyPanel() {
   const t = useTranslations('Activities.CodeChallenges');
   const form = useFormContext<CodeChallengeSettingsForm>();
-  const { data: judge0Languages = [] } = useJudge0Languages();
+  const { data: judge0Languages = [], isError: languagesUnavailable } = useJudge0Languages();
 
   return (
     <Card>
@@ -25,6 +26,13 @@ export default function LanguagePolicyPanel() {
         <CardDescription>{t('generalSettingsDescription')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
+        {languagesUnavailable ? (
+          <Alert variant="destructive">
+            <AlertTitle>{t('languageServiceUnavailableTitle')}</AlertTitle>
+            <AlertDescription>{t('languageServiceUnavailableDescription')}</AlertDescription>
+          </Alert>
+        ) : null}
+
         <Controller
           control={form.control}
           name="allowed_languages"
