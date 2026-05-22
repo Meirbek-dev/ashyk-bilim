@@ -97,7 +97,10 @@ async def api_feedback_stream(
     if redis is not None:
         try:
             current_conn_count = await redis.get(conn_key)
-            if current_conn_count and int(current_conn_count) >= _MAX_CONNECTIONS_PER_USER:
+            if (
+                current_conn_count
+                and int(current_conn_count) >= _MAX_CONNECTIONS_PER_USER
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail={

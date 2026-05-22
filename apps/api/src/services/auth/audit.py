@@ -4,9 +4,8 @@ All writes are append-only. The table is never read during token validation.
 
 Two entry points:
 - write_audit_event()     — synchronous; used by sessions.py internals
-- enqueue_audit_event()   — returns a callable suitable for FastAPI BackgroundTasks,
-                            opening its own short-lived DB session so the response
-                            session is not reused after it has been closed.
+- enqueue_audit_event()   — enqueues a durable taskiq task so audit writes
+                            survive process restarts and transient DB failures.
 """
 
 import logging
@@ -61,11 +60,10 @@ def _audit_background_task(
     metadata: dict[str, Any] | None,
     severity: str,
 ) -> None:
-    """Background-task target: opens its own DB session to write the audit event.
+    """Synchronous task target: opens its own DB session to write the audit event.
 
-    This is intentionally synchronous so it can be used as a FastAPI
-    BackgroundTask without requiring an async session factory.  The session
-    lifetime is scoped to this function and closed immediately after the write.
+    Kept for use by the taskiq ``write_audit_event_task`` worker and any
+    synchronous callers that cannot use async.
     """
     try:
         from src.infra.db.engine import get_bg_engine
@@ -86,8 +84,7 @@ def _audit_background_task(
         logger.exception("Background audit write failed: %s", event_type)
 
 
-def enqueue_audit_event(
-    background_tasks: Any,  # fastapi.BackgroundTasks — typed as Any to avoid import
+async def enqueue_audit_event(
     *,
     event_type: str,
     user_id: str | None = None,
@@ -97,18 +94,23 @@ def enqueue_audit_event(
     metadata: dict[str, Any] | None = None,
     severity: str = "info",
 ) -> None:
-    """Enqueue an audit event to be written after the response is sent.
+    """Durably enqueue an audit event via taskiq.
 
-    Uses FastAPI BackgroundTasks so audit writes never add latency to the
-    auth response path.  The background task creates its own DB session.
+    Uses ``write_audit_event_task.kiq()`` so the write is persisted to Redis
+    before this coroutine returns.  The worker retries up to 5 times on DB
+    failures, ensuring security events are never silently dropped.
+
+    Callers no longer need to pass ``background_tasks`` — remove that
+    argument from any call site that previously used it.
     """
-    background_tasks.add_task(
-        _audit_background_task,
-        event_type,
-        user_id,
-        session_id,
-        ip_address,
-        user_agent,
-        metadata,
-        severity,
+    from src.worker.tasks.audit import write_audit_event_task
+
+    await write_audit_event_task.kiq(
+        event_type=event_type,
+        user_id=user_id,
+        session_id=session_id,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        metadata=metadata,
+        severity=severity,
     )

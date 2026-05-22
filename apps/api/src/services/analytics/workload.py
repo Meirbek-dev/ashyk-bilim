@@ -3,14 +3,14 @@ from __future__ import annotations
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
     AnalyticsContext,
+    cohort_user_ids,
+    display_name,
+    hours_between,
     manual_assessment_graded_at,
     manual_assessment_is_graded,
     manual_assessment_is_reviewable,
     manual_assessment_submission_status,
     manual_assessment_submitted_at,
-    cohort_user_ids,
-    display_name,
-    hours_between,
     median_or_none,
     parse_timestamp,
     to_iso,

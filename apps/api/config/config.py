@@ -383,6 +383,26 @@ class RedisConfig(PlatformSectionSettings):
     redis_connection_string: str = Field(
         validation_alias="PLATFORM_REDIS_CONNECTION_STRING"
     )
+    # Separate Redis URL for the taskiq task queue.  Defaults to the same URL
+    # as the app cache but on DB index 1 to avoid key collisions.  Override
+    # via PLATFORM_TASKIQ_BROKER_URL if you want a completely separate Redis.
+    taskiq_broker_url: str = Field(
+        default="",
+        validation_alias="PLATFORM_TASKIQ_BROKER_URL",
+    )
+
+    @model_validator(mode="after")
+    def default_taskiq_url(self) -> RedisConfig:
+        if not self.taskiq_broker_url:
+            # Derive from the main Redis URL: swap DB index to 1
+            base = self.redis_connection_string.rstrip("/")
+            # Strip trailing /N if present and replace with /1
+            parts = base.rsplit("/", 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                self.taskiq_broker_url = f"{parts[0]}/1"
+            else:
+                self.taskiq_broker_url = f"{base}/1"
+        return self
 
     @field_validator("redis_connection_string", mode="before")
     @classmethod

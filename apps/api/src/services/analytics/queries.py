@@ -479,7 +479,6 @@ def load_analytics_context(
     assessments_by_activity = {row.activity_id: row for row in analytics_assessments}
 
     manual_assessments: list[AssessmentAnalyticsRow] = []
-    manual_assessment_activity_ids: list[int] = []
     manual_assessment_submissions: list[tuple[Submission, AssessmentAnalyticsRow]] = []
 
     exams = [

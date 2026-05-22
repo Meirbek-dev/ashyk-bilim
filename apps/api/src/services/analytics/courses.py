@@ -15,12 +15,12 @@ from src.services.analytics.assessments import build_assessment_rows
 from src.services.analytics.bottlenecks import build_content_bottlenecks
 from src.services.analytics.filters import AnalyticsFilters
 from src.services.analytics.queries import (
-    manual_assessment_is_reviewable,
     build_activity_events,
     build_series,
     cohort_user_ids,
     course_last_content_update,
     load_analytics_context,
+    manual_assessment_is_reviewable,
     progress_snapshots,
     safe_pct,
     to_iso,

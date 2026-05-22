@@ -1,6 +1,5 @@
 """Bulk grading operations with persisted audit state."""
 
-import asyncio
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
@@ -138,7 +137,10 @@ def create_deadline_extension_action(
         db_session=db_session,
     )
     if execute_inline:
-        execute_deadline_extension(
+        # Legacy/test path: run the core DB work synchronously without
+        # the async SSE publish (which requires a running event loop).
+        # Production always uses execute_inline=False + taskiq task.
+        _execute_deadline_extension_sync(
             action_uuid=action.action_uuid,
             policy=policy,
             new_due_at=new_due_at,
@@ -149,11 +151,11 @@ def create_deadline_extension_action(
     return action
 
 
-def run_deadline_extension_action(
+async def run_deadline_extension_action(
     action_uuid: str,
     session_factory: sessionmaker[Session] | None = None,
 ) -> None:
-    """Background-task entrypoint for queued deadline extensions."""
+    """Taskiq-task entrypoint for queued deadline extensions."""
     if session_factory is None:
         session_factory = build_session_factory(get_bg_engine())
     with session_factory() as session:
@@ -169,7 +171,7 @@ def run_deadline_extension_action(
         new_due_at = datetime.fromisoformat(raw_due_at)
         if new_due_at.tzinfo is None:
             new_due_at = new_due_at.replace(tzinfo=UTC)
-        execute_deadline_extension(
+        await execute_deadline_extension(
             action_uuid=action_uuid,
             policy=policy,
             new_due_at=new_due_at,
@@ -178,7 +180,65 @@ def run_deadline_extension_action(
         )
 
 
-def execute_deadline_extension(
+def _execute_deadline_extension_sync(
+    *,
+    action_uuid: str,
+    policy: AssessmentPolicy,
+    new_due_at: datetime,
+    reason: str,
+    db_session: Session,
+) -> None:
+    """Synchronous DB-only portion of execute_deadline_extension.
+
+    Used by the legacy ``execute_inline=True`` path (tests / CLI).
+    Does NOT publish SSE events — callers that need SSE should use the
+    async ``execute_deadline_extension`` via the taskiq worker instead.
+    """
+    action = db_session.exec(
+        select(BulkAction).where(BulkAction.action_uuid == action_uuid)
+    ).one()
+    action.status = BulkActionStatus.RUNNING
+    db_session.add(action)
+    db_session.commit()
+
+    try:
+        now = datetime.now(UTC)
+        affected = 0
+        for user_id in action.target_user_ids:
+            override = db_session.exec(
+                select(StudentPolicyOverride).where(
+                    StudentPolicyOverride.policy_id == policy.id,
+                    StudentPolicyOverride.user_id == user_id,
+                )
+            ).first()
+            if override is None:
+                override = StudentPolicyOverride(
+                    policy_id=policy.id,
+                    user_id=user_id,
+                    granted_by=action.performed_by,
+                )
+            override.due_at_override = new_due_at
+            override.note = reason
+            override.updated_at = now
+            db_session.add(override)
+            affected += 1
+
+        action.status = BulkActionStatus.COMPLETED
+        action.affected_count = affected
+        action.completed_at = now
+        db_session.add(action)
+        db_session.commit()
+    except Exception as exc:
+        db_session.rollback()
+        action.status = BulkActionStatus.FAILED
+        action.error_log = str(exc)
+        action.completed_at = datetime.now(UTC)
+        db_session.add(action)
+        db_session.commit()
+        raise
+
+
+async def execute_deadline_extension(
     *,
     action_uuid: str,
     policy: AssessmentPolicy,
@@ -249,7 +309,7 @@ def execute_deadline_extension(
             action.target_user_ids,
             db_session,
         ):
-            _publish_event_safe(
+            await _publish_event_durable(
                 "deadline.extended",
                 submission_uuid,
                 {
@@ -268,31 +328,23 @@ def execute_deadline_extension(
         raise
 
 
-def _publish_event_safe(
+async def _publish_event_durable(
     event_type: str,
     submission_uuid: str,
     payload: dict,
 ) -> None:
-    """Publish a grading event safely from a synchronous context.
+    """Durably enqueue a grading SSE event via taskiq.
 
-    ``execute_deadline_extension`` is a synchronous function that may be
-    called from a FastAPI ``BackgroundTasks`` executor thread.  Using
-    ``asyncio.run()`` inside a running event loop raises a ``RuntimeError``,
-    so we detect the current situation and act accordingly:
+    Replaces the old ``_publish_event_safe`` which used a fragile
+    ``asyncio.get_running_loop() / asyncio.run()`` pattern that could
+    deadlock and provided no retry guarantee.
 
-    - If there IS a running event loop (e.g. called indirectly from async code),
-      schedule the coroutine as a fire-and-forget task.
-    - If there is NO running event loop (pure background thread), create a
-      temporary loop and run the coroutine to completion.
+    ``execute_deadline_extension`` is called from the taskiq worker
+    (async context), so we can simply await the kiq call.
     """
-    coro = publish_grading_event(event_type, submission_uuid, payload)
-    try:
-        loop = asyncio.get_running_loop()
-        # Already inside an async context — schedule without blocking.
-        loop.create_task(coro)
-    except RuntimeError:
-        # No running event loop — run synchronously in a fresh loop.
-        asyncio.run(coro)
+    from src.worker.tasks.sse import publish_grading_event_task
+
+    await publish_grading_event_task.kiq(event_type, submission_uuid, payload)
 
 
 def _latest_submission_uuids(

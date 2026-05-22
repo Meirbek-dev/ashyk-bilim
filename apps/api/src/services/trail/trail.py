@@ -258,7 +258,7 @@ async def remove_activity_from_trail(
 ) -> TrailRead:
     # Look for the activity robustly
     activity = _get_activity_by_uuid_or_404(activity_uuid, db_session)
-    course = _get_course_for_activity_or_404(activity, db_session)
+    _get_course_for_activity_or_404(activity, db_session)
 
     statement = select(Trail).where(Trail.user_id == user.id)
     trail = db_session.exec(statement).first()

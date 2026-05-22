@@ -21,14 +21,14 @@ from src.services.analytics.interventions import summarize_interventions
 from src.services.analytics.quality import build_data_quality
 from src.services.analytics.queries import (
     ActivityEvent,
-    manual_assessment_graded_at,
-    manual_assessment_is_graded,
-    manual_assessment_is_reviewable,
     build_activity_events,
     build_series,
     cohort_user_ids,
     direction_for_delta,
     load_analytics_context,
+    manual_assessment_graded_at,
+    manual_assessment_is_graded,
+    manual_assessment_is_reviewable,
     parse_timestamp,
     progress_snapshots,
     safe_pct,

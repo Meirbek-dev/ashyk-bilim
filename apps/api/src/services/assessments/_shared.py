@@ -12,6 +12,12 @@ from sqlalchemy import asc, desc, func, or_
 from sqlmodel import Session, select
 from ulid import ULID
 
+from src.db.assessment_access import (
+    AssessmentAccessMode,
+    AssessmentAccessPolicy,
+    AssessmentAccessUser,
+    AssessmentAccessUserGroup,
+)
 from src.db.assessments import (
     ITEM_ANSWER_ADAPTER,
     ITEM_BODY_ADAPTER,
@@ -50,12 +56,6 @@ from src.db.assessments import (
     StudentSubmissionRead,
     TeacherSubmissionRead,
 )
-from src.db.assessment_access import (
-    AssessmentAccessMode,
-    AssessmentAccessPolicy,
-    AssessmentAccessUser,
-    AssessmentAccessUserGroup,
-)
 from src.db.code_execution import CodeRunPurpose, CodeRunStatus
 from src.db.courses.activities import (
     Activity,
@@ -84,8 +84,8 @@ from src.db.grading.submissions import (
     SubmissionStatus,
     TeacherGradeInput,
 )
-from src.db.users import AnonymousUser, PublicUser, User
 from src.db.usergroup_user import UserGroupUser
+from src.db.users import AnonymousUser, PublicUser, User
 from src.security.rbac import PermissionChecker
 from src.services.assessments.settings import validate_settings
 from src.services.code_execution import get_code_execution_service

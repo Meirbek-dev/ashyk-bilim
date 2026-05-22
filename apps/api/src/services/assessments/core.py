@@ -75,6 +75,12 @@ from src.services.assessments._shared import (
     _time_limit_seconds_from_settings,
     build_readiness,
 )
+from src.services.assessments.access_service import (
+    get_assessment_access,
+    list_assessment_access_eligible_usergroups,
+    list_assessment_access_eligible_users,
+    update_assessment_access,
+)
 from src.services.assessments.assessment_crud import (
     check_publish_readiness,
     create_assessment,
@@ -87,12 +93,6 @@ from src.services.assessments.assessment_crud import (
     transition_assessment_lifecycle,
     update_assessment,
     update_assessment_item,
-)
-from src.services.assessments.access_service import (
-    get_assessment_access,
-    list_assessment_access_eligible_usergroups,
-    list_assessment_access_eligible_users,
-    update_assessment_access,
 )
 from src.services.assessments.attempt_service import (
     get_attempt_state,
@@ -138,9 +138,9 @@ __all__ = [
     "get_my_assessment_draft",
     "get_my_assessment_submissions",
     "get_policy_preset",
-    "list_student_policy_overrides",
     "list_assessment_access_eligible_usergroups",
     "list_assessment_access_eligible_users",
+    "list_student_policy_overrides",
     "publish_assessment_grades",
     "reorder_assessment_items",
     "run_code_item",

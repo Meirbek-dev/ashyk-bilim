@@ -8,13 +8,11 @@ from src.db.courses.activities import Activity
 from src.db.courses.blocks import Block, BlockRead, BlockTypeEnum
 from src.db.courses.courses import Course
 from src.services.blocks.utils.upload_files import upload_file_and_return_file_object
-from src.services.users.users import PublicUser
-
-
 from src.services.courses._utils import (
     _get_activity_by_uuid_or_404,
     _get_course_for_activity_or_404,
 )
+from src.services.users.users import PublicUser
 
 
 async def create_video_block(

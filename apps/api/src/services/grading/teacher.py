@@ -38,8 +38,6 @@ from src.db.grading.submissions import (
 )
 from src.db.users import PublicUser, User
 from src.security.rbac import PermissionChecker
-from src.services.gamification.service import award_xp as _gamification_award_xp
-from src.services.grading.events import publish_grading_event
 from src.services.progress.submissions import (
     _attach_policy,
     recalculate_activity_progress,
@@ -781,23 +779,26 @@ async def _save_teacher_grade(
     db_session.commit()
     db_session.refresh(submission)
 
-    # ── Post-commit side-effects (non-critical, separate transactions) ────────
-    # XP is awarded after the main commit so a gamification failure never rolls
-    # back a grade. The idempotency key prevents double-awarding on re-publish.
+    # ── Post-commit side-effects (durable, via taskiq) ────────────────────────
+    # Enqueued AFTER the DB commit so a queue failure never rolls back a grade.
+    # Each task is idempotent — replaying is always safe.
     if (
         current_status != SubmissionStatus.PUBLISHED
         and requested_status == SubmissionStatus.PUBLISHED
         and final_score >= _policy_passing_score_for_submission(submission, db_session)
     ):
-        _award_xp_on_publish(
-            user_id=submission.user_id,
-            assessment_type=submission.assessment_type,
+        from src.worker.tasks.xp_award import award_xp_for_submission
+
+        await award_xp_for_submission.kiq(
             submission_uuid=submission_uuid,
-            db_session=db_session,
+            user_id=submission.user_id,
+            assessment_type=str(submission.assessment_type),
         )
 
     if requested_status == SubmissionStatus.PUBLISHED:
-        await publish_grading_event(
+        from src.worker.tasks.sse import publish_grading_event_task
+
+        await publish_grading_event_task.kiq(
             "grade.published",
             submission_uuid,
             {
@@ -807,7 +808,9 @@ async def _save_teacher_grade(
             },
         )
     elif requested_status == SubmissionStatus.RETURNED:
-        await publish_grading_event(
+        from src.worker.tasks.sse import publish_grading_event_task
+
+        await publish_grading_event_task.kiq(
             "submission.returned",
             submission_uuid,
             {
@@ -973,10 +976,12 @@ async def bulk_publish_grades(
 
     if published_count:
         db_session.commit()
+        from src.worker.tasks.sse import publish_grading_event_task
+
         for submission in submissions:
             if submission.id in already_published_ids:
                 continue
-            await publish_grading_event(
+            await publish_grading_event_task.kiq(
                 "grade.published",
                 submission.submission_uuid,
                 {
@@ -1066,32 +1071,3 @@ def _policy_passing_score_for_submission(
             )
         ).first()
     return float(policy.passing_score) if policy is not None else 60.0
-
-
-def _award_xp_on_publish(
-    user_id: int,
-    assessment_type: AssessmentType,
-    submission_uuid: str,
-    db_session: Session,
-) -> None:
-    """Award XP when a grade is published and the student passed.
-
-    Errors are logged and swallowed so a gamification failure never prevents
-    a grade from being published.  The idempotency key prevents double-awarding
-    if a grade is recalled and re-published.
-    """
-    xp_source = _XP_SOURCE_ON_PUBLISH.get(assessment_type)
-    if not xp_source:
-        return
-    try:
-        _gamification_award_xp(
-            db=db_session,
-            user_id=user_id,
-            source=xp_source.value,
-            source_id=submission_uuid,
-            idempotency_key=f"submission_{submission_uuid}",
-        )
-        db_session.commit()
-    except Exception as e:
-        logger.warning("Failed to award XP for submission %s: %s", submission_uuid, e)
-        db_session.rollback()

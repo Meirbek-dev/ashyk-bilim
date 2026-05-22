@@ -10,7 +10,7 @@ PATCH /grading/submissions/{uuid}    — save teacher grade + feedback
 
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, Query, status
+from fastapi import APIRouter, Depends, Header, Query, status
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
@@ -35,10 +35,12 @@ from src.infra.db.session import get_db_session
 from src.services.grading.bulk import (
     create_deadline_extension_action,
     get_bulk_action,
-    run_deadline_extension_action,
 )
 from src.services.grading.gradebook import get_course_gradebook
-from src.services.grading.gradebook_cursor import GradebookCursorPage, get_gradebook_cursor
+from src.services.grading.gradebook_cursor import (
+    GradebookCursorPage,
+    get_gradebook_cursor,
+)
 from src.services.grading.teacher import (
     batch_grade_submissions,
     bulk_publish_grades,
@@ -66,7 +68,9 @@ async def api_get_course_gradebook(
     )
 
 
-@router.get("/courses/{course_uuid}/gradebook/cursor", response_model=GradebookCursorPage)
+@router.get(
+    "/courses/{course_uuid}/gradebook/cursor", response_model=GradebookCursorPage
+)
 async def api_get_course_gradebook_cursor(
     course_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -118,11 +122,12 @@ async def api_bulk_publish_grades(
 async def api_extend_deadline(
     activity_id: int,
     request: DeadlineExtensionRequest,
-    background_tasks: BackgroundTasks,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> BulkActionRead:
     """Grant selected students a deadline extension via StudentPolicyOverride."""
+    from src.worker.tasks.bulk_grading import execute_deadline_extension_task
+
     action = create_deadline_extension_action(
         activity_id=activity_id,
         user_uuids=request.user_uuids,
@@ -132,7 +137,8 @@ async def api_extend_deadline(
         db_session=db_session,
         execute_inline=False,
     )
-    background_tasks.add_task(run_deadline_extension_action, action.action_uuid)
+    # Enqueue the heavy work durably — survives process restarts.
+    await execute_deadline_extension_task.kiq(action.action_uuid)
     return BulkActionRead.model_validate(action)
 
 

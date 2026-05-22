@@ -69,6 +69,7 @@ def _redis_invalidate_permissions(user_id: int) -> None:
     except Exception:
         _logger.debug("Failed to invalidate permission cache for user %s", user_id)
 
+
 # ============================================================================
 # Assessment Permission Constants
 # ============================================================================

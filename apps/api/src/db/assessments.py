@@ -24,8 +24,8 @@ from sqlalchemy import (
 from sqlmodel import Field as SQLField
 from ulid import ULID
 
-from src.db.courses.activities import ActivityAssessmentPolicyRead
 from src.db.assessment_access import AssessmentAccessMode
+from src.db.courses.activities import ActivityAssessmentPolicyRead
 from src.db.grading.progress import (
     AssessmentCompletionRule,
     AssessmentGradingMode,
