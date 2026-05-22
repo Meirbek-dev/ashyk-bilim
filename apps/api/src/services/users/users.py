@@ -25,7 +25,7 @@ from src.security.rbac import PermissionChecker, ResourceAccessDenied
 from src.security.security import security_hash_password, security_verify_password
 from src.services.cache import redis_client
 from src.services.users.avatars import upload_avatar
-from src.services.users.emails import send_account_creation_email
+from src.services.users.emails import enqueue_account_creation_email
 from src.services.users.usergroups import add_users_to_usergroup
 
 _logger = logging.getLogger(__name__)
@@ -56,10 +56,9 @@ async def create_user(
 
     user_read = UserRead.model_validate(user)
 
-    # Send Account creation email
-    send_account_creation_email(
-        user=user_read,
-        email=user_read.email,
+    await enqueue_account_creation_email(
+        username=user_read.username,
+        email=str(user_read.email),
     )
 
     return user_read
@@ -90,10 +89,9 @@ async def create_user_without_platform(
 
     user_read = UserRead.model_validate(user)
 
-    # Send Account creation email
-    send_account_creation_email(
-        user=user_read,
-        email=user_read.email,
+    await enqueue_account_creation_email(
+        username=user_read.username,
+        email=str(user_read.email),
     )
 
     return user_read

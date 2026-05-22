@@ -24,7 +24,7 @@ from src.worker.broker import broker
 logger = logging.getLogger(__name__)
 
 
-@broker.task(task_name="audit:write_event", max_retries=5)
+@broker.task(task_name="audit:write_event", retry_on_error=True, max_retries=5)
 async def write_audit_event_task(
     event_type: str,
     user_id: str | None = None,

@@ -110,6 +110,57 @@ services:
           memory: 2g
           cpus: "2.0"
 
+  taskiq-worker:
+    build:
+      context: ./apps/api
+    command: ["dumb-init", "taskiq", "worker", "worker:broker"]
+    restart: unless-stopped
+    volumes:
+      - app_content:/app/content
+    env_file: .env
+    networks:
+      - app-net
+      - data-net
+      - exec-net
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "2.0"
+
+  taskiq-scheduler:
+    build:
+      context: ./apps/api
+    command: ["dumb-init", "taskiq", "scheduler", "worker:scheduler", "--skip-first-run"]
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - data-net
+    depends_on:
+      redis:
+        condition: service_healthy
+      taskiq-worker:
+        condition: service_started
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+
   # ---------------------------------------------------------------------------
   # Database migration — run manually, never auto-started
   # ---------------------------------------------------------------------------

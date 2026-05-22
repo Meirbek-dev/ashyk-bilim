@@ -30,7 +30,11 @@ from src.worker.broker import broker
 logger = logging.getLogger(__name__)
 
 
-@broker.task(task_name="sse:publish_grading_event", max_retries=3)
+@broker.task(
+    task_name="sse:publish_grading_event",
+    retry_on_error=True,
+    max_retries=3,
+)
 async def publish_grading_event_task(
     event_type: str,
     submission_uuid: str,

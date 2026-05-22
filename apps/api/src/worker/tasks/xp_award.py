@@ -22,7 +22,11 @@ from src.worker.broker import broker
 logger = logging.getLogger(__name__)
 
 
-@broker.task(task_name="gamification:award_xp", max_retries=3)
+@broker.task(
+    task_name="gamification:award_xp",
+    retry_on_error=True,
+    max_retries=3,
+)
 async def award_xp_for_submission(
     submission_uuid: str,
     user_id: int,

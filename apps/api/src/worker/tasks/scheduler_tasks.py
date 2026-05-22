@@ -1,24 +1,4 @@
-"""Periodic cron tasks — replace the five asyncio.create_task() polling loops.
-
-Previously each loop ran inside the FastAPI lifespan as an ``asyncio.Task``.
-This had two problems:
-1. Work was silently dropped on process restart (no durability).
-2. Multiple API workers (e.g., Granian with ``GRANIAN_WORKERS > 1``) each
-   ran their own loop, causing N duplicate ticks per interval.
-
-With taskiq's ``TaskiqScheduler`` + ``RedisScheduleSource`` only ONE tick
-fires per interval across all workers — Redis acts as the distributed lock.
-
-Cron schedule (all times UTC):
-    assessment_scheduler:  every 1 minute
-    plagiarism_checker:    every 2 minutes
-    upload_reaper:         every 6 hours
-    vector_ttl_sweep:      every 1 hour
-
-These tasks are registered on the broker at import time.  The scheduler
-process (``taskiq scheduler worker:scheduler``) reads the cron definitions
-and enqueues them automatically.
-"""
+"""Periodic Taskiq scheduler tasks."""
 
 from __future__ import annotations
 
@@ -30,16 +10,14 @@ from src.worker.broker import broker
 logger = logging.getLogger(__name__)
 
 
-# ── Assessment scheduler ──────────────────────────────────────────────────────
-
-
-@broker.task(task_name="scheduler:assessment_publish", max_retries=1)
+@broker.task(
+    task_name="scheduler:assessment_publish",
+    retry_on_error=True,
+    max_retries=1,
+    schedule=[{"cron": "*/1 * * * *", "schedule_id": "assessment-auto-publish"}],
+)
 async def assessment_scheduler_tick() -> int:
-    """Auto-publish SCHEDULED assessments whose ``scheduled_at`` is past.
-
-    Returns the number of assessments published in this tick.
-    Idempotent — assessments already PUBLISHED are filtered out by the query.
-    """
+    """Auto-publish scheduled assessments whose scheduled time has passed."""
     from src.tasks.assessment_scheduler import _publish_due_assessments
 
     try:
@@ -52,18 +30,34 @@ async def assessment_scheduler_tick() -> int:
         raise
 
 
-# ── Plagiarism batch sweep ────────────────────────────────────────────────────
+@broker.task(
+    task_name="scheduler:assessment_timer",
+    retry_on_error=True,
+    max_retries=1,
+    schedule=[{"interval": 30, "schedule_id": "assessment-timer"}],
+)
+async def assessment_timer_tick() -> int:
+    """Auto-submit timed-out draft submissions."""
+    from src.tasks.assessment_timer import _auto_submit_expired_drafts
+
+    try:
+        submitted: int = await asyncio.to_thread(_auto_submit_expired_drafts)
+        if submitted:
+            logger.info("assessment_timer_tick submitted=%d", submitted)
+        return submitted
+    except Exception:
+        logger.exception("assessment_timer_tick failed")
+        raise
 
 
-@broker.task(task_name="scheduler:plagiarism_sweep", max_retries=1)
+@broker.task(
+    task_name="scheduler:plagiarism_sweep",
+    retry_on_error=True,
+    max_retries=1,
+    schedule=[{"cron": "*/2 * * * *", "schedule_id": "plagiarism-text-sweep"}],
+)
 async def plagiarism_checker_tick() -> int:
-    """Run one plagiarism sweep tick across all unchecked text submissions.
-
-    Delegates to ``src.worker.tasks.plagiarism.run_plagiarism_batch_tick``
-    logic directly (without re-enqueuing) so the cron tick IS the work unit.
-
-    Returns the number of flagged pairs.
-    """
+    """Run one plagiarism sweep tick across unchecked text submissions."""
     from src.tasks.plagiarism_checker import _run_check_tick
 
     try:
@@ -76,15 +70,14 @@ async def plagiarism_checker_tick() -> int:
         raise
 
 
-# ── Upload reaper ─────────────────────────────────────────────────────────────
-
-
-@broker.task(task_name="scheduler:upload_reaper", max_retries=1)
-async def upload_reaper_tick() -> dict:
-    """Delete orphan upload records that were never finalised.
-
-    Returns the result dict from ``reap_orphan_uploads``.
-    """
+@broker.task(
+    task_name="scheduler:upload_reaper",
+    retry_on_error=True,
+    max_retries=1,
+    schedule=[{"cron": "0 */6 * * *", "schedule_id": "orphan-upload-reaper"}],
+)
+async def upload_reaper_tick() -> dict[str, int]:
+    """Delete orphan upload records that were never finalized."""
     from sqlmodel import Session
 
     from src.infra.db.engine import get_bg_engine
@@ -92,9 +85,12 @@ async def upload_reaper_tick() -> dict:
 
     try:
         engine = get_bg_engine()
-        result: dict = await asyncio.to_thread(
-            lambda: reap_orphan_uploads(Session(engine).__enter__())
-        )
+
+        def _run() -> dict[str, int]:
+            with Session(engine) as session:
+                return reap_orphan_uploads(session)
+
+        result = await asyncio.to_thread(_run)
         logger.info("upload_reaper_tick result=%s", result)
         return result
     except Exception:
@@ -102,15 +98,14 @@ async def upload_reaper_tick() -> dict:
         raise
 
 
-# ── Vector TTL sweep ──────────────────────────────────────────────────────────
-
-
-@broker.task(task_name="scheduler:vector_ttl_sweep", max_retries=1)
+@broker.task(
+    task_name="scheduler:vector_ttl_sweep",
+    retry_on_error=True,
+    max_retries=1,
+    schedule=[{"cron": "0 * * * *", "schedule_id": "vector-ttl-sweep"}],
+)
 async def vector_ttl_sweep_tick() -> int:
-    """Remove expired AI document chunks past their retention window.
-
-    Returns the number of chunks deleted (-1 if the table does not exist yet).
-    """
+    """Remove expired AI document chunks past their retention window."""
     from src.infra.settings import get_settings
 
     settings = get_settings()

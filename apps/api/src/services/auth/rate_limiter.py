@@ -1,9 +1,4 @@
-"""Redis sliding-window rate limiter for auth endpoints (async).
-
-Uses a sorted set per key: members are random tokens, scores are timestamps.
-All functions are async and use the async Redis client so they never block
-the asyncio event loop.
-"""
+"""Redis sliding-window rate limiter for auth endpoints."""
 
 import logging
 import secrets
@@ -28,16 +23,10 @@ async def check_rate_limit(
     max_requests: int,
     window_seconds: int,
 ) -> None:
-    """Check a sliding-window rate limit (async).
-
-    Raises RateLimitExceeded if the limit is breached.
-    key: unique identifier (e.g. "login:ip:1.2.3.4" or "login:email:foo@bar.com")
-    If Redis is unavailable, the check is skipped (fail-open) so auth is never
-    blocked by infrastructure issues.
-    """
+    """Check a sliding-window rate limit."""
     r = get_async_redis_client()
     if not r:
-        return  # Redis unavailable – fail open
+        return
 
     now = time.time()
     window_start = now - window_seconds
@@ -45,17 +34,13 @@ async def check_rate_limit(
 
     try:
         async with r.pipeline(transaction=False) as pipe:
-            # Remove entries outside the window
             await pipe.zremrangebyscore(redis_key, 0, window_start)
-            # Count entries within the window
             await pipe.zcard(redis_key)
-            # Add current request
             await pipe.zadd(redis_key, {secrets.token_hex(8): now})
-            # Expire the set after the window to avoid unbounded growth
             await pipe.expire(redis_key, window_seconds + 1)
             results = await pipe.execute()
     except Exception:
-        return  # Redis error – fail open, same as unavailable
+        return
 
     current_count = results[1]
     if current_count >= max_requests:
@@ -63,7 +48,7 @@ async def check_rate_limit(
 
 
 async def check_account_locked(email: str) -> bool:
-    """Return True if the account is currently locked due to too many failures."""
+    """Return True if the account is currently locked."""
     r = get_async_redis_client()
     if not r:
         return False
@@ -71,19 +56,18 @@ async def check_account_locked(email: str) -> bool:
         return bool(await r.exists(f"account_locked:{email.lower()}"))
     except Exception:
         logger.warning(
-            "Redis error in check_account_locked — failing open", exc_info=True
+            "Redis error in check_account_locked; failing open", exc_info=True
         )
         return False
 
 
 async def record_login_failure(
-    email: str, *, lock_after: int = 5, lock_duration: int = 900
+    email: str,
+    *,
+    lock_after: int = 5,
+    lock_duration: int = 900,
 ) -> None:
-    """Record a failed login attempt and lock the account if threshold is reached.
-
-    When the lockout threshold is reached for the first time, enqueues a
-    lockout notification email to warn the user about suspicious activity.
-    """
+    """Record a failed login attempt and lock the account if needed."""
     r = get_async_redis_client()
     if not r:
         return
@@ -94,35 +78,17 @@ async def record_login_failure(
 
     if count >= lock_after:
         lock_key = f"account_locked:{email.lower()}"
-        # Only send notification the first time the lock is set
         was_locked = await r.exists(lock_key)
         await r.set(lock_key, "1", ex=lock_duration)
 
         if not was_locked:
-            _send_lockout_notification(email)
+            await _send_lockout_notification(email)
 
 
-def _send_lockout_notification(email: str) -> None:
-    """Send a lockout notification email (best-effort, non-blocking).
+async def _send_lockout_notification(email: str) -> None:
+    from src.services.users.emails import enqueue_lockout_notification_email
 
-    Uses fire-and-forget asyncio.create_task so the login flow is never
-    blocked by email delivery.
-    """
-    import asyncio
-
-    async def _send() -> None:
-        try:
-            from src.services.users.emails import send_lockout_notification_email
-
-            send_lockout_notification_email(email=email)
-        except Exception as e:
-            logger.warning("Failed to send lockout notification to %s: %s", email, e)
-
-    try:
-        asyncio.create_task(_send())
-    except RuntimeError:
-        # No event loop running — skip notification
-        pass
+    await enqueue_lockout_notification_email(email=email)
 
 
 async def clear_login_failures(email: str) -> None:

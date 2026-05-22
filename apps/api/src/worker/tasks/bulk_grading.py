@@ -25,7 +25,11 @@ from src.worker.broker import broker
 logger = logging.getLogger(__name__)
 
 
-@broker.task(task_name="grading:deadline_extension", max_retries=2)
+@broker.task(
+    task_name="grading:deadline_extension",
+    retry_on_error=True,
+    max_retries=2,
+)
 async def execute_deadline_extension_task(action_uuid: str) -> None:
     """Execute a deadline-extension bulk action identified by *action_uuid*.
 
