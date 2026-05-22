@@ -268,7 +268,7 @@ export async function getFileSubmissionFileUrl(attemptFileUuid: string): Promise
 }
 
 export function fileSubmissionExportUrl(fileSubmissionUuid: string): string {
-  return `${getAPIUrl()}/file-submissions/${fileSubmissionUuid}/submissions/export`;
+  return `${getAPIUrl()}file-submissions/${fileSubmissionUuid}/submissions/export`;
 }
 
 export async function gradeFileSubmissionAttempt(

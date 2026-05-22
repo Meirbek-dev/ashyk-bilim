@@ -91,3 +91,8 @@ test-results/
 plans/
 .claude/
 .turbo/
+
+# AI / agent files
+.agents
+.antigravitycli
+.kiro

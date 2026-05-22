@@ -33,7 +33,7 @@ _AGENT = Agent(
     system_prompt=_BASE_SYSTEM_PROMPT,
     deps_type=AgentDependencies,
     output_type=str,
-    tool_retries=1,
+    retries={'tools': 1},  # Explicitly targets only tool execution retries
     capabilities=[Instrumentation()]
     if get_settings().general_config.logfire_enabled
     else [],
