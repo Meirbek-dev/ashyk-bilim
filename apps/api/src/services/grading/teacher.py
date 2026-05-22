@@ -45,6 +45,34 @@ from src.services.progress.submissions import (
 
 logger = logging.getLogger(__name__)
 
+
+async def publish_grading_event(
+    event_type: str,
+    submission_uuid: str,
+    payload: dict | None = None,
+) -> None:
+    """Durably enqueue a grading event publication."""
+    from src.worker.tasks.sse import publish_grading_event_task
+
+    await publish_grading_event_task.kiq(event_type, submission_uuid, payload)
+
+
+async def _award_xp_on_publish(
+    *,
+    submission_uuid: str,
+    user_id: int,
+    assessment_type: str,
+) -> None:
+    """Durably enqueue XP award side effects for a published submission."""
+    from src.worker.tasks.xp_award import award_xp_for_submission
+
+    await award_xp_for_submission.kiq(
+        submission_uuid=submission_uuid,
+        user_id=user_id,
+        assessment_type=assessment_type,
+    )
+
+
 # Valid status transitions a teacher may request.
 # DRAFT is intentionally absent — teachers should never be able to revert
 # a submitted submission to draft.

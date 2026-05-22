@@ -28,16 +28,18 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute(
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_submission_status_late "
-        "ON submission (status, is_late);"
-    )
-    op.execute(
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_activity_progress_state "
-        "ON activity_progress (state);"
-    )
+    with op.get_context().autocommit_block():
+        op.execute(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_submission_status_late "
+            "ON submission (status, is_late);"
+        )
+        op.execute(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_activity_progress_state "
+            "ON activity_progress (state);"
+        )
 
 
 def downgrade() -> None:
-    op.execute("DROP INDEX CONCURRENTLY IF EXISTS idx_submission_status_late;")
-    op.execute("DROP INDEX CONCURRENTLY IF EXISTS idx_activity_progress_state;")
+    with op.get_context().autocommit_block():
+        op.execute("DROP INDEX CONCURRENTLY IF EXISTS idx_submission_status_late;")
+        op.execute("DROP INDEX CONCURRENTLY IF EXISTS idx_activity_progress_state;")
