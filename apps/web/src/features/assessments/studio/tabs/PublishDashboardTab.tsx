@@ -252,7 +252,7 @@ export default function PublishDashboardTab({
             <MetricCard
               icon={Target}
               label={tPublish('attemptLimit')}
-              value={assessmentState.maxAttempts ? assessmentState.maxAttempts : tPublish('unlimited')}
+              value={assessmentState.maxAttempts || tPublish('unlimited')}
             />
           </div>
 

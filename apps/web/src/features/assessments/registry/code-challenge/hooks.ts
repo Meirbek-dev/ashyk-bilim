@@ -48,7 +48,7 @@ function codeChallengeSubmissionHookOptions(
 }
 
 export function useCodeChallengeSettings(activityUuid: string | null | undefined) {
-  return useQuery(codeChallengeSettingsHookOptions<unknown>(activityUuid));
+  return useQuery(codeChallengeSettingsHookOptions(activityUuid));
 }
 
 export function useJudge0Languages() {

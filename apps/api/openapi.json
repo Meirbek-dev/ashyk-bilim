@@ -8934,6 +8934,41 @@
         "title": "GradebookActivity",
         "type": "object"
       },
+      "GradebookCursorPage": {
+        "description": "Cursor-paginated gradebook response.",
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityProgressCell"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "title": "GradebookCursorPage",
+        "type": "object"
+      },
       "GradebookStudent": {
         "properties": {
           "email": {
@@ -27666,7 +27701,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/GradebookCursorPage"
+                }
               }
             },
             "description": "Successful Response"
