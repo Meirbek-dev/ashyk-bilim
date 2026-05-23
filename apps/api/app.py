@@ -25,7 +25,7 @@ def _with_proxy_headers(asgi_app: ASGIApp, app_settings: AppSettings) -> ASGIApp
         return asgi_app
 
     return cast(
-        ASGIApp,
+        "ASGIApp",
         wrap_asgi_with_proxy_headers(
             asgi_app,
             trusted_hosts=hosting_config.forwarded_allow_ips,

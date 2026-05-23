@@ -67,7 +67,8 @@ def _assert_no_deprecated_tables(conn: sa.Connection) -> None:
     ).fetchall()
     if rows:
         names = ", ".join(row.table_name for row in rows)
-        raise RuntimeError(f"Deprecated assignment tables still exist: {names}")
+        msg = f"Deprecated assignment tables still exist: {names}"
+        raise RuntimeError(msg)
 
 
 def _assert_no_deprecated_activity_types(conn: sa.Connection) -> None:
@@ -77,7 +78,8 @@ def _assert_no_deprecated_activity_types(conn: sa.Connection) -> None:
         sa.text("SELECT COUNT(*) FROM activity WHERE activity_type = 'TYPE_ASSIGNMENT'")
     ).scalar_one()
     if count:
-        raise RuntimeError(f"Deprecated TYPE_ASSIGNMENT activities remain: {count}")
+        msg = f"Deprecated TYPE_ASSIGNMENT activities remain: {count}"
+        raise RuntimeError(msg)
 
 
 def _assert_no_deprecated_submission_metadata(conn: sa.Connection) -> None:
@@ -93,9 +95,8 @@ def _assert_no_deprecated_submission_metadata(conn: sa.Connection) -> None:
         )
     ).scalar_one()
     if count:
-        raise RuntimeError(
-            f"Deprecated assignment metadata remains in submission rows: {count}"
-        )
+        msg = f"Deprecated assignment metadata remains in submission rows: {count}"
+        raise RuntimeError(msg)
 
 
 def _assert_no_deprecated_foreign_keys(conn: sa.Connection) -> None:
@@ -120,9 +121,8 @@ def _assert_no_deprecated_foreign_keys(conn: sa.Connection) -> None:
             f"{row.table_name}.{row.constraint_name}->{row.referenced_table}"
             for row in rows
         )
-        raise RuntimeError(
-            f"Foreign keys still reference deprecated assignment tables: {formatted}"
-        )
+        msg = f"Foreign keys still reference deprecated assignment tables: {formatted}"
+        raise RuntimeError(msg)
 
 
 def _add_runtime_indexes(conn: sa.Connection) -> None:

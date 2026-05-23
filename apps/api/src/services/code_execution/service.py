@@ -46,12 +46,10 @@ _KOTLIN_COMPILER_OPTIONS = (
     "-J-XX:CompressedClassSpaceSize=64m -J-XX:ReservedCodeCacheSize=64m "
     "-J-XX:+UseSerialGC"
 )
-_IDEMPOTENT_REUSE_STATUSES = frozenset(
-    {
-        CodeRunStatus.ACCEPTED,
-        CodeRunStatus.WRONG_ANSWER,
-    }
-)
+_IDEMPOTENT_REUSE_STATUSES = frozenset({
+    CodeRunStatus.ACCEPTED,
+    CodeRunStatus.WRONG_ANSWER,
+})
 
 
 class CodeExecutionDegradedError(Exception):

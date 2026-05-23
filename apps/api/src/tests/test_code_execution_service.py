@@ -12,6 +12,8 @@ from sqlmodel import Session, SQLModel, create_engine
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
+from typing import Never
+
 from src.db.assessments import CodeTestCase
 from src.db.code_execution import CodeRun, CodeRunCase, CodeRunPurpose, CodeRunStatus
 from src.services.code_execution.service import (
@@ -379,7 +381,7 @@ def test_code_execution_filters_allowed_languages():
 @pytest.mark.asyncio
 async def test_code_execution_language_discovery_reports_service_unavailable():
     class Factory:
-        def get_client(self):
+        def get_client(self) -> Never:
             raise RuntimeError("Judge0 unavailable")
 
     service = CodeExecutionService(client_factory=Factory())
@@ -463,7 +465,9 @@ async def async_run_service(
 
 
 @pytest.mark.asyncio
-async def test_code_execution_with_different_source_code_and_hash_in_key(monkeypatch, db_session):
+async def test_code_execution_with_different_source_code_and_hash_in_key(
+    monkeypatch, db_session
+):
     calls = 0
 
     def fake_run(**_kwargs):
@@ -486,6 +490,7 @@ async def test_code_execution_with_different_source_code_and_hash_in_key(monkeyp
     service = CodeExecutionService(client_factory=FakeFactory())
 
     import hashlib
+
     # Simulating the submission of "first version of code"
     source_1 = "print('first')"
     hash_1 = hashlib.sha256(source_1.encode("utf-8")).hexdigest()
@@ -499,7 +504,11 @@ async def test_code_execution_with_different_source_code_and_hash_in_key(monkeyp
         purpose=CodeRunPurpose.FINAL,
         language_id=71,
         source_code=source_1,
-        test_cases=[CodeTestCase(id="visible", input="2", expected_output="4", is_visible=True, weight=2)],
+        test_cases=[
+            CodeTestCase(
+                id="visible", input="2", expected_output="4", is_visible=True, weight=2
+            )
+        ],
         idempotency_key=key_1,
     )
 
@@ -516,7 +525,11 @@ async def test_code_execution_with_different_source_code_and_hash_in_key(monkeyp
         purpose=CodeRunPurpose.FINAL,
         language_id=71,
         source_code=source_2,
-        test_cases=[CodeTestCase(id="visible", input="2", expected_output="4", is_visible=True, weight=2)],
+        test_cases=[
+            CodeTestCase(
+                id="visible", input="2", expected_output="4", is_visible=True, weight=2
+            )
+        ],
         idempotency_key=key_2,
     )
 
@@ -529,11 +542,17 @@ async def test_code_execution_with_different_source_code_and_hash_in_key(monkeyp
         purpose=CodeRunPurpose.FINAL,
         language_id=71,
         source_code=source_2,
-        test_cases=[CodeTestCase(id="visible", input="2", expected_output="4", is_visible=True, weight=2)],
+        test_cases=[
+            CodeTestCase(
+                id="visible", input="2", expected_output="4", is_visible=True, weight=2
+            )
+        ],
         idempotency_key=key_2,
     )
 
     # Verify that different code versions did not conflict and run_2 was executed
     assert run_1.run_uuid != run_2.run_uuid
     assert run_2.run_uuid == run_3.run_uuid
-    assert calls == 2  # run_1 and run_2 were sent to Judge0, run_3 reused run_2 from cache
+    assert (
+        calls == 2
+    )  # run_1 and run_2 were sent to Judge0, run_3 reused run_2 from cache

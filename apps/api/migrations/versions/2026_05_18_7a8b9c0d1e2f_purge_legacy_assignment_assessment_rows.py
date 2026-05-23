@@ -80,6 +80,5 @@ def _assert_no_legacy_assignment_assessment_rows(
             )
         ).scalar_one()
         if count:
-            raise RuntimeError(
-                f"Legacy ASSIGNMENT rows remain in {table_name}: {count}"
-            )
+            msg = f"Legacy ASSIGNMENT rows remain in {table_name}: {count}"
+            raise RuntimeError(msg)

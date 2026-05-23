@@ -58,7 +58,7 @@ def persist_submission(
     draft.submitted_at = now
     draft.graded_at = (
         now
-        if new_status in (SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED)
+        if new_status in {SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED}
         else None
     )
     draft.updated_at = now

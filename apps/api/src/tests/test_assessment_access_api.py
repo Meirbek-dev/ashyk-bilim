@@ -137,7 +137,8 @@ def test_restricted_access_narrows_course_learners(
         course = session.exec(select(Course)).first()
         student = _public_user(STUDENT_ID)
         other = _public_user(OTHER_ID)
-        assert activity is not None and course is not None
+        assert activity is not None
+        assert course is not None
         assert _has_submit_access(student, activity, course, session)
         assert not _has_submit_access(other, activity, course, session)
 

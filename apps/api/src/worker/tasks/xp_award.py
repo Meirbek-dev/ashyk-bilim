@@ -74,7 +74,7 @@ def _award_xp_sync(
     from src.infra.db.engine import get_bg_engine
     from src.services.gamification.service import award_xp
 
-    _XP_SOURCE: dict[str, XPSource] = {
+    XP_SOURCE: dict[str, XPSource] = {
         AssessmentType.QUIZ: XPSource.QUIZ_COMPLETION,
         AssessmentType.EXAM: XPSource.EXAM_COMPLETION,
         AssessmentType.CODE_CHALLENGE: XPSource.CODE_CHALLENGE_COMPLETION,
@@ -111,7 +111,7 @@ def _award_xp_sync(
             return
 
         try:
-            xp_source = _XP_SOURCE.get(
+            xp_source = XP_SOURCE.get(
                 AssessmentType(assessment_type),
                 XPSource.QUIZ_COMPLETION,
             )

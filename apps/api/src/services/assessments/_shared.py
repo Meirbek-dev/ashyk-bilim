@@ -359,7 +359,9 @@ def _build_attempt_state(
         ])
     )
     max_attempts = (
-        None if is_teacher_preview else (policy.max_attempts if policy is not None else None)
+        None
+        if is_teacher_preview
+        else (policy.max_attempts if policy is not None else None)
     )
     if override is not None and override.max_attempts_override is not None:
         max_attempts = override.max_attempts_override
@@ -380,7 +382,12 @@ def _build_attempt_state(
             reasons.append("ARCHIVED")
 
     allow_late = policy.allow_late if policy is not None else True
-    if not is_teacher_preview and due_at is not None and now > due_at and not allow_late:
+    if (
+        not is_teacher_preview
+        and due_at is not None
+        and now > due_at
+        and not allow_late
+    ):
         reasons.append("PAST_DUE")
 
     has_editable_existing = draft is not None
@@ -807,7 +814,9 @@ def _is_teacher_preview_user(
         return True
 
     bind = db_session.get_bind()
-    if bind is None or not sqlalchemy_inspect(bind).has_table(ResourceAuthor.__tablename__):
+    if bind is None or not sqlalchemy_inspect(bind).has_table(
+        ResourceAuthor.__tablename__
+    ):
         return False
 
     return (
@@ -815,8 +824,7 @@ def _is_teacher_preview_user(
             select(ResourceAuthor.id).where(
                 ResourceAuthor.resource_uuid == course.course_uuid,
                 ResourceAuthor.user_id == user.id,
-                ResourceAuthor.authorship_status
-                == ResourceAuthorshipStatusEnum.ACTIVE,
+                ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
             )
         ).first()
         is not None
@@ -1095,7 +1103,8 @@ def _default_activity_settings(kind: AssessmentType) -> dict[str, object]:
         return validate_settings({"kind": "CODE_CHALLENGE"}).model_dump(mode="json")
     if kind == AssessmentType.QUIZ:
         return validate_settings({"kind": "QUIZ"}).model_dump(mode="json")
-    raise ValueError(f"Unsupported assessment kind: {kind}")
+    msg = f"Unsupported assessment kind: {kind}"
+    raise ValueError(msg)
 
 
 def _sync_activity_lifecycle(

@@ -118,7 +118,7 @@ async def list_assessment_access_eligible_users(
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     _activity, course = _get_activity_and_course(assessment, db_session)
     _require_author(current_user, course, db_session)
-    users = db_session.exec(select(User).where(User.is_active == True)).all()
+    users = db_session.exec(select(User).where(User.is_active)).all()
     return [
         _user_read(user)
         for user in users
