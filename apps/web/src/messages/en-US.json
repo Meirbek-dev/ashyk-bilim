@@ -487,6 +487,7 @@
     "keyboardShortcuts": "Keyboard shortcuts",
     "lastUpdated": "Last updated",
     "markAsComplete": "Mark as complete",
+    "finishReadingBeforeComplete": "Finish reading the content before marking it complete",
     "markCompleteError": "Failed to mark activity as complete",
     "markStatus": {
       "markTooltipMessage": "Click the checkbox to mark this activity as complete",

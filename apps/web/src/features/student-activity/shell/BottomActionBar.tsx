@@ -24,6 +24,7 @@ function cleanUuid(uuid: string | null | undefined, prefix: 'course_' | 'activit
 }
 
 interface BottomActionBarProps {
+  contentReadComplete?: boolean;
   courseUuid: string;
   focusMode?: boolean;
   runtime: StudentActivityRuntime;
@@ -43,7 +44,12 @@ interface BottomActionBarProps {
  * Hidden when ACTIVE_ATTEMPT mode (AssessmentLayout handles its own bar).
  * Hidden when focus mode (data-layout-mode="focus").
  */
-export default function BottomActionBar({ courseUuid, focusMode = false, runtime }: BottomActionBarProps) {
+export default function BottomActionBar({
+  contentReadComplete = true,
+  courseUuid,
+  focusMode = false,
+  runtime,
+}: BottomActionBarProps) {
   const { mode, bottomBarAction } = useActivityLayout();
   const outlineProgress = useMemo(() => getOutlineProgress(runtime), [runtime]);
 
@@ -65,6 +71,7 @@ export default function BottomActionBar({ courseUuid, focusMode = false, runtime
             <OverrideCTA action={bottomBarAction} />
           ) : (
             <RuntimeCTA
+              contentReadComplete={contentReadComplete}
               courseUuid={courseUuid}
               runtime={runtime}
             />
@@ -100,7 +107,15 @@ function OverrideCTA({ action }: { action: NonNullable<ReturnType<typeof useActi
 
 // Runtime CTA (driven by StudentActivityRuntime.primary_action)
 
-function RuntimeCTA({ courseUuid, runtime }: { courseUuid: string; runtime: StudentActivityRuntime }) {
+function RuntimeCTA({
+  contentReadComplete,
+  courseUuid,
+  runtime,
+}: {
+  contentReadComplete: boolean;
+  courseUuid: string;
+  runtime: StudentActivityRuntime;
+}) {
   const t = useTranslations('ActivityPage');
   const router = useRouter();
   const completion = useRuntimeAction(courseUuid, runtime);
@@ -138,12 +153,16 @@ function RuntimeCTA({ courseUuid, runtime }: { courseUuid: string; runtime: Stud
   }
 
   if (action.id === 'mark_complete' || action.id === 'unmark_complete') {
+    const waitingForReadCompletion = action.id === 'mark_complete' && !contentReadComplete;
+    const disabledReason = waitingForReadCompletion ? t('finishReadingBeforeComplete') : undefined;
+
     return (
       <Button
         size="lg"
         className={PRIMARY_BUTTON_CLASSNAME}
         onClick={() => completion.mutate(action.id === 'mark_complete' ? 'mark_complete' : 'unmark_complete')}
-        disabled={!action.enabled || completion.isPending}
+        disabled={!action.enabled || completion.isPending || waitingForReadCompletion}
+        title={disabledReason}
       >
         {completion.isPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
         <span className="min-w-0 truncate">{getPrimaryActionText(action.id, t)}</span>

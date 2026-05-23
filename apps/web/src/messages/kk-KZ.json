@@ -486,6 +486,7 @@
     "keyboardShortcuts": "Пернелер тіркесімдері",
     "lastUpdated": "Соңғы жаңарту",
     "markAsComplete": "Аяқталды деп белгілеу",
+    "finishReadingBeforeComplete": "Аяқталды деп белгілеу үшін мазмұнды соңына дейін оқыңыз",
     "markCompleteError": "Белсенділікті аяқталды деп белгілеу мүмкін болмады",
     "markStatus": {
       "markTooltipMessage": "Бұл белсенділікті аяқталды деп белгілеу үшін құсбелгіні басыңыз",

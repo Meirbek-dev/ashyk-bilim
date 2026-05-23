@@ -377,14 +377,14 @@ export function CodeChallengeEditor({
       {/* Main Content */}
       <ResizablePanelGroup
         orientation="horizontal"
-        className="flex-1"
+        className="min-h-0 flex-1"
       >
         {/* Editor Panel */}
         <ResizablePanel
           defaultSize={60}
           minSize={30}
         >
-          <div className="flex h-full flex-col">
+          <div className="flex h-full min-h-0 flex-col">
             <CodeEditor
               value={code}
               onChange={updateCode}
@@ -392,7 +392,8 @@ export function CodeChallengeEditor({
               monacoLanguage={selectedLanguage?.monaco_language}
               readOnly={disabled}
               readOnlyMessage={disabled ? t('editorReadOnly') : undefined}
-              className="flex-1"
+              height="100%"
+              className="min-h-0 flex-1"
             />
 
             {/* Editor Actions */}
@@ -447,7 +448,7 @@ export function CodeChallengeEditor({
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
-            className="flex h-full flex-col"
+            className="flex h-full min-h-0 flex-col"
           >
             <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
               <TabsTrigger
@@ -487,7 +488,7 @@ export function CodeChallengeEditor({
 
             <TabsContent
               value="testcases"
-              className="flex-1 overflow-hidden p-4"
+              className="min-h-0 flex-1 overflow-hidden p-4"
             >
               <ScrollArea className="h-full">
                 <div className="space-y-4 p-1">
@@ -525,7 +526,7 @@ export function CodeChallengeEditor({
 
             <TabsContent
               value="custom"
-              className="flex flex-1 flex-col gap-4 overflow-hidden p-4"
+              className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4"
             >
               <div className="flex-1 space-y-2">
                 <label className="text-sm font-medium">{t('customInput')}</label>
@@ -547,7 +548,7 @@ export function CodeChallengeEditor({
 
             <TabsContent
               value="results"
-              className="flex-1 overflow-hidden p-4"
+              className="min-h-0 flex-1 overflow-hidden p-4"
             >
               <ScrollArea className="h-full">
                 {isSubmitting && activeSubmission?.status === 'processing' ? (
@@ -569,7 +570,7 @@ export function CodeChallengeEditor({
 
             <TabsContent
               value="history"
-              className="flex-1 overflow-hidden p-4"
+              className="min-h-0 flex-1 overflow-hidden p-4"
             >
               <ScrollArea className="h-full">
                 <div className="space-y-2">

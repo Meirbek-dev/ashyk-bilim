@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Activity } from '@components/Contexts/CourseContext';
 import AiAssistantPanel from '@/features/ai-assistant/AiAssistantPanel';
@@ -13,6 +13,8 @@ import BottomActionBar from './BottomActionBar';
 import InlineStatusStrip from './InlineStatusStrip';
 import LockStateCard from './LockStateCard';
 import KeyboardShortcutsModal from './KeyboardShortcutsModal';
+
+const CONTENT_READ_TOLERANCE_PX = 24;
 
 interface StudentActivityWorkspaceProps {
   activity: Activity | null;
@@ -34,6 +36,17 @@ export default function StudentActivityWorkspace({
   const { mode } = useActivityLayout();
   const isAttemptActive = mode === 'ACTIVE_ATTEMPT';
   const activityType = runtime.activity?.type ?? '';
+  const activityUuid = runtime.activity?.uuid ?? 'course-end';
+  const shouldRequireContentRead =
+    runtime.primary_action.id === 'mark_complete' &&
+    runtime.primary_action.enabled &&
+    !runtime.progress.complete &&
+    isReadingActivityType(activityType);
+  const contentReadComplete = useContentReadCompletion({
+    enabled: shouldRequireContentRead,
+    targetId: 'activity-main-content',
+    resetKey: activityUuid,
+  });
 
   const contentFrameClassName = useMemo(() => {
     switch (activityType) {
@@ -180,6 +193,7 @@ export default function StudentActivityWorkspace({
 
       <BottomActionBar
         courseUuid={courseUuid}
+        contentReadComplete={!shouldRequireContentRead || contentReadComplete}
         focusMode={focusMode}
         runtime={runtime}
       />
@@ -198,4 +212,70 @@ function isTypingTarget(target: EventTarget | null) {
     target instanceof HTMLTextAreaElement ||
     target instanceof HTMLSelectElement
   );
+}
+
+function isReadingActivityType(activityType: string) {
+  return activityType === 'TYPE_DYNAMIC';
+}
+
+function useContentReadCompletion({
+  enabled,
+  resetKey,
+  targetId,
+}: {
+  enabled: boolean;
+  resetKey: string;
+  targetId: string;
+}) {
+  const [complete, setComplete] = useState(!enabled);
+  const completeRef = useRef(!enabled);
+
+  const setCompleteOnce = useCallback((nextComplete: boolean) => {
+    if (completeRef.current === nextComplete) return;
+    completeRef.current = nextComplete;
+    setComplete(nextComplete);
+  }, []);
+
+  useEffect(() => {
+    completeRef.current = !enabled;
+    setComplete(!enabled);
+  }, [enabled, resetKey]);
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const target = document.getElementById(targetId);
+    if (!target) {
+      setCompleteOnce(true);
+      return;
+    }
+
+    let frame = 0;
+    const checkReadCompletion = () => {
+      frame = 0;
+      const bottom = target.getBoundingClientRect().bottom;
+      const viewportBottom = window.innerHeight;
+      setCompleteOnce(bottom <= viewportBottom + CONTENT_READ_TOLERANCE_PX);
+    };
+    const scheduleCheck = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(checkReadCompletion);
+    };
+
+    scheduleCheck();
+    window.addEventListener('scroll', scheduleCheck, { passive: true });
+    window.addEventListener('resize', scheduleCheck);
+
+    const resizeObserver = new ResizeObserver(scheduleCheck);
+    resizeObserver.observe(target);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', scheduleCheck);
+      window.removeEventListener('resize', scheduleCheck);
+      resizeObserver.disconnect();
+    };
+  }, [enabled, resetKey, setCompleteOnce, targetId]);
+
+  return complete;
 }
