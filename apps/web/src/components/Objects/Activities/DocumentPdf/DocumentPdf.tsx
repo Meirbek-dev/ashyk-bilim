@@ -5,9 +5,9 @@ const DocumentPdfActivity = ({ activity, course }: { activity: any; course: any 
   const t = useTranslations('Activities.DocumentPdf');
 
   return (
-    <div className="m-8 mt-14 rounded-md bg-zinc-900">
+    <div className="h-full w-full">
       <iframe
-        className="h-[900px] w-full rounded-lg"
+        className="h-full w-full"
         title={t('viewerTitle')}
         src={getActivityMediaDirectory({
           courseUUID: course?.course_uuid ?? '',

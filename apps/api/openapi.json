@@ -9487,6 +9487,76 @@
         "title": "InterventionSummary",
         "type": "object"
       },
+      "ItemAnalytics": {
+        "description": "Per-question analytics row for the teacher Results tab.",
+        "properties": {
+          "avg_score_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Score Pct"
+          },
+          "correct_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correct Pct"
+          },
+          "discrimination_index": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discrimination Index"
+          },
+          "item_uuid": {
+            "title": "Item Uuid",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "max_score": {
+            "title": "Max Score",
+            "type": "number"
+          },
+          "response_count": {
+            "title": "Response Count",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_uuid",
+          "title",
+          "kind",
+          "max_score",
+          "response_count",
+          "avg_score_pct",
+          "correct_pct",
+          "discrimination_index"
+        ],
+        "title": "ItemAnalytics",
+        "type": "object"
+      },
       "ItemAnswer": {
         "discriminator": {
           "mapping": {
@@ -11503,6 +11573,25 @@
         "title": "SavedAnalyticsViewRow",
         "type": "object"
       },
+      "ScoreDistributionBucket": {
+        "description": "One 10-point score bucket for the distribution histogram.",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "range": {
+            "title": "Range",
+            "type": "string"
+          }
+        },
+        "required": [
+          "range",
+          "count"
+        ],
+        "title": "ScoreDistributionBucket",
+        "type": "object"
+      },
       "SearchResult": {
         "properties": {
           "collections": {
@@ -12995,6 +13084,14 @@
               }
             ],
             "title": "Pass Rate"
+          },
+          "score_distribution": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ScoreDistributionBucket"
+            },
+            "title": "Score Distribution",
+            "type": "array"
           },
           "total": {
             "title": "Total",
@@ -21184,6 +21281,58 @@
           }
         ],
         "summary": "Api Duplicate Assessment",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v1/assessments/{assessment_uuid}/item-analytics": {
+      "get": {
+        "description": "Return per-question analytics for the teacher Results dashboard.",
+        "operationId": "api_get_item_analytics_api_v1_assessments__assessment_uuid__item_analytics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ItemAnalytics"
+                  },
+                  "title": "Response Api Get Item Analytics Api V1 Assessments  Assessment Uuid  Item Analytics Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Get Item Analytics",
         "tags": [
           "assessments"
         ]

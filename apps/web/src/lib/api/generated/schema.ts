@@ -739,6 +739,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assessments/{assessment_uuid}/item-analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Get Item Analytics
+         * @description Return per-question analytics for the teacher Results dashboard.
+         */
+        get: operations["api_get_item_analytics_api_v1_assessments__assessment_uuid__item_analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/assessments/{assessment_uuid}/items": {
         parameters: {
             query?: never;
@@ -7796,6 +7816,28 @@ export interface components {
              */
             total: number;
         };
+        /**
+         * ItemAnalytics
+         * @description Per-question analytics row for the teacher Results tab.
+         */
+        ItemAnalytics: {
+            /** Avg Score Pct */
+            avg_score_pct: number | null;
+            /** Correct Pct */
+            correct_pct: number | null;
+            /** Discrimination Index */
+            discrimination_index: number | null;
+            /** Item Uuid */
+            item_uuid: string;
+            /** Kind */
+            kind: string;
+            /** Max Score */
+            max_score: number;
+            /** Response Count */
+            response_count: number;
+            /** Title */
+            title: string;
+        };
         ItemAnswer: components["schemas"]["ChoiceItemAnswer"] | components["schemas"]["OpenTextItemAnswer"] | components["schemas"]["FormItemAnswer"] | components["schemas"]["CodeItemAnswer"] | components["schemas"]["MatchingItemAnswer"];
         ItemBody: components["schemas"]["ChoiceItemBody"] | components["schemas"]["OpenTextItemBody"] | components["schemas"]["FormItemBody"] | components["schemas"]["CodeItemBody"] | components["schemas"]["MatchingItemBody"];
         /**
@@ -8559,6 +8601,16 @@ export interface components {
             /** View Type */
             view_type: string;
         };
+        /**
+         * ScoreDistributionBucket
+         * @description One 10-point score bucket for the distribution histogram.
+         */
+        ScoreDistributionBucket: {
+            /** Count */
+            count: number;
+            /** Range */
+            range: string;
+        };
         /** SearchResult */
         SearchResult: {
             /** Collections */
@@ -9085,6 +9137,11 @@ export interface components {
             needs_grading_count: number;
             /** Pass Rate */
             pass_rate: number | null;
+            /**
+             * Score Distribution
+             * @default []
+             */
+            score_distribution: components["schemas"]["ScoreDistributionBucket"][];
             /** Total */
             total: number;
         };
@@ -11828,6 +11885,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssessmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_get_item_analytics_api_v1_assessments__assessment_uuid__item_analytics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assessment_uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemAnalytics"][];
                 };
             };
             /** @description Validation Error */

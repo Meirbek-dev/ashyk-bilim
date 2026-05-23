@@ -14,9 +14,7 @@ import {
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -128,7 +126,7 @@ export function CodeChallengeEditor({
   const [testResults, setTestResults] = useState<TestCaseResult[] | null>(null);
   const [activeSubmissionId, setActiveSubmissionId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState('testcases');
+  const [activeTab, setActiveTab] = useState('console');
   const runCustomTestMutation = useRunCustomTest(activityUuid);
   const runCodeChallengeTestsMutation = useRunCodeChallengeTests(activityUuid);
   const submitCodeChallengeMutation = useSubmitCodeChallenge(activityUuid);
@@ -247,7 +245,7 @@ export function CodeChallengeEditor({
     }
 
     setCustomOutput('');
-    setActiveTab('custom');
+    setActiveTab('console');
 
     try {
       const result = await runCustomTest({
@@ -346,24 +344,9 @@ export function CodeChallengeEditor({
 
   return (
     <div className="flex h-full flex-col">
-      {!hideHeader ? (
-        <div className="flex items-center justify-between border-b p-4">
-          <div>
-            {challengeTitle && <h2 className="text-xl font-semibold">{challengeTitle}</h2>}
-            {challengeDescription && <p className="text-muted-foreground mt-1 text-sm">{challengeDescription}</p>}
-          </div>
-          <div className="flex items-center gap-2">
-            <LanguageSelector
-              languages={availableLanguages}
-              selectedId={selectedLanguageId}
-              onSelect={updateLanguage}
-              allowedLanguages={settings?.allowed_languages}
-              disabled={disabled}
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-end border-b p-3">
+      {/* Compact top bar (only shown when hideHeader is false and no left problem panel) */}
+      {!hideHeader && !challengeTitle && !challengeDescription && visibleTestCases.length === 0 ? (
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2">
           <LanguageSelector
             languages={availableLanguages}
             selectedId={selectedLanguageId}
@@ -372,230 +355,286 @@ export function CodeChallengeEditor({
             disabled={disabled}
           />
         </div>
-      )}
+      ) : null}
 
-      {/* Main Content */}
+      {/* Split-pane IDE layout */}
       <ResizablePanelGroup
         orientation="horizontal"
         className="min-h-0 flex-1"
       >
-        {/* Editor Panel */}
+        {/* LEFT: Problem Statement + Visible Tests + Custom Input */}
         <ResizablePanel
-          defaultSize={60}
-          minSize={30}
+          defaultSize={35}
+          minSize={20}
+          className="flex flex-col"
         >
-          <div className="flex h-full min-h-0 flex-col">
-            <CodeEditor
-              value={code}
-              onChange={updateCode}
-              languageId={selectedLanguageId}
-              monacoLanguage={selectedLanguage?.monaco_language}
-              readOnly={disabled}
-              readOnlyMessage={disabled ? t('editorReadOnly') : undefined}
-              height="100%"
-              className="min-h-0 flex-1"
-            />
-
-            {/* Editor Actions */}
-            <div className="bg-muted/50 flex items-center justify-between border-t p-2">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRunTest}
-                  disabled={disabled || selectedLanguageId <= 0 || isRunning || isSubmitting}
-                >
-                  {isRunning ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Terminal className="mr-2 h-4 w-4" />
-                  )}
-                  {t('runCode')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestAgainstSamples}
-                  disabled={
-                    disabled || selectedLanguageId <= 0 || isRunning || isSubmitting || visibleTestCases.length === 0
-                  }
-                >
-                  <Play className="mr-2 h-4 w-4" />
-                  {t('runTests')}
-                </Button>
+          <ScrollArea className="h-full">
+            {/* Problem description */}
+            {(challengeTitle || challengeDescription) ? (
+              <div className="border-b p-4">
+                {challengeTitle && (
+                  <h2 className="mb-1 text-sm font-semibold leading-snug">{challengeTitle}</h2>
+                )}
+                {challengeDescription && (
+                  <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
+                    {challengeDescription}
+                  </p>
+                )}
               </div>
-              {!hideSubmitButton ? (
-                <Button
-                  size="sm"
-                  onClick={handleSubmit}
-                  disabled={disabled || selectedLanguageId <= 0 || isRunning || isSubmitting}
-                >
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                  {t('submit')}
-                </Button>
-              ) : null}
+            ) : null}
+
+            {/* Visible test cases */}
+            {visibleTestCases.length > 0 ? (
+              <div className="border-b p-4">
+                <div className="text-muted-foreground mb-3 text-xs font-medium tracking-wide uppercase">
+                  {t('testCases')}
+                </div>
+                <div className="space-y-3">
+                  {visibleTestCases.map((tc, index) => (
+                    <div
+                      key={`${tc.id ?? 'tc'}-${index}`}
+                      className="bg-muted/40 rounded-md border p-3"
+                    >
+                      <div className="text-muted-foreground mb-2 text-xs font-medium">
+                        {t('testCase')} #{index + 1}
+                        {tc.description ? ` — ${tc.description}` : ''}
+                      </div>
+                      <div className="space-y-1.5">
+                        <div>
+                          <div className="text-muted-foreground mb-0.5 text-xs">{t('input')}:</div>
+                          <pre className="bg-background overflow-x-auto rounded border px-2 py-1 font-mono text-xs">
+                            {tc.input || t('noInput')}
+                          </pre>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground mb-0.5 text-xs">{t('expectedOutput')}:</div>
+                          <pre className="bg-background overflow-x-auto rounded border px-2 py-1 font-mono text-xs">
+                            {tc.expected_output}
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Custom input area */}
+            <div className="p-4">
+              <div className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+                {t('customInput')}
+              </div>
+              <Textarea
+                placeholder={t('enterCustomInput')}
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                className="h-24 resize-none font-mono text-xs"
+              />
             </div>
-          </div>
+          </ScrollArea>
         </ResizablePanel>
 
         <ResizableHandle withHandle />
 
-        {/* Results Panel */}
+        {/* RIGHT: Language Selector + Monaco + Action bar + Output tabs */}
         <ResizablePanel
-          defaultSize={40}
-          minSize={25}
+          defaultSize={65}
+          minSize={40}
         >
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="flex h-full min-h-0 flex-col"
+          <ResizablePanelGroup
+            orientation="vertical"
+            className="h-full"
           >
-            <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
-              <TabsTrigger
-                value="testcases"
-                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent"
-              >
-                {t('testCases')}
-              </TabsTrigger>
-              <TabsTrigger
-                value="custom"
-                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent"
-              >
-                {t('customInput')}
-              </TabsTrigger>
-              <TabsTrigger
-                value="results"
-                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent"
-              >
-                {t('results')}
-                {testResults && (
-                  <Badge
-                    variant="secondary"
-                    className="ml-2"
-                  >
-                    {testResults.filter((r) => r.passed).length}/{testResults.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="history"
-                className="data-[state=active]:border-primary rounded-none border-b-2 border-transparent"
-              >
-                <History className="mr-1 h-4 w-4" />
-                {t('history')}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent
-              value="testcases"
-              className="min-h-0 flex-1 overflow-hidden p-4"
+            {/* Monaco editor zone */}
+            <ResizablePanel
+              defaultSize={65}
+              minSize={30}
             >
-              <ScrollArea className="h-full">
-                <div className="space-y-4 p-1">
-                  {visibleTestCases.length === 0 ? (
-                    <p className="text-muted-foreground text-center">{t('noVisibleTestCases')}</p>
-                  ) : (
-                    visibleTestCases.map((tc, index) => (
-                      <Card key={`${tc.id ?? 'tc'}-${index}`}>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">
-                            {t('testCase')} #{index + 1}
-                            {tc.description && ` - ${tc.description}`}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                          <div>
-                            <div className="text-muted-foreground text-xs font-medium">{t('input')}:</div>
-                            <pre className="bg-muted mt-1 overflow-x-auto rounded p-2 text-sm">
-                              {tc.input || t('noInput')}
-                            </pre>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground text-xs font-medium">{t('expectedOutput')}:</div>
-                            <pre className="bg-muted mt-1 overflow-x-auto rounded p-2 text-sm">
-                              {tc.expected_output}
-                            </pre>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
+              <div className="flex h-full flex-col">
+                {/* Language selector bar */}
+                <div className="flex shrink-0 items-center justify-end border-b px-3 py-1.5">
+                  <LanguageSelector
+                    languages={availableLanguages}
+                    selectedId={selectedLanguageId}
+                    onSelect={updateLanguage}
+                    allowedLanguages={settings?.allowed_languages}
+                    disabled={disabled}
+                  />
                 </div>
-              </ScrollArea>
-            </TabsContent>
-
-            <TabsContent
-              value="custom"
-              className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4"
-            >
-              <div className="flex-1 space-y-2">
-                <label className="text-sm font-medium">{t('customInput')}</label>
-                <Textarea
-                  placeholder={t('enterCustomInput')}
-                  value={customInput}
-                  onChange={(e) => setCustomInput(e.target.value)}
-                  className="h-32 resize-none font-mono text-sm"
+                {/* Monaco */}
+                <CodeEditor
+                  value={code}
+                  onChange={updateCode}
+                  languageId={selectedLanguageId}
+                  monacoLanguage={selectedLanguage?.monaco_language}
+                  readOnly={disabled}
+                  readOnlyMessage={disabled ? t('editorReadOnly') : undefined}
+                  height="100%"
+                  className="min-h-0 flex-1"
                 />
               </div>
-              <Separator />
-              <div className="flex-1 space-y-2">
-                <label className="text-sm font-medium">{t('output')}</label>
-                <ScrollArea className="bg-muted h-32 rounded border p-2">
-                  <pre className="font-mono text-sm whitespace-pre-wrap">{customOutput || t('noOutput')}</pre>
-                </ScrollArea>
-              </div>
-            </TabsContent>
+            </ResizablePanel>
 
-            <TabsContent
-              value="results"
-              className="min-h-0 flex-1 overflow-hidden p-4"
+            <ResizableHandle withHandle />
+
+            {/* Output / Results panel */}
+            <ResizablePanel
+              defaultSize={35}
+              minSize={15}
             >
-              <ScrollArea className="h-full">
-                {isSubmitting && activeSubmission?.status === 'processing' ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Loader2 className="text-primary h-8 w-8 animate-spin" />
-                    <p className="text-muted-foreground mt-4">{t('runningTests')}</p>
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="flex h-full flex-col"
+              >
+                {/* Tab list + action buttons in same bar */}
+                <div className="flex shrink-0 items-center justify-between border-b">
+                  <TabsList className="h-9 justify-start rounded-none bg-transparent px-0">
+                    <TabsTrigger
+                      value="console"
+                      className="data-[state=active]:border-primary h-9 rounded-none border-b-2 border-transparent px-3 text-xs"
+                    >
+                      {t('output')}
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="results"
+                      className="data-[state=active]:border-primary h-9 rounded-none border-b-2 border-transparent px-3 text-xs"
+                    >
+                      {t('results')}
+                      {testResults && (
+                        <Badge
+                          variant="secondary"
+                          className="ml-1.5 text-[10px]"
+                        >
+                          {testResults.filter((r) => r.passed).length}/{testResults.length}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="history"
+                      className="data-[state=active]:border-primary h-9 rounded-none border-b-2 border-transparent px-3 text-xs"
+                    >
+                      <History className="mr-1 h-3 w-3" />
+                      {t('history')}
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* Action buttons */}
+                  <div className="flex shrink-0 items-center gap-1 px-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={handleRunTest}
+                      disabled={disabled || selectedLanguageId <= 0 || isRunning || isSubmitting}
+                    >
+                      {isRunning ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : (
+                        <Terminal className="mr-1 h-3 w-3" />
+                      )}
+                      {t('runCode')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={handleTestAgainstSamples}
+                      disabled={
+                        disabled ||
+                        selectedLanguageId <= 0 ||
+                        isRunning ||
+                        isSubmitting ||
+                        visibleTestCases.length === 0
+                      }
+                    >
+                      <Play className="mr-1 h-3 w-3" />
+                      {t('runTests')}
+                    </Button>
+                    {!hideSubmitButton ? (
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={handleSubmit}
+                        disabled={disabled || selectedLanguageId <= 0 || isRunning || isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Send className="mr-1 h-3 w-3" />
+                        )}
+                        {t('submit')}
+                      </Button>
+                    ) : null}
                   </div>
-                ) : testResults ? (
-                  <TestResultsList
-                    results={testResults}
-                    visibleTestIds={visibleTestIds}
-                    testCases={visibleTestCases}
-                  />
-                ) : (
-                  <p className="text-muted-foreground text-center">{t('noResultsYet')}</p>
-                )}
-              </ScrollArea>
-            </TabsContent>
-
-            <TabsContent
-              value="history"
-              className="min-h-0 flex-1 overflow-hidden p-4"
-            >
-              <ScrollArea className="h-full">
-                <div className="space-y-2">
-                  {!submissions?.length ? (
-                    <p className="text-muted-foreground text-center">{t('noSubmissionsYet')}</p>
-                  ) : (
-                    <AttemptHistoryList
-                      compact
-                      title={t('history')}
-                      items={submissions.map((submission: Submission, index: number) => ({
-                        id: submission.submission_uuid ?? submission.uuid ?? index,
-                        label: `Attempt ${submissions.length - index} · ${getLanguageName(submission.language_id)}`,
-                        submittedAt: submission.created_at,
-                        status: submission.submission_status ?? codeRunToSubmissionStatus(submission.status),
-                        scoreLabel:
-                          submission.score !== undefined
-                            ? `${Math.round(submission.score)}/${submission.max_score ?? 100}`
-                            : null,
-                      }))}
-                    />
-                  )}
                 </div>
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
+
+                {/* Console output tab */}
+                <TabsContent
+                  value="console"
+                  className="min-h-0 flex-1 overflow-hidden"
+                >
+                  <ScrollArea className="h-full p-3">
+                    <pre className="font-mono text-xs whitespace-pre-wrap">
+                      {customOutput || <span className="text-muted-foreground">{t('noOutput')}</span>}
+                    </pre>
+                  </ScrollArea>
+                </TabsContent>
+
+                {/* Test results tab */}
+                <TabsContent
+                  value="results"
+                  className="min-h-0 flex-1 overflow-hidden"
+                >
+                  <ScrollArea className="h-full p-3">
+                    {isSubmitting && activeSubmission?.status === 'processing' ? (
+                      <div className="flex flex-col items-center justify-center py-8">
+                        <Loader2 className="text-primary h-6 w-6 animate-spin" />
+                        <p className="text-muted-foreground mt-3 text-xs">{t('runningTests')}</p>
+                      </div>
+                    ) : testResults ? (
+                      <TestResultsList
+                        results={testResults}
+                        visibleTestIds={visibleTestIds}
+                        testCases={visibleTestCases}
+                      />
+                    ) : (
+                      <p className="text-muted-foreground text-center text-xs">{t('noResultsYet')}</p>
+                    )}
+                  </ScrollArea>
+                </TabsContent>
+
+                {/* History tab */}
+                <TabsContent
+                  value="history"
+                  className="min-h-0 flex-1 overflow-hidden"
+                >
+                  <ScrollArea className="h-full p-3">
+                    <div className="space-y-2">
+                      {!submissions?.length ? (
+                        <p className="text-muted-foreground text-center text-xs">{t('noSubmissionsYet')}</p>
+                      ) : (
+                        <AttemptHistoryList
+                          compact
+                          title={t('history')}
+                          items={submissions.map((submission: Submission, index: number) => ({
+                            id: submission.submission_uuid ?? submission.uuid ?? index,
+                            label: `Attempt ${submissions.length - index} · ${getLanguageName(submission.language_id)}`,
+                            submittedAt: submission.created_at,
+                            status: submission.submission_status ?? codeRunToSubmissionStatus(submission.status),
+                            scoreLabel:
+                              submission.score !== undefined
+                                ? `${Math.round(submission.score)}/${submission.max_score ?? 100}`
+                                : null,
+                          }))}
+                        />
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

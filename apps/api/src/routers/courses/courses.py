@@ -231,7 +231,7 @@ async def api_create_course_thumbnail(
     )
 
 
-@router.get("/{course_uuid}")
+@router.get("/{course_uuid}", response_model=CourseRead)
 async def api_get_course(
     request: Request,
     response: Response,
@@ -264,7 +264,7 @@ async def api_get_course(
     return course
 
 
-@router.get("/{course_uuid}/meta")
+@router.get("/{course_uuid}/meta", response_model=FullCourseRead)
 async def api_get_course_meta(
     request: Request,
     response: Response,
