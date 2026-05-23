@@ -71,6 +71,7 @@ from src.infra.settings import get_settings
 from src.routers.assessments.unified import router as assessments_router
 from src.security.rbac import PermissionChecker
 from src.services.assessments import core
+from src.services.assessments._shared import _snapshot_submission
 from src.services.grading import submission as submission_service
 
 # ---------------------------------------------------------------------------
@@ -440,6 +441,41 @@ def test_start_blocked_when_max_attempts_exhausted(
     assert response.status_code == 403
     detail = response.json()["detail"]
     assert "attempt" in str(detail).lower() or "max" in str(detail).lower()
+
+
+def test_snapshot_submission_stores_items_as_dict(
+    db_session_factory, student_user
+) -> None:
+    """Submitting snapshots must match the Submission.items_snapshot dict type."""
+    assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory)
+    now = datetime.now(UTC)
+
+    with db_session_factory() as session:
+        assessment = session.exec(
+            select(Assessment).where(Assessment.assessment_uuid == assessment_uuid)
+        ).one()
+        submission = Submission(
+            submission_uuid="submission_snapshot_shape",
+            assessment_type=AssessmentType.EXAM,
+            activity_id=activity_id,
+            user_id=student_user.id,
+            status=SubmissionStatus.GRADED,
+            attempt_number=1,
+            answers_json={},
+            grading_json={},
+            started_at=now,
+            submitted_at=now,
+            graded_at=now,
+        )
+        session.add(submission)
+        session.commit()
+        session.refresh(submission)
+
+        _snapshot_submission(submission, assessment, session)
+        session.refresh(submission)
+
+        assert isinstance(submission.items_snapshot, dict)
+        assert submission.items_snapshot["items"][0]["item_uuid"] == "item_submit_1"
 
 
 # ---------------------------------------------------------------------------

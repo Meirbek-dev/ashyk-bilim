@@ -1578,17 +1578,19 @@ def _snapshot_submission(
 
     changed = False
     if getattr(submission, "items_snapshot", None) is None:
-        submission.items_snapshot = [
-            {
-                "item_uuid": item.item_uuid,
-                "kind": str(item.kind),
-                "title": item.title,
-                "body_json": item.body_json,
-                "max_score": item.max_score,
-                "order": item.order,
-            }
-            for item in items
-        ]
+        submission.items_snapshot = {
+            "items": [
+                {
+                    "item_uuid": item.item_uuid,
+                    "kind": str(item.kind),
+                    "title": item.title,
+                    "body_json": item.body_json,
+                    "max_score": item.max_score,
+                    "order": item.order,
+                }
+                for item in items
+            ]
+        }
         submission.content_version = _content_version(assessment)
         changed = True
 
