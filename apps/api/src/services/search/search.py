@@ -2,7 +2,7 @@ from typing import TypeVar
 
 from fastapi import Request
 from sqlalchemy import true as sa_true
-from sqlmodel import Session, and_, or_, select, text
+from sqlmodel import Session, and_, or_, select
 
 from sqlalchemy import func
 from src.db.collections import Collection, CollectionRead
@@ -34,6 +34,7 @@ async def search_platform_content(
     Search across courses, collections and users within the platform
     """
     offset = (page - 1) * limit
+    normalized_query = search_query.strip()
 
     # Search courses using existing search_courses function
     courses = await search_courses(
@@ -44,55 +45,41 @@ async def search_platform_content(
 
     # Search collections
     if dialect_name == "postgresql":
-        vector = func.to_tsvector(
-            "english",
-            func.coalesce(Collection.name, "")
-            + " "
-            + func.coalesce(Collection.description, ""),
-        )
+        vector = func.to_tsvector("english", func.concat_ws(" ", Collection.name, Collection.description))
+        query = func.websearch_to_tsquery("english", normalized_query)
         collections_query = (
             select(Collection)
-            .where(vector.op("@@")(func.plainto_tsquery("english", search_query.strip())))
+            .where(vector.op("@@")(query))
             .order_by(
-                func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
-                Collection.id.desc()
+                func.ts_rank_cd(vector, query).desc(),
+                Collection.id.desc(),
             )
         )
     else:
+        pattern = f"%{normalized_query}%"
         collections_query = (
             select(Collection)
             .where(
-                or_(
-                    text('LOWER("collection".name) LIKE LOWER(:pattern)'),
-                    text('LOWER("collection".description) LIKE LOWER(:pattern)'),
-                )
+                or_(Collection.name.ilike(pattern), Collection.description.ilike(pattern))
             )
-            .params(pattern=f"%{search_query}%")
         )
 
     # Search users
     if dialect_name == "postgresql":
-        vector = func.to_tsvector(
-            "english",
-            func.coalesce(User.username, "")
-            + " "
-            + func.coalesce(User.first_name, "")
-            + " "
-            + func.coalesce(User.last_name, "")
-            + " "
-            + func.coalesce(User.bio, ""),
-        )
+        vector = func.to_tsvector("english", func.concat_ws(" ", User.username, User.first_name, User.last_name, User.bio))
+        query = func.websearch_to_tsquery("english", normalized_query)
         users_query = (
             select(User)
             .join(UserRole, UserRole.user_id == User.id)
             .distinct(User.id)
-            .where(vector.op("@@")(func.plainto_tsquery("english", search_query.strip())))
+            .where(vector.op("@@")(query))
             .order_by(
-                func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
-                User.id.desc()
+                func.ts_rank_cd(vector, query).desc(),
+                User.id.desc(),
             )
         )
     else:
+        pattern = f"%{normalized_query}%"
         users_query = (
             select(User)
             .join(UserRole, UserRole.user_id == User.id)
@@ -100,15 +87,12 @@ async def search_platform_content(
             .distinct(User.id)
             .where(
                 or_(
-                    text(
-                        'LOWER("user".username) LIKE LOWER(:pattern) OR '
-                        'LOWER("user".first_name) LIKE LOWER(:pattern) OR '
-                        'LOWER("user".last_name) LIKE LOWER(:pattern) OR '
-                        'LOWER("user".bio) LIKE LOWER(:pattern)'
-                    )
+                    User.username.ilike(pattern),
+                    User.first_name.ilike(pattern),
+                    User.last_name.ilike(pattern),
+                    User.bio.ilike(pattern),
                 )
             )
-            .params(pattern=f"%{search_query}%")
         )
 
     if isinstance(current_user, AnonymousUser):

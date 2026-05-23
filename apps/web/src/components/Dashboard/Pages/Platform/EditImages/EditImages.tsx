@@ -31,6 +31,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { compressImage } from '@/lib/image-compression';
 
 const SUPPORTED_FILES = constructAcceptValue(['png', 'jpg', 'webp', 'avif']);
 
@@ -207,11 +208,12 @@ export default function EditImages() {
     if (event.target.files && event.target.files.length > 0) {
       const file = event.target.files[0];
       if (file) {
-        setLocalLogo(URL.createObjectURL(file));
+        const optimized = await compressImage(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.82 });
+        setLocalLogo(URL.createObjectURL(optimized));
         startTransition(() => setIsLogoUploading(true));
         const loadingToast = toast.loading(tNotify('uploadingLogo'));
         try {
-          await uploadPlatformLogo(file);
+          await uploadPlatformLogo(optimized);
           await new Promise((r) => setTimeout(r, 1500));
           toast.success(tNotify('logoUpdatedSuccess'), { id: loadingToast });
           router.refresh();
@@ -228,11 +230,12 @@ export default function EditImages() {
     if (event.target.files && event.target.files.length > 0) {
       const file = event.target.files[0];
       if (file) {
-        setLocalThumbnail(URL.createObjectURL(file));
+        const optimized = await compressImage(file, { maxWidth: 1920, maxHeight: 1080, quality: 0.82 });
+        setLocalThumbnail(URL.createObjectURL(optimized));
         startTransition(() => setIsThumbnailUploading(true));
         const loadingToast = toast.loading(tNotify('uploadingThumbnail'));
         try {
-          await uploadPlatformThumbnail(file);
+          await uploadPlatformThumbnail(optimized);
           await new Promise((r) => setTimeout(r, 1500));
           toast.success(tNotify('thumbnailUpdatedSuccess'), { id: loadingToast });
           router.refresh();
@@ -265,10 +268,11 @@ export default function EditImages() {
 
       try {
         const uploadPromises = files.map(async (file) => {
-          const response = await uploadPlatformPreview(file);
+          const optimized = await compressImage(file, { maxWidth: 2400, maxHeight: 1600, quality: 0.82 });
+          const response = await uploadPlatformPreview(optimized);
           return {
             id: response.name_in_disk,
-            url: URL.createObjectURL(file),
+            url: URL.createObjectURL(optimized),
             filename: response.name_in_disk,
             type: 'image' as const,
             order: previews.length, // Add new items at the end

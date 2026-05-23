@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select';
 import { updateLanding, uploadLandingContent } from '@/services/platform/platform';
+import { compressImage } from '@/lib/image-compression';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -769,7 +770,10 @@ const HeroSectionEditor: FC<{
           },
         });
       };
-      reader.readAsDataURL(file);
+      void (async () => {
+        const optimized = await compressImage(file, { maxWidth: 2400, maxHeight: 1600, quality: 0.82 });
+        reader.readAsDataURL(optimized);
+      })();
     }
   };
 
@@ -1590,7 +1594,8 @@ const ImageUploader: FC<ImageUploaderProps> = ({ t, onImageUploaded, className, 
     setIsUploading(true);
     const loadingToast = toast.loading(tNotify('uploadingImage'));
     try {
-      const response = await uploadLandingContent(file);
+      const fileToUpload = await compressImage(file, { maxWidth: 2400, maxHeight: 1600, quality: 0.82 });
+      const response = await uploadLandingContent(fileToUpload);
       if (response.status === 200 && response.data?.filename) {
         const imageUrl = getLandingMediaDirectory(response.data.filename);
         onImageUploaded(imageUrl);

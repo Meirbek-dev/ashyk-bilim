@@ -104,15 +104,14 @@ def _course_search_filter(search_query: str | None, dialect_name: str | None = N
     if dialect_name == "postgresql":
         vector = func.to_tsvector(
             "english",
-            func.coalesce(Course.name, "")
-            + " "
-            + func.coalesce(Course.description, "")
-            + " "
-            + func.coalesce(Course.about, "")
-            + " "
-            + func.coalesce(Course.learnings, "")
-            + " "
-            + func.coalesce(Course.tags, ""),
+            func.concat_ws(
+                " ",
+                Course.name,
+                Course.description,
+                Course.about,
+                Course.learnings,
+                Course.tags,
+            ),
         )
         return vector.op("@@")(func.plainto_tsquery("english", normalized))
 

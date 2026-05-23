@@ -156,44 +156,67 @@ def _run_check_tick() -> int:
                     pool_vectors[p.submission_uuid] = _tokenise(text)
 
             for target in target_subs:
-                target_text = _extract_text_from_answers(target.answers_json or {})
-                if not target_text.strip():
-                    _write_plagiarism_result(
-                        target, session, score=0.0, flagged=False, details={}, now=now
-                    )
-                    continue
-
-                target_vec = _tokenise(target_text)
-                max_score = 0.0
-                most_similar_uuid: str | None = None
-                flagged = False
-
-                for peer_uuid, peer_vec in pool_vectors.items():
-                    if peer_uuid == target.submission_uuid:
+                try:
+                    target_text = _extract_text_from_answers(target.answers_json or {})
+                    if not target_text.strip():
+                        _write_plagiarism_result(
+                            target,
+                            session,
+                            score=0.0,
+                            flagged=False,
+                            details={},
+                            now=now,
+                            status="complete",
+                        )
                         continue
-                    sim = _cosine(target_vec, peer_vec)
-                    if sim > max_score:
-                        max_score = sim
-                        most_similar_uuid = peer_uuid
-                    if sim >= SIMILARITY_THRESHOLD:
-                        flagged = True
 
-                if flagged:
-                    flagged_pairs += 1
+                    target_vec = _tokenise(target_text)
+                    max_score = 0.0
+                    most_similar_uuid: str | None = None
+                    flagged = False
 
-                details: dict = {}
-                if most_similar_uuid is not None:
-                    details["most_similar_submission_uuid"] = most_similar_uuid
-                    details["most_similar_score"] = round(max_score, 4)
+                    for peer_uuid, peer_vec in pool_vectors.items():
+                        if peer_uuid == target.submission_uuid:
+                            continue
+                        sim = _cosine(target_vec, peer_vec)
+                        if sim > max_score:
+                            max_score = sim
+                            most_similar_uuid = peer_uuid
+                        if sim >= SIMILARITY_THRESHOLD:
+                            flagged = True
 
-                _write_plagiarism_result(
-                    target,
-                    session,
-                    score=max_score,
-                    flagged=flagged,
-                    details=details,
-                    now=now,
-                )
+                    if flagged:
+                        flagged_pairs += 1
+
+                    details: dict = {}
+                    if most_similar_uuid is not None:
+                        details["most_similar_submission_uuid"] = most_similar_uuid
+                        details["most_similar_score"] = round(max_score, 4)
+
+                    _write_plagiarism_result(
+                        target,
+                        session,
+                        score=max_score,
+                        flagged=flagged,
+                        details=details,
+                        now=now,
+                        status="complete",
+                    )
+                except Exception as exc:
+                    logger.exception(
+                        "Plagiarism check failed for submission %s",
+                        target.submission_uuid,
+                    )
+                    _write_plagiarism_result(
+                        target,
+                        session,
+                        score=0.0,
+                        flagged=False,
+                        details={},
+                        now=now,
+                        status="failed",
+                        error=str(exc),
+                    )
 
         session.commit()
 
@@ -208,6 +231,8 @@ def _write_plagiarism_result(
     flagged: bool,
     details: dict,
     now: datetime,
+    status: str,
+    error: str | None = None,
 ) -> None:
     """Write the plagiarism result back into the submission's metadata_json."""
     current_meta: dict = submission.metadata_json or {}
@@ -217,5 +242,10 @@ def _write_plagiarism_result(
         "flagged": flagged,
         "details": details,
     }
+    current_meta["plagiarism_status"] = status
+    if error:
+        current_meta["plagiarism_error"] = error
+    else:
+        current_meta.pop("plagiarism_error", None)
     submission.metadata_json = current_meta
     session.add(submission)

@@ -1,6 +1,7 @@
 """Upload endpoints for assessment files and chunked uploads."""
 
 import hashlib
+import shutil
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
@@ -32,15 +33,18 @@ from src.db.users import PublicUser
 from src.infra.db.session import get_db_session
 from src.services.utils.chunked_upload import (
     cleanup_session,
+    cleanup_stale_sessions,
     complete_upload,
     create_upload_session,
+    get_upload_session,
     get_session_status,
     process_chunk,
 )
 from src.services.utils.upload_content import upload_content
 
 router = APIRouter()
-_TEMP_UPLOAD_ROOT = Path("temp_uploads/assessment")
+_TEMP_UPLOAD_ROOT = Path("content/uploads/assessment")
+_TEMP_UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
 
 
 class ChunkedUploadInitiateResponse(PydanticStrictBaseModel):
@@ -77,6 +81,27 @@ def _temp_upload_path(upload_uuid: str) -> Path:
     return _TEMP_UPLOAD_ROOT / upload_uuid / "bytes"
 
 
+def cleanup_stale_assessment_uploads(*, max_age_hours: int = 24) -> int:
+    """Remove orphaned single-file upload bytes left behind after cancellation."""
+    if not _TEMP_UPLOAD_ROOT.exists():
+        return 0
+
+    cutoff = datetime.now(UTC) - timedelta(hours=max_age_hours)
+    removed = 0
+    for upload_dir in _TEMP_UPLOAD_ROOT.iterdir():
+        if not upload_dir.is_dir():
+            continue
+        try:
+            mtime = datetime.fromtimestamp(upload_dir.stat().st_mtime, UTC)
+        except FileNotFoundError:
+            continue
+        if mtime >= cutoff:
+            continue
+        shutil.rmtree(upload_dir, ignore_errors=True)
+        removed += 1
+    return removed
+
+
 def _read_upload(upload_uuid: str, db_session: Session) -> Upload | None:
     return db_session.exec(
         select(Upload).where(Upload.upload_uuid == upload_uuid)
@@ -88,6 +113,13 @@ def _owned_upload(upload_uuid: str, user_id: int, db_session: Session) -> Upload
     if upload is None or upload.user_id != user_id:
         raise HTTPException(status_code=404, detail="Upload not found")
     return upload
+
+
+def _owned_chunked_session(upload_id: str, user_id: int):
+    session = get_upload_session(upload_id)
+    if session.owner_user_id != user_id:
+        raise HTTPException(status_code=404, detail="Upload session not found")
+    return session
 
 
 def _upload_key(upload: Upload, sha256: str, user_uuid: str) -> str:
@@ -238,6 +270,20 @@ async def delete_assessment_upload(
     upload.updated_at = datetime.now(UTC)
     db_session.add(upload)
     db_session.commit()
+    temp_path = _temp_upload_path(upload.upload_uuid)
+    if temp_path.exists():
+        temp_path.unlink(missing_ok=True)
+        shutil.rmtree(temp_path.parent, ignore_errors=True)
+
+
+@router.delete("/chunked/{upload_id}", status_code=204)
+async def cancel_chunked_upload(
+    upload_id: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
+) -> None:
+    """Cancel a resumable chunked upload and remove all staged chunk files."""
+    _owned_chunked_session(upload_id, current_user.id)
+    cleanup_session(upload_id)
 
 
 class UploadUrlResponse(PydanticStrictBaseModel):
@@ -294,6 +340,7 @@ async def initiate_chunked_upload(
         directory=directory,
         type_of_dir=type_of_dir,
         uuid=uuid,
+        owner_user_id=current_user.id,
         filename=filename,
         total_chunks=total_chunks,
         file_size=file_size,
@@ -323,6 +370,7 @@ async def upload_chunk(
     Returns:
         Status of the upload including progress
     """
+    _owned_chunked_session(upload_id, current_user.id)
     result = await process_chunk(upload_id, chunk_index, chunk)
 
     return {
@@ -350,6 +398,7 @@ async def complete_chunked_upload(
         Final filename and upload details
     """
     try:
+        _owned_chunked_session(upload_id, current_user.id)
         # Assemble chunks
         file_data, session = await complete_upload(upload_id)
 
@@ -393,12 +442,12 @@ async def get_upload_status(
     Returns:
         Upload progress and details
     """
-    status = get_session_status(upload_id)
+    session = _owned_chunked_session(upload_id, current_user.id)
     return {
-        "upload_uuid": status["upload_id"],
-        "filename": status["filename"],
-        "chunks_received": status["chunks_received"],
-        "total_chunks": status["total_chunks"],
-        "is_complete": status["is_complete"],
-        "file_size": status["file_size"],
+        "upload_uuid": session.upload_id,
+        "filename": session.filename,
+        "chunks_received": len(session.chunks_received),
+        "total_chunks": session.total_chunks,
+        "is_complete": session.is_complete(),
+        "file_size": session.file_size,
     }

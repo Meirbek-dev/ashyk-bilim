@@ -102,6 +102,8 @@ class SubmissionMetadata(PydanticStrictBaseModel):
     auto_submitted_at: str | None = None
     # Plagiarism detection outcome (populated post-submit by background task)
     plagiarism: PlagiarismScore | None = None
+    plagiarism_status: str | None = None
+    plagiarism_error: str | None = None
 
 
 def normalize_submission_metadata(value: object) -> dict[str, Any]:

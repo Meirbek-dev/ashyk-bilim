@@ -15,6 +15,7 @@ import {
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { canPublishGrade, canReturnSubmission, canTeacherEditGrade, getReleaseState } from '@/features/grading/domain';
 import type { GradedItem, Submission, TeacherGradeInput } from '@/features/grading/domain';
@@ -22,6 +23,7 @@ import { StaleGradeError } from '@/services/grading/errors';
 import { saveGradingDraft } from '@/services/assessments/assessment-actions';
 import type { ItemGradeEntry } from '@/services/assessments/assessment-actions';
 import { useGradingPanel } from '@/hooks/useGradingPanel';
+import { queryKeys } from '@/lib/react-query/queryKeys';
 import { useAnnotations, formatAnnotationsAsFeedback } from '../AnnotationContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -31,6 +33,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import type { ReviewNavigationState } from '../types';
+import { readLocalStorageString, writeLocalStorageString } from '@/lib/local-storage';
 
 interface GradeDraft {
   score: string;
@@ -54,6 +57,7 @@ export default function GradeForm({
   navigation: ReviewNavigationState;
 }) {
   const { submission, isLoading, mutate } = useGradingPanel(submissionUuid, assessmentUuid);
+  const queryClient = useQueryClient();
   const { annotationsByItem, clearAll: clearAnnotations } = useAnnotations();
   const t = useTranslations('Grading.Panel');
   const tItemGrading = useTranslations('ItemGrading');
@@ -146,6 +150,23 @@ export default function GradeForm({
       return;
     }
 
+    const detailQueryKey = queryKeys.grading.detail(submission.submission_uuid, assessmentUuid);
+    const previousSubmission = queryClient.getQueryData<Submission>(detailQueryKey);
+    const optimisticSubmission = buildOptimisticSubmission(submission, {
+      assessmentUuid,
+      calculatedTotal,
+      draft,
+      gradedItems,
+      itemDrafts,
+      overrideScore,
+      overrideReason,
+      status,
+      itemGrades,
+      finalScore: overrideScore ? finalScore ?? null : null,
+    });
+
+    queryClient.setQueryData(detailQueryKey, optimisticSubmission);
+
     startSaving(async () => {
       try {
         await saveGradingDraft(
@@ -172,6 +193,9 @@ export default function GradeForm({
         clearAnnotations();
         await Promise.all([mutate(), onSaved()]);
       } catch (error) {
+        if (previousSubmission) {
+          queryClient.setQueryData(detailQueryKey, previousSubmission);
+        }
         if (error instanceof StaleGradeError) {
           setStaleDraft({ server: error.serverSubmission, local: draft });
           await mutate();
@@ -180,7 +204,7 @@ export default function GradeForm({
         }
       }
     });
-  }, [submission, assessmentUuid, gradedItems, itemDrafts, overrideScore, draft, t, startSaving, overrideReason, tItemGrading, onSaved, mutate, annotationsByItem, clearAnnotations]);
+  }, [submission, assessmentUuid, gradedItems, itemDrafts, overrideScore, draft, t, startSaving, overrideReason, tItemGrading, onSaved, mutate, annotationsByItem, clearAnnotations, calculatedTotal, queryClient, overrideReason]);
 
   // All grading now goes through the item-level GradingDraftSave endpoint.
   // The legacy overall-score-only path has been removed.
@@ -564,9 +588,9 @@ function KeyboardHint() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (globalThis.localStorage.getItem('grading-review-keyboard-hint-seen') === '1') return;
+    if (readLocalStorageString('grading-review-keyboard-hint-seen') === '1') return;
     setOpen(true);
-    globalThis.localStorage.setItem('grading-review-keyboard-hint-seen', '1');
+    writeLocalStorageString('grading-review-keyboard-hint-seen', '1');
     const timeout = globalThis.setTimeout(() => setOpen(false), 4500);
     return () => globalThis.clearTimeout(timeout);
   }, []);
@@ -593,4 +617,44 @@ function KeyboardHint() {
       </Tooltip>
     </TooltipProvider>
   );
+}
+
+function buildOptimisticSubmission(
+  submission: Submission,
+  args: {
+    assessmentUuid: string;
+    calculatedTotal: number | null;
+    draft: { score: string; feedback: string };
+    gradedItems: GradedItem[];
+    itemDrafts: Record<string, { score: string; feedback: string }>;
+    overrideScore: boolean;
+    overrideReason: string;
+    status: 'save' | 'publish' | 'return';
+    itemGrades: ItemGradeEntry[];
+    finalScore: number | null;
+  },
+): Submission {
+  const nextStatus = args.status === 'publish' ? 'PUBLISHED' : args.status === 'return' ? 'RETURNED' : 'GRADED';
+  const gradingJson = {
+    ...(submission.grading_json ?? {}),
+    feedback: args.draft.feedback,
+    items: args.gradedItems.map((item) => {
+      const entry = args.itemDrafts[item.item_id];
+      const rawScore = entry?.score ?? String(item.score);
+      const parsed = Number.parseFloat(rawScore);
+      return {
+        ...item,
+        score: Number.isNaN(parsed) ? item.score : Math.min(parsed, item.max_score),
+        feedback: entry?.feedback ?? item.feedback ?? '',
+      };
+    }),
+  };
+
+  return {
+    ...submission,
+    status: nextStatus,
+    final_score: args.overrideScore ? args.finalScore ?? submission.final_score : submission.final_score,
+    grading_json: gradingJson,
+    version: typeof submission.version === 'number' ? submission.version + 1 : submission.version,
+  } as Submission;
 }

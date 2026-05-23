@@ -3,7 +3,7 @@ import logging
 from typing import Any, Literal
 
 from config.config import get_settings
-from src.services.ai.embeddings import get_openai_client
+from src.services.ai.embeddings import get_openai_client, openai_breaker
 from src.services.ai.exceptions import AIProcessingError, ContentModerationError
 
 logger = logging.getLogger(__name__)
@@ -43,13 +43,16 @@ async def moderate_text_input(text: str, *, stage: ModerationStage = "input") ->
         return
 
     try:
-        response = await asyncio.wait_for(
-            get_openai_client().moderations.create(
-                model=settings.moderation_model,
-                input=[{"type": "text", "text": stripped_text}],
-            ),
-            timeout=settings.request_timeout,
-        )
+        async def _call() -> Any:
+            return await asyncio.wait_for(
+                get_openai_client().moderations.create(
+                    model=settings.moderation_model,
+                    input=[{"type": "text", "text": stripped_text}],
+                ),
+                timeout=settings.request_timeout,
+            )
+
+        response = await openai_breaker.call_async(_call)
     except ContentModerationError:
         raise
     except Exception as exc:

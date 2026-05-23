@@ -3,6 +3,7 @@
 import { useGamificationStore } from '@/stores/gamification';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { readLocalStorageString, writeLocalStorageString } from '@/lib/local-storage';
 
 const TODAY_KEY = `gamification:lastLoginAward:${new Date().toISOString().slice(0, 10)}`;
 
@@ -24,7 +25,7 @@ export function LoginBonusHandler() {
     isMountedRef.current = true;
 
     try {
-      const alreadyDone = typeof globalThis.window !== 'undefined' ? localStorage.getItem(TODAY_KEY) : null;
+      const alreadyDone = readLocalStorageString(TODAY_KEY);
 
       if (alreadyDone) return;
 
@@ -41,7 +42,7 @@ export function LoginBonusHandler() {
             { silent: true },
           );
 
-          localStorage.setItem(TODAY_KEY, '1');
+          writeLocalStorageString(TODAY_KEY, '1');
 
           if (isMountedRef.current) {
             setShowBadge(true);

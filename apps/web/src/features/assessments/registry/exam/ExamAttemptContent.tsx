@@ -30,6 +30,7 @@ import { Progress } from '@components/ui/progress';
 import type { KindAttemptProps } from '../index';
 import ExamQuestionCard from './ExamQuestionCard';
 import ExamSubmitDialog from './ExamSubmitDialog';
+import { getSubmissionPlagiarismState } from '@/features/grading/domain/types';
 
 interface QuestionData {
   id: string;
@@ -79,14 +80,18 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
   const historyItems = submissionState.submissions
     .filter((submission) => submission.status !== 'DRAFT')
     .map((submission, index) => {
-      const plagiarism = (submission.metadata_json as Record<string, any>)?.plagiarism as
-        | { flagged?: boolean; score?: number }
-        | undefined;
+      const plagiarism = getSubmissionPlagiarismState(submission);
       let plagiarismText = '';
-      if (plagiarism) {
-        plagiarismText = plagiarism.flagged
-          ? `Plagiarism Flagged (${Math.round((plagiarism.score ?? 0) * 100)}% match)`
-          : `Plagiarism: Checked Clear`;
+      if (plagiarism.status === 'failed') {
+        plagiarismText = 'Plagiarism: Failed';
+      } else if (plagiarism.status === 'checking') {
+        plagiarismText = 'Plagiarism: Checking';
+      } else if (plagiarism.status === 'pending') {
+        plagiarismText = 'Plagiarism: Pending';
+      } else if (plagiarism.flagged) {
+        plagiarismText = `Plagiarism Flagged (${Math.round((plagiarism.score ?? 0) * 100)}% match)`;
+      } else {
+        plagiarismText = 'Plagiarism: Checked Clear';
       }
       return {
         id: submission.submission_uuid,

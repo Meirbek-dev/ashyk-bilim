@@ -1,10 +1,10 @@
-"""
-Chunked file upload utilities for handling large files.
-Bypasses nginx request size limits by streaming file chunks.
+"""Chunked file upload utilities for handling large files.
+
+Chunks are stored under the app's persistent content directory so resumable
+uploads survive process restarts and can be cleaned up by a startup sweep.
 """
 
-import hashlib
-import os
+from datetime import UTC, datetime, timedelta
 import shutil
 from pathlib import Path
 from typing import Literal
@@ -14,12 +14,18 @@ from fastapi import HTTPException, UploadFile
 from ulid import ULID
 
 
+_CHUNKED_UPLOAD_ROOT = Path("content/chunked_uploads")
+_CHUNKED_UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+_DEFAULT_SESSION_TTL = timedelta(hours=24)
+
+
 class ChunkedUploadSession:
     """Manages a chunked upload session."""
 
     def __init__(
         self,
         upload_id: str,
+        owner_user_id: int,
         directory: str,
         type_of_dir: Literal["platform", "users"],
         uuid: str,
@@ -28,6 +34,7 @@ class ChunkedUploadSession:
         file_size: int,
     ) -> None:
         self.upload_id = upload_id
+        self.owner_user_id = owner_user_id
         self.directory = directory
         self.type_of_dir = type_of_dir
         self.uuid = uuid
@@ -35,9 +42,10 @@ class ChunkedUploadSession:
         self.total_chunks = total_chunks
         self.file_size = file_size
         self.chunks_received: set[int] = set()
+        self.created_at = datetime.now(UTC)
 
-        # Create temp directory for chunks
-        self.temp_dir = Path(f"temp_uploads/{upload_id}")
+        # Create durable temp directory for chunks.
+        self.temp_dir = _CHUNKED_UPLOAD_ROOT / upload_id
         self.temp_dir.mkdir(parents=True, exist_ok=True)
 
     def get_chunk_path(self, chunk_index: int) -> Path:
@@ -106,6 +114,7 @@ def create_upload_session(
     directory: str,
     type_of_dir: Literal["platform", "users"],
     uuid: str,
+    owner_user_id: int,
     filename: str,
     total_chunks: int,
     file_size: int,
@@ -115,6 +124,7 @@ def create_upload_session(
 
     session = ChunkedUploadSession(
         upload_id=upload_id,
+        owner_user_id=owner_user_id,
         directory=directory,
         type_of_dir=type_of_dir,
         uuid=uuid,
@@ -182,6 +192,29 @@ def cleanup_session(upload_id: str) -> None:
     session = _upload_sessions.pop(upload_id, None)
     if session:
         session.cleanup()
+
+
+def cleanup_stale_sessions(*, max_age: timedelta = _DEFAULT_SESSION_TTL) -> int:
+    """Remove orphaned chunk directories that are no longer tracked in memory."""
+    if not _CHUNKED_UPLOAD_ROOT.exists():
+        return 0
+
+    now = datetime.now(UTC)
+    removed = 0
+    for entry in _CHUNKED_UPLOAD_ROOT.iterdir():
+        if not entry.is_dir():
+            continue
+        if entry.name in _upload_sessions:
+            continue
+        try:
+            created_at = datetime.fromtimestamp(entry.stat().st_mtime, UTC)
+        except FileNotFoundError:
+            continue
+        if now - created_at < max_age:
+            continue
+        shutil.rmtree(entry, ignore_errors=True)
+        removed += 1
+    return removed
 
 
 def get_session_status(upload_id: str) -> dict:

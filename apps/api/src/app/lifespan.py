@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import logging
 from collections.abc import AsyncIterator, Callable
@@ -17,6 +18,8 @@ from src.infra.db.engine import (
 )
 from src.infra.logging import configure_logging
 from src.infra.settings import AppSettings
+from src.routers.uploads.chunked_upload import cleanup_stale_assessment_uploads
+from src.services.utils.chunked_upload import cleanup_stale_sessions
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,16 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[
         app.state.settings = settings
         app.state.engine = engine
         app.state.session_factory = session_factory
+
+        with contextlib.suppress(Exception):
+            removed_chunked = cleanup_stale_sessions()
+            removed_assessment = cleanup_stale_assessment_uploads()
+            if removed_chunked or removed_assessment:
+                logger.info(
+                    "Startup upload cleanup removed %d resumable sessions and %d staged assessment uploads",
+                    removed_chunked,
+                    removed_assessment,
+                )
 
         # Patch Judge0 compiler command flags dynamically on startup.
         from src.app.judge0_patch import start_judge0_patcher

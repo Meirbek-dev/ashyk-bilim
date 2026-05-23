@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { getSubmissionDisplayName } from '@/features/grading/domain';
 import type { Submission } from '@/features/grading/domain';
 import { buildSubmissionReviewViewModel } from '@/features/grading/domain';
+import { getSubmissionPlagiarismState } from '@/features/grading/domain/types';
 import { getSubmissionViolations } from '@/features/grading/domain/types';
 import SubmissionStatusBadge from '@/features/assessments/shared/components/SubmissionStatusBadge';
 import type { KindReviewDetailProps } from '@/features/assessments/registry';
@@ -62,6 +63,7 @@ export default function SubmissionInspector({
   }
 
   const reviewVm = buildSubmissionReviewViewModel(current);
+  const plagiarismState = getSubmissionPlagiarismState(current);
 
   return (
     <main className="min-w-0 border-b p-4 lg:border-b-0 xl:border-r">
@@ -87,17 +89,20 @@ export default function SubmissionInspector({
                       : t('releaseStateReturned')}
               </Badge>
               {current.is_late ? <Badge variant="destructive">{t('submissionInspector.late')}</Badge> : null}
-              {(current.metadata_json as Record<string, any>)?.plagiarism ? (
-                <Badge
-                  variant={(current.metadata_json as Record<string, any>).plagiarism.flagged ? 'destructive' : 'secondary'}
-                  className="font-mono text-[10px]"
-                >
-                  Plagiarism:{' '}
-                  {(current.metadata_json as Record<string, any>).plagiarism.flagged
-                    ? `${Math.round(((current.metadata_json as Record<string, any>).plagiarism.score ?? 0) * 100)}% Match`
-                    : 'Clear'}
-                </Badge>
-              ) : null}
+              <Badge
+                variant={plagiarismState.status === 'failed' || plagiarismState.flagged ? 'destructive' : 'secondary'}
+                className="font-mono text-[10px]"
+              >
+                {plagiarismState.status === 'failed'
+                  ? 'Plagiarism: Failed'
+                  : plagiarismState.status === 'checking'
+                    ? 'Plagiarism: Checking'
+                    : plagiarismState.status === 'pending'
+                      ? 'Plagiarism: Pending'
+                      : plagiarismState.flagged
+                        ? `Plagiarism: ${Math.round((plagiarismState.score ?? 0) * 100)}% Match`
+                        : 'Plagiarism: Clear'}
+              </Badge>
             </div>
           </div>
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">

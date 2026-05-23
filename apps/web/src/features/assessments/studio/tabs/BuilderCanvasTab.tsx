@@ -55,8 +55,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import {
+  readJsonLocalStorage,
+  readVersionedLocalStorage,
+  writeJsonLocalStorage,
+  writeVersionedLocalStorage,
+} from '@/lib/local-storage';
 
 type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>;
+const SECTION_STORAGE_VERSION = 1;
 
 const KIND_ICONS: Record<SupportedStudioItemKind, typeof ListTodo> = {
   CHOICE: ListTodo,
@@ -95,11 +102,31 @@ export interface ExamSection {
 }
 
 function useSections(assessmentUuid: string) {
-  const key = `sections:${assessmentUuid}`;
+  const key = `sections:${assessmentUuid}:v${SECTION_STORAGE_VERSION}`;
   const [sections, setSections] = useState<ExamSection[]>(() => {
+    const isExamSectionArray = (value: unknown): value is ExamSection[] => {
+      if (!Array.isArray(value)) return false;
+      return value.every((section) => {
+        if (typeof section !== 'object' || section === null) return false;
+        const candidate = section as Partial<ExamSection>;
+        return (
+          typeof candidate.id === 'string' &&
+          typeof candidate.label === 'string' &&
+          typeof candidate.beforeItemUuid === 'string'
+        );
+      });
+    };
+
     try {
-      const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as ExamSection[]) : [];
+      const versioned = readVersionedLocalStorage<ExamSection[]>(key, SECTION_STORAGE_VERSION, isExamSectionArray);
+      if (versioned) return versioned;
+
+      const legacy = readJsonLocalStorage<ExamSection[]>(`sections:${assessmentUuid}`, isExamSectionArray);
+      if (legacy) {
+        writeVersionedLocalStorage(key, SECTION_STORAGE_VERSION, legacy);
+        return legacy;
+      }
+      return [];
     } catch {
       return [];
     }
@@ -108,7 +135,7 @@ function useSections(assessmentUuid: string) {
   const persist = useCallback(
     (next: ExamSection[]) => {
       setSections(next);
-      localStorage.setItem(key, JSON.stringify(next));
+      writeVersionedLocalStorage(key, SECTION_STORAGE_VERSION, next);
     },
     [key],
   );

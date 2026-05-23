@@ -1,5 +1,6 @@
 import rawThemeRegistry from './theme-store.json';
 import { loadThemeFonts } from './theme-fonts';
+import { readJsonLocalStorage, readLocalStorageString, writeJsonLocalStorage, writeLocalStorageString } from './local-storage';
 
 export type ThemeMode = 'light' | 'dark';
 export type ThemeTokenMap = Record<string, string>;
@@ -48,6 +49,11 @@ interface ShadcnRegistryItem {
 }
 
 const rawRegistry = rawThemeRegistry as unknown as { items?: ShadcnRegistryItem[] };
+
+interface CachedThemePayload {
+  name: string;
+  tokensByMode: ThemeStyles;
+}
 
 // Merge `theme` (shared) block into both light and dark so every preset is self-contained.
 const registry: Record<string, ThemePreset> = Object.fromEntries(
@@ -101,14 +107,13 @@ export function getTheme(name: string, mode: ThemeMode = DEFAULT_THEME_MODE): Th
 
 export function getStoredTheme(): string | null {
   if (typeof globalThis.window === 'undefined') return null;
-  const stored = globalThis.localStorage.getItem(THEME_STORAGE_KEY);
+  const stored = readLocalStorageString(THEME_STORAGE_KEY, themeNames);
   return stored && stored in registry ? stored : null;
 }
 
 export function getStoredThemeMode(): ThemeMode | null {
   if (typeof globalThis.window === 'undefined') return null;
-  const stored = globalThis.localStorage.getItem(THEME_MODE_STORAGE_KEY);
-  return isThemeMode(stored) ? stored : null;
+  return readLocalStorageString(THEME_MODE_STORAGE_KEY, ['light', 'dark']) as ThemeMode | null;
 }
 
 export function getSystemThemeMode(): ThemeMode {
@@ -137,9 +142,9 @@ export function persistTheme(theme: ThemeDefinition): void {
     },
   };
 
-  globalThis.localStorage.setItem(THEME_STORAGE_KEY, theme.name);
-  globalThis.localStorage.setItem(THEME_MODE_STORAGE_KEY, theme.resolvedTheme);
-  globalThis.localStorage.setItem(THEME_CACHE_STORAGE_KEY, JSON.stringify(cachedTheme));
+  writeLocalStorageString(THEME_STORAGE_KEY, theme.name);
+  writeLocalStorageString(THEME_MODE_STORAGE_KEY, theme.resolvedTheme);
+  writeJsonLocalStorage(THEME_CACHE_STORAGE_KEY, cachedTheme);
   document.cookie = `${THEME_STORAGE_KEY}=${encodeURIComponent(theme.name)}; path=/; max-age=${THEME_COOKIE_MAX_AGE}; samesite=lax`;
   document.cookie = `${THEME_MODE_STORAGE_KEY}=${theme.resolvedTheme}; path=/; max-age=${THEME_COOKIE_MAX_AGE}; samesite=lax`;
 }
