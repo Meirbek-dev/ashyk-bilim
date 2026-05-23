@@ -29,6 +29,46 @@
       "retrieving": "Подбираем релевантный контекст курса.",
       "working": "Обрабатываем ваш запрос."
     },
+    "AiAssistantPanel": {
+      "title": "Ассистент ИИ",
+      "suggestedPrompts": "Рекомендуемые запросы",
+      "currentActivity": "Текущая активность",
+      "askPlaceholder": "Спросите о чем угодно по этой активности...",
+      "suggestions": {
+        "dynamic": {
+          "summarize": "Кратко изложите эту страницу для меня",
+          "explain": "Объясните ключевые понятия на этой странице",
+          "takeaways": "Каковы основные выводы?",
+          "quiz": "Создайте тест на основе этого содержимого"
+        },
+        "code": {
+          "hint": "Дайте мне подсказку, не раскрывая ответа",
+          "testcases": "Объясните тестовые случаи",
+          "algorithm": "Какой алгоритм мне использовать здесь?",
+          "error": "Объясните это сообщение об ошибке"
+        },
+        "exam": {
+          "hint": "Дайте мне подсказку к этому вопросу",
+          "concept": "Объясните проверяемую концепцию",
+          "review": "Какую тему мне следует повторить для этого?"
+        },
+        "file": {
+          "include": "Что мне следует включить в свою работу?",
+          "criteria": "Каковы критерии оценивания?",
+          "structure": "Помогите мне структурировать работу"
+        },
+        "video": {
+          "summarize": "Кратко опишите то, что я только что посмотрел",
+          "explain": "Объясните концепцию из этого видео",
+          "keypoints": "Каковы ключевые моменты?"
+        },
+        "default": {
+          "understand": "Помогите мне понять эту активность",
+          "concepts": "Каковы ключевые понятия здесь?",
+          "guidance": "Дайте мне рекомендации о том, как действовать"
+        }
+      }
+    },
     "AICanvaToolkit": {
       "aiIconAlt": "Иконка Ashyk Ai",
       "aiTitle": "Ashyk Ai",
@@ -3767,7 +3807,8 @@
         "score": "Балл: {score}%",
         "quizInfo": "Встроенный тест ({id}…)",
         "submit": "Отправить",
-        "close": "Закрыть"
+        "close": "Закрыть",
+        "quizNotConfigured": "Тест не настроен"
       },
       "BadgesExtension": {
         "deepDive": "Глубокое погружение",
@@ -3822,7 +3863,11 @@
         "removeEmbedTitle": "Удалить встраивание",
         "urlButton": "URL",
         "urlPlaceholder": "Вставьте URL для встраивания (YouTube, Spotify и т.д.)",
-        "urlTip": "Подсказка: Вставьте любой URL для встраивания {productName} напрямую"
+        "urlTip": "Подсказка: Вставьте любой URL для встраивания {productName} напрямую",
+        "failedToRenderEmbed": "Встраивание {label}",
+        "embedRenderErrorMessage": "Не удалось отобразить это встраивание. Пожалуйста, попробуйте изменить или удалить его.",
+        "unknownEmbedType": "Неизвестный тип встраивания{type}. Пожалуйста, отредактируйте этот блок.",
+        "embeddedBlockRenderError": "Не удалось отобразить этот встроенный блок. Пожалуйста, попробуйте изменить или удалить его."
       },
       "FileUploadBlock": {
         "browseFiles": "Обзор файлов",
@@ -6460,6 +6505,9 @@
       "keyboardHintSave": "Сохранить черновик",
       "keyboardHintPublish": "Опубликовать",
       "keyboardHint": "Горячие клавиши",
+      "shortcutSave": "Ctrl↵",
+      "shortcutPublish": "Ctrl⇧↵",
+      "shortcutFocusGrade": "G",
       "loadingSubmission": "Загрузка работы...",
       "formUnavailable": "Форма оценивания недоступна."
     },
@@ -9030,5 +9078,50 @@
       "published": "Опубликовано",
       "returned": "Возвращено"
     }
+  },
+  "FileSubmissionReview": {
+    "loadingSubmissions": "Загрузка отправок",
+    "reviewUnavailable": "Просмотр недоступен.",
+    "fileSubmissionReview": "Проверка файлов",
+    "refresh": "Обновить",
+    "noSubmissions": "Нет отправок, соответствующих этому фильтру.",
+    "attemptInfo": "Попытка {attemptNumber} · {count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}",
+    "submittedAt": "Отправлено {date}",
+    "submittedAsDraft": "Сохранено как черновик",
+    "late": "С опозданием",
+    "noFiles": "Нет прикрепленных файлов.",
+    "preview": "Предпросмотр",
+    "gradeAndFeedback": "Оценка и отзыв",
+    "finalScore": "Итоговый балл",
+    "scoreSlash": "/ 100",
+    "useRubricTotal": "Использовать сумму рубрики ({score})",
+    "saveGrade": "Сохранить оценку",
+    "returnForRevision": "Вернуть на доработку",
+    "publishResult": "Опубликовать результат",
+    "selectSubmission": "Выберите отправку.",
+    "rubric": "Критерии оценивания"
+  },
+  "FileSubmissionStudio": {
+    "loadingStudio": "Загрузка студии отправки файлов",
+    "studioUnavailable": "Студия недоступна.",
+    "curriculum": "Учебный план",
+    "fileSubmission": "Отправка файлов",
+    "studio": "Студия",
+    "preview": "Предпросмотр",
+    "save": "Сохранить",
+    "publish": "Опубликовать",
+    "title": "Название",
+    "instructions": "Инструкции",
+    "dueDate": "Срок сдачи",
+    "maxFiles": "Макс. файлов",
+    "maxSize": "Макс. размер (МБ)",
+    "allowedFileTypes": "Разрешенные типы файлов",
+    "allowedFileTypesDesc": "Оставьте все поля пустыми, чтобы разрешить любой тип файла. Если выбраны определенные типы, при отправке будут приниматься только они.",
+    "collectionRules": "Правила сбора",
+    "attempts": "Попытки",
+    "lateWork": "Сдача с опозданием",
+    "allowedFiles": "Разрешенные файлы",
+    "review": "Проверка",
+    "openSubmissions": "Открыть отправленные работы"
   }
 }

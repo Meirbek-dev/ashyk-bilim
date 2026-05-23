@@ -2,8 +2,9 @@
 
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarClock, Eye, Loader2, Save, Send, SlidersHorizontal } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -100,11 +101,13 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
   const [maxFileSizeMb, setMaxFileSizeMb] = useState<number | ''>('');
   const [allowedMimeTypes, setAllowedMimeTypes] = useState<string[]>([]);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: queryKey(cleanActivityUuid),
-    queryFn: () => getFileSubmissionByActivity(cleanActivityUuid),
-    enabled: Boolean(cleanActivityUuid),
-  });
+  const { data, isLoading, error } = useQuery(
+    queryOptions({
+      queryKey: queryKey(cleanActivityUuid),
+      queryFn: () => getFileSubmissionByActivity(cleanActivityUuid),
+      enabled: Boolean(cleanActivityUuid),
+    })
+  );
 
   useEffect(() => {
     if (!data) return;
@@ -171,18 +174,20 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     saveMutation.mutate();
   }
 
+  const t = useTranslations('FileSubmissionStudio');
+
   if (isLoading) {
     return (
       <div className="text-muted-foreground flex min-h-[420px] items-center justify-center text-sm">
         <Loader2 className="mr-2 size-4 animate-spin" />
-        Loading file submission studio
+        {t('loadingStudio')}
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">Studio is unavailable.</div>
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('studioUnavailable')}</div>
     );
   }
 
@@ -196,12 +201,12 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
                 href={`/dash/courses/${courseUuid.replace('course_', '')}/curriculum`}
                 className="hover:text-foreground"
               >
-                Curriculum
+                {t('curriculum')}
               </Link>
               <span>/</span>
-              <span>File Submission</span>
+              <span>{t('fileSubmission')}</span>
               <span>/</span>
-              <span>Studio</span>
+              <span>{t('studio')}</span>
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h1 className="truncate text-xl font-semibold">{data.title}</h1>
@@ -222,7 +227,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               render={<Link href={`/course/${courseUuid.replace('course_', '')}/activity/${cleanActivityUuid}`} />}
             >
               <Eye className="size-4" />
-              Preview
+              {t('preview')}
             </Button>
             <Button
               size="sm"
@@ -231,7 +236,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               disabled={saveMutation.isPending || publishMutation.isPending}
             >
               {saveMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-              Save
+              {t('save')}
             </Button>
             <Button
               size="sm"
@@ -239,7 +244,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               disabled={publishMutation.isPending || saveMutation.isPending || !title.trim() || !instructions.trim()}
             >
               {publishMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-              Publish
+              {t('publish')}
             </Button>
           </div>
         </div>
@@ -251,7 +256,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
           className="space-y-5"
         >
           <Field>
-            <FieldLabel>Title</FieldLabel>
+            <FieldLabel>{t('title')}</FieldLabel>
             <Input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
@@ -259,7 +264,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
             />
           </Field>
           <Field>
-            <FieldLabel>Instructions</FieldLabel>
+            <FieldLabel>{t('instructions')}</FieldLabel>
             <Textarea
               value={instructions}
               onChange={(event) => setInstructions(event.target.value)}
@@ -268,7 +273,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
           </Field>
           <div className="grid gap-4 md:grid-cols-3">
             <Field>
-              <FieldLabel>Due date</FieldLabel>
+              <FieldLabel>{t('dueDate')}</FieldLabel>
               <Input
                 type="datetime-local"
                 value={dueAt}
@@ -276,7 +281,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               />
             </Field>
             <Field>
-              <FieldLabel>Max files</FieldLabel>
+              <FieldLabel>{t('maxFiles')}</FieldLabel>
               <Input
                 type="number"
                 min={1}
@@ -286,7 +291,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               />
             </Field>
             <Field>
-              <FieldLabel>Max size MB</FieldLabel>
+              <FieldLabel>{t('maxSize')}</FieldLabel>
               <Input
                 type="number"
                 min={1}
@@ -297,7 +302,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
           </div>
 
           <Field>
-            <FieldLabel>Allowed file types</FieldLabel>
+            <FieldLabel>{t('allowedFileTypes')}</FieldLabel>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {MIME_PRESETS.map((preset) => {
                 const checked = preset.mimes.every((mime) => allowedMimeTypes.includes(mime));
@@ -319,8 +324,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               })}
             </div>
             <p className="text-muted-foreground mt-2 text-xs">
-              Leave all unchecked to allow any file type. When specific types are selected, only those will be accepted
-              during submission.
+              {t('allowedFileTypesDesc')}
             </p>
           </Field>
         </form>
@@ -329,19 +333,19 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
           <section className="rounded-md border p-4">
             <div className="mb-3 flex items-center gap-2">
               <SlidersHorizontal className="text-muted-foreground size-4" />
-              <h2 className="text-sm font-semibold">Collection rules</h2>
+              <h2 className="text-sm font-semibold">{t('collectionRules')}</h2>
             </div>
             <dl className="grid gap-3 text-sm">
               <div>
-                <dt className="text-muted-foreground">Attempts</dt>
+                <dt className="text-muted-foreground">{t('attempts')}</dt>
                 <dd>{data.max_attempts ?? 'Unlimited'}</dd>
               </div>
               <div>
-                <dt className="text-muted-foreground">Late work</dt>
+                <dt className="text-muted-foreground">{t('lateWork')}</dt>
                 <dd>{data.allow_late ? 'Allowed' : 'Blocked'}</dd>
               </div>
               <div>
-                <dt className="text-muted-foreground">Allowed files</dt>
+                <dt className="text-muted-foreground">{t('allowedFiles')}</dt>
                 <dd>
                   {data.allowed_mime_types.length > 0
                     ? data.allowed_mime_types.map(getFriendlyMimeName).join(', ')
@@ -351,7 +355,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
             </dl>
           </section>
           <section className="rounded-md border p-4">
-            <h2 className="mb-3 text-sm font-semibold">Review</h2>
+            <h2 className="mb-3 text-sm font-semibold">{t('review')}</h2>
             <Button
               variant="outline"
               className="w-full"
@@ -362,7 +366,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
                 />
               }
             >
-              Open submissions
+              {t('openSubmissions')}
             </Button>
           </section>
         </aside>

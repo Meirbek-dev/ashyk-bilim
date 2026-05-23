@@ -9,6 +9,7 @@
 
 import { useCallback } from 'react';
 import { NodeViewWrapper } from '@tiptap/react';
+import { useTranslations } from 'next-intl';
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core';
 import type { InlineQuizAttrs } from './types';
 import InlineQuizAuthor from './InlineQuizAuthor';
@@ -18,6 +19,7 @@ const InlineQuizComponent = (props: TypedNodeViewProps<InlineQuizAttrs>) => {
   const { node, updateAttributes, editor } = props;
   const { assessmentUuid } = node.attrs;
   const editable = editor.isEditable;
+  const t = useTranslations('DashPage.Editor.InlineQuizExtension');
 
   const handleAssessmentCreated = useCallback(
     (uuid: string) => {
@@ -39,7 +41,7 @@ const InlineQuizComponent = (props: TypedNodeViewProps<InlineQuizAttrs>) => {
     if (!assessmentUuid) {
       return (
         <div className="border-muted-foreground/30 text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
-          Quiz not configured
+          {t('quizNotConfigured')}
         </div>
       );
     }

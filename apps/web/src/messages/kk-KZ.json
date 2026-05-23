@@ -29,6 +29,46 @@
       "retrieving": "Курс контекстін іздеп жатырмыз.",
       "working": "Сұрағыңызды өңдеп жатырмыз."
     },
+    "AiAssistantPanel": {
+      "title": "ЖИ ассистенті",
+      "suggestedPrompts": "Ұсынылатын сұраулар",
+      "currentActivity": "Ағымдағы белсенділік",
+      "askPlaceholder": "Осы белсенділік туралы кез келген нәрсені сұраңыз...",
+      "suggestions": {
+        "dynamic": {
+          "summarize": "Маған осы беттің қысқаша мазмұнын дайындап беріңіз",
+          "explain": "Осы беттегі негізгі ұғымдарды түсіндіріңіз",
+          "takeaways": "Негізгі қорытындылар қандай?",
+          "quiz": "Осы мазмұннан тест жасаңыз"
+        },
+        "code": {
+          "hint": "Жауабын ашпай маған нұсқау беріңіз",
+          "testcases": "Тест жағдайларын түсіндіріңіз",
+          "algorithm": "Мұнда қандай алгоритмді қолдануым керек?",
+          "error": "Осы қате туралы хабарламаны түсіндіріңіз"
+        },
+        "exam": {
+          "hint": "Осы сұрақ бойынша маған нұсқау беріңіз",
+          "concept": "Тесттен өтіп жатқан ұғымды түсіндіріңіз",
+          "review": "Ол үшін қандай тақырыпты қайталауым керек?"
+        },
+        "file": {
+          "include": "Жұмысыма не енгізуім керек?",
+          "criteria": "Бағалау критерийлері қандай?",
+          "structure": "Жұмысымды құрылымдауға көмектесіңіз"
+        },
+        "video": {
+          "summarize": "Жаңа ғана көргенімді қысқаша сипаттап беріңіз",
+          "explain": "Осы бейнедегі ұғымды түсіндіріңіз",
+          "keypoints": "Негізгі сәттер қандай?"
+        },
+        "default": {
+          "understand": "Бұл белсенділікті түсінуге көмектесіңіз",
+          "concepts": "Мұндағы негізгі ұғымдар қандай?",
+          "guidance": "Әрі қарай не істеу керектігі туралы нұсқау беріңіз"
+        }
+      }
+    },
     "AICanvaToolkit": {
       "aiIconAlt": "Ashyk Ai белгішесі",
       "aiTitle": "Ashyk Ai",
@@ -3763,7 +3803,8 @@
         "score": "Ұпай: {score}%",
         "quizInfo": "Кірістірілген тест ({id}…)",
         "submit": "Жіберу",
-        "close": "Жабу"
+        "close": "Жабу",
+        "quizNotConfigured": "Тест бапталмаған"
       },
       "BadgesExtension": {
         "deepDive": "Терең талдау",
@@ -3818,7 +3859,11 @@
         "removeEmbedTitle": "Кірістіруді жою",
         "urlButton": "URL",
         "urlPlaceholder": "Кірістіру үшін URL мекенжайын қойыңыз (YouTube, Spotify және т.б.)",
-        "urlTip": "Кеңес: {productName} тікелей кірістіру үшін кез келген URL мекенжайын қойыңыз"
+        "urlTip": "Кеңес: {productName} тікелей кірістіру үшін кез келген URL мекенжайын қойыңыз",
+        "failedToRenderEmbed": "{label} кірістіруі",
+        "embedRenderErrorMessage": "Бұл кірістіруді көрсету мүмкін болмады. Оны өңдеп немесе жойып көріңіз.",
+        "unknownEmbedType": "Белгісіз кірістіру түрі{type}. Бұл блокты өңдеңіз.",
+        "embeddedBlockRenderError": "Бұл енгізілген блокты көрсету мүмкін болмады. Оны өңдеп немесе жойып көріңіз."
       },
       "FileUploadBlock": {
         "browseFiles": "Файлдарды шолыңыз",
@@ -6456,6 +6501,9 @@
       "keyboardHintSave": "Жобаны сақтау",
       "keyboardHintPublish": "Жариялау",
       "keyboardHint": "Пернелер тіркесімі",
+      "shortcutSave": "Ctrl↵",
+      "shortcutPublish": "Ctrl⇧↵",
+      "shortcutFocusGrade": "G",
       "loadingSubmission": "Жіберім жүктелуде...",
       "formUnavailable": "Бағалау формасы қолжетімді емес."
     },
@@ -9183,5 +9231,50 @@
       "published": "Жарияланды",
       "returned": "Қайтарылды"
     }
+  },
+  "FileSubmissionReview": {
+    "loadingSubmissions": "Тапсырылған файлдарды жүктеу",
+    "reviewUnavailable": "Шолу қолжетімді емес.",
+    "fileSubmissionReview": "Файлдық тапсырмаларды тексеру",
+    "refresh": "Жаңарту",
+    "noSubmissions": "Бұл көрініске сәйкес келетін тапсырыстар жоқ.",
+    "attemptInfo": "{attemptNumber}-әрекет · {count, plural, one {# файл} other {# файл}}",
+    "submittedAt": "Тапсырылды: {date}",
+    "submittedAsDraft": "Нобай ретінде сақталды",
+    "late": "Кешікті",
+    "noFiles": "Файлдар тіркелмеген.",
+    "preview": "Алдын ала қарау",
+    "gradeAndFeedback": "Баға және кері байланыс",
+    "finalScore": "Қорытынды баға",
+    "scoreSlash": "/ 100",
+    "useRubricTotal": "Рубриканың жалпы санын пайдалану ({score})",
+    "saveGrade": "Бағаны сақтау",
+    "returnForRevision": "Түзетуге қайтару",
+    "publishResult": "Нәтижені жариялау",
+    "selectSubmission": "Тапсырманы таңдаңыз.",
+    "rubric": "Рубрика"
+  },
+  "FileSubmissionStudio": {
+    "loadingStudio": "Файл жіберу студиясын жүктеу",
+    "studioUnavailable": "Студия қолжетімді емес.",
+    "curriculum": "Оқу жоспары",
+    "fileSubmission": "Файлды тапсыру",
+    "studio": "Студия",
+    "preview": "Алдын ала қарау",
+    "save": "Сақтау",
+    "publish": "Жариялау",
+    "title": "Тақырыбы",
+    "instructions": "Нұсқаулықтар",
+    "dueDate": "Тапсыру мерзімі",
+    "maxFiles": "Максималды файл саны",
+    "maxSize": "Максималды өлшемі (МБ)",
+    "allowedFileTypes": "Рұқсат етілген файл түрлері",
+    "allowedFileTypesDesc": "Кез келген файл түріне рұқсат беру үшін барлығын белгілемей қалдырыңыз. Белгілі бір түрлер таңдалғанда, жіберу кезінде тек солар ғана қабылданады.",
+    "collectionRules": "Жинақтау ережелері",
+    "attempts": "Әрекеттер",
+    "lateWork": "Кешіктіріп тапсыру",
+    "allowedFiles": "Рұқсат етілген файлдар",
+    "review": "Шолу",
+    "openSubmissions": "Жіберілген жұмыстарды ашу"
   }
 }

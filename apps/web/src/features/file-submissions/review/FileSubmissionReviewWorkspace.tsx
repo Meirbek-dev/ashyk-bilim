@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, ExternalLink, Eye, FileText, Loader2, RefreshCw, RotateCcw, Search, Send, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -69,17 +70,21 @@ export default function FileSubmissionReviewWorkspace({
   const [previewFilename, setPreviewFilename] = useState<string | null>(null);
   const [isFetchingPreview, setIsFetchingPreview] = useState<string | null>(null); // attemptFileUuid
 
-  const { data: config, isLoading: isConfigLoading } = useQuery({
-    queryKey: activityQueryKey(cleanActivityUuid),
-    queryFn: () => getFileSubmissionByActivity(cleanActivityUuid),
-    enabled: Boolean(cleanActivityUuid),
-  });
+  const { data: config, isLoading: isConfigLoading } = useQuery(
+    queryOptions({
+      queryKey: activityQueryKey(cleanActivityUuid),
+      queryFn: () => getFileSubmissionByActivity(cleanActivityUuid),
+      enabled: Boolean(cleanActivityUuid),
+    })
+  );
 
-  const { data: queue, isLoading: isQueueLoading } = useQuery({
-    queryKey: config ? queueQueryKey(config.file_submission_uuid) : ['file-submission', 'review-queue', 'pending'],
-    queryFn: () => getFileSubmissionReviewQueue(config!.file_submission_uuid),
-    enabled: Boolean(config?.file_submission_uuid),
-  });
+  const { data: queue, isLoading: isQueueLoading } = useQuery(
+    queryOptions({
+      queryKey: config ? queueQueryKey(config.file_submission_uuid) : ['file-submission', 'review-queue', 'pending'],
+      queryFn: () => getFileSubmissionReviewQueue(config!.file_submission_uuid),
+      enabled: Boolean(config?.file_submission_uuid),
+    })
+  );
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -179,18 +184,20 @@ export default function FileSubmissionReviewWorkspace({
     }
   }
 
+  const t = useTranslations('FileSubmissionReview');
+
   if (isConfigLoading || isQueueLoading) {
     return (
       <div className="text-muted-foreground flex min-h-[420px] items-center justify-center text-sm">
         <Loader2 className="mr-2 size-4 animate-spin" />
-        Loading submissions
+        {t('loadingSubmissions')}
       </div>
     );
   }
 
   if (!config || !queue) {
     return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">Review is unavailable.</div>
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('reviewUnavailable')}</div>
     );
   }
 
@@ -199,7 +206,7 @@ export default function FileSubmissionReviewWorkspace({
       <aside className="border-border bg-card/40 border-r">
         <div className="border-border sticky top-0 z-10 space-y-3 border-b bg-inherit p-4 backdrop-blur">
           <div>
-            <p className="text-muted-foreground text-xs">File Submission Review</p>
+            <p className="text-muted-foreground text-xs">{t('fileSubmissionReview')}</p>
             <h1 className="truncate text-lg font-semibold">{config.title}</h1>
           </div>
           <div className="relative">
@@ -223,7 +230,7 @@ export default function FileSubmissionReviewWorkspace({
               }
             >
               <RefreshCw className="size-4" />
-              Refresh
+              {t('refresh')}
             </Button>
             <Button
               size="sm"
@@ -238,7 +245,7 @@ export default function FileSubmissionReviewWorkspace({
         </div>
         <div className="divide-border divide-y">
           {filteredItems.length === 0 ? (
-            <p className="text-muted-foreground p-4 text-sm">No submissions match this view.</p>
+            <p className="text-muted-foreground p-4 text-sm">{t('noSubmissions')}</p>
           ) : (
             filteredItems.map((attempt) => (
               <button
@@ -253,8 +260,7 @@ export default function FileSubmissionReviewWorkspace({
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{displayUser(attempt)}</p>
                     <p className="text-muted-foreground text-xs">
-                      Attempt {attempt.attempt_number} · {attempt.files.length} file
-                      {attempt.files.length === 1 ? '' : 's'}
+                      {t('attemptInfo', { attemptNumber: attempt.attempt_number, count: attempt.files.length })}
                     </p>
                   </div>
                   <AttemptStatusBadge status={attempt.status} />
@@ -273,18 +279,20 @@ export default function FileSubmissionReviewWorkspace({
                 <div>
                   <h2 className="text-xl font-semibold">{displayUser(selected)}</h2>
                   <p className="text-muted-foreground text-sm">
-                    Submitted {selected.submitted_at ? formatDate(selected.submitted_at) : 'as draft'}
+                    {selected.submitted_at
+                      ? t('submittedAt', { date: formatDate(selected.submitted_at) })
+                      : t('submittedAsDraft')}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {selected.is_late ? <Badge variant="destructive">Late</Badge> : null}
+                  {selected.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
                   {selected.final_score !== null ? <Badge variant="outline">{selected.final_score}%</Badge> : null}
                   <AttemptStatusBadge status={selected.status} />
                 </div>
               </div>
               <div className="divide-border rounded-md border">
                 {selected.files.length === 0 ? (
-                  <p className="text-muted-foreground p-4 text-sm">No files attached.</p>
+                  <p className="text-muted-foreground p-4 text-sm">{t('noFiles')}</p>
                 ) : (
                   selected.files.map((file) => {
                     const previewable = isPreviewable(file.filename);
@@ -322,7 +330,7 @@ export default function FileSubmissionReviewWorkspace({
                               ) : (
                                 <Eye className="size-4" />
                               )}
-                              Preview
+                              {t('preview')}
                             </Button>
                           )}
                           <Button
@@ -367,7 +375,7 @@ export default function FileSubmissionReviewWorkspace({
 
             <aside className="space-y-4">
               <section className="rounded-md border p-4">
-                <h3 className="mb-3 text-sm font-semibold">Grade and feedback</h3>
+                <h3 className="mb-3 text-sm font-semibold">{t('gradeAndFeedback')}</h3>
                 <div className="space-y-3">
                   {/* ── Rubric grid (shown when rubric criteria are defined) ── */}
                   {parsedCriteria.length > 0 && (
@@ -388,7 +396,7 @@ export default function FileSubmissionReviewWorkspace({
                   )}
 
                   <div className="space-y-1">
-                    <Label htmlFor="fs-review-score">Final score</Label>
+                    <Label htmlFor="fs-review-score">{t('finalScore')}</Label>
                     <div className="flex items-center gap-2">
                       <Input
                         id="fs-review-score"
@@ -400,7 +408,7 @@ export default function FileSubmissionReviewWorkspace({
                         placeholder="0–100"
                         className="w-24"
                       />
-                      <span className="text-muted-foreground text-sm">/ 100</span>
+                      <span className="text-muted-foreground text-sm">{t('scoreSlash')}</span>
                       {rubricTotalScore !== null && (
                         <Button
                           type="button"
@@ -409,7 +417,7 @@ export default function FileSubmissionReviewWorkspace({
                           className="h-auto p-0 text-xs"
                           onClick={() => setScore(String(rubricTotalScore))}
                         >
-                          Use rubric total ({rubricTotalScore})
+                          {t('useRubricTotal', { score: rubricTotalScore })}
                         </Button>
                       )}
                     </div>
@@ -430,7 +438,7 @@ export default function FileSubmissionReviewWorkspace({
                       ) : (
                         <Send className="size-4" />
                       )}
-                      Save grade
+                      {t('saveGrade')}
                     </Button>
                     <Button
                       variant="outline"
@@ -438,14 +446,14 @@ export default function FileSubmissionReviewWorkspace({
                       disabled={gradeMutation.isPending}
                     >
                       <RotateCcw className="size-4" />
-                      Return for revision
+                      {t('returnForRevision')}
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => gradeMutation.mutate({ status: 'PUBLISHED' })}
                       disabled={gradeMutation.isPending}
                     >
-                      Publish result
+                      {t('publishResult')}
                     </Button>
                   </div>
                 </div>
@@ -453,7 +461,7 @@ export default function FileSubmissionReviewWorkspace({
             </aside>
           </div>
         ) : (
-          <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">Select a submission.</div>
+          <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('selectSubmission')}</div>
         )}
       </main>
     </div>
@@ -482,7 +490,7 @@ function RubricGrid({
 }) {
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium">Rubric</p>
+      <p className="text-sm font-medium">{t('rubric')}</p>
       {criteria.map((c) => {
         const current = scores[c.criterion_id] ?? null;
         return (

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Bot, X, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -29,8 +30,9 @@ interface AiAssistantPanelProps {
  * or click-outside backdrop.
  */
 export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistantPanelProps) {
+  const t = useTranslations('Activities.AiAssistantPanel');
   const activityType = runtime.activity?.type ?? '';
-  const suggestions = getSuggestions(activityType);
+  const suggestions = getSuggestions(activityType, t);
 
   return (
     <>
@@ -44,20 +46,20 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
           open ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none',
         )}
         role="complementary"
-        aria-label="AI Assistant"
+        aria-label={t('title')}
       >
         {/* Header */}
         <div className="border-border flex h-12 shrink-0 items-center justify-between border-b px-4">
           <div className="flex items-center gap-2">
             <Sparkles className="text-primary size-4" />
-            <span className="text-sm font-semibold">AI Assistant</span>
+            <span className="text-sm font-semibold">{t('title')}</span>
           </div>
           <Button
             type="button"
             variant="ghost"
             size="icon"
             onClick={onClose}
-            aria-label="Close AI Assistant"
+            aria-label={t('title')}
           >
             <X className="size-4" />
           </Button>
@@ -66,7 +68,7 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
         {/* Suggestions */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="mb-4">
-            <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">Suggested prompts</p>
+            <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">{t('suggestedPrompts')}</p>
           </div>
           <div className="flex flex-col gap-2">
             {suggestions.map((suggestion, i) => (
@@ -83,7 +85,7 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
           {/* Activity context info */}
           {runtime.activity ? (
             <div className="border-border bg-muted/30 mt-6 rounded-lg border p-3">
-              <p className="text-muted-foreground mb-1 text-xs font-medium">Current activity</p>
+              <p className="text-muted-foreground mb-1 text-xs font-medium">{t('currentActivity')}</p>
               <p className="text-sm font-medium">{runtime.activity.title}</p>
             </div>
           ) : null}
@@ -93,7 +95,7 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
         <div className="border-border border-t p-4">
           <div className="border-border bg-muted/30 flex items-center gap-2 rounded-lg border p-3">
             <Bot className="text-muted-foreground size-4 shrink-0" />
-            <span className="text-muted-foreground text-sm">Ask anything about this activity...</span>
+            <span className="text-muted-foreground text-sm">{t('askPlaceholder')}</span>
           </div>
         </div>
       </div>
@@ -112,43 +114,51 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
 
 // ── Context-aware suggestions ─────────────────────────────────────────────────
 
-function getSuggestions(activityType: string): string[] {
+function getSuggestions(activityType: string, t: any): string[] {
   switch (activityType) {
     case 'TYPE_DYNAMIC': {
       return [
-        'Summarize this page for me',
-        'Explain the key concepts on this page',
-        'What are the main takeaways?',
-        'Create a quiz from this content',
+        t('suggestions.dynamic.summarize'),
+        t('suggestions.dynamic.explain'),
+        t('suggestions.dynamic.takeaways'),
+        t('suggestions.dynamic.quiz'),
       ];
     }
     case 'TYPE_CODE_CHALLENGE': {
       return [
-        'Give me a hint without revealing the answer',
-        'Explain the test cases',
-        'What algorithm should I use here?',
-        'Explain this error message',
+        t('suggestions.code.hint'),
+        t('suggestions.code.testcases'),
+        t('suggestions.code.algorithm'),
+        t('suggestions.code.error'),
       ];
     }
     case 'TYPE_EXAM':
     case 'TYPE_CUSTOM': {
       return [
-        'Give me a hint for this question',
-        'Explain the concept being tested',
-        'What topic should I review for this?',
+        t('suggestions.exam.hint'),
+        t('suggestions.exam.concept'),
+        t('suggestions.exam.review'),
       ];
     }
     case 'TYPE_FILE_SUBMISSION': {
-      return ['What should I include in my submission?', 'What are the grading criteria?', 'Help me structure my work'];
+      return [
+        t('suggestions.file.include'),
+        t('suggestions.file.criteria'),
+        t('suggestions.file.structure'),
+      ];
     }
     case 'TYPE_VIDEO': {
-      return ['Summarize what I just watched', 'Explain a concept from this video', 'What are the key points?'];
+      return [
+        t('suggestions.video.summarize'),
+        t('suggestions.video.explain'),
+        t('suggestions.video.keypoints'),
+      ];
     }
     default: {
       return [
-        'Help me understand this activity',
-        'What are the key concepts here?',
-        'Give me guidance on how to proceed',
+        t('suggestions.default.understand'),
+        t('suggestions.default.concepts'),
+        t('suggestions.default.guidance'),
       ];
     }
   }

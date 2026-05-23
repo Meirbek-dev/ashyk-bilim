@@ -29,6 +29,46 @@
       "retrieving": "Retrieving relevant course context.",
       "working": "Working on your request."
     },
+    "AiAssistantPanel": {
+      "title": "AI Assistant",
+      "suggestedPrompts": "Suggested prompts",
+      "currentActivity": "Current activity",
+      "askPlaceholder": "Ask anything about this activity...",
+      "suggestions": {
+        "dynamic": {
+          "summarize": "Summarize this page for me",
+          "explain": "Explain the key concepts on this page",
+          "takeaways": "What are the main takeaways?",
+          "quiz": "Create a quiz from this content"
+        },
+        "code": {
+          "hint": "Give me a hint without revealing the answer",
+          "testcases": "Explain the test cases",
+          "algorithm": "What algorithm should I use here?",
+          "error": "Explain this error message"
+        },
+        "exam": {
+          "hint": "Give me a hint for this question",
+          "concept": "Explain the concept being tested",
+          "review": "What topic should I review for this?"
+        },
+        "file": {
+          "include": "What should I include in my submission?",
+          "criteria": "What are the grading criteria?",
+          "structure": "Help me structure my work"
+        },
+        "video": {
+          "summarize": "Summarize what I just watched",
+          "explain": "Explain a concept from this video",
+          "keypoints": "What are the key points?"
+        },
+        "default": {
+          "understand": "Help me understand this activity",
+          "concepts": "What are the key concepts here?",
+          "guidance": "Give me guidance on how to proceed"
+        }
+      }
+    },
     "AICanvaToolkit": {
       "aiIconAlt": "Ashyk Ai Icon",
       "aiTitle": "Ashyk Ai",
@@ -3749,7 +3789,8 @@
         "score": "Score: {score}%",
         "quizInfo": "Inline quiz ({id}…)",
         "submit": "Submit",
-        "close": "Close"
+        "close": "Close",
+        "quizNotConfigured": "Quiz not configured"
       },
       "BadgesExtension": {
         "deepDive": "Deep Dive",
@@ -3804,7 +3845,11 @@
         "removeEmbedTitle": "Remove embed",
         "urlButton": "URL",
         "urlPlaceholder": "Paste embed URL (YouTube, Spotify, etc.)",
-        "urlTip": "Tip: Paste any {productName} embed URL directly"
+        "urlTip": "Tip: Paste any {productName} embed URL directly",
+        "failedToRenderEmbed": "{label} embed",
+        "embedRenderErrorMessage": "This embed could not be rendered. Please try editing or removing it.",
+        "unknownEmbedType": "Unknown embed type{type}. Please edit this block.",
+        "embeddedBlockRenderError": "This embedded block could not be rendered. Please try editing or removing it."
       },
       "FileUploadBlock": {
         "browseFiles": "Browse Files",
@@ -6437,6 +6482,9 @@
       "keyboardHintSave": "Save draft",
       "keyboardHintPublish": "Publish",
       "keyboardHint": "Keyboard shortcuts",
+      "shortcutSave": "Ctrl↵",
+      "shortcutPublish": "Ctrl⇧↵",
+      "shortcutFocusGrade": "G",
       "loadingSubmission": "Loading submission...",
       "formUnavailable": "Grading form is unavailable."
     },
@@ -8994,5 +9042,50 @@
       "published": "Published",
       "returned": "Returned"
     }
+  },
+  "FileSubmissionReview": {
+    "loadingSubmissions": "Loading submissions",
+    "reviewUnavailable": "Review is unavailable.",
+    "fileSubmissionReview": "File Submission Review",
+    "refresh": "Refresh",
+    "noSubmissions": "No submissions match this view.",
+    "attemptInfo": "Attempt {attemptNumber} · {count, plural, one {# file} other {# files}}",
+    "submittedAt": "Submitted {date}",
+    "submittedAsDraft": "Submitted as draft",
+    "late": "Late",
+    "noFiles": "No files attached.",
+    "preview": "Preview",
+    "gradeAndFeedback": "Grade and feedback",
+    "finalScore": "Final score",
+    "scoreSlash": "/ 100",
+    "useRubricTotal": "Use rubric total ({score})",
+    "saveGrade": "Save grade",
+    "returnForRevision": "Return for revision",
+    "publishResult": "Publish result",
+    "selectSubmission": "Select a submission.",
+    "rubric": "Rubric"
+  },
+  "FileSubmissionStudio": {
+    "loadingStudio": "Loading file submission studio",
+    "studioUnavailable": "Studio is unavailable.",
+    "curriculum": "Curriculum",
+    "fileSubmission": "File Submission",
+    "studio": "Studio",
+    "preview": "Preview",
+    "save": "Save",
+    "publish": "Publish",
+    "title": "Title",
+    "instructions": "Instructions",
+    "dueDate": "Due date",
+    "maxFiles": "Max files",
+    "maxSize": "Max size MB",
+    "allowedFileTypes": "Allowed file types",
+    "allowedFileTypesDesc": "Leave all unchecked to allow any file type. When specific types are selected, only those will be accepted during submission.",
+    "collectionRules": "Collection rules",
+    "attempts": "Attempts",
+    "lateWork": "Late work",
+    "allowedFiles": "Allowed files",
+    "review": "Review",
+    "openSubmissions": "Open submissions"
   }
 }

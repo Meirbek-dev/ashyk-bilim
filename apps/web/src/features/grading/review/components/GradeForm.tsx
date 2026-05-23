@@ -96,8 +96,7 @@ export default function GradeForm({
         saveOverallScore(event.shiftKey ? 'PUBLISHED' : 'GRADED');
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [editable, isSaving, hasItemGrading],
+    [editable, isSaving, hasItemGrading, saveWithItemGrading, saveOverallScore],
   );
 
   useEffect(() => {
@@ -141,7 +140,7 @@ export default function GradeForm({
   };
 
   // New item-level save (via unified assessment API)
-  const saveWithItemGrading = (status: 'save' | 'publish' | 'return') => {
+  const saveWithItemGrading = useCallback((status: 'save' | 'publish' | 'return') => {
     if (!submission || !assessmentUuid) return;
 
     const itemGrades: ItemGradeEntry[] = gradedItems.map((item) => {
@@ -195,14 +194,14 @@ export default function GradeForm({
         }
       }
     });
-  };
+  }, [submission, assessmentUuid, gradedItems, itemDrafts, overrideScore, draft, t, startSaving, overrideReason, tItemGrading, onSaved, mutate]);
 
   // All grading now goes through the item-level GradingDraftSave endpoint.
   // The legacy overall-score-only path has been removed.
-  const saveOverallScore = (status: TeacherGradeInput['status']) => {
+  const saveOverallScore = useCallback((status: TeacherGradeInput['status']) => {
     // Redirect to item-level grading with a single "overall" item
     saveWithItemGrading(status === 'PUBLISHED' ? 'publish' : status === 'RETURNED' ? 'return' : 'save');
-  };
+  }, [saveWithItemGrading]);
 
   if (!submissionUuid) {
     return <aside className="text-muted-foreground p-4 text-sm">{t('selectSubmission')}</aside>;
@@ -544,9 +543,9 @@ export default function GradeForm({
           {t('keyboardHintForward')}
           <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintPrevKey')}</kbd>{' '}
           {t('keyboardHintBackward')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">G</kbd> {t('keyboardHintFocusGrade')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">Ctrl↵</kbd> {t('keyboardHintSave')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">Ctrl⇧↵</kbd> {t('keyboardHintPublish')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutFocusGrade')}</kbd> {t('keyboardHintFocusGrade')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutSave')}</kbd> {t('keyboardHintSave')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutPublish')}</kbd> {t('keyboardHintPublish')}
         </div>
       </div>
     </aside>
