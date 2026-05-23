@@ -10,6 +10,7 @@ import { getAbsoluteUrl } from '@services/config/config';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
+import { Button } from '@/components/ui/button';
 import UserAvatar from '../../UserAvatar';
 
 interface Author {
@@ -236,10 +237,11 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
       <div className="flex flex-col space-y-4">
         <MultipleAuthors authors={sortedAuthors} />
 
-        <button
+        <Button
+          type="button"
           onClick={handleCourseAction}
           disabled={isActionLoading || isPending}
-          className="bg-primary hover:bg-primary/90 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:bg-neutral-700"
+          className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
         >
           {isActionLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -259,7 +261,7 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
               {t('startCourse')}
             </>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

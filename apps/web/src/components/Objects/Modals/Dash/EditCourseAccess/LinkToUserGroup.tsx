@@ -11,6 +11,8 @@ import { Info } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
+
 interface UserGroup {
   id: number;
   name: string;
@@ -104,14 +106,16 @@ const LinkToUserGroup = (props: LinkToUserGroupProps) => {
           </div>
         )}
         <div className="py-3">
-          <button
+          <Button
+            type="button"
             onClick={() => {
               handleLink();
             }}
-            className="rounded-md bg-green-700 px-4 py-2 font-bold text-white shadow-sm"
+            variant="ghost"
+            className="rounded-md bg-green-700 px-4 py-2 font-bold text-white shadow-sm hover:bg-green-800"
           >
             {t('linkButton')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

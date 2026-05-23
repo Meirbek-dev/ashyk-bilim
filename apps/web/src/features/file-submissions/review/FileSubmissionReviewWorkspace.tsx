@@ -248,15 +248,16 @@ export default function FileSubmissionReviewWorkspace({
             <p className="text-muted-foreground p-4 text-sm">{t('noSubmissions')}</p>
           ) : (
             filteredItems.map((attempt) => (
-              <button
+              <Button
                 type="button"
                 key={attempt.attempt_uuid}
-                className={`hover:bg-muted/60 block w-full p-4 text-left transition-colors ${
+                variant="ghost"
+                className={`hover:bg-muted/60 h-auto w-full justify-start rounded-none p-4 text-left transition-colors ${
                   selected?.attempt_uuid === attempt.attempt_uuid ? 'bg-muted' : ''
                 }`}
                 onClick={() => selectAttempt(attempt)}
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex w-full items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{displayUser(attempt)}</p>
                     <p className="text-muted-foreground text-xs">
@@ -265,7 +266,7 @@ export default function FileSubmissionReviewWorkspace({
                   </div>
                   <AttemptStatusBadge status={attempt.status} />
                 </div>
-              </button>
+              </Button>
             ))
           )}
         </div>
@@ -508,17 +509,17 @@ function RubricGrid({
             {c.levels && c.levels.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {c.levels.map((level) => (
-                  <button
+                  <Button
                     key={level.score}
                     type="button"
+                    variant={current === level.score ? 'default' : 'outline'}
+                    size="sm"
                     title={level.description}
-                    className={`rounded border px-2 py-0.5 text-xs transition-colors ${
-                      current === level.score ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'
-                    }`}
+                    className="h-auto px-2 py-0.5 text-xs"
                     onClick={() => onChange(c.criterion_id, level.score)}
                   >
                     {level.label} ({level.score})
-                  </button>
+                  </Button>
                 ))}
               </div>
             ) : (

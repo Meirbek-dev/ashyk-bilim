@@ -3,6 +3,7 @@
 import { CheckCircle2, FileWarning, Loader2, Paperclip, Trash2, XCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -74,15 +75,17 @@ export default function FileUploadSlot({ slot, onRemove, readonly = false }: Fil
 
         {/* Remove */}
         {!readonly && onRemove ? (
-          <button
+          <Button
             type="button"
-            className="text-muted-foreground hover:text-destructive rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
             onClick={() => onRemove(slot.id)}
             aria-label={t('removeFile', { name: slot.file.name })}
             disabled={isUploading}
           >
             <Trash2 className="size-4" />
-          </button>
+          </Button>
         ) : null}
       </div>
 

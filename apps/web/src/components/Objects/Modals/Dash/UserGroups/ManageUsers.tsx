@@ -10,6 +10,8 @@ import { Check, Plus, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
+
 interface ManageUsersProps {
   usergroup_id: number;
 }
@@ -109,20 +111,24 @@ const ManageUsers = (props: ManageUsersProps) => {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-end space-x-2">
-          <button
+          <Button
+            type="button"
             onClick={() => handleLinkUser(row.original.user.id)}
-            className="flex items-center space-x-2 rounded-md bg-cyan-700 p-1 px-3 text-sm font-bold text-cyan-100 hover:cursor-pointer"
+            variant="ghost"
+            className="flex items-center space-x-2 rounded-md bg-cyan-700 p-1 px-3 text-sm font-bold text-cyan-100 hover:cursor-pointer hover:bg-cyan-800"
           >
             <Plus className="h-4 w-4" />
             <span>{t('linkButton')}</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
             onClick={() => handleUnlinkUser(row.original.user.id)}
-            className="flex items-center space-x-2 rounded-md bg-gray-700 p-1 px-3 text-sm font-bold text-gray-100 hover:cursor-pointer"
+            variant="ghost"
+            className="flex items-center space-x-2 rounded-md bg-gray-700 p-1 px-3 text-sm font-bold text-gray-100 hover:cursor-pointer hover:bg-gray-800"
           >
             <X className="h-4 w-4" />
             <span>{t('unlinkButton')}</span>
-          </button>
+          </Button>
         </div>
       ),
     },

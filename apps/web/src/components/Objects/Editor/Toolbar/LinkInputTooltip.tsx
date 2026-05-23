@@ -1,8 +1,10 @@
-import { useTranslations } from 'next-intl';
-import { useId } from 'react';
-import type { KeyboardEvent } from 'react';
 import { Check, X } from 'lucide-react';
-import { useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useId, useState } from 'react';
+import type { KeyboardEvent } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface LinkInputTooltipProps {
   onSave: (url: string) => void;
@@ -45,7 +47,7 @@ const LinkInputTooltip = ({ onSave, onCancel, currentUrl = '' }: LinkInputToolti
         >
           {t('enterUrl')}
         </label>
-        <input
+        <Input
           id={inputId}
           name="url"
           type="text"
@@ -54,25 +56,27 @@ const LinkInputTooltip = ({ onSave, onCancel, currentUrl = '' }: LinkInputToolti
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/30 w-52 rounded-md border px-2.5 py-1 text-xs focus:ring-1 focus:outline-none"
+          className="w-52 text-xs"
         />
         <div className="flex gap-1">
-          <button
+          <Button
             type="submit"
             disabled={!url.trim()}
-            className="text-muted-foreground hover:bg-accent hover:text-foreground flex items-center justify-center rounded-md p-1 transition-colors disabled:pointer-events-none disabled:opacity-40"
+            variant="ghost"
+            size="icon"
             title={t('saveLink')}
           >
             <Check size={16} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={onCancel}
-            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex items-center justify-center rounded-md p-1 transition-colors"
+            variant="ghost"
+            size="icon"
             title={t('cancel')}
           >
             <X size={16} />
-          </button>
+          </Button>
         </div>
       </form>
     </div>

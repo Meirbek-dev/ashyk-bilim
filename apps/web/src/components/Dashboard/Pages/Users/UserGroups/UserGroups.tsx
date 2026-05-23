@@ -27,6 +27,8 @@ import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
+
 interface DeleteUserGroupButtonProps {
   usergroupId: number;
   onDelete: (usergroupId: number) => Promise<void>;
@@ -57,10 +59,14 @@ function DeleteUserGroupButton({ usergroupId, onDelete, t }: DeleteUserGroupButt
     >
       <AlertDialogTrigger
         render={
-          <button className="flex items-center space-x-2 rounded-md bg-rose-700 p-1 px-3 text-sm font-bold text-rose-100 hover:cursor-pointer">
+          <Button
+            type="button"
+            variant="ghost"
+            className="flex items-center space-x-2 rounded-md bg-rose-700 p-1 px-3 text-sm font-bold text-rose-100 hover:cursor-pointer hover:bg-rose-800"
+          >
             <X className="h-4 w-4" />
             <span>{t('deleteButton')}</span>
-          </button>
+          </Button>
         }
       />
       <AlertDialogContent>

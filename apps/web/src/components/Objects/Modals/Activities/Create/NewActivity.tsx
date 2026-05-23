@@ -6,6 +6,8 @@ import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
+import { Button } from '@/components/ui/button';
+
 import CodeChallenge from './NewActivityModal/CodeChallengeActivityModal';
 import DocumentPdfModal from './NewActivityModal/DocumentActivityModal';
 import DynamicCanvaModal from './NewActivityModal/DynamicActivityModal';
@@ -135,14 +137,15 @@ export default function NewActivityModal({
 
   return (
     <div className="w-full space-y-4">
-      <button
+      <Button
         type="button"
         onClick={handleBack}
-        className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-gray-200 focus-visible:outline-none"
+        variant="ghost"
+        className="inline-flex h-auto items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-gray-200 focus-visible:outline-none"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         {t('backToActivities')}
-      </button>
+      </Button>
 
       {selectedView === 'dynamic' && (
         <DynamicCanvaModal

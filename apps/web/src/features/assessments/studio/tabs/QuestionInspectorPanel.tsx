@@ -71,17 +71,18 @@ export default function QuestionInspectorPanel({
     <>
       {/* Toggle button (visible when panel is closed) */}
       {!isOpen && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={onToggle}
           title={t('open')}
-          className="bg-card hover:bg-muted border-l flex shrink-0 flex-col items-center justify-center gap-1.5 border px-1.5 py-3 transition-colors"
+          className="bg-card hover:bg-muted border-l flex h-auto shrink-0 flex-col items-center justify-center gap-1.5 rounded-none border px-1.5 py-3"
         >
           <SlidersHorizontal className="text-muted-foreground size-4" />
           <span className="text-muted-foreground text-[9px] font-medium [writing-mode:vertical-rl]">
             {t('title')}
           </span>
-        </button>
+        </Button>
       )}
 
       {/* Panel */}
@@ -140,19 +141,21 @@ export default function QuestionInspectorPanel({
                 <Label className="text-xs font-medium">{t('difficultyLabel')}</Label>
                 <div className="flex gap-1.5">
                   {DIFFICULTY_OPTIONS.map((d) => (
-                    <button
+                    <Button
                       key={d}
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       disabled={!isEditable}
                       onClick={() => setDifficulty(d)}
                       className={cn(
-                        'flex-1 rounded px-2 py-1 text-[11px] font-medium ring-1 transition-all',
+                        'flex-1 rounded px-2 py-1 text-[11px] font-medium ring-1 transition-all h-auto',
                         difficulty === d ? DIFFICULTY_COLORS[d] : 'bg-muted text-muted-foreground ring-transparent',
                         !isEditable && 'cursor-not-allowed opacity-50',
                       )}
                     >
                       {t(`difficulty.${d}`)}
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 <p className="text-muted-foreground text-[10px]">{t('difficultyNote')}</p>

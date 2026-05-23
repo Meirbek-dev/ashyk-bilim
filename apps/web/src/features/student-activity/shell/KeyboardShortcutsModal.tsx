@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 
 interface ShortcutRow {
   key: string;
@@ -43,21 +44,18 @@ export default function KeyboardShortcutsModal() {
           <DialogTitle>{t('keyboardShortcuts')}</DialogTitle>
         </DialogHeader>
         <div className="mt-2">
-          <table className="w-full text-sm">
-            <tbody>
+          <Table>
+            <TableBody>
               {SHORTCUTS.map((shortcut) => (
-                <tr
-                  key={shortcut.key}
-                  className="border-border border-b last:border-0"
-                >
-                  <td className="py-2 pr-4 font-mono">
+                <TableRow key={shortcut.key}>
+                  <TableCell className="py-2 pr-4 font-mono">
                     <kbd className="bg-muted rounded px-1.5 py-0.5 text-xs font-semibold">{shortcut.key}</kbd>
-                  </td>
-                  <td className="text-muted-foreground py-2">{shortcut.description}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground py-2">{shortcut.description}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </DialogContent>
     </Dialog>

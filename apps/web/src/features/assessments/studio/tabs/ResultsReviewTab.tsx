@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { apiFetcher } from '@/lib/api-client';
 import Link from '@components/ui/AppLink';
 import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface ScoreDistributionBucket {
   range: string;
@@ -149,66 +150,67 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
       {/* Per-item analytics table */}
       {itemAnalytics !== null && (
         <div className="bg-card rounded-lg border">
-          <button
+          <Button
             type="button"
-            className="flex w-full items-center justify-between p-5 text-left"
+            variant="ghost"
+            className="flex h-auto w-full items-center justify-between p-5 text-left hover:bg-transparent"
             onClick={() => setAnalyticsExpanded((v) => !v)}
           >
             <h3 className="text-sm font-semibold">{t('itemAnalyticsTitle')}</h3>
             {analyticsExpanded
               ? <ChevronUp className="text-muted-foreground size-4" />
               : <ChevronDown className="text-muted-foreground size-4" />}
-          </button>
+          </Button>
           {analyticsExpanded && (
             <div className="border-t">
               {itemAnalytics.length === 0 ? (
                 <p className="text-muted-foreground px-5 py-4 text-sm">{t('noAnalyticsData')}</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-muted/40 border-b text-xs font-medium">
-                        <th className="px-4 py-2.5 text-left">#</th>
-                        <th className="px-4 py-2.5 text-left">{t('colQuestion')}</th>
-                        <th className="px-4 py-2.5 text-left">{t('colKind')}</th>
-                        <th className="px-4 py-2.5 text-right">{t('colMaxScore')}</th>
-                        <th className="px-4 py-2.5 text-right">{t('colResponses')}</th>
-                        <th className="px-4 py-2.5 text-right">{t('colAvgScore')}</th>
-                        <th className="px-4 py-2.5 text-right">{t('colCorrectPct')}</th>
-                        <th className="px-4 py-2.5 text-right">{t('colDiscrimination')}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
+                  <Table className="text-sm">
+                    <TableHeader>
+                      <TableRow className="bg-muted/40 text-xs font-medium">
+                        <TableHead className="px-4 py-2.5">#</TableHead>
+                        <TableHead className="px-4 py-2.5">{t('colQuestion')}</TableHead>
+                        <TableHead className="px-4 py-2.5">{t('colKind')}</TableHead>
+                        <TableHead className="px-4 py-2.5 text-right">{t('colMaxScore')}</TableHead>
+                        <TableHead className="px-4 py-2.5 text-right">{t('colResponses')}</TableHead>
+                        <TableHead className="px-4 py-2.5 text-right">{t('colAvgScore')}</TableHead>
+                        <TableHead className="px-4 py-2.5 text-right">{t('colCorrectPct')}</TableHead>
+                        <TableHead className="px-4 py-2.5 text-right">{t('colDiscrimination')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y">
                       {itemAnalytics.map((item, idx) => (
-                        <tr key={item.item_uuid} className="hover:bg-muted/20 transition-colors">
-                          <td className="text-muted-foreground px-4 py-2.5">{idx + 1}</td>
-                          <td className="max-w-[280px] truncate px-4 py-2.5 font-medium" title={item.title}>
+                        <TableRow key={item.item_uuid} className="hover:bg-muted/20 transition-colors">
+                          <TableCell className="text-muted-foreground px-4 py-2.5">{idx + 1}</TableCell>
+                          <TableCell className="max-w-[280px] truncate px-4 py-2.5 font-medium" title={item.title}>
                             {item.title || `—`}
-                          </td>
-                          <td className="text-muted-foreground px-4 py-2.5 uppercase tracking-wide text-xs">
+                          </TableCell>
+                          <TableCell className="text-muted-foreground px-4 py-2.5 uppercase tracking-wide text-xs">
                             {item.kind.replace(/_/g, ' ')}
-                          </td>
-                          <td className="px-4 py-2.5 text-right tabular-nums">{item.max_score}</td>
-                          <td className="px-4 py-2.5 text-right tabular-nums">{item.response_count}</td>
-                          <td className="px-4 py-2.5 text-right tabular-nums">
+                          </TableCell>
+                          <TableCell className="px-4 py-2.5 text-right tabular-nums">{item.max_score}</TableCell>
+                          <TableCell className="px-4 py-2.5 text-right tabular-nums">{item.response_count}</TableCell>
+                          <TableCell className="px-4 py-2.5 text-right tabular-nums">
                             {item.avg_score_pct !== null ? (
                               <PercentBadge value={item.avg_score_pct} />
                             ) : '—'}
-                          </td>
-                          <td className="px-4 py-2.5 text-right tabular-nums">
+                          </TableCell>
+                          <TableCell className="px-4 py-2.5 text-right tabular-nums">
                             {item.correct_pct !== null ? (
                               <PercentBadge value={item.correct_pct} />
                             ) : '—'}
-                          </td>
-                          <td className="px-4 py-2.5 text-right tabular-nums">
+                          </TableCell>
+                          <TableCell className="px-4 py-2.5 text-right tabular-nums">
                             {item.discrimination_index !== null
                               ? <DiscriminationBadge value={item.discrimination_index} />
                               : '—'}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </div>

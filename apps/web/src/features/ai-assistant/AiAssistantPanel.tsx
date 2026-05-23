@@ -72,13 +72,14 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
           </div>
           <div className="flex flex-col gap-2">
             {suggestions.map((suggestion, i) => (
-              <button
+              <Button
                 key={i}
                 type="button"
-                className="border-border hover:bg-muted/50 rounded-lg border p-3 text-left text-sm transition-colors"
+                variant="outline"
+                className="h-auto justify-start rounded-lg p-3 text-left text-sm font-normal"
               >
                 {suggestion}
-              </button>
+              </Button>
             ))}
           </div>
 

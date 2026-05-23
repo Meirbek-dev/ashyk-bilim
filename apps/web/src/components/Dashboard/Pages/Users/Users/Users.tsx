@@ -38,6 +38,8 @@ import React, { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
+
 const USERS_PER_PAGE = 20;
 
 interface RemoveUserButtonProps {
@@ -82,10 +84,14 @@ function RemoveUserButton({ userId, username, onRemove, t }: RemoveUserButtonPro
     >
       <AlertDialogTrigger
         render={
-          <button className="mr-2 flex items-center space-x-2 rounded-md bg-rose-700 p-1 px-3 text-sm font-bold text-rose-100 hover:cursor-pointer">
+          <Button
+            type="button"
+            variant="ghost"
+            className="mr-2 flex items-center space-x-2 rounded-md bg-rose-700 p-1 px-3 text-sm font-bold text-rose-100 hover:cursor-pointer hover:bg-rose-800"
+          >
             <LogOut className="h-4 w-4" />
             <span>{t('removeFromOrgButton')}</span>
-          </button>
+          </Button>
         }
       />
       <AlertDialogContent>

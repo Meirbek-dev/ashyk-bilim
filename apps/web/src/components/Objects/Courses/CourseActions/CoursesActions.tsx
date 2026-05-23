@@ -275,9 +275,11 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
 
     if (!isStarted) {
       return (
-        <button
+        <Button
+          type="button"
           onClick={() => setIsProgressOpen(true)}
-          className="group flex w-full items-center gap-4 rounded-xl border border-neutral-200/60 bg-gradient-to-br from-neutral-50 to-white p-4 text-left transition-all hover:border-neutral-300 hover:shadow-sm"
+          variant="ghost"
+          className="group flex h-auto w-full items-center gap-4 rounded-xl border border-neutral-200/60 bg-gradient-to-br from-neutral-50 to-white p-4 text-left transition-all hover:border-neutral-300 hover:shadow-sm"
         >
           <div className="relative flex size-14 shrink-0 items-center justify-center rounded-full bg-neutral-100 transition-colors group-hover:bg-neutral-200/70">
             <BookOpen className="size-6 text-neutral-500" />
@@ -289,15 +291,17 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
             )}
           </div>
           <Sparkles className="text-primary size-5" />
-        </button>
+        </Button>
       );
     }
 
     return (
-      <button
+      <Button
+        type="button"
         onClick={() => setIsProgressOpen(true)}
+        variant="ghost"
         className={cn(
-          'group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all hover:shadow-sm',
+          'group flex h-auto w-full items-center gap-4 rounded-xl border p-4 text-left transition-all hover:shadow-sm',
           isCompleted
             ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50/50 hover:border-green-300'
             : 'border-neutral-200/60 bg-gradient-to-br from-neutral-50 to-white hover:border-neutral-300',
@@ -368,7 +372,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
             isCompleted ? 'text-green-500' : 'text-neutral-400',
           )}
         />
-      </button>
+      </Button>
     );
   };
 

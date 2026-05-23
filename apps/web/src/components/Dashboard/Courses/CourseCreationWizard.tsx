@@ -200,9 +200,10 @@ export default function CourseCreationWizard() {
           <Collapsible>
             <CollapsibleTrigger
               render={
-                <button
+                <Button
                   type="button"
-                  className="group bg-card text-foreground flex w-full items-center justify-between rounded-t-xl border px-5 py-4"
+                  variant="ghost"
+                  className="group bg-card text-foreground flex h-auto w-full items-center justify-between rounded-t-xl border px-5 py-4"
                 />
               }
             >
@@ -285,9 +286,10 @@ export default function CourseCreationWizard() {
               >
                 <CollapsibleTrigger
                   render={
-                    <button
+                    <Button
                       type="button"
-                      className="group bg-muted/30 flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left"
+                      variant="ghost"
+                      className="group bg-muted/30 flex h-auto w-full items-center justify-between rounded-xl border px-4 py-3 text-left"
                     />
                   }
                 >
@@ -367,11 +369,12 @@ export default function CourseCreationWizard() {
                       {sourceOptions.length > 0 && (
                         <div className="bg-popover max-h-48 overflow-y-auto rounded-lg border shadow-md">
                           {sourceOptions.map((course) => (
-                            <button
+                            <Button
                               key={course.course_uuid}
                               type="button"
+                              variant="ghost"
                               className={cn(
-                                'w-full px-3 py-2 text-left text-sm transition-colors hover:bg-accent',
+                                'h-auto w-full justify-start px-3 py-2 text-left text-sm transition-colors hover:bg-accent',
                                 sourceCourseUuid === course.cleanUuid && 'bg-accent font-medium',
                               )}
                               onClick={() => {
@@ -381,7 +384,7 @@ export default function CourseCreationWizard() {
                               }}
                             >
                               {course.name}
-                            </button>
+                            </Button>
                           ))}
                         </div>
                       )}

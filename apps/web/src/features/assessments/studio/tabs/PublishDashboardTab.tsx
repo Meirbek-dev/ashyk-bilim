@@ -25,6 +25,7 @@ import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
@@ -203,12 +204,11 @@ export default function PublishDashboardTab({
                   className="w-64 space-y-3 p-3"
                 >
                   <p className="text-sm font-medium">{t('schedulePublication')}</p>
-                  <input
+                  <Input
                     ref={scheduleInputRef}
                     type="datetime-local"
                     value={scheduledAt}
                     onChange={(e) => setScheduledAt(e.target.value)}
-                    className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   />
                   <Button
                     size="sm"
@@ -386,14 +386,16 @@ function ChecklistItem({
         <p className="text-xs text-amber-900 dark:text-amber-200">{message}</p>
       </div>
       {onNavigate ? (
-        <button
+        <Button
           type="button"
+          variant="link"
+          size="sm"
           onClick={onNavigate}
-          className="shrink-0 text-[10px] font-medium text-amber-700 underline underline-offset-2 transition-colors hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100"
+          className="h-auto shrink-0 p-0 text-[10px] font-medium text-amber-700 underline-offset-2 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100"
         >
           {navigateLabel}
           <ExternalLink className="ml-0.5 inline size-2.5" />
-        </button>
+        </Button>
       ) : null}
     </div>
   );

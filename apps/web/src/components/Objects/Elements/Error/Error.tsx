@@ -4,6 +4,7 @@ import { AlertTriangle, HomeIcon, RefreshCcw } from 'lucide-react';
 import { getAbsoluteUrl } from '@services/config/config';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
 import Link from '@components/ui/AppLink';
 
 const ErrorUI = ({ message, submessage }: { message?: string; submessage?: string }) => {
@@ -28,7 +29,8 @@ const ErrorUI = ({ message, submessage }: { message?: string; submessage?: strin
         </div>
       </div>
       <div className="flex space-x-4">
-        <button
+        <Button
+          type="button"
           onClick={() => {
             reloadPage();
           }}
@@ -39,7 +41,7 @@ const ErrorUI = ({ message, submessage }: { message?: string; submessage?: strin
             size={17}
           />
           <span className="text-base font-bold">{t('retryButton')}</span>
-        </button>
+        </Button>
         <Link
           href={getAbsoluteUrl('/home')}
           className="flex items-center space-x-2 rounded-full bg-gray-700 px-4 py-1 text-gray-200 shadow-lg transition-all ease-linear hover:bg-gray-800"

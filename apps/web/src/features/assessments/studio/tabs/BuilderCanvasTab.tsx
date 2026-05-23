@@ -461,7 +461,7 @@ function SectionHeader({
     <div className="group mb-1 mt-2 flex items-center gap-1 px-1">
       <div className="bg-border h-px flex-1" />
       {editing ? (
-        <input
+        <Input
           ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -473,7 +473,7 @@ function SectionHeader({
               setEditing(false);
             }
           }}
-          className="bg-background border-border text-muted-foreground w-32 rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider focus:outline-none"
+          className="w-32 h-5 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground focus-visible:ring-1"
         />
       ) : (
         <span className="text-muted-foreground select-none whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider">
@@ -482,20 +482,24 @@ function SectionHeader({
       )}
       {isEditable ? (
         <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => setEditing(true)}
-            className="hover:text-foreground text-muted-foreground rounded p-0.5 transition-colors"
+            className="hover:text-foreground text-muted-foreground h-5 w-5"
           >
             <Pencil className="size-3" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={onDelete}
-            className="rounded p-0.5 text-red-400 transition-colors hover:text-red-600"
+            className="h-5 w-5 text-red-400 hover:text-red-600"
           >
             <X className="size-3" />
-          </button>
+          </Button>
         </div>
       ) : null}
       <div className="bg-border h-px flex-1" />
@@ -547,12 +551,13 @@ function SortableOutlineItem({
       style={style}
       className={cn('group relative', isDragging && 'z-50 opacity-60')}
     >
-      <button
+      <Button
         type="button"
+        variant="ghost"
         id={`item-${item.item_uuid}`}
         onClick={onSelect}
         className={cn(
-          'w-full rounded-lg border p-3 text-left transition-all duration-150',
+          'h-auto w-full rounded-lg border p-3 text-left transition-all duration-150',
           'hover:bg-muted/50',
           selected ? 'border-primary bg-primary/5 ring-primary/20 ring-2' : 'bg-background border-border',
         )}
@@ -602,16 +607,18 @@ function SortableOutlineItem({
             <Tooltip>
               <TooltipTrigger
                 render={
-                  <button
+                  <Button
                     type="button"
-                    className="mt-0.5 shrink-0 cursor-pointer opacity-0 transition-opacity group-hover:opacity-60 hover:!opacity-100"
+                    variant="ghost"
+                    size="icon"
+                    className="mt-0.5 h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-60 hover:!opacity-100"
                     onClick={(e) => {
                       e.stopPropagation();
                       onAddSectionBefore();
                     }}
                   >
                     <FolderPlus className="text-muted-foreground size-3.5" />
-                  </button>
+                  </Button>
                 }
               />
               <TooltipContent side="right">
@@ -620,7 +627,7 @@ function SortableOutlineItem({
             </Tooltip>
           ) : null}
         </div>
-      </button>
+      </Button>
     </div>
   );
 }

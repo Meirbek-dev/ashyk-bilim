@@ -4,6 +4,7 @@ import { CheckCircle2, MessageSquare, RotateCcw, XCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -87,14 +88,13 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
       {/* Revision CTA */}
       {isReturned && onRevise ? (
         <div className="flex justify-end">
-          <button
+          <Button
             type="button"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
             onClick={onRevise}
           >
             <RotateCcw className="size-4" />
             {t('startRevision')}
-          </button>
+          </Button>
         </div>
       ) : null}
     </div>

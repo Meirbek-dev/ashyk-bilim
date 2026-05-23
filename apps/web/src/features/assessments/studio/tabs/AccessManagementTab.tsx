@@ -209,12 +209,13 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
           onSearch={setQuery}
         >
           {filteredUsers.map((user) => (
-            <button
+            <Button
               key={user.id}
               type="button"
               disabled={disabled || mode !== 'RESTRICTED'}
               onClick={() => toggleSet(setSelectedUsers, user.id)}
-              className="hover:bg-muted/60 bg-background flex w-full items-center gap-3 rounded-md border p-3 text-left transition disabled:cursor-not-allowed"
+              variant="ghost"
+              className="hover:bg-muted/60 bg-background flex h-auto w-full items-center gap-3 rounded-md border p-3 text-left transition disabled:cursor-not-allowed"
             >
               <Checkbox checked={selectedUsers.has(user.id)} />
               <div className="min-w-0 flex-1">
@@ -222,7 +223,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
                 <p className="text-muted-foreground truncate text-xs">{user.email}</p>
               </div>
               <Badge variant="outline">#{user.id}</Badge>
-            </button>
+            </Button>
           ))}
         </AccessList>
 
@@ -234,12 +235,13 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
           onSearch={setGroupQuery}
         >
           {filteredGroups.map((group) => (
-            <button
+            <Button
               key={group.id}
               type="button"
               disabled={disabled || mode !== 'RESTRICTED'}
               onClick={() => toggleSet(setSelectedGroups, group.id)}
-              className="hover:bg-muted/60 bg-background flex w-full items-center gap-3 rounded-md border p-3 text-left transition disabled:cursor-not-allowed"
+              variant="ghost"
+              className="hover:bg-muted/60 bg-background flex h-auto w-full items-center gap-3 rounded-md border p-3 text-left transition disabled:cursor-not-allowed"
             >
               <Checkbox checked={selectedGroups.has(group.id)} />
               <div className="min-w-0 flex-1">
@@ -250,7 +252,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
                 <UsersRound className="size-3" />
                 {group.member_count}
               </Badge>
-            </button>
+            </Button>
           ))}
         </AccessList>
       </main>

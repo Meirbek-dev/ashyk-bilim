@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { getAbsoluteUrl } from '@services/config/config';
 import AppLink from '@/components/ui/AppLink';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
@@ -200,11 +201,12 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                 className="border-border hover:border-border/80 overflow-hidden rounded-xl border transition-shadow"
               >
                 {/* Chapter Header */}
-                <button
+                <Button
                   type="button"
                   onClick={() => toggleChapter(chapter.chapter_uuid)}
+                  variant="ghost"
                   className={cn(
-                    'flex w-full items-center gap-3 bg-card p-4 text-left transition-colors hover:bg-muted/60',
+                    'flex h-auto w-full items-center gap-3 bg-card p-4 text-left transition-colors hover:bg-muted/60',
                     isChapterComplete && 'bg-primary/5',
                   )}
                 >
@@ -257,7 +259,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                       )}
                     />
                   </div>
-                </button>
+                </Button>
 
                 {/* Activities List */}
                 {isExpanded && (
