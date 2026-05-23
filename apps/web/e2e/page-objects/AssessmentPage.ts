@@ -5,24 +5,24 @@ import type { Page, Locator } from '@playwright/test';
  * Handles exam attempts and code-challenge submission.
  */
 export class AssessmentPage {
-  readonly page: Page;
+  public readonly page: Page;
 
   /** "Start exam / attempt" button */
-  readonly startButton: Locator;
+  public readonly startButton: Locator;
   /** "Submit" button for finishing an exam attempt */
-  readonly submitButton: Locator;
+  public readonly submitButton: Locator;
   /** Result / score display after submission */
-  readonly resultDisplay: Locator;
+  public readonly resultDisplay: Locator;
   /** Code editor textarea / code mirror input */
-  readonly codeEditor: Locator;
+  public readonly codeEditor: Locator;
   /** "Run" / "Test" button in code challenge */
-  readonly runCodeButton: Locator;
+  public readonly runCodeButton: Locator;
   /** "Submit solution" button in code challenge */
-  readonly submitCodeButton: Locator;
+  public readonly submitCodeButton: Locator;
   /** Pass/fail status text */
-  readonly attemptStatus: Locator;
+  public readonly attemptStatus: Locator;
 
-  constructor(page: Page) {
+  public constructor(page: Page) {
     this.page = page;
     this.startButton = page.getByRole('button', { name: /start|begin attempt|take exam/i }).first();
     this.submitButton = page.getByRole('button', { name: /submit exam|submit attempt|finish/i }).first();
@@ -35,7 +35,7 @@ export class AssessmentPage {
 
   // ── Exam helpers ─────────────────────────────────────────────────────────
 
-  async startAttempt(): Promise<void> {
+  public async startAttempt(): Promise<void> {
     await this.startButton.click();
     await this.page.waitForResponse((r) => r.url().includes('/assessments') && r.request().method() === 'POST', {
       timeout: 10_000,
@@ -47,7 +47,7 @@ export class AssessmentPage {
    * @param questionIndex - 0-based question index
    * @param answerIndex - 0-based index of the answer to select
    */
-  async answerChoiceQuestion(questionIndex: number, answerIndex: number): Promise<void> {
+  public async answerChoiceQuestion(questionIndex: number, answerIndex: number): Promise<void> {
     const questionBlock = this.page.locator('[data-question], .question-block, fieldset').nth(questionIndex);
     await questionBlock.locator('input[type="radio"]').nth(answerIndex).check();
   }
@@ -57,18 +57,18 @@ export class AssessmentPage {
    * @param questionIndex - 0-based
    * @param answerIndices - array of 0-based indices to check
    */
-  async answerMultiSelectQuestion(questionIndex: number, answerIndices: number[]): Promise<void> {
+  public async answerMultiSelectQuestion(questionIndex: number, answerIndices: number[]): Promise<void> {
     const questionBlock = this.page.locator('[data-question], .question-block, fieldset').nth(questionIndex);
     for (const idx of answerIndices) {
       await questionBlock.locator('input[type="checkbox"]').nth(idx).check();
     }
   }
 
-  async submitAttempt(): Promise<void> {
+  public async submitAttempt(): Promise<void> {
     await this.submitButton.click();
     // Confirm submission in a possible dialog
     const confirmBtn = this.page.getByRole('button', { name: /confirm|yes/i });
-    if (await confirmBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await confirmBtn.click();
     }
     await this.page.waitForResponse((r) => r.url().includes('/assessments') && r.request().method() !== 'GET', {
@@ -78,14 +78,14 @@ export class AssessmentPage {
 
   // ── Code challenge helpers ───────────────────────────────────────────────
 
-  async fillCodeEditor(code: string): Promise<void> {
+  public async fillCodeEditor(code: string): Promise<void> {
     await this.codeEditor.click();
     // Select all and replace
     await this.page.keyboard.press('Control+A');
     await this.codeEditor.fill(code);
   }
 
-  async submitCode(): Promise<void> {
+  public async submitCode(): Promise<void> {
     await this.submitCodeButton.click();
     await this.page.waitForResponse((r) => r.url().includes('/code-execution') || r.url().includes('/assessments'), {
       timeout: 30_000,

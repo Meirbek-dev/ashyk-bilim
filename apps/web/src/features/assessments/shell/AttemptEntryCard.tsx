@@ -35,8 +35,8 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
   const isRevision = recommendedAction === 'startRevision';
 
   const questionCount = items.length;
-  const timeLimitSeconds = policy.timeLimitSeconds;
-  const maxAttempts = policy.maxAttempts;
+  const { timeLimitSeconds } = policy;
+  const { maxAttempts } = policy;
 
   if (isBlocked) {
     return (
@@ -113,7 +113,10 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
           </div>
 
           {questionCount === 0 ? (
-            <Alert variant="destructive" className="border-destructive/30 bg-destructive/5 text-destructive">
+            <Alert
+              variant="destructive"
+              className="border-destructive/30 bg-destructive/5 text-destructive"
+            >
               <AlertTriangle className="size-4" />
               <AlertTitle>{t('testNotReadyTitle')}</AlertTitle>
               <AlertDescription>
@@ -132,7 +135,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
           <div className="rounded-lg border p-4">
             {questionCount === 0 ? (
               <>
-                <div className="text-sm font-semibold text-destructive">{t('testNotReadyTitle')}</div>
+                <div className="text-destructive text-sm font-semibold">{t('testNotReadyTitle')}</div>
                 <p className="text-muted-foreground mt-1 text-sm">
                   {isTeacher ? t('teacherNoQuestionsSidebar') : t('noQuestionsSidebar')}
                 </p>
@@ -173,15 +176,20 @@ function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; va
 
 function getKindLabel(kind: string): string {
   switch (kind) {
-    case 'TYPE_EXAM':
+    case 'TYPE_EXAM': {
       return 'Exam';
-    case 'TYPE_CUSTOM':
+    }
+    case 'TYPE_CUSTOM': {
       return 'Quiz';
-    case 'TYPE_CODE_CHALLENGE':
+    }
+    case 'TYPE_CODE_CHALLENGE': {
       return 'Coding Challenge';
-    case 'TYPE_FILE_SUBMISSION':
+    }
+    case 'TYPE_FILE_SUBMISSION': {
       return 'File Submission';
-    default:
+    }
+    default: {
       return kind;
+    }
   }
 }

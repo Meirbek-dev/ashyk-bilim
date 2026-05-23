@@ -13,14 +13,7 @@ import {
   TextCursorInput,
   Trash2,
 } from 'lucide-react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -232,7 +225,10 @@ export default function BuilderCanvasTab({
                   </Button>
                 }
               />
-              <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuContent
+                align="start"
+                className="w-64"
+              >
                 {allowedKinds.map((kind) => {
                   const Icon = KIND_ICONS[kind];
                   return (
@@ -374,10 +370,7 @@ function SortableOutlineItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(
-        'group relative',
-        isDragging && 'z-50 opacity-60',
-      )}
+      className={cn('group relative', isDragging && 'z-50 opacity-60')}
     >
       <button
         type="button"
@@ -386,9 +379,7 @@ function SortableOutlineItem({
         className={cn(
           'w-full rounded-lg border p-3 text-left transition-all duration-150',
           'hover:bg-muted/50',
-          selected
-            ? 'border-primary bg-primary/5 ring-primary/20 ring-2'
-            : 'bg-background border-border',
+          selected ? 'border-primary bg-primary/5 ring-primary/20 ring-2' : 'bg-background border-border',
         )}
       >
         <div className="flex items-start gap-2">
@@ -417,7 +408,10 @@ function SortableOutlineItem({
           {hasIssues ? (
             <Tooltip>
               <TooltipTrigger render={<AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500" />} />
-              <TooltipContent side="right" className="max-w-[200px]">
+              <TooltipContent
+                side="right"
+                className="max-w-[200px]"
+              >
                 <ul className="space-y-1 text-xs">
                   {issues.slice(0, 3).map((issue, i) => (
                     <li key={i}>• {issue.message}</li>
@@ -481,19 +475,30 @@ function ItemCanvas({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">{kindLabel}</Badge>
-            {itemIndex >= 0 ? (
-              <span className="text-muted-foreground text-xs">#{itemIndex + 1}</span>
-            ) : null}
+            <Badge
+              variant="outline"
+              className="text-xs"
+            >
+              {kindLabel}
+            </Badge>
+            {itemIndex !== -1 ? <span className="text-muted-foreground text-xs">#{itemIndex + 1}</span> : null}
             <SaveStateBadge state={saveState} />
-            {!isEditable ? <Badge variant="secondary" className="text-xs">{t('readOnlyBadge')}</Badge> : null}
+            {!isEditable ? (
+              <Badge
+                variant="secondary"
+                className="text-xs"
+              >
+                {t('readOnlyBadge')}
+              </Badge>
+            ) : null}
           </div>
           <h2 className="mt-2 text-xl font-semibold">
             {item.title || t('untitledItem', { itemNoun: itemNoun.toLowerCase() })}
           </h2>
           {totalPoints > 0 ? (
             <p className="text-muted-foreground mt-0.5 text-sm">
-              {item.max_score || 0} {t('pointsAbbreviation')} · {Math.round(((item.max_score || 0) / totalPoints) * 100)}% {t('weightLabel')}
+              {item.max_score || 0} {t('pointsAbbreviation')} ·{' '}
+              {Math.round(((item.max_score || 0) / totalPoints) * 100)}% {t('weightLabel')}
             </p>
           ) : null}
         </div>
@@ -585,7 +590,11 @@ function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTitle: st
       kind,
       title: defaultTitle,
       max_score: 1,
-      body: { kind, prompt: '', fields: [{ id: `field_${crypto.randomUUID()}`, label: '', field_type: 'text', required: false }] },
+      body: {
+        kind,
+        prompt: '',
+        fields: [{ id: `field_${crypto.randomUUID()}`, label: '', field_type: 'text', required: false }],
+      },
     };
   }
   return { kind, title: defaultTitle, max_score: 1, body: { kind, prompt: '', min_words: null, rubric: null } };

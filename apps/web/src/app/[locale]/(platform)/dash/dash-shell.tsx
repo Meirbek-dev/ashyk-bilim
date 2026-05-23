@@ -5,6 +5,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import DashSidebar from '@components/Dashboard/Menus/DashSidebar';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
+
 const DashShell = ({ children }: { children: ReactNode }) => {
   return (
     <SidebarProvider defaultOpen>

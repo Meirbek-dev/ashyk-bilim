@@ -159,7 +159,7 @@ let renderCount = 0;
  * only re-renders when its own props change, so any re-render of the
  * inner EditorToolbar is caused by its own hooks, not by the wrapper.
  */
-const TrackedEditorToolbar = React.memo(function TrackedEditorToolbar({ onAIToggle }: { onAIToggle: () => void }) {
+const TrackedEditorToolbar = React.memo(({ onAIToggle }: { onAIToggle: () => void }) => {
   renderCount += 1;
   return <EditorToolbar onAIToggle={onAIToggle} />;
 });

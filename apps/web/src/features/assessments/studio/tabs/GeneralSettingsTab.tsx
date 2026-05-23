@@ -18,7 +18,7 @@ import SecurityShieldBadge from '@/features/assessments/shared/SecurityShieldBad
 import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge';
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge';
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes';
-import { classifyValidationIssue } from '@/features/assessments/domain/readiness';
+import type { classifyValidationIssue } from '@/features/assessments/domain/readiness';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -37,11 +37,7 @@ interface GeneralSettingsTabProps {
 const ANTI_CHEAT_FEATURES: {
   key: keyof Pick<
     AssessmentEditorState,
-    | 'copyPasteProtection'
-    | 'tabSwitchDetection'
-    | 'devtoolsDetection'
-    | 'rightClickDisable'
-    | 'fullscreenEnforcement'
+    'copyPasteProtection' | 'tabSwitchDetection' | 'devtoolsDetection' | 'rightClickDisable' | 'fullscreenEnforcement'
   >;
   icon: typeof Shield;
   labelKey: string;
@@ -79,13 +75,7 @@ const ANTI_CHEAT_FEATURES: {
   },
 ];
 
-export default function GeneralSettingsTab({
-  state,
-  saveState,
-  disabled,
-  issues,
-  onChange,
-}: GeneralSettingsTabProps) {
+export default function GeneralSettingsTab({ state, saveState, disabled, issues, onChange }: GeneralSettingsTabProps) {
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
   const tSetup = useTranslations('Features.Assessments.Studio.GeneralSettingsTab');
 
@@ -227,7 +217,7 @@ export default function GeneralSettingsTab({
               key={key}
               className={cn(
                 'flex items-start gap-3 rounded-xl border p-4 transition-all duration-200',
-                state[key] as boolean
+                state[key]
                   ? 'border-emerald-300 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-950/20'
                   : 'bg-card/50 hover:bg-muted/40',
               )}
@@ -235,16 +225,14 @@ export default function GeneralSettingsTab({
               <Icon
                 className={cn(
                   'mt-0.5 size-5 shrink-0 transition-colors duration-200',
-                  state[key] as boolean
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-muted-foreground',
+                  state[key] ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground',
                 )}
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium leading-tight">{t(labelKey as any)}</span>
+                  <span className="text-sm leading-tight font-medium">{t(labelKey as any)}</span>
                   <Switch
-                    checked={state[key] as boolean}
+                    checked={state[key]}
                     disabled={disabled}
                     onCheckedChange={(checked) => onChange({ ...state, [key]: checked })}
                     className="shrink-0"
@@ -271,7 +259,10 @@ export default function GeneralSettingsTab({
             />
             <Tooltip>
               <TooltipTrigger render={<Info className="text-muted-foreground size-4 shrink-0 cursor-help" />} />
-              <TooltipContent side="right" className="max-w-xs">
+              <TooltipContent
+                side="right"
+                className="max-w-xs"
+              >
                 <p className="text-xs">{tSetup('violationThresholdDesc')}</p>
               </TooltipContent>
             </Tooltip>

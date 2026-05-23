@@ -358,10 +358,13 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
 
       if (!nextSaveTimeoutRef.current) {
         const delay = isSavingPending ? 1000 : 5000 - timeSinceLastSave;
-        nextSaveTimeoutRef.current = setTimeout(() => {
-          nextSaveTimeoutRef.current = null;
-          save();
-        }, Math.max(100, delay));
+        nextSaveTimeoutRef.current = setTimeout(
+          () => {
+            nextSaveTimeoutRef.current = null;
+            save();
+          },
+          Math.max(100, delay),
+        );
       }
       return;
     }
@@ -451,7 +454,7 @@ function cloneAnswers(answers: Record<string, ItemAnswer>): Record<string, ItemA
     return structuredClone(answers);
   }
   // Fallback for environments without structuredClone (e.g. older Safari/Node)
-  return JSON.parse(JSON.stringify(answers)) as Record<string, ItemAnswer>;
+  return structuredClone(answers);
 }
 
 function areAnswersEqual(left: Record<string, ItemAnswer>, right: Record<string, ItemAnswer>): boolean {

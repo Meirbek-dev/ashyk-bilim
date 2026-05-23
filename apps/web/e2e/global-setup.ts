@@ -16,7 +16,8 @@
  *    Next.js sets via HttpOnly cookies that fetch() can't obtain.
  */
 
-import { chromium, type FullConfig } from '@playwright/test';
+import { chromium } from '@playwright/test';
+import type { FullConfig } from '@playwright/test';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,7 +33,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // ---------------------------------------------------------------------------
 function loadEnvFile(filePath: string): void {
   if (!fs.existsSync(filePath)) return;
-  const lines = fs.readFileSync(filePath, 'utf-8').split('\n');
+  const lines = fs.readFileSync(filePath, 'utf8').split('\n');
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
@@ -140,7 +141,7 @@ async function getMe(cookieHeader: string): Promise<{ id: number; email: string;
 }
 
 /** GET /api/v1/roles — list all roles, returns array of { id, slug, name } */
-async function listRoles(cookieHeader: string): Promise<Array<{ id: number; slug: string; name: string }>> {
+async function listRoles(cookieHeader: string): Promise<{ id: number; slug: string; name: string }[]> {
   const res = await fetch(`${API_URL}/roles`, {
     headers: { Cookie: cookieHeader },
   });
@@ -154,7 +155,7 @@ async function findUserIdByEmail(cookieHeader: string, email: string): Promise<n
     headers: { Cookie: cookieHeader },
   });
   if (!res.ok) throw new Error(`[setup] GET /rbac/user-roles failed: ${res.status}`);
-  const rows: Array<{ user_id: number; user?: { email: string } }> = await res.json();
+  const rows: { user_id: number; user?: { email: string } }[] = await res.json();
   const match = rows.find((r) => r.user?.email === email);
   return match?.user_id ?? null;
 }

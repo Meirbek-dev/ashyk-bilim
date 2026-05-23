@@ -7,20 +7,20 @@ import { expect } from '@playwright/test';
  *   /en/course/<courseuuid>/activity/<activityid>
  */
 export class CoursePlayerPage {
-  readonly page: Page;
+  public readonly page: Page;
 
   /** Sidebar list of activities */
-  readonly activityList: Locator;
+  public readonly activityList: Locator;
   /** "Mark as complete" / "Continue" button */
-  readonly markCompleteButton: Locator;
+  public readonly markCompleteButton: Locator;
   /** Enroll / Start course button on the course landing */
-  readonly enrollButton: Locator;
+  public readonly enrollButton: Locator;
   /** Certificate download button (appears after completion) */
-  readonly downloadCertButton: Locator;
+  public readonly downloadCertButton: Locator;
   /** Progress bar or percentage text */
-  readonly progressIndicator: Locator;
+  public readonly progressIndicator: Locator;
 
-  constructor(page: Page) {
+  public constructor(page: Page) {
     this.page = page;
     this.activityList = page.locator('nav[aria-label*="activities"], aside ul, .activity-list').first();
     this.markCompleteButton = page.getByRole('button', { name: /mark.*complete|complete|done|continue/i }).first();
@@ -32,17 +32,17 @@ export class CoursePlayerPage {
     this.progressIndicator = page.locator('[role="progressbar"], [aria-label*="progress"]').first();
   }
 
-  async gotoCourseLanding(courseUuid: string): Promise<void> {
+  public async gotoCourseLanding(courseUuid: string): Promise<void> {
     await this.page.goto(`/en/course/${courseUuid}`);
     await this.page.waitForLoadState('networkidle');
   }
 
-  async gotoActivity(courseUuid: string, activityId: string): Promise<void> {
+  public async gotoActivity(courseUuid: string, activityId: string): Promise<void> {
     await this.page.goto(`/en/course/${courseUuid}/activity/${activityId}`);
     await this.page.waitForLoadState('networkidle');
   }
 
-  async enroll(): Promise<void> {
+  public async enroll(): Promise<void> {
     await this.enrollButton.click();
     // Wait for the page to update — enroll may redirect or update in-place
     await this.page.waitForResponse((r) => r.url().includes('/trail') && r.request().method() === 'POST', {
@@ -50,7 +50,7 @@ export class CoursePlayerPage {
     });
   }
 
-  async markComplete(): Promise<void> {
+  public async markComplete(): Promise<void> {
     await this.markCompleteButton.click();
     await this.page.waitForResponse((r) => r.url().includes('/trail') && r.request().method() !== 'GET', {
       timeout: 10_000,
@@ -58,13 +58,13 @@ export class CoursePlayerPage {
   }
 
   /** Click on a specific activity in the sidebar by name */
-  async clickActivity(activityName: string): Promise<void> {
+  public async clickActivity(activityName: string): Promise<void> {
     await this.activityList.getByText(activityName).click();
     await this.page.waitForURL(/\/activity\//, { timeout: 10_000 });
   }
 
   /** Assert the certificate download button is visible */
-  async assertCertificateAvailable(): Promise<void> {
+  public async assertCertificateAvailable(): Promise<void> {
     await expect(this.downloadCertButton).toBeVisible({ timeout: 20_000 });
   }
 }

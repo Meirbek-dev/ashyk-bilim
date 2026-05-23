@@ -92,25 +92,34 @@ export function normalizeProgressState(
     return 'complete';
   }
   switch (state) {
-    case 'IN_PROGRESS':
+    case 'IN_PROGRESS': {
       return 'in_progress';
-    case 'SUBMITTED':
+    }
+    case 'SUBMITTED': {
       return 'submitted';
-    case 'NEEDS_GRADING':
+    }
+    case 'NEEDS_GRADING': {
       return 'needs_grading';
-    case 'RETURNED':
+    }
+    case 'RETURNED': {
       return 'returned';
-    case 'GRADED':
+    }
+    case 'GRADED': {
       return 'graded_hidden';
-    case 'PASSED':
+    }
+    case 'PASSED': {
       return 'passed';
-    case 'FAILED':
+    }
+    case 'FAILED': {
       return 'failed';
-    case 'COMPLETED':
+    }
+    case 'COMPLETED': {
       return 'complete';
-    default:
+    }
+    default: {
       if (cell?.latest_submission_status === 'PUBLISHED') return cell.passed === false ? 'failed' : 'published';
       return 'not_started';
+    }
   }
 }
 

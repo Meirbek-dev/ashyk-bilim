@@ -5,14 +5,14 @@ import { expect } from '@playwright/test';
  * Page Object for /en/dash/courses/new — the course creation wizard.
  */
 export class CourseCreatePage {
-  readonly page: Page;
+  public readonly page: Page;
 
-  readonly titleInput: Locator;
-  readonly descriptionTextarea: Locator;
-  readonly createButton: Locator;
-  readonly errorMessage: Locator;
+  public readonly titleInput: Locator;
+  public readonly descriptionTextarea: Locator;
+  public readonly createButton: Locator;
+  public readonly errorMessage: Locator;
 
-  constructor(page: Page) {
+  public constructor(page: Page) {
     this.page = page;
     // The wizard uses id="course-title" on the title input
     this.titleInput = page.locator('#course-title').or(page.locator('input[id*="course-title"]'));
@@ -25,7 +25,7 @@ export class CourseCreatePage {
     this.errorMessage = page.locator('[role="alert"]').first();
   }
 
-  async goto(): Promise<void> {
+  public async goto(): Promise<void> {
     await this.page.goto('/en/dash/courses/new');
     await expect(this.titleInput).toBeVisible({ timeout: 15_000 });
   }
@@ -34,7 +34,7 @@ export class CourseCreatePage {
    * Fill the wizard and submit.
    * Returns the URL-embedded course UUID after redirect to the curriculum page.
    */
-  async createCourse(opts: { title: string; description: string }): Promise<string> {
+  public async createCourse(opts: { title: string; description: string }): Promise<string> {
     await this.titleInput.fill(opts.title);
     await this.descriptionTextarea.fill(opts.description);
     await this.createButton.click();
@@ -43,8 +43,8 @@ export class CourseCreatePage {
     await this.page.waitForURL(/\/dash\/courses\/[^/]+\/curriculum/, { timeout: 20_000 });
 
     const url = this.page.url();
-    const match = url.match(/\/courses\/([^/]+)\/curriculum/);
-    if (!match || !match[1]) throw new Error(`Could not extract course UUID from URL: ${url}`);
+    const match = /\/courses\/([^/]+)\/curriculum/.exec(url);
+    if (!match?.[1]) throw new Error(`Could not extract course UUID from URL: ${url}`);
     return match[1];
   }
 }

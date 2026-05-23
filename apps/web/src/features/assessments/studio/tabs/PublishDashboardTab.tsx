@@ -17,15 +17,12 @@ import {
 } from 'lucide-react';
 import { useRef, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
 
 import type { AssessmentItem } from '@/features/assessments/domain/items';
 import type { UnifiedItemKind } from '@/features/assessments/domain/items';
 import { classifyValidationIssue, dedupeIssues } from '@/features/assessments/domain/readiness';
 import type { ValidationIssue } from '@/features/assessments/domain/view-models';
 import type { AssessmentEditorState } from '@/features/assessments/studio/studioTypes';
-import { apiFetch } from '@/lib/api-client';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -165,7 +162,7 @@ export default function PublishDashboardTab({
 
         {/* Publish actions */}
         <div className="flex items-center gap-2">
-          {(isPublished || isScheduled) ? (
+          {isPublished || isScheduled ? (
             <Button
               variant="outline"
               size="sm"
@@ -184,7 +181,10 @@ export default function PublishDashboardTab({
                 <Send className="size-4" />
                 {t('publishNow')}
               </Button>
-              <Popover open={scheduleOpen} onOpenChange={setScheduleOpen}>
+              <Popover
+                open={scheduleOpen}
+                onOpenChange={setScheduleOpen}
+              >
                 <PopoverTrigger
                   render={
                     <Button
@@ -198,7 +198,10 @@ export default function PublishDashboardTab({
                     </Button>
                   }
                 />
-                <PopoverContent align="end" className="w-64 space-y-3 p-3">
+                <PopoverContent
+                  align="end"
+                  className="w-64 space-y-3 p-3"
+                >
                   <p className="text-sm font-medium">{t('schedulePublication')}</p>
                   <input
                     ref={scheduleInputRef}
@@ -249,14 +252,14 @@ export default function PublishDashboardTab({
             <MetricCard
               icon={Target}
               label={tPublish('attemptLimit')}
-              value={assessmentState.maxAttempts ? String(assessmentState.maxAttempts) : tPublish('unlimited')}
+              value={assessmentState.maxAttempts ? assessmentState.maxAttempts : tPublish('unlimited')}
             />
           </div>
 
           {/* Breakdown by kind */}
           {Object.entries(kindCounts).length > 0 ? (
             <div className="bg-card rounded-xl border p-4">
-              <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
                 {tPublish('questionTypes')}
               </p>
               <div className="space-y-2">
@@ -264,13 +267,21 @@ export default function PublishDashboardTab({
                   const Icon = KIND_ICONS[kind] ?? BookOpen;
                   const percent = items.length > 0 ? Math.round((count / items.length) * 100) : 0;
                   return (
-                    <div key={kind} className="flex items-center gap-2">
+                    <div
+                      key={kind}
+                      className="flex items-center gap-2"
+                    >
                       <Icon className="text-muted-foreground size-3.5 shrink-0" />
                       <span className="min-w-0 flex-1 truncate text-xs">{kind.replaceAll('_', ' ')}</span>
-                      <Badge variant="secondary" className="text-xs">{count}</Badge>
-                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                      <Badge
+                        variant="secondary"
+                        className="text-xs"
+                      >
+                        {count}
+                      </Badge>
+                      <div className="bg-muted h-1.5 w-16 overflow-hidden rounded-full">
                         <div
-                          className="h-full rounded-full bg-primary transition-all duration-500"
+                          className="bg-primary h-full rounded-full transition-all duration-500"
                           style={{ width: `${percent}%` }}
                         />
                       </div>
@@ -296,7 +307,7 @@ export default function PublishDashboardTab({
             <div className="space-y-3">
               {assessmentLevelIssues.length > 0 ? (
                 <div className="bg-card rounded-xl border p-4">
-                  <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
                     {tPublish('assessmentIssues')}
                   </p>
                   <div className="space-y-2">
@@ -314,7 +325,7 @@ export default function PublishDashboardTab({
 
               {itemLevelIssues.length > 0 ? (
                 <div className="bg-card rounded-xl border p-4">
-                  <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
                     {tPublish('questionIssues')}
                   </p>
                   <div className="space-y-2">
@@ -322,14 +333,13 @@ export default function PublishDashboardTab({
                       const itemIndex = issue.itemUuid
                         ? items.findIndex((item) => item.item_uuid === issue.itemUuid)
                         : -1;
-                      const itemTitle =
-                        itemIndex >= 0 ? `Q${itemIndex + 1}: ${items[itemIndex]?.title || '—'}` : null;
+                      const itemTitle = itemIndex >= 0 ? `Q${itemIndex + 1}: ${items[itemIndex]?.title || '—'}` : null;
                       return (
                         <ChecklistItem
                           key={i}
                           message={issue.message}
                           context={itemTitle ?? undefined}
-                          onNavigate={issue.itemUuid ? () => onSwitchToBuilder(issue.itemUuid!) : undefined}
+                          onNavigate={issue.itemUuid ? () => onSwitchToBuilder(issue.itemUuid) : undefined}
                           navigateLabel={tPublish('goToQuestion')}
                         />
                       );

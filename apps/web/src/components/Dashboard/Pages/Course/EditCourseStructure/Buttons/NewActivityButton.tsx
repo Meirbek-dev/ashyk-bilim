@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import NewActivityModal from '@components/Objects/Modals/Activities/Create/NewActivity';
 import { useActivityMutations } from '@/hooks/mutations/useActivityMutations';
-import { cleanActivityUuid, cleanCourseUuid } from '@/lib/course-management';
 import { useCourse } from '@components/Contexts/CourseContext';
 import { apiFetch } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';

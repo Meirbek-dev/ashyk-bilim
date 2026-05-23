@@ -8,24 +8,24 @@ import { expect } from '@playwright/test';
  * Covers the GradingReviewWorkspace: submission list + grade form.
  */
 export class GradingReviewPage {
-  readonly page: Page;
+  public readonly page: Page;
 
   /** List of student submissions in the left pane */
-  readonly submissionList: Locator;
+  public readonly submissionList: Locator;
   /** Individual submission list items */
-  readonly submissionItems: Locator;
+  public readonly submissionItems: Locator;
   /** Score / grade input field */
-  readonly scoreInput: Locator;
+  public readonly scoreInput: Locator;
   /** Feedback textarea */
-  readonly feedbackTextarea: Locator;
+  public readonly feedbackTextarea: Locator;
   /** "Publish grade" / "Save" / "Approve" button */
-  readonly publishButton: Locator;
+  public readonly publishButton: Locator;
   /** Status badge on a submission (Graded, Pending, etc.) */
-  readonly statusBadge: Locator;
+  public readonly statusBadge: Locator;
   /** Toast notification */
-  readonly toast: Locator;
+  public readonly toast: Locator;
 
-  constructor(page: Page) {
+  public constructor(page: Page) {
     this.page = page;
     this.submissionList = page.locator('[data-submission-list], aside ul, .submission-list').first();
     this.submissionItems = page.locator('[data-submission-item], .submission-item, [role="listitem"]');
@@ -36,7 +36,7 @@ export class GradingReviewPage {
     this.toast = page.locator('[data-sonner-toast]').first();
   }
 
-  async goto(courseUuid: string, activityId: string): Promise<void> {
+  public async goto(courseUuid: string, activityId: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/activity/${activityId}/review`);
     await this.page.waitForLoadState('networkidle');
   }
@@ -44,7 +44,7 @@ export class GradingReviewPage {
   /**
    * Select a submission from the list by student name or email fragment.
    */
-  async selectSubmission(studentIdentifier: string): Promise<void> {
+  public async selectSubmission(studentIdentifier: string): Promise<void> {
     const item = this.page
       .locator('[data-submission-item], .submission-item, [role="listitem"], li')
       .filter({ hasText: studentIdentifier })
@@ -52,13 +52,13 @@ export class GradingReviewPage {
     await expect(item).toBeVisible({ timeout: 15_000 });
     await item.click();
     // Wait for the inspector panel to load
-    await expect(this.scoreInput.or(this.feedbackTextarea)).toBeVisible({ timeout: 8_000 });
+    await expect(this.scoreInput.or(this.feedbackTextarea)).toBeVisible({ timeout: 8000 });
   }
 
   /**
    * Fill the grade form and publish.
    */
-  async gradeSubmission(opts: { score: number; feedback: string }): Promise<void> {
+  public async gradeSubmission(opts: { score: number; feedback: string }): Promise<void> {
     // Fill score
     await this.scoreInput.fill(String(opts.score));
     // Fill feedback
@@ -77,7 +77,7 @@ export class GradingReviewPage {
   /**
    * Assert that the submission status shows "Graded" or "Released".
    */
-  async assertGradedStatus(): Promise<void> {
+  public async assertGradedStatus(): Promise<void> {
     await expect(this.page.getByText(/graded|released/i).first()).toBeVisible({ timeout: 10_000 });
   }
 }

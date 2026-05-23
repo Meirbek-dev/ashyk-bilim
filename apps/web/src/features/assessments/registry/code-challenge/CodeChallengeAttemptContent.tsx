@@ -28,7 +28,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   const settings = useMemo(() => (codeItem ? codeItemToSettings(codeItem) : null), [codeItem]);
   const submissionState = useAssessmentSubmission(assessmentUuid, normalizedActivityUuid);
   const saveDraft = submissionState.save;
-  const saveState = submissionState.saveState;
+  const { saveState } = submissionState;
   const submissionStatus = submissionState.status;
   const submitAssessment = submissionState.submit;
   const { submitControl, handleSubmitControlChange } = useCodeSubmitControl();
@@ -49,9 +49,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
       isSaving: submissionState.isSaving,
       isSubmitting: submissionState.isSubmitting || Boolean(submitControl?.isSubmitting),
       onSave:
-        Boolean(vm?.canSaveDraft) && submissionState.saveState === 'dirty'
-          ? () => void submissionState.save()
-          : undefined,
+        Boolean(vm?.canSaveDraft) && submissionState.saveState === 'dirty' ? () => submissionState.save() : undefined,
       onSubmit: vm?.canSubmit && submitControl?.canSubmit ? submitControl.submit : undefined,
       conflict: submissionState.conflict
         ? {
@@ -81,7 +79,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   useEffect(() => {
     if (submissionStatus !== 'DRAFT' || saveState !== 'dirty') return;
     const timeout = setTimeout(() => {
-      void saveDraft();
+      saveDraft();
     }, 1000);
     return () => clearTimeout(timeout);
   }, [saveDraft, saveState, submissionStatus]);

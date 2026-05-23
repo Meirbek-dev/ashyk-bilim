@@ -104,7 +104,7 @@ test.describe.serial('Teacher – Course Creation', () => {
     await configureBtn.click();
 
     await page.waitForURL(/\/activity\/[^/]+\/studio/, { timeout: 10_000 });
-    const match = page.url().match(/\/activity\/([^/]+)\/studio/);
+    const match = /\/activity\/([^/]+)\/studio/.exec(page.url());
     expect(match).not.toBeNull();
     const activityId = match![1];
     process.env.E2E_LECTURE_ACTIVITY_ID = activityId;
@@ -158,7 +158,7 @@ test.describe.serial('Teacher – Course Creation', () => {
     await configureBtn.click();
     await page.waitForURL(/\/activity\/[^/]+\/studio/, { timeout: 10_000 });
 
-    const match = page.url().match(/\/activity\/([^/]+)\/studio/);
+    const match = /\/activity\/([^/]+)\/studio/.exec(page.url());
     expect(match).not.toBeNull();
     process.env.E2E_EXAM_ACTIVITY_ID = match![1];
 
@@ -242,7 +242,7 @@ test.describe.serial('Teacher – Course Creation', () => {
 
     // Confirm publish if a dialog appears
     const confirmBtn = page.getByRole('button', { name: /confirm|yes|publish/i }).last();
-    if (await confirmBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await confirmBtn.click();
     }
 

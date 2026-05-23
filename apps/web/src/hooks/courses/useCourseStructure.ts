@@ -55,8 +55,8 @@ export function useCourseStructure<TCourseStructure = any>(
   };
 }
 
-export function useCourseChapters<TChapter = any>(courseUuid: string, withUnpublishedActivities = false) {
-  const { courseStructure, ...rest } = useCourseStructure<{ chapters?: TChapter[] }>(courseUuid, {
+export function useCourseChapters(courseUuid: string, withUnpublishedActivities = false) {
+  const { courseStructure, ...rest } = useCourseStructure<{ chapters?: unknown[] }>(courseUuid, {
     withUnpublishedActivities,
   });
 
@@ -77,13 +77,13 @@ export function useChapter<TChapter = any>(courseUuid: string, chapterUuid: stri
   return { ...rest, chapter };
 }
 
-export function useChapterActivities<TActivity = any>(
+export function useChapterActivities(
   courseUuid: string,
   chapterUuid: string,
   enabled: boolean,
   withUnpublishedActivities = false,
 ) {
-  const { chapter, ...rest } = useChapter<{ activities?: TActivity[] }>(
+  const { chapter, ...rest } = useChapter<{ activities?: unknown[] }>(
     courseUuid,
     chapterUuid,
     withUnpublishedActivities,

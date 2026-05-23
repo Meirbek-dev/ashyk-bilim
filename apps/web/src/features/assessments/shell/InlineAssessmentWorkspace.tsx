@@ -58,7 +58,8 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     recommendedAction === 'waitForRelease' ||
     recommendedAction === 'noAction';
 
-  const canAct = (recommendedAction === 'start' || recommendedAction === 'startRevision') && (vm?.items?.length ?? 0) > 0;
+  const canAct =
+    (recommendedAction === 'start' || recommendedAction === 'startRevision') && (vm?.items?.length ?? 0) > 0;
 
   // ── Derive layout mode ──────────────────────────────────────────────────────
 
@@ -149,7 +150,12 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
 
   // Entry card (pre-flight) — no CTA inside, it lives in BottomActionBar
   if (isPreflightMode) {
-    return <AttemptEntryCard vm={vm} isTeacher={isTeacher} />;
+    return (
+      <AttemptEntryCard
+        vm={vm}
+        isTeacher={isTeacher}
+      />
+    );
   }
 
   // Result card (post-submit)

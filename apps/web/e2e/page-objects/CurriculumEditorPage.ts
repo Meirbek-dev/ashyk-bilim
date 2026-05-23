@@ -6,16 +6,16 @@ import { expect } from '@playwright/test';
  * Manages chapter and activity creation in the DnD curriculum editor.
  */
 export class CurriculumEditorPage {
-  readonly page: Page;
+  public readonly page: Page;
 
   /** "Add chapter" / "+ New chapter" button */
-  readonly addChapterButton: Locator;
+  public readonly addChapterButton: Locator;
   /** The inline input that appears after clicking addChapterButton */
-  readonly chapterNameInput: Locator;
+  public readonly chapterNameInput: Locator;
   /** Toast notifications from sonner */
-  readonly toast: Locator;
+  public readonly toast: Locator;
 
-  constructor(page: Page) {
+  public constructor(page: Page) {
     this.page = page;
     this.addChapterButton = page.getByRole('button', { name: /add chapter|new chapter|\+ chapter/i }).first();
     // The new-chapter inline input — rendered when showChapterInput===true
@@ -23,14 +23,14 @@ export class CurriculumEditorPage {
     this.toast = page.locator('[data-sonner-toast]').first();
   }
 
-  async goto(courseUuid: string): Promise<void> {
+  public async goto(courseUuid: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/curriculum`);
     await this.page.waitForLoadState('networkidle');
     await expect(this.addChapterButton).toBeVisible({ timeout: 15_000 });
   }
 
   /** Create a new chapter and wait for it to appear in the list. */
-  async createChapter(name: string): Promise<void> {
+  public async createChapter(name: string): Promise<void> {
     await this.addChapterButton.click();
     await expect(this.chapterNameInput).toBeVisible();
     await this.chapterNameInput.fill(name);
@@ -44,7 +44,7 @@ export class CurriculumEditorPage {
    * @param chapterName - the visible chapter title to target
    * @param activityType - human label shown in the dropdown, e.g. "Dynamic", "Exam"
    */
-  async addActivityToChapter(chapterName: string, activityType: string): Promise<void> {
+  public async addActivityToChapter(chapterName: string, activityType: string): Promise<void> {
     // Find the chapter row
     const chapterRow = this.page
       .locator('[data-chapter-element], .chapter-element, li')
@@ -75,7 +75,7 @@ export class CurriculumEditorPage {
    * Click "Configure" on an activity item to navigate to its studio page.
    * Returns the activity UUID extracted from the resulting URL.
    */
-  async configureActivity(activityName: string): Promise<string> {
+  public async configureActivity(activityName: string): Promise<string> {
     const activityRow = this.page
       .locator('[data-activity-element], .activity-element, li')
       .filter({ hasText: activityName })
@@ -88,7 +88,7 @@ export class CurriculumEditorPage {
 
     await this.page.waitForURL(/\/activity\/[^/]+\/studio/, { timeout: 10_000 });
 
-    const match = this.page.url().match(/\/activity\/([^/]+)\/studio/);
+    const match = /\/activity\/([^/]+)\/studio/.exec(this.page.url());
     if (!match?.[1]) throw new Error(`Could not extract activity id from: ${this.page.url()}`);
     return match[1];
   }

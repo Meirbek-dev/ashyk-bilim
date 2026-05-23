@@ -308,7 +308,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
                   >
                     <Checkbox
                       checked={checked}
-                      onCheckedChange={(nextChecked) => togglePreset(preset.mimes, Boolean(nextChecked))}
+                      onCheckedChange={(nextChecked) => togglePreset(preset.mimes, nextChecked)}
                       className="mt-0.5"
                     />
                     <div className="grid gap-0.5">

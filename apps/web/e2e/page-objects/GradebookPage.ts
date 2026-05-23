@@ -6,16 +6,16 @@ import { expect } from '@playwright/test';
  * The teacher's grade-at-a-glance table.
  */
 export class GradebookPage {
-  readonly page: Page;
+  public readonly page: Page;
 
   /** The main gradebook data table */
-  readonly table: Locator;
+  public readonly table: Locator;
   /** Filter / preset tabs (e.g. "Needs Grading") */
-  readonly needsGradingTab: Locator;
+  public readonly needsGradingTab: Locator;
   /** Each row in the table */
-  readonly tableRows: Locator;
+  public readonly tableRows: Locator;
 
-  constructor(page: Page) {
+  public constructor(page: Page) {
     this.page = page;
     this.table = page.locator('table, [role="table"]').first();
     this.needsGradingTab = page
@@ -25,7 +25,7 @@ export class GradebookPage {
     this.tableRows = this.table.locator('tbody tr, [role="row"]');
   }
 
-  async goto(courseUuid: string): Promise<void> {
+  public async goto(courseUuid: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/gradebook`);
     await this.page.waitForLoadState('networkidle');
     await expect(this.table).toBeVisible({ timeout: 15_000 });
@@ -35,7 +35,7 @@ export class GradebookPage {
    * Click on a specific activity column header to open the review page.
    * @param activityName - the activity name that appears in the column header
    */
-  async openActivityReview(activityName: string): Promise<void> {
+  public async openActivityReview(activityName: string): Promise<void> {
     const header = this.table.locator('th, [role="columnheader"]').filter({ hasText: activityName }).first();
     await header.click();
     await this.page.waitForURL(/\/activity\/[^/]+\/review/, { timeout: 10_000 });
@@ -44,7 +44,7 @@ export class GradebookPage {
   /**
    * Navigate directly to the review page for an activity.
    */
-  async gotoActivityReview(courseUuid: string, activityId: string): Promise<void> {
+  public async gotoActivityReview(courseUuid: string, activityId: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/activity/${activityId}/review`);
     await this.page.waitForLoadState('networkidle');
   }

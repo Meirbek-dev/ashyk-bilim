@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useMemo, useRef } from 'react';
-import Editor, { type OnChange, type OnMount } from '@monaco-editor/react';
+import Editor from '@monaco-editor/react';
+import type { OnChange, OnMount } from '@monaco-editor/react';
 
 import { useTheme } from '@/components/providers/theme-provider';
 import { cn } from '@/lib/utils';

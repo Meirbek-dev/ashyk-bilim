@@ -353,9 +353,7 @@ function OptionsAuthor({
             <button
               type="button"
               disabled={disabled || value.options.length <= 1}
-              onClick={() =>
-                onChange({ ...value, options: value.options.filter((_, i) => i !== index) })
-              }
+              onClick={() => onChange({ ...value, options: value.options.filter((_, i) => i !== index) })}
               className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-0"
               aria-label={t('removeOption')}
             >

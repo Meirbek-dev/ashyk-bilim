@@ -90,28 +90,26 @@ export function useCodeSubmitControl() {
   const submitRef = useRef<CodeChallengeSubmitControl['submit'] | null>(null);
   const submit = useCallback(() => submitRef.current?.(), []);
 
-  const handleSubmitControlChange = useCallback((control: CodeChallengeSubmitControl | null) => {
-    submitRef.current = control?.submit ?? null;
-    setSubmitControl((prev) => {
-      if (!prev && !control) return null;
-      const next = control
-        ? {
-            canSubmit: control.canSubmit,
-            isSubmitting: control.isSubmitting,
-            submit,
-          }
-        : null;
-      if (
-        prev &&
-        next &&
-        prev.canSubmit === next.canSubmit &&
-        prev.isSubmitting === next.isSubmitting
-      ) {
-        return prev;
-      }
-      return next;
-    });
-  }, [submit]);
+  const handleSubmitControlChange = useCallback(
+    (control: CodeChallengeSubmitControl | null) => {
+      submitRef.current = control?.submit ?? null;
+      setSubmitControl((prev) => {
+        if (!prev && !control) return null;
+        const next = control
+          ? {
+              canSubmit: control.canSubmit,
+              isSubmitting: control.isSubmitting,
+              submit,
+            }
+          : null;
+        if (prev && next && prev.canSubmit === next.canSubmit && prev.isSubmitting === next.isSubmitting) {
+          return prev;
+        }
+        return next;
+      });
+    },
+    [submit],
+  );
 
   return { submitControl, handleSubmitControlChange };
 }

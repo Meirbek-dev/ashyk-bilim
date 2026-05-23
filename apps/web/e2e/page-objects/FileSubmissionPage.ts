@@ -6,20 +6,20 @@ import * as path from 'node:path';
  * Page Object for file-submission activities (student side).
  */
 export class FileSubmissionPage {
-  readonly page: Page;
+  public readonly page: Page;
 
   /** File upload input (hidden, triggered by the upload area) */
-  readonly fileInput: Locator;
+  public readonly fileInput: Locator;
   /** The drag-and-drop upload zone */
-  readonly dropZone: Locator;
+  public readonly dropZone: Locator;
   /** "Submit" / "Upload" button */
-  readonly submitButton: Locator;
+  public readonly submitButton: Locator;
   /** Status badge after submission */
-  readonly statusBadge: Locator;
+  public readonly statusBadge: Locator;
   /** Success toast */
-  readonly toast: Locator;
+  public readonly toast: Locator;
 
-  constructor(page: Page) {
+  public constructor(page: Page) {
     this.page = page;
     this.fileInput = page.locator('input[type="file"]').first();
     this.dropZone = page.locator('[data-dropzone], [aria-label*="upload"], .upload-zone').first();
@@ -32,10 +32,10 @@ export class FileSubmissionPage {
    * Upload a file and submit.
    * @param filePath - absolute path to the file to upload
    */
-  async uploadAndSubmit(filePath: string): Promise<void> {
+  public async uploadAndSubmit(filePath: string): Promise<void> {
     // Use setInputFiles for reliable headless file uploads
     await this.fileInput.setInputFiles(filePath);
-    await expect(this.page.getByText(path.basename(filePath))).toBeVisible({ timeout: 8_000 });
+    await expect(this.page.getByText(path.basename(filePath))).toBeVisible({ timeout: 8000 });
 
     await this.submitButton.click();
     await this.page.waitForResponse((r) => r.url().includes('/file-submissions') && r.request().method() === 'POST', {
@@ -43,7 +43,7 @@ export class FileSubmissionPage {
     });
   }
 
-  async assertSubmitted(): Promise<void> {
+  public async assertSubmitted(): Promise<void> {
     await expect(this.page.getByText(/submitted|awaiting grade|pending/i).first()).toBeVisible({ timeout: 10_000 });
   }
 }

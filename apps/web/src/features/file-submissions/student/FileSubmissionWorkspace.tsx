@@ -81,7 +81,7 @@ interface FileCategory {
   icon: React.ElementType;
 }
 
-const MIME_CATEGORY_MAP: Array<{ prefix: string; category: FileCategory }> = [
+const MIME_CATEGORY_MAP: { prefix: string; category: FileCategory }[] = [
   { prefix: 'image/', category: { label: 'Images', icon: FileImage } },
   { prefix: 'video/', category: { label: 'Videos', icon: FileVideo } },
   { prefix: 'audio/', category: { label: 'Audio', icon: FileVideo } },
@@ -270,10 +270,10 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
           const done = { ...slot, upload_uuid: result.upload_uuid, status: 'saved' as const, progress: 100 };
           setSlots((prev) => prev.map((s) => (s.id === slot.id ? done : s)));
           uploaded.push(done);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : t('uploadFailed');
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : t('uploadFailed');
           setSlots((prev) => prev.map((s) => (s.id === slot.id ? { ...s, status: 'failed', error: msg } : s)));
-          throw err;
+          throw error;
         }
       }
 

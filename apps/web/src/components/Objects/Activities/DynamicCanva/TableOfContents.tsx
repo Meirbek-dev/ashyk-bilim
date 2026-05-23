@@ -47,7 +47,7 @@ const TableOfContents = ({ className, editor, minItems = 2 }: TableOfContentsPro
       (entries) => {
         const visible = entries
           .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          .toSorted((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
         if (visible[0]?.target.id) {
           setActiveId(visible[0].target.id);
         }

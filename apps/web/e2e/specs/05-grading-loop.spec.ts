@@ -110,7 +110,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
       test.skip(true, 'Exam activity ID not set — run course creation spec first');
     }
     await gradebookPage.gotoActivityReview(courseUuid, examActivityId);
-    await expect(page.url()).toContain(`/activity/${examActivityId}/review`);
+    expect(page.url()).toContain(`/activity/${examActivityId}/review`);
   });
 
   test('teacher can release the exam grade to the student', async ({ page, gradingReviewPage }) => {
@@ -129,7 +129,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
       await submissionItem.click();
       // Exam may be auto-graded; just publish/release the grade
       const releaseBtn = page.getByRole('button', { name: /publish|release|approve/i }).first();
-      await expect(releaseBtn).toBeVisible({ timeout: 8_000 });
+      await expect(releaseBtn).toBeVisible({ timeout: 8000 });
       await releaseBtn.click();
 
       await expect(

@@ -47,25 +47,37 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
 
   return (
     <div className="mx-auto max-w-7xl space-y-5 px-4 py-6">
-      <div className="flex flex-col gap-3 rounded-lg border bg-card p-5 md:flex-row md:items-center md:justify-between">
+      <div className="bg-card flex flex-col gap-3 rounded-lg border p-5 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
-          <div className="rounded-md border bg-muted p-2">
-            <BarChart3 className="size-5 text-muted-foreground" />
+          <div className="bg-muted rounded-md border p-2">
+            <BarChart3 className="text-muted-foreground size-5" />
           </div>
           <div>
             <h2 className="text-base font-semibold">{t('title')}</h2>
             <p className="text-muted-foreground text-sm">{t('description')}</p>
           </div>
         </div>
-        <Button nativeButton={false} render={<Link href={reviewHref} />}>
+        <Button
+          nativeButton={false}
+          render={<Link href={reviewHref} />}
+        >
           <ExternalLink className="size-4" />
           {t('openReview')}
         </Button>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
-        <ResultMetric icon={Users} label={t('submissions')} value={stats?.total ?? 0} />
-        <ResultMetric icon={Clock4} label={t('needsReview')} value={stats?.needs_grading_count ?? 0} accent="amber" />
+        <ResultMetric
+          icon={Users}
+          label={t('submissions')}
+          value={stats?.total ?? 0}
+        />
+        <ResultMetric
+          icon={Clock4}
+          label={t('needsReview')}
+          value={stats?.needs_grading_count ?? 0}
+          accent="amber"
+        />
         <ResultMetric
           icon={TrendingUp}
           label={t('averageScore')}
@@ -81,9 +93,18 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
       </div>
 
       <section className="grid gap-4 lg:grid-cols-3">
-        <InsightPanel title={t('queueTitle')} body={t('queueBody')} />
-        <InsightPanel title={t('questionQualityTitle')} body={t('questionQualityBody')} />
-        <InsightPanel title={t('releaseTitle')} body={t('releaseBody')} />
+        <InsightPanel
+          title={t('queueTitle')}
+          body={t('queueBody')}
+        />
+        <InsightPanel
+          title={t('questionQualityTitle')}
+          body={t('questionQualityBody')}
+        />
+        <InsightPanel
+          title={t('releaseTitle')}
+          body={t('releaseBody')}
+        />
       </section>
     </div>
   );
@@ -107,7 +128,7 @@ function ResultMetric({
     emerald: 'text-emerald-600',
   }[accent];
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div className="bg-card rounded-lg border p-4">
       <Icon className={`${color} size-5`} />
       <p className="text-muted-foreground mt-3 text-xs">{label}</p>
       <p className="text-2xl font-semibold">{value}</p>
@@ -117,7 +138,7 @@ function ResultMetric({
 
 function InsightPanel({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div className="bg-card rounded-lg border p-4">
       <h3 className="text-sm font-semibold">{title}</h3>
       <p className="text-muted-foreground mt-2 text-sm">{body}</p>
     </div>

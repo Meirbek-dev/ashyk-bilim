@@ -281,7 +281,10 @@ export function NativeItemOutline({
                 </Button>
               }
             />
-            <DropdownMenuContent align="start" className="w-64">
+            <DropdownMenuContent
+              align="start"
+              className="w-64"
+            >
               {allowedKinds.map((kind) => {
                 const Icon = KIND_ICONS[kind];
                 return (
@@ -461,13 +464,17 @@ export function NativeItemAuthor({
           }),
         });
         if (!response.ok)
-          throw new Error(await responseError(response, t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() })));
+          throw new Error(
+            await responseError(response, t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() })),
+          );
         lastSavedItemRef.current = serializeItemState(nextItem);
         setItemSaveState('saved');
         await refresh();
       } catch (error) {
         setItemSaveState('error');
-        toast.error(error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }));
+        toast.error(
+          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
+        );
       }
     },
     [assessment.assessment_uuid, displayItemNoun, refresh, t],
@@ -478,7 +485,9 @@ export function NativeItemAuthor({
     const serialized = serializeAssessmentState(assessmentState);
     if (serialized === lastSavedAssessmentRef.current) return;
     setAssessmentSaveState('dirty');
-    const timeout = setTimeout(() => { void saveAssessment(assessmentState); }, 900);
+    const timeout = setTimeout(() => {
+      void saveAssessment(assessmentState);
+    }, 900);
     return () => clearTimeout(timeout);
   }, [assessmentState, isEditable, saveAssessment]);
 
@@ -487,25 +496,30 @@ export function NativeItemAuthor({
     const serialized = serializeItemState(itemState);
     if (serialized === lastSavedItemRef.current) return;
     setItemSaveState('dirty');
-    const timeout = setTimeout(() => { void saveItem(itemState); }, 900);
+    const timeout = setTimeout(() => {
+      void saveItem(itemState);
+    }, 900);
     return () => clearTimeout(timeout);
   }, [isEditable, itemState, saveItem]);
 
-  const handleReorder = useCallback(async (orderedUuids: string[]) => {
-    setLocalOrderedUuids(orderedUuids);
-    try {
-      await apiFetch(`assessments/${assessment.assessment_uuid}/items:reorder`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: orderedUuids.map((item_uuid, index) => ({ item_uuid, order: index + 1 })),
-        }),
-      });
-      await refresh();
-    } catch {
-      // Reorder persists visually; server sync is best-effort
-    }
-  }, [assessment.assessment_uuid, refresh]);
+  const handleReorder = useCallback(
+    async (orderedUuids: string[]) => {
+      setLocalOrderedUuids(orderedUuids);
+      try {
+        await apiFetch(`assessments/${assessment.assessment_uuid}/items:reorder`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: orderedUuids.map((item_uuid, index) => ({ item_uuid, order: index + 1 })),
+          }),
+        });
+        await refresh();
+      } catch {
+        // Reorder persists visually; server sync is best-effort
+      }
+    },
+    [assessment.assessment_uuid, refresh],
+  );
 
   const setLifecycle = useCallback(
     async (lifecycle: AssessmentLifecycle, scheduledAt?: string | null) => {
@@ -605,9 +619,18 @@ export function NativeItemAuthor({
           itemState={itemState}
           itemSaveState={itemSaveState}
           onSelectItem={setSelectedItemUuid}
-          onItemCreated={async (uuid) => { await refresh(); setSelectedItemUuid(uuid); }}
-          onItemDeleted={async () => { setSelectedItemUuid(null); await refresh(); }}
-          onItemDuplicated={async (uuid) => { await refresh(); setSelectedItemUuid(uuid); }}
+          onItemCreated={async (uuid) => {
+            await refresh();
+            setSelectedItemUuid(uuid);
+          }}
+          onItemDeleted={async () => {
+            setSelectedItemUuid(null);
+            await refresh();
+          }}
+          onItemDuplicated={async (uuid) => {
+            await refresh();
+            setSelectedItemUuid(uuid);
+          }}
           onReorder={handleReorder}
           onItemChange={setItemState}
           renderItemBodyEditor={(currentItem) => (

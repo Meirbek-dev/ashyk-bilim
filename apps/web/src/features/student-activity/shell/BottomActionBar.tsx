@@ -10,7 +10,8 @@ import { toast } from 'sonner';
 import Link from '@components/ui/AppLink';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { runStudentActivityAction, type StudentActivityRuntime } from '@/features/student-activity/api/runtime';
+import { runStudentActivityAction } from '@/features/student-activity/api/runtime';
+import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime';
 import { useActivityLayout } from '@/features/assessments/shell/ActivityLayoutContext';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 
@@ -318,42 +319,58 @@ function getOutlineProgress(runtime: StudentActivityRuntime) {
 
 function getPrimaryActionText(actionId: RuntimeActionId, t: (key: string) => string): string {
   switch (actionId) {
-    case 'start':
+    case 'start': {
       return t('startActivity');
-    case 'continue':
+    }
+    case 'continue': {
       return t('continueActivity');
-    case 'submit':
+    }
+    case 'submit': {
       return t('submitButton');
-    case 'view_receipt':
+    }
+    case 'view_receipt': {
       return t('viewReceipt');
-    case 'view_feedback':
+    }
+    case 'view_feedback': {
       return t('viewResult');
-    case 'revise':
+    }
+    case 'revise': {
       return t('needsRevision');
-    case 'review_policy':
+    }
+    case 'review_policy': {
       return t('statusGradingInProgress');
-    case 'next_activity':
+    }
+    case 'next_activity': {
       return t('next');
-    case 'back_to_course':
+    }
+    case 'back_to_course': {
       return t('backToCourse');
-    case 'unmark_complete':
+    }
+    case 'unmark_complete': {
       return t('unmarkComplete');
-    case 'mark_complete':
+    }
+    case 'mark_complete': {
       return t('markAsComplete');
-    default:
+    }
+    default: {
       return t('noAction');
+    }
   }
 }
 
 function getDisabledReason(reason: string, t: (key: string) => string): string {
   switch (reason) {
-    case 'authentication_required':
+    case 'authentication_required': {
       return t('signInRequired');
-    case 'unavailable':
+    }
+    case 'unavailable': {
       return t('unpublishedActivity');
-    case 'locked':
+    }
+    case 'locked': {
       return t('accessBlocked');
-    default:
+    }
+    default: {
       return reason.replace(/_/g, ' ');
+    }
   }
 }

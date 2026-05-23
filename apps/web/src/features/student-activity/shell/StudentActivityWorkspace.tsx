@@ -50,19 +50,24 @@ export default function StudentActivityWorkspace({
 
   const contentFrameClassName = useMemo(() => {
     switch (activityType) {
-      case 'TYPE_DYNAMIC':
+      case 'TYPE_DYNAMIC': {
         return 'mx-auto w-full max-w-[112rem]';
+      }
       case 'TYPE_VIDEO':
       case 'TYPE_DOCUMENT':
-      case 'TYPE_CODE_CHALLENGE':
+      case 'TYPE_CODE_CHALLENGE': {
         return 'mx-auto w-full max-w-[112rem]';
-      case 'TYPE_FILE_SUBMISSION':
+      }
+      case 'TYPE_FILE_SUBMISSION': {
         return 'mx-auto w-full max-w-[80rem]';
+      }
       case 'TYPE_EXAM':
-      case 'TYPE_CUSTOM':
+      case 'TYPE_CUSTOM': {
         return 'mx-auto w-full max-w-[96rem]';
-      default:
+      }
+      default: {
         return 'mx-auto w-full max-w-[86rem]';
+      }
     }
   }, [activityType]);
 
@@ -107,8 +112,8 @@ export default function StudentActivityWorkspace({
       if (focusMode) setFocusMode(false);
     };
 
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    globalThis.addEventListener('keydown', onKeyDown);
+    return () => globalThis.removeEventListener('keydown', onKeyDown);
   }, [focusMode, aiOpen, outlineOpen]);
 
   useEffect(() => {
@@ -136,8 +141,8 @@ export default function StudentActivityWorkspace({
       }
     };
 
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    globalThis.addEventListener('keydown', onKeyDown);
+    return () => globalThis.removeEventListener('keydown', onKeyDown);
   }, [focusMode, isAttemptActive]);
 
   const isLocked = runtime.progress.state === 'locked' || runtime.progress.state === 'unavailable';
@@ -253,13 +258,13 @@ function useContentReadCompletion({
     let frame = 0;
     const checkReadCompletion = () => {
       frame = 0;
-      const bottom = target.getBoundingClientRect().bottom;
+      const { bottom } = target.getBoundingClientRect();
       const viewportBottom = window.innerHeight;
       setCompleteOnce(bottom <= viewportBottom + CONTENT_READ_TOLERANCE_PX);
     };
     const scheduleCheck = () => {
       if (frame) return;
-      frame = window.requestAnimationFrame(checkReadCompletion);
+      frame = globalThis.requestAnimationFrame(checkReadCompletion);
     };
 
     scheduleCheck();
@@ -270,7 +275,7 @@ function useContentReadCompletion({
     resizeObserver.observe(target);
 
     return () => {
-      if (frame) window.cancelAnimationFrame(frame);
+      if (frame) globalThis.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', scheduleCheck);
       window.removeEventListener('resize', scheduleCheck);
       resizeObserver.disconnect();

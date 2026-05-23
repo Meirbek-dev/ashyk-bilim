@@ -33,8 +33,8 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
   const activityType = runtime.activity?.type ?? '';
   if (!ASSESSMENT_TYPES.has(activityType)) return null;
 
-  const policy = runtime.policy;
-  const state = runtime.progress.state;
+  const { policy } = runtime;
+  const { state } = runtime.progress;
 
   const items: string[] = [];
 
@@ -95,40 +95,53 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
 
 function getKindLabel(activityType: string, t: (key: string) => string): string {
   switch (activityType) {
-    case 'TYPE_EXAM':
+    case 'TYPE_EXAM': {
       return t('activityTypes.exam');
-    case 'TYPE_CUSTOM':
+    }
+    case 'TYPE_CUSTOM': {
       return t('activityTypes.learningMaterial');
-    case 'TYPE_CODE_CHALLENGE':
+    }
+    case 'TYPE_CODE_CHALLENGE': {
       return t('activityTypes.codeChallenge');
-    case 'TYPE_FILE_SUBMISSION':
+    }
+    case 'TYPE_FILE_SUBMISSION': {
       return t('activityTypes.fileSubmission');
-    default:
+    }
+    default: {
       return activityType;
+    }
   }
 }
 
 function getStateChip(state: string, t: (key: string) => string): string | null {
   switch (state) {
-    case 'not_started':
+    case 'not_started': {
       return t('notStarted');
-    case 'draft':
+    }
+    case 'draft': {
       return t('draft');
+    }
     case 'submitted':
-    case 'needs_grading':
+    case 'needs_grading': {
       return t('submitted');
-    case 'returned':
+    }
+    case 'returned': {
       return t('needsRevision');
-    case 'graded_hidden':
+    }
+    case 'graded_hidden': {
       return t('statusGradingInProgress');
+    }
     case 'published':
     case 'passed':
-    case 'complete':
+    case 'complete': {
       return t('statusComplete');
-    case 'failed':
+    }
+    case 'failed': {
       return t('failed');
-    default:
+    }
+    default: {
       return null;
+    }
   }
 }
 

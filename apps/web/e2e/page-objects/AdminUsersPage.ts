@@ -6,15 +6,15 @@ import { expect } from '@playwright/test';
  * Used by Admin to assign roles to other users.
  */
 export class AdminUsersPage {
-  readonly page: Page;
+  public readonly page: Page;
 
-  readonly addRoleButton: Locator;
-  readonly userSelect: Locator;
-  readonly roleSelect: Locator;
-  readonly confirmAssignButton: Locator;
-  readonly successToast: Locator;
+  public readonly addRoleButton: Locator;
+  public readonly userSelect: Locator;
+  public readonly roleSelect: Locator;
+  public readonly confirmAssignButton: Locator;
+  public readonly successToast: Locator;
 
-  constructor(page: Page) {
+  public constructor(page: Page) {
     this.page = page;
     // "Add Role" / "+" button that opens the assignment dialog
     this.addRoleButton = page.getByRole('button', { name: /add role|\+/i }).first();
@@ -27,7 +27,7 @@ export class AdminUsersPage {
     this.successToast = page.locator('[data-sonner-toast]').first();
   }
 
-  async goto(): Promise<void> {
+  public async goto(): Promise<void> {
     await this.page.goto('/en/dash/admin/users');
     await expect(this.addRoleButton).toBeVisible({ timeout: 15_000 });
   }
@@ -36,7 +36,7 @@ export class AdminUsersPage {
    * Assign `roleName` to the user with `userEmail`.
    * Assumes the dialog contains searchable Select components.
    */
-  async assignRole(userEmail: string, roleName: string): Promise<void> {
+  public async assignRole(userEmail: string, roleName: string): Promise<void> {
     await this.addRoleButton.click();
 
     // The dialog should appear

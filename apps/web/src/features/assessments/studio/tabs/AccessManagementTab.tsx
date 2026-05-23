@@ -156,8 +156,14 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
             <ShieldCheck className="text-primary size-5 shrink-0" />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <Metric label={t('eligible')} value={eligibleUsers.length} />
-            <Metric label={t('effective')} value={effectiveLocalCount} />
+            <Metric
+              label={t('eligible')}
+              value={eligibleUsers.length}
+            />
+            <Metric
+              label={t('effective')}
+              value={effectiveLocalCount}
+            />
           </div>
         </section>
 
@@ -208,7 +214,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
               type="button"
               disabled={disabled || mode !== 'RESTRICTED'}
               onClick={() => toggleSet(setSelectedUsers, user.id)}
-              className="hover:bg-muted/60 flex w-full items-center gap-3 rounded-md border bg-background p-3 text-left transition disabled:cursor-not-allowed"
+              className="hover:bg-muted/60 bg-background flex w-full items-center gap-3 rounded-md border p-3 text-left transition disabled:cursor-not-allowed"
             >
               <Checkbox checked={selectedUsers.has(user.id)} />
               <div className="min-w-0 flex-1">
@@ -233,7 +239,7 @@ export default function AccessManagementTab({ assessmentUuid, disabled }: Access
               type="button"
               disabled={disabled || mode !== 'RESTRICTED'}
               onClick={() => toggleSet(setSelectedGroups, group.id)}
-              className="hover:bg-muted/60 flex w-full items-center gap-3 rounded-md border bg-background p-3 text-left transition disabled:cursor-not-allowed"
+              className="hover:bg-muted/60 bg-background flex w-full items-center gap-3 rounded-md border p-3 text-left transition disabled:cursor-not-allowed"
             >
               <Checkbox checked={selectedGroups.has(group.id)} />
               <div className="min-w-0 flex-1">
@@ -282,7 +288,11 @@ function ModeOption({
         active && 'border-primary bg-primary/5',
       )}
     >
-      <RadioGroupItem id={id} value={value} className="mt-0.5" />
+      <RadioGroupItem
+        id={id}
+        value={value}
+        className="mt-0.5"
+      />
       <span>
         <span className="block text-sm font-medium">{title}</span>
         <span className="text-muted-foreground block text-xs">{description}</span>

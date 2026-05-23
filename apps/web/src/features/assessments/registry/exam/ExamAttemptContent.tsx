@@ -135,34 +135,47 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
         actionTitle={
           questions.length === 0
             ? t('testNotReadyTitle')
-            : (vm.isReturnedForRevision
+            : vm.isReturnedForRevision
               ? t('readyToRevise')
-              : t('readyToStart'))
+              : t('readyToStart')
         }
         actionDescription={
           questions.length === 0
-            ? (contributorStatus === 'ACTIVE' ? t('teacherNoQuestionsWarning') : t('noQuestionsWarning'))
-            : (vm.isReturnedForRevision
+            ? contributorStatus === 'ACTIVE'
+              ? t('teacherNoQuestionsWarning')
+              : t('noQuestionsWarning')
+            : vm.isReturnedForRevision
               ? t('readyToReviseDescription')
-              : t('readyToStartSubtitle'))
+              : t('readyToStartSubtitle')
         }
         actionLabel={
           questions.length === 0
             ? undefined
-            : (vm.canEdit ? (vm.isReturnedForRevision ? t('startRevision') : t('startExam')) : undefined)
+            : vm.canEdit
+              ? vm.isReturnedForRevision
+                ? t('startRevision')
+                : t('startExam')
+              : undefined
         }
         actionDisabled={!vm.canEdit || questions.length === 0}
         actionPending={isStarting}
         blockedMessage={
           questions.length === 0
-            ? (contributorStatus === 'ACTIVE' ? t('teacherNoQuestionsWarning') : t('noQuestionsWarning'))
-            : (!vm.canEdit ? t('noEditableDraft') : null)
+            ? contributorStatus === 'ACTIVE'
+              ? t('teacherNoQuestionsWarning')
+              : t('noQuestionsWarning')
+            : !vm.canEdit
+              ? t('noEditableDraft')
+              : null
         }
         onAction={vm.canEdit && questions.length > 0 ? handleStartExam : undefined}
         notices={
           <div className="space-y-4">
             {questions.length === 0 ? (
-              <Alert variant="destructive" className="border-destructive/30 bg-destructive/5 text-destructive">
+              <Alert
+                variant="destructive"
+                className="border-destructive/30 bg-destructive/5 text-destructive"
+              >
                 <AlertCircle className="size-4" />
                 <AlertTitle>{t('testNotReadyTitle')}</AlertTitle>
                 <AlertDescription>
@@ -364,7 +377,7 @@ function ExamTakingContent({
   useEffect(() => {
     if (submissionState.status !== 'DRAFT' || submissionState.saveState !== 'dirty') return;
     const timeout = setTimeout(() => {
-      void submissionState.save();
+      submissionState.save();
     }, 1000);
     return () => clearTimeout(timeout);
   }, [submissionState]);
@@ -389,7 +402,7 @@ function ExamTakingContent({
       canSubmit,
       isSaving: submissionState.isSaving,
       isSubmitting: submissionState.isSubmitting,
-      onSave: canSaveDraft && submissionState.saveState === 'dirty' ? () => void submissionState.save() : undefined,
+      onSave: canSaveDraft && submissionState.saveState === 'dirty' ? () => submissionState.save() : undefined,
       onSubmit: canSubmit ? handleOpenSubmitConfirmation : undefined,
       navigation: {
         current: currentIndex + 1,

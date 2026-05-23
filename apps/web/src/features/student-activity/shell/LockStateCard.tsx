@@ -28,8 +28,8 @@ function cleanUuid(uuid: string | null | undefined, prefix: 'course_' | 'activit
  */
 export default function LockStateCard({ runtime }: LockStateCardProps) {
   const t = useTranslations('ActivityPage');
-  const state = runtime.progress.state;
-  const reason = runtime.primary_action.reason;
+  const { state } = runtime.progress;
+  const { reason } = runtime.primary_action;
 
   const isLocked = state === 'locked';
   const isUnavailable = state === 'unavailable';
@@ -39,14 +39,18 @@ export default function LockStateCard({ runtime }: LockStateCardProps) {
   const title = isLocked ? t('lockedTitle') : t('unpublishedActivity');
   const body = (() => {
     switch (reason) {
-      case 'locked':
+      case 'locked': {
         return t('lockedReasonLocked');
-      case 'unavailable':
+      }
+      case 'unavailable': {
         return t('unpublishedActivity');
-      case 'authentication_required':
+      }
+      case 'authentication_required': {
         return t('signInRequired');
-      default:
+      }
+      default: {
         return isLocked ? t('lockedReasonLocked') : t('unpublishedActivity');
+      }
     }
   })();
 

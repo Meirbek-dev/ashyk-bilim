@@ -48,7 +48,7 @@ export default function ReviewBulkActionBar({
   const [reason, setReason] = useState('');
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [lastSummary, setLastSummary] = useState<BulkActionSummary | null>(null);
-  const [failedSubmissions, setFailedSubmissions] = useState<Array<{ name: string; error: string }>>([]);
+  const [failedSubmissions, setFailedSubmissions] = useState<{ name: string; error: string }[]>([]);
 
   const gradeable = submissions.filter((submission) => submission.final_score !== null);
   const userIds = submissions
@@ -391,7 +391,7 @@ async function saveGradesWithinAssessment(
     ),
   );
 
-  const failures: Array<{ name: string; error: string }> = [];
+  const failures: { name: string; error: string }[] = [];
   results.forEach((result, i) => {
     if (result.status === 'rejected') {
       const sub = submissions[i];

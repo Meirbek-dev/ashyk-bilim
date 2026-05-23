@@ -114,36 +114,42 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
 
 function getSuggestions(activityType: string): string[] {
   switch (activityType) {
-    case 'TYPE_DYNAMIC':
+    case 'TYPE_DYNAMIC': {
       return [
         'Summarize this page for me',
         'Explain the key concepts on this page',
         'What are the main takeaways?',
         'Create a quiz from this content',
       ];
-    case 'TYPE_CODE_CHALLENGE':
+    }
+    case 'TYPE_CODE_CHALLENGE': {
       return [
         'Give me a hint without revealing the answer',
         'Explain the test cases',
         'What algorithm should I use here?',
         'Explain this error message',
       ];
+    }
     case 'TYPE_EXAM':
-    case 'TYPE_CUSTOM':
+    case 'TYPE_CUSTOM': {
       return [
         'Give me a hint for this question',
         'Explain the concept being tested',
         'What topic should I review for this?',
       ];
-    case 'TYPE_FILE_SUBMISSION':
+    }
+    case 'TYPE_FILE_SUBMISSION': {
       return ['What should I include in my submission?', 'What are the grading criteria?', 'Help me structure my work'];
-    case 'TYPE_VIDEO':
+    }
+    case 'TYPE_VIDEO': {
       return ['Summarize what I just watched', 'Explain a concept from this video', 'What are the key points?'];
-    default:
+    }
+    default: {
       return [
         'Help me understand this activity',
         'What are the key concepts here?',
         'Give me guidance on how to proceed',
       ];
+    }
   }
 }

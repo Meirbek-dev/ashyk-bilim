@@ -35,7 +35,7 @@ interface RubricCriterion {
 }
 
 function parseRubricCriteria(rubric: Record<string, unknown>): RubricCriterion[] {
-  const criteria = (rubric as { criteria?: unknown }).criteria;
+  const { criteria } = rubric as { criteria?: unknown };
   if (!Array.isArray(criteria)) return [];
   return criteria.filter(
     (c): c is RubricCriterion =>
@@ -148,7 +148,7 @@ export default function FileSubmissionReviewWorkspace({
     const savedRubric = attempt.feedback?.rubric;
     if (savedRubric && typeof savedRubric === 'object' && 'criteria' in savedRubric) {
       const criteriaScores: Record<string, number> = {};
-      for (const c of (savedRubric as { criteria: Array<{ criterion_id: string; score: number }> }).criteria) {
+      for (const c of (savedRubric as { criteria: { criterion_id: string; score: number }[] }).criteria) {
         criteriaScores[c.criterion_id] = c.score;
       }
       setRubricScores(criteriaScores);

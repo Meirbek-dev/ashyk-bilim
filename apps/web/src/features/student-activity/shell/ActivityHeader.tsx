@@ -44,7 +44,7 @@ export default function ActivityHeader({
     if (!runtime.activity) return null;
     const items = (runtime.outline ?? []).flatMap((chapter) => chapter.activities ?? []);
     const index = items.findIndex((item) => item.id === runtime.activity?.id);
-    return { current: index >= 0 ? index + 1 : 1, total: items.length || 1 };
+    return { current: index !== -1 ? index + 1 : 1, total: items.length || 1 };
   }, [runtime.activity, runtime.outline]);
 
   const percent = useMemo(() => {

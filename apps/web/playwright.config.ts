@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Minimal env loader — no external deps required in the config file
 function loadEnv(file: string): void {
   if (!fs.existsSync(file)) return;
-  for (const line of fs.readFileSync(file, 'utf-8').split('\n')) {
+  for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
     const t = line.trim();
     if (!t || t.startsWith('#')) continue;
     const eq = t.indexOf('=');

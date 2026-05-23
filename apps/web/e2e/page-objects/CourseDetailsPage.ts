@@ -6,14 +6,14 @@ import { expect } from '@playwright/test';
  * (Course general settings: title, description, thumbnail, tags, visibility)
  */
 export class CourseDetailsPage {
-  readonly page: Page;
+  public readonly page: Page;
 
-  readonly titleInput: Locator;
-  readonly descriptionTextarea: Locator;
-  readonly saveButton: Locator;
-  readonly savedBadge: Locator;
+  public readonly titleInput: Locator;
+  public readonly descriptionTextarea: Locator;
+  public readonly saveButton: Locator;
+  public readonly savedBadge: Locator;
 
-  constructor(page: Page) {
+  public constructor(page: Page) {
     this.page = page;
     // EditCourseGeneral form uses react-hook-form — fields have no `id` by
     // default, so we target them by their label associations.
@@ -23,12 +23,12 @@ export class CourseDetailsPage {
     this.savedBadge = page.locator('text=Saved').first();
   }
 
-  async goto(courseUuid: string): Promise<void> {
+  public async goto(courseUuid: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/details`);
     await this.page.waitForLoadState('networkidle');
   }
 
-  async updateTitle(newTitle: string): Promise<void> {
+  public async updateTitle(newTitle: string): Promise<void> {
     await this.titleInput.fill(newTitle);
     await this.saveButton.click();
     await expect(this.savedBadge).toBeVisible({ timeout: 10_000 });

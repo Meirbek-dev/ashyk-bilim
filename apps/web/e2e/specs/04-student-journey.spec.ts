@@ -46,7 +46,7 @@ test.describe.serial('Student – Learning Journey', () => {
     await coursePlayerPage.gotoCourseLanding(courseUuid);
 
     // If an Enroll button exists, click it
-    if (await coursePlayerPage.enrollButton.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    if (await coursePlayerPage.enrollButton.isVisible({ timeout: 3000 }).catch(() => false)) {
       await coursePlayerPage.enroll();
     }
 
@@ -80,7 +80,7 @@ test.describe.serial('Student – Learning Journey', () => {
       .filter({ hasText: /introduction|lecture|dynamic/i })
       .first();
 
-    if (await firstActivityLink.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    if (await firstActivityLink.isVisible({ timeout: 5000 }).catch(() => false)) {
       await firstActivityLink.click();
       await page.waitForURL(/\/activity\//, { timeout: 10_000 });
     }
@@ -109,7 +109,7 @@ test.describe.serial('Student – Learning Journey', () => {
     await page.waitForURL(/\/activity\//, { timeout: 10_000 });
 
     // Store the activity id for grading spec
-    const match = page.url().match(/\/activity\/([^/]+)/);
+    const match = /\/activity\/([^/]+)/.exec(page.url());
     if (match) process.env.E2E_FILE_SUBMISSION_ACTIVITY_ID = match[1];
   });
 
@@ -143,7 +143,7 @@ test.describe.serial('Student – Learning Journey', () => {
     await examLink.click();
     await page.waitForURL(/\/activity\//, { timeout: 10_000 });
 
-    const match = page.url().match(/\/activity\/([^/]+)/);
+    const match = /\/activity\/([^/]+)/.exec(page.url());
     if (match) process.env.E2E_EXAM_STUDENT_ACTIVITY_ID = match[1];
   });
 
@@ -173,7 +173,7 @@ test.describe.serial('Student – Learning Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Start attempt if not already in progress
-    if (await assessmentPage.startButton.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    if (await assessmentPage.startButton.isVisible({ timeout: 3000 }).catch(() => false)) {
       await assessmentPage.startAttempt();
     }
 
@@ -204,7 +204,7 @@ test.describe.serial('Student – Learning Journey', () => {
       .filter({ hasText: /code|coding|challenge/i })
       .first();
 
-    if (!(await codeLink.isVisible({ timeout: 5_000 }).catch(() => false))) {
+    if (!(await codeLink.isVisible({ timeout: 5000 }).catch(() => false))) {
       // BUG: Code challenge activity not visible in sidebar — leave test failing
       await expect(codeLink).toBeVisible({
         timeout: 1,
@@ -214,11 +214,11 @@ test.describe.serial('Student – Learning Journey', () => {
     await codeLink.click();
     await page.waitForURL(/\/activity\//, { timeout: 10_000 });
 
-    const match = page.url().match(/\/activity\/([^/]+)/);
+    const match = /\/activity\/([^/]+)/.exec(page.url());
     if (match) process.env.E2E_CODE_ACTIVITY_ID = match[1];
 
     // Fill and submit the code solution
-    if (await assessmentPage.codeEditor.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    if (await assessmentPage.codeEditor.isVisible({ timeout: 5000 }).catch(() => false)) {
       await assessmentPage.fillCodeEditor(CORRECT_PYTHON_SOLUTION);
       await assessmentPage.submitCode();
 
@@ -241,6 +241,6 @@ test.describe.serial('Student – Learning Journey', () => {
 
     // The download certificate button should NOT be present yet
     const certBtn = coursePlayerPage.downloadCertButton;
-    await expect(certBtn).not.toBeVisible({ timeout: 5_000 });
+    await expect(certBtn).not.toBeVisible({ timeout: 5000 });
   });
 });

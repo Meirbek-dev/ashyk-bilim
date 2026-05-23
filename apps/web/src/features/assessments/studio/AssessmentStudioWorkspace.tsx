@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  Archive,
-  Eye,
-  LoaderCircle,
-  MoreHorizontal,
-} from 'lucide-react';
+import { Archive, Eye, LoaderCircle, MoreHorizontal } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
@@ -99,7 +94,7 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
         await queryClient.invalidateQueries({
           queryKey: queryKeys.assessments.activity(activityUuid.replace(/^activity_/, '')),
         });
-        toast.success(t('lifecycleChanged', { state: lifecycleLabels['ARCHIVED'] }));
+        toast.success(t('lifecycleChanged', { state: lifecycleLabels.ARCHIVED }));
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('updateLifecycleFailed'));
       }
@@ -115,7 +110,10 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
   return (
     <div className="bg-background min-h-screen">
       {/* ── Topbar ──────────────────────────────────────────────────────── */}
-      <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur" style={{ height: '61px' }}>
+      <header
+        className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur"
+        style={{ height: '61px' }}
+      >
         <div className="flex h-full items-center justify-between gap-4 px-4 md:px-6">
           {/* Left: breadcrumb + title + lifecycle badge */}
           <div className="min-w-0">
@@ -133,7 +131,10 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
             </div>
             <div className="mt-0.5 flex flex-wrap items-center gap-2">
               <h1 className="truncate text-base font-semibold">{studio.title}</h1>
-              <Badge variant={LIFECYCLE_BADGE_VARIANT[studio.lifecycle]} className="text-xs">
+              <Badge
+                variant={LIFECYCLE_BADGE_VARIANT[studio.lifecycle]}
+                className="text-xs"
+              >
                 {lifecycleLabels[studio.lifecycle]}
               </Badge>
             </div>
@@ -145,7 +146,12 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
               variant="ghost"
               size="sm"
               nativeButton={false}
-              render={<Link href={previewHref} target="_blank" />}
+              render={
+                <Link
+                  href={previewHref}
+                  target="_blank"
+                />
+              }
             >
               <Eye className="size-4" />
               {t('preview')}
@@ -155,7 +161,11 @@ export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: 
               <DropdownMenuTrigger
                 nativeButton
                 render={
-                  <Button variant="outline" size="sm" aria-label={t('moreOptions')}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label={t('moreOptions')}
+                  >
                     <MoreHorizontal className="size-4" />
                   </Button>
                 }

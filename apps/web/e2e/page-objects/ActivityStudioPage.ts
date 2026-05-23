@@ -8,29 +8,29 @@ import { expect } from '@playwright/test';
  * Covers dynamic page (lecture) editor, exam builder, and file-submission editor.
  */
 export class ActivityStudioPage {
-  readonly page: Page;
+  public readonly page: Page;
 
   // ── Name field (shared across all activity types) ─────────────────────
-  readonly activityNameInput: Locator;
+  public readonly activityNameInput: Locator;
 
   // ── Dynamic / lecture editor ──────────────────────────────────────────
   /** The rich-text / block editor content area */
-  readonly editorContent: Locator;
+  public readonly editorContent: Locator;
   /** Toolbar button that opens the block-insert menu */
-  readonly addBlockButton: Locator;
+  public readonly addBlockButton: Locator;
 
   // ── Exam / quiz builder ───────────────────────────────────────────────
   /** "Add question" button */
-  readonly addQuestionButton: Locator;
+  public readonly addQuestionButton: Locator;
   /** Question type dropdown / combobox */
-  readonly questionTypeSelect: Locator;
+  public readonly questionTypeSelect: Locator;
 
   // ── Shared ────────────────────────────────────────────────────────────
-  readonly saveButton: Locator;
-  readonly savedBadge: Locator;
-  readonly toast: Locator;
+  public readonly saveButton: Locator;
+  public readonly savedBadge: Locator;
+  public readonly toast: Locator;
 
-  constructor(page: Page) {
+  public constructor(page: Page) {
     this.page = page;
 
     this.activityNameInput = page.locator('input[placeholder*="Activity name"], input[name*="name"]').first();
@@ -48,7 +48,7 @@ export class ActivityStudioPage {
     this.toast = page.locator('[data-sonner-toast]').first();
   }
 
-  async goto(courseUuid: string, activityId: string): Promise<void> {
+  public async goto(courseUuid: string, activityId: string): Promise<void> {
     await this.page.goto(`/en/dash/courses/${courseUuid}/activity/${activityId}/studio`);
     await this.page.waitForLoadState('networkidle');
   }
@@ -59,7 +59,7 @@ export class ActivityStudioPage {
    * Type text into the block editor.
    * Assumes the editor is a contenteditable element.
    */
-  async typeInEditor(text: string): Promise<void> {
+  public async typeInEditor(text: string): Promise<void> {
     await this.editorContent.click();
     await this.editorContent.type(text);
   }
@@ -68,12 +68,12 @@ export class ActivityStudioPage {
    * Insert a block of the given type using the block-insert toolbar / slash menu.
    * @param blockTypeLabel - visible label in the insert menu, e.g. "Heading", "Callout"
    */
-  async insertBlock(blockTypeLabel: string): Promise<void> {
+  public async insertBlock(blockTypeLabel: string): Promise<void> {
     // Trigger the slash-command / block insert menu
     await this.editorContent.click();
     await this.page.keyboard.type('/');
     await expect(this.page.getByRole('option', { name: new RegExp(blockTypeLabel, 'i') })).toBeVisible({
-      timeout: 5_000,
+      timeout: 5000,
     });
     await this.page.getByRole('option', { name: new RegExp(blockTypeLabel, 'i') }).click();
   }
@@ -87,7 +87,7 @@ export class ActivityStudioPage {
    * @param choices - array of choice strings (for choice-type questions)
    * @param correctIndex - 0-based index of the correct answer (for single-choice)
    */
-  async addExamQuestion(opts: {
+  public async addExamQuestion(opts: {
     type: string;
     questionText: string;
     choices?: string[];
@@ -98,13 +98,13 @@ export class ActivityStudioPage {
 
     // Select type if a type picker is shown
     const typePicker = this.page.getByRole('option', { name: new RegExp(opts.type, 'i') });
-    if (await typePicker.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    if (await typePicker.isVisible({ timeout: 2000 }).catch(() => false)) {
       await typePicker.click();
     }
 
     // Wait for the question editor to appear
     const questionEditor = this.page.locator('[data-question-editor], .question-editor, .assessment-item').last();
-    await expect(questionEditor).toBeVisible({ timeout: 8_000 });
+    await expect(questionEditor).toBeVisible({ timeout: 8000 });
 
     // Fill the question text
     const questionInput = questionEditor.locator('input[type="text"], textarea, [contenteditable="true"]').first();
@@ -112,7 +112,7 @@ export class ActivityStudioPage {
 
     // Fill choices if provided
     if (opts.choices) {
-      for (let i = 0; i < opts.choices.length; i++) {
+      for (let i = 0; i < opts.choices.length; i += 1) {
         const choiceInput = questionEditor.locator('input[type="text"]').nth(i + 1);
         if (!(await choiceInput.isVisible().catch(() => false))) {
           // Add another choice option
@@ -138,7 +138,7 @@ export class ActivityStudioPage {
   }
 
   /** Save and confirm success badge or toast */
-  async save(): Promise<void> {
+  public async save(): Promise<void> {
     await this.saveButton.click();
     await expect(this.page.locator('[data-sonner-toast]').first().or(this.savedBadge)).toBeVisible({ timeout: 10_000 });
   }

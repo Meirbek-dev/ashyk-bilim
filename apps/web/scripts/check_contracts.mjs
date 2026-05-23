@@ -17,10 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Run from the monorepo root so git diff paths resolve correctly.
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
 
-const TRACKED_FILES = [
-  'apps/api/openapi.json',
-  'apps/web/src/lib/api/generated/schema.ts',
-];
+const TRACKED_FILES = ['apps/api/openapi.json', 'apps/web/src/lib/api/generated/schema.ts'];
 
 try {
   execSync(`git diff --exit-code -- ${TRACKED_FILES.join(' ')}`, {
@@ -31,7 +28,7 @@ try {
 } catch {
   console.error(
     '\n[check:contracts] FAILED — the generated schema differs from the committed version.\n' +
-    'Run `bun run generate:contracts` at the repo root, then commit the updated files.\n',
+      'Run `bun run generate:contracts` at the repo root, then commit the updated files.\n',
   );
   process.exit(1);
 }
