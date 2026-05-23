@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 
 import { useAssessmentAttempt } from '@/features/assessments/hooks/useAssessment';
 import { useActivityLayout } from '@/features/assessments/shell/ActivityLayoutContext';
+import { useContributorStatus } from '@/hooks/useContributorStatus';
 import AssessmentLayout from '@/features/assessments/shell/AssessmentLayout';
 import AttemptEntryCard from '@/features/assessments/shell/AttemptEntryCard';
 import AttemptResultCard from '@/features/assessments/shell/AttemptResultCard';
@@ -39,6 +40,8 @@ interface InlineAssessmentWorkspaceProps {
  */
 export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: InlineAssessmentWorkspaceProps) {
   const { vm: assessmentData, isLoading } = useAssessmentAttempt(activityUuid);
+  const { contributorStatus } = useContributorStatus(courseUuid);
+  const isTeacher = contributorStatus === 'ACTIVE';
   const { setMode, setBottomBarAction } = useActivityLayout();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -55,7 +58,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
     recommendedAction === 'waitForRelease' ||
     recommendedAction === 'noAction';
 
-  const canAct = recommendedAction === 'start' || recommendedAction === 'startRevision';
+  const canAct = (recommendedAction === 'start' || recommendedAction === 'startRevision') && (vm?.items?.length ?? 0) > 0;
 
   // ── Derive layout mode ──────────────────────────────────────────────────────
 
@@ -146,7 +149,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
 
   // Entry card (pre-flight) — no CTA inside, it lives in BottomActionBar
   if (isPreflightMode) {
-    return <AttemptEntryCard vm={vm} />;
+    return <AttemptEntryCard vm={vm} isTeacher={isTeacher} />;
   }
 
   // Result card (post-submit)

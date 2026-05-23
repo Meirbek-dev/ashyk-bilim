@@ -17,7 +17,8 @@ import { queryKeys } from '@/lib/react-query/queryKeys';
 type RuntimeNavItem = NonNullable<StudentActivityRuntime['next']>;
 type RuntimeActionId = StudentActivityRuntime['primary_action']['id'];
 
-const PRIMARY_BUTTON_CLASSNAME = 'h-11 min-w-0 w-full max-w-[20rem] px-4 shadow-sm sm:h-10';
+// Reduced button height from h-11 / sm:h-10 down to a universal h-9 for a lower profile
+const PRIMARY_BUTTON_CLASSNAME = 'h-9 min-w-0 w-full max-w-[20rem] px-4 shadow-sm';
 
 function cleanUuid(uuid: string | null | undefined, prefix: 'course_' | 'activity_') {
   return uuid?.replace(new RegExp(`^${prefix}`), '') ?? '';
@@ -34,15 +35,6 @@ interface BottomActionBarProps {
  * BottomActionBar
  *
  * Persistent fixed bottom bar — all viewports.
- *
- * Layout: [← Prev] [PRIMARY CTA] [Next →]
- *
- * Replaces both:
- * - ActivityActionPanel (right sidebar primary action + nav)
- * - ActivityMobileActionBar
- *
- * Hidden when ACTIVE_ATTEMPT mode (AssessmentLayout handles its own bar).
- * Hidden when focus mode (data-layout-mode="focus").
  */
 export default function BottomActionBar({
   contentReadComplete = true,
@@ -56,10 +48,12 @@ export default function BottomActionBar({
   // ACTIVE_ATTEMPT: the AssessmentLayout renders its own action controls
   if (mode === 'ACTIVE_ATTEMPT' || focusMode) return null;
 
+  // Reduced shadow size and spread to make it visually less "tall"
   return (
-    <div className="bottom-action-bar border-border/70 bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+    <div className="bottom-action-bar border-border/70 bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(15,23,42,0.06)] backdrop-blur-xl">
       <ProgressFill percent={outlineProgress} />
-      <div className="mx-auto grid min-h-16 max-w-[96rem] grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-2 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,20rem)_minmax(0,1fr)] sm:gap-3 sm:px-4">
+      {/* Reduced min-height from min-h-16 to min-h-14, and vertical padding from py-2 to py-1.5 */}
+      <div className="mx-auto grid min-h-12 max-w-[96rem] grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-2 px-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,20rem)_minmax(0,1fr)] sm:gap-3 sm:px-4">
         <NavChevron
           courseUuid={courseUuid}
           item={runtime.previous ?? null}
@@ -93,7 +87,6 @@ export default function BottomActionBar({
 function OverrideCTA({ action }: { action: NonNullable<ReturnType<typeof useActivityLayout>['bottomBarAction']> }) {
   return (
     <Button
-      size="lg"
       className={PRIMARY_BUTTON_CLASSNAME}
       onClick={action.handler}
       disabled={action.disabled ?? action.isPending}
@@ -124,7 +117,6 @@ function RuntimeCTA({
   if (action.id === 'back_to_course') {
     return (
       <Button
-        size="lg"
         className={PRIMARY_BUTTON_CLASSNAME}
         nativeButton={false}
         render={<Link href={`/course/${cleanUuid(runtime.course.uuid, 'course_')}`} />}
@@ -138,7 +130,6 @@ function RuntimeCTA({
   if (action.id === 'next_activity' && action.target_activity_uuid) {
     return (
       <Button
-        size="lg"
         className={PRIMARY_BUTTON_CLASSNAME}
         onClick={() =>
           router.push(
@@ -158,7 +149,6 @@ function RuntimeCTA({
 
     return (
       <Button
-        size="lg"
         className={PRIMARY_BUTTON_CLASSNAME}
         onClick={() => completion.mutate(action.id === 'mark_complete' ? 'mark_complete' : 'unmark_complete')}
         disabled={!action.enabled || completion.isPending || waitingForReadCompletion}
@@ -171,11 +161,8 @@ function RuntimeCTA({
   }
 
   if (action.id !== 'none' && action.enabled) {
-    // For assessment-type activities, the BottomActionBar override handles the real start.
-    // For other types (e.g. the action scrolls to content), render the action button.
     return (
       <Button
-        size="lg"
         className={PRIMARY_BUTTON_CLASSNAME}
         onClick={() =>
           document.getElementById('activity-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -186,10 +173,8 @@ function RuntimeCTA({
     );
   }
 
-  // Disabled / no-action state
   return (
     <Button
-      size="lg"
       className={cn(
         PRIMARY_BUTTON_CLASSNAME,
         (action.reason === 'locked' || action.reason === 'unavailable') &&
@@ -224,23 +209,22 @@ function NavChevron({
     return (
       <Button
         variant="ghost"
-        size="lg"
         disabled
-        className={cn('h-11 min-w-0 px-0 sm:h-12 sm:w-full sm:px-2', side === 'prev' ? 'justify-start' : 'justify-end')}
+        className={cn('h-9 min-w-0 px-0 sm:h-10 sm:w-full sm:px-2', side === 'prev' ? 'justify-start' : 'justify-end')}
         aria-label={unavailableLabel}
         title={unavailableLabel}
       >
-        {side === 'prev' ? <Icon className="size-5 sm:size-4" /> : null}
+        {side === 'prev' ? <Icon className="size-4" /> : null}
         <span
           className={cn(
             'hidden min-w-0 flex-col sm:flex',
             side === 'prev' ? 'items-start text-left' : 'items-end text-right',
           )}
         >
-          <span className="text-xs font-medium">{label}</span>
-          <span className="text-muted-foreground max-w-40 truncate text-xs">{unavailableLabel}</span>
+          <span className="text-[10px] leading-none font-medium">{label}</span>
+          <span className="text-muted-foreground mt-0.5 max-w-36 truncate text-[11px]">{unavailableLabel}</span>
         </span>
-        {side === 'next' ? <Icon className="size-5 sm:size-4" /> : null}
+        {side === 'next' ? <Icon className="size-4" /> : null}
       </Button>
     );
   }
@@ -250,11 +234,10 @@ function NavChevron({
   return (
     <Button
       variant="ghost"
-      size="lg"
       nativeButton={false}
       render={<Link href={href} />}
       className={cn(
-        'group h-11 min-w-0 px-0 text-muted-foreground hover:text-foreground sm:h-12 sm:w-full sm:border sm:border-border/60 sm:bg-background/60 sm:px-2 sm:hover:border-primary/30 sm:hover:bg-muted/70',
+        'group h-9 min-w-0 px-0 text-muted-foreground hover:text-foreground sm:h-10 sm:w-full sm:border sm:border-border/60 sm:bg-background/60 sm:px-2 sm:hover:border-primary/30 sm:hover:bg-muted/70',
         side === 'prev' ? 'justify-start' : 'justify-end',
       )}
       aria-label={
@@ -264,17 +247,17 @@ function NavChevron({
       }
       title={item.title}
     >
-      {side === 'prev' ? <Icon className="size-5 sm:size-4" /> : null}
+      {side === 'prev' ? <Icon className="size-4" /> : null}
       <span
         className={cn(
           'hidden min-w-0 flex-col sm:flex',
           side === 'prev' ? 'items-start text-left' : 'items-end text-right',
         )}
       >
-        <span className="text-xs font-medium">{label}</span>
-        <span className="text-foreground max-w-40 truncate text-xs font-semibold">{item.title}</span>
+        <span className="text-[10px] leading-none font-medium">{label}</span>
+        <span className="text-foreground mt-0.5 max-w-36 truncate text-[11px] font-semibold">{item.title}</span>
       </span>
-      {side === 'next' ? <Icon className="size-5 sm:size-4" /> : null}
+      {side === 'next' ? <Icon className="size-4" /> : null}
     </Button>
   );
 }

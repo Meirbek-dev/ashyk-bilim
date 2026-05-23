@@ -433,7 +433,13 @@
       "violationWarning": "Violations: {count}/{max}. You have {remaining} remaining before auto-submit. If you believe this is a mistake, {appealLink}.",
       "violationsRecorded": "{count} violations recorded during this exam",
       "yourAnswer": "Your Answer",
-      "latestSubmission": "Latest submission"
+      "latestSubmission": "Latest submission",
+      "resultsWaitingForReleaseTitle": "Results awaiting publication",
+      "resultsWaitingForReleaseDescription": "Your test has been graded, but results will be available after the teacher publishes them.",
+      "noQuestions": "There are no questions in this exam.",
+      "testNotReadyTitle": "Test is not ready",
+      "noQuestionsWarning": "This exam doesn't have any questions yet and cannot be started.",
+      "teacherNoQuestionsWarning": "This exam doesn't have any questions yet. Please add questions before making it available to students."
     }
   },
   "ActivityIndicators": {
@@ -7738,7 +7744,24 @@
           "resolveDraftConflict": "Resolve draft conflict",
           "draftConflictAvailable": "A newer version of your answers was found on the server.",
           "keepMyLocalVersion": "Keep my local version",
-          "useLatestSavedVersion": "Use latest saved version"
+          "useLatestSavedVersion": "Use latest saved version",
+          "returnedForRevisionTitle": "Returned for revision",
+          "returnedForRevisionDescription": "The teacher has returned your submission for revisions. Please review the comments and resubmit.",
+          "violationsRecorded": "{count} violations recorded during the exam",
+          "antiCheatDefaultNotice": "Copy protection, navigation tracking, and fullscreen requirements may apply.",
+          "antiCheatCopyPaste": "copy-paste blocking",
+          "antiCheatTabSwitch": "tab switch tracking",
+          "antiCheatDevTools": "developer tools detection",
+          "antiCheatRightClick": "right-click blocking",
+          "antiCheatFullscreen": "enforced fullscreen",
+          "antiCheatActiveChecks": "Active checks: {checks}.",
+          "antiCheatActiveNotice": "Attempt integrity checks are active.",
+          "resultsAwaitingReleaseTitle": "Results awaiting release",
+          "resultsAwaitingReleaseDescription": "Your work has been graded, but scores and feedback are hidden until the teacher releases them.",
+          "submissionReceivedTitle": "Submission received",
+          "submissionReceivedDescription": "Your answers have been successfully submitted. Results will be hidden until grading is complete.",
+          "resultsAvailableTitle": "Results available",
+          "resultsAvailableDescription": "The published scores and feedback for your latest attempt are visible below."
         },
         "CodeChallenge": {
           "actualOutput": "Your Output",
@@ -8311,7 +8334,12 @@
       "attemptHistory": "Attempt history",
       "antiCheatNotice": "This assessment monitors browser activity. Do not switch tabs or windows during the attempt.",
       "passingScore": "Pass",
-      "submittedOn": "Submitted {date}"
+      "submittedOn": "Submitted {date}",
+      "noQuestionsWarning": "This exam doesn't have any questions yet and cannot be started.",
+      "teacherNoQuestionsWarning": "This exam doesn't have any questions yet. Click 'Manage Questions' to add some before publishing.",
+      "testNotReadyTitle": "Test is not ready",
+      "noQuestionsSidebar": "This exam cannot be started because it has no questions.",
+      "teacherNoQuestionsSidebar": "Please add questions before publishing."
     }
   },
   "Themes": {

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { AlertTriangle, BookOpen, Clock, FileEdit, Layers, Lock, RotateCcw, Timer } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { AttemptViewModel } from '@/features/assessments/domain/view-models';
@@ -23,9 +23,10 @@ function formatDate(value: string) {
 
 interface AttemptEntryCardProps {
   vm: AttemptViewModel;
+  isTeacher?: boolean;
 }
 
-export default function AttemptEntryCard({ vm }: AttemptEntryCardProps) {
+export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntryCardProps) {
   const t = useTranslations('Features.ActivityWorkspace');
 
   const { recommendedAction, policy, items } = vm;
@@ -111,7 +112,15 @@ export default function AttemptEntryCard({ vm }: AttemptEntryCardProps) {
             />
           </div>
 
-          {isAntiCheatEnabled(vm.policy.antiCheat) ? (
+          {questionCount === 0 ? (
+            <Alert variant="destructive" className="border-destructive/30 bg-destructive/5 text-destructive">
+              <AlertTriangle className="size-4" />
+              <AlertTitle>{t('testNotReadyTitle')}</AlertTitle>
+              <AlertDescription>
+                {isTeacher ? t('teacherNoQuestionsWarning') : t('noQuestionsWarning')}
+              </AlertDescription>
+            </Alert>
+          ) : isAntiCheatEnabled(vm.policy.antiCheat) ? (
             <Alert>
               <AlertTriangle className="size-4" />
               <AlertDescription>{t('antiCheatNotice')}</AlertDescription>
@@ -121,8 +130,19 @@ export default function AttemptEntryCard({ vm }: AttemptEntryCardProps) {
 
         <aside className="space-y-4">
           <div className="rounded-lg border p-4">
-            <div className="text-sm font-semibold">{isRevision ? t('revision') : t('readyToStart')}</div>
-            <p className="text-muted-foreground mt-1 text-sm">{t('readyToStartSubtitle')}</p>
+            {questionCount === 0 ? (
+              <>
+                <div className="text-sm font-semibold text-destructive">{t('testNotReadyTitle')}</div>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {isTeacher ? t('teacherNoQuestionsSidebar') : t('noQuestionsSidebar')}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-sm font-semibold">{isRevision ? t('revision') : t('readyToStart')}</div>
+                <p className="text-muted-foreground mt-1 text-sm">{t('readyToStartSubtitle')}</p>
+              </>
+            )}
           </div>
 
           {policy.dueAt ? (

@@ -432,7 +432,13 @@
       "violationWarning": "Бұзушылықтар: {count}/{max}. Автоматты оқу әрекетіға дейін {remaining} қалды. Егер бұл қате деп ойласаңыз, {appealLink}.",
       "violationsRecorded": "Осы емтихан кезінде {count} бұзушылық тіркелді",
       "yourAnswer": "Сіздің жауабыңыз",
-      "latestSubmission": "Соңғы жіберілім"
+      "latestSubmission": "Соңғы жіберілім",
+      "resultsWaitingForReleaseTitle": "Нәтижелер жариялануды күтуде",
+      "resultsWaitingForReleaseDescription": "Тестіңіз тексерілді, бірақ нәтижелер мұғалім жариялағаннан кейін қолжетімді болады.",
+      "noQuestions": "Бұл тестте сұрақтар жоқ.",
+      "testNotReadyTitle": "Тест дайын емес",
+      "noQuestionsWarning": "Бұл тестте әзірге сұрақтар жоқ, сондықтан оны бастау мүмкін емес.",
+      "teacherNoQuestionsWarning": "Бұл тестте әзірге сұрақтар жоқ. Студенттерге қолжетімді етпес бұрын сұрақтар қосыңыз."
     }
   },
   "ActivityIndicators": {
@@ -8065,7 +8071,24 @@
           "resolveDraftConflict": "Жобалар қайшылығын шешу",
           "draftConflictAvailable": "Серверде жауаптарыңыздың жаңа нұсқасы табылды.",
           "keepMyLocalVersion": "Менің жергілікті нұсқамды қалдыру",
-          "useLatestSavedVersion": "Соңғы сақталған нұсқаны пайдалану"
+          "useLatestSavedVersion": "Соңғы сақталған нұсқаны пайдалану",
+          "returnedForRevisionTitle": "Пысықтауға қайтарылды",
+          "returnedForRevisionDescription": "Мұғалім жұмысыңызды түзету енгізу үшін қайтарды. Түсініктемелермен танысып, жұмысты қайта жіберіңіз.",
+          "violationsRecorded": "Тест кезінде {count} ереже бұзушылық тіркелді",
+          "antiCheatDefaultNotice": "Көшіруден қорғау, қойындыларды ауыстыруды бақылау және толық экран режимі қолданылуы мүмкін.",
+          "antiCheatCopyPaste": "көшіру мен қоюды блоктау",
+          "antiCheatTabSwitch": "қойындыларды ауыстыруды бақылау",
+          "antiCheatDevTools": "әзірлеуші құралдарын анықтау",
+          "antiCheatRightClick": "оң жақ батырманы блоктау",
+          "antiCheatFullscreen": "толық экран режимін талап ету",
+          "antiCheatActiveChecks": "Белсенді тексерулер: {checks}.",
+          "antiCheatActiveNotice": "Әрекеттің тұтастығын тексеру белсенді.",
+          "resultsAwaitingReleaseTitle": "Нәтижелер жариялануды күтуде",
+          "resultsAwaitingReleaseDescription": "Жұмысыңыз бағаланды, бірақ мұғалім жариялағанға дейін ұпайлар мен кері байланыс жасырылады.",
+          "submissionReceivedTitle": "Жауап қабылданды",
+          "submissionReceivedDescription": "Жауаптарыңыз сәтті жіберілді. Тексеру аяқталғанға дейін нәтижелер жасырылады.",
+          "resultsAvailableTitle": "Нәтижелер қолжетімді",
+          "resultsAvailableDescription": "Соңғы әрекетіңіз бойынша жарияланған ұпайлар мен кері байланыс төменде көрсетілген."
         },
         "CodeChallenge": {
           "actualOutput": "Сіздің шығаруыңыз",
@@ -8500,7 +8523,12 @@
       "attemptHistory": "Әрекет тарихы",
       "antiCheatNotice": "Бұл тапсырма браузер белсенділігін бақылайды. Орындау кезінде қойындыларды ауыстырмаңыз.",
       "passingScore": "Өту балы",
-      "submittedOn": "Жіберілді {date}"
+      "submittedOn": "Жіберілді {date}",
+      "noQuestionsWarning": "Бұл тестте әзірге сұрақтар жоқ, сондықтан оны бастау мүмкін емес.",
+      "teacherNoQuestionsWarning": "Бұл тестте әзірге сұрақтар жоқ. Жарияламас бұрын оларды қосу үшін 'Сұрақтарды басқару' батырмасын басыңыз.",
+      "testNotReadyTitle": "Тест дайын емес",
+      "noQuestionsSidebar": "Бұл тестте сұрақтар болмағандықтан, оны бастау мүмкін емес.",
+      "teacherNoQuestionsSidebar": "Жарияламас бұрын сұрақтарды қосыңыз."
     }
   },
   "Themes": {

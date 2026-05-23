@@ -132,47 +132,77 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
           },
         ]}
         historyItems={historyItems}
-        actionTitle={vm.isReturnedForRevision ? t('readyToRevise') : t('readyToStart')}
-        actionDescription={vm.isReturnedForRevision ? t('readyToReviseDescription') : t('readyToStartSubtitle')}
-        actionLabel={vm.canEdit ? (vm.isReturnedForRevision ? t('startRevision') : t('startExam')) : undefined}
-        actionDisabled={!vm.canEdit}
+        actionTitle={
+          questions.length === 0
+            ? t('testNotReadyTitle')
+            : (vm.isReturnedForRevision
+              ? t('readyToRevise')
+              : t('readyToStart'))
+        }
+        actionDescription={
+          questions.length === 0
+            ? (contributorStatus === 'ACTIVE' ? t('teacherNoQuestionsWarning') : t('noQuestionsWarning'))
+            : (vm.isReturnedForRevision
+              ? t('readyToReviseDescription')
+              : t('readyToStartSubtitle'))
+        }
+        actionLabel={
+          questions.length === 0
+            ? undefined
+            : (vm.canEdit ? (vm.isReturnedForRevision ? t('startRevision') : t('startExam')) : undefined)
+        }
+        actionDisabled={!vm.canEdit || questions.length === 0}
         actionPending={isStarting}
-        blockedMessage={!vm.canEdit ? t('noEditableDraft') : null}
-        onAction={vm.canEdit ? handleStartExam : undefined}
+        blockedMessage={
+          questions.length === 0
+            ? (contributorStatus === 'ACTIVE' ? t('teacherNoQuestionsWarning') : t('noQuestionsWarning'))
+            : (!vm.canEdit ? t('noEditableDraft') : null)
+        }
+        onAction={vm.canEdit && questions.length > 0 ? handleStartExam : undefined}
         notices={
           <div className="space-y-4">
-            <div className="bg-muted/30 rounded-md border p-4">
-              <h3 className="mb-3 text-sm font-semibold">{t('instructions')}</h3>
-              <ul className="space-y-2 text-sm">
-                <Instruction
-                  icon={CheckCircle}
-                  label={t('instruction1')}
-                />
-                {policy.timeLimitSeconds ? (
+            {questions.length === 0 ? (
+              <Alert variant="destructive" className="border-destructive/30 bg-destructive/5 text-destructive">
+                <AlertCircle className="size-4" />
+                <AlertTitle>{t('testNotReadyTitle')}</AlertTitle>
+                <AlertDescription>
+                  {contributorStatus === 'ACTIVE' ? t('teacherNoQuestionsWarning') : t('noQuestionsWarning')}
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="bg-muted/30 rounded-md border p-4">
+                <h3 className="mb-3 text-sm font-semibold">{t('instructions')}</h3>
+                <ul className="space-y-2 text-sm">
                   <Instruction
                     icon={CheckCircle}
-                    label={t('instruction3', { minutes: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)) })}
+                    label={t('instruction1')}
                   />
-                ) : null}
-                <Instruction
-                  icon={AlertCircle}
-                  label={t('instruction2')}
-                />
-                {policy.antiCheat.tabSwitchDetection ? (
+                  {policy.timeLimitSeconds ? (
+                    <Instruction
+                      icon={CheckCircle}
+                      label={t('instruction3', { minutes: Math.max(1, Math.ceil(policy.timeLimitSeconds / 60)) })}
+                    />
+                  ) : null}
                   <Instruction
                     icon={AlertCircle}
-                    label={t('instruction4')}
+                    label={t('instruction2')}
                   />
-                ) : null}
-                {policy.antiCheat.copyPasteProtection ? (
-                  <Instruction
-                    icon={AlertCircle}
-                    label={t('instruction5')}
-                  />
-                ) : null}
-              </ul>
-            </div>
-            {isAntiCheatWarningVisible(policy) ? (
+                  {policy.antiCheat.tabSwitchDetection ? (
+                    <Instruction
+                      icon={AlertCircle}
+                      label={t('instruction4')}
+                    />
+                  ) : null}
+                  {policy.antiCheat.copyPasteProtection ? (
+                    <Instruction
+                      icon={AlertCircle}
+                      label={t('instruction5')}
+                    />
+                  ) : null}
+                </ul>
+              </div>
+            )}
+            {questions.length > 0 && isAntiCheatWarningVisible(policy) ? (
               <Alert className="border-red-200 bg-red-50/80 text-red-900">
                 <ShieldAlert className="size-4" />
                 <AlertTitle>{t('antiCheatingEnabled')}</AlertTitle>
