@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 from ulid import ULID
 
 from src.db.users import User
+from src.services.auth.usernames import build_generated_username
 from src.services.users.users import ensure_user_has_default_role
 
 
@@ -34,10 +35,12 @@ async def find_or_create_google_user(
         picture = google_user_data.get("picture", "")
         google_sub = google_user_data.get("sub", "")
 
-        parts = [p for p in [given_name, family_name] if p]
-        if not parts:
-            parts = [user_email.split("@")[0] if "@" in user_email else "user"]
-        username = "".join(parts) + str(1000 + secrets.randbelow(9000))
+        username = build_generated_username(
+            given_name,
+            family_name,
+            email=user_email,
+            suffix=str(1000 + secrets.randbelow(9000)),
+        )
 
         user = User(
             email=user_email,

@@ -1,5 +1,6 @@
 """UserManager — business logic layer (fastapi-users)."""
 
+import asyncio
 import logging
 from typing import Annotated, Any
 
@@ -55,6 +56,28 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         from src.services.auth.sessions import revoke_all_user_sessions
 
         await revoke_all_user_sessions(user.id)
+
+    async def on_after_register(
+        self, user: User, request: Request | None = None
+    ) -> None:
+        from src.services.users.users import ensure_user_has_default_role
+
+        if user.id is None:
+            _logger.warning("Cannot assign default role: registered user has no id")
+            return
+
+        session_factory = getattr(self.user_db, "session_factory", None)
+        if session_factory is None:
+            _logger.warning(
+                "Cannot assign default role: user DB has no session factory"
+            )
+            return
+
+        def _assign_default_role() -> None:
+            with session_factory() as session:
+                ensure_user_has_default_role(session, user.id)
+
+        await asyncio.to_thread(_assign_default_role)
 
 
 async def get_user_manager(user_db: Annotated[Any, Depends(get_user_db)] = None):

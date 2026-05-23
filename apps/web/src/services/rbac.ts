@@ -132,7 +132,12 @@ export function removeRoleFromUser(userId: number, roleId: number): Promise<void
 // ============================================================================
 
 export function listUsers(limit = 100): Promise<UserBasic[]> {
-  return request<UserBasic[] | { users: UserBasic[] }>(`members?limit=${limit}`).then((data) =>
-    Array.isArray(data) ? data : data.users,
+  return request<UserBasic[] | { users: Array<UserBasic | { user: UserBasic }> }>(`members?per_page=${limit}`).then(
+    (data) => {
+      const rows = Array.isArray(data) ? data : data.users;
+      return rows
+        .map((row) => ('user' in row ? row.user : row))
+        .filter((user): user is UserBasic => typeof user?.id === 'number');
+    },
   );
 }

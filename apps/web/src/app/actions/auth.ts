@@ -97,6 +97,26 @@ async function performLoginFetch(email: string, password: string, requestHeaders
   });
 }
 
+function usernameBaseFrom(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/\.+/g, '.')
+    .replace(/^\.+|\.+$/g, '');
+}
+
+function buildSignupUsername(input: Pick<SignupActionInput, 'email' | 'firstName' | 'lastName'>): string {
+  const nameBase = usernameBaseFrom(`${input.firstName}.${input.lastName}`);
+  const emailBase = usernameBaseFrom(input.email.split('@')[0] ?? '');
+  const base = (nameBase || emailBase || 'user').slice(0, 20).replace(/^\.+|\.+$/g, '') || 'user';
+  const suffix = Math.floor(Math.random() * 10_000)
+    .toString()
+    .padStart(4, '0');
+  return `${base}.${suffix}`;
+}
+
 async function postAuthenticated(path: string): Promise<Response> {
   const [requestHeaders, cookieStore] = await Promise.all([headers(), cookies()]);
   const cookieHeader = buildCookieHeaderFromPairs([
@@ -137,13 +157,7 @@ export async function loginAction(input: LoginActionInput): Promise<AuthActionRe
 
 export async function signupAction(input: SignupActionInput): Promise<AuthActionResult> {
   const requestHeaders = await headers();
-  const base = `${input.firstName.toLowerCase()}.${input.lastName.toLowerCase()}`
-    .replace(/[^a-z0-9.]/g, '')
-    .slice(0, 20);
-  const suffix = Math.floor(Math.random() * 10_000)
-    .toString()
-    .padStart(4, '0');
-  const username = `${base}.${suffix}`;
+  const username = buildSignupUsername(input);
   let signupResponse: Response;
   try {
     signupResponse = await postAuthJson(

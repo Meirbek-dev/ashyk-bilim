@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { loginAction, signupAction, logoutAction } from '@/app/actions/auth';
 
 // Mock headers and cookies from Next.js
@@ -40,6 +40,11 @@ describe('Frontend Auth Actions', () => {
     vi.clearAllMocks();
     mockFetch.mockReset();
     mockHeaders.get.mockReturnValue('Mozilla/5.0');
+    vi.spyOn(Math, 'random').mockReturnValue(0.1234);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('loginAction', () => {
@@ -125,6 +130,32 @@ describe('Frontend Auth Actions', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(mockFetch.mock.calls[0]![0]).toBe('http://api.test/auth/register');
       expect(mockFetch.mock.calls[1]![0]).toBe('http://api.test/auth/login');
+    });
+
+    it('should fall back to email when names cannot produce a safe username', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers(),
+      });
+
+      try {
+        await signupAction({
+          email: 'student.ivanov@example.com',
+          firstName: '\u0418\u0432\u0430\u043d',
+          lastName: '\u0418\u0432\u0430\u043d\u043e\u0432',
+          password: 'password123',
+        });
+        expect.fail('Should have redirected');
+      } catch (e: any) {
+        expect(e.message).toBe('REDIRECTED_TO:/redirect_from_auth');
+      }
+
+      const signupBody = JSON.parse(mockFetch.mock.calls[0]![1].body as string);
+      expect(signupBody.username).toBe('student.ivanov.1234');
     });
 
     it('should handle signup failure with signupCode', async () => {
