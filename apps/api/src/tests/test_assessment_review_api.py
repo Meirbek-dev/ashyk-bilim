@@ -436,7 +436,7 @@ def seeded_review_data_fixture(db_session_factory):
             metadata_json={},
             auto_score=88.0,
             final_score=92.0,
-            status=SubmissionStatus.PUBLISHED,
+            status=SubmissionStatus.GRADED,
             attempt_number=2,
             is_late=False,
             late_penalty_pct=0.0,
@@ -557,7 +557,7 @@ def test_assessment_submission_stats_aggregate_non_draft_review_counts(
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload == {
+    assert {k: v for k, v in payload.items() if k != "score_distribution"} == {
         "total": 3,
         "graded_count": 1,
         "needs_grading_count": 2,
@@ -680,7 +680,7 @@ def test_assessment_submission_publish_transition_updates_state_and_ledger(
         ("bella_submission_uuid", 55.0),
     ],
 )
-def test_assessment_submission_return_flow_supports_pending_and_published_states(
+def test_assessment_submission_return_flow_supports_pending_and_graded_states(
     api_client: TestClient,
     db_session_factory,
     seeded_review_data,

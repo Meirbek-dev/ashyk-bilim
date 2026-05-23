@@ -655,6 +655,7 @@ def _build_migration_status(
         "quiz": SubmissionAssessmentType.QUIZ,
         "exam": SubmissionAssessmentType.EXAM,
         "code_challenge": SubmissionAssessmentType.CODE_CHALLENGE,
+        "manual_assessment": SubmissionAssessmentType.EXAM,
     }[assessment_type]
     canonical_row_count = _canonical_submission_count(
         db_session,

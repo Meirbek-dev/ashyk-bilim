@@ -25,7 +25,11 @@ export function getExamAttemptLimit(settings: ExamSettingsRecord): number | null
 }
 
 export function getExamTimeLimitSeconds(settings: ExamSettingsRecord): number | null {
-  return readInt(settings, 'time_limit_seconds');
+  const seconds = readInt(settings, 'time_limit_seconds');
+  if (seconds !== null) return seconds;
+  const minutes = readInt(settings, 'time_limit');
+  if (minutes !== null) return minutes * 60;
+  return null;
 }
 
 export function buildExamAntiCheatSettings(settings: ExamSettingsRecord) {
@@ -43,14 +47,24 @@ export function buildExamAntiCheatSettings(settings: ExamSettingsRecord) {
 }
 
 export function normalizeExamPolicySettings(settings: ExamSettingsRecord | null | undefined): ExamSettingsRecord {
+  if (!settings) return {};
   const normalized: ExamSettingsRecord = { ...settings };
-  const dueAt = readString(normalized, 'due_at');
+  const dueAt = readString(normalized, 'due_at', 'due_date_iso');
   const maxAttempts = getExamAttemptLimit(normalized);
   const timeLimitSeconds = getExamTimeLimitSeconds(normalized);
 
-  normalized.due_at = dueAt;
-  normalized.max_attempts = maxAttempts;
-  normalized.time_limit_seconds = timeLimitSeconds;
+  if (dueAt !== null) {
+    normalized.due_at = dueAt;
+    normalized.due_date_iso = dueAt;
+  }
+  if (maxAttempts !== null) {
+    normalized.max_attempts = maxAttempts;
+    normalized.attempt_limit = maxAttempts;
+  }
+  if (timeLimitSeconds !== null) {
+    normalized.time_limit_seconds = timeLimitSeconds;
+    normalized.time_limit = Math.floor(timeLimitSeconds / 60);
+  }
 
   return normalized;
 }

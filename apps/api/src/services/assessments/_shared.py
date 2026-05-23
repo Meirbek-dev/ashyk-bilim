@@ -78,6 +78,7 @@ from src.db.grading.progress import (
 from src.db.grading.schemas import BulkPublishGradesResponse
 from src.db.grading.submissions import (
     AssessmentType,
+    GradedItem,
     GradingBreakdown,
     Submission,
     SubmissionRead,
@@ -1621,7 +1622,60 @@ def _build_teacher_submission_read(
     result.policy_version = _policy_version(
         _get_policy_for_assessment(assessment, db_session)
     )
+    _hydrate_submission_grading_json(result, submission, assessment, db_session)
     return result
+
+
+def _hydrate_submission_grading_json(
+    result: TeacherSubmissionRead,
+    submission: Submission,
+    assessment: Assessment,
+    db_session: Session,
+) -> None:
+    items = _get_items(assessment, db_session)
+
+    existing_grading = submission.grading_json or {}
+    if not isinstance(existing_grading, dict):
+        existing_grading = existing_grading.model_dump() if hasattr(existing_grading, "model_dump") else existing_grading.__dict__
+
+    existing_items = existing_grading.get("items", [])
+    existing_map = {}
+    for item in existing_items:
+        if isinstance(item, dict):
+            existing_map[item.get("item_id")] = item
+        elif hasattr(item, "item_id"):
+            existing_map[getattr(item, "item_id")] = item.model_dump() if hasattr(item, "model_dump") else item.__dict__
+
+    answers = submission.answers_json or {}
+    answers_map = answers.get("answers", {})
+
+    hydrated_items = []
+    for item in items:
+        existing = existing_map.get(item.item_uuid) or {}
+        user_ans = answers_map.get(item.item_uuid)
+
+        needs_review = existing.get("needs_manual_review")
+        if needs_review is None:
+            needs_review = (item.kind == "OPEN_TEXT")
+
+        hydrated_items.append(GradedItem(
+            item_id=item.item_uuid,
+            item_text=item.title or "",
+            score=existing.get("score") or 0.0,
+            max_score=item.max_score if item.max_score > 0 else 1.0,
+            correct=existing.get("correct"),
+            feedback=existing.get("feedback") or "",
+            needs_manual_review=needs_review,
+            user_answer=user_ans,
+            correct_answer=existing.get("correct_answer"),
+        ))
+
+    result.grading_json = GradingBreakdown(
+        items=hydrated_items,
+        needs_manual_review=any(i.needs_manual_review for i in hydrated_items),
+        auto_graded=existing_grading.get("auto_graded", False),
+        feedback=existing_grading.get("feedback") or "",
+    )
 
 
 def _content_version(assessment: Assessment) -> int:

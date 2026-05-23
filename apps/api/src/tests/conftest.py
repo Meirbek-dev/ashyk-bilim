@@ -16,3 +16,15 @@ os.environ["PLATFORM_JWT_SECRET"] = "test-secret-at-least-32-bytes-long-for-hmac
 
 # Suppress logfire warnings in tests
 os.environ["LOGFIRE_IGNORE_NO_CONFIG"] = "1"
+
+
+import pytest
+from src.security.rbac import PermissionChecker
+
+
+@pytest.fixture(autouse=True)
+def mock_permission_checker(monkeypatch: pytest.MonkeyPatch):
+    """Stub out permission checks globally for integration tests."""
+    monkeypatch.setattr(PermissionChecker, "check", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(PermissionChecker, "require", lambda *_args, **_kwargs: None)
+

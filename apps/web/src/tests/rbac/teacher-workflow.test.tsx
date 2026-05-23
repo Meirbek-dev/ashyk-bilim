@@ -63,7 +63,7 @@ describe('Teacher (Instructor) Workflow', () => {
     'course:read:all',
     'course:update:own',
     'course:create:platform',
-    'manual_assessment:grade:own',
+    'assessment:grade:own',
     'analytics:read:assigned',
     'chapter:read:all',
     'activity:read:all',
