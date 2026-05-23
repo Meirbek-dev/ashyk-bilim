@@ -21,7 +21,7 @@ from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTyp
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course, ThumbnailType
 from src.db.grading.progress import AssessmentPolicy, GradeReleaseMode
-from src.db.grading.submissions import AssessmentType
+from src.db.grading.submissions import AssessmentType, Submission, SubmissionStatus
 from src.db.resource_authors import ResourceAuthor
 from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
@@ -32,7 +32,7 @@ from src.infra.db.session import get_db_session
 from src.infra.settings import get_settings
 from src.routers.assessments.unified import router
 from src.security.rbac import PermissionChecker
-from src.services.assessments._shared import _has_submit_access
+from src.services.assessments._shared import _build_attempt_state, _has_submit_access
 
 TEACHER_ID = 101
 STUDENT_ID = 201
@@ -49,6 +49,7 @@ TABLES = [
     Activity.__table__,
     AssessmentPolicy.__table__,
     Assessment.__table__,
+    Submission.__table__,
     AssessmentAccessPolicy.__table__,
     AssessmentAccessUser.__table__,
     AssessmentAccessUserGroup.__table__,
@@ -139,6 +140,66 @@ def test_restricted_access_narrows_course_learners(
         assert activity is not None and course is not None
         assert _has_submit_access(student, activity, course, session)
         assert not _has_submit_access(other, activity, course, session)
+
+
+def test_course_author_can_test_after_previous_attempt_when_access_restricted(
+    db_session_factory,
+):
+    _assessment_uuid, activity_id = _seed_assessment(db_session_factory)
+    now = datetime.now(UTC)
+
+    with db_session_factory() as session:
+        activity = session.get(Activity, activity_id)
+        course = session.exec(select(Course)).first()
+        assessment = session.exec(select(Assessment)).first()
+        policy = session.exec(select(AssessmentPolicy)).first()
+        assert activity is not None
+        assert course is not None
+        assert assessment is not None
+        assert policy is not None
+
+        policy.max_attempts = 1
+        session.add(policy)
+        session.add(
+            AssessmentAccessPolicy(
+                assessment_id=assessment.id,
+                mode="RESTRICTED",
+            )
+        )
+        session.flush()
+        access_policy = session.exec(select(AssessmentAccessPolicy)).one()
+        session.add(
+            AssessmentAccessUser(
+                policy_id=access_policy.id,
+                user_id=STUDENT_ID,
+            )
+        )
+        session.add(
+            Submission(
+                submission_uuid="submission_teacher_preview_done",
+                assessment_type=AssessmentType.EXAM,
+                activity_id=activity.id,
+                user_id=TEACHER_ID,
+                status=SubmissionStatus.GRADED,
+                attempt_number=1,
+                answers_json={},
+                grading_json={},
+                started_at=now,
+                submitted_at=now,
+                graded_at=now,
+            )
+        )
+        session.commit()
+
+        teacher = _public_user(TEACHER_ID)
+        assert _has_submit_access(teacher, activity, course, session)
+
+        state = _build_attempt_state(assessment, activity, teacher, session)
+        assert state["active_submission"] is None
+        assert state["can_edit"] is True
+        assert state["can_start"] is True
+        assert state["effective_policy"].max_attempts is None
+        assert "MAX_ATTEMPTS_REACHED" not in state["disabled_action_reasons"]
 
 
 def _seed_assessment(db_session_factory) -> tuple[str, int]:

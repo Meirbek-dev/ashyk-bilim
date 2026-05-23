@@ -24,6 +24,11 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.db.assessment_access import (
+    AssessmentAccessPolicy,
+    AssessmentAccessUser,
+    AssessmentAccessUserGroup,
+)
 from src.db.assessments import (
     Assessment,
     AssessmentGradingType,
@@ -34,6 +39,11 @@ from src.db.assessments import (
 from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course, ThumbnailType
+from src.db.file_submissions import (
+    FileSubmissionActivity,
+    FileSubmissionAttempt,
+    FileSubmissionAttemptFile,
+)
 from src.db.grading.entries import GradingEntry
 from src.db.grading.overrides import StudentPolicyOverride
 from src.db.grading.progress import (
@@ -51,20 +61,10 @@ from src.db.grading.submissions import (
     Submission,
     SubmissionStatus,
 )
-from src.db.users import PublicUser, User
-from src.db.usergroups import UserGroup
-from src.db.usergroup_user import UserGroupUser
-from src.db.assessment_access import (
-    AssessmentAccessPolicy,
-    AssessmentAccessUser,
-    AssessmentAccessUserGroup,
-)
-from src.db.file_submissions import (
-    FileSubmissionActivity,
-    FileSubmissionAttempt,
-    FileSubmissionAttemptFile,
-)
 from src.db.uploads import Upload
+from src.db.usergroup_user import UserGroupUser
+from src.db.usergroups import UserGroup
+from src.db.users import PublicUser, User
 from src.infra.db.engine import build_engine, build_session_factory
 from src.infra.db.session import get_db_session
 from src.infra.settings import get_settings

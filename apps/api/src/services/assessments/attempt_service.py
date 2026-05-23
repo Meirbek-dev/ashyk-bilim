@@ -43,6 +43,7 @@ from src.services.assessments._shared import (
     _get_or_create_submission_draft,
     _get_policy_for_assessment,
     _is_result_visible,
+    _is_teacher_preview_user,
     _normalize_answer_patch,
     _parse_if_match_version,
     _policy_version,
@@ -80,12 +81,17 @@ async def start_assessment(
         current_user=current_user,
         db_session=db_session,
     )
+    is_teacher_preview = _is_teacher_preview_user(
+        current_user, activity, course, db_session
+    )
     try:
         result = start_submission_v2(
             activity_id=activity.id,
             assessment_type=AssessmentType(assessment.kind),
             current_user=current_user,
             db_session=db_session,
+            skip_permission=is_teacher_preview,
+            skip_attempt_limit=is_teacher_preview,
         )
         submission = db_session.exec(
             select(Submission).where(
@@ -278,6 +284,9 @@ async def submit_assessment(
         current_user=current_user,
         db_session=db_session,
     )
+    is_teacher_preview = _is_teacher_preview_user(
+        current_user, activity, course, db_session
+    )
 
     try:
         if payload is not None:
@@ -314,6 +323,8 @@ async def submit_assessment(
             db_session=db_session,
             violation_count=violation_count,
             submission_uuid=submission_uuid,
+            skip_permission=is_teacher_preview,
+            skip_policy_constraints=is_teacher_preview,
         )
         submission = db_session.exec(
             select(Submission).where(

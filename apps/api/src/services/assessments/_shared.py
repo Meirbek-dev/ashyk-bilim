@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy import asc, desc, func, or_
+from sqlalchemy import inspect as sqlalchemy_inspect
 from sqlmodel import Session, select
 from ulid import ULID
 
@@ -84,6 +85,7 @@ from src.db.grading.submissions import (
     SubmissionStatus,
     TeacherGradeInput,
 )
+from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.usergroup_user import UserGroupUser
 from src.db.users import AnonymousUser, PublicUser, User
 from src.security.rbac import PermissionChecker
@@ -319,8 +321,16 @@ def _build_attempt_state(
     db_session: Session,
 ) -> dict[str, object]:
     now = datetime.now(UTC)
+    course = _get_course_for_activity_or_404(activity, db_session)
+    is_teacher_preview = _is_teacher_preview_user(
+        current_user, activity, course, db_session
+    )
     policy = _get_policy_for_assessment(assessment, db_session)
-    override = _active_policy_override(policy, current_user.id, db_session)
+    override = (
+        None
+        if is_teacher_preview
+        else _active_policy_override(policy, current_user.id, db_session)
+    )
     submissions = db_session.exec(
         select(Submission)
         .where(
@@ -338,13 +348,19 @@ def _build_attempt_state(
         None,
     )
     latest = submissions[0] if submissions else None
-    active_submission = draft or latest
-    completed_count = len([
-        submission
-        for submission in submissions
-        if submission.status != SubmissionStatus.DRAFT
-    ])
-    max_attempts = policy.max_attempts if policy is not None else None
+    active_submission = draft or (None if is_teacher_preview else latest)
+    completed_count = (
+        0
+        if is_teacher_preview
+        else len([
+            submission
+            for submission in submissions
+            if submission.status != SubmissionStatus.DRAFT
+        ])
+    )
+    max_attempts = (
+        None if is_teacher_preview else (policy.max_attempts if policy is not None else None)
+    )
     if override is not None and override.max_attempts_override is not None:
         max_attempts = override.max_attempts_override
     due_at = _effective_due_at(policy, override)
@@ -353,17 +369,18 @@ def _build_attempt_state(
 
     reasons: list[str] = []
     available_at: datetime | None = None
-    if lifecycle == AssessmentLifecycle.DRAFT:
-        reasons.append("NOT_PUBLISHED")
-    elif lifecycle == AssessmentLifecycle.SCHEDULED:
-        available_at = _coerce_datetime(assessment.scheduled_at)
-        if available_at is None or available_at > now:
-            reasons.append("SCHEDULED_NOT_OPEN")
-    elif lifecycle == AssessmentLifecycle.ARCHIVED:
-        reasons.append("ARCHIVED")
+    if not is_teacher_preview:
+        if lifecycle == AssessmentLifecycle.DRAFT:
+            reasons.append("NOT_PUBLISHED")
+        elif lifecycle == AssessmentLifecycle.SCHEDULED:
+            available_at = _coerce_datetime(assessment.scheduled_at)
+            if available_at is None or available_at > now:
+                reasons.append("SCHEDULED_NOT_OPEN")
+        elif lifecycle == AssessmentLifecycle.ARCHIVED:
+            reasons.append("ARCHIVED")
 
     allow_late = policy.allow_late if policy is not None else True
-    if due_at is not None and now > due_at and not allow_late:
+    if not is_teacher_preview and due_at is not None and now > due_at and not allow_late:
         reasons.append("PAST_DUE")
 
     has_editable_existing = draft is not None
@@ -387,7 +404,7 @@ def _build_attempt_state(
         )
         timed_close_at = started_at + timedelta(seconds=int(time_limit_seconds))
         time_remaining_seconds = max(0, int((timed_close_at - now).total_seconds()))
-        if time_remaining_seconds <= 0:
+        if not is_teacher_preview and time_remaining_seconds <= 0:
             reasons.append("TIME_LIMIT_EXPIRED")
 
     closes_at = _earliest_datetime([due_at, timed_close_at])
@@ -401,7 +418,11 @@ def _build_attempt_state(
 
     # Fine-grained action flags
     has_draft = draft is not None
-    has_submitted = latest is not None and active_status != SubmissionStatus.DRAFT
+    has_submitted = (
+        False
+        if is_teacher_preview
+        else latest is not None and active_status != SubmissionStatus.DRAFT
+    )
     can_start = not has_draft and not has_submitted and not reasons
     can_continue = has_draft and not reasons
     can_view_result = _is_result_visible(active_submission, db_session)
@@ -724,6 +745,8 @@ def _require_submit_access(
     course: Course,
     db_session: Session,
 ) -> None:
+    if _is_teacher_preview_user(user, activity, course, db_session):
+        return
     if not user_has_course_access(user.id, course, db_session):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -758,6 +781,8 @@ def _has_submit_access(
 ) -> bool:
     if not isinstance(user, PublicUser):
         return False
+    if _is_teacher_preview_user(user, activity, course, db_session):
+        return True
     if not user_has_course_access(user.id, course, db_session):
         return False
     if not _assessment_access_allows_user(activity.id or 0, user.id, db_session):
@@ -768,6 +793,33 @@ def _has_submit_access(
         "assessment:submit",
         resource_owner_id=activity.creator_id,
         is_assigned=True,
+    )
+
+
+def _is_teacher_preview_user(
+    user: PublicUser,
+    activity: Activity,
+    course: Course,
+    db_session: Session,
+) -> bool:
+    """Course authors can exercise assessment runtime without learner limits."""
+    if user.id in {course.creator_id, activity.creator_id}:
+        return True
+
+    bind = db_session.get_bind()
+    if bind is None or not sqlalchemy_inspect(bind).has_table(ResourceAuthor.__tablename__):
+        return False
+
+    return (
+        db_session.exec(
+            select(ResourceAuthor.id).where(
+                ResourceAuthor.resource_uuid == course.course_uuid,
+                ResourceAuthor.user_id == user.id,
+                ResourceAuthor.authorship_status
+                == ResourceAuthorshipStatusEnum.ACTIVE,
+            )
+        ).first()
+        is not None
     )
 
 
@@ -1122,11 +1174,17 @@ def _get_or_create_submission_draft(
     if draft is not None:
         return draft
 
+    course = _get_course_for_activity_or_404(activity, db_session)
+    is_teacher_preview = _is_teacher_preview_user(
+        current_user, activity, course, db_session
+    )
     read = start_submission_v2(
         activity_id=activity.id,
         assessment_type=AssessmentType(assessment.kind),
         current_user=current_user,
         db_session=db_session,
+        skip_permission=is_teacher_preview,
+        skip_attempt_limit=is_teacher_preview,
     )
     draft = db_session.exec(
         select(Submission).where(Submission.submission_uuid == read.submission_uuid)

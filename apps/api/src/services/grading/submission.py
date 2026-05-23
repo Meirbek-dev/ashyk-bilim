@@ -99,6 +99,9 @@ def start_submission_v2(
     assessment_type: AssessmentType,
     current_user: PublicUser,
     db_session: Session,
+    *,
+    skip_permission: bool = False,
+    skip_attempt_limit: bool = False,
 ) -> SubmissionRead:
     """
     Create a DRAFT Submission and record the server-stamped start time.
@@ -111,7 +114,8 @@ def start_submission_v2(
     Raises 404 if the activity does not exist.
     """
     activity = _get_activity_or_404(activity_id, db_session)
-    _require_permission(current_user, activity, assessment_type, db_session)
+    if not skip_permission:
+        _require_permission(current_user, activity, assessment_type, db_session)
 
     # Return the open DRAFT if one already exists (idempotent)
     existing_draft = db_session.exec(
@@ -127,7 +131,8 @@ def start_submission_v2(
         return SubmissionRead.model_validate(existing_draft)
 
     # Enforce max_attempts from AssessmentPolicy before creating a new DRAFT.
-    _enforce_attempt_limit_from_policy(activity_id, current_user.id, db_session)
+    if not skip_attempt_limit:
+        _enforce_attempt_limit_from_policy(activity_id, current_user.id, db_session)
 
     attempt_number = (
         _count_previous_attempts(activity_id, current_user.id, db_session) + 1

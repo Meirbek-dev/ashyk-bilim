@@ -1,6 +1,6 @@
 import os
-import sys
 import pathlib
+import sys
 from datetime import UTC, datetime
 
 import pytest

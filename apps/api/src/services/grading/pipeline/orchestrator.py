@@ -67,6 +67,8 @@ async def submit_assessment(
     *,
     violation_count: int = 0,
     submission_uuid: str | None = None,
+    skip_permission: bool = False,
+    skip_policy_constraints: bool = False,
 ) -> SubmissionRead:
     """Submit an assessment attempt through the canonical pipeline.
 
@@ -97,6 +99,8 @@ async def submit_assessment(
                 db_session=db_session,
                 violation_count=violation_count,
                 submission_uuid=submission_uuid,
+                skip_permission=skip_permission,
+                skip_policy_constraints=skip_policy_constraints,
             )
     except TimeoutError:
         logger.exception(
@@ -138,10 +142,13 @@ async def _submit_assessment_inner(
     *,
     violation_count: int = 0,
     submission_uuid: str | None = None,
+    skip_permission: bool = False,
+    skip_policy_constraints: bool = False,
 ) -> SubmissionRead:
     # 1. Permission check
     activity = _get_activity_or_404(activity_id, db_session)
-    _require_permission(current_user, activity, assessment_type, db_session)
+    if not skip_permission:
+        _require_permission(current_user, activity, assessment_type, db_session)
 
     # 2. Get-or-create DRAFT
     draft = _get_or_create_draft(
@@ -162,9 +169,10 @@ async def _submit_assessment_inner(
 
     # 5. Enforce constraints
     attempt_count = _count_completed_attempts(activity_id, current_user.id, db_session)
-    enforce_attempt_limit(effective, attempt_count)
-    enforce_time_limit(draft.started_at, effective)
-    enforce_late_submission(effective)
+    if not skip_policy_constraints:
+        enforce_attempt_limit(effective, attempt_count)
+        enforce_time_limit(draft.started_at, effective)
+        enforce_late_submission(effective)
 
     # 6. Check violations
     violation_exceeded = check_violations(settings, violation_count)
