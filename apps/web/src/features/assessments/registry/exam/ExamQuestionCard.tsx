@@ -1,10 +1,14 @@
 'use client';
 
+import { Bookmark, BookmarkCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ChoiceItemAttempt } from '@/features/assessments/items/choice';
 import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice';
+import { MarkdownRenderer } from '@/features/assessments/shared/MarkdownRenderer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
+import { Button } from '@components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface QuestionData {
   id: string;
@@ -20,7 +24,9 @@ interface ExamQuestionCardProps {
   question: QuestionData;
   questionNumber: number;
   answer: Record<string, unknown>;
+  isFlagged?: boolean;
   onAnswerChange: (questionId: string, answer: unknown) => void;
+  onToggleFlag?: () => void;
 }
 
 function getAnswerOptionId(option: QuestionData['answer_options'][number], visualIndex: number): string | number {
@@ -60,7 +66,14 @@ function toChoiceItem(question: QuestionData): ChoiceAttemptItem {
   };
 }
 
-export default function ExamQuestionCard({ question, questionNumber, answer, onAnswerChange }: ExamQuestionCardProps) {
+export default function ExamQuestionCard({
+  question,
+  questionNumber,
+  answer,
+  isFlagged = false,
+  onAnswerChange,
+  onToggleFlag,
+}: ExamQuestionCardProps) {
   const t = useTranslations('Activities.ExamActivity');
   const questionId = question.id;
 
@@ -68,17 +81,40 @@ export default function ExamQuestionCard({ question, questionNumber, answer, onA
     <Card
       role="group"
       aria-labelledby={`question-title-${questionId}`}
+      className={cn(isFlagged && 'ring-2 ring-amber-400/60 dark:ring-amber-500/60')}
     >
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between gap-2">
           <span id={`question-title-${questionId}`}>{t('questionNumber', { number: questionNumber })}</span>
-          <span className="text-muted-foreground text-sm font-normal">
-            {t('points', { count: question.points ?? 0 })}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-sm font-normal">
+              {t('points', { count: question.points ?? 0 })}
+            </span>
+            {onToggleFlag ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={onToggleFlag}
+                aria-label={isFlagged ? t('unflagQuestion') : t('flagQuestion')}
+                className={cn(
+                  'size-8 transition-colors',
+                  isFlagged
+                    ? 'text-amber-500 hover:text-amber-600'
+                    : 'text-muted-foreground hover:text-amber-500',
+                )}
+              >
+                {isFlagged ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
+              </Button>
+            ) : null}
+          </div>
         </CardTitle>
-        <CardDescription className="text-foreground mt-4 text-xl leading-relaxed">
-          {question.question_text}
-        </CardDescription>
+        <div className="mt-2">
+          <MarkdownRenderer
+            content={question.question_text}
+            className="text-foreground text-base leading-relaxed"
+          />
+        </div>
       </CardHeader>
       <CardContent className="pt-6">
         <ChoiceItemAttempt

@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { RichTextPromptEditor } from '@/features/assessments/shared/RichTextPromptEditor';
 
 import { registerItemKind } from '../registry';
 import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
@@ -213,14 +214,12 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">
         <div className="space-y-2">
-          <Label htmlFor="choice-prompt">{t('prompt')}</Label>
-          <textarea
-            id="choice-prompt"
-            rows={3}
+          <Label>{t('prompt')}</Label>
+          <RichTextPromptEditor
             value={value.prompt}
             disabled={disabled}
-            className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[76px] w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            onChange={(event) => onChange({ ...value, prompt: event.target.value })}
+            placeholder={t('promptPlaceholder')}
+            onChange={(md) => onChange({ ...value, prompt: md })}
           />
         </div>
         <div className="space-y-2">

@@ -375,6 +375,8 @@
       "explanation": "Объяснение",
       "flagged": "Помечено",
       "flaggedForReview": "Отмечено для проверки",
+      "flagQuestion": "Отметить для проверки",
+      "unflagQuestion": "Снять отметку",
       "fullscreenExited": "Выход из полноэкранного режима - нарушение зарегистрировано",
       "fullscreenRequiredDescription": "Для этого теста требуется полноэкранный режим. Нажмите кнопку ниже, чтобы браузер разрешил переход в полноэкранный режим.",
       "fullscreenRequiredTitle": "Перейдите в полноэкранный режим",
@@ -7669,6 +7671,7 @@
           },
           "errorLoading": "Ошибка при загрузке студии",
           "Items": {
+            "promptPlaceholder": "Напишите вопрос здесь. Поддерживается **Markdown** и $\\LaTeX$.",
             "OpenText": {
               "prompt": "Вопрос",
               "minWords": "Минимальное количество слов",
@@ -7707,6 +7710,9 @@
           "detailsDescription": "Общая информация об этом экзамене.",
           "timingTitle": "Доступ и сроки",
           "timingDescription": "Дата сдачи, ограничения на попытки и время.",
+          "availableFromLabel": "Доступно с",
+          "gracePeriodLabel": "Льготный период (мин)",
+          "gracePeriodDesc": "Дополнительные минуты после истечения времени до автосдачи.",
           "resultReviewTitle": "Просмотр результатов",
           "resultReviewDescription": "Управление тем, что видят студенты после сдачи.",
           "allowResultReviewDesc": "Разрешить студентам просматривать результаты после сдачи.",
@@ -7718,7 +7724,19 @@
           "devtoolsDetectionDesc": "Обнаруживать открытие DevTools браузера.",
           "rightClickDisabledDesc": "Отключить контекстное меню правой кнопки мыши.",
           "fullscreenEnforcementDesc": "Требовать полноэкранный режим; выход считается нарушением.",
-          "violationThresholdDesc": "Количество нарушений до автоматической сдачи."
+          "violationThresholdDesc": "Количество нарушений до автоматической сдачи.",
+          "gradingTitle": "Оценивание",
+          "gradingDescription": "Пороговое значение для зачёта и правила начисления баллов.",
+          "passThresholdLabel": "Порог зачёта",
+          "passThresholdDesc": "Минимальный балл (0–100%) для зачёта. Оставьте пустым, чтобы не задавать порог.",
+          "partialCreditLabel": "Частичный балл",
+          "partialCreditDesc": "Начислять частичные баллы за частично правильные ответы с множественным выбором.",
+          "randomizationTitle": "Случайный порядок",
+          "randomizationDescription": "Рандомизация порядка вопросов и вариантов ответа для каждой попытки.",
+          "randomizeQuestionsLabel": "Случайный порядок вопросов",
+          "randomizeQuestionsDesc": "Показывать вопросы в случайном порядке для каждого студента.",
+          "randomizeOptionsLabel": "Случайный порядок вариантов",
+          "randomizeOptionsDesc": "Перемешивать варианты ответа внутри каждого вопроса."
         },
         "BuilderCanvas": {
           "addShort": "{kind}",
@@ -7820,7 +7838,11 @@
         }
       },
       "Exam": {
-        "questions": "Вопросы"
+        "questions": "Вопросы",
+        "answeredOf": "{answered} из {total} отвечено",
+        "legendAnswered": "Отвечено",
+        "legendFlagged": "Отмечено для проверки",
+        "legendNotAnswered": "Нет ответа"
       },
       "ReviewWorkspace": {
         "loading": "Загрузка рабочего пространства проверки...",
@@ -7829,6 +7851,7 @@
       "Items": {
         "Choice": {
           "prompt": "Формулировка",
+          "promptPlaceholder": "Напишите вопрос здесь. Поддерживается **Markdown** и $\\LaTeX$.",
           "type": "Тип",
           "trueLabel": "Верно",
           "falseLabel": "Неверно",

@@ -375,6 +375,8 @@
       "explanation": "Explanation",
       "flagged": "Flagged",
       "flaggedForReview": "Flagged for review",
+      "flagQuestion": "Flag for review",
+      "unflagQuestion": "Remove flag",
       "fullscreenExited": "Fullscreen exited - violation recorded",
       "fullscreenRequiredDescription": "This exam requires fullscreen mode. Use the button below so the browser can grant fullscreen access.",
       "fullscreenRequiredTitle": "Enter fullscreen to continue",
@@ -479,7 +481,9 @@
       "noQuestions": "There are no questions in this exam.",
       "testNotReadyTitle": "Test is not ready",
       "noQuestionsWarning": "This exam doesn't have any questions yet and cannot be started.",
-      "teacherNoQuestionsWarning": "This exam doesn't have any questions yet. Please add questions before making it available to students."
+      "teacherNoQuestionsWarning": "This exam doesn't have any questions yet. Please add questions before making it available to students.",
+      "resumedDraft": "Resuming exam",
+      "resumedDraftDescription": "Last saved: {time}"
     }
   },
   "ActivityIndicators": {
@@ -7492,7 +7496,11 @@
         }
       },
       "Exam": {
-        "questions": "Questions"
+        "questions": "Questions",
+        "answeredOf": "{answered} of {total} answered",
+        "legendAnswered": "Answered",
+        "legendFlagged": "Flagged for review",
+        "legendNotAnswered": "Not answered"
       },
       "ReviewWorkspace": {
         "loading": "Loading review workspace...",
@@ -7501,6 +7509,7 @@
       "Items": {
         "Choice": {
           "prompt": "Prompt",
+          "promptPlaceholder": "Write your question here. Supports **Markdown** and $\\LaTeX$ math.",
           "type": "Type",
           "trueLabel": "True",
           "falseLabel": "False",
@@ -7809,7 +7818,11 @@
           "submissionReceivedTitle": "Submission received",
           "submissionReceivedDescription": "Your answers have been successfully submitted. Results will be hidden until grading is complete.",
           "resultsAvailableTitle": "Results available",
-          "resultsAvailableDescription": "The published scores and feedback for your latest attempt are visible below."
+          "resultsAvailableDescription": "The published scores and feedback for your latest attempt are visible below.",
+          "flagQuestion": "Flag for review",
+          "unflagQuestion": "Remove flag",
+          "answered_short": "ans",
+          "resumedDraftDescription": "Last saved: {time}"
         },
         "CodeChallenge": {
           "actualOutput": "Your Output",
@@ -8152,6 +8165,7 @@
           },
           "errorLoading": "Error loading studio",
           "Items": {
+            "promptPlaceholder": "Write your prompt here. Supports **Markdown** and $\\LaTeX$ math.",
             "OpenText": {
               "prompt": "Prompt",
               "minWords": "Minimum words",
@@ -8190,6 +8204,9 @@
           "detailsDescription": "General information about this exam.",
           "timingTitle": "Access & Timing",
           "timingDescription": "Due date, attempt limits, and time constraints.",
+          "availableFromLabel": "Available from",
+          "gracePeriodLabel": "Grace period (min)",
+          "gracePeriodDesc": "Extra minutes after the time limit before auto-submission fires.",
           "resultReviewTitle": "Result Review",
           "resultReviewDescription": "Control what students see after submission.",
           "allowResultReviewDesc": "Allow students to view their graded results after submission.",
@@ -8201,7 +8218,19 @@
           "devtoolsDetectionDesc": "Detect and alert when browser DevTools are opened.",
           "rightClickDisabledDesc": "Disable right-click context menu during exam.",
           "fullscreenEnforcementDesc": "Require fullscreen mode; exit counts as a violation.",
-          "violationThresholdDesc": "Number of violations allowed before auto-submission."
+          "violationThresholdDesc": "Number of violations allowed before auto-submission.",
+          "gradingTitle": "Grading",
+          "gradingDescription": "Pass threshold and credit rules.",
+          "passThresholdLabel": "Pass threshold",
+          "passThresholdDesc": "Minimum score (0–100%) required to pass. Leave empty for no threshold.",
+          "partialCreditLabel": "Partial credit",
+          "partialCreditDesc": "Award partial points for partially-correct multi-select answers.",
+          "randomizationTitle": "Randomization",
+          "randomizationDescription": "Randomize question and option order per attempt.",
+          "randomizeQuestionsLabel": "Randomize questions",
+          "randomizeQuestionsDesc": "Present questions in a different order for each student.",
+          "randomizeOptionsLabel": "Randomize options",
+          "randomizeOptionsDesc": "Shuffle answer options within each question."
         },
         "BuilderCanvas": {
           "addShort": "{kind}",

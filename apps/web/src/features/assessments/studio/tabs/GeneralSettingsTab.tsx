@@ -9,6 +9,8 @@ import {
   ShieldAlert,
   ShieldCheck,
   ShieldOff,
+  Shuffle,
+  Target,
   Timer,
   UserCheck,
 } from 'lucide-react';
@@ -125,7 +127,17 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
         title={tSetup('timingTitle')}
         description={tSetup('timingDescription')}
       >
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-2">
+            <Label htmlFor="assessment-available-from">{tSetup('availableFromLabel')}</Label>
+            <Input
+              id="assessment-available-from"
+              type="datetime-local"
+              value={state.availableFrom}
+              disabled={disabled}
+              onChange={(e) => onChange({ ...state, availableFrom: e.target.value })}
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="assessment-due-at">{t('dueDateLabel')}</Label>
             <Input
@@ -167,6 +179,94 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
               />
             </div>
           </div>
+        </div>
+        {/* Grace period */}
+        <div className="mt-4 max-w-48 space-y-2">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="exam-grace-period">{tSetup('gracePeriodLabel')}</Label>
+            <Tooltip>
+              <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
+              <TooltipContent side="right" className="max-w-xs">
+                <p className="text-xs">{tSetup('gracePeriodDesc')}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <Input
+            id="exam-grace-period"
+            type="number"
+            min={0}
+            value={state.gracePeriodMinutes}
+            disabled={disabled}
+            onChange={(e) => onChange({ ...state, gracePeriodMinutes: e.target.value })}
+          />
+        </div>
+      </SettingsCard>
+
+      {/* Grading Card */}
+      <SettingsCard
+        icon={Target}
+        title={tSetup('gradingTitle')}
+        description={tSetup('gradingDescription')}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="exam-pass-threshold">{tSetup('passThresholdLabel')}</Label>
+              <Tooltip>
+                <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
+                <TooltipContent side="right" className="max-w-xs">
+                  <p className="text-xs">{tSetup('passThresholdDesc')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="relative">
+              <Input
+                id="exam-pass-threshold"
+                type="number"
+                min={0}
+                max={100}
+                value={state.passThreshold}
+                disabled={disabled}
+                placeholder="60"
+                className="pr-8"
+                onChange={(e) => onChange({ ...state, passThreshold: e.target.value })}
+              />
+              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">%</span>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 space-y-3">
+          <ToggleFeatureRow
+            label={tSetup('partialCreditLabel')}
+            description={tSetup('partialCreditDesc')}
+            checked={state.partialCredit}
+            disabled={disabled}
+            onChange={(checked) => onChange({ ...state, partialCredit: checked })}
+          />
+        </div>
+      </SettingsCard>
+
+      {/* Randomization Card */}
+      <SettingsCard
+        icon={Shuffle}
+        title={tSetup('randomizationTitle')}
+        description={tSetup('randomizationDescription')}
+      >
+        <div className="space-y-3">
+          <ToggleFeatureRow
+            label={tSetup('randomizeQuestionsLabel')}
+            description={tSetup('randomizeQuestionsDesc')}
+            checked={state.randomizeQuestions}
+            disabled={disabled}
+            onChange={(checked) => onChange({ ...state, randomizeQuestions: checked })}
+          />
+          <ToggleFeatureRow
+            label={tSetup('randomizeOptionsLabel')}
+            description={tSetup('randomizeOptionsDesc')}
+            checked={state.randomizeOptions}
+            disabled={disabled}
+            onChange={(checked) => onChange({ ...state, randomizeOptions: checked })}
+          />
         </div>
       </SettingsCard>
 

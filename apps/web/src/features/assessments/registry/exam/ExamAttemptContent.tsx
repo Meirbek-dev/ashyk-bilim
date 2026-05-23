@@ -286,6 +286,7 @@ function ExamTakingContent({
   const [isConfirmingSubmit, setIsConfirmingSubmit] = useState(false);
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   const [recoveredAnswers, setRecoveredAnswers] = useState<Record<string, ItemAnswer> | null>(null);
+  const [flaggedIndexes, setFlaggedIndexes] = useState<Set<number>>(new Set());
   const violationCountRef = useRef(0);
 
   const persistence = useAssessmentAttempt<Record<string, ItemAnswer>>({
@@ -333,7 +334,7 @@ function ExamTakingContent({
     [isAnswered, orderedQuestions],
   );
 
-  const progress = orderedQuestions.length > 0 ? ((currentIndex + 1) / orderedQuestions.length) * 100 : 0;
+  const progress = orderedQuestions.length > 0 ? (answeredCount / orderedQuestions.length) * 100 : 0;
 
   const handleAnswerChange = (questionId: string, answer: unknown) => {
     const question = questionById.get(questionId);
@@ -372,6 +373,15 @@ function ExamTakingContent({
   const handleViolation = useCallback((type: string, count: number) => {
     void type;
     violationCountRef.current = count;
+  }, []);
+
+  const toggleFlag = useCallback((index: number) => {
+    setFlaggedIndexes((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -521,7 +531,9 @@ function ExamTakingContent({
             question={currentQuestion}
             questionNumber={currentIndex + 1}
             answer={displayAnswers}
+            isFlagged={flaggedIndexes.has(currentIndex)}
             onAnswerChange={handleAnswerChange}
+            onToggleFlag={() => toggleFlag(currentIndex)}
           />
         </div>
 
@@ -530,6 +542,7 @@ function ExamTakingContent({
             totalQuestions={orderedQuestions.length}
             currentQuestionIndex={currentIndex}
             answeredQuestions={answeredIndexes}
+            flaggedQuestions={flaggedIndexes}
             onQuestionSelect={setCurrentIndex}
           />
         </div>
@@ -539,6 +552,7 @@ function ExamTakingContent({
         totalQuestions={orderedQuestions.length}
         currentQuestionIndex={currentIndex}
         answeredQuestions={answeredIndexes}
+        flaggedQuestions={flaggedIndexes}
         onQuestionSelect={setCurrentIndex}
         onPrevious={() => setCurrentIndex((index) => Math.max(0, index - 1))}
         onNext={() => setCurrentIndex((index) => Math.min(orderedQuestions.length - 1, index + 1))}
@@ -551,7 +565,15 @@ function ExamTakingContent({
         open={isConfirmingSubmit}
         totalQuestions={orderedQuestions.length}
         answeredCount={answeredCount}
+        flaggedCount={flaggedIndexes.size}
+        unansweredQuestions={orderedQuestions
+          .map((q, i) => ({ index: i, id: q.id, question_text: q.question_text }))
+          .filter((q) => !isAnswered(q.id))}
         isSubmitting={submissionState.isSubmitting}
+        onNavigateTo={(index) => {
+          setIsConfirmingSubmit(false);
+          setCurrentIndex(index);
+        }}
         labels={{
           confirmSubmission: t('confirmSubmission'),
           confirmSubmissionMessage: t('confirmSubmissionMessage'),

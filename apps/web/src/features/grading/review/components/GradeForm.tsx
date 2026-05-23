@@ -83,26 +83,7 @@ export default function GradeForm({
 
   const editable = submission ? canTeacherEditGrade(submission.status) : false;
 
-  // Ctrl+Enter saves draft; Ctrl+Shift+Enter publishes
-  const handleCtrlEnter = useCallback(
-    (event: KeyboardEvent) => {
-      if (!editable || isSaving) return;
-      const isCtrl = event.ctrlKey || event.metaKey;
-      if (!isCtrl || event.key !== 'Enter') return;
-      event.preventDefault();
-      if (hasItemGrading) {
-        saveWithItemGrading(event.shiftKey ? 'publish' : 'save');
-      } else {
-        saveOverallScore(event.shiftKey ? 'PUBLISHED' : 'GRADED');
-      }
-    },
-    [editable, isSaving, hasItemGrading, saveWithItemGrading, saveOverallScore],
-  );
 
-  useEffect(() => {
-    globalThis.addEventListener('keydown', handleCtrlEnter);
-    return () => globalThis.removeEventListener('keydown', handleCtrlEnter);
-  }, [handleCtrlEnter]);
 
   useEffect(() => {
     // Sync overall draft from server
@@ -202,6 +183,27 @@ export default function GradeForm({
     // Redirect to item-level grading with a single "overall" item
     saveWithItemGrading(status === 'PUBLISHED' ? 'publish' : status === 'RETURNED' ? 'return' : 'save');
   }, [saveWithItemGrading]);
+
+  // Ctrl+Enter saves draft; Ctrl+Shift+Enter publishes
+  const handleCtrlEnter = useCallback(
+    (event: KeyboardEvent) => {
+      if (!editable || isSaving) return;
+      const isCtrl = event.ctrlKey || event.metaKey;
+      if (!isCtrl || event.key !== 'Enter') return;
+      event.preventDefault();
+      if (hasItemGrading) {
+        saveWithItemGrading(event.shiftKey ? 'publish' : 'save');
+      } else {
+        saveOverallScore(event.shiftKey ? 'PUBLISHED' : 'GRADED');
+      }
+    },
+    [editable, isSaving, hasItemGrading, saveWithItemGrading, saveOverallScore],
+  );
+
+  useEffect(() => {
+    globalThis.addEventListener('keydown', handleCtrlEnter);
+    return () => globalThis.removeEventListener('keydown', handleCtrlEnter);
+  }, [handleCtrlEnter]);
 
   if (!submissionUuid) {
     return <aside className="text-muted-foreground p-4 text-sm">{t('selectSubmission')}</aside>;

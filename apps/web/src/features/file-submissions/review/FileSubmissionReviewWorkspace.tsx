@@ -488,6 +488,7 @@ function RubricGrid({
   scores: Record<string, number>;
   onChange: (criterionId: string, score: number) => void;
 }) {
+  const t = useTranslations('FileSubmissionReview');
   return (
     <div className="space-y-3">
       <p className="text-sm font-medium">{t('rubric')}</p>

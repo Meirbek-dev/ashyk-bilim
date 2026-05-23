@@ -374,6 +374,8 @@
       "explanation": "Түсініктеме",
       "flagged": "Белгіленген",
       "flaggedForReview": "Қарау үшін белгіленген",
+      "flagQuestion": "Тексеруге белгілеу",
+      "unflagQuestion": "Белгіні алу",
       "fullscreenExited": "Толық экраннан шығу - бұзушылық тіркелді",
       "fullscreenRequiredDescription": "Бұл емтихан толық экран режимін қажет етеді. Браузер толық экранға кіруге рұқсат беруі үшін төмендегі батырманы басыңыз.",
       "fullscreenRequiredTitle": "Жалғастыру үшін толық экранға өтіңіз",
@@ -478,7 +480,9 @@
       "noQuestions": "Бұл тестте сұрақтар жоқ.",
       "testNotReadyTitle": "Тест дайын емес",
       "noQuestionsWarning": "Бұл тестте әзірге сұрақтар жоқ, сондықтан оны бастау мүмкін емес.",
-      "teacherNoQuestionsWarning": "Бұл тестте әзірге сұрақтар жоқ. Студенттерге қолжетімді етпес бұрын сұрақтар қосыңыз."
+      "teacherNoQuestionsWarning": "Бұл тестте әзірге сұрақтар жоқ. Студенттерге қолжетімді етпес бұрын сұрақтар қосыңыз.",
+      "resumedDraft": "Жалғасу",
+      "resumedDraftDescription": "Соңғы сақталған уақыт: {time}"
     }
   },
   "ActivityIndicators": {
@@ -7631,6 +7635,7 @@
             "requiredLabel": "Міндетті"
           },
           "Items": {
+            "promptPlaceholder": "Сұрағыңызды осында жазыңыз. **Markdown** және $\\LaTeX$ қолданылады.",
             "OpenText": {
               "prompt": "Сұрақ",
               "minWords": "Сөздердің минималды саны",
@@ -7670,6 +7675,9 @@
           "detailsDescription": "Бұл емтихан туралы жалпы ақпарат.",
           "timingTitle": "Қол жетімділік және мерзімдер",
           "timingDescription": "Тапсыру мерзімі, әрекет шектеулері және уақыт.",
+          "availableFromLabel": "Қол жетімді күннен бастап",
+          "gracePeriodLabel": "Мерзімді ұзарту (мин)",
+          "gracePeriodDesc": "Уақыт аяқталғаннан кейін автотапсыруға дейінгі қосымша минуттар.",
           "resultReviewTitle": "Нәтижелерді қарау",
           "resultReviewDescription": "Студенттердің тапсырудан кейін не көретінін басқарыңыз.",
           "allowResultReviewDesc": "Студенттерге тапсырудан кейін нәтижелерін қарауға рұқсат беру.",
@@ -7681,7 +7689,19 @@
           "devtoolsDetectionDesc": "Браузер DevTools ашылғанда анықтап, ескерту беру.",
           "rightClickDisabledDesc": "Емтихан кезінде оң жақ тышқан мәзірін өшіру.",
           "fullscreenEnforcementDesc": "Толық экран режимін талап ету; шығу бұзушылық болып есептеледі.",
-          "violationThresholdDesc": "Автоматты тапсырудан бұрын рұқсат берілетін бұзушылықтар саны."
+          "violationThresholdDesc": "Автоматты тапсырудан бұрын рұқсат берілетін бұзушылықтар саны.",
+          "gradingTitle": "Бағалау",
+          "gradingDescription": "Есептеу шегі және балл есептеу ережелері.",
+          "passThresholdLabel": "Өту шегі",
+          "passThresholdDesc": "Өту үшін қажетті минималды балл (0–100%). Шек белгілемеу үшін бос қалдырыңыз.",
+          "partialCreditLabel": "Ішінара балл",
+          "partialCreditDesc": "Бірнеше таңдаулы сұрақтарға ішінара дұрыс жауаптар үшін ішінара балл беру.",
+          "randomizationTitle": "Кездейсоқ тәртіп",
+          "randomizationDescription": "Әрбір әрекет үшін сұрақтар мен жауаптар тәртібін кездейсоқтандыру.",
+          "randomizeQuestionsLabel": "Сұрақтардың кездейсоқ тәртібі",
+          "randomizeQuestionsDesc": "Әрбір студент үшін сұрақтарды кездейсоқ тәртіпте көрсету.",
+          "randomizeOptionsLabel": "Жауаптардың кездейсоқ тәртібі",
+          "randomizeOptionsDesc": "Әрбір сұрақтың жауап нұсқаларын кездейсоқ тәртіпте орналастыру."
         },
         "BuilderCanvas": {
           "addShort": "{kind}",
@@ -7815,7 +7835,11 @@
         }
       },
       "Exam": {
-        "questions": "Сұрақтар"
+        "questions": "Сұрақтар",
+        "answeredOf": "{answered} / {total} жауапталды",
+        "legendAnswered": "Жауапталды",
+        "legendFlagged": "Тексеруге белгіленді",
+        "legendNotAnswered": "Жауапталмады"
       },
       "ReviewWorkspace": {
         "loading": "Тексеру жұмыс кеңістігі жүктелуде...",
@@ -7826,6 +7850,7 @@
           "selectMatch": "Сәйкестікті таңдаңыз",
           "points": "{count} ұпай",
           "prompt": "Сұрақ",
+          "promptPlaceholder": "Сұрағыңызды осында жазыңыз. **Markdown** және $\\LaTeX$ қолдаылады.",
           "type": "Түрі",
           "trueLabel": "Дұрыс",
           "falseLabel": "Бұрыс",

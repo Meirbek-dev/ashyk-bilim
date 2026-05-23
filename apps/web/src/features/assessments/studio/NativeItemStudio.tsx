@@ -57,6 +57,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { RichTextPromptEditor } from '@/features/assessments/shared/RichTextPromptEditor';
 
 export type { AssessmentEditorState, EditableItem, StudioTab };
 export type { SaveState };
@@ -390,7 +391,28 @@ export function NativeItemAuthor({
   const tTabs = useTranslations('Features.Assessments.Studio.Tabs');
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}` as any) : itemNoun;
 
-  const [activeTab, setActiveTab] = useState<StudioTab>('BUILDER');
+  const VALID_TABS: StudioTab[] = ['SETUP', 'BUILDER', 'ACCESS', 'RESULTS', 'PUBLISH'];
+
+  const [activeTab, setActiveTabState] = useState<StudioTab>(() => {
+    if (typeof window !== 'undefined') {
+      const raw = new URLSearchParams(window.location.search).get('tab')?.toUpperCase();
+      if (raw && VALID_TABS.includes(raw as StudioTab)) return raw as StudioTab;
+    }
+    return 'BUILDER';
+  });
+
+  const setActiveTab = useCallback(
+    (tab: StudioTab) => {
+      setActiveTabState(tab);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tab.toLowerCase());
+        window.history.replaceState(null, '', url.toString());
+      }
+    },
+    [],
+  );
+
   const [localOrderedUuids, setLocalOrderedUuids] = useState<string[]>([]);
 
   // Sync local order with server items
@@ -751,15 +773,14 @@ function NativeItemBodyEditor({
     return (
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="open-text-prompt">{t('Items.OpenText.prompt')}</Label>
-          <Textarea
-            id="open-text-prompt"
+          <Label>{t('Items.OpenText.prompt')}</Label>
+          <RichTextPromptEditor
             value={body.prompt}
             disabled={disabled}
-            className="min-h-32"
-            aria-invalid={hasIssue('open_text.prompt_missing')}
-            onChange={(event) =>
-              onChange({ ...item, body: { ...body, kind: 'OPEN_TEXT', prompt: event.target.value } })
+            placeholder={t('Items.promptPlaceholder')}
+            className={hasIssue('open_text.prompt_missing') ? 'border-destructive' : ''}
+            onChange={(md) =>
+              onChange({ ...item, body: { ...body, kind: 'OPEN_TEXT', prompt: md } })
             }
           />
         </div>
@@ -808,14 +829,13 @@ function NativeItemBodyEditor({
     return (
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="form-prompt">{t('Items.Form.prompt')}</Label>
-          <Textarea
-            id="form-prompt"
+          <Label>{t('Items.Form.prompt')}</Label>
+          <RichTextPromptEditor
             value={body.prompt}
             disabled={disabled}
-            className="min-h-24"
-            aria-invalid={hasIssue('form.prompt_missing')}
-            onChange={(event) => onChange({ ...item, body: { ...body, kind: 'FORM', prompt: event.target.value } })}
+            placeholder={t('Items.promptPlaceholder')}
+            className={hasIssue('form.prompt_missing') ? 'border-destructive' : ''}
+            onChange={(md) => onChange({ ...item, body: { ...body, kind: 'FORM', prompt: md } })}
           />
         </div>
 
@@ -1037,6 +1057,12 @@ function buildAssessmentPatch(mode: StudioMode, assessment: AssessmentStudioDeta
       right_click_disable: state.rightClickDisable,
       fullscreen_enforcement: state.fullscreenEnforcement,
       violation_threshold: state.violationThreshold ? Number(state.violationThreshold) : null,
+      pass_threshold: state.passThreshold ? Number(state.passThreshold) : null,
+      randomize_questions: state.randomizeQuestions,
+      randomize_options: state.randomizeOptions,
+      partial_credit: state.partialCredit,
+      grace_period_minutes: state.gracePeriodMinutes ? Number(state.gracePeriodMinutes) : null,
+      available_from: state.availableFrom ? new Date(state.availableFrom).toISOString() : null,
     },
   };
   return payload;
@@ -1082,6 +1108,12 @@ function toAssessmentEditorState(assessment: AssessmentStudioDetail): Assessment
       typeof settings.show_correct_answers === 'boolean'
         ? settings.show_correct_answers
         : settings.allow_result_review !== false,
+    passThreshold: typeof settings.pass_threshold === 'number' ? String(settings.pass_threshold) : '',
+    randomizeQuestions: settings.randomize_questions === true,
+    randomizeOptions: settings.randomize_options === true,
+    partialCredit: settings.partial_credit === true,
+    gracePeriodMinutes: typeof settings.grace_period_minutes === 'number' ? String(settings.grace_period_minutes) : '',
+    availableFrom: settings.available_from ? toDateTimeLocal(settings.available_from as string) : '',
   };
 }
 
