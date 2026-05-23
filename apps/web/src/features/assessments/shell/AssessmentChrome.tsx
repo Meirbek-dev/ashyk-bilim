@@ -5,6 +5,7 @@ import { AlertTriangle, Clock, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { TimerRing } from './TimerRing';
 import { useTranslations } from 'next-intl';
 import type { PolicyView } from '@/features/assessments/domain/policy';
 import type { ReleaseState } from '@/features/assessments/domain/release';
@@ -76,7 +77,7 @@ export function AssessmentChrome({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {timerSeconds !== null ? <TimerBadge remainingSeconds={timerSeconds} /> : null}
+            {timerSeconds !== null ? <TimerRing remainingSeconds={timerSeconds} /> : null}
             {dueAt ? (
               <Badge variant="outline">
                 <Clock className="size-3" />
@@ -116,22 +117,6 @@ export function AssessmentChrome({
         </Alert>
       ) : null}
     </div>
-  );
-}
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function TimerBadge({ remainingSeconds }: { remainingSeconds: number }) {
-  const urgent = remainingSeconds <= 60;
-  const warning = remainingSeconds <= 300;
-  return (
-    <Badge
-      variant={urgent ? 'destructive' : 'outline'}
-      className={cn(warning && !urgent && 'border-orange-300 text-orange-700')}
-    >
-      <Clock className="size-3" />
-      {formatDuration(remainingSeconds)}
-    </Badge>
   );
 }
 
@@ -188,12 +173,6 @@ function getReleaseNotice({
   }
 
   return null;
-}
-
-function formatDuration(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 function formatDate(value: string): string {

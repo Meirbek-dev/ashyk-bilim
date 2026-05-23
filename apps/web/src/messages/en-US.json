@@ -8245,6 +8245,22 @@
           "deleteConfirmDesc": "This action cannot be undone.",
           "outlinePoints": "{points} pts total"
         },
+        "Inspector": {
+          "title": "Inspector",
+          "open": "Open inspector",
+          "close": "Close inspector",
+          "pointsLabel": "Points",
+          "difficultyLabel": "Difficulty",
+          "difficultyNote": "Difficulty is not yet synced to the server.",
+          "difficulty": {
+            "easy": "Easy",
+            "medium": "Medium",
+            "hard": "Hard"
+          },
+          "explanationLabel": "Explanation",
+          "explanationPlaceholder": "Explain why the correct answer is correct…",
+          "explanationDesc": "Shown to students during result review."
+        },
         "PublishDashboard": {
           "metricsTitle": "Exam Metrics",
           "totalQuestions": "Questions",
@@ -8304,6 +8320,7 @@
           "needsReview": "Needs review",
           "averageScore": "Average score",
           "passRate": "Pass rate",
+          "scoreDistributionTitle": "Score distribution",
           "queueTitle": "Review queue",
           "queueBody": "Grade manual items, publish completed results, and return attempts that need revision.",
           "questionQualityTitle": "Question quality",

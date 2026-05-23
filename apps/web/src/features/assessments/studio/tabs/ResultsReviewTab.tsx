@@ -3,16 +3,23 @@
 import { BarChart3, BookOpenCheck, Clock4, ExternalLink, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { apiFetcher } from '@/lib/api-client';
 import Link from '@components/ui/AppLink';
 import { Button } from '@/components/ui/button';
+
+interface ScoreDistributionBucket {
+  range: string;
+  count: number;
+}
 
 interface SubmissionStats {
   total: number;
   needs_grading_count: number;
   avg_score: number | null;
   pass_rate: number | null;
+  score_distribution: ScoreDistributionBucket[];
 }
 
 interface ResultsReviewTabProps {
@@ -91,6 +98,25 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
           accent="emerald"
         />
       </div>
+
+      {stats && stats.score_distribution.some((b) => b.count > 0) && (
+        <div className="bg-card rounded-lg border p-5">
+          <h3 className="mb-4 text-sm font-semibold">{t('scoreDistributionTitle')}</h3>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={stats.score_distribution} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+              <XAxis dataKey="range" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+              <Tooltip
+                contentStyle={{ fontSize: 12 }}
+                labelFormatter={(label) => `Score: ${label}`}
+                formatter={(value) => [Number(value ?? 0), t('submissions')]}
+              />
+              <Bar dataKey="count" radius={[3, 3, 0, 0]} className="fill-primary" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       <section className="grid gap-4 lg:grid-cols-3">
         <InsightPanel

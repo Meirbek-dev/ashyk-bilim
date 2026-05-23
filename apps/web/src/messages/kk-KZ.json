@@ -7716,6 +7716,22 @@
           "deleteConfirmDesc": "Бұл әрекетті болдырмау мүмкін емес.",
           "outlinePoints": "{points} ұпай барлығы"
         },
+        "Inspector": {
+          "title": "Инспектор",
+          "open": "Инспекторды ашу",
+          "close": "Инспекторды жабу",
+          "pointsLabel": "Ұпайлар",
+          "difficultyLabel": "Қиындық",
+          "difficultyNote": "Қиындық деңгейі әлі серверге синхрондалмайды.",
+          "difficulty": {
+            "easy": "Жеңіл",
+            "medium": "Орташа",
+            "hard": "Қиын"
+          },
+          "explanationLabel": "Түсіндірме",
+          "explanationPlaceholder": "Неліктен жауап дұрыс екенін түсіндіріңіз…",
+          "explanationDesc": "Нәтижелерді қарастыру кезінде студенттерге көрсетіледі."
+        },
         "PublishDashboard": {
           "metricsTitle": "Емтихан метрикалары",
           "totalQuestions": "Сұрақтар",
@@ -7775,6 +7791,7 @@
           "needsReview": "Тексеруді қажет етеді",
           "averageScore": "Орташа балл",
           "passRate": "Өту пайызы",
+          "scoreDistributionTitle": "Балл таралымы",
           "queueTitle": "Тексеру кезегі",
           "queueBody": "Қолмен бағаланатын элементтерді бағалаңыз, дайын нәтижелерді жариялаңыз және әрекеттерді түзетуге қайтарыңыз.",
           "questionQualityTitle": "Сұрақ сапасы",

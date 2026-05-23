@@ -7751,6 +7751,22 @@
           "deleteConfirmDesc": "Это действие нельзя отменить.",
           "outlinePoints": "{points} пт всего"
         },
+        "Inspector": {
+          "title": "Инспектор",
+          "open": "Открыть инспектор",
+          "close": "Закрыть инспектор",
+          "pointsLabel": "Баллы",
+          "difficultyLabel": "Сложность",
+          "difficultyNote": "Сложность пока не синхронизируется с сервером.",
+          "difficulty": {
+            "easy": "Лёгкий",
+            "medium": "Средний",
+            "hard": "Сложный"
+          },
+          "explanationLabel": "Пояснение",
+          "explanationPlaceholder": "Объясните, почему ответ правильный…",
+          "explanationDesc": "Отображается студентам при проверке результатов."
+        },
         "PublishDashboard": {
           "metricsTitle": "Метрики экзамена",
           "totalQuestions": "Вопросы",
@@ -7810,6 +7826,7 @@
           "needsReview": "Требуют проверки",
           "averageScore": "Средний балл",
           "passRate": "Процент прохождения",
+          "scoreDistributionTitle": "Распределение баллов",
           "queueTitle": "Очередь проверки",
           "queueBody": "Оценивайте ручные задания, публикуйте завершенные результаты и возвращайте попытки на доработку.",
           "questionQualityTitle": "Качество вопросов",

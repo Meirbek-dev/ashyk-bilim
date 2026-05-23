@@ -23,7 +23,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslations } from 'next-intl';
-import { useTransition, useCallback } from 'react';
+import { useTransition, useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { AssessmentItem } from '@/features/assessments/domain/items';
@@ -38,6 +38,7 @@ import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import type { EditableItem } from '@/features/assessments/studio/studioTypes';
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge';
 import SaveStateBadge from '@/features/assessments/shared/SaveStateBadge';
+import QuestionInspectorPanel from './QuestionInspectorPanel';
 import { apiFetch } from '@/lib/api-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -105,6 +106,7 @@ export default function BuilderCanvasTab({
   const [isCreating, startCreateTransition] = useTransition();
   const [isDuplicating, startDuplicateTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [inspectorOpen, setInspectorOpen] = useState(true);
 
   const kindLabels: Record<SupportedStudioItemKind, string> = {
     CHOICE: t('kindLabels.choice'),
@@ -327,6 +329,17 @@ export default function BuilderCanvasTab({
           />
         )}
       </main>
+
+      {/* Right Inspector */}
+      {itemState ? (
+        <QuestionInspectorPanel
+          item={itemState}
+          isEditable={isEditable}
+          isOpen={inspectorOpen}
+          onToggle={() => setInspectorOpen((v) => !v)}
+          onChange={onItemChange}
+        />
+      ) : null}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { RichTextPromptEditor } from '@/features/assessments/shared/RichTextPromptEditor';
+import { MarkdownRenderer } from '@/features/assessments/shared/MarkdownRenderer';
 
 import { registerItemKind } from '../registry';
 import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
@@ -133,7 +134,9 @@ export function ChoiceItemAttempt({
                   onAnswerChange(next);
                 }}
               />
-              <span className="text-sm leading-relaxed">{option.text || `Option ${index + 1}`}</span>
+              <div className="min-w-0 flex-1 text-sm leading-relaxed">
+                <MarkdownRenderer compact content={option.text || `Option ${index + 1}`} />
+              </div>
             </label>
           );
         })}
@@ -157,7 +160,9 @@ export function ChoiceItemAttempt({
             className="bg-background hover:bg-muted/60 flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors"
           >
             <RadioGroupItem value={String(id)} />
-            <span className="text-sm leading-relaxed">{option.text || `Option ${index + 1}`}</span>
+            <div className="min-w-0 flex-1 text-sm leading-relaxed">
+              <MarkdownRenderer compact content={option.text || `Option ${index + 1}`} />
+            </div>
           </label>
         );
       })}

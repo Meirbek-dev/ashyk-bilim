@@ -22,6 +22,7 @@ from src.db.grading.progress import (
 from src.db.grading.schemas import BulkPublishGradesResponse
 from src.db.grading.submissions import (
     AssessmentType,
+    ScoreDistributionBucket,
     Submission,
     SubmissionStats,
     SubmissionStatus,
@@ -217,6 +218,16 @@ async def get_assessment_submission_stats(
         round(len(passing) / len(graded_scores) * 100, 1) if graded_scores else None
     )
 
+    # Build 10-point score distribution buckets (0–10, 10–20, … 90–100)
+    bucket_counts = [0] * 10
+    for score in graded_scores:
+        idx = min(int(score // 10), 9)
+        bucket_counts[idx] += 1
+    score_distribution = [
+        ScoreDistributionBucket(range=f"{i * 10}–{i * 10 + 10}", count=bucket_counts[i])
+        for i in range(10)
+    ]
+
     return SubmissionStats(
         total=total,
         graded_count=graded_count,
@@ -224,6 +235,7 @@ async def get_assessment_submission_stats(
         late_count=late_count,
         avg_score=avg_score,
         pass_rate=pass_rate,
+        score_distribution=score_distribution,
     )
 
 

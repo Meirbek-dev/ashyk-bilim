@@ -506,6 +506,13 @@ class SubmissionListResponse(SQLModelStrictBaseModel):
 # ── Aggregate stats ───────────────────────────────────────────────────────────
 
 
+class ScoreDistributionBucket(SQLModelStrictBaseModel):
+    """One 10-point score bucket for the distribution histogram."""
+
+    range: str  # e.g. "0–10"
+    count: int
+
+
 class SubmissionStats(SQLModelStrictBaseModel):
     """Aggregate statistics for the teacher dashboard header."""
 
@@ -515,3 +522,4 @@ class SubmissionStats(SQLModelStrictBaseModel):
     late_count: int  # count of PENDING submissions where is_late=True
     avg_score: float | None
     pass_rate: float | None  # percentage of GRADED/PUBLISHED scoring ≥ 50
+    score_distribution: list[ScoreDistributionBucket] = []
