@@ -414,21 +414,13 @@ def export_grades_csv(
         base_conditions.append(Submission.submitted_at <= submitted_before)
 
     query = (
-        select(Submission)
+        select(Submission, User)
         .join(User, User.id == Submission.user_id)
         .where(*base_conditions)
         .order_by(asc(Submission.submitted_at))
     )
 
-    # Pre-fetch all involved users in a single query (user records are small).
-    # Submission rows are streamed below so memory scales with batch size, not
-    # with the total number of submissions.
-    all_user_ids_query = select(Submission.user_id).where(*base_conditions).distinct()
-    all_user_ids = set(db_session.exec(all_user_ids_query).all())
-    users_by_id = _batch_fetch_users(all_user_ids, db_session)
-
-    for s in db_session.exec(query).yield_per(200):
-        u = users_by_id.get(s.user_id)
+    for s, u in db_session.exec(query).yield_per(200):
         if u:
             parts = [p for p in [u.first_name, u.middle_name, u.last_name] if p]
             name = " ".join(parts) if parts else u.username

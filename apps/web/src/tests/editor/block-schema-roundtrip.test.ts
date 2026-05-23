@@ -126,7 +126,7 @@ const serializationCases: Array<{ title: string; doc: object }> = [
     title: 'math equation',
     doc: {
       type: 'doc',
-      content: [{ type: 'blockMathEquation', attrs: { math_equation: 'x^2 + y^2 = z^2' } }],
+      content: [{ type: 'blockMathEquation', attrs: { math_equation: 'x^2 + y^2 = z^2', html: '' } }],
     },
   },
   {

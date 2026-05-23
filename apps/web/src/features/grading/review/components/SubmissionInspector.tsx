@@ -14,6 +14,8 @@ import { useAssessmentAttempt } from '@/features/assessments/hooks/useAssessment
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items';
 import { CanonicalReviewAnswer } from '@/features/assessments/shared/canonical-item-rendering';
 import { useGradingPanel } from '@/hooks/useGradingPanel';
+import { useAnnotations } from '../AnnotationContext';
+import AnnotatableText from './AnnotatableText';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -85,6 +87,17 @@ export default function SubmissionInspector({
                       : t('releaseStateReturned')}
               </Badge>
               {current.is_late ? <Badge variant="destructive">{t('submissionInspector.late')}</Badge> : null}
+              {(current.metadata_json as Record<string, any>)?.plagiarism ? (
+                <Badge
+                  variant={(current.metadata_json as Record<string, any>).plagiarism.flagged ? 'destructive' : 'secondary'}
+                  className="font-mono text-[10px]"
+                >
+                  Plagiarism:{' '}
+                  {(current.metadata_json as Record<string, any>).plagiarism.flagged
+                    ? `${Math.round(((current.metadata_json as Record<string, any>).plagiarism.score ?? 0) * 100)}% Match`
+                    : 'Clear'}
+                </Badge>
+              ) : null}
             </div>
           </div>
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
@@ -262,6 +275,7 @@ export function SubmittedAnswers({
   const { vm } = useAssessmentAttempt(activityUuid ?? null);
   const items = vm?.surface === 'ATTEMPT' ? vm.vm.items : [];
   const canonicalAnswers = answersByItem ?? getCanonicalAnswersByItem(submission);
+  const { annotationsByItem, addAnnotation, removeAnnotation } = useAnnotations();
 
   if (items.length === 0) {
     return (
@@ -282,26 +296,42 @@ export function SubmittedAnswers({
           {t('submissionInspector.noAnswerPayload')}
         </div>
       ) : (
-        items.map((item: AssessmentItem, index) => (
-          <div
-            key={item.item_uuid ?? index}
-            className="bg-card rounded-lg border p-4"
-          >
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <Badge variant="secondary">{t('submissionInspector.itemLabel', { index: index + 1 })}</Badge>
-              <Badge variant="outline">{item.kind}</Badge>
+        items.map((item: AssessmentItem, index) => {
+          const answer = canonicalAnswers[item.item_uuid];
+          const isOpenText = item.body?.kind === 'OPEN_TEXT' || item.kind === 'OPEN_TEXT';
+          const openTextValue =
+            isOpenText && answer && 'text' in answer ? (answer.text as string | undefined) : undefined;
+
+          return (
+            <div
+              key={item.item_uuid ?? index}
+              className="bg-card rounded-lg border p-4"
+            >
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <Badge variant="secondary">{t('submissionInspector.itemLabel', { index: index + 1 })}</Badge>
+                <Badge variant="outline">{item.kind}</Badge>
+              </div>
+              <p className="mb-3 text-sm font-medium">
+                {item.title ||
+                  ('prompt' in item.body ? item.body.prompt : t('submissionInspector.itemLabel', { index: index + 1 }))}
+              </p>
+              {isOpenText && openTextValue !== undefined ? (
+                <AnnotatableText
+                  text={openTextValue ?? ''}
+                  annotations={annotationsByItem[item.item_uuid] ?? []}
+                  onAdd={(a) => addAnnotation(item.item_uuid, a)}
+                  onRemove={(id) => removeAnnotation(item.item_uuid, id)}
+                />
+              ) : (
+                <CanonicalReviewAnswer
+                  item={item}
+                  answer={answer}
+                />
+              )}
+              {item.body.kind === 'OPEN_TEXT' && item.body.rubric ? <RubricSummary rubric={item.body.rubric} /> : null}
             </div>
-            <p className="mb-3 text-sm font-medium">
-              {item.title ||
-                ('prompt' in item.body ? item.body.prompt : t('submissionInspector.itemLabel', { index: index + 1 }))}
-            </p>
-            <CanonicalReviewAnswer
-              item={item}
-              answer={canonicalAnswers[item.item_uuid]}
-            />
-            {item.body.kind === 'OPEN_TEXT' && item.body.rubric ? <RubricSummary rubric={item.body.rubric} /> : null}
-          </div>
-        ))
+          );
+        })
       )}
     </section>
   );

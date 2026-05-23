@@ -234,23 +234,34 @@ async def api_create_course_thumbnail(
 @router.get("/{course_uuid}")
 async def api_get_course(
     request: Request,
+    response: Response,
     course_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
     current_user: Annotated[
         PublicUser | AnonymousUser, Depends(get_optional_public_user)
     ] = None,
     checker: PermissionCheckerDep = None,
-) -> CourseRead:
+) -> CourseRead | Response:
     """
     Get single Course by course_uuid
     """
-    return await get_course(
+    course = await get_course(
         request,
         course_uuid,
         current_user=current_user,
         db_session=db_session,
         checker=checker,
     )
+    
+    up_time = course.update_date.timestamp() if getattr(course, "update_date", None) else 0.0
+    etag = f'W/"{course.id}-{up_time}"'
+    
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304)
+        
+    response.headers["ETag"] = etag
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=120"
+    return course
 
 
 @router.get("/{course_uuid}/meta")
@@ -264,7 +275,7 @@ async def api_get_course_meta(
     ] = None,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
     checker: PermissionCheckerDep = None,
-) -> FullCourseRead:
+) -> FullCourseRead | Response:
     """
     Get single Course Metadata (chapters, activities) by course_uuid.
 
@@ -282,6 +293,7 @@ async def api_get_course_meta(
     )
 
     # Emit the structure version so clients can detect concurrent edits
+    latest_chapter_update = None
     try:
         from sqlalchemy import func as _func
         from sqlmodel import select as _select
@@ -303,6 +315,16 @@ async def api_get_course_meta(
             response.headers["Access-Control-Expose-Headers"] = "X-Structure-Version"
     except Exception:
         logger.debug("Failed to emit structure version", exc_info=True)
+
+    up_time = result.update_date.timestamp() if getattr(result, "update_date", None) else 0.0
+    struct_time = latest_chapter_update.timestamp() if latest_chapter_update and hasattr(latest_chapter_update, "timestamp") else 0.0
+    etag = f'W/"{result.id}-{up_time}-{struct_time}"'
+
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304)
+
+    response.headers["ETag"] = etag
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=120"
 
     return result
 

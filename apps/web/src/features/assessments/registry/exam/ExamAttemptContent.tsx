@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, CheckCircle, Clock, FileText, InfinityIcon, ShieldAlert, Users, RotateCcw } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, FileText, InfinityIcon, ShieldAlert, Users, RotateCcw, LayoutList, Rows2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient, queryOptions } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
@@ -9,6 +9,9 @@ import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api-client';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { courseKeys } from '@/hooks/courses/courseKeys';
 import { useContributorStatus } from '@/hooks/useContributorStatus';
@@ -75,16 +78,28 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     submissionState.submissions.find((submission) => submission.status !== 'DRAFT') ?? null;
   const historyItems = submissionState.submissions
     .filter((submission) => submission.status !== 'DRAFT')
-    .map((submission, index) => ({
-      id: submission.submission_uuid,
-      label:
-        index === 0
-          ? t('latestSubmission')
-          : t('attemptNumber', { number: submissionState.submissions.length - index }),
-      submittedAt: submission.submitted_at ?? submission.updated_at,
-      status: submission.status,
-      scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
-    }));
+    .map((submission, index) => {
+      const plagiarism = (submission.metadata_json as Record<string, any>)?.plagiarism as
+        | { flagged?: boolean; score?: number }
+        | undefined;
+      let plagiarismText = '';
+      if (plagiarism) {
+        plagiarismText = plagiarism.flagged
+          ? `Plagiarism Flagged (${Math.round((plagiarism.score ?? 0) * 100)}% match)`
+          : `Plagiarism: Checked Clear`;
+      }
+      return {
+        id: submission.submission_uuid,
+        label:
+          index === 0
+            ? t('latestSubmission')
+            : t('attemptNumber', { number: submissionState.submissions.length - index }),
+        submittedAt: submission.submitted_at ?? submission.updated_at,
+        status: submission.status,
+        scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
+        metaLabel: plagiarismText || null,
+      };
+    });
 
   const handleStartExam = async () => {
     if (!assessmentUuid || !vm.canEdit) return;
@@ -289,11 +304,53 @@ function ExamTakingContent({
   const [flaggedIndexes, setFlaggedIndexes] = useState<Set<number>>(new Set());
   const violationCountRef = useRef(0);
 
+  // View mode: CARD (one at a time) or SCROLL (all visible)
+  const [viewMode, setViewMode] = useState<'CARD' | 'SCROLL'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('exam-view-mode') as 'CARD' | 'SCROLL') ?? 'CARD';
+    }
+    return 'CARD';
+  });
+  const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const toggleViewMode = useCallback(() => {
+    setViewMode((prev) => {
+      const next = prev === 'CARD' ? 'SCROLL' : 'CARD';
+      localStorage.setItem('exam-view-mode', next);
+      return next;
+    });
+  }, []);
+
+  const scrollToQuestion = useCallback((index: number) => {
+    const ref = questionRefs.current[index];
+    if (ref) {
+      ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
   const persistence = useAssessmentAttempt<Record<string, ItemAnswer>>({
     attemptUuid: attempt.submission_uuid,
     autoSaveInterval: 5000,
     expirationHours: 24,
     storageKeyPrefix: 'exam_answers_',
+    validate: (answers: unknown): boolean => {
+      if (!answers || typeof answers !== 'object') return false;
+      const record = answers as Record<string, unknown>;
+      for (const key of Object.keys(record)) {
+        const ans = record[key];
+        if (!ans || typeof ans !== 'object') return false;
+        const kind = (ans as any).kind;
+        if (!['CHOICE', 'OPEN_TEXT', 'FORM', 'CODE', 'MATCHING'].includes(kind)) {
+          return false;
+        }
+        if (kind === 'CHOICE' && !Array.isArray((ans as any).selected)) return false;
+        if (kind === 'OPEN_TEXT' && typeof (ans as any).text !== 'string') return false;
+        if (kind === 'FORM' && (!(ans as any).values || typeof (ans as any).values !== 'object')) return false;
+        if (kind === 'CODE' && (typeof (ans as any).language !== 'number' || typeof (ans as any).source !== 'string')) return false;
+        if (kind === 'MATCHING' && !Array.isArray((ans as any).matches)) return false;
+      }
+      return true;
+    },
     onRestore: (recovered) => {
       if (Object.keys(submissionState.answers).length === 0 && Object.keys(recovered).length > 0) {
         setRecoveredAnswers(recovered);
@@ -303,6 +360,24 @@ function ExamTakingContent({
   });
 
   const orderedQuestions = useMemo(() => getOrderedExamQuestions(questions, null), [questions]);
+
+  // Track which question is in view when in SCROLL mode
+  useEffect(() => {
+    if (viewMode !== 'SCROLL') return;
+    const observers: IntersectionObserver[] = [];
+    questionRefs.current.forEach((ref, index) => {
+      if (!ref) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry?.isIntersecting) setCurrentIndex(index);
+        },
+        { threshold: 0.4, rootMargin: '-10% 0px -55% 0px' },
+      );
+      obs.observe(ref);
+      observers.push(obs);
+    });
+    return () => observers.forEach((obs) => obs.disconnect());
+  }, [viewMode, orderedQuestions.length]);
   const currentQuestion = orderedQuestions[currentIndex];
   const questionById = useMemo(
     () => new Map(orderedQuestions.map((question) => [question.id, question])),
@@ -420,8 +495,16 @@ function ExamTakingContent({
         answered: answeredCount,
         canPrevious: currentIndex > 0,
         canNext: currentIndex < orderedQuestions.length - 1,
-        onPrevious: () => setCurrentIndex((index) => Math.max(0, index - 1)),
-        onNext: () => setCurrentIndex((index) => index + 1),
+        onPrevious: () => {
+          const next = Math.max(0, currentIndex - 1);
+          setCurrentIndex(next);
+          if (viewMode === 'SCROLL') scrollToQuestion(next);
+        },
+        onNext: () => {
+          const next = Math.min(orderedQuestions.length - 1, currentIndex + 1);
+          setCurrentIndex(next);
+          if (viewMode === 'SCROLL') scrollToQuestion(next);
+        },
       },
       timer: policy.timeLimitSeconds
         ? {
@@ -519,43 +602,122 @@ function ExamTakingContent({
 
       {latestCompletedSubmission ? <ExamSubmissionStatePanel submission={latestCompletedSubmission as any} /> : null}
 
-      <Progress
-        value={progress}
-        className="h-2 transition-all duration-500 ease-out"
-        aria-label={t('questionProgress', { current: currentIndex + 1, total: orderedQuestions.length })}
-      />
-
-      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-        <div className="space-y-6">
-          <ExamQuestionCard
-            question={currentQuestion}
-            questionNumber={currentIndex + 1}
-            answer={displayAnswers}
-            isFlagged={flaggedIndexes.has(currentIndex)}
-            onAnswerChange={handleAnswerChange}
-            onToggleFlag={() => toggleFlag(currentIndex)}
+      {/* Progress bar + view mode toggle */}
+      <div className="flex items-center gap-3">
+        <Progress
+          value={progress}
+          className="h-2 flex-1 transition-all duration-500 ease-out"
+          aria-label={t('questionProgress', { current: currentIndex + 1, total: orderedQuestions.length })}
+        />
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-7 shrink-0"
+                onClick={toggleViewMode}
+                aria-label={viewMode === 'CARD' ? t('switchToScrollMode') : t('switchToCardMode')}
+              >
+                {viewMode === 'CARD' ? <LayoutList className="size-4" /> : <Rows2 className="size-4" />}
+              </Button>
+            }
           />
-        </div>
-
-        <div className="order-first hidden lg:order-last lg:block">
-          <ExamQuestionNavigation
-            totalQuestions={orderedQuestions.length}
-            currentQuestionIndex={currentIndex}
-            answeredQuestions={answeredIndexes}
-            flaggedQuestions={flaggedIndexes}
-            onQuestionSelect={setCurrentIndex}
-          />
-        </div>
+          <TooltipContent side="left">
+            {viewMode === 'CARD' ? t('switchToScrollMode') : t('switchToCardMode')}
+          </TooltipContent>
+        </Tooltip>
       </div>
+
+      {viewMode === 'CARD' ? (
+        /* ── Card mode: one question at a time ─────────────── */
+        <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+          <div className="space-y-6">
+            <ExamQuestionCard
+              question={currentQuestion!}
+              questionNumber={currentIndex + 1}
+              answer={displayAnswers}
+              isFlagged={flaggedIndexes.has(currentIndex)}
+              onAnswerChange={handleAnswerChange}
+              onToggleFlag={() => toggleFlag(currentIndex)}
+            />
+          </div>
+
+          <div className="order-first hidden lg:order-last lg:block">
+            <ExamQuestionNavigation
+              totalQuestions={orderedQuestions.length}
+              currentQuestionIndex={currentIndex}
+              answeredQuestions={answeredIndexes}
+              flaggedQuestions={flaggedIndexes}
+              onQuestionSelect={setCurrentIndex}
+            />
+          </div>
+        </div>
+      ) : (
+        /* ── Scroll mode: all questions visible ─────────────── */
+        <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+          <div className="space-y-6">
+            {orderedQuestions.map((question, index) => (
+              <div
+                key={question.id}
+                ref={(el) => {
+                  questionRefs.current[index] = el;
+                }}
+                id={`exam-q-${index}`}
+                className={cn(
+                  'scroll-mt-4 rounded-xl transition-all duration-300',
+                  currentIndex === index && 'ring-2 ring-primary/30',
+                )}
+              >
+                <ExamQuestionCard
+                  question={question}
+                  questionNumber={index + 1}
+                  answer={displayAnswers}
+                  isFlagged={flaggedIndexes.has(index)}
+                  onAnswerChange={handleAnswerChange}
+                  onToggleFlag={() => toggleFlag(index)}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="order-first hidden lg:order-last lg:block">
+            <div className="sticky top-4">
+              <ExamQuestionNavigation
+                totalQuestions={orderedQuestions.length}
+                currentQuestionIndex={currentIndex}
+                answeredQuestions={answeredIndexes}
+                flaggedQuestions={flaggedIndexes}
+                onQuestionSelect={(index) => {
+                  setCurrentIndex(index);
+                  scrollToQuestion(index);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <ExamQuestionNavigationMobile
         totalQuestions={orderedQuestions.length}
         currentQuestionIndex={currentIndex}
         answeredQuestions={answeredIndexes}
         flaggedQuestions={flaggedIndexes}
-        onQuestionSelect={setCurrentIndex}
-        onPrevious={() => setCurrentIndex((index) => Math.max(0, index - 1))}
-        onNext={() => setCurrentIndex((index) => Math.min(orderedQuestions.length - 1, index + 1))}
+        onQuestionSelect={(index) => {
+          setCurrentIndex(index);
+          if (viewMode === 'SCROLL') scrollToQuestion(index);
+        }}
+        onPrevious={() => {
+          const next = Math.max(0, currentIndex - 1);
+          setCurrentIndex(next);
+          if (viewMode === 'SCROLL') scrollToQuestion(next);
+        }}
+        onNext={() => {
+          const next = Math.min(orderedQuestions.length - 1, currentIndex + 1);
+          setCurrentIndex(next);
+          if (viewMode === 'SCROLL') scrollToQuestion(next);
+        }}
         onSubmit={handleOpenSubmitConfirmation}
         canGoNext={currentIndex < orderedQuestions.length - 1}
         canGoPrevious={currentIndex > 0}

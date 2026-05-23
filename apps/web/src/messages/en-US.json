@@ -483,7 +483,9 @@
       "noQuestionsWarning": "This exam doesn't have any questions yet and cannot be started.",
       "teacherNoQuestionsWarning": "This exam doesn't have any questions yet. Please add questions before making it available to students.",
       "resumedDraft": "Resuming exam",
-      "resumedDraftDescription": "Last saved: {time}"
+      "resumedDraftDescription": "Last saved: {time}",
+      "switchToScrollMode": "Switch to scroll mode (view all questions)",
+      "switchToCardMode": "Switch to card mode (one question at a time)"
     }
   },
   "ActivityIndicators": {
@@ -7476,6 +7478,14 @@
           "loadingSubmission": "Loading submission...",
           "formUnavailable": "Grading form is unavailable."
         },
+        "Annotation": {
+          "addNote": "Add note",
+          "cancel": "Cancel",
+          "removeAnnotation": "Remove annotation",
+          "commentPlaceholder": "Your comment about the selected passage…",
+          "addNoteFor": "Comment on: \"{text}\"",
+          "ctrlEnterHint": "Ctrl+Enter to save"
+        },
         "releaseStateHidden": "Hidden",
         "releaseStateAwaitingRelease": "Awaiting release",
         "releaseStateVisible": "Visible",
@@ -8243,7 +8253,9 @@
           "noItemSelectedDesc": "Choose a question from the outline to edit it.",
           "deleteConfirm": "Delete question?",
           "deleteConfirmDesc": "This action cannot be undone.",
-          "outlinePoints": "{points} pts total"
+          "outlinePoints": "{points} pts total",
+          "defaultSectionLabel": "Section {n}",
+          "addSectionBefore": "Add section before this question"
         },
         "Inspector": {
           "title": "Inspector",
@@ -8326,7 +8338,16 @@
           "questionQualityTitle": "Question quality",
           "questionQualityBody": "Use item-level analytics to identify confusing, too easy, or too difficult questions.",
           "releaseTitle": "Release control",
-          "releaseBody": "Keep grades hidden while reviewing, then publish results when the cohort is ready."
+          "releaseBody": "Keep grades hidden while reviewing, then publish results when the cohort is ready.",
+          "itemAnalyticsTitle": "Per-question analytics",
+          "noAnalyticsData": "No graded submissions yet — analytics will appear after students complete and are graded.",
+          "colQuestion": "Question",
+          "colKind": "Type",
+          "colMaxScore": "Points",
+          "colResponses": "Responses",
+          "colAvgScore": "Avg. Score",
+          "colCorrectPct": "Correct %",
+          "colDiscrimination": "Discrimination"
         },
         "SecurityShield": {
           "low": "Low Security",

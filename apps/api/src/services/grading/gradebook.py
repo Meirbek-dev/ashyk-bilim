@@ -66,7 +66,8 @@ async def get_course_gradebook(
         },
         db_session,
     )
-    policies_by_activity = _policies_by_activity(db_session)
+    activity_ids = {activity.id for activity in activities if activity.id is not None}
+    policies_by_activity = _policies_by_activity(activity_ids, db_session)
     file_activity_ids = {
         activity.id
         for activity in activities
@@ -74,7 +75,7 @@ async def get_course_gradebook(
         and str(activity.activity_type) == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
     }
     file_attempts_by_pair = file_submission_attempts_for_gradebook(
-        file_activity_ids, db_session
+        file_activity_ids, db_session, student_ids=student_ids
     )
     file_configs_by_activity = file_submission_configs_for_activities(
         file_activity_ids, db_session
@@ -186,57 +187,40 @@ def _course_students(
     db_session: Session,
 ) -> list[User]:
     activity_ids = [activity.id for activity in activities if activity.id is not None]
-    user_ids: set[int] = set()
+    
+    from sqlmodel import or_, exists
 
-    user_ids.update(
-        db_session.exec(
-            select(UserGroupUser.user_id)
-            .join(
-                UserGroupResource,
-                UserGroupResource.usergroup_id == UserGroupUser.usergroup_id,
-            )
-            .where(UserGroupResource.resource_uuid == course.course_uuid)
-        ).all()
+    user_group_exists = exists().where(
+        UserGroupUser.user_id == User.id,
+        UserGroupUser.usergroup_id == UserGroupResource.usergroup_id,
+        UserGroupResource.resource_uuid == course.course_uuid,
+    )
+    trail_run_exists = exists().where(
+        TrailRun.user_id == User.id,
+        TrailRun.course_id == course.id,
     )
 
-    user_ids.update(
-        db_session.exec(
-            select(TrailRun.user_id).where(TrailRun.course_id == course.id)
-        ).all()
-    )
+    conditions = [user_group_exists, trail_run_exists]
 
     if activity_ids:
-        user_ids.update(
-            db_session.exec(
-                select(Submission.user_id).where(
-                    Submission.activity_id.in_(activity_ids)
-                )
-            ).all()
+        submission_exists = exists().where(
+            Submission.user_id == User.id,
+            Submission.activity_id.in_(activity_ids),
         )
-
-        user_ids.update(
-            db_session.exec(
-                select(FileSubmissionAttempt.user_id).where(
-                    FileSubmissionAttempt.activity_id.in_(activity_ids)
-                )
-            ).all()
+        file_attempt_exists = exists().where(
+            FileSubmissionAttempt.user_id == User.id,
+            FileSubmissionAttempt.activity_id.in_(activity_ids),
         )
-
-        user_ids.update(
-            db_session.exec(
-                select(ActivityProgress.user_id).where(
-                    ActivityProgress.activity_id.in_(activity_ids)
-                )
-            ).all()
+        progress_exists = exists().where(
+            ActivityProgress.user_id == User.id,
+            ActivityProgress.activity_id.in_(activity_ids),
         )
-
-    if not user_ids:
-        return []
+        conditions.extend([submission_exists, file_attempt_exists, progress_exists])
 
     return list(
         db_session.exec(
             select(User)
-            .where(User.id.in_(user_ids))
+            .where(or_(*conditions))
             .order_by(User.last_name, User.first_name, User.username)
         ).all()
     )
@@ -265,8 +249,12 @@ def _submissions_by_id(
     return {submission.id: submission for submission in submissions if submission.id}
 
 
-def _policies_by_activity(db_session: Session) -> dict[int, AssessmentPolicy]:
-    policies = db_session.exec(select(AssessmentPolicy)).all()
+def _policies_by_activity(activity_ids: set[int], db_session: Session) -> dict[int, AssessmentPolicy]:
+    if not activity_ids:
+        return {}
+    policies = db_session.exec(
+        select(AssessmentPolicy).where(AssessmentPolicy.activity_id.in_(activity_ids))
+    ).all()
     return {policy.activity_id: policy for policy in policies}
 
 

@@ -1063,6 +1063,7 @@ function buildAssessmentPatch(mode: StudioMode, assessment: AssessmentStudioDeta
       partial_credit: state.partialCredit,
       grace_period_minutes: state.gracePeriodMinutes ? Number(state.gracePeriodMinutes) : null,
       available_from: state.availableFrom ? new Date(state.availableFrom).toISOString() : null,
+      negative_marking_percent: state.negativeMarkingPercent ? Number(state.negativeMarkingPercent) : 0,
     },
   };
   return payload;
@@ -1114,6 +1115,7 @@ function toAssessmentEditorState(assessment: AssessmentStudioDetail): Assessment
     partialCredit: settings.partial_credit === true,
     gracePeriodMinutes: typeof settings.grace_period_minutes === 'number' ? String(settings.grace_period_minutes) : '',
     availableFrom: settings.available_from ? toDateTimeLocal(settings.available_from as string) : '',
+    negativeMarkingPercent: typeof settings.negative_marking_percent === 'number' && settings.negative_marking_percent > 0 ? String(settings.negative_marking_percent) : '',
   };
 }
 

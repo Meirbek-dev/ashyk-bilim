@@ -5,13 +5,16 @@ import {
   BookOpen,
   CheckCircle2,
   Copy,
+  FolderPlus,
   GitCompareArrows,
   GripVertical,
   ListTodo,
   LoaderCircle,
+  Pencil,
   Plus,
   TextCursorInput,
   Trash2,
+  X,
 } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -23,7 +26,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslations } from 'next-intl';
-import { useTransition, useCallback, useState } from 'react';
+import { useTransition, useCallback, useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import type { AssessmentItem } from '@/features/assessments/domain/items';
@@ -82,6 +85,70 @@ interface BuilderCanvasTabProps {
   renderItemBodyEditor: (item: EditableItem) => React.ReactNode;
 }
 
+// ─── Exam Sections ───────────────────────────────────────────────────────────
+
+export interface ExamSection {
+  id: string;
+  label: string;
+  /** This section header appears immediately before the item with this uuid */
+  beforeItemUuid: string;
+}
+
+function useSections(assessmentUuid: string) {
+  const key = `sections:${assessmentUuid}`;
+  const [sections, setSections] = useState<ExamSection[]>(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as ExamSection[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const persist = useCallback(
+    (next: ExamSection[]) => {
+      setSections(next);
+      localStorage.setItem(key, JSON.stringify(next));
+    },
+    [key],
+  );
+
+  const addSection = useCallback(
+    (beforeItemUuid: string, label: string) => {
+      const next: ExamSection = { id: crypto.randomUUID(), label, beforeItemUuid };
+      persist([...sections, next]);
+    },
+    [sections, persist],
+  );
+
+  const renameSection = useCallback(
+    (id: string, label: string) => {
+      persist(sections.map((s) => (s.id === id ? { ...s, label } : s)));
+    },
+    [sections, persist],
+  );
+
+  const deleteSection = useCallback(
+    (id: string) => {
+      persist(sections.filter((s) => s.id !== id));
+    },
+    [sections, persist],
+  );
+
+  /** Remove dangling sections after item deletion */
+  const pruneSections = useCallback(
+    (liveItemUuids: string[]) => {
+      const pruned = sections.filter((s) => liveItemUuids.includes(s.beforeItemUuid));
+      if (pruned.length !== sections.length) persist(pruned);
+    },
+    [sections, persist],
+  );
+
+  return { sections, addSection, renameSection, deleteSection, pruneSections };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function BuilderCanvasTab({
   assessmentUuid,
   items,
@@ -107,6 +174,7 @@ export default function BuilderCanvasTab({
   const [isDuplicating, startDuplicateTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [inspectorOpen, setInspectorOpen] = useState(true);
+  const { sections, addSection, renameSection, deleteSection, pruneSections } = useSections(assessmentUuid);
 
   const kindLabels: Record<SupportedStudioItemKind, string> = {
     CHOICE: t('kindLabels.choice'),
@@ -194,6 +262,7 @@ export default function BuilderCanvasTab({
         if (!response.ok) throw new Error('Failed to delete item');
         toast.success(t('itemDeleted', { itemNoun }));
         await onItemDeleted();
+        pruneSections(items.filter((i) => i.item_uuid !== itemState.item_uuid).map((i) => i.item_uuid));
       } catch {
         toast.error(t('deleteFailed', { itemNoun: itemNoun.toLowerCase() }));
       }
@@ -265,18 +334,36 @@ export default function BuilderCanvasTab({
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-1">
-                  {items.map((item, index) => (
-                    <SortableOutlineItem
-                      key={item.item_uuid}
-                      item={item}
-                      index={index}
-                      selected={item.item_uuid === selectedItemUuid}
-                      kindLabel={kindLabels[item.kind as SupportedStudioItemKind] ?? item.kind}
-                      validationIssues={validationIssues}
-                      disabled={!isEditable}
-                      onSelect={() => onSelectItem(item.item_uuid)}
-                    />
-                  ))}
+                  {items.map((item, index) => {
+                    const itemSections = sections.filter((s) => s.beforeItemUuid === item.item_uuid);
+                    return (
+                      <div key={item.item_uuid}>
+                        {itemSections.map((section) => (
+                          <SectionHeader
+                            key={section.id}
+                            section={section}
+                            isEditable={isEditable}
+                            onRename={(label) => renameSection(section.id, label)}
+                            onDelete={() => deleteSection(section.id)}
+                          />
+                        ))}
+                        <SortableOutlineItem
+                          item={item}
+                          index={index}
+                          selected={item.item_uuid === selectedItemUuid}
+                          kindLabel={kindLabels[item.kind as SupportedStudioItemKind] ?? item.kind}
+                          validationIssues={validationIssues}
+                          disabled={!isEditable}
+                          onSelect={() => onSelectItem(item.item_uuid)}
+                          onAddSectionBefore={
+                            isEditable
+                              ? () => addSection(item.item_uuid, tBuilder('defaultSectionLabel', { n: sections.length + 1 }))
+                              : undefined
+                          }
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </SortableContext>
             </DndContext>
@@ -344,6 +431,78 @@ export default function BuilderCanvasTab({
   );
 }
 
+function SectionHeader({
+  section,
+  isEditable,
+  onRename,
+  onDelete,
+}: {
+  section: ExamSection;
+  isEditable: boolean;
+  onRename: (label: string) => void;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(section.label);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.select();
+  }, [editing]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed) onRename(trimmed);
+    else setDraft(section.label);
+    setEditing(false);
+  };
+
+  return (
+    <div className="group mb-1 mt-2 flex items-center gap-1 px-1">
+      <div className="bg-border h-px flex-1" />
+      {editing ? (
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit();
+            if (e.key === 'Escape') {
+              setDraft(section.label);
+              setEditing(false);
+            }
+          }}
+          className="bg-background border-border text-muted-foreground w-32 rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider focus:outline-none"
+        />
+      ) : (
+        <span className="text-muted-foreground select-none whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider">
+          {section.label}
+        </span>
+      )}
+      {isEditable ? (
+        <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="hover:text-foreground text-muted-foreground rounded p-0.5 transition-colors"
+          >
+            <Pencil className="size-3" />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="rounded p-0.5 text-red-400 transition-colors hover:text-red-600"
+          >
+            <X className="size-3" />
+          </button>
+        </div>
+      ) : null}
+      <div className="bg-border h-px flex-1" />
+    </div>
+  );
+}
+
 function SortableOutlineItem({
   item,
   index,
@@ -352,6 +511,7 @@ function SortableOutlineItem({
   validationIssues,
   disabled,
   onSelect,
+  onAddSectionBefore,
 }: {
   item: AssessmentItem;
   index: number;
@@ -360,8 +520,10 @@ function SortableOutlineItem({
   validationIssues: ValidationIssue[];
   disabled: boolean;
   onSelect: () => void;
+  onAddSectionBefore?: () => void;
 }) {
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio');
+  const tBuilder = useTranslations('Features.Assessments.Studio.BuilderCanvas');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.item_uuid,
     disabled,
@@ -436,6 +598,27 @@ function SortableOutlineItem({
           ) : (
             <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
           )}
+          {onAddSectionBefore ? (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    type="button"
+                    className="mt-0.5 shrink-0 cursor-pointer opacity-0 transition-opacity group-hover:opacity-60 hover:!opacity-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddSectionBefore();
+                    }}
+                  >
+                    <FolderPlus className="text-muted-foreground size-3.5" />
+                  </button>
+                }
+              />
+              <TooltipContent side="right">
+                <span className="text-xs">{tBuilder('addSectionBefore')}</span>
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
         </div>
       </button>
     </div>

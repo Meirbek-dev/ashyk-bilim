@@ -805,13 +805,13 @@
 
     "@tailwindcss/postcss": ["@tailwindcss/postcss@4.3.0", "", { "dependencies": { "@alloc/quick-lru": "^5.2.0", "@tailwindcss/node": "4.3.0", "@tailwindcss/oxide": "4.3.0", "postcss": "^8.5.10", "tailwindcss": "4.3.0" } }, "sha512-Jm05Tjx+9yCLGv5qw1c+84Psds8MnyrEQYCB+FFk2lgGiUjlRqdxke4mVTuYrj2xnVZqKim2Apr5ySuQRYAw/w=="],
 
-    "@tanstack/ai": ["@tanstack/ai@0.21.2", "", { "dependencies": { "@ag-ui/core": "^0.0.52", "@standard-schema/spec": "^1.1.0", "@tanstack/ai-event-client": "0.3.9", "partial-json": "^0.1.7" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-T+56wbeSbpHMSGKRyHcvOd+m6qE21dnv4ewV7zVsQga8bxxzhkaDl0h3pCEHYmx52ohI6lZ7vdS0WvXiXZc9RQ=="],
+    "@tanstack/ai": ["@tanstack/ai@0.21.3", "", { "dependencies": { "@ag-ui/core": "^0.0.52", "@standard-schema/spec": "^1.1.0", "@tanstack/ai-event-client": "0.3.10", "partial-json": "^0.1.7" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-3Noje5zMAluJW/htpTGN3WrrFRFYPOBg0XcnCRg+T4SRcxK5b6KTfJEZneEjkLWTN9Hp24r/sNM/rNbIxl2MpQ=="],
 
-    "@tanstack/ai-client": ["@tanstack/ai-client@0.11.6", "", { "dependencies": { "@tanstack/ai": "0.21.2", "@tanstack/ai-event-client": "0.3.9" } }, "sha512-vXuVvdhij7eG208EjHaiGiiPmoWuT/GyB+94lvFQnNgcWcwd/ejAlrkPlw45u/e6SEEz8m5MM7shjXQXPy/TaA=="],
+    "@tanstack/ai-client": ["@tanstack/ai-client@0.11.7", "", { "dependencies": { "@tanstack/ai": "0.21.3", "@tanstack/ai-event-client": "0.3.10" } }, "sha512-QyHpVN42SEC1loNFIfiZ2mPyJE+htVucGEGckb+tlkT4q+2WdhvbN0uZojecTJWC/CTHL7Tc1eO2DJPXOm2mgw=="],
 
-    "@tanstack/ai-event-client": ["@tanstack/ai-event-client@0.3.9", "", { "dependencies": { "@tanstack/devtools-event-client": "^0.4.1" }, "peerDependencies": { "@tanstack/ai": "0.21.2" } }, "sha512-XNmIjPnexntUx3jyjsgmHVcGL78al4q6B3Y2+MsTdTMczKV3d6lCRR+Dk+10PtuwCr/TGOT91hxN1jWsnJvkrg=="],
+    "@tanstack/ai-event-client": ["@tanstack/ai-event-client@0.3.10", "", { "dependencies": { "@tanstack/devtools-event-client": "^0.4.1" }, "peerDependencies": { "@tanstack/ai": "0.21.3" } }, "sha512-i8Qe88sVDYswMyXGnhM2lZWCTwUP12WCShl8Pfm+n5Bo+RaoMaxFvtuJ9R+ba4hnGJ3kiWk9yPAr5xQ8A+2w6A=="],
 
-    "@tanstack/ai-react": ["@tanstack/ai-react@0.11.6", "", { "dependencies": { "@tanstack/ai-client": "0.11.6" }, "peerDependencies": { "@tanstack/ai": "^0.21.2", "@types/react": ">=18.0.0", "react": ">=18.0.0" } }, "sha512-j92IkOdzxFZdUG6v7XfXecp6N7p4rkxj+mEc2t9LKzbwwl4PiZa5NkW7uvDRQjc4yhwovLUosnCmQDZgHWqoiw=="],
+    "@tanstack/ai-react": ["@tanstack/ai-react@0.11.7", "", { "dependencies": { "@tanstack/ai-client": "0.11.7" }, "peerDependencies": { "@tanstack/ai": "^0.21.3", "@types/react": ">=18.0.0", "react": ">=18.0.0" } }, "sha512-wmuxeYJ7lkoYq12id+BOz3uUmNAKZ6sXMVyjDhW6qLZX8p0a5d6MwbbpYlhbxLv6q7ul4sUyQEqyHSKYdJBe8w=="],
 
     "@tanstack/devtools-event-client": ["@tanstack/devtools-event-client@0.4.3", "", { "bin": { "intent": "bin/intent.js" } }, "sha512-OZI6QyULw0FI0wjgmeYzCIfbgPsOEzwJtCpa69XrfLMtNXLGnz3d/dIabk7frg0TmHo+Ah49w5I4KC7Tufwsvw=="],
 

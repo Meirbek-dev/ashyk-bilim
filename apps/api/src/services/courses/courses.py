@@ -93,13 +93,28 @@ def _accessible_courses_filter(
     )
 
 
-def _course_search_filter(search_query: str | None):
+def _course_search_filter(search_query: str | None, dialect_name: str | None = None):
     if not search_query:
         return None
 
     normalized = search_query.strip()
     if not normalized:
         return None
+
+    if dialect_name == "postgresql":
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(Course.name, "")
+            + " "
+            + func.coalesce(Course.description, "")
+            + " "
+            + func.coalesce(Course.about, "")
+            + " "
+            + func.coalesce(Course.learnings, "")
+            + " "
+            + func.coalesce(Course.tags, ""),
+        )
+        return vector.op("@@")(func.plainto_tsquery("english", normalized))
 
     pattern = f"%{normalized}%"
     return or_(
@@ -839,7 +854,8 @@ async def search_courses(
     limit: int = 20,
 ) -> list[CourseRead]:
     offset = (page - 1) * limit
-    search_filter = _course_search_filter(search_query)
+    dialect_name = db_session.bind.dialect.name
+    search_filter = _course_search_filter(search_query, dialect_name)
 
     # Base query
     query = select(Course)
@@ -885,9 +901,28 @@ async def search_courses(
             )
         )
 
-    # Apply pagination
-    query = _apply_lms_sort(query, current_user).offset(offset).limit(limit)
+    # Apply pagination & sorting
+    if dialect_name == "postgresql" and search_query:
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(Course.name, "")
+            + " "
+            + func.coalesce(Course.description, "")
+            + " "
+            + func.coalesce(Course.about, "")
+            + " "
+            + func.coalesce(Course.learnings, "")
+            + " "
+            + func.coalesce(Course.tags, ""),
+        )
+        query = query.order_by(
+            func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
+            Course.id.desc()
+        )
+    else:
+        query = _apply_lms_sort(query, current_user)
 
+    query = query.offset(offset).limit(limit)
     courses = db_session.exec(query).all()
 
     # Batch fetch all authors for all courses in one query
@@ -1466,7 +1501,8 @@ async def get_editable_courses(
     has_broad_update = PermissionChecker._has_perm(
         granted, "course", "update", "all"
     ) or PermissionChecker._has_perm(granted, "course", "update", "platform")
-    search_filter = _course_search_filter(search_query)
+    dialect_name = db_session.bind.dialect.name
+    search_filter = _course_search_filter(search_query, dialect_name)
 
     offset = (page - 1) * limit
 
@@ -1476,7 +1512,6 @@ async def get_editable_courses(
             id_query = id_query.where(search_filter)
         if extra_filter is not None:
             id_query = id_query.where(extra_filter)
-        id_query = _apply_course_sort(id_query, sort_by)
     else:
         has_own_update = PermissionChecker._has_perm(granted, "course", "update", "own")
         if not has_own_update:
@@ -1497,22 +1532,42 @@ async def get_editable_courses(
             id_query = id_query.where(search_filter)
         if extra_filter is not None:
             id_query = id_query.where(extra_filter)
+
+    if dialect_name == "postgresql" and search_query:
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(Course.name, "")
+            + " "
+            + func.coalesce(Course.description, "")
+            + " "
+            + func.coalesce(Course.about, "")
+            + " "
+            + func.coalesce(Course.learnings, "")
+            + " "
+            + func.coalesce(Course.tags, ""),
+        )
+        id_query = id_query.order_by(
+            func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
+            Course.id.desc()
+        )
+    else:
         id_query = _apply_course_sort(id_query, sort_by)
 
     if apply_pagination:
         id_query = id_query.offset(offset).limit(limit)
 
-    id_subquery = id_query.subquery()
+    sorted_ids = db_session.exec(id_query).all()
+    if not sorted_ids:
+        return []
 
     AuthorRA = aliased(ResourceAuthor)
     AuthorUser = aliased(User)
 
     combined_query = (
         select(Course, AuthorRA, AuthorUser)
-        .where(Course.id.in_(select(id_subquery.c.id)))
+        .where(Course.id.in_(sorted_ids))
         .outerjoin(AuthorRA, AuthorRA.resource_uuid == Course.course_uuid)
         .outerjoin(AuthorUser, AuthorRA.user_id == AuthorUser.id)
-        .order_by(Course.id, AuthorRA.id.asc())
     )
 
     results = db_session.exec(combined_query).all()
@@ -1572,6 +1627,7 @@ async def get_editable_courses(
         })
         course_reads.append(course_read)
 
+    course_reads.sort(key=lambda cr: sorted_ids.index(cr.id))
     return course_reads
 
 
@@ -1590,7 +1646,7 @@ async def count_editable_courses(
     has_broad_update = PermissionChecker._has_perm(
         granted, "course", "update", "all"
     ) or PermissionChecker._has_perm(granted, "course", "update", "platform")
-    search_filter = _course_search_filter(search_query)
+    search_filter = _course_search_filter(search_query, db_session.bind.dialect.name)
 
     if has_broad_update:
         query = select(func.count(Course.id.distinct()))

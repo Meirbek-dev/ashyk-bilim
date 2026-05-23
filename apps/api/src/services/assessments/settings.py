@@ -87,6 +87,7 @@ class ExamAssessmentSettings(PydanticStrictBaseModel):
     right_click_disable: bool = False
     fullscreen_enforcement: bool = False
     violation_threshold: int | None = 3
+    negative_marking_percent: float = 0.0
     lifecycle_status: str = "DRAFT"
     scheduled_at: str | None = None
     published_at: str | None = None
@@ -107,6 +108,7 @@ class QuizAssessmentSettings(PydanticStrictBaseModel):
     max_attempts: int | None = None
     time_limit_seconds: int | None = None
     max_score_penalty_per_attempt: float | None = None
+    negative_marking_percent: float = 0.0
     track_violations: bool = False
     block_on_violations: bool = False
     max_violations: int = 3

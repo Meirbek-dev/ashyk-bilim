@@ -14,12 +14,13 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import type React from 'react';
+import { compressImage } from '@/lib/image-compression';
 
 const MAX_FILE_SIZE = 8_000_000; // 8MB for images
 const MAX_VIDEO_FILE_SIZE = 100_000_000; // 100MB for videos
 const REQUIRED_IMAGE_ASPECT_RATIO = 16 / 9;
 const IMAGE_ASPECT_RATIO_TOLERANCE = 0.01;
-const VALID_IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png'] as const;
+const VALID_IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'] as const;
 const VALID_VIDEO_MIME_TYPES = ['video/mp4', 'video/webm', 'video/x-matroska'] as const;
 
 type ValidImageMimeType = (typeof VALID_IMAGE_MIME_TYPES)[number];
@@ -174,12 +175,21 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         return;
       }
 
-      if (!validateFile(file, type)) {
+      let fileToUse = file;
+      if (type === 'image') {
+        try {
+          fileToUse = await compressImage(file, { maxWidth: 1200, maxHeight: 675, quality: 0.8 });
+        } catch (err) {
+          console.error('Image compression failed, using original file', err);
+        }
+      }
+
+      if (!validateFile(fileToUse, type)) {
         event.target.value = '';
         return;
       }
 
-      const blobUrl = URL.createObjectURL(file);
+      const blobUrl = URL.createObjectURL(fileToUse);
 
       if (type === 'image') {
         const hasValidAspectRatio = await validateImageAspectRatio(blobUrl);
@@ -191,8 +201,8 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         }
       }
 
-      setLocalThumbnail({ file, url: blobUrl, type });
-      await updateThumbnail(file, type);
+      setLocalThumbnail({ file: fileToUse, url: blobUrl, type });
+      await updateThumbnail(fileToUse, type);
       event.target.value = '';
     },
     [showError, validateFile, validateImageAspectRatio, updateThumbnail, t],
@@ -274,7 +284,7 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
         ref={imageInputRef}
         type="file"
         className="hidden"
-        accept=".jpg,.jpeg,.png"
+        accept=".jpg,.jpeg,.png,.webp"
         onChange={(e) => handleFileChange(e, 'image')}
         aria-label={t('ariaLabelImage')}
         disabled={isSaving || disabled}

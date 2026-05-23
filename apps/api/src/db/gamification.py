@@ -55,17 +55,27 @@ class StreakType(StrEnum):
 
 
 def calculate_level(total_xp: int) -> int:
-    """Calculate level from total XP - 100 XP per level"""
+    """Calculate level from total XP using a quadratic curve.
+
+    Curve formula: XP = 50 * (level - 1)^2 + 50 * (level - 1)
+    Solving for level gives: level = floor((-1 + sqrt(1 + 0.08 * XP)) / 2) + 1
+    """
+    import math
+
     if total_xp <= 0:
         return 1
-    return min((total_xp // 100) + 1, MAX_LEVEL)
+    try:
+        level = int((-1.0 + math.sqrt(1.0 + 0.08 * total_xp)) / 2.0) + 1
+    except Exception:
+        level = 1
+    return min(level, MAX_LEVEL)
 
 
 def get_xp_for_level(level: int) -> int:
-    """Calculate total XP required to reach a given level"""
+    """Calculate total XP required to reach a given level using quadratic curve."""
     if level <= 1:
         return 0
-    return (level - 1) * 100
+    return 50 * (level - 1) ** 2 + 50 * (level - 1)
 
 
 class GamificationProfile(SQLModel, table=True):

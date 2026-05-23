@@ -61,5 +61,39 @@ def reap_orphan_uploads(db_session: Session) -> dict[str, int]:
         deleted += 1
 
     db_session.commit()
+
+    # --- Clean up orphaned temporary chunk directories ---
+    import shutil
+    import time
+    from pathlib import Path
+
+    temp_uploads_root = Path("temp_uploads")
+    if temp_uploads_root.exists():
+        now_ts = time.time()
+        cutoff_seconds = 2 * 3600  # 2 hours
+        dirs_to_check = []
+        for p in temp_uploads_root.iterdir():
+            if p.is_dir():
+                if p.name == "assessment":
+                    for subp in p.iterdir():
+                        if subp.is_dir():
+                            dirs_to_check.append(subp)
+                else:
+                    dirs_to_check.append(p)
+
+        for d in dirs_to_check:
+            try:
+                mtime = d.stat().st_mtime
+                for filepath in d.rglob("*"):
+                    try:
+                        mtime = max(mtime, filepath.stat().st_mtime)
+                    except Exception:
+                        pass
+                if (now_ts - mtime) > cutoff_seconds:
+                    shutil.rmtree(d)
+                    log.info("upload_reaper: deleted stale temp upload directory %s", d)
+            except Exception as e:
+                log.warning("upload_reaper: failed to delete stale temp upload directory %s: %s", d, e)
+
     log.info("upload_reaper: cancelled=%d deleted=%d", cancelled, deleted)
     return {"cancelled": cancelled, "deleted": deleted}

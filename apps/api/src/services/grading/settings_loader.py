@@ -35,6 +35,7 @@ class AssessmentSettings:
     max_attempts: int | None = None
     time_limit_seconds: int | None = None
     max_score_penalty_per_attempt: float | None = None
+    negative_marking_percent: float = 0.0
     due_date_iso: str | None = None
     track_violations: bool = False
     block_on_violations: bool = False
@@ -64,6 +65,7 @@ def load_activity_settings(
                 max_attempts=canonical.max_attempts,
                 time_limit_seconds=canonical.time_limit_seconds,
                 max_score_penalty_per_attempt=canonical.max_score_penalty_per_attempt,
+                negative_marking_percent=canonical.negative_marking_percent,
                 due_date_iso=canonical.due_date_iso,
                 track_violations=canonical.track_violations,
                 block_on_violations=canonical.block_on_violations,
@@ -79,6 +81,7 @@ def load_activity_settings(
                 time_limit_seconds=(
                     canonical.time_limit * 60 if canonical.time_limit else None
                 ),
+                negative_marking_percent=canonical.negative_marking_percent,
                 track_violations=any([
                     canonical.copy_paste_protection,
                     canonical.tab_switch_detection,

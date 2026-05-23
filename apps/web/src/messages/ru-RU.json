@@ -478,12 +478,13 @@
       "latestSubmission": "Последняя отправка",
       "resumedDraft": "Черновик восстановлен",
       "resumedDraftDescription": "Мы нашли ваш предыдущий черновик и восстановили ваши ответы.",
-      "resultsWaitingForReleaseTitle": "Результаты ожидают публикации",
+      "switchToScrollMode": "Переключиться в режим прокрутки (все вопросы)",
+      "switchToCardMode": "Переключиться в режим карточек (по одному вопросу)",
       "resultsWaitingForReleaseDescription": "Ваш тест проверен, но результаты будут доступны после того, как преподаватель их опубликует.",
       "noQuestions": "В этом тесте нет вопросов.",
       "testNotReadyTitle": "Тест не готов",
       "noQuestionsWarning": "В этом тесте пока нет вопросов, поэтому его нельзя начать.",
-      "teacherNoQuestionsWarning": "В этом тесте пока нет вопросов. Пожалуйста, добавьте вопросы перед тем, как сделать его доступным для студентов."
+      "teacherNoQuestionsWarning": "В этом тесте пока нет вопросов. Пожалуйста, добавьте вопросы перед тем, как сделать его доступным для студентам."
     }
   },
   "ActivityIndicators": {
@@ -7507,6 +7508,14 @@
           "loadingSubmission": "Загрузка работы...",
           "formUnavailable": "Форма оценивания недоступна."
         },
+        "Annotation": {
+          "addNote": "Добавить заметку",
+          "cancel": "Отмена",
+          "removeAnnotation": "Удалить аннотацию",
+          "commentPlaceholder": "Ваш комментарий к выделенному фрагменту…",
+          "addNoteFor": "Комментарий к: «{text}»",
+          "ctrlEnterHint": "Ctrl+Enter для сохранения"
+        },
         "releaseStateHidden": "Скрыто",
         "releaseStateAwaitingRelease": "Ожидает публикации",
         "releaseStateVisible": "Видно",
@@ -7749,7 +7758,9 @@
           "noItemSelectedDesc": "Выберите вопрос из списка для редактирования.",
           "deleteConfirm": "Удалить вопрос?",
           "deleteConfirmDesc": "Это действие нельзя отменить.",
-          "outlinePoints": "{points} пт всего"
+          "outlinePoints": "{points} пт всего",
+          "defaultSectionLabel": "Раздел {n}",
+          "addSectionBefore": "Добавить раздел перед этим вопросом"
         },
         "Inspector": {
           "title": "Инспектор",
@@ -7832,7 +7843,16 @@
           "questionQualityTitle": "Качество вопросов",
           "questionQualityBody": "Используйте аналитику вопросов, чтобы находить непонятные, слишком легкие или слишком сложные вопросы.",
           "releaseTitle": "Управление публикацией",
-          "releaseBody": "Держите оценки скрытыми во время проверки, затем публикуйте результаты, когда группа готова."
+          "releaseBody": "Держите оценки скрытыми во время проверки, затем публикуйте результаты, когда группа готова.",
+          "itemAnalyticsTitle": "Аналитика по вопросам",
+          "noAnalyticsData": "Нет проверенных работ — аналитика появится после того, как студенты сдадут и работы будут оценены.",
+          "colQuestion": "Вопрос",
+          "colKind": "Тип",
+          "colMaxScore": "Баллы",
+          "colResponses": "Ответы",
+          "colAvgScore": "Средний балл",
+          "colCorrectPct": "% правильных",
+          "colDiscrimination": "Различимость"
         },
         "SecurityShield": {
           "low": "Низкая защита",

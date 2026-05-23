@@ -35,6 +35,8 @@ export interface UseAssessmentAttemptOptions<T = unknown> {
    * since `attemptUuid` already makes keys unique).
    */
   storageKeyPrefix?: string;
+  /** Optional function to validate draft schema before recovery. */
+  validate?: (answers: any) => boolean;
 }
 
 // ── Return type ───────────────────────────────────────────────────────────────
@@ -66,6 +68,7 @@ export function useAssessmentAttempt<T = unknown>({
   autoSaveInterval = 5000,
   expirationHours = 24,
   storageKeyPrefix = DEFAULT_PREFIX,
+  validate,
 }: UseAssessmentAttemptOptions<T>): UseAssessmentAttemptReturn<T> {
   const storageKey = `${storageKeyPrefix}${attemptUuid}`;
   const pendingAnswersRef = useRef<T | null>(null);
@@ -125,11 +128,17 @@ export function useAssessmentAttempt<T = unknown>({
       ) {
         return null;
       }
+      if (validate && !validate(entry.answers)) {
+        try {
+          localStorage.removeItem(storageKey);
+        } catch {}
+        return null;
+      }
       return entry;
     } catch {
       return null;
     }
-  }, [attemptUuid, isExpired, storageKey]);
+  }, [attemptUuid, isExpired, storageKey, validate]);
 
   // ── Write ─────────────────────────────────────────────────────────────────────
 

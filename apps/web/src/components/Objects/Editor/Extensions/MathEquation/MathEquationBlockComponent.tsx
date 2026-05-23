@@ -87,6 +87,7 @@ const mathSymbols = [
 
 interface MathEquationNodeAttrs {
   math_equation: string;
+  html?: string;
 }
 
 const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAttrs>) => {
@@ -124,15 +125,18 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
   }, []);
 
   const handleEquationChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setEquation(event.target.value);
+    const val = event.target.value;
+    setEquation(val);
     props.updateAttributes({
-      math_equation: event.target.value,
+      math_equation: val,
+      html: renderToString(val, { displayMode: true, throwOnError: false }),
     });
   };
 
   const saveEquation = () => {
     props.updateAttributes({
       math_equation: equation,
+      html: renderToString(equation, { displayMode: true, throwOnError: false }),
     });
     // setIsEditing(false);
   };
@@ -141,6 +145,7 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
     setEquation(template);
     props.updateAttributes({
       math_equation: template,
+      html: renderToString(template, { displayMode: true, throwOnError: false }),
     });
     setShowTemplates(false);
 
@@ -158,6 +163,7 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
     setEquation(newEquation);
     props.updateAttributes({
       math_equation: newEquation,
+      html: renderToString(newEquation, { displayMode: true, throwOnError: false }),
     });
 
     // Focus the input and place cursor after the inserted symbol
@@ -186,7 +192,9 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
           <div className="soft-shadow rounded-md bg-white p-4">
             <span
               dangerouslySetInnerHTML={{
-                __html: renderToString(equation, { displayMode: true, throwOnError: false }),
+                __html: isEditable
+                  ? renderToString(equation, { displayMode: true, throwOnError: false })
+                  : (props.node.attrs.html || renderToString(equation, { displayMode: true, throwOnError: false })),
               }}
             />
           </div>

@@ -68,6 +68,10 @@ def create_lifespan(settings: AppSettings) -> Callable[[FastAPI], AsyncIterator[
         try:
             yield
         finally:
+            logger.info("Lifespan shutdown: initiating 5-second graceful connection drain...")
+            await asyncio.sleep(5.0)
+            logger.info("Lifespan shutdown: connection drain complete. Cleaning up resources.")
+
             # ── Taskiq broker shutdown ────────────────────────────────────────
             if not broker.is_worker_process:
                 with contextlib.suppress(Exception):

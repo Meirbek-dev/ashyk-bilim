@@ -33,6 +33,7 @@ def add_application_middleware(app: FastAPI, settings: AppSettings) -> None:
         allow_methods=["*"],
         allow_credentials=True,
         allow_headers=["*"],
+        expose_headers=["Retry-After", "X-Total-Count", "X-Structure-Version"],
     )
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 

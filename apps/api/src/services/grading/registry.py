@@ -60,6 +60,7 @@ class QuizGrader(BaseGrader):
                 items=ctx.items,
                 answers_by_item_uuid=ctx.answers_by_item_uuid,
                 max_score=ctx.max_score,
+                negative_marking_percent=ctx.negative_marking_percent,
             )
         else:
             raw_score = 0.0
@@ -86,6 +87,7 @@ class ExamGrader(BaseGrader):
                 items=ctx.items,
                 answers_by_item_uuid=ctx.answers_by_item_uuid,
                 max_score=ctx.max_score,
+                negative_marking_percent=ctx.negative_marking_percent,
             )
         else:
             # No canonical items — return empty (exams must have items)

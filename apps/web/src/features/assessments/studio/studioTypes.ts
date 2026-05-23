@@ -29,6 +29,8 @@ export interface AssessmentEditorState {
   gracePeriodMinutes: string;
   /** ISO datetime-local — when the exam becomes available. */
   availableFrom: string;
+  /** 0–100 — percentage of item points deducted for a fully wrong answer (negative marking). Empty string = disabled. */
+  negativeMarkingPercent: string;
 }
 
 export type EditableItem = Pick<AssessmentItem, 'item_uuid' | 'kind' | 'title' | 'max_score' | 'body'>;

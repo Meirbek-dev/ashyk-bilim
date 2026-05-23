@@ -23,6 +23,7 @@ import { useCourse } from '@components/Contexts/CourseContext';
 import Modal from '@/components/Objects/Elements/Modal/Modal';
 import { constructAcceptValue } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { compressImage } from '@/lib/image-compression';
 
 // ============================================================================
 // Types
@@ -86,7 +87,7 @@ function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
   const [error, setError] = useState<string | null>(null);
 
   const handleFileSelect = useCallback(
-    (selectedFile: File | null) => {
+    async (selectedFile: File | null) => {
       setError(null);
 
       if (!selectedFile) {
@@ -101,8 +102,15 @@ function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
         return;
       }
 
-      setFile(selectedFile);
-      setPreview(URL.createObjectURL(selectedFile));
+      try {
+        const compressed = await compressImage(selectedFile, { maxWidth: 1600, maxHeight: 1600, quality: 0.8 });
+        setFile(compressed);
+        setPreview(URL.createObjectURL(compressed));
+      } catch (err) {
+        console.error('Image compression failed, using original file', err);
+        setFile(selectedFile);
+        setPreview(URL.createObjectURL(selectedFile));
+      }
     },
     [t],
   );

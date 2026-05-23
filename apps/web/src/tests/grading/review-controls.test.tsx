@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ReviewBulkActionBar from '@/features/grading/review/components/ReviewBulkActionBar';
 import GradeForm from '@/features/grading/review/components/GradeForm';
 import type { Submission } from '@/features/grading/domain';
+import { AnnotationProvider } from '@/features/grading/review/AnnotationContext';
 
 const mocks = vi.hoisted(() => ({
   publishAssessmentGradesMock: vi.fn(),
@@ -276,11 +277,13 @@ describe('teacher review controls', () => {
     });
 
     render(
-      <GradeForm
-        submissionUuid="submission_review"
-        onSaved={vi.fn().mockResolvedValue(undefined)}
-        navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
-      />,
+      <AnnotationProvider>
+        <GradeForm
+          submissionUuid="submission_review"
+          onSaved={vi.fn().mockResolvedValue(undefined)}
+          navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+        />
+      </AnnotationProvider>,
     );
 
     expect(screen.getByText('releaseStateHidden')).toBeInTheDocument();
@@ -294,12 +297,14 @@ describe('teacher review controls', () => {
     mocks.gradingPanelState.submission = createSubmission({ status: 'GRADED', final_score: 94, version: 8 });
 
     render(
-      <GradeForm
-        submissionUuid="submission_review"
-        assessmentUuid="assessment_review"
-        onSaved={onSaved}
-        navigation={{ hasNext: true, hasPrevious: true, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
-      />,
+      <AnnotationProvider>
+        <GradeForm
+          submissionUuid="submission_review"
+          assessmentUuid="assessment_review"
+          onSaved={onSaved}
+          navigation={{ hasNext: true, hasPrevious: true, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+        />
+      </AnnotationProvider>,
     );
 
     expect(screen.getByText('releaseStateAwaitingRelease')).toBeInTheDocument();
@@ -329,11 +334,13 @@ describe('teacher review controls', () => {
     mocks.gradingPanelState.submission = createSubmission({ status: 'PUBLISHED', final_score: 88 });
 
     render(
-      <GradeForm
-        submissionUuid="submission_review"
-        onSaved={vi.fn().mockResolvedValue(undefined)}
-        navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
-      />,
+      <AnnotationProvider>
+        <GradeForm
+          submissionUuid="submission_review"
+          onSaved={vi.fn().mockResolvedValue(undefined)}
+          navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+        />
+      </AnnotationProvider>,
     );
 
     expect(screen.getByText('releaseStateVisible')).toBeInTheDocument();

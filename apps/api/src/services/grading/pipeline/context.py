@@ -27,6 +27,7 @@ class GradingContext:
     max_score: float = 100.0
     code_strategy: str = "BEST_SUBMISSION"
     max_score_penalty_per_attempt: float | None = None
+    negative_marking_percent: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)

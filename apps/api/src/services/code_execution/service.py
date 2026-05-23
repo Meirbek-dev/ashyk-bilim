@@ -22,8 +22,10 @@ from ulid import ULID
 from config.config import get_settings, secret_value
 from src.db.assessments import CodeRunTestResult, CodeTestCase
 from src.db.code_execution import CodeRun, CodeRunCase, CodeRunPurpose, CodeRunStatus
+from src.services.utils.circuit_breaker import CircuitBreaker
 
 logger = logging.getLogger(__name__)
+judge0_breaker = CircuitBreaker("judge0", failure_threshold=5, recovery_timeout=30.0)
 _OUTPUT_TRUNCATION_MARKER = "\n[output truncated]"
 _JVM_LANGUAGE_IDS = frozenset({26, 27, 28, 62, 78})
 _GO_LANGUAGE_IDS = frozenset({22, 60})
@@ -453,27 +455,31 @@ class CodeExecutionService:
         client = self._client_factory.get_client()
         sandbox_policy = _sandbox_policy_for_language(language_id, memory_limit_mb)
         started_at = time.monotonic()
-        submissions = judge0.run(
-            client=client,
-            source_code=source_code,
-            language=language_id,
-            test_cases=[
-                judge0.TestCase(test.input, test.expected_output if scored else None)
-                for test in test_cases
-            ],
-            cpu_time_limit=float(time_limit_seconds) if time_limit_seconds else None,
-            wall_time_limit=float(time_limit_seconds + 1)
-            if time_limit_seconds
-            else None,
-            compiler_options=_compiler_options_for_language(language_id),
-            memory_limit=sandbox_policy.memory_limit_kb,
-            stack_limit=sandbox_policy.stack_limit_kb,
-            max_processes_and_or_threads=sandbox_policy.max_processes_and_or_threads,
-            enable_per_process_and_thread_time_limit=True,
-            enable_per_process_and_thread_memory_limit=True,
-            max_file_size=settings.max_output_file_kb,
-            enable_network=False,
-        )
+
+        def _run_judge0():
+            return judge0.run(
+                client=client,
+                source_code=source_code,
+                language=language_id,
+                test_cases=[
+                    judge0.TestCase(test.input, test.expected_output if scored else None)
+                    for test in test_cases
+                ],
+                cpu_time_limit=float(time_limit_seconds) if time_limit_seconds else None,
+                wall_time_limit=float(time_limit_seconds + 1)
+                if time_limit_seconds
+                else None,
+                compiler_options=_compiler_options_for_language(language_id),
+                memory_limit=sandbox_policy.memory_limit_kb,
+                stack_limit=sandbox_policy.stack_limit_kb,
+                max_processes_and_or_threads=sandbox_policy.max_processes_and_or_threads,
+                enable_per_process_and_thread_time_limit=True,
+                enable_per_process_and_thread_memory_limit=True,
+                max_file_size=settings.max_output_file_kb,
+                enable_network=False,
+            )
+
+        submissions = judge0_breaker.call(_run_judge0)
         if isinstance(submissions, judge0.Submission):
             submissions = [submissions]
 

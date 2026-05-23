@@ -26,6 +26,7 @@ def grade_canonical_choice_items(
     items: list[CanonicalAssessmentItem],
     answers_by_item_uuid: dict[str, Any],
     max_score: float = 100.0,
+    negative_marking_percent: float = 0.0,
 ) -> tuple[float, GradingBreakdown]:
     """Grade canonical CHOICE and MATCHING items from answers[item_uuid]."""
 
@@ -53,7 +54,7 @@ def grade_canonical_choice_items(
         )
         answer = answers_by_item_uuid.get(item.item_uuid)
         if item.body.kind == "CHOICE":
-            graded = _grade_canonical_choice(item, answer, item_points)
+            graded = _grade_canonical_choice(item, answer, item_points, negative_marking_percent)
         else:
             graded = _grade_canonical_matching(item, answer, item_points)
         total_score += graded.score
@@ -70,6 +71,7 @@ def _grade_canonical_choice(
     item: CanonicalAssessmentItem,
     raw_answer: Any,
     points: float,
+    negative_marking_percent: float = 0.0,
 ) -> GradedItem:
     selected = []
     if isinstance(raw_answer, ChoiceItemAnswer):
@@ -109,7 +111,11 @@ def _grade_canonical_choice(
         correct = False
         feedback = f"Partially correct ({correct_count}/{len(correct_option_ids)})"
     else:
-        score, correct, feedback = 0.0, False, "Incorrect"
+        # Fully wrong — apply negative marking if configured
+        deduction = (negative_marking_percent / 100.0) * points if negative_marking_percent > 0 else 0.0
+        score = max(-points, -deduction)
+        correct = False
+        feedback = "Incorrect" if deduction == 0.0 else f"Incorrect (−{round(deduction, 2)} pts)"
 
     return GradedItem(
         item_id=item.item_uuid,

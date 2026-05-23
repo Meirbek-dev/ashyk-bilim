@@ -216,6 +216,7 @@ async def _submit_assessment_inner(
         max_score=100.0,
         code_strategy=settings.code_strategy,
         max_score_penalty_per_attempt=settings.max_score_penalty_per_attempt,
+        negative_marking_percent=settings.negative_marking_percent,
     )
 
     # 9. Apply penalties
@@ -230,21 +231,23 @@ async def _submit_assessment_inner(
         needs_manual_review=result.needs_manual_review,
     )
 
-    # 10. Persist (atomic)
-    draft = persist_submission(
-        db_session=db_session,
-        draft=draft,
-        result=result,
-        penalty=penalty,
-        effective=effective,
-        answers_payload=final_payload,
-        now=now,
-        policy=policy,
-        assessment_type=assessment_type,
-    )
+    # 10. Persist (atomic, shielded from timeout cancellation)
+    async def _persist_and_update():
+        d = persist_submission(
+            db_session=db_session,
+            draft=draft,
+            result=result,
+            penalty=penalty,
+            effective=effective,
+            answers_payload=final_payload,
+            now=now,
+            policy=policy,
+            assessment_type=assessment_type,
+        )
+        progress_submissions.submit_activity(d, db_session)
+        return d
 
-    # Update progress
-    progress_submissions.submit_activity(draft, db_session)
+    draft = await asyncio.shield(_persist_and_update())
 
     # 11. Emit events (post-commit, non-blocking)
     is_code_challenge = assessment_type == AssessmentType.CODE_CHALLENGE

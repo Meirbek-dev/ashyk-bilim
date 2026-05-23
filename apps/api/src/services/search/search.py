@@ -4,6 +4,7 @@ from fastapi import Request
 from sqlalchemy import true as sa_true
 from sqlmodel import Session, and_, or_, select, text
 
+from sqlalchemy import func
 from src.db.collections import Collection, CollectionRead
 from src.db.collections_courses import CollectionCourse
 from src.db.courses.courses import Course, CourseRead
@@ -39,36 +40,76 @@ async def search_platform_content(
         request, current_user, search_query, db_session, page, limit
     )
 
+    dialect_name = db_session.bind.dialect.name
+
     # Search collections
-    collections_query = (
-        select(Collection)
-        .where(
-            or_(
-                text('LOWER("collection".name) LIKE LOWER(:pattern)'),
-                text('LOWER("collection".description) LIKE LOWER(:pattern)'),
+    if dialect_name == "postgresql":
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(Collection.name, "")
+            + " "
+            + func.coalesce(Collection.description, ""),
+        )
+        collections_query = (
+            select(Collection)
+            .where(vector.op("@@")(func.plainto_tsquery("english", search_query.strip())))
+            .order_by(
+                func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
+                Collection.id.desc()
             )
         )
-        .params(pattern=f"%{search_query}%")
-    )
-
-    # Search users
-    users_query = (
-        select(User)
-        .join(UserRole, UserRole.user_id == User.id)
-        # Use DISTINCT on `User.id` to avoid comparing JSON columns
-        .distinct(User.id)
-        .where(
-            or_(
-                text(
-                    'LOWER("user".username) LIKE LOWER(:pattern) OR '
-                    'LOWER("user".first_name) LIKE LOWER(:pattern) OR '
-                    'LOWER("user".last_name) LIKE LOWER(:pattern) OR '
-                    'LOWER("user".bio) LIKE LOWER(:pattern)'
+    else:
+        collections_query = (
+            select(Collection)
+            .where(
+                or_(
+                    text('LOWER("collection".name) LIKE LOWER(:pattern)'),
+                    text('LOWER("collection".description) LIKE LOWER(:pattern)'),
                 )
             )
+            .params(pattern=f"%{search_query}%")
         )
-        .params(pattern=f"%{search_query}%")
-    )
+
+    # Search users
+    if dialect_name == "postgresql":
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(User.username, "")
+            + " "
+            + func.coalesce(User.first_name, "")
+            + " "
+            + func.coalesce(User.last_name, "")
+            + " "
+            + func.coalesce(User.bio, ""),
+        )
+        users_query = (
+            select(User)
+            .join(UserRole, UserRole.user_id == User.id)
+            .distinct(User.id)
+            .where(vector.op("@@")(func.plainto_tsquery("english", search_query.strip())))
+            .order_by(
+                func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
+                User.id.desc()
+            )
+        )
+    else:
+        users_query = (
+            select(User)
+            .join(UserRole, UserRole.user_id == User.id)
+            # Use DISTINCT on `User.id` to avoid comparing JSON columns
+            .distinct(User.id)
+            .where(
+                or_(
+                    text(
+                        'LOWER("user".username) LIKE LOWER(:pattern) OR '
+                        'LOWER("user".first_name) LIKE LOWER(:pattern) OR '
+                        'LOWER("user".last_name) LIKE LOWER(:pattern) OR '
+                        'LOWER("user".bio) LIKE LOWER(:pattern)'
+                    )
+                )
+            )
+            .params(pattern=f"%{search_query}%")
+        )
 
     if isinstance(current_user, AnonymousUser):
         # For anonymous users, only show public collections

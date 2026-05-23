@@ -22,6 +22,7 @@ import { StaleGradeError } from '@/services/grading/errors';
 import { saveGradingDraft } from '@/services/assessments/assessment-actions';
 import type { ItemGradeEntry } from '@/services/assessments/assessment-actions';
 import { useGradingPanel } from '@/hooks/useGradingPanel';
+import { useAnnotations, formatAnnotationsAsFeedback } from '../AnnotationContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Textarea } from '@/components/ui/textarea';
@@ -53,6 +54,7 @@ export default function GradeForm({
   navigation: ReviewNavigationState;
 }) {
   const { submission, isLoading, mutate } = useGradingPanel(submissionUuid, assessmentUuid);
+  const { annotationsByItem, clearAll: clearAnnotations } = useAnnotations();
   const t = useTranslations('Grading.Panel');
   const tItemGrading = useTranslations('ItemGrading');
   const [draft, setDraft] = useState<GradeDraft>({ score: '', feedback: '' });
@@ -128,10 +130,12 @@ export default function GradeForm({
       const entry = itemDrafts[item.item_id];
       const rawScore = entry?.score ?? String(item.score);
       const parsed = Number.parseFloat(rawScore);
+      const baseFeedback = entry?.feedback ?? item.feedback ?? '';
+      const annotationNote = formatAnnotationsAsFeedback(annotationsByItem[item.item_id] ?? []);
       return {
         item_uuid: item.item_id,
         score: Number.isNaN(parsed) ? 0 : Math.min(parsed, item.max_score),
-        feedback: entry?.feedback ?? item.feedback ?? '',
+        feedback: annotationNote ? baseFeedback + annotationNote : baseFeedback,
         is_manual: true,
       };
     });
@@ -165,6 +169,7 @@ export default function GradeForm({
               : tItemGrading('toasts.saved'),
         );
         setStaleDraft(null);
+        clearAnnotations();
         await Promise.all([mutate(), onSaved()]);
       } catch (error) {
         if (error instanceof StaleGradeError) {
@@ -175,7 +180,7 @@ export default function GradeForm({
         }
       }
     });
-  }, [submission, assessmentUuid, gradedItems, itemDrafts, overrideScore, draft, t, startSaving, overrideReason, tItemGrading, onSaved, mutate]);
+  }, [submission, assessmentUuid, gradedItems, itemDrafts, overrideScore, draft, t, startSaving, overrideReason, tItemGrading, onSaved, mutate, annotationsByItem, clearAnnotations]);
 
   // All grading now goes through the item-level GradingDraftSave endpoint.
   // The legacy overall-score-only path has been removed.

@@ -618,13 +618,18 @@ def read_file_submission_upload_bytes(upload: Upload, db_session: Session) -> by
 def file_submission_attempts_for_gradebook(
     activity_ids: set[int],
     db_session: Session,
+    *,
+    student_ids: list[int] | None = None,
 ) -> dict[tuple[int, int], FileSubmissionAttempt]:
     if not activity_ids:
         return {}
+    query = select(FileSubmissionAttempt).where(FileSubmissionAttempt.activity_id.in_(activity_ids))
+    if student_ids is not None:
+        if not student_ids:
+            return {}
+        query = query.where(FileSubmissionAttempt.user_id.in_(student_ids))
     attempts = db_session.exec(
-        select(FileSubmissionAttempt)
-        .where(FileSubmissionAttempt.activity_id.in_(activity_ids))
-        .order_by(FileSubmissionAttempt.updated_at, FileSubmissionAttempt.id)
+        query.order_by(FileSubmissionAttempt.updated_at, FileSubmissionAttempt.id)
     ).all()
     result: dict[tuple[int, int], FileSubmissionAttempt] = {}
     for attempt in attempts:

@@ -22,6 +22,7 @@ def grade_attempt(
     max_score: float = 100.0,
     code_strategy: str = "BEST_SUBMISSION",
     max_score_penalty_per_attempt: float | None = None,
+    negative_marking_percent: float = 0.0,
 ) -> GradingResult:
     """Build a GradingContext and dispatch to the registered grader."""
     ctx = GradingContext(
@@ -32,6 +33,7 @@ def grade_attempt(
         max_score=max_score,
         code_strategy=code_strategy,
         max_score_penalty_per_attempt=max_score_penalty_per_attempt,
+        negative_marking_percent=negative_marking_percent,
     )
     return grade_with_context(ctx)
 

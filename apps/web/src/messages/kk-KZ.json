@@ -482,7 +482,9 @@
       "noQuestionsWarning": "Бұл тестте әзірге сұрақтар жоқ, сондықтан оны бастау мүмкін емес.",
       "teacherNoQuestionsWarning": "Бұл тестте әзірге сұрақтар жоқ. Студенттерге қолжетімді етпес бұрын сұрақтар қосыңыз.",
       "resumedDraft": "Жалғасу",
-      "resumedDraftDescription": "Соңғы сақталған уақыт: {time}"
+      "resumedDraftDescription": "Соңғы сақталған уақыт: {time}",
+      "switchToScrollMode": "Айналдыру режиміне ауысу (барлық сұрақтар)",
+      "switchToCardMode": "Карта режиміне ауысу (бір сұрақ)"
     }
   },
   "ActivityIndicators": {
@@ -7505,6 +7507,14 @@
           "itemLabel": "{index}-элемент",
           "rubricGuidance": "Рубрика нұсқаулығы"
         },
+        "Annotation": {
+          "addNote": "Жазба қосу",
+          "cancel": "Болдырмау",
+          "removeAnnotation": "Аннотацияны жою",
+          "commentPlaceholder": "Таңдалған үзіндіге пікіріңіз…",
+          "addNoteFor": "Пікір: «{text}»",
+          "ctrlEnterHint": "Ctrl+Enter — сақтау"
+        },
         "releaseStateHidden": "Жасырын",
         "releaseStateAwaitingRelease": "Жарияланым күтуде",
         "releaseStateVisible": "Студентке көрінеді",
@@ -7714,7 +7724,9 @@
           "noItemSelectedDesc": "Өңдеу үшін тізімнен сұрақты таңдаңыз.",
           "deleteConfirm": "Сұрақты жою керек пе?",
           "deleteConfirmDesc": "Бұл әрекетті болдырмау мүмкін емес.",
-          "outlinePoints": "{points} ұпай барлығы"
+          "outlinePoints": "{points} ұпай барлығы",
+          "defaultSectionLabel": "{n}-бөлім",
+          "addSectionBefore": "Бұл сұрақтан бұрын бөлім қосу"
         },
         "Inspector": {
           "title": "Инспектор",
@@ -7797,7 +7809,16 @@
           "questionQualityTitle": "Сұрақ сапасы",
           "questionQualityBody": "Түсініксіз, тым оңай немесе тым қиын сұрақтарды табу үшін сұрақ аналитикасын пайдаланыңыз.",
           "releaseTitle": "Жариялауды басқару",
-          "releaseBody": "Тексеру кезінде бағаларды жасырып, топ дайын болғанда нәтижелерді жариялаңыз."
+          "releaseBody": "Тексеру кезінде бағаларды жасырып, топ дайын болғанда нәтижелерді жариялаңыз.",
+          "itemAnalyticsTitle": "Сұрақтар бойынша аналитика",
+          "noAnalyticsData": "Әлі бағаланған жұмыстар жоқ — студенттер аяқтағаннан кейін аналитика пайда болады.",
+          "colQuestion": "Сұрақ",
+          "colKind": "Түрі",
+          "colMaxScore": "Балдар",
+          "colResponses": "Жауаптар",
+          "colAvgScore": "Орт. балл",
+          "colCorrectPct": "% дұрыс",
+          "colDiscrimination": "Айырымдылық"
         },
         "SecurityShield": {
           "low": "Төмен қауіпсіздік",

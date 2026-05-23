@@ -27,6 +27,9 @@ export default Node.create({
       math_equation: {
         default: '',
       },
+      html: {
+        default: '',
+      },
     };
   },
 

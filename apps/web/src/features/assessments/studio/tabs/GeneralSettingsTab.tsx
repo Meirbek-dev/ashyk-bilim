@@ -234,6 +234,31 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
               <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">%</span>
             </div>
           </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="exam-negative-marking">{tSetup('negativeMarkingLabel')}</Label>
+              <Tooltip>
+                <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
+                <TooltipContent side="right" className="max-w-xs">
+                  <p className="text-xs">{tSetup('negativeMarkingDesc')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="relative">
+              <Input
+                id="exam-negative-marking"
+                type="number"
+                min={0}
+                max={100}
+                value={state.negativeMarkingPercent}
+                disabled={disabled}
+                placeholder={tSetup('negativeMarkingPlaceholder')}
+                className="pr-8"
+                onChange={(e) => onChange({ ...state, negativeMarkingPercent: e.target.value })}
+              />
+              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">%</span>
+            </div>
+          </div>
         </div>
         <div className="mt-4 space-y-3">
           <ToggleFeatureRow

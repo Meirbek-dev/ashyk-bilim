@@ -13,6 +13,9 @@ from src.services.ai.exceptions import RetrievalError
 from src.services.cache.redis_client import get_async_redis_client
 
 logger = logging.getLogger(__name__)
+from src.services.utils.circuit_breaker import CircuitBreaker
+
+openai_breaker = CircuitBreaker("openai", failure_threshold=5, recovery_timeout=30.0)
 
 _openai_client: AsyncOpenAI | None = None
 _client_lock = Lock()
@@ -79,14 +82,16 @@ async def embed_texts(texts: list[str], model_name: str) -> list[list[float]]:
 
         for attempt in range(3):
             try:
-                response = await asyncio.wait_for(
-                    client.embeddings.create(
-                        model=model_name,
-                        input=batch,
-                        dimensions=dimensions,
-                    ),
-                    timeout=request_timeout,
-                )
+                async def _call():
+                    return await asyncio.wait_for(
+                        client.embeddings.create(
+                            model=model_name,
+                            input=batch,
+                            dimensions=dimensions,
+                        ),
+                        timeout=request_timeout,
+                    )
+                response = await openai_breaker.call_async(_call)
                 fetched_embeddings.extend(item.embedding for item in response.data)
                 last_error = None
                 logger.info(

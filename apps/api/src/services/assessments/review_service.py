@@ -1,11 +1,14 @@
 """Assessment service — teacher review queue."""
 
+from collections import defaultdict
+
 from fastapi import HTTPException, status
 from sqlalchemy import asc, desc, func, or_
 from sqlmodel import Session, select
 
 from src.db.assessments import (
     Assessment,
+    AssessmentItem,
     AssessmentPolicyPreset,
     ReviewQueueRead,
     StudentPolicyOverrideCreate,
@@ -22,6 +25,8 @@ from src.db.grading.progress import (
 from src.db.grading.schemas import BulkPublishGradesResponse
 from src.db.grading.submissions import (
     AssessmentType,
+    GradingBreakdown,
+    ItemAnalytics,
     ScoreDistributionBucket,
     Submission,
     SubmissionStats,
@@ -487,3 +492,127 @@ async def delete_student_policy_override(
     db_session.delete(override)
     db_session.commit()
     return {"detail": "Исключение удалено"}
+
+
+async def get_item_analytics(
+    assessment_uuid: str,
+    current_user: PublicUser,
+    db_session: Session,
+) -> list[ItemAnalytics]:
+    """Compute per-item answer statistics for graded/published submissions."""
+    assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
+    activity, course = _get_activity_and_course(assessment, db_session)
+    _require_grade(current_user, course, db_session)
+
+    # Load all assessment items ordered by their position
+    items = db_session.exec(
+        select(AssessmentItem)
+        .where(AssessmentItem.assessment_id == assessment.id)
+        .order_by(asc(AssessmentItem.order))
+    ).all()
+
+    if not items:
+        return []
+
+    # Load graded / published submissions (those with grading_json populated)
+    graded_submissions = db_session.exec(
+        select(Submission).where(
+            Submission.activity_id == activity.id,
+            Submission.status.in_([SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED]),
+        )
+    ).all()
+
+    if not graded_submissions:
+        return [
+            ItemAnalytics(
+                item_uuid=item.item_uuid,
+                title=item.title,
+                kind=item.kind,
+                max_score=item.max_score,
+                response_count=0,
+                avg_score_pct=None,
+                correct_pct=None,
+                discrimination_index=None,
+            )
+            for item in items
+        ]
+
+    # Build a map: item_uuid → list[graded_item_score_pct]
+    item_scores: dict[str, list[float]] = defaultdict(list)
+    item_correct: dict[str, list[bool]] = defaultdict(list)
+    submission_total_scores: list[float] = []
+
+    for submission in graded_submissions:
+        # grading_json is stored as plain dict in the ORM model; deserialize it
+        raw = submission.grading_json  # type: ignore[attr-defined]
+        if isinstance(raw, dict):
+            grading = GradingBreakdown.model_validate(raw)
+        else:
+            grading = raw  # already deserialized (shouldn't happen but be safe)
+        if submission.final_score is not None:
+            submission_total_scores.append(submission.final_score)
+        for graded_item in grading.items:
+            iid: str = graded_item.item_id or ""
+            score: float = graded_item.score or 0.0
+            max_s: float = graded_item.max_score or 0.0
+            correct: bool | None = graded_item.correct
+            if iid:
+                pct = (score / max_s * 100) if max_s > 0 else 0.0
+                item_scores[iid].append(pct)
+                if correct is not None:
+                    item_correct[iid].append(correct)
+
+    # Compute discrimination index per item
+    # Split submissions into top 27% and bottom 27% by total score
+    disc_by_item: dict[str, float | None] = {}
+    if len(submission_total_scores) >= 6:
+        cutoff = max(1, int(len(submission_total_scores) * 0.27))
+        sorted_subs = sorted(graded_submissions, key=lambda s: s.final_score or 0)
+        bottom_subs = {s.submission_uuid for s in sorted_subs[:cutoff]}
+        top_subs = {s.submission_uuid for s in sorted_subs[-cutoff:]}
+
+        # Rebuild per-item correct maps for top/bottom groups
+        top_correct: dict[str, int] = defaultdict(int)
+        bot_correct: dict[str, int] = defaultdict(int)
+        for submission in graded_submissions:
+            uuid = submission.submission_uuid
+            raw2 = submission.grading_json  # type: ignore[attr-defined]
+            grading2 = GradingBreakdown.model_validate(raw2) if isinstance(raw2, dict) else raw2
+            for graded_item in grading2.items:
+                iid = graded_item.item_id or ""
+                correct = graded_item.correct
+                if iid and correct is not None:
+                    if uuid in top_subs:
+                        top_correct[iid] += 1 if correct else 0
+                    if uuid in bottom_subs:
+                        bot_correct[iid] += 1 if correct else 0
+
+        for item in items:
+            iid = item.item_uuid
+            if iid in top_correct or iid in bot_correct:
+                disc = (top_correct.get(iid, 0) - bot_correct.get(iid, 0)) / cutoff
+                disc_by_item[iid] = round(disc, 3)
+            else:
+                disc_by_item[iid] = None
+    else:
+        for item in items:
+            disc_by_item[item.item_uuid] = None
+
+    result: list[ItemAnalytics] = []
+    for item in items:
+        iid = item.item_uuid
+        scores = item_scores.get(iid, [])
+        corrects = item_correct.get(iid, [])
+        result.append(
+            ItemAnalytics(
+                item_uuid=iid,
+                title=item.title,
+                kind=item.kind,
+                max_score=item.max_score,
+                response_count=len(scores),
+                avg_score_pct=round(sum(scores) / len(scores), 1) if scores else None,
+                correct_pct=round(sum(corrects) / len(corrects) * 100, 1) if corrects else None,
+                discrimination_index=disc_by_item.get(iid),
+            )
+        )
+    return result

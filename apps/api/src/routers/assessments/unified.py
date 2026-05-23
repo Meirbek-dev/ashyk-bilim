@@ -4,10 +4,14 @@ These are the canonical verbs for authoring, lifecycle, attempts, drafts, and
 teacher submission lists.
 """
 
+import asyncio
+
+_SUBMIT_SEMAPHORE = asyncio.Semaphore(15)
+
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 
@@ -44,6 +48,7 @@ from src.db.assessments import (
 from src.db.grading.schemas import BulkPublishGradesResponse
 from src.db.grading.submissions import (
     AssessmentType,
+    ItemAnalytics,
     SubmissionStats,
     TeacherGradeInput,
 )
@@ -65,6 +70,7 @@ from src.services.assessments.core import (
     get_assessment_submissions,
     get_attempt_state,
     get_code_item_run,
+    get_item_analytics,
     get_my_assessment_draft,
     get_my_assessment_submissions,
     get_policy_preset,
@@ -323,14 +329,29 @@ async def api_submit_assessment(
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
     violation_count: Annotated[int, Query(ge=0)] = 0,
 ) -> StudentSubmissionRead:
-    return await submit_assessment(
-        assessment_uuid,
-        payload,
-        current_user,
-        db_session,
-        violation_count=violation_count,
-        if_match=if_match,
-    )
+    try:
+        await asyncio.wait_for(_SUBMIT_SEMAPHORE.acquire(), timeout=0.1)
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "SERVER_OVERLOADED",
+                "message": "Система временно перегружена. Пожалуйста, попробуйте позже."
+            },
+            headers={"Retry-After": "10"}
+        )
+
+    try:
+        return await submit_assessment(
+            assessment_uuid,
+            payload,
+            current_user,
+            db_session,
+            violation_count=violation_count,
+            if_match=if_match,
+        )
+    finally:
+        _SUBMIT_SEMAPHORE.release()
 
 
 @router.get("/{assessment_uuid}/me", response_model=list[StudentSubmissionRead])
@@ -382,6 +403,16 @@ async def api_get_submission_stats(
         current_user,
         db_session,
     )
+
+
+@router.get("/{assessment_uuid}/item-analytics", response_model=list[ItemAnalytics])
+async def api_get_item_analytics(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+) -> list[ItemAnalytics]:
+    """Return per-question analytics for the teacher Results dashboard."""
+    return await get_item_analytics(assessment_uuid, current_user, db_session)
 
 
 @router.get("/{assessment_uuid}/submissions/export")

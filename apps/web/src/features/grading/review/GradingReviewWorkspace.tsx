@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import type { KindModule } from '@/features/assessments/registry';
 import { useSubmissionStats } from '@/hooks/useSubmissionStats';
 import { useSubmissions } from '@/hooks/useSubmissions';
+import { AnnotationProvider } from './AnnotationContext';
 import ReviewLayout from './components/ReviewLayout';
 import SubmissionList from './components/SubmissionList';
 import SubmissionInspector from './components/SubmissionInspector';
@@ -153,7 +154,8 @@ export default function GradingReviewWorkspace({
   };
 
   return (
-    <ReviewLayout
+    <AnnotationProvider>
+      <ReviewLayout
       activityId={activityId}
       assessmentUuid={assessmentUuid}
       title={title}
@@ -216,5 +218,6 @@ export default function GradingReviewWorkspace({
         navigation={navigation}
       />
     </ReviewLayout>
+    </AnnotationProvider>
   );
 }
