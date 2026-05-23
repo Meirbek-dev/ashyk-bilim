@@ -180,7 +180,7 @@ export default function PublishDashboardTab({
                 onClick={handlePublish}
               >
                 <Send className="size-4" />
-                {t('publishNow')}
+                {tPublish('publishNow')}
               </Button>
               <Popover
                 open={scheduleOpen}
@@ -194,7 +194,7 @@ export default function PublishDashboardTab({
                       disabled={isPending || !canSchedule}
                     >
                       <CalendarClock className="size-4" />
-                      {t('schedule')}
+                      {tPublish('schedule')}
                       <ChevronDown className="size-3" />
                     </Button>
                   }
@@ -203,7 +203,7 @@ export default function PublishDashboardTab({
                   align="end"
                   className="w-64 space-y-3 p-3"
                 >
-                  <p className="text-sm font-medium">{t('schedulePublication')}</p>
+                  <p className="text-sm font-medium">{tPublish('schedulePublication')}</p>
                   <Input
                     ref={scheduleInputRef}
                     type="datetime-local"
@@ -217,7 +217,7 @@ export default function PublishDashboardTab({
                     onClick={handleSchedule}
                   >
                     <CalendarClock className="mr-1 size-4" />
-                    {t('schedule')}
+                    {tPublish('schedule')}
                   </Button>
                 </PopoverContent>
               </Popover>

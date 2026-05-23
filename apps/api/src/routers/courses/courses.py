@@ -67,6 +67,23 @@ from src.services.student_activity_runtime import (
     run_student_activity_action,
 )
 
+
+def _get_timestamp(v: datetime | str | None) -> float:
+    if not v:
+        return 0.0
+    if isinstance(v, datetime):
+        return v.timestamp()
+    if isinstance(v, str):
+        try:
+            value = v.strip()
+            if value.endswith("Z"):
+                value = f"{value[:-1]}+00:00"
+            return datetime.fromisoformat(value).timestamp()
+        except ValueError:
+            return 0.0
+    return 0.0
+
+
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
@@ -253,7 +270,7 @@ async def api_get_course(
         checker=checker,
     )
     
-    up_time = course.update_date.timestamp() if getattr(course, "update_date", None) else 0.0
+    up_time = _get_timestamp(getattr(course, "update_date", None))
     etag = f'W/"{course.id}-{up_time}"'
     
     if request.headers.get("if-none-match") == etag:
@@ -316,8 +333,8 @@ async def api_get_course_meta(
     except Exception:
         logger.debug("Failed to emit structure version", exc_info=True)
 
-    up_time = result.update_date.timestamp() if getattr(result, "update_date", None) else 0.0
-    struct_time = latest_chapter_update.timestamp() if latest_chapter_update and hasattr(latest_chapter_update, "timestamp") else 0.0
+    up_time = _get_timestamp(getattr(result, "update_date", None))
+    struct_time = _get_timestamp(latest_chapter_update)
     etag = f'W/"{result.id}-{up_time}-{struct_time}"'
 
     if request.headers.get("if-none-match") == etag:

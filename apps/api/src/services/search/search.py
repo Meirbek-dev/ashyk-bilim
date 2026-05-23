@@ -45,7 +45,12 @@ async def search_platform_content(
 
     # Search collections
     if dialect_name == "postgresql":
-        vector = func.to_tsvector("english", func.concat_ws(" ", Collection.name, Collection.description))
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(Collection.name, "")
+            + " "
+            + func.coalesce(Collection.description, ""),
+        )
         query = func.websearch_to_tsquery("english", normalized_query)
         collections_query = (
             select(Collection)
@@ -66,12 +71,20 @@ async def search_platform_content(
 
     # Search users
     if dialect_name == "postgresql":
-        vector = func.to_tsvector("english", func.concat_ws(" ", User.username, User.first_name, User.last_name, User.bio))
+        vector = func.to_tsvector(
+            "english",
+            func.coalesce(User.username, "")
+            + " "
+            + func.coalesce(User.first_name, "")
+            + " "
+            + func.coalesce(User.last_name, "")
+            + " "
+            + func.coalesce(User.bio, ""),
+        )
         query = func.websearch_to_tsquery("english", normalized_query)
         users_query = (
             select(User)
-            .join(UserRole, UserRole.user_id == User.id)
-            .distinct(User.id)
+            .where(User.id.in_(select(UserRole.user_id)))
             .where(vector.op("@@")(query))
             .order_by(
                 func.ts_rank_cd(vector, query).desc(),
@@ -82,9 +95,7 @@ async def search_platform_content(
         pattern = f"%{normalized_query}%"
         users_query = (
             select(User)
-            .join(UserRole, UserRole.user_id == User.id)
-            # Use DISTINCT on `User.id` to avoid comparing JSON columns
-            .distinct(User.id)
+            .where(User.id.in_(select(UserRole.user_id)))
             .where(
                 or_(
                     User.username.ilike(pattern),

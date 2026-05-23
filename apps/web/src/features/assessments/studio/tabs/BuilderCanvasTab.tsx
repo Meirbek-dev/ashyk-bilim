@@ -578,13 +578,19 @@ function SortableOutlineItem({
       style={style}
       className={cn('group relative', isDragging && 'z-50 opacity-60')}
     >
-      <Button
-        type="button"
-        variant="ghost"
+      <div
+        role="button"
+        tabIndex={0}
         id={`item-${item.item_uuid}`}
         onClick={onSelect}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect();
+          }
+        }}
         className={cn(
-          'h-auto w-full rounded-lg border p-3 text-left transition-all duration-150',
+          'h-auto w-full rounded-lg border p-3 text-left transition-all duration-150 cursor-pointer block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
           'hover:bg-muted/50',
           selected ? 'border-primary bg-primary/5 ring-primary/20 ring-2' : 'bg-background border-border',
         )}
@@ -654,7 +660,7 @@ function SortableOutlineItem({
             </Tooltip>
           ) : null}
         </div>
-      </Button>
+      </div>
     </div>
   );
 }
