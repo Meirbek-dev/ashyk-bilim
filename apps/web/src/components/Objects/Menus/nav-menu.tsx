@@ -242,7 +242,7 @@ export default function NavBar() {
             <Image
               src={logoSrc}
               alt={t('logoAlt')}
-              width={120}
+              width={99}
               height={36}
               className="h-9 w-auto object-contain"
               style={{ width: 'auto' }}
@@ -315,8 +315,8 @@ export default function NavBar() {
                 <Image
                   src={logoSrc}
                   alt={t('logoAlt')}
-                  width={163}
-                  height={60}
+                  width={88}
+                  height={32}
                   className="h-8 w-auto object-contain"
                   style={{ width: 'auto' }}
                 />

@@ -16,6 +16,7 @@ export default async function NotFound() {
         <Image
           quality={100}
           width={270}
+          height={98}
           src={platformLogoFull}
           alt={tCommon('platformLogoAlt')}
           style={{ height: 'auto' }}
@@ -25,6 +26,7 @@ export default async function NotFound() {
         <Image
           quality={100}
           width={270}
+          height={98}
           src={platformLogoLightFull}
           alt={tCommon('platformLogoAlt')}
           style={{ height: 'auto' }}

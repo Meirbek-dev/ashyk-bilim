@@ -22,6 +22,7 @@ const HomeClient = () => {
         <Image
           quality={100}
           width={230}
+          height={84}
           src={logoSrc}
           alt={tCommon('platformLogoAlt')}
           style={{ width: '100%', height: 'auto' }}

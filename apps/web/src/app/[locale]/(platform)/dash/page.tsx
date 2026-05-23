@@ -75,6 +75,7 @@ export default async function PlatformDashHomePage() {
         <Image
           alt={t('platformLogo')}
           width={210}
+          height={77}
           src={platformLogoFull}
           className="theme-logo-dark w-40 sm:w-[210px]"
           style={{ height: 'auto' }}
@@ -83,6 +84,7 @@ export default async function PlatformDashHomePage() {
         <Image
           alt={t('platformLogo')}
           width={210}
+          height={77}
           src={platformLogoLightFull}
           className="theme-logo-light w-40 sm:w-[210px]"
           style={{ height: 'auto' }}
