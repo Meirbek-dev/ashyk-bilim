@@ -75,7 +75,7 @@ export default function FileSubmissionReviewWorkspace({
       queryKey: activityQueryKey(cleanActivityUuid),
       queryFn: () => getFileSubmissionByActivity(cleanActivityUuid),
       enabled: Boolean(cleanActivityUuid),
-    })
+    }),
   );
 
   const { data: queue, isLoading: isQueueLoading } = useQuery(
@@ -83,7 +83,7 @@ export default function FileSubmissionReviewWorkspace({
       queryKey: config ? queueQueryKey(config.file_submission_uuid) : ['file-submission', 'review-queue', 'pending'],
       queryFn: () => getFileSubmissionReviewQueue(config!.file_submission_uuid),
       enabled: Boolean(config?.file_submission_uuid),
-    })
+    }),
   );
 
   const filteredItems = useMemo(() => {
@@ -462,7 +462,9 @@ export default function FileSubmissionReviewWorkspace({
             </aside>
           </div>
         ) : (
-          <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('selectSubmission')}</div>
+          <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
+            {t('selectSubmission')}
+          </div>
         )}
       </main>
     </div>

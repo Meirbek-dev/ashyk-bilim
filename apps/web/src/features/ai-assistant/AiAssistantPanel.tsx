@@ -68,7 +68,9 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
         {/* Suggestions */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="mb-4">
-            <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">{t('suggestedPrompts')}</p>
+            <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+              {t('suggestedPrompts')}
+            </p>
           </div>
           <div className="flex flex-col gap-2">
             {suggestions.map((suggestion, i) => (
@@ -135,25 +137,13 @@ function getSuggestions(activityType: string, t: any): string[] {
     }
     case 'TYPE_EXAM':
     case 'TYPE_CUSTOM': {
-      return [
-        t('suggestions.exam.hint'),
-        t('suggestions.exam.concept'),
-        t('suggestions.exam.review'),
-      ];
+      return [t('suggestions.exam.hint'), t('suggestions.exam.concept'), t('suggestions.exam.review')];
     }
     case 'TYPE_FILE_SUBMISSION': {
-      return [
-        t('suggestions.file.include'),
-        t('suggestions.file.criteria'),
-        t('suggestions.file.structure'),
-      ];
+      return [t('suggestions.file.include'), t('suggestions.file.criteria'), t('suggestions.file.structure')];
     }
     case 'TYPE_VIDEO': {
-      return [
-        t('suggestions.video.summarize'),
-        t('suggestions.video.explain'),
-        t('suggestions.video.keypoints'),
-      ];
+      return [t('suggestions.video.summarize'), t('suggestions.video.explain'), t('suggestions.video.keypoints')];
     }
     default: {
       return [

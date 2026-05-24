@@ -31,10 +31,7 @@ export function writeLocalStorageString(key: string, value: string): void {
   }
 }
 
-export function readJsonLocalStorage<T>(
-  key: string,
-  validate: (value: unknown) => value is T,
-): T | null {
+export function readJsonLocalStorage<T>(key: string, validate: (value: unknown) => value is T): T | null {
   if (!canUseLocalStorage()) return null;
 
   try {
@@ -62,11 +59,14 @@ export function readVersionedLocalStorage<T>(
   version: number,
   validate: (value: unknown) => value is T,
 ): T | null {
-  const envelope = readJsonLocalStorage<VersionedStorageEnvelope<T>>(key, (value): value is VersionedStorageEnvelope<T> => {
-    if (typeof value !== 'object' || value === null) return false;
-    const candidate = value as Partial<VersionedStorageEnvelope<T>>;
-    return typeof candidate.version === 'number' && candidate.version === version && validate(candidate.value);
-  });
+  const envelope = readJsonLocalStorage<VersionedStorageEnvelope<T>>(
+    key,
+    (value): value is VersionedStorageEnvelope<T> => {
+      if (typeof value !== 'object' || value === null) return false;
+      const candidate = value as Partial<VersionedStorageEnvelope<T>>;
+      return typeof candidate.version === 'number' && candidate.version === version && validate(candidate.value);
+    },
+  );
 
   return envelope?.value ?? null;
 }

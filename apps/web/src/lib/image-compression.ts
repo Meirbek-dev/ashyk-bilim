@@ -8,7 +8,7 @@ export async function compressImage(
     maxWidth?: number;
     maxHeight?: number;
     quality?: number; // 0.0 to 1.0
-  } = {}
+  } = {},
 ): Promise<File> {
   const { maxWidth = 1200, maxHeight = 1200, quality = 0.8 } = options;
 
@@ -26,8 +26,8 @@ export async function compressImage(
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        let width = img.width;
-        let height = img.height;
+        let {width} = img;
+        let {height} = img;
 
         // Calculate aspect ratio and target dimensions
         if (width > maxWidth || height > maxHeight) {
@@ -55,7 +55,7 @@ export async function compressImage(
               resolve(file); // fallback
               return;
             }
-            const webpFilename = file.name.replace(/\.[^/.]+$/, "") + '.webp';
+            const webpFilename = file.name.replace(/\.[^/.]+$/, '') + '.webp';
             const compressedFile = new File([blob], webpFilename, {
               type: 'image/webp',
               lastModified: Date.now(),
@@ -63,7 +63,7 @@ export async function compressImage(
             resolve(compressedFile);
           },
           'image/webp',
-          quality
+          quality,
         );
       };
       img.onerror = () => resolve(file); // fallback

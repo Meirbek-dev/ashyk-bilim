@@ -22,7 +22,7 @@ export default function GradebookError({ error, reset }: { error: Error & { dige
     <div className="flex min-h-[480px] items-center justify-center p-6">
       <div className="w-full max-w-xl rounded-3xl border border-rose-200 bg-white p-6 shadow-lg dark:border-rose-900/40 dark:bg-slate-950">
         <div className="flex items-start gap-3">
-          <div className="bg-rose-500/10 text-rose-600 flex h-11 w-11 items-center justify-center rounded-2xl">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600">
             <AlertTriangle className="size-5" />
           </div>
           <div className="space-y-1">

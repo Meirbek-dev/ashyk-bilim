@@ -1,6 +1,15 @@
 'use client';
 
-import { BarChart3, BookOpenCheck, ChevronDown, ChevronUp, Clock4, ExternalLink, TrendingUp, Users } from 'lucide-react';
+import {
+  BarChart3,
+  BookOpenCheck,
+  ChevronDown,
+  ChevronUp,
+  Clock4,
+  ExternalLink,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -131,17 +140,39 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
       {stats && stats.score_distribution.some((b) => b.count > 0) && (
         <div className="bg-card rounded-lg border p-5">
           <h3 className="mb-4 text-sm font-semibold">{t('scoreDistributionTitle')}</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={stats.score_distribution} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
-              <XAxis dataKey="range" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+          <ResponsiveContainer
+            width="100%"
+            height={180}
+          >
+            <BarChart
+              data={stats.score_distribution}
+              margin={{ top: 0, right: 8, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                className="stroke-border"
+              />
+              <XAxis
+                dataKey="range"
+                tick={{ fontSize: 11 }}
+                className="fill-muted-foreground"
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fontSize: 11 }}
+                className="fill-muted-foreground"
+              />
               <Tooltip
                 contentStyle={{ fontSize: 12 }}
                 labelFormatter={(label) => `Score: ${label}`}
                 formatter={(value) => [Number(value ?? 0), t('submissions')]}
               />
-              <Bar dataKey="count" radius={[3, 3, 0, 0]} className="fill-primary" />
+              <Bar
+                dataKey="count"
+                radius={[3, 3, 0, 0]}
+                className="fill-primary"
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -157,9 +188,11 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
             onClick={() => setAnalyticsExpanded((v) => !v)}
           >
             <h3 className="text-sm font-semibold">{t('itemAnalyticsTitle')}</h3>
-            {analyticsExpanded
-              ? <ChevronUp className="text-muted-foreground size-4" />
-              : <ChevronDown className="text-muted-foreground size-4" />}
+            {analyticsExpanded ? (
+              <ChevronUp className="text-muted-foreground size-4" />
+            ) : (
+              <ChevronDown className="text-muted-foreground size-4" />
+            )}
           </Button>
           {analyticsExpanded && (
             <div className="border-t">
@@ -182,30 +215,34 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
                     </TableHeader>
                     <TableBody className="divide-y">
                       {itemAnalytics.map((item, idx) => (
-                        <TableRow key={item.item_uuid} className="hover:bg-muted/20 transition-colors">
+                        <TableRow
+                          key={item.item_uuid}
+                          className="hover:bg-muted/20 transition-colors"
+                        >
                           <TableCell className="text-muted-foreground px-4 py-2.5">{idx + 1}</TableCell>
-                          <TableCell className="max-w-[280px] truncate px-4 py-2.5 font-medium" title={item.title}>
+                          <TableCell
+                            className="max-w-[280px] truncate px-4 py-2.5 font-medium"
+                            title={item.title}
+                          >
                             {item.title || `—`}
                           </TableCell>
-                          <TableCell className="text-muted-foreground px-4 py-2.5 uppercase tracking-wide text-xs">
+                          <TableCell className="text-muted-foreground px-4 py-2.5 text-xs tracking-wide uppercase">
                             {item.kind.replace(/_/g, ' ')}
                           </TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">{item.max_score}</TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">{item.response_count}</TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {item.avg_score_pct !== null ? (
-                              <PercentBadge value={item.avg_score_pct} />
-                            ) : '—'}
+                            {item.avg_score_pct !== null ? <PercentBadge value={item.avg_score_pct} /> : '—'}
                           </TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {item.correct_pct !== null ? (
-                              <PercentBadge value={item.correct_pct} />
-                            ) : '—'}
+                            {item.correct_pct !== null ? <PercentBadge value={item.correct_pct} /> : '—'}
                           </TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {item.discrimination_index !== null
-                              ? <DiscriminationBadge value={item.discrimination_index} />
-                              : '—'}
+                            {item.discrimination_index !== null ? (
+                              <DiscriminationBadge value={item.discrimination_index} />
+                            ) : (
+                              '—'
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -237,15 +274,13 @@ export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityU
 }
 
 function PercentBadge({ value }: { value: number }) {
-  const color =
-    value >= 70 ? 'text-emerald-600' : value >= 40 ? 'text-amber-600' : 'text-red-600';
+  const color = value >= 70 ? 'text-emerald-600' : value >= 40 ? 'text-amber-600' : 'text-red-600';
   return <span className={cn('font-medium', color)}>{value.toFixed(1)}%</span>;
 }
 
 function DiscriminationBadge({ value }: { value: number }) {
   // discrimination index: ≥ 0.3 good (green), 0.1–0.3 fair (amber), < 0.1 poor (red)
-  const color =
-    value >= 0.3 ? 'text-emerald-600' : value >= 0.1 ? 'text-amber-600' : 'text-red-600';
+  const color = value >= 0.3 ? 'text-emerald-600' : value >= 0.1 ? 'text-amber-600' : 'text-red-600';
   return <span className={cn('font-medium', color)}>{value.toFixed(2)}</span>;
 }
 

@@ -61,9 +61,7 @@ class EmbedErrorBoundary extends Component<EmbedErrorBoundaryProps, EmbedErrorBo
         >
           <div>
             <p className="text-sm font-semibold text-red-700 capitalize">{this.props.title}</p>
-            <p className="mt-1 text-xs text-red-500">
-              {this.props.message}
-            </p>
+            <p className="mt-1 text-xs text-red-500">{this.props.message}</p>
           </div>
         </div>
       );
@@ -132,9 +130,7 @@ const EmbedBlockNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
 
         return (
           <div className="flex min-h-[120px] w-full items-center justify-center rounded-xl border border-gray-200 bg-gray-50 p-6 text-center">
-            <p className="text-sm text-gray-500">
-              {t('unknownEmbedType', { type: type ? `: ${type}` : '' })}
-            </p>
+            <p className="text-sm text-gray-500">{t('unknownEmbedType', { type: type ? `: ${type}` : '' })}</p>
           </div>
         );
       }

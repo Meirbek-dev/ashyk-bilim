@@ -179,8 +179,8 @@ const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: Th
       if (type === 'image') {
         try {
           fileToUse = await compressImage(file, { maxWidth: 1200, maxHeight: 675, quality: 0.8 });
-        } catch (err) {
-          console.error('Image compression failed, using original file', err);
+        } catch (error) {
+          console.error('Image compression failed, using original file', error);
         }
       }
 

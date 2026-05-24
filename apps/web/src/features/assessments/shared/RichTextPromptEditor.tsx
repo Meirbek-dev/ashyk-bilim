@@ -45,10 +45,7 @@ export function RichTextPromptEditor({
     },
     editorProps: {
       attributes: {
-        class: cn(
-          'outline-none px-3 py-2 focus:outline-none',
-          `min-h-[${minHeight}]`,
-        ),
+        class: cn('outline-none px-3 py-2 focus:outline-none', `min-h-[${minHeight}]`),
       },
     },
   });
@@ -136,7 +133,7 @@ export function RichTextPromptEditor({
           '[&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none',
           '[&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left',
           '[&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0',
-          "[&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]",
+          '[&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]',
           disabled && 'pointer-events-none',
         )}
       />

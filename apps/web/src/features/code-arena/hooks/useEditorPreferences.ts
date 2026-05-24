@@ -20,7 +20,7 @@ export function useEditorPreferences() {
   const [preferences, setPreferences] = useState<CodeEditorPreferences>(DEFAULT_PREFERENCES);
 
   useEffect(() => {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = globalThis.localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     try {
       const parsed = JSON.parse(raw) as Partial<CodeEditorPreferences>;
@@ -35,7 +35,7 @@ export function useEditorPreferences() {
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+    globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
   }, [preferences]);
 
   const monacoOptions = useMemo(

@@ -186,7 +186,10 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
             <Label htmlFor="exam-grace-period">{tSetup('gracePeriodLabel')}</Label>
             <Tooltip>
               <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
-              <TooltipContent side="right" className="max-w-xs">
+              <TooltipContent
+                side="right"
+                className="max-w-xs"
+              >
                 <p className="text-xs">{tSetup('gracePeriodDesc')}</p>
               </TooltipContent>
             </Tooltip>
@@ -214,7 +217,10 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
               <Label htmlFor="exam-pass-threshold">{tSetup('passThresholdLabel')}</Label>
               <Tooltip>
                 <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
-                <TooltipContent side="right" className="max-w-xs">
+                <TooltipContent
+                  side="right"
+                  className="max-w-xs"
+                >
                   <p className="text-xs">{tSetup('passThresholdDesc')}</p>
                 </TooltipContent>
               </Tooltip>
@@ -239,7 +245,10 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
               <Label htmlFor="exam-negative-marking">{tSetup('negativeMarkingLabel')}</Label>
               <Tooltip>
                 <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
-                <TooltipContent side="right" className="max-w-xs">
+                <TooltipContent
+                  side="right"
+                  className="max-w-xs"
+                >
                   <p className="text-xs">{tSetup('negativeMarkingDesc')}</p>
                 </TooltipContent>
               </Tooltip>

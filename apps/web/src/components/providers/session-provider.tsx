@@ -151,14 +151,14 @@ export function SessionProvider({ children, initialSession = null }: SessionProv
 export function broadcastLogout(): void {
   if (typeof BroadcastChannel === 'undefined') return;
   const channel = new BroadcastChannel(AUTH_BROADCAST_CHANNEL);
-  channel.postMessage({ type: 'logout' } satisfies AuthBroadcastMessage);
+  channel.postMessage({ type: 'logout' } satisfies AuthBroadcastMessage, channel.location.origin);
   channel.close();
 }
 
 export function broadcastSessionRefresh(): void {
   if (typeof BroadcastChannel === 'undefined') return;
   const channel = new BroadcastChannel(AUTH_BROADCAST_CHANNEL);
-  channel.postMessage({ type: 'session_refresh' } satisfies AuthBroadcastMessage);
+  channel.postMessage({ type: 'session_refresh' } satisfies AuthBroadcastMessage, channel.location.origin);
   channel.close();
 }
 

@@ -31,15 +31,13 @@ interface SelectionState {
 
 // ─── Segment model ────────────────────────────────────────────────────────────
 
-type Segment =
-  | { type: 'plain'; text: string }
-  | { type: 'annotated'; text: string; annotation: TextAnnotation };
+type Segment = { type: 'plain'; text: string } | { type: 'annotated'; text: string; annotation: TextAnnotation };
 
 function buildSegments(text: string, annotations: TextAnnotation[]): Segment[] {
   if (!annotations.length) return [{ type: 'plain', text }];
 
   // Sort and merge overlapping ranges so we never double-highlight
-  const sorted = [...annotations].sort((a, b) => a.start - b.start);
+  const sorted = [...annotations].toSorted((a, b) => a.start - b.start);
   const merged: TextAnnotation[] = [];
   for (const ann of sorted) {
     const prev = merged.at(-1);
@@ -89,7 +87,7 @@ export default function AnnotatableText({
 
   const handleMouseUp = () => {
     if (readOnly) return;
-    const sel = window.getSelection();
+    const sel = globalThis.getSelection();
     if (!sel || sel.isCollapsed || !containerRef.current) return;
     if (!containerRef.current.contains(sel.anchorNode)) return;
 
@@ -109,7 +107,7 @@ export default function AnnotatableText({
   const cancelSelection = () => {
     setSelection(null);
     setComment('');
-    window.getSelection()?.removeAllRanges();
+    globalThis.getSelection()?.removeAllRanges();
   };
 
   const confirmAnnotation = () => {
@@ -161,7 +159,7 @@ export default function AnnotatableText({
                     e.stopPropagation();
                     onRemove(seg.annotation.id);
                   }}
-                  className="absolute -right-2 -top-2 z-10 flex size-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow"
+                  className="bg-destructive text-destructive-foreground absolute -top-2 -right-2 z-10 flex size-4 items-center justify-center rounded-full shadow"
                 >
                   <X className="size-2.5" />
                 </button>
@@ -173,12 +171,14 @@ export default function AnnotatableText({
 
       {/* Add-comment panel (appears below text when selection is active) */}
       {selection && (
-        <div className="rounded-md border bg-amber-50/80 p-3 dark:bg-amber-900/20 space-y-2">
+        <div className="space-y-2 rounded-md border bg-amber-50/80 p-3 dark:bg-amber-900/20">
           <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
-            {t('addNoteFor', { text: selection.selectedText.slice(0, 60) + (selection.selectedText.length > 60 ? '…' : '') })}
+            {t('addNoteFor', {
+              text: selection.selectedText.slice(0, 60) + (selection.selectedText.length > 60 ? '…' : ''),
+            })}
           </p>
           <Textarea
-            autoFocus
+            
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder={t('commentPlaceholder')}
@@ -225,7 +225,7 @@ export default function AnnotatableText({
                 {idx + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <span className="line-clamp-1 italic text-muted-foreground">"{ann.selectedText}"</span>
+                <span className="text-muted-foreground line-clamp-1 italic">"{ann.selectedText}"</span>
                 <span className="ml-1 font-medium">{ann.comment}</span>
               </div>
               {!readOnly && (

@@ -55,12 +55,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import {
-  readJsonLocalStorage,
-  readVersionedLocalStorage,
-  writeJsonLocalStorage,
-  writeVersionedLocalStorage,
-} from '@/lib/local-storage';
+import { readJsonLocalStorage, readVersionedLocalStorage, writeVersionedLocalStorage } from '@/lib/local-storage';
 
 type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>;
 const SECTION_STORAGE_VERSION = 1;
@@ -384,7 +379,11 @@ export default function BuilderCanvasTab({
                           onSelect={() => onSelectItem(item.item_uuid)}
                           onAddSectionBefore={
                             isEditable
-                              ? () => addSection(item.item_uuid, tBuilder('defaultSectionLabel', { n: sections.length + 1 }))
+                              ? () =>
+                                  addSection(
+                                    item.item_uuid,
+                                    tBuilder('defaultSectionLabel', { n: sections.length + 1 }),
+                                  )
                               : undefined
                           }
                         />
@@ -485,7 +484,7 @@ function SectionHeader({
   };
 
   return (
-    <div className="group mb-1 mt-2 flex items-center gap-1 px-1">
+    <div className="group mt-2 mb-1 flex items-center gap-1 px-1">
       <div className="bg-border h-px flex-1" />
       {editing ? (
         <Input
@@ -500,10 +499,10 @@ function SectionHeader({
               setEditing(false);
             }
           }}
-          className="w-32 h-5 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground focus-visible:ring-1"
+          className="text-muted-foreground h-5 w-32 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase focus-visible:ring-1"
         />
       ) : (
-        <span className="text-muted-foreground select-none whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider">
+        <span className="text-muted-foreground text-[10px] font-semibold tracking-wider whitespace-nowrap uppercase select-none">
           {section.label}
         </span>
       )}

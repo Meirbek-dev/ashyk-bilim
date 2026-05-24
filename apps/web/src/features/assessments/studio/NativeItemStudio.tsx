@@ -391,27 +391,24 @@ export function NativeItemAuthor({
   const tTabs = useTranslations('Features.Assessments.Studio.Tabs');
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}` as any) : itemNoun;
 
-  const VALID_TABS: StudioTab[] = ['SETUP', 'BUILDER', 'ACCESS', 'RESULTS', 'PUBLISH'];
+  const VALID_TABS: StudioTab[] = new Set(['SETUP', 'BUILDER', 'ACCESS', 'RESULTS', 'PUBLISH']);
 
   const [activeTab, setActiveTabState] = useState<StudioTab>(() => {
     if (typeof window !== 'undefined') {
       const raw = new URLSearchParams(window.location.search).get('tab')?.toUpperCase();
-      if (raw && VALID_TABS.includes(raw as StudioTab)) return raw as StudioTab;
+      if (raw && VALID_TABS.has(raw as StudioTab)) return raw as StudioTab;
     }
     return 'BUILDER';
   });
 
-  const setActiveTab = useCallback(
-    (tab: StudioTab) => {
-      setActiveTabState(tab);
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.searchParams.set('tab', tab.toLowerCase());
-        window.history.replaceState(null, '', url.toString());
-      }
-    },
-    [],
-  );
+  const setActiveTab = useCallback((tab: StudioTab) => {
+    setActiveTabState(tab);
+    if (typeof globalThis.window !== 'undefined') {
+      const url = new URL(globalThis.location.href);
+      url.searchParams.set('tab', tab.toLowerCase());
+      globalThis.history.replaceState(null, '', url.toString());
+    }
+  }, []);
 
   const [localOrderedUuids, setLocalOrderedUuids] = useState<string[]>([]);
 
@@ -779,9 +776,7 @@ function NativeItemBodyEditor({
             disabled={disabled}
             placeholder={t('Items.promptPlaceholder')}
             className={hasIssue('open_text.prompt_missing') ? 'border-destructive' : ''}
-            onChange={(md) =>
-              onChange({ ...item, body: { ...body, kind: 'OPEN_TEXT', prompt: md } })
-            }
+            onChange={(md) => onChange({ ...item, body: { ...body, kind: 'OPEN_TEXT', prompt: md } })}
           />
         </div>
         <div className="grid gap-4 md:grid-cols-[12rem_1fr]">
@@ -1115,7 +1110,10 @@ function toAssessmentEditorState(assessment: AssessmentStudioDetail): Assessment
     partialCredit: settings.partial_credit === true,
     gracePeriodMinutes: typeof settings.grace_period_minutes === 'number' ? String(settings.grace_period_minutes) : '',
     availableFrom: settings.available_from ? toDateTimeLocal(settings.available_from as string) : '',
-    negativeMarkingPercent: typeof settings.negative_marking_percent === 'number' && settings.negative_marking_percent > 0 ? String(settings.negative_marking_percent) : '',
+    negativeMarkingPercent:
+      typeof settings.negative_marking_percent === 'number' && settings.negative_marking_percent > 0
+        ? String(settings.negative_marking_percent)
+        : '',
   };
 }
 

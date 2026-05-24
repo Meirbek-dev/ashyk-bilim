@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  Download,
-  Plus,
-  Trash2,
-  Upload,
-  ArrowUp,
-  ArrowDown,
-  Info,
-} from 'lucide-react';
+import { Download, Plus, Trash2, Upload, ArrowUp, ArrowDown, Info } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -32,7 +24,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
 
   const tests = [...(draft.visible_tests ?? []), ...(draft.hidden_tests ?? [])];
-  
+
   // Find currently selected test case details
   const selectedTestCase = tests.find((t) => t.id === selectedCaseId) ?? null;
 
@@ -74,7 +66,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
   const moveTest = (idx: number, direction: 'up' | 'down') => {
     const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (targetIdx < 0 || targetIdx >= tests.length) return;
-    
+
     const next = [...tests];
     const temp = next[idx]!;
     next[idx] = next[targetIdx]!;
@@ -101,7 +93,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
         // Simple CSV serialize
         const headers = ['id', 'is_visible', 'description', 'input', 'expected_output', 'weight', 'match_mode'];
         const csvRows = [headers.join(',')];
-        
+
         for (const t of tests) {
           const values = [
             t.id,
@@ -127,7 +119,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
       link.click();
       URL.revokeObjectURL(url);
       toast.success(`Exported test suite as ${format.toUpperCase()}.`);
-    } catch (err) {
+    } catch {
       toast.error('Failed to export test suite.');
     }
   };
@@ -164,7 +156,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
           // Naive CSV parsing
           const lines = text.split('\n').filter((l) => l.trim());
           const headers = lines[0]?.split(',').map((h) => h.trim());
-          
+
           if (headers && headers.includes('input') && headers.includes('expected_output')) {
             imported = lines.slice(1).map((line) => {
               // Quick quote splits
@@ -174,7 +166,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
               while ((match = regex.exec(line)) !== null) {
                 matches.push(match[1] ? match[1].replace(/""/g, '"') : match[2]);
               }
-              
+
               return {
                 id: matches[0] || `test_${generateUUID()}`,
                 is_visible: matches[1] === 'true',
@@ -197,8 +189,8 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
           });
           toast.success(`Successfully imported ${imported.length} test cases.`);
         }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Invalid import file format.');
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Invalid import file format.');
       }
     };
     reader.readAsText(file);
@@ -211,18 +203,18 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
   const hiddenCount = draft.hidden_tests?.length ?? 0;
 
   return (
-    <div className="flex h-full min-h-0 grid-cols-[1fr_360px] flex-col md:grid overflow-hidden">
+    <div className="flex h-full min-h-0 grid-cols-[1fr_360px] flex-col overflow-hidden md:grid">
       {/* Left Pane: test suite spreadsheet */}
-      <div className="flex flex-col h-full min-h-0 border-r overflow-hidden">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden border-r">
         {/* Tool bar */}
-        <div className="flex h-11 shrink-0 items-center justify-between border-b px-4 bg-muted/20">
+        <div className="bg-muted/20 flex h-11 shrink-0 items-center justify-between border-b px-4">
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               size="xs"
               onClick={() => addTest(true)}
-              className="h-7 text-xs gap-1.5"
+              className="h-7 gap-1.5 text-xs"
             >
               <Plus className="size-3.5" />
               Add Sample (Visible)
@@ -232,7 +224,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
               variant="outline"
               size="xs"
               onClick={() => addTest(false)}
-              className="h-7 text-xs gap-1.5"
+              className="h-7 gap-1.5 text-xs"
             >
               <Plus className="size-3.5" />
               Add Hidden Case
@@ -245,7 +237,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
               variant="ghost"
               size="xs"
               onClick={handleImportClick}
-              className="h-7 text-xs gap-1"
+              className="h-7 gap-1 text-xs"
             >
               <Upload className="size-3.5" />
               Import
@@ -257,13 +249,13 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
               accept=".csv,.json"
               className="hidden"
             />
-            
+
             <Button
               type="button"
               variant="ghost"
               size="xs"
               onClick={() => handleExport('json')}
-              className="h-7 text-xs gap-1"
+              className="h-7 gap-1 text-xs"
             >
               <Download className="size-3.5" />
               JSON
@@ -273,7 +265,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
               variant="ghost"
               size="xs"
               onClick={() => handleExport('csv')}
-              className="h-7 text-xs gap-1"
+              className="h-7 gap-1 text-xs"
             >
               <Download className="size-3.5" />
               CSV
@@ -281,7 +273,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
           </div>
         </div>
 
-        <ScrollArea className="flex-1 min-h-0">
+        <ScrollArea className="min-h-0 flex-1">
           <div className="p-4">
             <Table>
               <TableHeader>
@@ -300,14 +292,14 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                   return (
                     <TableRow
                       key={test.id}
-                      className={cn(
-                        'cursor-pointer hover:bg-muted/10',
-                        isSelected ? 'bg-primary/5' : ''
-                      )}
+                      className={cn('cursor-pointer hover:bg-muted/10', isSelected ? 'bg-primary/5' : '')}
                       onClick={() => setSelectedCaseId(test.id)}
                     >
                       <TableCell className="py-2.5">
-                        <div className="flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="flex flex-col gap-0.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <button
                             type="button"
                             disabled={index === 0}
@@ -331,7 +323,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                           <NativeSelect
                             value={test.is_visible ? 'visible' : 'hidden'}
                             onChange={(e) => updateTest(test.id, { is_visible: e.target.value === 'visible' })}
-                            className="h-8 py-0 select-xs"
+                            className="select-xs h-8 py-0"
                           >
                             <NativeSelectOption value="visible">Visible</NativeSelectOption>
                             <NativeSelectOption value="hidden">Hidden</NativeSelectOption>
@@ -343,7 +335,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                           <NativeSelect
                             value={test.match_mode ?? 'EXACT'}
                             onChange={(e) => updateTest(test.id, { match_mode: e.target.value as any })}
-                            className="h-8 py-0 select-xs"
+                            className="select-xs h-8 py-0"
                           >
                             <NativeSelectOption value="EXACT">Exact Match</NativeSelectOption>
                             <NativeSelectOption value="TRIMMED">Trimmed Match</NativeSelectOption>
@@ -382,7 +374,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                             onClick={() => removeTest(test.id)}
                             className="size-8"
                           >
-                            <Trash2 className="size-3.5 text-muted-foreground hover:text-destructive" />
+                            <Trash2 className="text-muted-foreground hover:text-destructive size-3.5" />
                           </Button>
                         </div>
                       </TableCell>
@@ -395,34 +387,45 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
         </ScrollArea>
 
         {/* Aggregate summary footer */}
-        <div className="h-10 shrink-0 border-t px-4 flex items-center justify-between text-xs text-muted-foreground bg-muted/10 font-medium select-none">
+        <div className="text-muted-foreground bg-muted/10 flex h-10 shrink-0 items-center justify-between border-t px-4 text-xs font-medium select-none">
           <div className="flex gap-4">
-            <span>Samples: <strong>{sampleCount}</strong></span>
-            <span>Hidden tests: <strong>{hiddenCount}</strong></span>
-            <span>Total cases: <strong>{tests.length}</strong></span>
+            <span>
+              Samples: <strong>{sampleCount}</strong>
+            </span>
+            <span>
+              Hidden tests: <strong>{hiddenCount}</strong>
+            </span>
+            <span>
+              Total cases: <strong>{tests.length}</strong>
+            </span>
           </div>
-          <span>Total weights: <strong>{totalWeight}</strong></span>
+          <span>
+            Total weights: <strong>{totalWeight}</strong>
+          </span>
         </div>
       </div>
 
       {/* Right Pane: selected case details */}
-      <div className="flex flex-col h-full min-h-0 bg-muted/5 overflow-hidden border-t md:border-t-0">
-        <div className="flex h-11 shrink-0 items-center justify-between border-b px-4 bg-muted/20">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+      <div className="bg-muted/5 flex h-full min-h-0 flex-col overflow-hidden border-t md:border-t-0">
+        <div className="bg-muted/20 flex h-11 shrink-0 items-center justify-between border-b px-4">
+          <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
             Assertion Details
           </span>
           {selectedTestCase && (
-            <Badge variant={selectedTestCase.is_visible ? 'success' : 'secondary'} className="text-[10px]">
+            <Badge
+              variant={selectedTestCase.is_visible ? 'success' : 'secondary'}
+              className="text-[10px]"
+            >
               {selectedTestCase.is_visible ? 'Sample Case' : 'Hidden Case'}
             </Badge>
           )}
         </div>
 
-        <ScrollArea className="flex-1 min-h-0">
+        <ScrollArea className="min-h-0 flex-1">
           {selectedTestCase ? (
-            <div className="p-4 space-y-4">
+            <div className="space-y-4 p-4">
               <label className="grid gap-1.5">
-                <span className="text-xs font-semibold text-muted-foreground uppercase">Stdin Input</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">Stdin Input</span>
                 <Textarea
                   value={selectedTestCase.input}
                   onChange={(e) => updateTest(selectedTestCase.id, { input: e.target.value })}
@@ -432,7 +435,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-xs font-semibold text-muted-foreground uppercase">Expected stdout</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">Expected stdout</span>
                 <Textarea
                   value={selectedTestCase.expected_output}
                   onChange={(e) => updateTest(selectedTestCase.id, { expected_output: e.target.value })}
@@ -441,22 +444,26 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                 />
               </label>
 
-              <div className="rounded-md border bg-muted/20 p-3 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                  <Info className="size-3.5 text-muted-foreground" />
+              <div className="bg-muted/20 space-y-1.5 rounded-md border p-3">
+                <div className="text-foreground flex items-center gap-1.5 text-xs font-semibold">
+                  <Info className="text-muted-foreground size-3.5" />
                   Asserting Matches
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  {selectedTestCase.match_mode === 'EXACT' && 'Exact Match requires character-for-character comparison including whitespace and trailing newlines.'}
-                  {selectedTestCase.match_mode === 'TRIMMED' && 'Trimmed Match strips surrounding leading/trailing blank spaces and newlines before comparing.'}
-                  {selectedTestCase.match_mode === 'IGNORE_WHITESPACE' && 'Ignore Whitespace strips all whitespace, tabs, and line boundaries for comparative checks.'}
-                  {selectedTestCase.match_mode === 'NUMERIC_TOLERANCE' && 'Float Tolerance parses float numbers in outputs and compares them within delta = 1e-6.'}
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  {selectedTestCase.match_mode === 'EXACT' &&
+                    'Exact Match requires character-for-character comparison including whitespace and trailing newlines.'}
+                  {selectedTestCase.match_mode === 'TRIMMED' &&
+                    'Trimmed Match strips surrounding leading/trailing blank spaces and newlines before comparing.'}
+                  {selectedTestCase.match_mode === 'IGNORE_WHITESPACE' &&
+                    'Ignore Whitespace strips all whitespace, tabs, and line boundaries for comparative checks.'}
+                  {selectedTestCase.match_mode === 'NUMERIC_TOLERANCE' &&
+                    'Float Tolerance parses float numbers in outputs and compares them within delta = 1e-6.'}
                 </p>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-52 text-center text-muted-foreground text-xs p-6">
-              <Info className="size-8 text-muted-foreground/30 mb-2" />
+            <div className="text-muted-foreground flex h-52 flex-col items-center justify-center p-6 text-center text-xs">
+              <Info className="text-muted-foreground/30 mb-2 size-8" />
               Select a test case row in the spreadsheet to edit stdin/stdout.
             </div>
           )}

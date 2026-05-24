@@ -106,8 +106,8 @@ function useImageUpload({ activityUuid, onSuccess, t }: UseImageUploadOptions) {
         const compressed = await compressImage(selectedFile, { maxWidth: 1600, maxHeight: 1600, quality: 0.8 });
         setFile(compressed);
         setPreview(URL.createObjectURL(compressed));
-      } catch (err) {
-        console.error('Image compression failed, using original file', err);
+      } catch (error) {
+        console.error('Image compression failed, using original file', error);
         setFile(selectedFile);
         setPreview(URL.createObjectURL(selectedFile));
       }

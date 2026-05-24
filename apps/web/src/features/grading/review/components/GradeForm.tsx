@@ -89,8 +89,6 @@ export default function GradeForm({
 
   const editable = submission ? canTeacherEditGrade(submission.status) : false;
 
-
-
   useEffect(() => {
     // Sync overall draft from server
     setDraft({
@@ -127,91 +125,115 @@ export default function GradeForm({
   };
 
   // New item-level save (via unified assessment API)
-  const saveWithItemGrading = useCallback((status: 'save' | 'publish' | 'return') => {
-    if (!submission || !assessmentUuid) return;
+  const saveWithItemGrading = useCallback(
+    (status: 'save' | 'publish' | 'return') => {
+      if (!submission || !assessmentUuid) return;
 
-    const itemGrades: ItemGradeEntry[] = gradedItems.map((item) => {
-      const entry = itemDrafts[item.item_id];
-      const rawScore = entry?.score ?? String(item.score);
-      const parsed = Number.parseFloat(rawScore);
-      const baseFeedback = entry?.feedback ?? item.feedback ?? '';
-      const annotationNote = formatAnnotationsAsFeedback(annotationsByItem[item.item_id] ?? []);
-      return {
-        item_uuid: item.item_id,
-        score: Number.isNaN(parsed) ? 0 : Math.min(parsed, item.max_score),
-        feedback: annotationNote ? baseFeedback + annotationNote : baseFeedback,
-        is_manual: true,
-      };
-    });
+      const itemGrades: ItemGradeEntry[] = gradedItems.map((item) => {
+        const entry = itemDrafts[item.item_id];
+        const rawScore = entry?.score ?? String(item.score);
+        const parsed = Number.parseFloat(rawScore);
+        const baseFeedback = entry?.feedback ?? item.feedback ?? '';
+        const annotationNote = formatAnnotationsAsFeedback(annotationsByItem[item.item_id] ?? []);
+        return {
+          item_uuid: item.item_id,
+          score: Number.isNaN(parsed) ? 0 : Math.min(parsed, item.max_score),
+          feedback: annotationNote ? baseFeedback + annotationNote : baseFeedback,
+          is_manual: true,
+        };
+      });
 
-    const finalScore = overrideScore ? Number.parseFloat(draft.score) : undefined;
-    if (overrideScore && (Number.isNaN(finalScore!) || finalScore! < 0 || finalScore! > 100)) {
-      toast.error(t('invalidScore'));
-      return;
-    }
+      const finalScore = overrideScore ? Number.parseFloat(draft.score) : undefined;
+      if (overrideScore && (Number.isNaN(finalScore!) || finalScore! < 0 || finalScore! > 100)) {
+        toast.error(t('invalidScore'));
+        return;
+      }
 
-    const detailQueryKey = queryKeys.grading.detail(submission.submission_uuid, assessmentUuid);
-    const previousSubmission = queryClient.getQueryData<Submission>(detailQueryKey);
-    const optimisticSubmission = buildOptimisticSubmission(submission, {
+      const detailQueryKey = queryKeys.grading.detail(submission.submission_uuid, assessmentUuid);
+      const previousSubmission = queryClient.getQueryData<Submission>(detailQueryKey);
+      const optimisticSubmission = buildOptimisticSubmission(submission, {
+        assessmentUuid,
+        calculatedTotal,
+        draft,
+        gradedItems,
+        itemDrafts,
+        overrideScore,
+        overrideReason,
+        status,
+        itemGrades,
+        finalScore: overrideScore ? (finalScore ?? null) : null,
+      });
+
+      queryClient.setQueryData(detailQueryKey, optimisticSubmission);
+
+      startSaving(async () => {
+        try {
+          await saveGradingDraft(
+            assessmentUuid,
+            submission.submission_uuid,
+            {
+              item_grades: itemGrades,
+              overall_feedback: draft.feedback,
+              status,
+              override_score: overrideScore ? true : undefined,
+              final_score: overrideScore ? finalScore : undefined,
+              override_reason: overrideScore ? overrideReason : undefined,
+            },
+            submission.version,
+          );
+          toast.success(
+            status === 'publish'
+              ? tItemGrading('toasts.published')
+              : status === 'return'
+                ? tItemGrading('toasts.returned')
+                : tItemGrading('toasts.saved'),
+          );
+          setStaleDraft(null);
+          clearAnnotations();
+          await Promise.all([mutate(), onSaved()]);
+        } catch (error) {
+          if (previousSubmission) {
+            queryClient.setQueryData(detailQueryKey, previousSubmission);
+          }
+          if (error instanceof StaleGradeError) {
+            setStaleDraft({ server: error.serverSubmission, local: draft });
+            await mutate();
+          } else {
+            toast.error(tItemGrading('toasts.failed'));
+          }
+        }
+      });
+    },
+    [
+      submission,
       assessmentUuid,
-      calculatedTotal,
-      draft,
       gradedItems,
       itemDrafts,
       overrideScore,
+      draft,
+      t,
+      startSaving,
       overrideReason,
-      status,
-      itemGrades,
-      finalScore: overrideScore ? finalScore ?? null : null,
-    });
-
-    queryClient.setQueryData(detailQueryKey, optimisticSubmission);
-
-    startSaving(async () => {
-      try {
-        await saveGradingDraft(
-          assessmentUuid,
-          submission.submission_uuid,
-          {
-            item_grades: itemGrades,
-            overall_feedback: draft.feedback,
-            status,
-            override_score: overrideScore ? true : undefined,
-            final_score: overrideScore ? finalScore : undefined,
-            override_reason: overrideScore ? overrideReason : undefined,
-          },
-          submission.version,
-        );
-        toast.success(
-          status === 'publish'
-            ? tItemGrading('toasts.published')
-            : status === 'return'
-              ? tItemGrading('toasts.returned')
-              : tItemGrading('toasts.saved'),
-        );
-        setStaleDraft(null);
-        clearAnnotations();
-        await Promise.all([mutate(), onSaved()]);
-      } catch (error) {
-        if (previousSubmission) {
-          queryClient.setQueryData(detailQueryKey, previousSubmission);
-        }
-        if (error instanceof StaleGradeError) {
-          setStaleDraft({ server: error.serverSubmission, local: draft });
-          await mutate();
-        } else {
-          toast.error(tItemGrading('toasts.failed'));
-        }
-      }
-    });
-  }, [submission, assessmentUuid, gradedItems, itemDrafts, overrideScore, draft, t, startSaving, overrideReason, tItemGrading, onSaved, mutate, annotationsByItem, clearAnnotations, calculatedTotal, queryClient, overrideReason]);
+      tItemGrading,
+      onSaved,
+      mutate,
+      annotationsByItem,
+      clearAnnotations,
+      calculatedTotal,
+      queryClient,
+      overrideReason,
+    ],
+  );
 
   // All grading now goes through the item-level GradingDraftSave endpoint.
   // The legacy overall-score-only path has been removed.
-  const saveOverallScore = useCallback((status: TeacherGradeInput['status']) => {
-    // Redirect to item-level grading with a single "overall" item
-    saveWithItemGrading(status === 'PUBLISHED' ? 'publish' : status === 'RETURNED' ? 'return' : 'save');
-  }, [saveWithItemGrading]);
+  const saveOverallScore = useCallback(
+    (status: TeacherGradeInput['status']) => {
+      // Redirect to item-level grading with a single "overall" item
+      saveWithItemGrading(status === 'PUBLISHED' ? 'publish' : status === 'RETURNED' ? 'return' : 'save');
+    },
+    [saveWithItemGrading],
+  );
 
   // Ctrl+Enter saves draft; Ctrl+Shift+Enter publishes
   const handleCtrlEnter = useCallback(
@@ -574,9 +596,12 @@ export default function GradeForm({
           {t('keyboardHintForward')}
           <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintPrevKey')}</kbd>{' '}
           {t('keyboardHintBackward')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutFocusGrade')}</kbd> {t('keyboardHintFocusGrade')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutSave')}</kbd> {t('keyboardHintSave')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutPublish')}</kbd> {t('keyboardHintPublish')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutFocusGrade')}</kbd>{' '}
+          {t('keyboardHintFocusGrade')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutSave')}</kbd>{' '}
+          {t('keyboardHintSave')}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutPublish')}</kbd>{' '}
+          {t('keyboardHintPublish')}
         </div>
       </div>
     </aside>
@@ -636,7 +661,7 @@ function buildOptimisticSubmission(
 ): Submission {
   const nextStatus = args.status === 'publish' ? 'PUBLISHED' : args.status === 'return' ? 'RETURNED' : 'GRADED';
   const gradingJson = {
-    ...(submission.grading_json ?? {}),
+    ...submission.grading_json,
     feedback: args.draft.feedback,
     items: args.gradedItems.map((item) => {
       const entry = args.itemDrafts[item.item_id];
@@ -653,7 +678,7 @@ function buildOptimisticSubmission(
   return {
     ...submission,
     status: nextStatus,
-    final_score: args.overrideScore ? args.finalScore ?? submission.final_score : submission.final_score,
+    final_score: args.overrideScore ? (args.finalScore ?? submission.final_score) : submission.final_score,
     grading_json: gradingJson,
     version: typeof submission.version === 'number' ? submission.version + 1 : submission.version,
   } as Submission;

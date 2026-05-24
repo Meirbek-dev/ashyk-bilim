@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { ChoiceItemAttempt } from '@/features/assessments/items/choice';
 import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice';
 import { MarkdownRenderer } from '@/features/assessments/shared/MarkdownRenderer';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -99,9 +99,7 @@ export default function ExamQuestionCard({
                 aria-label={isFlagged ? t('unflagQuestion') : t('flagQuestion')}
                 className={cn(
                   'size-8 transition-colors',
-                  isFlagged
-                    ? 'text-amber-500 hover:text-amber-600'
-                    : 'text-muted-foreground hover:text-amber-500',
+                  isFlagged ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-amber-500',
                 )}
               >
                 {isFlagged ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}

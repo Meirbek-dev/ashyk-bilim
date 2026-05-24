@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-  XCircle,
-  Loader2,
-} from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Copy, XCircle, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -156,7 +148,7 @@ export function ResultsDock({
 
                 {/* Hidden Results Aggregated Summary */}
                 {hiddenTotal > 0 && (
-                  <div className="rounded-lg border bg-card/65 p-4 border-dashed">
+                  <div className="bg-card/65 rounded-lg border border-dashed p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {hiddenPassed === hiddenTotal ? (
@@ -170,10 +162,10 @@ export function ResultsDock({
                         Passed {hiddenPassed}/{hiddenTotal}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-muted-foreground mt-2 text-xs">
                       Input and output diagnostics are hidden to ensure evaluation integrity.
                     </p>
-                    <div className="flex flex-wrap gap-1.5 mt-3">
+                    <div className="mt-3 flex flex-wrap gap-1.5">
                       {hiddenResults.map((result, idx) => (
                         <span
                           key={`hidden-indicator-${idx}`}
@@ -181,7 +173,7 @@ export function ResultsDock({
                             'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border',
                             result.passed
                               ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                              : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                              : 'bg-rose-500/10 text-rose-600 border-rose-500/20',
                           )}
                           title={`Hidden case ${idx + 1}: ${result.passed ? 'Passed' : result.status_description}`}
                         >
@@ -227,7 +219,8 @@ function VerdictBanner({
   onFocusFailedCase: (caseId: string) => void;
 }) {
   const firstFail = firstFailingResult(results);
-  const Icon = verdict === 'ACCEPTED' ? CheckCircle2 : verdict === 'RUNNING' ? Loader2 : verdict ? XCircle : AlertTriangle;
+  const Icon =
+    verdict === 'ACCEPTED' ? CheckCircle2 : verdict === 'RUNNING' ? Loader2 : verdict ? XCircle : AlertTriangle;
   const isRunning = verdict === 'RUNNING';
 
   return (
@@ -238,7 +231,7 @@ function VerdictBanner({
           ? 'border-emerald-200 bg-emerald-50 text-emerald-950 dark:bg-emerald-950/20 dark:text-emerald-100'
           : isRunning
             ? 'border-blue-200 bg-blue-50/50 text-blue-950 dark:bg-blue-950/10 dark:text-blue-200'
-            : 'bg-card'
+            : 'bg-card',
       )}
     >
       <div className="flex items-center justify-between gap-3">
@@ -247,12 +240,18 @@ function VerdictBanner({
           <div className="font-semibold">{verdictLabel(verdict)}</div>
         </div>
         <Badge variant={verdictTone(verdict)}>
-          {results ? `${results.filter((result) => result.passed).length}/${results.length}` : isRunning ? 'running' : 'idle'}
+          {results
+            ? `${results.filter((result) => result.passed).length}/${results.length}`
+            : isRunning
+              ? 'running'
+              : 'idle'}
         </Badge>
       </div>
       {firstFail ? (
-        <div className="mt-2.5 text-xs text-muted-foreground flex flex-wrap items-center gap-1.5">
-          <span>First failing case: <strong>{firstFail.test_case_id}</strong>. {firstFail.status_description}</span>
+        <div className="text-muted-foreground mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
+          <span>
+            First failing case: <strong>{firstFail.test_case_id}</strong>. {firstFail.status_description}
+          </span>
           <Button
             type="button"
             size="xs"
@@ -293,16 +292,16 @@ function RunProgressTimeline() {
   const currentIdx = steps.findIndex((s) => s.key === phase);
 
   return (
-    <div className="rounded-lg border bg-muted/20 p-4 space-y-3.5">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+    <div className="bg-muted/20 space-y-3.5 rounded-lg border p-4">
+      <div className="text-muted-foreground flex items-center justify-between text-xs">
         <span>Executing Judge0 Environment</span>
-        <span className="font-mono animate-pulse">Running...</span>
+        <span className="animate-pulse font-mono">Running...</span>
       </div>
-      
+
       <div className="relative flex items-center justify-between">
-        <div className="absolute top-1/2 left-0 right-0 h-0.5 -translate-y-1/2 bg-border z-0" />
+        <div className="bg-border absolute top-1/2 right-0 left-0 z-0 h-0.5 -translate-y-1/2" />
         <div
-          className="absolute top-1/2 left-0 h-0.5 -translate-y-1/2 bg-blue-500 transition-all duration-300 z-0"
+          className="absolute top-1/2 left-0 z-0 h-0.5 -translate-y-1/2 bg-blue-500 transition-all duration-300"
           style={{ width: `${(currentIdx / (steps.length - 1)) * 100}%` }}
         />
 
@@ -311,7 +310,10 @@ function RunProgressTimeline() {
           const isCurrent = idx === currentIdx;
 
           return (
-            <div key={step.key} className="flex flex-col items-center z-10">
+            <div
+              key={step.key}
+              className="z-10 flex flex-col items-center"
+            >
               <div
                 className={cn(
                   'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors duration-300',
@@ -319,12 +321,14 @@ function RunProgressTimeline() {
                     ? 'bg-blue-600 text-white border-blue-600 scale-110 shadow-xs'
                     : isActive
                       ? 'bg-blue-500 text-white border-blue-500'
-                      : 'bg-background text-muted-foreground border-border'
+                      : 'bg-background text-muted-foreground border-border',
                 )}
               >
                 {isActive && !isCurrent ? '✓' : idx + 1}
               </div>
-              <span className={cn('text-[10px] mt-1.5 font-medium', isActive ? 'text-foreground' : 'text-muted-foreground')}>
+              <span
+                className={cn('text-[10px] mt-1.5 font-medium', isActive ? 'text-foreground' : 'text-muted-foreground')}
+              >
                 {step.label}
               </span>
             </div>
@@ -346,9 +350,14 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
   const diffExists = !result.passed && typeof result.expected === 'string' && typeof result.stdout === 'string';
 
   return (
-    <div className={cn('rounded-md border bg-card transition-all duration-200', result.passed ? 'border-emerald-500/20' : 'border-rose-500/25')}>
+    <div
+      className={cn(
+        'rounded-md border bg-card transition-all duration-200',
+        result.passed ? 'border-emerald-500/20' : 'border-rose-500/25',
+      )}
+    >
       <div
-        className="flex items-center justify-between gap-3 px-3 py-2 cursor-pointer select-none hover:bg-muted/15"
+        className="hover:bg-muted/15 flex cursor-pointer items-center justify-between gap-3 px-3 py-2 select-none"
         onClick={onToggle}
       >
         <div className="flex min-w-0 items-center gap-2">
@@ -360,44 +369,62 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
           <span className="truncate text-xs font-semibold">Case {index + 1}</span>
           <Badge
             variant={result.passed ? 'success' : 'destructive'}
-            className="text-[10px] px-1 py-0"
+            className="px-1 py-0 text-[10px]"
           >
             {result.passed ? 'Passed' : result.status_description}
           </Badge>
         </div>
-        <div className="text-muted-foreground flex shrink-0 items-center gap-3.5 text-xs font-mono">
+        <div className="text-muted-foreground flex shrink-0 items-center gap-3.5 font-mono text-xs">
           {typeof result.time_ms === 'number' ? <span>{result.time_ms}ms</span> : null}
           {typeof result.memory_kb === 'number' ? <span>{(result.memory_kb / 1024).toFixed(1)}MB</span> : null}
-          {isExpanded ? <ChevronUp className="size-3.5 text-muted-foreground" /> : <ChevronDown className="size-3.5 text-muted-foreground" />}
+          {isExpanded ? (
+            <ChevronUp className="text-muted-foreground size-3.5" />
+          ) : (
+            <ChevronDown className="text-muted-foreground size-3.5" />
+          )}
         </div>
       </div>
 
       {isExpanded && (
-        <div className="border-t p-3 bg-background/50 space-y-3">
+        <div className="bg-background/50 space-y-3 border-t p-3">
           {result.stdin && (
             <div>
-              <div className="text-muted-foreground mb-1 text-[10px] font-bold uppercase tracking-wider">Input</div>
+              <div className="text-muted-foreground mb-1 text-[10px] font-bold tracking-wider uppercase">Input</div>
               <pre className="bg-muted/30 overflow-x-auto rounded border p-2 font-mono text-xs">{result.stdin}</pre>
             </div>
           )}
 
           {diffExists ? (
             <div className="space-y-1.5">
-              <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Difference</div>
-              <CodeDiffViewer expected={result.expected!} actual={result.stdout!} />
+              <div className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">Difference</div>
+              <CodeDiffViewer
+                expected={result.expected!}
+                actual={result.stdout!}
+              />
             </div>
           ) : (
             result.stdout && (
-              <Output label="Actual output" value={result.stdout} />
+              <Output
+                label="Actual output"
+                value={result.stdout}
+              />
             )
           )}
 
           {result.stderr && (
-            <Output label="Stderr" value={result.stderr} destructive />
+            <Output
+              label="Stderr"
+              value={result.stderr}
+              destructive
+            />
           )}
 
           {result.compile_output && (
-            <Output label="Compile output" value={result.compile_output} destructive />
+            <Output
+              label="Compile output"
+              value={result.compile_output}
+              destructive
+            />
           )}
         </div>
       )}
@@ -408,7 +435,7 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
 function Output({ label, value, destructive = false }: { label: string; value: string; destructive?: boolean }) {
   return (
     <div>
-      <div className="text-muted-foreground mb-1 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
+      <div className="text-muted-foreground mb-1 flex items-center justify-between text-[10px] font-bold tracking-wider uppercase">
         {label}
         <Button
           type="button"
@@ -423,7 +450,9 @@ function Output({ label, value, destructive = false }: { label: string; value: s
       <pre
         className={cn(
           'overflow-x-auto rounded border p-2.5 font-mono text-xs',
-          destructive ? 'bg-red-500/10 text-red-700 dark:bg-red-950/20 dark:text-red-300 border-rose-500/20' : 'bg-muted/30'
+          destructive
+            ? 'bg-red-500/10 text-red-700 dark:bg-red-950/20 dark:text-red-300 border-rose-500/20'
+            : 'bg-muted/30',
         )}
       >
         {value}

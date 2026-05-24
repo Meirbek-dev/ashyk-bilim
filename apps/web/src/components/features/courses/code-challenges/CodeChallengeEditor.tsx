@@ -370,11 +370,9 @@ export function CodeChallengeEditor({
         >
           <ScrollArea className="h-full">
             {/* Problem description */}
-            {(challengeTitle || challengeDescription) ? (
+            {challengeTitle || challengeDescription ? (
               <div className="border-b p-4">
-                {challengeTitle && (
-                  <h2 className="mb-1 text-sm font-semibold leading-snug">{challengeTitle}</h2>
-                )}
+                {challengeTitle && <h2 className="mb-1 text-sm leading-snug font-semibold">{challengeTitle}</h2>}
                 {challengeDescription && (
                   <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
                     {challengeDescription}

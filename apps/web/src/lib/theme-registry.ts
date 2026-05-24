@@ -1,6 +1,6 @@
 import rawThemeRegistry from './theme-store.json';
 import { loadThemeFonts } from './theme-fonts';
-import { readJsonLocalStorage, readLocalStorageString, writeJsonLocalStorage, writeLocalStorageString } from './local-storage';
+import { readLocalStorageString, writeJsonLocalStorage, writeLocalStorageString } from './local-storage';
 
 export type ThemeMode = 'light' | 'dark';
 export type ThemeTokenMap = Record<string, string>;

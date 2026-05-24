@@ -135,7 +135,10 @@ export function ChoiceItemAttempt({
                 }}
               />
               <div className="min-w-0 flex-1 text-sm leading-relaxed">
-                <MarkdownRenderer compact content={option.text || `Option ${index + 1}`} />
+                <MarkdownRenderer
+                  compact
+                  content={option.text || `Option ${index + 1}`}
+                />
               </div>
             </label>
           );
@@ -161,7 +164,10 @@ export function ChoiceItemAttempt({
           >
             <RadioGroupItem value={String(id)} />
             <div className="min-w-0 flex-1 text-sm leading-relaxed">
-              <MarkdownRenderer compact content={option.text || `Option ${index + 1}`} />
+              <MarkdownRenderer
+                compact
+                content={option.text || `Option ${index + 1}`}
+              />
             </div>
           </label>
         );

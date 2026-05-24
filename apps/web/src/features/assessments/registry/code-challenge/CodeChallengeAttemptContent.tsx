@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { CodeItemLoading, useCodeSubmitControl } from '@/features/assessments/items/code';
-import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items';
+import type { AssessmentItem } from '@/features/assessments/domain/items';
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
 import { useAttemptShellControls } from '@/features/assessments/shell';
 import type { AttemptSaveState } from '@/features/assessments/shell';

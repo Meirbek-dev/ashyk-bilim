@@ -174,9 +174,8 @@ export function ProblemPane({
           <ScrollArea className="h-full">
             <div className="space-y-3 p-5">
               {settings.hints?.length ? (
-                settings.hints
-                  .slice()
-                  .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                [...settings.hints]
+                  .toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0))
                   .map((hint, index) => {
                     const hintId = hint.id ?? String(index);
                     const revealed = revealedHints.has(hintId);

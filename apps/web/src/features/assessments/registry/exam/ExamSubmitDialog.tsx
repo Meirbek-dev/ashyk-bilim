@@ -103,7 +103,7 @@ export default function ExamSubmitDialog({
           {/* Unanswered question list with jump links */}
           {unansweredQuestions.length > 0 && onNavigateTo ? (
             <div className="mt-3 max-h-40 space-y-1 overflow-y-auto">
-              <p className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+              <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
                 Unanswered questions
               </p>
               {unansweredQuestions.map((q) => (

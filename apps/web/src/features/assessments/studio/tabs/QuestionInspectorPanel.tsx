@@ -60,11 +60,10 @@ export default function QuestionInspectorPanel({
 
   // Difficulty is stored in a custom optional metadata field on the item body.
   // We use a simple cast since this optional UI-layer field has no backend schema yet.
-  const difficulty: Difficulty =
-    ((item as unknown as { _difficulty?: string })._difficulty as Difficulty) ?? 'medium';
+  const difficulty: Difficulty = ((item as unknown as { _difficulty?: string })._difficulty as Difficulty) ?? 'medium';
 
   const setDifficulty = (d: Difficulty) => {
-    onChange(Object.assign({}, item, { _difficulty: d }));
+    onChange({ ...item, _difficulty: d});
   };
 
   return (
@@ -76,12 +75,10 @@ export default function QuestionInspectorPanel({
           variant="ghost"
           onClick={onToggle}
           title={t('open')}
-          className="bg-card hover:bg-muted border-l flex h-auto shrink-0 flex-col items-center justify-center gap-1.5 rounded-none border px-1.5 py-3"
+          className="bg-card hover:bg-muted flex h-auto shrink-0 flex-col items-center justify-center gap-1.5 rounded-none border border-l px-1.5 py-3"
         >
           <SlidersHorizontal className="text-muted-foreground size-4" />
-          <span className="text-muted-foreground text-[9px] font-medium [writing-mode:vertical-rl]">
-            {t('title')}
-          </span>
+          <span className="text-muted-foreground text-[9px] font-medium [writing-mode:vertical-rl]">{t('title')}</span>
         </Button>
       )}
 
@@ -116,7 +113,10 @@ export default function QuestionInspectorPanel({
             <div className="flex-1 space-y-5 overflow-y-auto p-4">
               {/* Points */}
               <div className="space-y-1.5">
-                <Label htmlFor="inspector-points" className="text-xs font-medium">
+                <Label
+                  htmlFor="inspector-points"
+                  className="text-xs font-medium"
+                >
                   {t('pointsLabel')}
                 </Label>
                 <Input
@@ -128,7 +128,7 @@ export default function QuestionInspectorPanel({
                   disabled={!isEditable}
                   className="h-8 text-sm"
                   onChange={(e) => {
-                    const val = parseFloat(e.target.value);
+                    const val = Number.parseFloat(e.target.value);
                     if (!Number.isNaN(val) && val >= 0) {
                       onChange({ ...item, max_score: val });
                     }
@@ -164,7 +164,10 @@ export default function QuestionInspectorPanel({
               {/* Explanation */}
               {supportsExplanation && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="inspector-explanation" className="text-xs font-medium">
+                  <Label
+                    htmlFor="inspector-explanation"
+                    className="text-xs font-medium"
+                  >
                     {t('explanationLabel')}
                   </Label>
                   <Textarea
@@ -173,7 +176,7 @@ export default function QuestionInspectorPanel({
                     placeholder={t('explanationPlaceholder')}
                     value={explanation}
                     disabled={!isEditable}
-                    className="text-sm resize-none"
+                    className="resize-none text-sm"
                     onChange={(e) => onChange(setExplanation(item, e.target.value))}
                   />
                   <p className="text-muted-foreground text-[10px]">{t('explanationDesc')}</p>

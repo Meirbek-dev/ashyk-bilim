@@ -32,7 +32,7 @@ export default function CourseDetailLoading() {
               {Array.from({ length: 4 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="flex h-16 w-full animate-pulse items-center justify-between rounded-lg border p-4 bg-gray-50/50 dark:bg-gray-800/20"
+                  className="flex h-16 w-full animate-pulse items-center justify-between rounded-lg border bg-gray-50/50 p-4 dark:bg-gray-800/20"
                 >
                   <div className="h-5 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
                   <div className="h-5 w-5 rounded-full bg-gray-200 dark:bg-gray-700" />
@@ -43,7 +43,7 @@ export default function CourseDetailLoading() {
 
           {/* Sidebar */}
           <div className="w-full space-y-6 md:w-1/4">
-            <div className="space-y-3 rounded-xl border p-4 bg-gray-50/50 dark:bg-gray-800/20">
+            <div className="space-y-3 rounded-xl border bg-gray-50/50 p-4 dark:bg-gray-800/20">
               <div className="h-12 w-full animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
               <div className="h-10 w-full animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
               <div className="h-4 w-2/3 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />

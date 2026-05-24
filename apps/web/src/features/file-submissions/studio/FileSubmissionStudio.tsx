@@ -106,7 +106,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
       queryKey: queryKey(cleanActivityUuid),
       queryFn: () => getFileSubmissionByActivity(cleanActivityUuid),
       enabled: Boolean(cleanActivityUuid),
-    })
+    }),
   );
 
   useEffect(() => {
@@ -323,9 +323,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
                 );
               })}
             </div>
-            <p className="text-muted-foreground mt-2 text-xs">
-              {t('allowedFileTypesDesc')}
-            </p>
+            <p className="text-muted-foreground mt-2 text-xs">{t('allowedFileTypesDesc')}</p>
           </Field>
         </form>
 

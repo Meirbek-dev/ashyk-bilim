@@ -194,7 +194,7 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
               dangerouslySetInnerHTML={{
                 __html: isEditable
                   ? renderToString(equation, { displayMode: true, throwOnError: false })
-                  : (props.node.attrs.html || renderToString(equation, { displayMode: true, throwOnError: false })),
+                  : props.node.attrs.html || renderToString(equation, { displayMode: true, throwOnError: false }),
               }}
             />
           </div>

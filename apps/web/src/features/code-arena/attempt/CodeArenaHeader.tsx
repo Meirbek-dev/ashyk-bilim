@@ -53,11 +53,9 @@ export function CodeArenaHeader({
     <div className="bg-muted/40 flex h-14 shrink-0 items-center justify-between border-b px-4">
       {/* Left: Breadcrumbs & Problem Select */}
       <div className="flex items-center gap-3">
-        <span className="text-muted-foreground hidden text-xs font-medium md:inline-block">
-          Course / Challenges
-        </span>
+        <span className="text-muted-foreground hidden text-xs font-medium md:inline-block">Course / Challenges</span>
         <span className="text-muted-foreground hidden md:inline">/</span>
-        
+
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -65,7 +63,7 @@ export function CodeArenaHeader({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="gap-1.5 font-semibold text-sm h-8"
+                className="h-8 gap-1.5 text-sm font-semibold"
               />
             }
           >
@@ -75,7 +73,7 @@ export function CodeArenaHeader({
           <DropdownMenuContent align="start">
             <DropdownMenuItem className="font-semibold">{problem.title}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-xs text-muted-foreground">Practice mode active</DropdownMenuItem>
+            <DropdownMenuItem className="text-muted-foreground text-xs">Practice mode active</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -107,14 +105,15 @@ export function CodeArenaHeader({
       <div className="flex items-center gap-3 truncate">
         <h1 className="truncate text-sm font-semibold">{problem.title}</h1>
         {problem.difficulty ? (
-          <Badge variant={difficultyTone(problem.difficulty)} className="text-[10px] py-0 px-1.5 uppercase font-bold">
+          <Badge
+            variant={difficultyTone(problem.difficulty)}
+            className="px-1.5 py-0 text-[10px] font-bold uppercase"
+          >
             {problem.difficulty}
           </Badge>
         ) : null}
         {problem.points ? (
-          <span className="text-muted-foreground hidden text-xs md:inline-block">
-            {problem.points} pts
-          </span>
+          <span className="text-muted-foreground hidden text-xs md:inline-block">{problem.points} pts</span>
         ) : null}
         <VerdictStatus verdict={verdict} />
       </div>
@@ -155,7 +154,7 @@ export function CodeArenaHeader({
           size="sm"
           onClick={onSubmit}
           disabled={disabled || isRunning}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 gap-1.5 text-xs"
+          className="h-8 gap-1.5 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
         >
           <Send className="size-3.5" />
           Submit

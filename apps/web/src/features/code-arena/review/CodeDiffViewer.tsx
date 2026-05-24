@@ -1,6 +1,6 @@
 'use client';
 
-import { Columns, List, ToggleLeft } from 'lucide-react';
+import { Columns, List } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -26,18 +26,16 @@ export function CodeDiffViewer({
   const maxLines = Math.max(expectedLines.length, actualLines.length);
 
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-xs">
+    <div className="bg-card text-card-foreground rounded-lg border shadow-xs">
       <div className="bg-muted/40 flex items-center justify-between border-b px-4 py-2">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Output Comparison
-        </span>
+        <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">Output Comparison</span>
         <div className="flex gap-1">
           <Button
             type="button"
             size="xs"
             variant={isSideBySide ? 'secondary' : 'ghost'}
             onClick={() => setIsSideBySide(true)}
-            className="h-7 text-xs gap-1"
+            className="h-7 gap-1 text-xs"
           >
             <Columns className="size-3.5" />
             Side-by-side
@@ -47,7 +45,7 @@ export function CodeDiffViewer({
             size="xs"
             variant={!isSideBySide ? 'secondary' : 'ghost'}
             onClick={() => setIsSideBySide(false)}
-            className="h-7 text-xs gap-1"
+            className="h-7 gap-1 text-xs"
           >
             <List className="size-3.5" />
             Inline
@@ -57,10 +55,10 @@ export function CodeDiffViewer({
 
       {isSideBySide ? (
         /* Side-by-Side Diff Layout */
-        <div className="grid grid-cols-2 divide-x border-b border-border">
+        <div className="border-border grid grid-cols-2 divide-x border-b">
           {/* Left Column: Expected */}
           <div>
-            <div className="bg-muted/20 border-b px-3 py-1.5 text-xs font-medium text-muted-foreground">
+            <div className="bg-muted/20 text-muted-foreground border-b px-3 py-1.5 text-xs font-medium">
               {labelExpected}
             </div>
             <div className="overflow-x-auto p-3 font-mono text-xs leading-relaxed">
@@ -73,12 +71,10 @@ export function CodeDiffViewer({
                       'flex items-start px-1.5 py-0.5 rounded-sm',
                       differs && line
                         ? 'bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border-l-2 border-emerald-500'
-                        : ''
+                        : '',
                     )}
                   >
-                    <span className="text-muted-foreground/45 w-6 shrink-0 select-none text-right pr-2">
-                      {idx + 1}
-                    </span>
+                    <span className="text-muted-foreground/45 w-6 shrink-0 pr-2 text-right select-none">{idx + 1}</span>
                     <span className="whitespace-pre">{line || ' '}</span>
                   </div>
                 );
@@ -88,7 +84,7 @@ export function CodeDiffViewer({
 
           {/* Right Column: Actual */}
           <div>
-            <div className="bg-muted/20 border-b px-3 py-1.5 text-xs font-medium text-muted-foreground">
+            <div className="bg-muted/20 text-muted-foreground border-b px-3 py-1.5 text-xs font-medium">
               {labelActual}
             </div>
             <div className="overflow-x-auto p-3 font-mono text-xs leading-relaxed">
@@ -101,12 +97,10 @@ export function CodeDiffViewer({
                       'flex items-start px-1.5 py-0.5 rounded-sm',
                       differs && line
                         ? 'bg-rose-500/10 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 border-l-2 border-rose-500'
-                        : ''
+                        : '',
                     )}
                   >
-                    <span className="text-muted-foreground/45 w-6 shrink-0 select-none text-right pr-2">
-                      {idx + 1}
-                    </span>
+                    <span className="text-muted-foreground/45 w-6 shrink-0 pr-2 text-right select-none">{idx + 1}</span>
                     <span className="whitespace-pre">{line || ' '}</span>
                   </div>
                 );
@@ -124,33 +118,33 @@ export function CodeDiffViewer({
 
             if (!isDifferent) {
               return (
-                <div key={`inline-eq-${idx}`} className="flex items-start px-1.5 py-0.5 text-foreground/80">
-                  <span className="text-muted-foreground/45 w-12 shrink-0 select-none text-right pr-4">
-                    {idx + 1}
-                  </span>
-                  <span className="w-4 shrink-0 select-none text-muted-foreground/30"> </span>
+                <div
+                  key={`inline-eq-${idx}`}
+                  className="text-foreground/80 flex items-start px-1.5 py-0.5"
+                >
+                  <span className="text-muted-foreground/45 w-12 shrink-0 pr-4 text-right select-none">{idx + 1}</span>
+                  <span className="text-muted-foreground/30 w-4 shrink-0 select-none"> </span>
                   <span className="whitespace-pre">{expLine ?? ' '}</span>
                 </div>
               );
             }
 
             return (
-              <div key={`inline-diff-${idx}`} className="space-y-0.5">
+              <div
+                key={`inline-diff-${idx}`}
+                className="space-y-0.5"
+              >
                 {expLine !== undefined && (
-                  <div className="flex items-start px-1.5 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border-l-2 border-emerald-500">
-                    <span className="text-emerald-600/60 w-12 shrink-0 select-none text-right pr-4">
-                      {idx + 1}
-                    </span>
-                    <span className="w-4 shrink-0 select-none text-emerald-500">+</span>
+                  <div className="flex items-start rounded-sm border-l-2 border-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                    <span className="w-12 shrink-0 pr-4 text-right text-emerald-600/60 select-none">{idx + 1}</span>
+                    <span className="w-4 shrink-0 text-emerald-500 select-none">+</span>
                     <span className="whitespace-pre">{expLine || ' '}</span>
                   </div>
                 )}
                 {actLine !== undefined && (
-                  <div className="flex items-start px-1.5 py-0.5 rounded-sm bg-rose-500/10 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 border-l-2 border-rose-500">
-                    <span className="text-rose-600/60 w-12 shrink-0 select-none text-right pr-4">
-                      {idx + 1}
-                    </span>
-                    <span className="w-4 shrink-0 select-none text-rose-500">-</span>
+                  <div className="flex items-start rounded-sm border-l-2 border-rose-500 bg-rose-500/10 px-1.5 py-0.5 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
+                    <span className="w-12 shrink-0 pr-4 text-right text-rose-600/60 select-none">{idx + 1}</span>
+                    <span className="w-4 shrink-0 text-rose-500 select-none">-</span>
                     <span className="whitespace-pre">{actLine || ' '}</span>
                   </div>
                 )}

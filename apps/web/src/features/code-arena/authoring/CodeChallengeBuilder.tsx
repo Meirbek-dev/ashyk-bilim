@@ -93,8 +93,8 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
     try {
       await saveSettings.mutateAsync({
         ...draft,
-        visible_tests: (draft.visible_tests ?? []).map((test) => ({ ...test, is_visible: true })),
-        hidden_tests: (draft.hidden_tests ?? []).map((test) => ({ ...test, is_visible: false })),
+        visible_tests: (draft.visible_tests ?? []).map((test) => (Object.assign(test, { is_visible: true }))),
+        hidden_tests: (draft.hidden_tests ?? []).map((test) => (Object.assign(test, { is_visible: false }))),
       });
       toast.success('Code challenge settings saved.');
     } catch (error) {
@@ -113,22 +113,25 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
   return (
     <div className="bg-background flex h-[calc(100dvh-9rem)] min-h-[680px] flex-col overflow-hidden rounded-md border">
       {/* Header bar */}
-      <div className="flex h-14 shrink-0 items-center justify-between border-b px-4 bg-muted/10 select-none">
+      <div className="bg-muted/10 flex h-14 shrink-0 items-center justify-between border-b px-4 select-none">
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-foreground">{draft.title || 'Challenge Builder'}</div>
-          <div className="text-muted-foreground text-xs mt-0.5 font-medium">
+          <div className="text-foreground truncate text-sm font-semibold">{draft.title || 'Challenge Builder'}</div>
+          <div className="text-muted-foreground mt-0.5 text-xs font-medium">
             {blockersCount > 0 ? `${blockersCount} requirements pending` : 'All checks passed'}
           </div>
         </div>
         <div className="flex items-center gap-2.5">
-          <Badge variant={blockersCount > 0 ? 'warning' : 'success'} className="font-bold text-[10px] uppercase">
+          <Badge
+            variant={blockersCount > 0 ? 'warning' : 'success'}
+            className="text-[10px] font-bold uppercase"
+          >
             {blockersCount > 0 ? 'Draft needs work' : 'Ready to Publish'}
           </Badge>
           <Button
             type="button"
             onClick={save}
             disabled={saveSettings.isPending}
-            className="h-8 text-xs font-semibold gap-1.5"
+            className="h-8 gap-1.5 text-xs font-semibold"
           >
             {saveSettings.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
             Save Settings
@@ -142,39 +145,39 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
         className="flex min-h-0 flex-1 flex-col"
       >
         {/* Tab triggers */}
-        <div className="border-b px-3 bg-muted/5">
-          <TabsList className="h-11 bg-transparent p-0 gap-1">
+        <div className="bg-muted/5 border-b px-3">
+          <TabsList className="h-11 gap-1 bg-transparent p-0">
             <TabsTrigger
               value="problem"
-              className="data-[state=active]:border-primary h-11 rounded-none border-b-2 border-transparent px-3 text-xs gap-1.5 font-medium"
+              className="data-[state=active]:border-primary h-11 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-xs font-medium"
             >
               <FileText className="size-4" />
               1. Problem
             </TabsTrigger>
             <TabsTrigger
               value="languages"
-              className="data-[state=active]:border-primary h-11 rounded-none border-b-2 border-transparent px-3 text-xs gap-1.5 font-medium"
+              className="data-[state=active]:border-primary h-11 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-xs font-medium"
             >
               <Code2 className="size-4" />
               2. Languages
             </TabsTrigger>
             <TabsTrigger
               value="tests"
-              className="data-[state=active]:border-primary h-11 rounded-none border-b-2 border-transparent px-3 text-xs gap-1.5 font-medium"
+              className="data-[state=active]:border-primary h-11 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-xs font-medium"
             >
               <FlaskConical className="size-4" />
               3. Test Suite
             </TabsTrigger>
             <TabsTrigger
               value="verify"
-              className="data-[state=active]:border-primary h-11 rounded-none border-b-2 border-transparent px-3 text-xs gap-1.5 font-medium"
+              className="data-[state=active]:border-primary h-11 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-xs font-medium"
             >
               <Sparkles className="size-4" />
               4. Verify Solution
             </TabsTrigger>
             <TabsTrigger
               value="review"
-              className="data-[state=active]:border-primary h-11 rounded-none border-b-2 border-transparent px-3 text-xs gap-1.5 font-medium"
+              className="data-[state=active]:border-primary h-11 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-xs font-medium"
             >
               <ClipboardCheck className="size-4" />
               5. Publish Review
@@ -187,7 +190,10 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
           value="problem"
           className="min-h-0 flex-1 overflow-hidden"
         >
-          <ProblemStatementEditor draft={draft} onChange={updateDraft} />
+          <ProblemStatementEditor
+            draft={draft}
+            onChange={updateDraft}
+          />
         </TabsContent>
 
         <TabsContent
@@ -196,9 +202,9 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
         >
           <div className="grid h-full min-h-0 grid-cols-[280px_1fr] overflow-hidden">
             {/* Allowed checkbox side pane */}
-            <ScrollArea className="border-r bg-muted/5">
+            <ScrollArea className="bg-muted/5 border-r">
               <div className="space-y-2 p-4">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
+                <h3 className="text-muted-foreground mb-3 text-xs font-bold tracking-wider uppercase">
                   Allowed Languages
                 </h3>
                 {languages.map((language) => {
@@ -218,11 +224,11 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                         'flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-xs font-semibold transition-all duration-150',
                         selected
                           ? 'border-emerald-500/20 bg-emerald-500/[0.03] text-foreground'
-                          : 'border-border bg-card text-muted-foreground hover:bg-muted/10'
+                          : 'border-border bg-card text-muted-foreground hover:bg-muted/10',
                       )}
                     >
                       {language.name}
-                      {selected ? <CheckCircle2 className="text-emerald-600 size-4" /> : null}
+                      {selected ? <CheckCircle2 className="size-4 text-emerald-600" /> : null}
                     </button>
                   );
                 })}
@@ -231,7 +237,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
 
             {/* Monaco editors pane */}
             <ScrollArea className="h-full">
-              <div className="space-y-6 p-6 max-w-5xl">
+              <div className="max-w-5xl space-y-6 p-6">
                 {selectedLanguages.length === 0 ? (
                   <div className="text-muted-foreground rounded-md border border-dashed p-10 text-center text-sm">
                     Select at least one allowed language in the sidebar to configure templates.
@@ -243,7 +249,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                       className="bg-card grid gap-4 rounded-lg border p-5 shadow-xs"
                     >
                       <div className="flex items-center justify-between border-b pb-2">
-                        <div className="font-bold text-sm text-foreground">{language!.name}</div>
+                        <div className="text-foreground text-sm font-bold">{language!.name}</div>
                         <Badge
                           variant={
                             draft.starter_code?.[language!.id]?.trim() &&
@@ -262,11 +268,13 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
 
                       <div className="grid gap-4 xl:grid-cols-2">
                         <div className="grid gap-1.5">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Starter Template Code</span>
+                          <span className="text-muted-foreground text-[10px] font-bold uppercase">
+                            Starter Template Code
+                          </span>
                           <CodeEditor
                             value={draft.starter_code?.[language!.id] ?? ''}
                             onChange={(value) =>
-                              updateDraft({ starter_code: { ...(draft.starter_code ?? {}), [language!.id]: value } })
+                              updateDraft({ starter_code: { ...draft.starter_code, [language!.id]: value } })
                             }
                             languageId={language!.id}
                             monacoLanguage={language!.monaco_language}
@@ -275,12 +283,14 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                           />
                         </div>
                         <div className="grid gap-1.5">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Reference Solution</span>
+                          <span className="text-muted-foreground text-[10px] font-bold uppercase">
+                            Reference Solution
+                          </span>
                           <CodeEditor
                             value={draft.reference_solutions?.[language!.id] ?? ''}
                             onChange={(value) =>
                               updateDraft({
-                                reference_solutions: { ...(draft.reference_solutions ?? {}), [language!.id]: value },
+                                reference_solutions: { ...draft.reference_solutions, [language!.id]: value },
                               })
                             }
                             languageId={language!.id}
@@ -302,14 +312,20 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
           value="tests"
           className="min-h-0 flex-1 overflow-hidden"
         >
-          <TestSuiteBuilder draft={draft} onChange={updateDraft} />
+          <TestSuiteBuilder
+            draft={draft}
+            onChange={updateDraft}
+          />
         </TabsContent>
 
         <TabsContent
           value="verify"
           className="min-h-0 flex-1 overflow-hidden"
         >
-          <ReferenceSolutionRunner draft={draft} languages={languages} />
+          <ReferenceSolutionRunner
+            draft={draft}
+            languages={languages}
+          />
         </TabsContent>
 
         <TabsContent
@@ -328,7 +344,7 @@ function buildReadiness(settings: CodeChallengeSettings) {
   const hidden = settings.hidden_tests ?? [];
   const referenceSolutions = settings.reference_solutions ?? {};
   const starterCode = settings.starter_code ?? {};
-  
+
   const items = [
     {
       label: 'Problem statement',

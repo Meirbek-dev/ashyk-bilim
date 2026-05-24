@@ -108,7 +108,10 @@ export function EditorPane({
             >
               <Settings2 className="size-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent
+              align="end"
+              className="w-56"
+            >
               <DropdownMenuGroup>
                 <DropdownMenuLabel>Editor Settings</DropdownMenuLabel>
               </DropdownMenuGroup>
@@ -136,7 +139,10 @@ export function EditorPane({
                     onValueChange={(val) => onPreferencesChange({ ...preferences, fontSize: Number(val) })}
                   >
                     {[12, 13, 14, 15, 16, 18, 20].map((size) => (
-                      <DropdownMenuRadioItem key={size} value={String(size)}>
+                      <DropdownMenuRadioItem
+                        key={size}
+                        value={String(size)}
+                      >
                         {size}px
                       </DropdownMenuRadioItem>
                     ))}

@@ -27,39 +27,51 @@ export function verdictFromResults(results: TestCaseResult[] | null): CodeVerdic
 
 export function verdictLabel(verdict: CodeVerdict | null): string {
   switch (verdict) {
-    case 'ACCEPTED':
+    case 'ACCEPTED': {
       return 'Accepted';
-    case 'WRONG_ANSWER':
+    }
+    case 'WRONG_ANSWER': {
       return 'Wrong Answer';
-    case 'COMPILE_ERROR':
+    }
+    case 'COMPILE_ERROR': {
       return 'Compile Error';
-    case 'RUNTIME_ERROR':
+    }
+    case 'RUNTIME_ERROR': {
       return 'Runtime Error';
-    case 'TIME_LIMIT':
+    }
+    case 'TIME_LIMIT': {
       return 'Time Limit';
-    case 'DEGRADED':
+    }
+    case 'DEGRADED': {
       return 'Runner Unavailable';
-    case 'RUNNING':
+    }
+    case 'RUNNING': {
       return 'Running';
+    }
     case 'IDLE':
-    case null:
+    case null: {
       return 'Ready';
+    }
   }
 }
 
 export function verdictTone(verdict: CodeVerdict | null): 'success' | 'destructive' | 'warning' | 'secondary' {
   switch (verdict) {
-    case 'ACCEPTED':
+    case 'ACCEPTED': {
       return 'success';
+    }
     case 'WRONG_ANSWER':
-    case 'RUNTIME_ERROR':
+    case 'RUNTIME_ERROR': {
       return 'destructive';
+    }
     case 'COMPILE_ERROR':
     case 'TIME_LIMIT':
-    case 'DEGRADED':
+    case 'DEGRADED': {
       return 'warning';
-    default:
+    }
+    default: {
       return 'secondary';
+    }
   }
 }
 

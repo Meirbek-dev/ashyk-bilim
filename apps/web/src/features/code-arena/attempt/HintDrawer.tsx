@@ -1,16 +1,10 @@
 'use client';
 
-import { Lightbulb, Lock, HelpCircle, CheckCircle2 } from 'lucide-react';
+import { Lightbulb, Lock, HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { MarkdownRenderer } from '@/features/assessments/shared/MarkdownRenderer';
 import { cn } from '@/lib/utils';
 
@@ -46,16 +40,17 @@ export function HintDrawer({ open, onOpenChange, hints = [] }: HintDrawerProps) 
     }
   };
 
-  const sortedHints = hints
-    .slice()
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const sortedHints = [...hints].toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto border-l bg-background">
+    <Sheet
+      open={open}
+      onOpenChange={onOpenChange}
+    >
+      <SheetContent className="bg-background w-full overflow-y-auto border-l sm:max-w-md">
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-2 text-lg font-semibold">
-            <Lightbulb className="size-5 text-amber-500 fill-amber-500/20" />
+            <Lightbulb className="size-5 fill-amber-500/20 text-amber-500" />
             Hints & Help
           </SheetTitle>
           <SheetDescription>
@@ -65,8 +60,8 @@ export function HintDrawer({ open, onOpenChange, hints = [] }: HintDrawerProps) 
 
         <div className="space-y-4 pt-2">
           {sortedHints.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center text-muted-foreground text-sm">
-              <HelpCircle className="size-8 text-muted-foreground/50 mb-2" />
+            <div className="text-muted-foreground flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center text-sm">
+              <HelpCircle className="text-muted-foreground/50 mb-2 size-8" />
               No hints available for this challenge.
             </div>
           ) : (
@@ -80,19 +75,13 @@ export function HintDrawer({ open, onOpenChange, hints = [] }: HintDrawerProps) 
                   key={hintId}
                   className={cn(
                     'rounded-lg border transition-all duration-200',
-                    isRevealed
-                      ? 'border-border bg-card/60 shadow-xs'
-                      : 'border-muted bg-muted/20 hover:bg-muted/40'
+                    isRevealed ? 'border-border bg-card/60 shadow-xs' : 'border-muted bg-muted/20 hover:bg-muted/40',
                   )}
                 >
                   <div className="flex items-center justify-between gap-4 p-4">
                     <div className="space-y-0.5">
-                      <h4 className="text-sm font-semibold text-foreground">
-                        Hint {index + 1}
-                      </h4>
-                      <p className="text-xs text-amber-600 font-medium">
-                        -{hint.xp_penalty} XP penalty
-                      </p>
+                      <h4 className="text-foreground text-sm font-semibold">Hint {index + 1}</h4>
+                      <p className="text-xs font-medium text-amber-600">-{hint.xp_penalty} XP penalty</p>
                     </div>
 
                     {!isRevealed && !isConfirming && (
@@ -101,20 +90,21 @@ export function HintDrawer({ open, onOpenChange, hints = [] }: HintDrawerProps) 
                         size="sm"
                         variant="outline"
                         onClick={() => handleRevealClick(hintId)}
-                        className="gap-1.5 h-8 text-xs font-semibold"
+                        className="h-8 gap-1.5 text-xs font-semibold"
                       >
-                        <Lock className="size-3.5 text-muted-foreground" />
+                        <Lock className="text-muted-foreground size-3.5" />
                         Reveal
                       </Button>
                     )}
                   </div>
 
                   {isConfirming && (
-                    <div className="bg-amber-500/10 border-t border-amber-500/20 p-4 space-y-3">
-                      <p className="text-xs text-amber-800 dark:text-amber-300 font-medium">
-                        Are you sure you want to reveal Hint {index + 1}? Doing so will deduct {hint.xp_penalty} XP from your potential score.
+                    <div className="space-y-3 border-t border-amber-500/20 bg-amber-500/10 p-4">
+                      <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                        Are you sure you want to reveal Hint {index + 1}? Doing so will deduct {hint.xp_penalty} XP from
+                        your potential score.
                       </p>
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex justify-end gap-2">
                         <Button
                           type="button"
                           size="xs"
@@ -128,7 +118,7 @@ export function HintDrawer({ open, onOpenChange, hints = [] }: HintDrawerProps) 
                           type="button"
                           size="xs"
                           onClick={confirmReveal}
-                          className="bg-amber-600 hover:bg-amber-700 text-white h-7 text-xs font-semibold"
+                          className="h-7 bg-amber-600 text-xs font-semibold text-white hover:bg-amber-700"
                         >
                           Unlock (-{hint.xp_penalty} XP)
                         </Button>
@@ -137,10 +127,10 @@ export function HintDrawer({ open, onOpenChange, hints = [] }: HintDrawerProps) 
                   )}
 
                   {isRevealed && (
-                    <div className="border-t px-4 py-3.5 bg-background">
+                    <div className="bg-background border-t px-4 py-3.5">
                       <MarkdownRenderer
                         content={hint.content}
-                        className="text-sm text-foreground/90 prose-sm"
+                        className="text-foreground/90 prose-sm text-sm"
                         compact
                       />
                     </div>

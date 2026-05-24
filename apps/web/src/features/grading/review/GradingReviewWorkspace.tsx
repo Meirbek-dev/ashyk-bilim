@@ -156,68 +156,68 @@ export default function GradingReviewWorkspace({
   return (
     <AnnotationProvider>
       <ReviewLayout
-      activityId={activityId}
-      assessmentUuid={assessmentUuid}
-      title={title}
-      total={total}
-      stats={stats}
-      selectedSubmissions={selectedSubmissions}
-      onBulkRefresh={async () => {
-        setSelectedUuids(new Set());
-        await refresh();
-      }}
-    >
-      <SubmissionList
-        submissions={submissions}
+        activityId={activityId}
+        assessmentUuid={assessmentUuid}
+        title={title}
         total={total}
-        pages={pages}
-        page={page}
-        activeFilter={activeFilter}
-        search={search}
-        sortBy={sortBy}
-        isLoading={isLoading}
-        selectedUuid={selectedUuid}
-        selectedUuids={selectedUuids}
-        onFilterChange={(value) => {
-          setActiveFilter(value);
-          setPage(1);
-          updateUrl({ filter: value });
+        stats={stats}
+        selectedSubmissions={selectedSubmissions}
+        onBulkRefresh={async () => {
+          setSelectedUuids(new Set());
+          await refresh();
         }}
-        onSearchChange={(value) => {
-          setSearch(value);
-          setPage(1);
-          updateUrl({ q: value });
-        }}
-        onSortChange={(value) => {
-          setSortBy(value);
-          setPage(1);
-          updateUrl({ sort: value });
-        }}
-        onPageChange={setPage}
-        onSelectSubmission={setSelectedUuid}
-        onToggleSelected={(uuid, checked) =>
-          setSelectedUuids((current) => {
-            const next = new Set(current);
-            if (checked) next.add(uuid);
-            else next.delete(uuid);
-            return next;
-          })
-        }
-      />
-      <SubmissionInspector
-        selectedUuid={selectedUuid}
-        fallbackSubmission={selectedSubmission}
-        assessmentUuid={assessmentUuid}
-        activityUuid={activityUuid}
-        ReviewDetail={kindModule?.ReviewDetail}
-      />
-      <GradeForm
-        submissionUuid={selectedUuid}
-        assessmentUuid={assessmentUuid}
-        onSaved={refresh}
-        navigation={navigation}
-      />
-    </ReviewLayout>
+      >
+        <SubmissionList
+          submissions={submissions}
+          total={total}
+          pages={pages}
+          page={page}
+          activeFilter={activeFilter}
+          search={search}
+          sortBy={sortBy}
+          isLoading={isLoading}
+          selectedUuid={selectedUuid}
+          selectedUuids={selectedUuids}
+          onFilterChange={(value) => {
+            setActiveFilter(value);
+            setPage(1);
+            updateUrl({ filter: value });
+          }}
+          onSearchChange={(value) => {
+            setSearch(value);
+            setPage(1);
+            updateUrl({ q: value });
+          }}
+          onSortChange={(value) => {
+            setSortBy(value);
+            setPage(1);
+            updateUrl({ sort: value });
+          }}
+          onPageChange={setPage}
+          onSelectSubmission={setSelectedUuid}
+          onToggleSelected={(uuid, checked) =>
+            setSelectedUuids((current) => {
+              const next = new Set(current);
+              if (checked) next.add(uuid);
+              else next.delete(uuid);
+              return next;
+            })
+          }
+        />
+        <SubmissionInspector
+          selectedUuid={selectedUuid}
+          fallbackSubmission={selectedSubmission}
+          assessmentUuid={assessmentUuid}
+          activityUuid={activityUuid}
+          ReviewDetail={kindModule?.ReviewDetail}
+        />
+        <GradeForm
+          submissionUuid={selectedUuid}
+          assessmentUuid={assessmentUuid}
+          onSaved={refresh}
+          navigation={navigation}
+        />
+      </ReviewLayout>
     </AnnotationProvider>
   );
 }

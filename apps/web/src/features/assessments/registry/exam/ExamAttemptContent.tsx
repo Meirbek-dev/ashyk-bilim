@@ -1,6 +1,17 @@
 'use client';
 
-import { AlertCircle, CheckCircle, Clock, FileText, InfinityIcon, ShieldAlert, Users, RotateCcw, LayoutList, Rows2 } from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  FileText,
+  InfinityIcon,
+  ShieldAlert,
+  Users,
+  RotateCcw,
+  LayoutList,
+  Rows2,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient, queryOptions } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
@@ -311,7 +322,7 @@ function ExamTakingContent({
 
   // View mode: CARD (one at a time) or SCROLL (all visible)
   const [viewMode, setViewMode] = useState<'CARD' | 'SCROLL'>(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof globalThis.window !== 'undefined') {
       return (localStorage.getItem('exam-view-mode') as 'CARD' | 'SCROLL') ?? 'CARD';
     }
     return 'CARD';
@@ -344,14 +355,15 @@ function ExamTakingContent({
       for (const key of Object.keys(record)) {
         const ans = record[key];
         if (!ans || typeof ans !== 'object') return false;
-        const kind = (ans as any).kind;
+        const {kind} = (ans as any);
         if (!['CHOICE', 'OPEN_TEXT', 'FORM', 'CODE', 'MATCHING'].includes(kind)) {
           return false;
         }
         if (kind === 'CHOICE' && !Array.isArray((ans as any).selected)) return false;
         if (kind === 'OPEN_TEXT' && typeof (ans as any).text !== 'string') return false;
         if (kind === 'FORM' && (!(ans as any).values || typeof (ans as any).values !== 'object')) return false;
-        if (kind === 'CODE' && (typeof (ans as any).language !== 'number' || typeof (ans as any).source !== 'string')) return false;
+        if (kind === 'CODE' && (typeof (ans as any).language !== 'number' || typeof (ans as any).source !== 'string'))
+          return false;
         if (kind === 'MATCHING' && !Array.isArray((ans as any).matches)) return false;
       }
       return true;
@@ -562,24 +574,26 @@ function ExamTakingContent({
         : null,
     }),
     [
-      canSaveDraft,
-      canSubmit,
-      answeredCount,
-      attempt.created_at,
-      attempt.started_at,
-      currentIndex,
-      handleOpenSubmitConfirmation,
-      handleSubmit,
-      handleViolation,
-      orderedQuestions.length,
-      persistence,
-      policy,
-      recoveredAnswers,
-      showRecoveryDialog,
-      submissionState,
-      t,
-      timerExpiresAt,
-    ],
+	canSaveDraft,
+	canSubmit,
+	answeredCount,
+	attempt.created_at,
+	attempt.started_at,
+	currentIndex,
+	handleOpenSubmitConfirmation,
+	handleSubmit,
+	handleViolation,
+	orderedQuestions.length,
+	persistence,
+	policy,
+	recoveredAnswers,
+	showRecoveryDialog,
+	submissionState,
+	t,
+	timerExpiresAt,
+	viewMode,
+	scrollToQuestion
+],
   );
 
   useAttemptShellControls(shellControls);
@@ -640,7 +654,7 @@ function ExamTakingContent({
         <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
           <div className="space-y-6">
             <ExamQuestionCard
-              question={currentQuestion!}
+              question={currentQuestion}
               questionNumber={currentIndex + 1}
               answer={displayAnswers}
               isFlagged={flaggedIndexes.has(currentIndex)}
