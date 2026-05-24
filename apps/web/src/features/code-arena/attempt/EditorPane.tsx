@@ -2,6 +2,7 @@
 
 import { useRef } from 'react';
 import { AlignLeft, Code2, RotateCcw, Settings2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -50,6 +51,7 @@ export function EditorPane({
   onPreferencesChange,
   monacoOptions,
 }: EditorPaneProps) {
+  const t = useTranslations('Activities.CodeChallenges');
   const selectedLanguage = languages.find((language) => language.id === languageId);
   const editorRef = useRef<any>(null);
 
@@ -66,7 +68,7 @@ export function EditorPane({
       <div className="flex h-10 shrink-0 items-center justify-between border-b px-2">
         <div className="flex min-w-0 items-center gap-2">
           <Code2 className="size-4 text-emerald-600" />
-          <span className="text-sm font-semibold">Code</span>
+          <span className="text-sm font-semibold">{t('codeTab')}</span>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <Button
@@ -77,7 +79,7 @@ export function EditorPane({
             disabled={readOnly || !starterCode}
           >
             <RotateCcw className="size-4" />
-            Reset
+            {t('resetCode')}
           </Button>
           <Button
             type="button"
@@ -87,7 +89,7 @@ export function EditorPane({
             disabled={readOnly}
           >
             <AlignLeft className="size-4" />
-            Format
+            {t('formatCode')}
           </Button>
           <LanguageSelector
             languages={languages}
@@ -113,26 +115,26 @@ export function EditorPane({
               className="w-56"
             >
               <DropdownMenuGroup>
-                <DropdownMenuLabel>Editor Settings</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('editorSettings')}</DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={preferences.wordWrap}
-                onCheckedChange={(checked) => onPreferencesChange({ ...preferences, wordWrap: Boolean(checked) })}
+                onCheckedChange={(checked) => onPreferencesChange({ ...preferences, wordWrap: checked })}
               >
-                Word wrap
+                {t('wordWrap')}
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
                 checked={preferences.minimap}
-                onCheckedChange={(checked) => onPreferencesChange({ ...preferences, minimap: Boolean(checked) })}
+                onCheckedChange={(checked) => onPreferencesChange({ ...preferences, minimap: checked })}
               >
-                Minimap
+                {t('minimap')}
               </DropdownMenuCheckboxItem>
 
               <DropdownMenuSeparator />
 
               <DropdownMenuSub>
-                <DropdownMenuSubTrigger>Font Size</DropdownMenuSubTrigger>
+                <DropdownMenuSubTrigger>{t('fontSize')}</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   <DropdownMenuRadioGroup
                     value={String(preferences.fontSize)}
@@ -143,7 +145,7 @@ export function EditorPane({
                         key={size}
                         value={String(size)}
                       >
-                        {size}px
+                        {t('pxValue', { size })}
                       </DropdownMenuRadioItem>
                     ))}
                   </DropdownMenuRadioGroup>

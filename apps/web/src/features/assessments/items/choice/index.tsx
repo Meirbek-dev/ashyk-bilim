@@ -498,7 +498,10 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
           <Badge variant="secondary">{t('points', { count: item.points })}</Badge>
         ) : null}
       </div>
-      <p className="text-sm font-medium">{item.prompt}</p>
+      <MarkdownRenderer
+        content={item.prompt}
+        compact
+      />
       <pre className={cn('mt-2 whitespace-pre-wrap text-sm', item.kind !== 'MATCHING' && 'font-sans')}>
         {answerLabel}
       </pre>

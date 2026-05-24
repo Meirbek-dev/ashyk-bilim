@@ -3,6 +3,7 @@
 import { Play, CheckCircle2, XCircle, Loader2, Code2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,7 @@ interface ValidationResultLanguage {
 }
 
 export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionRunnerProps) {
+  const t = useTranslations('Activities.CodeChallenges');
   const [isValidating, setIsValidating] = useState(false);
   const [results, setResults] = useState<Record<number, ValidationResultLanguage> | null>(null);
 
@@ -45,7 +47,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
 
   const runValidation = async () => {
     if (selectedLanguages.length === 0) {
-      toast.error('Configure allowed languages first.');
+      toast.error(t('selectLanguageBeforeValidation'));
       return;
     }
     setIsValidating(true);
@@ -73,7 +75,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
       {/* Runner Toolbar */}
       <div className="bg-muted/20 flex h-11 shrink-0 items-center justify-between border-b px-4">
         <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-          Reference Verification Suite
+          {t('referenceVerificationSuite')}
         </span>
         <Button
           type="button"
@@ -83,7 +85,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
           className="h-7 gap-1.5 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
         >
           {isValidating ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
-          Validate Solutions
+          {t('validateSolutions')}
         </Button>
       </div>
 
@@ -92,7 +94,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
           {selectedLanguages.length === 0 ? (
             <div className="text-muted-foreground flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center text-sm">
               <Code2 className="text-muted-foreground/30 mb-2 size-8" />
-              Please select at least one language in the "Languages" tab before validation.
+              {t('selectLanguageBeforeValidation')}
             </div>
           ) : (
             <div className="space-y-4">
@@ -113,10 +115,10 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                           <h3 className="text-sm font-semibold">{lang.name}</h3>
                           <div className="text-muted-foreground mt-0.5 flex gap-3 text-xs font-medium">
                             <span className="flex items-center gap-1">
-                              Starter code: {starter?.trim() ? '✓ Present' : '✗ Missing'}
+                              {t('starterCodeStatus')}: {starter?.trim() ? t('present') : t('missing')}
                             </span>
                             <span className="flex items-center gap-1">
-                              Solution: {solution?.trim() ? '✓ Present' : '✗ Missing'}
+                              {t('solutionStatus')}: {solution?.trim() ? t('present') : t('missing')}
                             </span>
                           </div>
                         </div>
@@ -131,7 +133,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                                 className="gap-1 text-[10px] font-bold"
                               >
                                 <CheckCircle2 className="size-3" />
-                                Passes Tests
+                                {t('passesTests')}
                               </Badge>
                             ) : (
                               <Badge
@@ -153,7 +155,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                             variant="secondary"
                             className="text-[10px] font-bold"
                           >
-                            Awaiting Run
+                            {t('awaitingRun')}
                           </Badge>
                         )}
                       </div>
@@ -165,7 +167,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                         {runResult.compile_output && (
                           <div className="space-y-1.5">
                             <h4 className="text-[10px] font-bold tracking-wider text-rose-600 uppercase">
-                              Compilation Diagnostic
+                              {t('compilationDiagnostic')}
                             </h4>
                             <pre className="overflow-x-auto rounded border border-rose-500/20 bg-rose-500/10 p-3 font-mono text-xs text-rose-700 dark:bg-rose-950/20 dark:text-rose-300">
                               {runResult.compile_output}
@@ -176,7 +178,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                         {runResult.message && (
                           <div className="space-y-1">
                             <h4 className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-                              Error Details
+                              {t('errorDetails')}
                             </h4>
                             <p className="text-muted-foreground text-xs leading-relaxed">{runResult.message}</p>
                           </div>
@@ -185,7 +187,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                         {runResult.details && runResult.details.length > 0 && (
                           <div className="space-y-2">
                             <h4 className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-                              Execution cases breakdown
+                              {t('executionCasesBreakdown')}
                             </h4>
                             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-6">
                               {runResult.details.map((caseDetail, idx) => (
@@ -202,17 +204,17 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                                     className="mb-0.5 truncate font-bold"
                                     title={caseDetail.test_id}
                                   >
-                                    Case {idx + 1}
+                                    {t('caseNumber', { number: idx + 1 })}
                                   </div>
                                   <div
                                     className="truncate text-[10px] opacity-75"
                                     title={caseDetail.status_description}
                                   >
-                                    {caseDetail.passed ? 'Passed' : caseDetail.status_description}
+                                    {caseDetail.passed ? t('passed') : caseDetail.status_description}
                                   </div>
                                   {typeof caseDetail.time === 'number' && (
                                     <div className="mt-1 font-mono text-[9px] opacity-60">
-                                      {Math.round(caseDetail.time * 1000)}ms
+                                      {t('timeMsValue', { value: Math.round(caseDetail.time * 1000) })}
                                     </div>
                                   )}
                                 </div>

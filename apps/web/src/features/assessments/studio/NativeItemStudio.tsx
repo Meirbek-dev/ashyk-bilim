@@ -391,12 +391,12 @@ export function NativeItemAuthor({
   const tTabs = useTranslations('Features.Assessments.Studio.Tabs');
   const displayItemNoun = itemNounKey ? t(`itemNouns.${itemNounKey}` as any) : itemNoun;
 
-  const VALID_TABS: StudioTab[] = new Set(['SETUP', 'BUILDER', 'ACCESS', 'RESULTS', 'PUBLISH']);
+  const VALID_TABS = new Set<StudioTab>(['SETUP', 'BUILDER', 'ACCESS', 'RESULTS', 'PUBLISH']);
 
   const [activeTab, setActiveTabState] = useState<StudioTab>(() => {
-    if (typeof window !== 'undefined') {
-      const raw = new URLSearchParams(window.location.search).get('tab')?.toUpperCase();
-      if (raw && VALID_TABS.has(raw)) return raw as StudioTab;
+    if (typeof globalThis.window !== 'undefined') {
+      const raw = new URLSearchParams(globalThis.location.search).get('tab')?.toUpperCase();
+      if (raw && VALID_TABS.has(raw as StudioTab)) return raw as StudioTab;
     }
     return 'BUILDER';
   });

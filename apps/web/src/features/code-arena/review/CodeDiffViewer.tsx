@@ -2,6 +2,7 @@
 
 import { Columns, List } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -14,12 +15,16 @@ interface CodeDiffViewerProps {
 }
 
 export function CodeDiffViewer({
-  expected = '',
-  actual = '',
-  labelExpected = 'Expected Output',
-  labelActual = 'Actual Output',
+  expected,
+  actual,
+  labelExpected,
+  labelActual,
 }: CodeDiffViewerProps) {
+  const t = useTranslations('Activities.CodeChallenges');
   const [isSideBySide, setIsSideBySide] = useState(true);
+
+  const resolvedExpected = labelExpected ?? t('expectedOutput');
+  const resolvedActual = labelActual ?? t('actualOutput');
 
   const expectedLines = expected.split('\n');
   const actualLines = actual.split('\n');
@@ -28,7 +33,7 @@ export function CodeDiffViewer({
   return (
     <div className="bg-card text-card-foreground rounded-lg border shadow-xs">
       <div className="bg-muted/40 flex items-center justify-between border-b px-4 py-2">
-        <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">Output Comparison</span>
+        <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{t('outputComparison')}</span>
         <div className="flex gap-1">
           <Button
             type="button"
@@ -38,7 +43,7 @@ export function CodeDiffViewer({
             className="h-7 gap-1 text-xs"
           >
             <Columns className="size-3.5" />
-            Side-by-side
+            {t('sideBySide')}
           </Button>
           <Button
             type="button"
@@ -48,7 +53,7 @@ export function CodeDiffViewer({
             className="h-7 gap-1 text-xs"
           >
             <List className="size-3.5" />
-            Inline
+            {t('inline')}
           </Button>
         </div>
       </div>
@@ -59,7 +64,7 @@ export function CodeDiffViewer({
           {/* Left Column: Expected */}
           <div>
             <div className="bg-muted/20 text-muted-foreground border-b px-3 py-1.5 text-xs font-medium">
-              {labelExpected}
+              {resolvedExpected}
             </div>
             <div className="overflow-x-auto p-3 font-mono text-xs leading-relaxed">
               {expectedLines.map((line, idx) => {
@@ -85,7 +90,7 @@ export function CodeDiffViewer({
           {/* Right Column: Actual */}
           <div>
             <div className="bg-muted/20 text-muted-foreground border-b px-3 py-1.5 text-xs font-medium">
-              {labelActual}
+              {resolvedActual}
             </div>
             <div className="overflow-x-auto p-3 font-mono text-xs leading-relaxed">
               {actualLines.map((line, idx) => {

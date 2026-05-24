@@ -71,10 +71,10 @@ export function readVersionedLocalStorage<T>(
   return envelope?.value ?? null;
 }
 
-export function writeVersionedLocalStorage<T>(key: string, version: number, value: T): void {
+export function writeVersionedLocalStorage(key: string, version: number, value: unknown): void {
   writeJsonLocalStorage(key, {
     version,
     value,
     updatedAt: Date.now(),
-  } satisfies VersionedStorageEnvelope<T>);
+  } satisfies VersionedStorageEnvelope<unknown>);
 }

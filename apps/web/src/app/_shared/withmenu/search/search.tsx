@@ -12,6 +12,7 @@ import { Input } from '@components/ui/input';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import Link from '@components/ui/AppLink';
+import { extractMarkdownSummary } from '@/features/content-markdown';
 
 // Types from SearchBar component
 interface User {
@@ -369,7 +370,9 @@ const SearchPage = () => {
                         </div>
                         <div className="p-4">
                           <h3 className="text-foreground mb-1 text-sm font-medium">{course.name}</h3>
-                          <p className="text-muted-foreground line-clamp-2 text-xs">{course.description}</p>
+                          <p className="text-muted-foreground line-clamp-2 text-xs">
+                            {extractMarkdownSummary(course.description, 140)}
+                          </p>
                           {course.authors && course.authors.length > 0 && course.authors[0]?.user ? (
                             <div className="mt-3 flex items-center gap-2">
                               <UserAvatar
@@ -429,7 +432,9 @@ const SearchPage = () => {
                         </div>
                         <div>
                           <h3 className="text-foreground mb-1 text-sm font-medium">{collection.name}</h3>
-                          <p className="text-muted-foreground line-clamp-2 text-xs">{collection.description}</p>
+                          <p className="text-muted-foreground line-clamp-2 text-xs">
+                            {extractMarkdownSummary(collection.description, 140)}
+                          </p>
                           <p className="text-muted-foreground text-xs">
                             {t('coursesCount', { count: collection.courses.length })}
                           </p>

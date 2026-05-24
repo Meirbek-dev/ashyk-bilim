@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { MarkdownContent } from '@/features/content-markdown';
 
 import { registerItemKind } from '../registry';
 import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
@@ -135,7 +136,12 @@ export function MatchingItemAttempt({
 
   return (
     <div className="space-y-3">
-      {item.prompt ? <p className="text-sm">{item.prompt}</p> : null}
+      {item.prompt ? (
+        <MarkdownContent
+          content={item.prompt}
+          mode="prompt"
+        />
+      ) : null}
       <div className="space-y-2">
         {item.pairs.map((pair, index) => {
           const selected = currentMatches[pair.left] ?? '';

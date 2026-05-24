@@ -11,6 +11,7 @@ import { getAbsoluteUrl } from '@services/config/config';
 import { useMemo, useState, useTransition } from 'react';
 import { useCourseList } from '@/hooks/useCourseList';
 import { Textarea } from '@/components/ui/textarea';
+import { extractMarkdownSummary } from '@/features/content-markdown';
 import { Checkbox } from '@/components/ui/checkbox';
 import NextImage from '@/components/ui/NextImage';
 import { Button } from '@/components/ui/button';
@@ -355,7 +356,9 @@ const NewCollection = () => {
                             <div className="min-w-0 flex-1">
                               <h3 className="text-foreground leading-tight font-medium">{course.name}</h3>
                               {course.description && (
-                                <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">{course.description}</p>
+                                <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
+                                  {extractMarkdownSummary(course.description, 140)}
+                                </p>
                               )}
                             </div>
                           </div>

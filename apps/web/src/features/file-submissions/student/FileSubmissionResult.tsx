@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { FileSubmissionAttempt } from '@/features/file-submissions/services/file-submissions';
+import { MarkdownContent } from '@/features/content-markdown';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -81,7 +82,10 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
             <MessageSquare className="size-4" />
             {t('teacherFeedback')}
           </h4>
-          <p className="text-sm leading-6 whitespace-pre-wrap">{feedbackText}</p>
+          <MarkdownContent
+            content={feedbackText}
+            mode="compactRichText"
+          />
         </div>
       ) : null}
 

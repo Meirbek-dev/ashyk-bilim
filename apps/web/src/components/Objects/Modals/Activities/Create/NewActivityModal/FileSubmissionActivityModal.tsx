@@ -11,9 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldContent, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { courseKeys } from '@/hooks/courses/courseKeys';
 import { createFileSubmissionActivity } from '@/features/file-submissions/services/file-submissions';
+import { MarkdownEditor, isMarkdownStructurallyEmpty } from '@/features/content-markdown';
 
 const MIME_PRESETS = [
   { id: 'pdf', label: 'PDF', mimes: ['application/pdf'] },
@@ -102,7 +102,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!title.trim() || !instructions.trim()) {
+    if (!title.trim() || isMarkdownStructurallyEmpty(instructions)) {
       toast.error(t('requiredFields'));
       return;
     }
@@ -154,10 +154,12 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
       <Field>
         <FieldLabel>{t('instructions')}</FieldLabel>
         <FieldContent>
-          <Textarea
+          <MarkdownEditor
             value={instructions}
-            className="min-h-32"
-            onChange={(event) => setInstructions(event.target.value)}
+            onChange={setInstructions}
+            preset="fileSubmissionInstructions"
+            minHeight={180}
+            required
           />
         </FieldContent>
       </Field>

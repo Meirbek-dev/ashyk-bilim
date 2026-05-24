@@ -22,6 +22,7 @@ import { Input } from '@components/ui/input';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
 import UserAvatar from '../UserAvatar';
+import { extractMarkdownSummary } from '@/features/content-markdown';
 
 interface User {
   username: string;
@@ -265,7 +266,7 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
                       {t('courseType')}
                     </span>
                   </div>
-                  <p className="text-muted-foreground truncate text-xs">{course.description}</p>
+                  <p className="text-muted-foreground truncate text-xs">{extractMarkdownSummary(course.description, 120)}</p>
                 </div>
               </Link>
             ))}

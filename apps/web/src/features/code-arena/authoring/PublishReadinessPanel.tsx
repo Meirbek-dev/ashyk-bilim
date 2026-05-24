@@ -2,6 +2,7 @@
 
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import type { CodeChallengeSettings } from '@/services/courses/code-challenges';
@@ -12,20 +13,21 @@ interface PublishReadinessPanelProps {
 }
 
 export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
-  const readiness = useMemo(() => buildReadiness(draft), [draft]);
+  const t = useTranslations('Activities.CodeChallenges');
+  const readiness = useMemo(() => buildReadiness(draft, t), [draft, t]);
   const blockersCount = readiness.items.filter((item) => !item.ok).length;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="bg-muted/20 flex h-11 shrink-0 items-center justify-between border-b px-4">
         <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-          Publish Readiness Check
+          {t('publishReadinessCheck')}
         </span>
         <Badge
           variant={blockersCount > 0 ? 'warning' : 'success'}
           className="text-[10px] font-bold"
         >
-          {blockersCount > 0 ? `${blockersCount} Issues Pending` : 'Ready to Publish'}
+          {blockersCount > 0 ? t('issuesPending', { count: blockersCount }) : t('readyToPublish')}
         </Badge>
       </div>
 
@@ -38,11 +40,10 @@ export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
               ) : (
                 <CheckCircle2 className="size-5 fill-emerald-600/10 text-emerald-600" />
               )}
-              {blockersCount > 0 ? 'Checklist pending requirements' : 'All publish readiness requirements have passed!'}
+              {blockersCount > 0 ? t('checklistPending') : t('checklistAllPassed')}
             </h3>
             <p className="text-muted-foreground text-xs leading-relaxed">
-              Before publishing this challenge to students, verify that all configurations meet grading requirements. An
-              incomplete challenge cannot be evaluated.
+              {t('publishReadinessDescription')}
             </p>
           </div>
 
@@ -82,7 +83,7 @@ export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
   );
 }
 
-function buildReadiness(settings: CodeChallengeSettings) {
+function buildReadiness(settings: CodeChallengeSettings, t: any) {
   const visible = settings.visible_tests ?? [];
   const hidden = settings.hidden_tests ?? [];
   const referenceSolutions = settings.reference_solutions ?? {};
@@ -90,34 +91,31 @@ function buildReadiness(settings: CodeChallengeSettings) {
 
   const items = [
     {
-      label: 'Problem Statement & Title',
+      label: t('readiness.problem.label'),
       ok: Boolean((settings.prompt ?? '').trim() && (settings.title ?? '').trim()),
-      detail: 'A non-empty challenge title and description prompt in markdown format are required.',
+      detail: t('readiness.problem.detail'),
     },
     {
-      label: 'Allowed Languages & Code Harnesses',
+      label: t('readiness.languages.label'),
       ok:
         (settings.allowed_languages ?? []).length > 0 &&
         settings.allowed_languages.every((id) => starterCode[id]?.trim() && referenceSolutions[id]?.trim()),
-      detail:
-        'Configure allowed languages and verify starter code templates and reference solutions exist for every language.',
+      detail: t('readiness.languages.detail'),
     },
     {
-      label: 'Visible Samples',
+      label: t('readiness.visible.label'),
       ok: visible.length > 0 && visible.some((test) => test.input.trim() || test.expected_output.trim()),
-      detail: 'Provide at least one visible test case sample so students can verify standard outputs locally.',
+      detail: t('readiness.visible.detail'),
     },
     {
-      label: 'Hidden Grading Tests',
+      label: t('readiness.hidden.label'),
       ok: hidden.length > 0,
-      detail:
-        'Provide at least one hidden grading test case. Hidden cases ensure submissions cannot simply hardcode expected sample outputs.',
+      detail: t('readiness.hidden.detail'),
     },
     {
-      label: 'Execution Limits & Thresholds',
+      label: t('readiness.limits.label'),
       ok: Boolean(settings.time_limit && settings.memory_limit),
-      detail:
-        'Specify execution time limits (seconds) and memory usage limits (MB) to prevent infinite loops and resource exhaustions.',
+      detail: t('readiness.limits.detail'),
     },
   ];
   return {

@@ -1,6 +1,7 @@
 'use client';
 
 import { RotateCcw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,12 +14,14 @@ interface SubmissionTimelineProps {
 }
 
 export function SubmissionTimeline({ submissions, onRestoreSubmission }: SubmissionTimelineProps) {
+  const t = useTranslations('Activities.CodeChallenges');
+
   return (
     <ScrollArea className="h-full">
       <div className="space-y-2 p-4">
         {!submissions.length ? (
           <div className="text-muted-foreground rounded-md border border-dashed p-6 text-center text-sm">
-            No submissions yet.
+            {t('noSubmissionsYet')}
           </div>
         ) : (
           submissions.map((submission, index) => (
@@ -29,7 +32,7 @@ export function SubmissionTimeline({ submissions, onRestoreSubmission }: Submiss
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold">Attempt {submissions.length - index}</span>
+                    <span className="text-sm font-semibold">{t('attemptNumber', { number: submissions.length - index })}</span>
                     <Badge variant={submission.score === submission.max_score ? 'success' : 'secondary'}>
                       {submission.score !== undefined
                         ? `${Math.round(submission.score)}/${submission.max_score ?? 100}`
@@ -49,7 +52,7 @@ export function SubmissionTimeline({ submissions, onRestoreSubmission }: Submiss
                     onClick={() => onRestoreSubmission(submission)}
                   >
                     <RotateCcw className="size-4" />
-                    Restore
+                    {t('restoreCode')}
                   </Button>
                 ) : null}
               </div>
@@ -60,3 +63,4 @@ export function SubmissionTimeline({ submissions, onRestoreSubmission }: Submiss
     </ScrollArea>
   );
 }
+

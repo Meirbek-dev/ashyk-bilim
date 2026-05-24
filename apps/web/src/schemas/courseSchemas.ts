@@ -24,7 +24,7 @@ const isValidLearningsJson = (value: string): boolean => {
 
 export const courseGeneralSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
-  description: v.pipe(v.string(), v.minLength(1), v.maxLength(1000)),
+  description: v.pipe(v.string(), v.minLength(1), v.maxLength(8000)),
   about: v.optional(v.string()),
   learnings: v.pipe(v.string(), v.check(isValidLearningsJson, 'learnings_invalid')),
   tags: v.array(v.string()),

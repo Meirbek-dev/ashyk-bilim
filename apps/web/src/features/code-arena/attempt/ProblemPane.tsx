@@ -2,12 +2,13 @@
 
 import { BookOpen, CheckCircle2, FileText, Lightbulb, ListChecks } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MarkdownRenderer } from '@/features/assessments/shared/MarkdownRenderer';
+import { MarkdownCodeBlock, MarkdownContent } from '@/features/content-markdown';
 import { cn } from '@/lib/utils';
 import type { CodeArenaTab, CodeChallengeProblem, CodeChallengeSettings, CodeSubmission } from '../domain';
 import { SubmissionTimeline } from './SubmissionTimeline';
@@ -31,6 +32,7 @@ export function ProblemPane({
   onUseInput,
   onRestoreSubmission,
 }: ProblemPaneProps) {
+  const t = useTranslations('Activities.CodeChallenges');
   const visibleTests = settings.visible_tests ?? [];
   const hiddenCount = settings.hidden_tests?.length ?? 0;
   const [revealedHints, setRevealedHints] = useState<Set<string>>(() => new Set());
@@ -54,21 +56,21 @@ export function ProblemPane({
               className="data-[state=active]:border-primary h-9 rounded-none border-b-2 border-transparent px-2"
             >
               <FileText className="size-3.5" />
-              Description
+              {t('descriptionTab')}
             </TabsTrigger>
             <TabsTrigger
               value="hints"
               className="data-[state=active]:border-primary h-9 rounded-none border-b-2 border-transparent px-2"
             >
               <Lightbulb className="size-3.5" />
-              Hints
+              {t('hintsTab')}
             </TabsTrigger>
             <TabsTrigger
               value="submissions"
               className="data-[state=active]:border-primary h-9 rounded-none border-b-2 border-transparent px-2"
             >
               <ListChecks className="size-3.5" />
-              Submissions
+              {t('submissionsTab')}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -84,27 +86,30 @@ export function ProblemPane({
                   {problem.difficulty ? (
                     <Badge variant={difficultyTone(problem.difficulty)}>{problem.difficulty}</Badge>
                   ) : null}
-                  {typeof problem.points === 'number' ? <Badge variant="outline">{problem.points} pts</Badge> : null}
-                  {problem.timeLimitSeconds ? <Badge variant="secondary">{problem.timeLimitSeconds}s</Badge> : null}
-                  {problem.memoryLimitMb ? <Badge variant="secondary">{problem.memoryLimitMb} MB</Badge> : null}
-                  {hiddenCount > 0 ? <Badge variant="outline">{hiddenCount} hidden tests</Badge> : null}
+                  {typeof problem.points === 'number' ? <Badge variant="outline">{problem.points} {t('pointsShort')}</Badge> : null}
+                  {problem.timeLimitSeconds ? <Badge variant="secondary">{t('timeSecondsValue', { value: problem.timeLimitSeconds })}</Badge> : null}
+                  {problem.memoryLimitMb ? <Badge variant="secondary">{t('memoryLimitValue', { value: problem.memoryLimitMb })}</Badge> : null}
+                  {hiddenCount > 0 ? <Badge variant="outline">{t('hiddenTestsCount', { count: hiddenCount })}</Badge> : null}
                 </div>
                 <h1 className="text-2xl font-semibold tracking-normal">{problem.title}</h1>
               </header>
 
-              <MarkdownRenderer content={promptFallback} />
+              <MarkdownContent
+                content={promptFallback}
+                mode="codeProblem"
+              />
 
               {problem.inputSpec || problem.outputSpec ? (
                 <section className="grid gap-3">
                   {problem.inputSpec ? (
                     <SpecBlock
-                      title="Input"
+                      title={t('input')}
                       content={problem.inputSpec}
                     />
                   ) : null}
                   {problem.outputSpec ? (
                     <SpecBlock
-                      title="Output"
+                      title={t('output')}
                       content={problem.outputSpec}
                     />
                   ) : null}
@@ -115,16 +120,16 @@ export function ProblemPane({
                 <section className="space-y-3">
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <BookOpen className="size-4" />
-                    Examples
+                    {t('examplesTitle')}
                   </div>
                   {visibleTests.map((test, index) => (
                     <div
-                      key={`${test.id}-${index}`}
+                       key={`${test.id}-${index}`}
                       className="bg-card rounded-md border"
                     >
                       <div className="flex items-center justify-between border-b px-3 py-2">
                         <div className="text-sm font-medium">
-                          Example {index + 1}
+                          {t('exampleNumber', { number: index + 1 })}
                           {test.description ? (
                             <span className="text-muted-foreground"> - {test.description}</span>
                           ) : null}
@@ -135,12 +140,12 @@ export function ProblemPane({
                           variant="ghost"
                           onClick={() => onUseInput(test.input)}
                         >
-                          Use input
+                          {t('useInput')}
                         </Button>
                       </div>
                       <div className="grid gap-3 p-3">
-                        <CodeBlock label="Input">{test.input || 'No input'}</CodeBlock>
-                        <CodeBlock label="Expected output">{test.expected_output}</CodeBlock>
+                        <CodeBlock label={t('input')}>{test.input || 'No input'}</CodeBlock>
+                        <CodeBlock label={t('output')}>{test.expected_output}</CodeBlock>
                       </div>
                     </div>
                   ))}
@@ -149,7 +154,7 @@ export function ProblemPane({
 
               {problem.constraints.length > 0 ? (
                 <section className="space-y-2">
-                  <div className="text-sm font-semibold">Constraints</div>
+                  <div className="text-sm font-semibold">{t('constraintsTitle')}</div>
                   <ul className="space-y-1.5">
                     {problem.constraints.map((constraint, index) => (
                       <li
@@ -186,8 +191,8 @@ export function ProblemPane({
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <div className="text-sm font-semibold">Hint {index + 1}</div>
-                            <div className="text-muted-foreground text-xs">{hint.xp_penalty} XP penalty</div>
+                            <div className="text-sm font-semibold">{t('hintNumber', { number: index + 1 })}</div>
+                            <div className="text-muted-foreground text-xs">{t('xpPenaltyValue', { penalty: hint.xp_penalty })}</div>
                           </div>
                           {!revealed ? (
                             <Button
@@ -196,15 +201,15 @@ export function ProblemPane({
                               variant="outline"
                               onClick={() => setRevealedHints((current) => new Set(current).add(hintId))}
                             >
-                              Reveal
+                              {t('reveal')}
                             </Button>
                           ) : null}
                         </div>
                         {revealed ? (
-                          <MarkdownRenderer
+                          <MarkdownContent
                             content={hint.content}
                             className="mt-3"
-                            compact
+                            mode="compactRichText"
                           />
                         ) : null}
                       </div>
@@ -212,7 +217,7 @@ export function ProblemPane({
                   })
               ) : (
                 <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-                  No hints are available for this challenge.
+                  {t('noHintsAvailable')}
                 </div>
               )}
             </div>
@@ -237,9 +242,9 @@ function SpecBlock({ title, content }: { title: string; content: string }) {
   return (
     <section className="space-y-2">
       <div className="text-sm font-semibold">{title}</div>
-      <MarkdownRenderer
+      <MarkdownContent
         content={content}
-        compact
+        mode="codeSpec"
       />
     </section>
   );
@@ -249,7 +254,11 @@ function CodeBlock({ label, children }: { label: string; children: string }) {
   return (
     <div>
       <div className="text-muted-foreground mb-1 text-xs font-medium">{label}</div>
-      <pre className="bg-muted/50 overflow-x-auto rounded-md border px-3 py-2 font-mono text-xs">{children}</pre>
+      <MarkdownCodeBlock
+        code={children}
+        language="text"
+        compact
+      />
     </div>
   );
 }

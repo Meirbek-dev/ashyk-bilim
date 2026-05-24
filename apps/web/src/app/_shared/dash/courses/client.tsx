@@ -38,6 +38,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { DashBreadcrumbs } from '@/components/ui/app-breadcrumbs';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { extractMarkdownSummary } from '@/features/content-markdown';
 import DataTable from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import AppLink from '@/components/ui/AppLink';
@@ -431,7 +432,7 @@ const CoursesHome = ({
                 {course.name}
               </AppLink>
               <div className="text-muted-foreground line-clamp-2 text-sm">
-                {course.description?.trim() || t('table.noDescription')}
+                {course.description?.trim() ? extractMarkdownSummary(course.description, 140) : t('table.noDescription')}
               </div>
               <div className="text-muted-foreground text-xs">
                 {t('table.structureSummary', {

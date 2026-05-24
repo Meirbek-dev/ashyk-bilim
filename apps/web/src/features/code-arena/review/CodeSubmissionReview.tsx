@@ -2,6 +2,7 @@
 
 import { CheckCircle2, XCircle, Code2, Columns, FileSpreadsheet } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,12 +19,13 @@ interface CodeSubmissionReviewProps {
 type ReviewTab = 'code' | 'diff' | 'diagnostics';
 
 export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmissionReviewProps) {
+  const t = useTranslations('Activities.CodeChallenges');
   const [activeTab, setActiveTab] = useState<ReviewTab>('code');
 
-  if (!answer || answer.kind !== 'CODE') {
+  if (answer?.kind !== 'CODE') {
     return (
       <div className="text-muted-foreground bg-muted/10 rounded-lg border border-dashed p-6 text-center text-sm">
-        No code answer was submitted for this item.
+        {t('noCodeAnswerSubmitted')}
       </div>
     );
   }
@@ -45,9 +47,11 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
           )}
           <div>
             <h3 className="text-foreground text-sm font-semibold">
-              {accepted ? 'Solution Accepted' : 'Submission Requires Review'}
+              {accepted ? t('solutionAccepted') : t('submissionRequiresReview')}
             </h3>
-            <p className="text-muted-foreground mt-0.5 font-mono text-xs">Evaluated Language ID: {answer.language}</p>
+            <p className="text-muted-foreground mt-0.5 font-mono text-xs">
+              {t('evaluatedLanguageId', { language: answer.language })}
+            </p>
           </div>
         </div>
 
@@ -56,14 +60,14 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
             variant={accepted ? 'success' : 'destructive'}
             className="text-[10px] font-bold uppercase"
           >
-            {passed}/{total} Test Cases Passed
+            {t('testCasesPassed', { passed, total })}
           </Badge>
           {typeof latestRun?.score === 'number' ? (
             <Badge
               variant="outline"
               className="text-[10px] font-bold"
             >
-              Grade: {Math.round(latestRun.score)}%
+              {t('gradeValue', { score: Math.round(latestRun.score) })}
             </Badge>
           ) : null}
         </div>
@@ -82,21 +86,21 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
               className="data-[state=active]:border-primary h-10 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-xs font-medium"
             >
               <Code2 className="size-3.5" />
-              Submitted Code
+              {t('submittedCode')}
             </TabsTrigger>
             <TabsTrigger
               value="diff"
               className="data-[state=active]:border-primary h-10 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-xs font-medium"
             >
               <Columns className="size-3.5" />
-              Compare against Template
+              {t('compareAgainstTemplate')}
             </TabsTrigger>
             <TabsTrigger
               value="diagnostics"
               className="data-[state=active]:border-primary h-10 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-xs font-medium"
             >
               <FileSpreadsheet className="size-3.5" />
-              Diagnostic Logs ({latestRun?.details?.length ?? 0})
+              {t('diagnosticLogsCount', { count: latestRun?.details?.length ?? 0 })}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -123,8 +127,8 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
           <CodeDiffViewer
             expected={starterTemplate}
             actual={answer.source}
-            labelExpected="Starter Template"
-            labelActual="Student Submission"
+            labelExpected={t('starterTemplate')}
+            labelActual={t('studentSubmission')}
           />
         </TabsContent>
 
@@ -160,7 +164,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
                         ) : (
                           <XCircle className="size-4 text-rose-500" />
                         )}
-                        Case {index + 1}
+                        {t('caseNumber', { number: index + 1 })}
                         {testId ? (
                           <span className="text-muted-foreground font-mono text-[10px] font-normal">({testId})</span>
                         ) : null}
@@ -169,7 +173,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
                         variant={passedCase ? 'success' : 'destructive'}
                         className="px-1 py-0 text-[9px] uppercase"
                       >
-                        {passedCase ? 'Passed' : 'Failed'}
+                        {passedCase ? t('passed') : t('failed')}
                       </Badge>
                     </div>
 
@@ -186,7 +190,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
             </div>
           ) : (
             <div className="text-muted-foreground bg-muted/5 rounded-md border border-dashed p-6 text-center text-xs">
-              No detailed test diagnostics are available.
+              {t('noDiagnosticsAvailable')}
             </div>
           )}
         </TabsContent>

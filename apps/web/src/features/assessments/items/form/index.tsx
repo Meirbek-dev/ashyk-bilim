@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { generateUUID } from '@/lib/utils';
+import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown';
 
 import { registerItemKind } from '../registry';
 import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
@@ -97,19 +98,23 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
         >
           <div className="flex items-center gap-3">
             <Badge variant="secondary">{t('questionBadge', { number: questionIndex + 1 })}</Badge>
-            <Input
-              value={question.questionText}
-              placeholder={t('questionPlaceholder')}
-              disabled={disabled}
-              onChange={(event) =>
-                onChange({
-                  ...value,
-                  questions: value.questions.map((item, index) =>
-                    index === questionIndex ? { ...item, questionText: event.target.value } : item,
-                  ),
-                })
-              }
-            />
+            <div className="min-w-0 flex-1">
+              <MarkdownEditor
+                value={question.questionText}
+                placeholder={t('questionPlaceholder')}
+                disabled={disabled}
+                preset="questionPrompt"
+                minHeight={120}
+                onChange={(questionText) =>
+                  onChange({
+                    ...value,
+                    questions: value.questions.map((item, index) =>
+                      index === questionIndex ? { ...item, questionText } : item,
+                    ),
+                  })
+                }
+              />
+            </div>
             <Button
               type="button"
               variant="ghost"
@@ -266,7 +271,13 @@ export function FormItemAttempt({
         >
           <div className="mb-3 flex items-start gap-2">
             <Badge variant="secondary">{t('questionBadge', { number: questionIndex + 1 })}</Badge>
-            <p className="font-medium">{question.questionText || t('promptFallback')}</p>
+            <div className="min-w-0 flex-1 font-medium">
+              <MarkdownContent
+                content={question.questionText || t('promptFallback')}
+                mode="prompt"
+                compact
+              />
+            </div>
           </div>
           <div className="grid gap-3">
             {question.blanks.map((blank, blankIndex) => {

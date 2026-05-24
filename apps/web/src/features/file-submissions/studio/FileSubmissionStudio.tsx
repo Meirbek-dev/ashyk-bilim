@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import Link from '@components/ui/AppLink';
 import {
   getFileSubmissionByActivity,
@@ -20,6 +19,7 @@ import {
 } from '@/features/file-submissions/services/file-submissions';
 import { getFriendlyMimeName } from '@/lib/file-validation';
 import { Checkbox } from '@/components/ui/checkbox';
+import { MarkdownEditor, isMarkdownStructurallyEmpty } from '@/features/content-markdown';
 
 interface FileSubmissionStudioProps {
   courseUuid: string;
@@ -241,7 +241,12 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
             <Button
               size="sm"
               onClick={() => publishMutation.mutate()}
-              disabled={publishMutation.isPending || saveMutation.isPending || !title.trim() || !instructions.trim()}
+              disabled={
+                publishMutation.isPending ||
+                saveMutation.isPending ||
+                !title.trim() ||
+                isMarkdownStructurallyEmpty(instructions)
+              }
             >
               {publishMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               {t('publish')}
@@ -265,10 +270,11 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
           </Field>
           <Field>
             <FieldLabel>{t('instructions')}</FieldLabel>
-            <Textarea
+            <MarkdownEditor
               value={instructions}
-              onChange={(event) => setInstructions(event.target.value)}
-              className="min-h-52"
+              onChange={setInstructions}
+              preset="fileSubmissionInstructions"
+              required
             />
           </Field>
           <div className="grid gap-4 md:grid-cols-3">

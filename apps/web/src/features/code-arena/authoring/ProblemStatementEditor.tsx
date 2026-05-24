@@ -2,12 +2,13 @@
 
 import { FileText, Eye, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { MarkdownRenderer } from '@/features/assessments/shared/MarkdownRenderer';
+import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown';
 import type { CodeChallengeSettings } from '@/services/courses/code-challenges';
 
 interface ProblemStatementEditorProps {
@@ -16,6 +17,7 @@ interface ProblemStatementEditorProps {
 }
 
 export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEditorProps) {
+  const t = useTranslations('Activities.CodeChallenges');
   const [isPreview, setIsPreview] = useState(false);
 
   const constraintsList = draft.constraints ?? [];
@@ -25,7 +27,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
       {/* Editor Sub-Header */}
       <div className="bg-muted/20 flex h-11 shrink-0 items-center justify-between border-b px-4">
         <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-          Problem Configuration
+          {t('problemConfiguration')}
         </span>
         <div className="flex gap-1">
           <button
@@ -38,7 +40,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
             }`}
           >
             <FileText className="mr-1 inline size-3.5" />
-            Editor
+            {t('editor')}
           </button>
           <button
             type="button"
@@ -50,7 +52,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
             }`}
           >
             <Eye className="mr-1 inline size-3.5" />
-            Live Student Preview
+            {t('liveStudentPreview')}
           </button>
         </div>
       </div>
@@ -61,28 +63,28 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
           <div className="mx-auto max-w-4xl space-y-6 p-6">
             <div className="grid gap-4 md:grid-cols-[1fr_160px_160px]">
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">Challenge Title</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('form.title')}</span>
                 <Input
                   value={draft.title ?? ''}
                   onChange={(e) => onChange({ title: e.target.value })}
-                  placeholder="e.g. Two Sum"
+                  placeholder={t('form.titlePlaceholder')}
                 />
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">Difficulty</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('form.difficulty')}</span>
                 <NativeSelect
                   value={draft.difficulty ?? 'EASY'}
                   onChange={(e) => onChange({ difficulty: e.target.value as any })}
                 >
-                  <NativeSelectOption value="EASY">Easy</NativeSelectOption>
-                  <NativeSelectOption value="MEDIUM">Medium</NativeSelectOption>
-                  <NativeSelectOption value="HARD">Hard</NativeSelectOption>
+                  <NativeSelectOption value="EASY">{t('difficulty.easy')}</NativeSelectOption>
+                  <NativeSelectOption value="MEDIUM">{t('difficulty.medium')}</NativeSelectOption>
+                  <NativeSelectOption value="HARD">{t('difficulty.hard')}</NativeSelectOption>
                 </NativeSelect>
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">Max Score (Pts)</span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('maxScore')}</span>
                 <Input
                   type="number"
                   min={1}
@@ -94,43 +96,43 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
 
             <label className="grid gap-1.5">
               <span className="text-muted-foreground text-xs font-semibold uppercase">
-                Problem Description (Markdown)
+                {t('problemDescriptionMarkdown')}
               </span>
-              <Textarea
+              <MarkdownEditor
                 value={draft.prompt ?? ''}
-                onChange={(e) => onChange({ prompt: e.target.value })}
-                className="min-h-56 font-mono text-sm leading-relaxed"
-                placeholder="Write the task description here. You can use markdown and math equations."
+                onChange={(prompt) => onChange({ prompt })}
+                preset="codeProblemStatement"
+                placeholder={t('form.promptPlaceholder')}
               />
             </label>
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="grid gap-1.5">
                 <span className="text-muted-foreground text-xs font-semibold uppercase">
-                  Input Specification (Markdown)
+                  {t('inputSpecificationMarkdown')}
                 </span>
-                <Textarea
+                <MarkdownEditor
                   value={draft.input_spec ?? ''}
-                  onChange={(e) => onChange({ input_spec: e.target.value })}
-                  className="min-h-24 font-mono text-sm"
-                  placeholder="Describe inputs structure..."
+                  onChange={(input_spec) => onChange({ input_spec })}
+                  preset="codeInputSpec"
+                  placeholder={t('form.inputSpecPlaceholder')}
                 />
               </label>
               <label className="grid gap-1.5">
                 <span className="text-muted-foreground text-xs font-semibold uppercase">
-                  Output Specification (Markdown)
+                  {t('outputSpecificationMarkdown')}
                 </span>
-                <Textarea
+                <MarkdownEditor
                   value={draft.output_spec ?? ''}
-                  onChange={(e) => onChange({ output_spec: e.target.value })}
-                  className="min-h-24 font-mono text-sm"
-                  placeholder="Describe outputs structure..."
+                  onChange={(output_spec) => onChange({ output_spec })}
+                  preset="codeOutputSpec"
+                  placeholder={t('form.outputSpecPlaceholder')}
                 />
               </label>
             </div>
 
             <label className="grid gap-1.5">
-              <span className="text-muted-foreground text-xs font-semibold uppercase">Constraints (One per line)</span>
+              <span className="text-muted-foreground text-xs font-semibold uppercase">{t('constraintsOnePerLine')}</span>
               <Textarea
                 value={constraintsList.join('\n')}
                 onChange={(e) =>
@@ -142,7 +144,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                   })
                 }
                 className="min-h-24 font-mono text-sm"
-                placeholder="1 <= nums.length <= 10^4&#10;-10^9 <= nums[i] <= 10^9"
+                placeholder={t('form.constraintsPlaceholder')}
               />
             </label>
           </div>
@@ -156,41 +158,48 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                     draft.difficulty === 'EASY' ? 'success' : draft.difficulty === 'MEDIUM' ? 'warning' : 'destructive'
                   }
                 >
-                  {draft.difficulty ?? 'EASY'}
+                  {t(`difficulty.${(draft.difficulty ?? 'EASY').toLowerCase()}` as any)}
                 </Badge>
-                <Badge variant="outline">{draft.points ?? 100} pts</Badge>
-                {draft.time_limit && <Badge variant="secondary">{draft.time_limit}s limit</Badge>}
+                <Badge variant="outline">{draft.points ?? 100} {t('pointsShort')}</Badge>
+                {draft.time_limit && (
+                  <Badge variant="secondary">
+                    {t('timeLimit')}: {t('timeSecondsValue', { value: draft.time_limit })}
+                  </Badge>
+                )}
               </div>
-              <h1 className="text-2xl font-bold tracking-normal">{draft.title || 'Untitled Challenge'}</h1>
+              <h1 className="text-2xl font-bold tracking-normal">{draft.title || t('untitledChallenge')}</h1>
             </header>
 
             <div className="prose prose-sm dark:prose-invert max-w-none">
-              <MarkdownRenderer content={draft.prompt || '*No problem statement written yet.*'} />
+              <MarkdownContent
+                content={draft.prompt || t('noProblemStatement')}
+                mode="codeProblem"
+              />
             </div>
 
             {draft.input_spec && (
               <div className="space-y-1">
-                <h3 className="text-foreground text-sm font-bold">Input Format</h3>
-                <MarkdownRenderer
+                <h3 className="text-foreground text-sm font-bold">{t('inputFormat')}</h3>
+                <MarkdownContent
                   content={draft.input_spec}
-                  compact
+                  mode="codeSpec"
                 />
               </div>
             )}
 
             {draft.output_spec && (
               <div className="space-y-1">
-                <h3 className="text-foreground text-sm font-bold">Output Format</h3>
-                <MarkdownRenderer
+                <h3 className="text-foreground text-sm font-bold">{t('outputFormat')}</h3>
+                <MarkdownContent
                   content={draft.output_spec}
-                  compact
+                  mode="codeSpec"
                 />
               </div>
             )}
 
             {constraintsList.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-foreground text-sm font-bold">Constraints</h3>
+                <h3 className="text-foreground text-sm font-bold">{t('constraints')}</h3>
                 <ul className="space-y-1.5">
                   {constraintsList.map((constraint, idx) => (
                     <li

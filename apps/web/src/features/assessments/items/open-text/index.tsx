@@ -4,6 +4,7 @@ import { AlignLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Textarea } from '@/components/ui/textarea';
+import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown';
 import { registerItemKind } from '../registry';
 import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
 
@@ -42,12 +43,12 @@ export function OpenTextAuthor({ value, disabled, onChange }: ItemAuthorProps<Op
         </div>
         <p className="text-muted-foreground mt-1 text-sm">{t('description')}</p>
       </div>
-      <Textarea
+      <MarkdownEditor
         value={value.body.prompt}
         placeholder={t('promptPlaceholder')}
         disabled={disabled}
-        className="min-h-36"
-        onChange={(event) => onChange({ ...value, body: { prompt: event.target.value } })}
+        preset="questionPrompt"
+        onChange={(prompt) => onChange({ ...value, body: { prompt } })}
       />
     </div>
   );
@@ -61,7 +62,12 @@ export function OpenTextAttempt({
 }: ItemAttemptProps<OpenTextValue & { taskUuid?: string }, OpenTextAnswer | null>) {
   return (
     <div className="space-y-3">
-      {item.body.prompt ? <p className="text-sm">{item.body.prompt}</p> : null}
+      {item.body.prompt ? (
+        <MarkdownContent
+          content={item.body.prompt}
+          mode="prompt"
+        />
+      ) : null}
       <Textarea
         value={answer?.text ?? ''}
         disabled={disabled}

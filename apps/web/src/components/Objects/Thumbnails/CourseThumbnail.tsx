@@ -17,6 +17,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import type { FC } from 'react';
 import { toast } from 'sonner';
+import { extractMarkdownSummary } from '@/features/content-markdown';
 
 import {
   AlertDialog,
@@ -630,7 +631,9 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
               {course.name}
             </h3>
           </Link>
-          <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed">{course.description}</p>
+          <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed">
+            {extractMarkdownSummary(course.description, 140)}
+          </p>
         </div>
 
         <AuthorsDisplay

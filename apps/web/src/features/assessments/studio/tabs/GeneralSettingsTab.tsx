@@ -23,10 +23,10 @@ import type { AssessmentEditorState } from '@/features/assessments/studio/studio
 import type { classifyValidationIssue } from '@/features/assessments/domain/readiness';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { MarkdownEditor } from '@/features/content-markdown';
 
 interface GeneralSettingsTabProps {
   state: AssessmentEditorState;
@@ -110,12 +110,12 @@ export default function GeneralSettingsTab({ state, saveState, disabled, issues,
           </div>
           <div className="space-y-2">
             <Label htmlFor="assessment-description">{t('descriptionLabel')}</Label>
-            <Textarea
-              id="assessment-description"
+            <MarkdownEditor
               value={state.description}
               disabled={disabled}
-              className="min-h-28"
-              onChange={(e) => onChange({ ...state, description: e.target.value })}
+              preset="assessmentDescription"
+              minHeight={220}
+              onChange={(description) => onChange({ ...state, description })}
             />
           </div>
         </div>

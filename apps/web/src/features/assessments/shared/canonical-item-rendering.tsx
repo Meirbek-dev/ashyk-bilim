@@ -10,6 +10,7 @@ import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/ite
 import { normalizeFormItem } from '@/features/assessments/items/form';
 import { getItemKindModule } from '@/features/assessments/items/registry';
 import type { AssessmentItem, ItemAnswer, MatchPair } from '@/features/assessments/domain/items';
+import { MarkdownContent } from '@/features/content-markdown';
 
 export function CanonicalAttemptItem({
   item,
@@ -68,7 +69,12 @@ export function CanonicalAttemptItem({
   if (body.kind === 'OPEN_TEXT') {
     return (
       <div className="space-y-3">
-        {body.prompt ? <p className="text-sm">{body.prompt}</p> : null}
+        {body.prompt ? (
+          <MarkdownContent
+            content={body.prompt}
+            mode="prompt"
+          />
+        ) : null}
         <Textarea
           value={answer?.kind === 'OPEN_TEXT' ? answer.text : ''}
           disabled={disabled}
@@ -83,7 +89,12 @@ export function CanonicalAttemptItem({
     const currentValues = answer?.kind === 'FORM' ? answer.values : {};
     return (
       <div className="space-y-4">
-        {body.prompt ? <p className="text-sm">{body.prompt}</p> : null}
+        {body.prompt ? (
+          <MarkdownContent
+            content={body.prompt}
+            mode="prompt"
+          />
+        ) : null}
         {body.fields.map((field, fieldIndex) => (
           <div
             key={field.id}
@@ -157,7 +168,12 @@ export function CanonicalAttemptItem({
 
     return (
       <div className="space-y-3">
-        {body.prompt ? <p className="text-sm">{body.prompt}</p> : null}
+        {body.prompt ? (
+          <MarkdownContent
+            content={body.prompt}
+            mode="prompt"
+          />
+        ) : null}
         {body.pairs.map((pair, pairIndex) => (
           <div
             key={`${pair.left}-${pairIndex}`}
@@ -193,7 +209,12 @@ export function CanonicalAttemptItem({
         : { kind: 'CODE' as const, language: body.languages[0] ?? 0, source: '', latest_run: undefined };
     return (
       <div className="space-y-4">
-        {body.prompt ? <p className="text-sm">{body.prompt}</p> : null}
+        {body.prompt ? (
+          <MarkdownContent
+            content={body.prompt}
+            mode="codeProblem"
+          />
+        ) : null}
         <div className="space-y-2">
           <Label htmlFor={`${item.item_uuid}-language`}>{t('Code.language')}</Label>
           <NativeSelect
@@ -291,7 +312,10 @@ export function CanonicalReviewAnswer({
         {body.rubric ? (
           <div className="rounded-md border border-sky-200 bg-sky-50/70 p-3 text-xs text-sky-950">
             <div className="mb-1 font-medium">{t('OpenText.rubricGuidance')}</div>
-            <pre className="whitespace-pre-wrap">{body.rubric}</pre>
+            <MarkdownContent
+              content={body.rubric}
+              mode="compactRichText"
+            />
           </div>
         ) : null}
       </div>

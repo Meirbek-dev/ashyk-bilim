@@ -7,8 +7,8 @@ import type { EditableItem } from '@/features/assessments/studio/studioTypes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { MarkdownEditor } from '@/features/content-markdown';
 
 interface QuestionInspectorPanelProps {
   item: EditableItem;
@@ -63,7 +63,8 @@ export default function QuestionInspectorPanel({
   const difficulty: Difficulty = ((item as unknown as { _difficulty?: string })._difficulty as Difficulty) ?? 'medium';
 
   const setDifficulty = (d: Difficulty) => {
-    onChange({ ...item, _difficulty: d});
+    const nextItem = { ...item, _difficulty: d } as unknown as EditableItem;
+    onChange(nextItem);
   };
 
   return (
@@ -170,14 +171,13 @@ export default function QuestionInspectorPanel({
                   >
                     {t('explanationLabel')}
                   </Label>
-                  <Textarea
-                    id="inspector-explanation"
-                    rows={4}
+                  <MarkdownEditor
                     placeholder={t('explanationPlaceholder')}
                     value={explanation}
                     disabled={!isEditable}
-                    className="resize-none text-sm"
-                    onChange={(e) => onChange(setExplanation(item, e.target.value))}
+                    preset="explanation"
+                    minHeight={140}
+                    onChange={(markdown) => onChange(setExplanation(item, markdown))}
                   />
                   <p className="text-muted-foreground text-[10px]">{t('explanationDesc')}</p>
                 </div>

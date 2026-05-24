@@ -41,6 +41,7 @@ import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import { cn } from '@/lib/utils';
+import { MarkdownContent } from '@/features/content-markdown';
 
 const CourseClient = (props: any) => {
   const t = useTranslations('CoursePage');
@@ -326,10 +327,12 @@ const CourseClient = (props: any) => {
                 )}
 
                 {/* Course description */}
-                {course.about && (
-                  <p className="text-muted-foreground leading-relaxed text-pretty hyphens-auto whitespace-pre-line">
-                    {course.about}
-                  </p>
+                {(course.description || course.about) && (
+                  <MarkdownContent
+                    content={course.description || course.about}
+                    mode="courseDescription"
+                    className="text-foreground/90"
+                  />
                 )}
 
                 {/* What you will learn */}

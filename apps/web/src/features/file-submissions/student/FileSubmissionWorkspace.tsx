@@ -40,6 +40,7 @@ import FileUploadSlot from './FileUploadSlot';
 import type { PendingFileSlot } from './FileUploadSlot';
 import FileSubmissionReceipt from './FileSubmissionReceipt';
 import FileSubmissionResult from './FileSubmissionResult';
+import { MarkdownContent } from '@/features/content-markdown';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -461,7 +462,11 @@ function Header({
 
       {/* ── Instructions ─────────────────────────────────────── */}
       {instructions ? (
-        <p className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">{instructions}</p>
+        <MarkdownContent
+          content={instructions}
+          mode="taskDescription"
+          className="text-foreground/90"
+        />
       ) : null}
 
       {/* ── Metadata bar ─────────────────────────────────────── */}

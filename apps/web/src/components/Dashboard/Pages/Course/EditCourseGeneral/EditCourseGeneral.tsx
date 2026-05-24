@@ -18,11 +18,11 @@ import { useSaveSection } from '@/hooks/useSaveSection';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Separator } from '@components/ui/separator';
 import LearningItemsList from './LearningItemsList';
-import { Textarea } from '@components/ui/textarea';
 import ThumbnailUpdate from './ThumbnailUpdate';
 import { Input } from '@components/ui/input';
 import { useTranslations } from 'next-intl';
 import type * as v from 'valibot';
+import { MarkdownEditor } from '@/features/content-markdown';
 
 // Placeholder ID is stable across SSR and hydration; LearningItemsList replaces it
 // with a real UUID in a post-mount effect, avoiding hydration mismatches.
@@ -268,12 +268,19 @@ function EditCourseGeneral() {
                   {t('description.label')}
                 </FieldLabel>
                 <FieldContent>
-                  <Textarea
-                    {...form.register('description')}
-                    id="description"
-                    placeholder={t('description.placeholder')}
-                    className="min-h-[100px] resize-y"
-                    maxLength={1000}
+                  <Controller
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <MarkdownEditor
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        preset="courseDescription"
+                        placeholder={t('description.placeholder')}
+                        required
+                      />
+                    )}
                   />
                 </FieldContent>
                 <FieldError errors={[form.formState.errors.description]} />

@@ -2,6 +2,7 @@
 
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Copy, XCircle, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ export function ResultsDock({
   results,
   verdict,
 }: ResultsDockProps) {
+  const t = useTranslations('Activities.CodeChallenges');
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   // Auto-expand the first failing test case when results change
@@ -75,13 +77,13 @@ export function ResultsDock({
             value="testcase"
             className="data-[state=active]:border-primary h-9 rounded-none border-b-2 border-transparent px-3"
           >
-            Testcase
+            {t('testCaseTab')}
           </TabsTrigger>
           <TabsTrigger
             value="result"
             className="data-[state=active]:border-primary h-9 rounded-none border-b-2 border-transparent px-3"
           >
-            Result
+            {t('resultTab')}
             {results ? (
               <Badge
                 className="ml-2"
@@ -95,7 +97,7 @@ export function ResultsDock({
             value="console"
             className="data-[state=active]:border-primary h-9 rounded-none border-b-2 border-transparent px-3"
           >
-            Console
+            {t('consoleTab')}
           </TabsTrigger>
         </TabsList>
       </div>
@@ -107,7 +109,7 @@ export function ResultsDock({
         <ScrollArea className="h-full">
           <div className="space-y-3 p-4">
             <div>
-              <div className="text-sm font-semibold">Custom input</div>
+              <div className="text-sm font-semibold">{t('customInputTitle')}</div>
             </div>
             <Textarea
               value={customInput}
@@ -156,14 +158,14 @@ export function ResultsDock({
                         ) : (
                           <XCircle className="size-5 text-rose-500" />
                         )}
-                        <span className="text-sm font-semibold">Hidden Test Cases</span>
+                        <span className="text-sm font-semibold">{t('hiddenTestCases')}</span>
                       </div>
                       <Badge variant={hiddenPassed === hiddenTotal ? 'success' : 'destructive'}>
-                        Passed {hiddenPassed}/{hiddenTotal}
+                        {t('passedFraction', { passed: hiddenPassed, total: hiddenTotal })}
                       </Badge>
                     </div>
                     <p className="text-muted-foreground mt-2 text-xs">
-                      Input and output diagnostics are hidden to ensure evaluation integrity.
+                      {t('diagnosticsHidden')}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {hiddenResults.map((result, idx) => (
@@ -186,7 +188,7 @@ export function ResultsDock({
               </div>
             ) : verdict !== 'RUNNING' ? (
               <div className="text-muted-foreground rounded-md border border-dashed p-8 text-center text-sm">
-                Run tests to see diagnostics.
+                {t('runTestsToSeeDiagnostics')}
               </div>
             ) : null}
           </div>
@@ -218,6 +220,7 @@ function VerdictBanner({
   results: TestCaseResult[] | null;
   onFocusFailedCase: (caseId: string) => void;
 }) {
+  const t = useTranslations('Activities.CodeChallenges');
   const firstFail = firstFailingResult(results);
   const Icon =
     verdict === 'ACCEPTED' ? CheckCircle2 : verdict === 'RUNNING' ? Loader2 : verdict ? XCircle : AlertTriangle;
@@ -250,7 +253,7 @@ function VerdictBanner({
       {firstFail ? (
         <div className="text-muted-foreground mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
           <span>
-            First failing case: <strong>{firstFail.test_case_id}</strong>. {firstFail.status_description}
+            {t('firstFailingCasePrefix')} <strong>{firstFail.test_case_id}</strong>. {firstFail.status_description}
           </span>
           <Button
             type="button"
@@ -259,7 +262,7 @@ function VerdictBanner({
             onClick={() => onFocusFailedCase(firstFail.test_case_id)}
             className="h-auto p-0 text-xs font-semibold text-rose-600 dark:text-rose-400"
           >
-            Locate & Inspect
+            {t('locateAndInspect')}
           </Button>
         </div>
       ) : null}
@@ -268,6 +271,7 @@ function VerdictBanner({
 }
 
 function RunProgressTimeline() {
+  const t = useTranslations('Activities.CodeChallenges');
   const [phase, setPhase] = useState<'queue' | 'compile' | 'run' | 'judge'>('queue');
 
   useEffect(() => {
@@ -283,10 +287,10 @@ function RunProgressTimeline() {
   }, []);
 
   const steps = [
-    { key: 'queue', label: 'Queued' },
-    { key: 'compile', label: 'Compiling' },
-    { key: 'run', label: 'Running Tests' },
-    { key: 'judge', label: 'Judging' },
+    { key: 'queue', label: t('status.inQueue') },
+    { key: 'compile', label: t('status.processing') },
+    { key: 'run', label: t('runningTests') },
+    { key: 'judge', label: t('status.processing') },
   ];
 
   const currentIdx = steps.findIndex((s) => s.key === phase);
@@ -294,7 +298,7 @@ function RunProgressTimeline() {
   return (
     <div className="bg-muted/20 space-y-3.5 rounded-lg border p-4">
       <div className="text-muted-foreground flex items-center justify-between text-xs">
-        <span>Executing Judge0 Environment</span>
+        <span>{t('executingEnvironment')}</span>
         <span className="animate-pulse font-mono">Running...</span>
       </div>
 
@@ -347,6 +351,7 @@ interface ResultRowProps {
 }
 
 function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
+  const t = useTranslations('Activities.CodeChallenges');
   const diffExists = !result.passed && typeof result.expected === 'string' && typeof result.stdout === 'string';
 
   return (
@@ -366,7 +371,7 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
           ) : (
             <XCircle className="size-4 text-rose-500" />
           )}
-          <span className="truncate text-xs font-semibold">Case {index + 1}</span>
+          <span className="truncate text-xs font-semibold">{t('caseNumber', { number: index + 1 })}</span>
           <Badge
             variant={result.passed ? 'success' : 'destructive'}
             className="px-1 py-0 text-[10px]"
@@ -375,7 +380,7 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
           </Badge>
         </div>
         <div className="text-muted-foreground flex shrink-0 items-center gap-3.5 font-mono text-xs">
-          {typeof result.time_ms === 'number' ? <span>{result.time_ms}ms</span> : null}
+          {typeof result.time_ms === 'number' ? <span>{t('timeLimitValue', { value: result.time_ms })}</span> : null}
           {typeof result.memory_kb === 'number' ? <span>{(result.memory_kb / 1024).toFixed(1)}MB</span> : null}
           {isExpanded ? (
             <ChevronUp className="text-muted-foreground size-3.5" />
@@ -389,14 +394,14 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
         <div className="bg-background/50 space-y-3 border-t p-3">
           {result.stdin && (
             <div>
-              <div className="text-muted-foreground mb-1 text-[10px] font-bold tracking-wider uppercase">Input</div>
+              <div className="text-muted-foreground mb-1 text-[10px] font-bold tracking-wider uppercase">{t('input')}</div>
               <pre className="bg-muted/30 overflow-x-auto rounded border p-2 font-mono text-xs">{result.stdin}</pre>
             </div>
           )}
 
           {diffExists ? (
             <div className="space-y-1.5">
-              <div className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">Difference</div>
+              <div className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">{t('difference')}</div>
               <CodeDiffViewer
                 expected={result.expected!}
                 actual={result.stdout!}
