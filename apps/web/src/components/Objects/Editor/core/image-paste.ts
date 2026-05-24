@@ -39,7 +39,7 @@ function getFileIdentity(file: File): string {
 }
 
 export function getPastedImageFiles(source: ClipboardImageSource | null | undefined): File[] {
-  const filesFromItems = [...source?.items ?? []]
+  const filesFromItems = Array.from(source?.items ?? [])
     .map((item) => {
       if (item.kind !== 'file' || !item.type.startsWith('image/')) {
         return null;
@@ -49,7 +49,7 @@ export function getPastedImageFiles(source: ClipboardImageSource | null | undefi
     })
     .filter((file): file is File => Boolean(file));
 
-  const filesFromClipboard = [...source?.files ?? []].filter((file) => file.type.startsWith('image/'));
+  const filesFromClipboard = Array.from(source?.files ?? []).filter((file) => file.type.startsWith('image/'));
   const seen = new Set<string>();
 
   return [...filesFromItems, ...filesFromClipboard].filter((file) => {

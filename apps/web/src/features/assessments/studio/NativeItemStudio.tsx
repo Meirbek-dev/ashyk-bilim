@@ -57,7 +57,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { RichTextPromptEditor } from '@/features/assessments/shared/RichTextPromptEditor';
+import { MarkdownEditor } from '@/features/content-markdown';
 
 export type { AssessmentEditorState, EditableItem, StudioTab };
 export type { SaveState };
@@ -771,11 +771,12 @@ function NativeItemBodyEditor({
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>{t('Items.OpenText.prompt')}</Label>
-          <RichTextPromptEditor
+          <MarkdownEditor
             value={body.prompt}
             disabled={disabled}
             placeholder={t('Items.promptPlaceholder')}
             className={hasIssue('open_text.prompt_missing') ? 'border-destructive' : ''}
+            preset="questionPrompt"
             onChange={(md) => onChange({ ...item, body: { ...body, kind: 'OPEN_TEXT', prompt: md } })}
           />
         </div>
@@ -803,13 +804,13 @@ function NativeItemBodyEditor({
           </div>
           <div className="space-y-2">
             <Label htmlFor="open-text-rubric">{t('Items.OpenText.rubric')}</Label>
-            <Textarea
-              id="open-text-rubric"
+            <MarkdownEditor
               value={body.rubric ?? ''}
               disabled={disabled}
-              className="min-h-24"
-              onChange={(event) =>
-                onChange({ ...item, body: { ...body, kind: 'OPEN_TEXT', rubric: event.target.value || null } })
+              preset="explanation"
+              minHeight={140}
+              onChange={(markdown) =>
+                onChange({ ...item, body: { ...body, kind: 'OPEN_TEXT', rubric: markdown || null } })
               }
             />
           </div>
@@ -825,11 +826,12 @@ function NativeItemBodyEditor({
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>{t('Items.Form.prompt')}</Label>
-          <RichTextPromptEditor
+          <MarkdownEditor
             value={body.prompt}
             disabled={disabled}
             placeholder={t('Items.promptPlaceholder')}
             className={hasIssue('form.prompt_missing') ? 'border-destructive' : ''}
+            preset="questionPrompt"
             onChange={(md) => onChange({ ...item, body: { ...body, kind: 'FORM', prompt: md } })}
           />
         </div>

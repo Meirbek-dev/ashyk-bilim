@@ -22,7 +22,7 @@ import ThumbnailUpdate from './ThumbnailUpdate';
 import { Input } from '@components/ui/input';
 import { useTranslations } from 'next-intl';
 import type * as v from 'valibot';
-import { MarkdownEditor } from '@/features/content-markdown';
+import { MarkdownEditor, getMarkdownSaveGate } from '@/features/content-markdown';
 
 // Placeholder ID is stable across SSR and hydration; LearningItemsList replaces it
 // with a real UUID in a post-mount effect, avoiding hydration mismatches.
@@ -162,6 +162,14 @@ function EditCourseGeneral() {
 
   const handleSubmit = async (values: CourseGeneralValues) => {
     setError('');
+    const descriptionGate = getMarkdownSaveGate(values.description, 'courseDescription', {
+      intent: 'publish',
+      required: true,
+    });
+    if (!descriptionGate.canSave) {
+      setError(descriptionGate.errors[0]?.message ?? t('errors.saveFailed'));
+      return;
+    }
 
     await saveWithoutRefresh(
       async () =>

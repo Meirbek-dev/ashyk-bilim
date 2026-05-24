@@ -10,6 +10,7 @@ import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MarkdownEditor, extractMarkdownSummary } from '@/features/content-markdown';
 import { generateUUID } from '@/lib/utils';
 import type { CodeChallengeSettingsForm } from './CodeChallengeStudio';
 
@@ -75,7 +76,7 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
                 <AccordionTrigger className="hover:no-underline">
                   <span className="truncate text-sm">
                     {visible ? t('testCase') : t('hiddenTest')} #{index + 1}
-                    {tests[index]?.description ? ` - ${tests[index]?.description}` : ''}
+                    {tests[index]?.description ? ` - ${extractMarkdownSummary(tests[index]?.description, 80)}` : ''}
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 px-1 pt-4">
@@ -85,10 +86,13 @@ export default function TestCaseListEditor({ name, title, visible = false }: Tes
                     render={({ field }) => (
                       <Field>
                         <FieldLabel htmlFor={field.name}>{t('testDescription')}</FieldLabel>
-                        <Input
-                          id={field.name}
+                        <MarkdownEditor
+                          value={field.value ?? ''}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
                           placeholder={t('testDescriptionPlaceholder')}
-                          {...field}
+                          preset="codeExampleExplanation"
+                          minHeight={120}
                         />
                       </Field>
                     )}

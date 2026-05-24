@@ -60,7 +60,7 @@ export type CourseContributorsValues = v.InferOutput<typeof courseContributorsSc
 
 export const courseWizardSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, 'name_required'), v.maxLength(100)),
-  description: v.pipe(v.string(), v.minLength(1, 'description_required'), v.maxLength(500)),
+  description: v.pipe(v.string(), v.minLength(1, 'description_required'), v.maxLength(8000)),
   public: v.boolean(),
   template: v.picklist(['blank', 'starter', 'outline'] as const),
   sourceCourseUuid: v.optional(v.string()),

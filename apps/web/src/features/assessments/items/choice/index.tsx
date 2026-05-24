@@ -11,8 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { RichTextPromptEditor } from '@/features/assessments/shared/RichTextPromptEditor';
-import { MarkdownRenderer } from '@/features/assessments/shared/MarkdownRenderer';
+import { MarkdownContent, MarkdownEditor } from '@/features/content-markdown';
 
 import { registerItemKind } from '../registry';
 import type { ItemAuthorProps, ItemAttemptProps, ItemReviewDetailProps } from '../registry';
@@ -135,7 +134,8 @@ export function ChoiceItemAttempt({
                 }}
               />
               <div className="min-w-0 flex-1 text-sm leading-relaxed">
-                <MarkdownRenderer
+                <MarkdownContent
+                  mode="compactRichText"
                   compact
                   content={option.text || `Option ${index + 1}`}
                 />
@@ -164,7 +164,8 @@ export function ChoiceItemAttempt({
           >
             <RadioGroupItem value={String(id)} />
             <div className="min-w-0 flex-1 text-sm leading-relaxed">
-              <MarkdownRenderer
+              <MarkdownContent
+                mode="compactRichText"
                 compact
                 content={option.text || `Option ${index + 1}`}
               />
@@ -226,10 +227,11 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">
         <div className="space-y-2">
           <Label>{t('prompt')}</Label>
-          <RichTextPromptEditor
+          <MarkdownEditor
             value={value.prompt}
             disabled={disabled}
             placeholder={t('promptPlaceholder')}
+            preset="questionPrompt"
             onChange={(md) => onChange({ ...value, prompt: md })}
           />
         </div>
@@ -498,7 +500,8 @@ export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<C
           <Badge variant="secondary">{t('points', { count: item.points })}</Badge>
         ) : null}
       </div>
-      <MarkdownRenderer
+      <MarkdownContent
+        mode="compactRichText"
         content={item.prompt}
         compact
       />

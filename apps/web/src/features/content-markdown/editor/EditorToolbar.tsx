@@ -23,6 +23,7 @@ import {
   Strikethrough,
   TerminalSquare,
   TextCursorInput,
+  FileCode2,
   Eye,
   Undo2,
 } from 'lucide-react';
@@ -33,7 +34,7 @@ import { EditorLinkDialog } from './EditorLinkDialog';
 import { EditorImageDialog } from './EditorImageDialog';
 import { EditorSnippetPicker } from './EditorSnippetPicker';
 
-export type ViewMode = 'write' | 'split' | 'preview';
+export type ViewMode = 'write' | 'source' | 'split' | 'preview';
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -186,7 +187,11 @@ export function EditorToolbar({
                 title="Task list"
                 active={editor?.isActive('taskList')}
                 disabled={disabled}
-                onClick={() => (editor?.chain().focus() as any).toggleTaskList?.().run()}
+                onClick={() => {
+                  if (!editor) return;
+                  const pos = editor.state.selection.to;
+                  editor.chain().focus().insertContentAt(pos, '- [ ] ').run();
+                }}
               >
                 <ListTodo className="size-3.5" />
               </ToolbarButton>
@@ -308,6 +313,7 @@ export function EditorToolbar({
           {/* View mode switcher */}
           <div className="flex items-center rounded-md border p-0.5">
             <ViewModeButton mode="write" activeMode={viewMode} onClick={onViewModeChange} title="Write" icon={<TextCursorInput className="size-3.5" />} />
+            <ViewModeButton mode="source" activeMode={viewMode} onClick={onViewModeChange} title="Source" icon={<FileCode2 className="size-3.5" />} />
             <ViewModeButton mode="split" activeMode={viewMode} onClick={onViewModeChange} title="Split preview" icon={<SplitSquareHorizontal className="size-3.5" />} />
             <ViewModeButton mode="preview" activeMode={viewMode} onClick={onViewModeChange} title="Preview" icon={<Eye className="size-3.5" />} />
           </div>

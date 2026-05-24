@@ -44,7 +44,8 @@ export function EditorSnippetPicker({ snippets, disabled, onSelect }: EditorSnip
     }
     if (e.key === 'Enter' && activeIdx >= 0) {
       e.preventDefault();
-      handleSelect(snippets[activeIdx]);
+      const snippet = snippets[activeIdx];
+      if (snippet) handleSelect(snippet);
     }
   };
 

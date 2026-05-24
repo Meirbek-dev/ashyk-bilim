@@ -26,6 +26,7 @@ export function EditorStatusBar({
 }: EditorStatusBarProps) {
   const [showAllIssues, setShowAllIssues] = useState(false);
   const severity = getHighestMarkdownIssueSeverity(issues);
+  const firstIssue = issues[0];
   const nearLimit = charCount > config.maxLength * 0.9;
   const overLimit = charCount > config.maxLength;
 
@@ -70,7 +71,7 @@ export function EditorStatusBar({
       {/* Right: validation + char count */}
       <div className="flex items-center gap-2">
         {/* Issues */}
-        {issues.length > 0 && (
+        {firstIssue && (
           <div className="relative">
             <button
               type="button"
@@ -86,7 +87,7 @@ export function EditorStatusBar({
               ) : (
                 <Info className="size-3" />
               )}
-              <span>{issues[0].message}</span>
+              <span>{firstIssue.message}</span>
               {issues.length > 1 && (
                 <span className="text-muted-foreground/60">+{issues.length - 1}</span>
               )}

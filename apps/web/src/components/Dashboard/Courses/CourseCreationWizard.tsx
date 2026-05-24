@@ -13,14 +13,14 @@ import { courseWizardSchema } from '@/schemas/courseSchemas';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createChapter } from '@services/courses/chapters';
 import { RadioGroup } from '@/components/ui/radio-group';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslations } from 'next-intl';
-import { useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type * as v from 'valibot';
+import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown';
 
 export default function CourseCreationWizard() {
   const t = useTranslations('DashPage.CourseManagement.Wizard');
@@ -103,7 +103,7 @@ export default function CourseCreationWizard() {
 
   const canCreate =
     name.trim().length > 0 &&
-    description.trim().length > 0 &&
+    !isMarkdownStructurallyEmpty(description) &&
     (template !== 'outline' || Boolean(sourceCourseUuid?.trim()));
 
   const createOutlineFromSource = async (createdCourse: any) => {
@@ -121,6 +121,15 @@ export default function CourseCreationWizard() {
   };
 
   const handleCreate = form.handleSubmit(async (values) => {
+    const descriptionGate = getMarkdownSaveGate(values.description, 'courseDescription', {
+      intent: 'publish',
+      required: true,
+    });
+    if (!descriptionGate.canPublish) {
+      toast.error(descriptionGate.errors[0]?.message ?? t('errors.createWorkspace'));
+      return;
+    }
+
     try {
       const result = await createNewCourse(
         {
@@ -237,11 +246,20 @@ export default function CourseCreationWizard() {
               <Field>
                 <FieldLabel htmlFor="course-description">{t('basics.shortDescription')}</FieldLabel>
                 <FieldContent>
-                  <Textarea
-                    id="course-description"
-                    {...form.register('description')}
-                    placeholder={t('basics.shortDescriptionPlaceholder')}
-                    className="min-h-32"
+                  <Controller
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <MarkdownEditor
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        preset="courseDescription"
+                        placeholder={t('basics.shortDescriptionPlaceholder')}
+                        required
+                        minHeight={220}
+                      />
+                    )}
                   />
                 </FieldContent>
                 <FieldError errors={[form.formState.errors.description]} />

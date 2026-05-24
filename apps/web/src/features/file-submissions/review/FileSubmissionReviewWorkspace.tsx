@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { MarkdownEditor } from '@/features/content-markdown';
 import {
   fileSubmissionExportUrl,
   getFileSubmissionByActivity,
@@ -423,10 +423,11 @@ export default function FileSubmissionReviewWorkspace({
                       )}
                     </div>
                   </div>
-                  <Textarea
+                  <MarkdownEditor
                     value={feedback}
-                    onChange={(event) => setFeedback(event.target.value)}
-                    className="min-h-36"
+                    onChange={setFeedback}
+                    preset="explanation"
+                    minHeight={160}
                     placeholder="Feedback"
                   />
                   <div className="grid gap-2">

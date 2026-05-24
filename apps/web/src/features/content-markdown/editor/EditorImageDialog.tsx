@@ -20,7 +20,7 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
   const inputRef = useRef<HTMLInputElement>(null);
 
   const srcValid = !src.trim() || isSafeMarkdownUrl(src.trim());
-  const showError = touched && src.trim() && !srcValid;
+  const showError = touched && Boolean(src.trim()) && !srcValid;
 
   useEffect(() => {
     inputRef.current?.focus();

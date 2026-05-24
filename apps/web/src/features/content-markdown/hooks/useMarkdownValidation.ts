@@ -8,6 +8,38 @@ export interface MarkdownValidationIssue {
   message: string;
 }
 
+function hasUnbalancedMathDelimiters(markdown: string): boolean {
+  const withoutCode = markdown
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`\n]*`/g, '');
+  let inlineOpen = false;
+  let blockOpen = false;
+
+  for (let i = 0; i < withoutCode.length; i += 1) {
+    const char = withoutCode[i];
+    if (char !== '$') continue;
+    if (i > 0 && withoutCode[i - 1] === '\\') continue;
+
+    const next = withoutCode[i + 1];
+    const prev = withoutCode[i - 1];
+    if (next === '$') {
+      blockOpen = !blockOpen;
+      i += 1;
+      continue;
+    }
+
+    const opening = !inlineOpen;
+    if (opening) {
+      if (!next || /\s|\d/.test(next)) continue;
+    } else if (!prev || /\s/.test(prev)) {
+      continue;
+    }
+    inlineOpen = !inlineOpen;
+  }
+
+  return inlineOpen || blockOpen;
+}
+
 /**
  * Validates markdown content against a preset's constraints.
  * Returns all issues, not just the first.
@@ -78,10 +110,7 @@ export function validateMarkdownContent(
 
   // ── Math checks ───────────────────────────────────────────────────────────
   if (config.allowMath) {
-    // Only count $ that look like math delimiters (not currency: $100, $price)
-    // Math $ must be followed by a non-digit, non-space, non-end character OR be $$
-    const mathDollarCount = (markdown.match(/(?<!\\)\$(?!\d)(?!\s)/g)?.length ?? 0);
-    if (mathDollarCount % 2 !== 0) {
+    if (hasUnbalancedMathDelimiters(markdown)) {
       issues.push({
         severity: 'warning',
         code: 'math.unbalanced',

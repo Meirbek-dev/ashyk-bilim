@@ -6,7 +6,7 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { TableRow } from '@tiptap/extension-table-row';
 import { Markdown } from 'tiptap-markdown';
-import type { Extension, Node, Mark } from '@tiptap/core';
+import type { Extension, Mark, Node } from '@tiptap/core';
 
 import type { MarkdownPresetConfig } from '../presets/presets';
 
@@ -15,24 +15,23 @@ export type EditorExtensionItem = Extension | Node | Mark;
 interface BuildOptions {
   config: MarkdownPresetConfig;
   placeholder?: string;
-  autoFocus?: boolean;
 }
 
 /**
- * Builds the Tiptap extension array for a given preset configuration.
- * Only registers extensions for features enabled by the preset,
- * keeping bundle impact proportional to actual usage.
+ * Builds the TipTap extension array for a preset. Extension registration must
+ * match toolbar capabilities so the editor never advertises unavailable actions.
  */
 export function buildEditorExtensions({ config, placeholder }: BuildOptions): EditorExtensionItem[] {
   const extensions: EditorExtensionItem[] = [
     StarterKit.configure({
-      codeBlock: false, // We use our own code block or disable it
+      codeBlock: config.allowCodeBlock ? {} : false,
+      link: false,
       heading: {
         levels: [1, 2, 3, 4, 5, 6],
       },
-      strike: {}, // Always available — strikethrough is a basic formatting action
-      blockquote: {}, // Always available
-      code: {}, // Inline code — always available
+      strike: {},
+      blockquote: {},
+      code: {},
     }),
     Placeholder.configure({
       placeholder: placeholder ?? config.placeholder,
@@ -43,7 +42,7 @@ export function buildEditorExtensions({ config, placeholder }: BuildOptions): Ed
       linkOnPaste: true,
       HTMLAttributes: {
         rel: 'noopener noreferrer',
-        target: null, // We set this per-link in the renderer
+        target: null,
       },
     }),
     Markdown.configure({
@@ -54,31 +53,11 @@ export function buildEditorExtensions({ config, placeholder }: BuildOptions): Ed
   ];
 
   if (config.allowTable) {
-    extensions.push(
-      Table.configure({ resizable: false }),
-      TableRow,
-      TableHeader,
-      TableCell,
-    );
+    extensions.push(Table.configure({ resizable: false }), TableRow, TableHeader, TableCell);
   }
 
-  // TaskList support: lazy-loaded to avoid pulling the extension for presets that don't need it
-  if (config.allowTaskList) {
-    // Dynamic requires to avoid bundling for all presets
-    // These are already in @tiptap/starter-kit dependencies so no new installs needed
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { TaskList } = require('@tiptap/extension-task-list');
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { TaskItem } = require('@tiptap/extension-task-item');
-      extensions.push(
-        TaskList,
-        TaskItem.configure({ nested: true }),
-      );
-    } catch {
-      // TaskList extensions not available — skip
-    }
-  }
-
+  // Task lists render through remark-gfm and snippets insert portable Markdown.
+  // Avoid runtime require() in client bundles until the TipTap task extensions
+  // are explicit dependencies.
   return extensions;
 }

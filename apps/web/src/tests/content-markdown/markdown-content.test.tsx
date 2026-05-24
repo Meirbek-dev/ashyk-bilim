@@ -52,11 +52,11 @@ describe('MarkdownContent', () => {
   });
 
   it('renders actual image when allowImages is true', () => {
-    const content = '![A cat](https://example.com/cat.jpg)';
+    const content = '![A cat](/uploads/cat.jpg)';
     const { container } = render(<MarkdownContent content={content} allowImages={true} />);
     const img = container.querySelector('img');
     expect(img).toBeInTheDocument();
-    expect(img?.getAttribute('src')).toBe('https://example.com/cat.jpg');
+    expect(img?.getAttribute('src')).toBe('/uploads/cat.jpg');
     expect(img?.getAttribute('alt')).toBe('A cat');
   });
 

@@ -6,9 +6,9 @@ import { useTranslations } from 'next-intl';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MarkdownEditor } from '@/features/content-markdown';
 import { generateUUID } from '@/lib/utils';
 import type { CodeChallengeSettingsForm } from './CodeChallengeStudio';
 
@@ -69,11 +69,13 @@ export default function HintsPanel() {
                 render={({ field }) => (
                   <Field>
                     <FieldLabel htmlFor={field.name}>{t('hintsPanel.content')}</FieldLabel>
-                    <Textarea
-                      id={field.name}
-                      rows={3}
+                    <MarkdownEditor
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
                       placeholder={t('hintsPanel.contentPlaceholder')}
-                      {...field}
+                      preset="codeHint"
+                      minHeight={120}
                     />
                   </Field>
                 )}

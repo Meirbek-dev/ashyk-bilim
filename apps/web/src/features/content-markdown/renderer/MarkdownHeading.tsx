@@ -4,7 +4,7 @@ import { Link } from 'lucide-react';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-function slugify(text: string): string {
+export function slugifyMarkdownHeading(text: string): string {
   return text
     .toLowerCase()
     .replace(/[^\w\s-]/g, '')
@@ -13,17 +13,18 @@ function slugify(text: string): string {
     .trim();
 }
 
-function extractText(children: ReactNode): string {
+export function extractMarkdownHeadingText(children: ReactNode): string {
   if (typeof children === 'string') return children;
-  if (Array.isArray(children)) return children.map(extractText).join('');
+  if (Array.isArray(children)) return children.map(extractMarkdownHeadingText).join('');
   if (children && typeof children === 'object' && 'props' in (children as object)) {
-    return extractText((children as { props?: { children?: ReactNode } }).props?.children);
+    return extractMarkdownHeadingText((children as { props?: { children?: ReactNode } }).props?.children);
   }
   return '';
 }
 
 interface MarkdownHeadingProps extends ComponentPropsWithoutRef<'h1'> {
   level: 1 | 2 | 3 | 4 | 5 | 6;
+  anchorId?: string;
   onAnchorClick?: (id: string) => void;
 }
 
@@ -36,10 +37,10 @@ const HEADING_CLASS: Record<number, string> = {
   6: 'text-xs font-semibold mt-2 mb-1',
 };
 
-export function MarkdownHeading({ level, children, className, onAnchorClick, ...props }: MarkdownHeadingProps) {
+export function MarkdownHeading({ level, anchorId, children, className, onAnchorClick, ...props }: MarkdownHeadingProps) {
   const Tag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
-  const text = extractText(children);
-  const id = slugify(text);
+  const text = extractMarkdownHeadingText(children);
+  const id = anchorId ?? slugifyMarkdownHeading(text);
 
   return (
     <Tag

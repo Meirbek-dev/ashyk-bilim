@@ -8,11 +8,18 @@ import { MarkdownContent } from '../renderer/MarkdownContent';
 import type { MarkdownEditorPreset, MarkdownEditorSaveState } from '../presets/presets';
 import { getMarkdownPreset } from '../presets/presets';
 import { normalizeMarkdown, isMarkdownStructurallyEmpty } from '../utils/markdown-sanitize';
+import type { MarkdownValidationIssue } from '../hooks/useMarkdownValidation';
 import { validateMarkdownContent } from '../hooks/useMarkdownValidation';
 import { buildEditorExtensions } from '../lib/tiptap-extensions';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorStatusBar } from './EditorStatusBar';
 import type { ViewMode } from './EditorToolbar';
+
+interface MarkdownStorage {
+  markdown?: {
+    getMarkdown?: () => string;
+  };
+}
 
 interface MarkdownEditorProps {
   value: string;
@@ -26,6 +33,8 @@ interface MarkdownEditorProps {
   autoFocus?: boolean;
   saveState?: MarkdownEditorSaveState;
   required?: boolean;
+  onValidationChange?: (issues: MarkdownValidationIssue[]) => void;
+  onModeChange?: (mode: ViewMode) => void;
   onBlur?: () => void;
 }
 
@@ -41,12 +50,15 @@ export function MarkdownEditor({
   autoFocus = false,
   saveState = 'idle',
   required = false,
+  onValidationChange,
+  onModeChange,
   onBlur,
 }: MarkdownEditorProps) {
   const config = getMarkdownPreset(preset);
   const [viewMode, setViewMode] = useState<ViewMode>('write');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const normalizedValue = normalizeMarkdown(value ?? '');
+  const sourceValue = (value ?? '').replace(/\r\n?/g, '\n');
+  const normalizedValue = normalizeMarkdown(sourceValue);
   // Ref to track whether current content change came from the editor itself
   const isInternalUpdateRef = useRef(false);
 
@@ -54,6 +66,10 @@ export function MarkdownEditor({
     () => validateMarkdownContent(normalizedValue, preset, { required }),
     [normalizedValue, preset, required],
   );
+
+  useEffect(() => {
+    onValidationChange?.(issues);
+  }, [issues, onValidationChange]);
 
   const charCount = normalizedValue.length;
   const wordCount = normalizedValue.trim()
@@ -77,7 +93,7 @@ export function MarkdownEditor({
     immediatelyRender: false,
     onBlur,
     onUpdate: ({ editor: activeEditor }) => {
-      const markdown = activeEditor.storage?.markdown?.getMarkdown?.() as string | undefined;
+      const markdown = (activeEditor.storage as MarkdownStorage).markdown?.getMarkdown?.();
       if (markdown === undefined) return;
       isInternalUpdateRef.current = true;
       onChange(normalizeMarkdown(markdown));
@@ -99,10 +115,10 @@ export function MarkdownEditor({
       isInternalUpdateRef.current = false;
       return;
     }
-    const current = normalizeMarkdown(editor.storage?.markdown?.getMarkdown?.() ?? '');
+    const current = normalizeMarkdown((editor.storage as MarkdownStorage).markdown?.getMarkdown?.() ?? '');
     if (current !== normalizedValue) {
       // emitUpdate: false prevents triggering onUpdate, which would re-normalize and loop
-      editor.commands.setContent(normalizedValue, false);
+      editor.commands.setContent(normalizedValue, { emitUpdate: false });
     }
   }, [editor, normalizedValue]);
 
@@ -129,6 +145,21 @@ export function MarkdownEditor({
     setIsFullscreen((v) => !v);
   }, []);
 
+  const handleViewModeChange = useCallback(
+    (mode: ViewMode) => {
+      setViewMode(mode);
+      onModeChange?.(mode);
+    },
+    [onModeChange],
+  );
+
+  const handleSourceChange = useCallback(
+    (nextValue: string) => {
+      onChange(nextValue.replace(/\r\n?/g, '\n'));
+    },
+    [onChange],
+  );
+
   const severity = issues.some((i) => i.severity === 'error')
     ? 'error'
     : issues.some((i) => i.severity === 'warning')
@@ -153,7 +184,7 @@ export function MarkdownEditor({
         config={config}
         disabled={disabled}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        onViewModeChange={handleViewModeChange}
         isFullscreen={isFullscreen}
         onFullscreenToggle={handleFullscreenToggle}
       />
@@ -163,7 +194,7 @@ export function MarkdownEditor({
         className={cn(
           'grid min-h-0',
           viewMode === 'split' && 'md:grid-cols-2',
-          viewMode === 'preview' && 'grid-cols-1',
+          (viewMode === 'preview' || viewMode === 'source') && 'grid-cols-1',
           isFullscreen && 'flex-1 overflow-hidden',
         )}
         style={
@@ -172,7 +203,23 @@ export function MarkdownEditor({
             : undefined
         }
       >
-        {viewMode !== 'preview' && (
+        {viewMode === 'source' && (
+          <textarea
+            value={sourceValue}
+            disabled={disabled}
+            onBlur={onBlur}
+            onChange={(event) => handleSourceChange(event.target.value)}
+            aria-label={`${config.label} Markdown source`}
+            spellCheck={false}
+            className={cn(
+              'bg-background min-h-0 w-full resize-none overflow-y-auto px-4 py-3 font-mono text-sm leading-6 outline-none',
+              'focus:outline-none disabled:pointer-events-none disabled:opacity-70',
+              isFullscreen && 'h-full',
+            )}
+            style={!isFullscreen ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight } : undefined}
+          />
+        )}
+        {viewMode !== 'preview' && viewMode !== 'source' && (
           <EditorContent
             editor={editor}
             className={cn(

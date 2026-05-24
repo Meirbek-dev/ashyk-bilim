@@ -48,8 +48,8 @@ function codeChallengeSubmissionHookOptions(
   });
 }
 
-export function useCodeChallengeSettings(activityUuid: string | null | undefined) {
-  return useQuery(codeChallengeSettingsHookOptions<unknown>(activityUuid));
+export function useCodeChallengeSettings<TSettings = CodeChallengeSettings>(activityUuid: string | null | undefined) {
+  return useQuery(codeChallengeSettingsHookOptions<TSettings>(activityUuid));
 }
 
 export function useJudge0Languages() {

@@ -26,7 +26,7 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isValid = !url.trim() || isSafeMarkdownUrl(url.trim());
-  const showError = touched && url.trim() && !isValid;
+  const showError = touched && Boolean(url.trim()) && !isValid;
 
   useEffect(() => {
     inputRef.current?.focus();

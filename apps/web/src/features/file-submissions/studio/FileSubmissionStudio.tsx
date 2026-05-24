@@ -19,7 +19,7 @@ import {
 } from '@/features/file-submissions/services/file-submissions';
 import { getFriendlyMimeName } from '@/lib/file-validation';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MarkdownEditor, isMarkdownStructurallyEmpty } from '@/features/content-markdown';
+import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown';
 
 interface FileSubmissionStudioProps {
   courseUuid: string;
@@ -171,10 +171,22 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const gate = getMarkdownSaveGate(instructions, 'fileSubmissionInstructions', {
+      intent: 'draft',
+      required: true,
+    });
+    if (!gate.canSave) {
+      toast.error(gate.errors[0]?.message ?? 'Fix the instruction content before saving');
+      return;
+    }
     saveMutation.mutate();
   }
 
   const t = useTranslations('FileSubmissionStudio');
+  const publishGate = getMarkdownSaveGate(instructions, 'fileSubmissionInstructions', {
+    intent: 'publish',
+    required: true,
+  });
 
   if (isLoading) {
     return (
@@ -240,12 +252,19 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
             </Button>
             <Button
               size="sm"
-              onClick={() => publishMutation.mutate()}
+              onClick={() => {
+                if (!publishGate.canPublish) {
+                  toast.error(publishGate.errors[0]?.message ?? 'Fix the instruction content before publishing');
+                  return;
+                }
+                publishMutation.mutate();
+              }}
               disabled={
                 publishMutation.isPending ||
                 saveMutation.isPending ||
                 !title.trim() ||
-                isMarkdownStructurallyEmpty(instructions)
+                isMarkdownStructurallyEmpty(instructions) ||
+                !publishGate.canPublish
               }
             >
               {publishMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}

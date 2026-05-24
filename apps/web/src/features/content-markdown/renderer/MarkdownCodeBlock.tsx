@@ -35,9 +35,13 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
 
   const copy = async () => {
     if (!navigator?.clipboard) return;
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    globalThis.setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      globalThis.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
   };
 
   return (
@@ -63,7 +67,7 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
           variant="ghost"
           className="size-6 text-zinc-400 hover:bg-white/10 hover:text-zinc-50"
           onClick={copy}
-          aria-label="Copy code"
+          aria-label={copied ? 'Copied code' : 'Copy code'}
         >
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
         </Button>

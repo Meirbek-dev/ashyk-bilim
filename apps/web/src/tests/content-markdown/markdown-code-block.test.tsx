@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { MarkdownCodeBlock } from '@/features/content-markdown';
@@ -9,6 +9,7 @@ const mockWriteText = vi.fn().mockResolvedValue(undefined);
 Object.defineProperty(navigator, 'clipboard', {
   value: { writeText: mockWriteText },
   writable: true,
+  configurable: true,
 });
 
 // Mock Shiki
@@ -60,14 +61,13 @@ describe('MarkdownCodeBlock', () => {
   });
 
   it('copies code to clipboard on copy button click', async () => {
-    const user = userEvent.setup();
     render(<MarkdownCodeBlock code='const x = 1' language='typescript' />);
-    await user.click(screen.getByRole('button', { name: /copy/i }));
-    expect(mockWriteText).toHaveBeenCalledWith('const x = 1');
+    fireEvent.click(screen.getByRole('button', { name: /copy/i }));
+    await waitFor(() => expect(mockWriteText).toHaveBeenCalledWith('const x = 1'));
   });
 
   it('shows check icon after copying', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ writeToClipboard: false });
     render(<MarkdownCodeBlock code='const x = 1' language='typescript' />);
     await user.click(screen.getByRole('button', { name: /copy/i }));
     // After clicking, the copied state should show a Check icon

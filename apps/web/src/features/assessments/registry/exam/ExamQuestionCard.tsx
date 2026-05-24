@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 
 import { ChoiceItemAttempt } from '@/features/assessments/items/choice';
 import type { ChoiceAnswer, ChoiceAttemptItem } from '@/features/assessments/items/choice';
-import { MarkdownRenderer } from '@/features/assessments/shared/MarkdownRenderer';
+import { MarkdownContent } from '@/features/content-markdown';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { cn } from '@/lib/utils';
@@ -108,8 +108,9 @@ export default function ExamQuestionCard({
           </div>
         </CardTitle>
         <div className="mt-2">
-          <MarkdownRenderer
+          <MarkdownContent
             content={question.question_text}
+            mode="prompt"
             className="text-foreground text-base leading-relaxed"
           />
         </div>

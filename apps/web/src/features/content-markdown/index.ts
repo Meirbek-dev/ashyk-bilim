@@ -24,8 +24,10 @@ export {
   findUnsafeMarkdownLinks,
   hasRawHtml,
   isMarkdownStructurallyEmpty,
+  isSafeMarkdownImageUrl,
   isSafeMarkdownUrl,
   normalizeMarkdown,
+  sanitizeMarkdownImageUrl,
   sanitizeMarkdownUrl,
 } from './utils/markdown-sanitize';
 
@@ -37,4 +39,7 @@ export { getHighestMarkdownIssueSeverity, validateMarkdownContent } from './hook
 export type { MarkdownValidationIssue } from './hooks/useMarkdownValidation';
 
 // ── Shiki (shared singleton) ──────────────────────────────────────────────────
+export { getMarkdownSaveGate } from './policy/save-gate';
+export type { MarkdownSaveGate, MarkdownSaveIntent } from './policy/save-gate';
+
 export { highlightCode, getLanguageDisplayName } from './lib/shiki';

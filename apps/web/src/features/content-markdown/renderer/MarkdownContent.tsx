@@ -9,10 +9,17 @@ import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import type { MarkdownRenderMode } from '../presets/presets';
 import { extractMarkdownSummary } from '../utils/markdown-extract';
-import { sanitizeMarkdownUrl } from '../utils/markdown-sanitize';
+import {
+  sanitizeMarkdownImageUrl,
+  sanitizeMarkdownUrl,
+} from '../utils/markdown-sanitize';
 import { MarkdownCodeBlock } from './MarkdownCodeBlock';
 import { MarkdownImage } from './MarkdownImage';
-import { MarkdownHeading } from './MarkdownHeading';
+import {
+  extractMarkdownHeadingText,
+  MarkdownHeading,
+  slugifyMarkdownHeading,
+} from './MarkdownHeading';
 import { AiStreamingCursor } from './MarkdownStreaming';
 
 interface MarkdownContentProps {
@@ -64,6 +71,14 @@ export function MarkdownContent({
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldShowAnchors = showHeadingAnchors ?? MODE_WITH_ANCHORS.has(mode);
   const hasMath = MODE_WITH_MATH.has(mode) && /\$/.test(content);
+  const headingIds = new Map<string, number>();
+
+  const nextHeadingId = (raw: React.ReactNode) => {
+    const base = slugifyMarkdownHeading(extractMarkdownHeadingText(raw)) || 'section';
+    const count = headingIds.get(base) ?? 0;
+    headingIds.set(base, count + 1);
+    return count === 0 ? base : `${base}-${count + 1}`;
+  };
 
   // Lazy-load KaTeX CSS only when math is actually present
   useEffect(() => {
@@ -94,7 +109,7 @@ export function MarkdownContent({
     return () => cursor.remove();
   });
 
-  if (!content?.trim()) return <>{emptyFallback}</>;
+  if (!content || !content.replace(/\\[nr]/g, '\n').trim()) return <>{emptyFallback}</>;
   if (mode === 'plainSummary') return <>{extractMarkdownSummary(content)}</>;
 
   const remarkPlugins: Parameters<typeof ReactMarkdown>[0]['remarkPlugins'] = [remarkGfm];
@@ -124,7 +139,7 @@ export function MarkdownContent({
           // ── Headings ────────────────────────────────────────────────────────
           h1: ({ children, ...props }) =>
             shouldShowAnchors ? (
-              <MarkdownHeading level={1} onAnchorClick={onHeadingAnchorClick} {...props}>
+              <MarkdownHeading level={1} anchorId={nextHeadingId(children)} onAnchorClick={onHeadingAnchorClick} {...props}>
                 {children}
               </MarkdownHeading>
             ) : (
@@ -132,7 +147,7 @@ export function MarkdownContent({
             ),
           h2: ({ children, ...props }) =>
             shouldShowAnchors ? (
-              <MarkdownHeading level={2} onAnchorClick={onHeadingAnchorClick} {...props}>
+              <MarkdownHeading level={2} anchorId={nextHeadingId(children)} onAnchorClick={onHeadingAnchorClick} {...props}>
                 {children}
               </MarkdownHeading>
             ) : (
@@ -140,7 +155,7 @@ export function MarkdownContent({
             ),
           h3: ({ children, ...props }) =>
             shouldShowAnchors ? (
-              <MarkdownHeading level={3} onAnchorClick={onHeadingAnchorClick} {...props}>
+              <MarkdownHeading level={3} anchorId={nextHeadingId(children)} onAnchorClick={onHeadingAnchorClick} {...props}>
                 {children}
               </MarkdownHeading>
             ) : (
@@ -210,7 +225,7 @@ export function MarkdownContent({
                 </span>
               );
             }
-            const safeHref = sanitizeMarkdownUrl(src);
+            const safeHref = sanitizeMarkdownImageUrl(typeof src === 'string' ? src : undefined);
             return <MarkdownImage src={safeHref} alt={alt} title={title} />;
           },
 

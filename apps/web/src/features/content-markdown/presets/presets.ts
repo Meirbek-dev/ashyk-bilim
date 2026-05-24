@@ -309,7 +309,7 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowTable: true,
     allowMath: false,
     allowCodeBlock: false,
-    allowImages: true,
+    allowImages: false,
     toolbarGroups: ['formatting', 'headings', 'lists', 'media', 'table'],
     snippets: courseSnippets,
   },
