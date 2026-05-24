@@ -7,6 +7,7 @@ import ReviewBulkActionBar from '@/features/grading/review/components/ReviewBulk
 import GradeForm from '@/features/grading/review/components/GradeForm';
 import type { Submission } from '@/features/grading/domain';
 import { AnnotationProvider } from '@/features/grading/review/AnnotationContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const mocks = vi.hoisted(() => ({
   publishAssessmentGradesMock: vi.fn(),
@@ -276,14 +277,17 @@ describe('teacher review controls', () => {
       grading_json: { auto_graded: false, needs_manual_review: false, feedback: '' },
     });
 
+    const queryClient = new QueryClient();
     render(
-      <AnnotationProvider>
-        <GradeForm
-          submissionUuid="submission_review"
-          onSaved={vi.fn().mockResolvedValue(undefined)}
-          navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
-        />
-      </AnnotationProvider>,
+      <QueryClientProvider client={queryClient}>
+        <AnnotationProvider>
+          <GradeForm
+            submissionUuid="submission_review"
+            onSaved={vi.fn().mockResolvedValue(undefined)}
+            navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+          />
+        </AnnotationProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByText('releaseStateHidden')).toBeInTheDocument();
@@ -296,15 +300,18 @@ describe('teacher review controls', () => {
     const onSaved = vi.fn().mockResolvedValue(undefined);
     mocks.gradingPanelState.submission = createSubmission({ status: 'GRADED', final_score: 94, version: 8 });
 
+    const queryClient = new QueryClient();
     render(
-      <AnnotationProvider>
-        <GradeForm
-          submissionUuid="submission_review"
-          assessmentUuid="assessment_review"
-          onSaved={onSaved}
-          navigation={{ hasNext: true, hasPrevious: true, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
-        />
-      </AnnotationProvider>,
+      <QueryClientProvider client={queryClient}>
+        <AnnotationProvider>
+          <GradeForm
+            submissionUuid="submission_review"
+            assessmentUuid="assessment_review"
+            onSaved={onSaved}
+            navigation={{ hasNext: true, hasPrevious: true, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+          />
+        </AnnotationProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByText('releaseStateAwaitingRelease')).toBeInTheDocument();
@@ -333,14 +340,17 @@ describe('teacher review controls', () => {
   it('explains already visible grades and keeps publish disabled after release', () => {
     mocks.gradingPanelState.submission = createSubmission({ status: 'PUBLISHED', final_score: 88 });
 
+    const queryClient = new QueryClient();
     render(
-      <AnnotationProvider>
-        <GradeForm
-          submissionUuid="submission_review"
-          onSaved={vi.fn().mockResolvedValue(undefined)}
-          navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
-        />
-      </AnnotationProvider>,
+      <QueryClientProvider client={queryClient}>
+        <AnnotationProvider>
+          <GradeForm
+            submissionUuid="submission_review"
+            onSaved={vi.fn().mockResolvedValue(undefined)}
+            navigation={{ hasNext: false, hasPrevious: false, goNext: vi.fn(), goPrevious: vi.fn(), selectedIndex: 0 }}
+          />
+        </AnnotationProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByText('releaseStateVisible')).toBeInTheDocument();

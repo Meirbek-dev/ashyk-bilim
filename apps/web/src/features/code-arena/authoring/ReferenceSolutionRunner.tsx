@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { apiFetch } from '@/lib/api-client';
 import type { CodeChallengeSettings, Judge0Language } from '@/services/courses/code-challenges';
 import { cn } from '@/lib/utils';

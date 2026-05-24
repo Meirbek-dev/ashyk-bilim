@@ -426,3 +426,91 @@ def test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind(
     assert lifecycle_response.status_code == 422
     lifecycle_payload = lifecycle_response.json()
     assert lifecycle_payload["detail"]["issues"] == readiness_payload["issues"]
+
+
+def test_validate_code_challenge_endpoint(
+    api_client: TestClient,
+    db_session_factory,
+    monkeypatch,
+) -> None:
+    from src.services.code_execution.service import CodeExecutionCaseResult
+    from src.db.code_execution import CodeRunStatus
+
+    assessment = _seed_assessment(
+        db_session_factory,
+        kind=AssessmentType.CODE_CHALLENGE,
+        title="Python challenge",
+        scheduled_at=None,
+        items=[
+            {
+                "kind": ItemKind.CODE,
+                "title": "Two Sum",
+                "max_score": 100,
+                "body_json": {
+                    "kind": "CODE",
+                    "prompt": "Find sum.",
+                    "languages": [71],
+                    "starter_code": {"71": "def f(): pass"},
+                    "reference_solutions": {"71": "def f(): return 4"},
+                    "tests": [
+                        {
+                            "id": "t1",
+                            "input": "2",
+                            "expected_output": "4",
+                            "is_visible": True,
+                            "weight": 1,
+                            "match_mode": "EXACT",
+                        }
+                    ],
+                },
+            }
+        ],
+    )
+
+    class FakeResult:
+        run_uuid = "run_123"
+        status = CodeRunStatus.ACCEPTED
+        passed = 1
+        total = 1
+        score = 100.0
+        compile_output = "compiled ok"
+        error_message = None
+        details = [
+            CodeExecutionCaseResult(
+                test_id="t1",
+                passed=True,
+                is_visible=True,
+                stdin="2",
+                expected="4",
+                actual="4",
+                stdout="4",
+                stderr=None,
+                compile_output=None,
+                message=None,
+                status_id=3,
+                status_description="Accepted",
+                judge0_token="token",
+                time=0.01,
+                memory=1024,
+                weight=1.0,
+                description="",
+            )
+        ]
+
+    async def mock_run(*args, **kwargs):
+        return FakeResult()
+
+    from src.services.code_execution.service import CodeExecutionService
+    monkeypatch.setattr(CodeExecutionService, "run", mock_run)
+
+    response = api_client.post(
+        f"/assessments/{assessment.assessment_uuid}/code-challenge/validate"
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "results" in payload
+    assert "71" in payload["results"]
+    assert payload["results"]["71"]["ok"] is True
+    assert payload["results"]["71"]["passed"] == 1
+

@@ -681,10 +681,12 @@ async def validate_code_challenge_service(
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_submit_access(current_user, activity, course, db_session)
 
-    from src.db.assessments import AssessmentItem, ItemKind
+    from src.db.assessments import AssessmentItem, ItemKind, Assessment
     item = db_session.exec(
-        select(AssessmentItem).where(
-            AssessmentItem.assessment_uuid == assessment_uuid,
+        select(AssessmentItem)
+        .join(Assessment, Assessment.id == AssessmentItem.assessment_id)
+        .where(
+            Assessment.assessment_uuid == assessment_uuid,
             AssessmentItem.kind == ItemKind.CODE
         )
     ).first()
@@ -719,7 +721,7 @@ async def validate_code_challenge_service(
             result = await service.run(
                 db_session=db_session,
                 assessment_uuid=assessment_uuid,
-                item_uuid=item_uuid,
+                item_uuid=item.item_uuid,
                 user_id=current_user.id,
                 purpose=CodeRunPurpose.REFERENCE_CHECK,
                 language_id=lang_id,

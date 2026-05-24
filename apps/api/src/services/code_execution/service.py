@@ -54,6 +54,33 @@ _IDEMPOTENT_REUSE_STATUSES = frozenset({
 })
 
 
+def _compare_output(actual: str | None, expected: str | None, match_mode: str) -> bool:
+    act = (actual or "").strip("\r\n")
+    exp = (expected or "").strip("\r\n")
+    if match_mode == "EXACT":
+        return act == exp
+    if match_mode == "TRIMMED":
+        return act.strip() == exp.strip()
+    if match_mode == "IGNORE_WHITESPACE":
+        return "".join(act.split()) == "".join(exp.split())
+    if match_mode == "NUMERIC_TOLERANCE":
+        act_tokens = act.split()
+        exp_tokens = exp.split()
+        if len(act_tokens) != len(exp_tokens):
+            return False
+        for a, e in zip(act_tokens, exp_tokens):
+            try:
+                af = float(a)
+                ef = float(e)
+                if abs(af - ef) > 1e-6:
+                    return False
+            except ValueError:
+                if a != e:
+                    return False
+        return True
+    return act == exp
+
+
 class CodeExecutionDegradedError(Exception):
     """Raised when Judge0 cannot accept or complete a run."""
 
@@ -466,7 +493,7 @@ class CodeExecutionService:
                 source_code=source_code,
                 language=language_id,
                 test_cases=[
-                    judge0.TestCase(test.input, test.expected_output if scored else None)
+                    judge0.TestCase(test.input, None)
                     for test in test_cases
                 ],
                 cpu_time_limit=float(time_limit_seconds) if time_limit_seconds else None,
@@ -496,14 +523,40 @@ class CodeExecutionService:
 
         for test, submission in zip(test_cases, submissions, strict=False):
             case_status = normalize_status(submission.status)
+            
+            # Extract standard status
+            status_id = (
+                int(submission.status)
+                if submission.status is not None
+                else None
+            )
+            status_description = (
+                str(submission.status)
+                if submission.status is not None
+                else ""
+            )
+
+            if scored and case_status == CodeRunStatus.ACCEPTED:
+                match_mode = getattr(test, "match_mode", "EXACT")
+                if not _compare_output(submission.stdout, test.expected_output, match_mode):
+                    case_status = CodeRunStatus.WRONG_ANSWER
+                    case_passed = False
+                    status_id = 4
+                    status_description = "Wrong Answer"
+                else:
+                    case_passed = True
+                    passed += 1
+            else:
+                case_passed = case_status == CodeRunStatus.ACCEPTED if scored else True
+                if case_passed and scored:
+                    passed += 1
+
             if (
                 case_status != CodeRunStatus.ACCEPTED
                 and overall_status == CodeRunStatus.ACCEPTED
             ):
                 overall_status = case_status
-            case_passed = case_status == CodeRunStatus.ACCEPTED if scored else True
-            if case_passed and scored:
-                passed += 1
+
             stdout = _truncate_output(submission.stdout, settings.max_output_bytes)
             stderr = _truncate_output(submission.stderr, settings.max_output_bytes)
             compile_output = _truncate_output(
@@ -526,12 +579,8 @@ class CodeExecutionService:
                     stderr=stderr,
                     compile_output=compile_output,
                     message=message,
-                    status_id=int(submission.status)
-                    if submission.status is not None
-                    else None,
-                    status_description=str(submission.status)
-                    if submission.status is not None
-                    else "",
+                    status_id=status_id,
+                    status_description=status_description,
                     judge0_token=str(submission.token)
                     if submission.token is not None
                     else None,

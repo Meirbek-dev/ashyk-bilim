@@ -163,7 +163,7 @@ async def test_code_execution_retries_failed_idempotent_run(monkeypatch, db_sess
         return [
             SimpleNamespace(
                 status=Status.ACCEPTED,
-                stdout="ok\n",
+                stdout="4\n",
                 stderr=None,
                 compile_output=None,
                 message=None,
@@ -556,3 +556,99 @@ async def test_code_execution_with_different_source_code_and_hash_in_key(
     assert (
         calls == 2
     )  # run_1 and run_2 were sent to Judge0, run_3 reused run_2 from cache
+
+
+@pytest.mark.asyncio
+async def test_code_execution_match_modes(monkeypatch, db_session):
+    outputs = []
+    def fake_run(**_kwargs):
+        return [
+            SimpleNamespace(
+                status=Status.ACCEPTED,
+                stdout=out,
+                stderr=None,
+                compile_output=None,
+                message=None,
+                token=f"token-{i}",
+                time=0.01,
+                memory=256,
+            )
+            for i, out in enumerate(outputs)
+        ]
+
+    monkeypatch.setattr("src.services.code_execution.service.judge0.run", fake_run)
+    service = CodeExecutionService(client_factory=FakeFactory())
+
+    # 1. EXACT match mode
+    outputs = ["hello\n", "hello", "hello \n"]
+    run = await service.run(
+        db_session=db_session,
+        assessment_uuid="assessment_code",
+        item_uuid="item_code",
+        user_id=42,
+        purpose=CodeRunPurpose.FINAL,
+        language_id=71,
+        source_code="print('hello')",
+        test_cases=[
+            CodeTestCase(id="c1", input="x", expected_output="hello", match_mode="EXACT"),
+            CodeTestCase(id="c2", input="x", expected_output="hello", match_mode="EXACT"),
+            CodeTestCase(id="c3_fail", input="x", expected_output="hello", match_mode="EXACT"),
+        ],
+    )
+    assert run.details[0].passed is True
+    assert run.details[1].passed is True
+    assert run.details[2].passed is False
+
+    # 2. TRIMMED match mode
+    outputs = ["  hello  \n", "world"]
+    run = await service.run(
+        db_session=db_session,
+        assessment_uuid="assessment_code",
+        item_uuid="item_code",
+        user_id=42,
+        purpose=CodeRunPurpose.FINAL,
+        language_id=71,
+        source_code="print('hello')",
+        test_cases=[
+            CodeTestCase(id="c3", input="x", expected_output="hello", match_mode="TRIMMED"),
+            CodeTestCase(id="c4", input="x", expected_output="world  ", match_mode="TRIMMED"),
+        ],
+    )
+    assert run.details[0].passed is True
+    assert run.details[1].passed is True
+
+    # 3. IGNORE_WHITESPACE match mode
+    outputs = ["h e l l o\n"]
+    run = await service.run(
+        db_session=db_session,
+        assessment_uuid="assessment_code",
+        item_uuid="item_code",
+        user_id=42,
+        purpose=CodeRunPurpose.FINAL,
+        language_id=71,
+        source_code="print('hello')",
+        test_cases=[
+            CodeTestCase(id="c5", input="x", expected_output="hello", match_mode="IGNORE_WHITESPACE"),
+        ],
+    )
+    assert run.details[0].passed is True
+
+    # 4. NUMERIC_TOLERANCE match mode
+    outputs = ["3.14159265\n", "100.0000001\n", "abc 123\n"]
+    run = await service.run(
+        db_session=db_session,
+        assessment_uuid="assessment_code",
+        item_uuid="item_code",
+        user_id=42,
+        purpose=CodeRunPurpose.FINAL,
+        language_id=71,
+        source_code="print('hello')",
+        test_cases=[
+            CodeTestCase(id="c6", input="x", expected_output="3.141593", match_mode="NUMERIC_TOLERANCE"),  # diff is ~3.5e-7
+            CodeTestCase(id="c7", input="x", expected_output="100.0", match_mode="NUMERIC_TOLERANCE"),  # diff is 1e-7
+            CodeTestCase(id="c8", input="x", expected_output="abc 123", match_mode="NUMERIC_TOLERANCE"),  # non-numeric token match
+        ],
+    )
+    assert run.details[0].passed is True
+    assert run.details[1].passed is True
+    assert run.details[2].passed is True
