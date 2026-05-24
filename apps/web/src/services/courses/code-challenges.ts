@@ -107,6 +107,7 @@ export interface TestCaseResult {
   status_id?: number | null;
   status_description: string;
   passed: boolean;
+  is_visible?: boolean;
   description?: string | null;
   weight?: number | null;
   time_ms?: number | null;
@@ -115,6 +116,8 @@ export interface TestCaseResult {
   stderr?: string | null;
   compile_output?: string | null;
   message?: string | null;
+  expected?: string | null;
+  stdin?: string | null;
 }
 
 export interface Judge0Language {
@@ -658,6 +661,7 @@ function toTestCaseResult(
     status_id: result.status_id ?? null,
     status_description: result.status_description ?? (result.passed ? 'Accepted' : run.status),
     passed: result.passed,
+    is_visible: true,
     description: result.description ?? null,
     weight: result.weight ?? null,
     time_ms: typeof result.time === 'number' ? Math.round(result.time * 1000) : null,
@@ -665,6 +669,8 @@ function toTestCaseResult(
     stdout: result.actual ?? run.stdout ?? null,
     stderr: run.stderr ?? null,
     compile_output: run.compile_output ?? null,
+    expected: result.expected ?? null,
+    stdin: result.stdin ?? null,
   };
 }
 

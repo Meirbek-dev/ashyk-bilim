@@ -100,7 +100,7 @@ export function CodeEditor({
         value={value}
         onChange={handleChange}
         onMount={handleMount}
-        theme={resolvedTheme === 'dark' ? 'vs-dark' : 'light'}
+        theme={(options.theme as string) || (resolvedTheme === 'dark' ? 'vs-dark' : 'light')}
         options={editorOptions}
         loading={
           <div

@@ -35,11 +35,13 @@ import type {
   TestCaseResult,
 } from '../domain';
 import { normalizeStarterCode, verdictFromResults, verdictFromRun, verdictLabel, verdictTone } from '../domain';
-import { useEditorPreferences } from '../hooks/useEditorPreferences';
+import { useEditorPreferences, useCodeArenaLayout } from '../hooks';
 import { EditorPane } from './EditorPane';
 import { ProblemPane } from './ProblemPane';
 import { ResultsDock } from './ResultsDock';
 import { ShortcutsDialog } from './ShortcutsDialog';
+import { CodeArenaHeader } from './CodeArenaHeader';
+import { HintDrawer } from './HintDrawer';
 
 interface CodeArenaWorkspaceProps {
   problem: CodeChallengeProblem;
@@ -68,6 +70,8 @@ export function CodeArenaWorkspace({
   const [resultTab, setResultTab] = useState<CodeResultTab>('testcase');
   const [commandOpen, setCommandOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [hintsOpen, setHintsOpen] = useState(false);
+  const { horizontalStorage, verticalStorage } = useCodeArenaLayout();
   const [codeByLanguage, setCodeByLanguage] = useState<Record<number, string>>(() =>
     initialLanguageId > 0 ? { [initialLanguageId]: answer?.source ?? initialCode } : {},
   );
@@ -230,54 +234,20 @@ export function CodeArenaWorkspace({
 
   return (
     <div className="bg-background flex h-full min-h-0 flex-col">
-      <div className="flex h-11 shrink-0 items-center justify-between border-b px-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <PanelLeft className="text-muted-foreground size-4" />
-          <div className="min-w-0 truncate text-sm font-semibold">{problem.title}</div>
-          <Badge variant={verdictTone(verdict)}>{verdictLabel(verdict)}</Badge>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={handleRunCustom}
-            disabled={disabled || isRunning}
-          >
-            {runCustom.isPending ? <Loader2 className="size-4 animate-spin" /> : <Terminal className="size-4" />}
-            Run
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={handleRunTests}
-            disabled={disabled || isRunning}
-          >
-            {runTests.isPending ? <Loader2 className="size-4 animate-spin" /> : <Rocket className="size-4" />}
-            Test
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleSubmit}
-            disabled={disabled || isRunning || !code.trim()}
-          >
-            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-            Submit
-          </Button>
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            onClick={() => document.documentElement.requestFullscreen?.()}
-          >
-            <Maximize2 className="size-4" />
-          </Button>
-        </div>
-      </div>
+      <CodeArenaHeader
+        problem={problem}
+        verdict={verdict}
+        isRunning={isRunning}
+        onRunCustom={handleRunCustom}
+        onRunTests={handleRunTests}
+        onSubmit={handleSubmit}
+        onOpenShortcuts={() => setShortcutsOpen(true)}
+        disabled={disabled}
+      />
 
       <ResizablePanelGroup
+        id="code-arena-main-layout"
+        storage={horizontalStorage}
         orientation="horizontal"
         className="min-h-0 flex-1"
       >
@@ -291,7 +261,13 @@ export function CodeArenaWorkspace({
             settings={settings}
             submissions={submissions}
             activeTab={problemTab}
-            onTabChange={setProblemTab}
+            onTabChange={(tab) => {
+              if (tab === 'hints') {
+                setHintsOpen(true);
+              } else {
+                setProblemTab(tab);
+              }
+            }}
             onUseInput={(input) => {
               setCustomInput(input);
               setResultTab('testcase');
@@ -304,6 +280,8 @@ export function CodeArenaWorkspace({
           minSize={42}
         >
           <ResizablePanelGroup
+            id="code-arena-editor-results-layout"
+            storage={verticalStorage}
             orientation="vertical"
             className="h-full"
           >
@@ -398,6 +376,11 @@ export function CodeArenaWorkspace({
       <ShortcutsDialog
         open={shortcutsOpen}
         onOpenChange={setShortcutsOpen}
+      />
+      <HintDrawer
+        open={hintsOpen}
+        onOpenChange={setHintsOpen}
+        hints={settings.hints}
       />
     </div>
   );

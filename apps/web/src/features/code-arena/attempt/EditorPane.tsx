@@ -1,14 +1,21 @@
 'use client';
 
-import { Code2, Command, RotateCcw, Settings2 } from 'lucide-react';
+import { useRef } from 'react';
+import { AlignLeft, Code2, Command, RotateCcw, Settings2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CodeEditor } from '@/components/features/courses/code-challenges/CodeEditor';
@@ -46,6 +53,15 @@ export function EditorPane({
   monacoOptions,
 }: EditorPaneProps) {
   const selectedLanguage = languages.find((language) => language.id === languageId);
+  const editorRef = useRef<any>(null);
+
+  const handleMount = (editor: any) => {
+    editorRef.current = editor;
+  };
+
+  const handleFormat = () => {
+    editorRef.current?.getAction('editor.action.formatDocument')?.run();
+  };
 
   return (
     <div className="bg-background flex h-full min-h-0 flex-col">
@@ -64,6 +80,16 @@ export function EditorPane({
           >
             <RotateCcw className="size-4" />
             Reset
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleFormat}
+            disabled={readOnly}
+          >
+            <AlignLeft className="size-4" />
+            Format
           </Button>
           <LanguageSelector
             languages={languages}
@@ -84,8 +110,10 @@ export function EditorPane({
             >
               <Settings2 className="size-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Editor</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Editor Settings</DropdownMenuLabel>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={preferences.wordWrap}
@@ -99,6 +127,52 @@ export function EditorPane({
               >
                 Minimap
               </DropdownMenuCheckboxItem>
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Font Size</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuRadioGroup
+                    value={String(preferences.fontSize)}
+                    onValueChange={(val) => onPreferencesChange({ ...preferences, fontSize: Number(val) })}
+                  >
+                    {[12, 13, 14, 15, 16, 18, 20].map((size) => (
+                      <DropdownMenuRadioItem key={size} value={String(size)}>
+                        {size}px
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Theme</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuRadioGroup
+                    value={preferences.theme}
+                    onValueChange={(val) => onPreferencesChange({ ...preferences, theme: val as any })}
+                  >
+                    <DropdownMenuRadioItem value="dark">Dark Theme</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="light">Light Theme</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="hc-black">High Contrast</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Keybindings</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuRadioGroup
+                    value={preferences.keybindings}
+                    onValueChange={(val) => onPreferencesChange({ ...preferences, keybindings: val as any })}
+                  >
+                    <DropdownMenuRadioItem value="standard">Standard VS Code</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="vim">Vim Emulation</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="emacs">Emacs Emulation</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
@@ -121,6 +195,7 @@ export function EditorPane({
         readOnly={readOnly}
         height="100%"
         className="min-h-0 flex-1 rounded-none border-0"
+        onMount={handleMount}
         options={monacoOptions}
         readOnlyMessage={readOnly ? 'This submission is read-only.' : undefined}
       />
