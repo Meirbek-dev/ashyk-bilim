@@ -2466,6 +2466,77 @@
       "signOut": "Sign Out"
     }
   },
+  "MarkdownEditor": {
+    "toolbar": {
+      "bold": "Bold",
+      "italic": "Italic",
+      "strikethrough": "Strikethrough",
+      "inlineCode": "Inline code",
+      "h1": "Heading 1",
+      "h2": "Heading 2",
+      "h3": "Heading 3",
+      "bulletList": "Bullet list",
+      "orderedList": "Numbered list",
+      "taskList": "Task list",
+      "blockquote": "Blockquote",
+      "codeBlock": "Code block",
+      "link": "Link",
+      "image": "Insert image",
+      "table": "Insert table",
+      "math": "Math (inline)",
+      "undo": "Undo",
+      "redo": "Redo",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen",
+      "snippets": "Snippets",
+      "viewWrite": "Write",
+      "viewSplit": "Split preview",
+      "viewPreview": "Preview"
+    },
+    "statusBar": {
+      "empty": "Empty",
+      "markdown": "Markdown",
+      "word": "word",
+      "words": "words",
+      "unsaved": "Unsaved",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "saveFailed": "Save failed"
+    },
+    "linkDialog": {
+      "title": "Insert link",
+      "editTitle": "Edit link",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://example.com or /relative/path",
+      "urlError": "Please enter a safe URL (https, http, mailto, or relative path).",
+      "openNewTab": "Open in new tab",
+      "removeLink": "Remove link",
+      "cancel": "Cancel",
+      "insert": "Insert",
+      "update": "Update"
+    },
+    "imageDialog": {
+      "title": "Insert image",
+      "srcLabel": "Image URL",
+      "srcPlaceholder": "https://example.com/image.png",
+      "srcError": "Please enter a valid image URL.",
+      "altLabel": "Alt text",
+      "altLabelOptional": "(optional but recommended)",
+      "altPlaceholder": "Describe the image for screen readers",
+      "cancel": "Cancel",
+      "insert": "Insert image"
+    },
+    "validation": {
+      "required": "Content is required.",
+      "tooLong": "Content is {count} characters over the limit.",
+      "nearLimit": "Content is approaching the character limit.",
+      "rawHtml": "Raw HTML is not supported.",
+      "unsafeLink": "One or more links use an unsafe protocol.",
+      "codeFenceUnclosed": "A code block appears to be missing a closing fence.",
+      "mathUnbalanced": "A math expression appears to have an unbalanced $ delimiter.",
+      "tableColumnMismatch": "A table appears to have rows with different column counts."
+    }
+  },
   "CourseBreadcrumbs": {
     "courses": "Courses"
   },

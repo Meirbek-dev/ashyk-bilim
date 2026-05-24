@@ -2465,6 +2465,77 @@
       "signOut": "Шығу"
     }
   },
+  "MarkdownEditor": {
+    "toolbar": {
+      "bold": "Жирту",
+      "italic": "Курсив",
+      "strikethrough": "Сызу",
+      "inlineCode": "Кіріктірілген код",
+      "h1": "1-тақырып",
+      "h2": "2-тақырып",
+      "h3": "3-тақырып",
+      "bulletList": "Таңбалы тізім",
+      "orderedList": "Нөмірлі тізім",
+      "taskList": "Тапсырма тізімі",
+      "blockquote": "Дәйексөз",
+      "codeBlock": "Код блогы",
+      "link": "Сілтеме",
+      "image": "Кескін кірістіру",
+      "table": "Кесте кірістіру",
+      "math": "Математика (кіріктірілген)",
+      "undo": "Болдырмау",
+      "redo": "Қайталау",
+      "fullscreen": "Толық экран",
+      "exitFullscreen": "Толық экраннан шығу",
+      "snippets": "Үзінділер",
+      "viewWrite": "Жазу",
+      "viewSplit": "Алдын ала қарау",
+      "viewPreview": "Алдын ала қарау"
+    },
+    "statusBar": {
+      "empty": "Бос",
+      "markdown": "Markdown",
+      "word": "сөз",
+      "words": "сөздер",
+      "unsaved": "Сақталмаған",
+      "saving": "Сақталуда…",
+      "saved": "Сақталды",
+      "saveFailed": "Сақтау сәтсіз аяқталды"
+    },
+    "linkDialog": {
+      "title": "Сілтеме кірістіру",
+      "editTitle": "Сілтемені өңдеу",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://example.com немесе /relative/path",
+      "urlError": "Қауіпсіз URL енгізіңіз (https, http, mailto немесе салыстырмалы жол).",
+      "openNewTab": "Жаңа қойындыда ашу",
+      "removeLink": "Сілтемені жою",
+      "cancel": "Болдырмау",
+      "insert": "Кірістіру",
+      "update": "Жаңарту"
+    },
+    "imageDialog": {
+      "title": "Кескін кірістіру",
+      "srcLabel": "Кескін URL",
+      "srcPlaceholder": "https://example.com/image.png",
+      "srcError": "Жарамды кескін URL енгізіңіз.",
+      "altLabel": "Балама мәтін",
+      "altLabelOptional": "(міндетті емес, бірақ ұсынылады)",
+      "altPlaceholder": "Экран оқушылары үшін кескінді сипаттаңыз",
+      "cancel": "Болдырмау",
+      "insert": "Кескінді кірістіру"
+    },
+    "validation": {
+      "required": "Мазмұн міндетті.",
+      "tooLong": "Мазмұн шектен {count} таңба артық.",
+      "nearLimit": "Мазмұн таңба шегіне жақындап жатыр.",
+      "rawHtml": "HTML мәтін қолдау көрсетілмейді.",
+      "unsafeLink": "Бір немесе бірнеше сілтеме қауіпті протокол пайдаланады.",
+      "codeFenceUnclosed": "Код блогында жабылатын тордың жоқ болуы мүмкін.",
+      "mathUnbalanced": "Математикалық өрнектегі $ бөлгіш теңгерімсіз болуы мүмкін.",
+      "tableColumnMismatch": "Кестеде әртүрлі баған саны бар жолдар болуы мүмкін."
+    }
+  },
   "CourseBreadcrumbs": {
     "courses": "Курстар"
   },

@@ -1,5 +1,13 @@
 import type { LucideIcon } from 'lucide-react';
-import { BookOpen, ClipboardCheck, Code2, FileText, GraduationCap, Lightbulb, MessageSquareText } from 'lucide-react';
+import {
+  BookOpen,
+  ClipboardCheck,
+  Code2,
+  FileText,
+  GraduationCap,
+  Lightbulb,
+  MessageSquareText,
+} from 'lucide-react';
 
 export type MarkdownEditorPreset =
   | 'assessmentDescription'
@@ -31,6 +39,16 @@ export interface MarkdownSnippet {
   markdown: string;
 }
 
+/** Groups of toolbar actions for preset-driven toolbar composition. */
+export type ToolbarGroup =
+  | 'formatting'      // Bold, italic, strikethrough, inline code
+  | 'headings'        // H1–H3
+  | 'lists'           // Bullet, ordered, task
+  | 'blocks'          // Code block, blockquote
+  | 'media'           // Link, image
+  | 'table'           // Insert table
+  | 'math';           // Math inline / block
+
 export interface MarkdownPresetConfig {
   label: string;
   description: string;
@@ -40,12 +58,18 @@ export interface MarkdownPresetConfig {
   minHeight: number;
   maxHeight?: number;
   maxLength: number;
+  /** Feature gates — controls both toolbar visibility and extension registration. */
   allowTaskList: boolean;
   allowTable: boolean;
   allowMath: boolean;
   allowCodeBlock: boolean;
+  allowImages: boolean;
+  /** Ordered list of toolbar groups to render. */
+  toolbarGroups: ToolbarGroup[];
   snippets: MarkdownSnippet[];
 }
+
+// ── Snippet libraries ─────────────────────────────────────────────────────────
 
 const taskSnippets: MarkdownSnippet[] = [
   {
@@ -56,7 +80,8 @@ const taskSnippets: MarkdownSnippet[] = [
   {
     id: 'rubric',
     label: 'Rubric table',
-    markdown: '| Criteria | Excellent | Needs work |\n| --- | --- | --- |\n| Accuracy | Complete and correct | Missing key requirements |\n',
+    markdown:
+      '| Criteria | Excellent | Needs work |\n| --- | --- | --- |\n| Accuracy | Complete and correct | Missing key requirements |\n',
   },
   {
     id: 'checklist',
@@ -102,6 +127,8 @@ const courseSnippets: MarkdownSnippet[] = [
   },
 ];
 
+// ── Preset definitions ────────────────────────────────────────────────────────
+
 export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig> = {
   assessmentDescription: {
     label: 'Assessment description',
@@ -115,6 +142,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowTable: true,
     allowMath: true,
     allowCodeBlock: true,
+    allowImages: false,
+    toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table', 'math'],
     snippets: taskSnippets,
   },
   questionPrompt: {
@@ -129,6 +158,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowTable: true,
     allowMath: true,
     allowCodeBlock: true,
+    allowImages: false,
+    toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table', 'math'],
     snippets: taskSnippets.slice(0, 2),
   },
   explanation: {
@@ -143,6 +174,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowTable: true,
     allowMath: true,
     allowCodeBlock: true,
+    allowImages: false,
+    toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table', 'math'],
     snippets: taskSnippets.slice(1),
   },
   fileSubmissionInstructions: {
@@ -157,6 +190,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowTable: true,
     allowMath: true,
     allowCodeBlock: true,
+    allowImages: false,
+    toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table'],
     snippets: [
       {
         id: 'file-rules',
@@ -178,6 +213,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowTable: true,
     allowMath: true,
     allowCodeBlock: true,
+    allowImages: false,
+    toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table', 'math'],
     snippets: codeSnippets,
   },
   codeInputSpec: {
@@ -192,6 +229,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowTable: true,
     allowMath: true,
     allowCodeBlock: true,
+    allowImages: false,
+    toolbarGroups: ['formatting', 'lists', 'blocks', 'table', 'math'],
     snippets: codeSnippets.slice(1),
   },
   codeOutputSpec: {
@@ -206,6 +245,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowTable: true,
     allowMath: true,
     allowCodeBlock: true,
+    allowImages: false,
+    toolbarGroups: ['formatting', 'lists', 'blocks', 'table', 'math'],
     snippets: codeSnippets.slice(1),
   },
   codeExampleExplanation: {
@@ -220,6 +261,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowTable: true,
     allowMath: true,
     allowCodeBlock: true,
+    allowImages: false,
+    toolbarGroups: ['formatting', 'lists', 'blocks', 'math'],
     snippets: codeSnippets.slice(1),
   },
   codeHint: {
@@ -234,6 +277,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowTable: false,
     allowMath: true,
     allowCodeBlock: true,
+    allowImages: false,
+    toolbarGroups: ['formatting', 'lists', 'blocks', 'math'],
     snippets: codeSnippets.slice(2, 3),
   },
   codeEditorial: {
@@ -248,6 +293,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     allowTable: true,
     allowMath: true,
     allowCodeBlock: true,
+    allowImages: false,
+    toolbarGroups: ['formatting', 'headings', 'lists', 'blocks', 'media', 'table', 'math'],
     snippets: codeSnippets,
   },
   courseDescription: {
@@ -260,8 +307,10 @@ export const MARKDOWN_PRESETS: Record<MarkdownEditorPreset, MarkdownPresetConfig
     maxLength: 8000,
     allowTaskList: false,
     allowTable: true,
-    allowMath: true,
-    allowCodeBlock: true,
+    allowMath: false,
+    allowCodeBlock: false,
+    allowImages: true,
+    toolbarGroups: ['formatting', 'headings', 'lists', 'media', 'table'],
     snippets: courseSnippets,
   },
 };

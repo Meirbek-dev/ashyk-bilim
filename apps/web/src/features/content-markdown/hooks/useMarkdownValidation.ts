@@ -8,6 +8,10 @@ export interface MarkdownValidationIssue {
   message: string;
 }
 
+/**
+ * Validates markdown content against a preset's constraints.
+ * Returns all issues, not just the first.
+ */
 export function validateMarkdownContent(
   markdown: string,
   preset: MarkdownEditorPreset,
@@ -16,6 +20,7 @@ export function validateMarkdownContent(
   const config = getMarkdownPreset(preset);
   const issues: MarkdownValidationIssue[] = [];
 
+  // ── Required field ────────────────────────────────────────────────────────
   if (options.required && isMarkdownStructurallyEmpty(markdown)) {
     issues.push({
       severity: 'error',
@@ -24,14 +29,23 @@ export function validateMarkdownContent(
     });
   }
 
-  if (markdown.length > config.maxLength) {
+  // ── Length check ──────────────────────────────────────────────────────────
+  const overBy = markdown.length - config.maxLength;
+  if (overBy > 0) {
     issues.push({
       severity: 'error',
       code: 'content.tooLong',
-      message: `Content is ${markdown.length - config.maxLength} characters over the limit.`,
+      message: `Content is ${overBy} characters over the limit.`,
+    });
+  } else if (markdown.length > config.maxLength * 0.9) {
+    issues.push({
+      severity: 'warning',
+      code: 'content.nearLimit',
+      message: `Content is approaching the character limit.`,
     });
   }
 
+  // ── Security checks ───────────────────────────────────────────────────────
   if (hasRawHtml(markdown)) {
     issues.push({
       severity: 'error',
@@ -49,7 +63,12 @@ export function validateMarkdownContent(
     });
   }
 
-  if ((markdown.match(/```/g)?.length ?? 0) % 2 !== 0) {
+  // ── Structure checks ─────────────────────────────────────────────────────
+  // Count triple-backtick fences that are NOT inside code spans (simplified: count ```)
+  // Strip inline code spans first so embedded backticks don't count
+  const withoutInlineCode = markdown.replace(/`[^`\n]+`/g, '');
+  const fenceCount = (withoutInlineCode.match(/```/g)?.length ?? 0);
+  if (fenceCount % 2 !== 0) {
     issues.push({
       severity: 'warning',
       code: 'codeFence.unclosed',
@@ -57,13 +76,36 @@ export function validateMarkdownContent(
     });
   }
 
-  const dollarCount = markdown.match(/(?<!\\)\$/g)?.length ?? 0;
-  if (config.allowMath && dollarCount % 2 !== 0) {
-    issues.push({
-      severity: 'warning',
-      code: 'math.unbalanced',
-      message: 'A math expression appears to have an unbalanced $ delimiter.',
-    });
+  // ── Math checks ───────────────────────────────────────────────────────────
+  if (config.allowMath) {
+    // Only count $ that look like math delimiters (not currency: $100, $price)
+    // Math $ must be followed by a non-digit, non-space, non-end character OR be $$
+    const mathDollarCount = (markdown.match(/(?<!\\)\$(?!\d)(?!\s)/g)?.length ?? 0);
+    if (mathDollarCount % 2 !== 0) {
+      issues.push({
+        severity: 'warning',
+        code: 'math.unbalanced',
+        message: 'A math expression appears to have an unbalanced $ delimiter.',
+      });
+    }
+  }
+
+  // ── Table structure check ─────────────────────────────────────────────────
+  if (config.allowTable) {
+    const tableLines = markdown.split('\n').filter((l) => l.includes('|'));
+    let lastColCount = -1;
+    for (const line of tableLines) {
+      const cols = line.split('|').filter((_, i, arr) => i > 0 && i < arr.length - 1).length;
+      if (lastColCount > 0 && cols > 0 && cols !== lastColCount) {
+        issues.push({
+          severity: 'warning',
+          code: 'table.columnMismatch',
+          message: 'A table appears to have rows with different column counts.',
+        });
+        break;
+      }
+      if (cols > 0) lastColCount = cols;
+    }
   }
 
   return issues;

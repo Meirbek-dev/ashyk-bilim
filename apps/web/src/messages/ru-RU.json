@@ -2466,6 +2466,77 @@
       "signOut": "Выйти"
     }
   },
+  "MarkdownEditor": {
+    "toolbar": {
+      "bold": "Жирный",
+      "italic": "Курсив",
+      "strikethrough": "Зачёркнутый",
+      "inlineCode": "Встроенный код",
+      "h1": "Заголовок 1",
+      "h2": "Заголовок 2",
+      "h3": "Заголовок 3",
+      "bulletList": "Маркированный список",
+      "orderedList": "Нумерованный список",
+      "taskList": "Список задач",
+      "blockquote": "Цитата",
+      "codeBlock": "Блок кода",
+      "link": "Ссылка",
+      "image": "Вставить изображение",
+      "table": "Вставить таблицу",
+      "math": "Математика (встроенная)",
+      "undo": "Отменить",
+      "redo": "Повторить",
+      "fullscreen": "Полный экран",
+      "exitFullscreen": "Выйти из полного экрана",
+      "snippets": "Фрагменты",
+      "viewWrite": "Редактировать",
+      "viewSplit": "Предварительный просмотр",
+      "viewPreview": "Просмотр"
+    },
+    "statusBar": {
+      "empty": "Пусто",
+      "markdown": "Markdown",
+      "word": "слово",
+      "words": "слов",
+      "unsaved": "Несохранено",
+      "saving": "Сохранение…",
+      "saved": "Сохранено",
+      "saveFailed": "Ошибка сохранения"
+    },
+    "linkDialog": {
+      "title": "Вставить ссылку",
+      "editTitle": "Редактировать ссылку",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://example.com или /relative/path",
+      "urlError": "Введите безопасный URL (https, http, mailto или относительный путь).",
+      "openNewTab": "Открыть в новой вкладке",
+      "removeLink": "Удалить ссылку",
+      "cancel": "Отмена",
+      "insert": "Вставить",
+      "update": "Обновить"
+    },
+    "imageDialog": {
+      "title": "Вставить изображение",
+      "srcLabel": "URL изображения",
+      "srcPlaceholder": "https://example.com/image.png",
+      "srcError": "Введите корректный URL изображения.",
+      "altLabel": "Альтернативный текст",
+      "altLabelOptional": "(необязательно, но рекомендуется)",
+      "altPlaceholder": "Опишите изображение для программ чтения экрана",
+      "cancel": "Отмена",
+      "insert": "Вставить изображение"
+    },
+    "validation": {
+      "required": "Содержимое обязательно.",
+      "tooLong": "Содержимое превышает лимит на {count} символов.",
+      "nearLimit": "Содержимое приближается к лимиту символов.",
+      "rawHtml": "Встроенный HTML не поддерживается.",
+      "unsafeLink": "Одна или несколько ссылок используют небезопасный протокол.",
+      "codeFenceUnclosed": "Похоже, в блоке кода отсутствует закрывающий разделитель.",
+      "mathUnbalanced": "Похоже, в математическом выражении несбалансированный разделитель $.",
+      "tableColumnMismatch": "В таблице могут быть строки с разным количеством столбцов."
+    }
+  },
   "CourseBreadcrumbs": {
     "courses": "Курсы"
   },

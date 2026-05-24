@@ -1,37 +1,18 @@
 'use client';
 
 import { EditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import Link from '@tiptap/extension-link';
-import { Table } from '@tiptap/extension-table';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { TableHeader } from '@tiptap/extension-table-header';
-import { TableRow } from '@tiptap/extension-table-row';
-import { Markdown } from 'tiptap-markdown';
-import {
-  Bold,
-  Code,
-  Eye,
-  Heading2,
-  Italic,
-  LinkIcon,
-  List,
-  ListOrdered,
-  Redo2,
-  Rows3,
-  SplitSquareHorizontal,
-  TextCursorInput,
-  Undo2,
-} from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { MarkdownContent } from '../renderer/MarkdownContent';
 import type { MarkdownEditorPreset, MarkdownEditorSaveState } from '../presets/presets';
 import { getMarkdownPreset } from '../presets/presets';
 import { normalizeMarkdown, isMarkdownStructurallyEmpty } from '../utils/markdown-sanitize';
-import { getHighestMarkdownIssueSeverity, validateMarkdownContent } from '../hooks/useMarkdownValidation';
+import { validateMarkdownContent } from '../hooks/useMarkdownValidation';
+import { buildEditorExtensions } from '../lib/tiptap-extensions';
+import { EditorToolbar } from './EditorToolbar';
+import { EditorStatusBar } from './EditorStatusBar';
+import type { ViewMode } from './EditorToolbar';
 
 interface MarkdownEditorProps {
   value: string;
@@ -47,8 +28,6 @@ interface MarkdownEditorProps {
   required?: boolean;
   onBlur?: () => void;
 }
-
-type ViewMode = 'write' | 'split' | 'preview';
 
 export function MarkdownEditor({
   value,
@@ -66,54 +45,64 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const config = getMarkdownPreset(preset);
   const [viewMode, setViewMode] = useState<ViewMode>('write');
-  const [lastInsertedSnippet, setLastInsertedSnippet] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const normalizedValue = normalizeMarkdown(value ?? '');
+  // Ref to track whether current content change came from the editor itself
+  const isInternalUpdateRef = useRef(false);
 
   const issues = useMemo(
     () => validateMarkdownContent(normalizedValue, preset, { required }),
     [normalizedValue, preset, required],
   );
-  const severity = getHighestMarkdownIssueSeverity(issues);
+
   const charCount = normalizedValue.length;
+  const wordCount = normalizedValue.trim()
+    ? normalizedValue.trim().split(/\s+/).length
+    : 0;
   const effectiveMinHeight = minHeight ?? config.minHeight;
   const effectiveMaxHeight = maxHeight ?? config.maxHeight;
 
+  // Stable extensions array — rebuilt only when preset changes
+  const extensions = useMemo(
+    () => buildEditorExtensions({ config, placeholder }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [preset, placeholder],
+  );
+
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({ codeBlock: {} }),
-      Placeholder.configure({ placeholder: placeholder ?? config.placeholder }),
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-        linkOnPaste: true,
-      }),
-      Table.configure({ resizable: false }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      Markdown.configure({ html: false, tightLists: true, transformPastedText: true }),
-    ],
+    extensions,
     content: normalizedValue,
     editable: !disabled,
     autofocus: autoFocus,
     immediatelyRender: false,
     onBlur,
     onUpdate: ({ editor: activeEditor }) => {
-      const markdown: string = (activeEditor.storage as any).markdown.getMarkdown();
+      const markdown = activeEditor.storage?.markdown?.getMarkdown?.() as string | undefined;
+      if (markdown === undefined) return;
+      isInternalUpdateRef.current = true;
       onChange(normalizeMarkdown(markdown));
     },
     editorProps: {
       attributes: {
         class: cn('outline-none px-4 py-3 focus:outline-none'),
+        'aria-label': `${config.label} editor`,
+        'aria-multiline': 'true',
+        role: 'textbox',
       },
     },
   });
 
+  // Sync external value changes into the editor, but skip updates the editor itself emitted
   useEffect(() => {
     if (!editor) return;
-    const current: string = normalizeMarkdown((editor.storage as any).markdown.getMarkdown());
+    if (isInternalUpdateRef.current) {
+      isInternalUpdateRef.current = false;
+      return;
+    }
+    const current = normalizeMarkdown(editor.storage?.markdown?.getMarkdown?.() ?? '');
     if (current !== normalizedValue) {
-      editor.commands.setContent(normalizedValue);
+      // emitUpdate: false prevents triggering onUpdate, which would re-normalize and loop
+      editor.commands.setContent(normalizedValue, false);
     }
   }, [editor, normalizedValue]);
 
@@ -121,24 +110,32 @@ export function MarkdownEditor({
     editor?.setEditable(!disabled);
   }, [disabled, editor]);
 
-  const insertMarkdown = (markdown: string) => {
-    if (!editor || !markdown) return;
-    editor.chain().focus().insertContent(markdown).run();
-  };
+  // Fullscreen keyboard shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'F11') {
+        e.preventDefault();
+        setIsFullscreen((v) => !v);
+      }
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isFullscreen]);
 
-  const setLink = () => {
-    if (!editor) return;
-    const current = editor.getAttributes('link').href as string | undefined;
-    const href = globalThis.prompt('Paste a safe URL', current ?? '');
-    if (href === null) return;
-    if (!href.trim()) {
-      editor.chain().focus().unsetLink().run();
-      return;
-    }
-    editor.chain().focus().setLink({ href: href.trim() }).run();
-  };
+  const handleFullscreenToggle = useCallback(() => {
+    setIsFullscreen((v) => !v);
+  }, []);
 
-  return (
+  const severity = issues.some((i) => i.severity === 'error')
+    ? 'error'
+    : issues.some((i) => i.severity === 'warning')
+      ? 'warning'
+      : null;
+
+  const editorPanel = (
     <div
       className={cn(
         'bg-card overflow-hidden rounded-md border shadow-sm transition-colors',
@@ -146,152 +143,36 @@ export function MarkdownEditor({
         disabled && 'opacity-70',
         severity === 'error' && 'border-destructive/70',
         severity === 'warning' && 'border-amber-500/70',
-        className,
+        isFullscreen && 'fixed inset-4 z-50 flex flex-col',
+        !isFullscreen && className,
       )}
     >
-      <div className="bg-muted/25 flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
-        <ToolbarButton
-          title="Bold"
-          active={editor?.isActive('bold')}
-          disabled={disabled}
-          onClick={() => editor?.chain().focus().toggleBold().run()}
-        >
-          <Bold className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Italic"
-          active={editor?.isActive('italic')}
-          disabled={disabled}
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
-        >
-          <Italic className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Inline code"
-          active={editor?.isActive('code')}
-          disabled={disabled}
-          onClick={() => editor?.chain().focus().toggleCode().run()}
-        >
-          <Code className="size-3.5" />
-        </ToolbarButton>
-        <div className="bg-border mx-1 h-5 w-px" />
-        <ToolbarButton
-          title="Heading"
-          active={editor?.isActive('heading', { level: 2 })}
-          disabled={disabled}
-          onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-        >
-          <Heading2 className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Bullet list"
-          active={editor?.isActive('bulletList')}
-          disabled={disabled}
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
-        >
-          <List className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Numbered list"
-          active={editor?.isActive('orderedList')}
-          disabled={disabled}
-          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-        >
-          <ListOrdered className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Link"
-          active={editor?.isActive('link')}
-          disabled={disabled}
-          onClick={setLink}
-        >
-          <LinkIcon className="size-3.5" />
-        </ToolbarButton>
-        {config.allowTable ? (
-          <ToolbarButton
-            title="Insert table"
-            disabled={disabled}
-            onClick={() => (editor?.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-          >
-            <Rows3 className="size-3.5" />
-          </ToolbarButton>
-        ) : null}
-        <ToolbarButton
-          title="Undo"
-          disabled={disabled}
-          onClick={() => editor?.chain().focus().undo().run()}
-        >
-          <Undo2 className="size-3.5" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Redo"
-          disabled={disabled}
-          onClick={() => editor?.chain().focus().redo().run()}
-        >
-          <Redo2 className="size-3.5" />
-        </ToolbarButton>
+      {/* Toolbar */}
+      <EditorToolbar
+        editor={editor}
+        config={config}
+        disabled={disabled}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        isFullscreen={isFullscreen}
+        onFullscreenToggle={handleFullscreenToggle}
+      />
 
-        <div className="ml-auto flex items-center gap-1">
-          {config.snippets.length > 0 ? (
-            <select
-              value={lastInsertedSnippet}
-              disabled={disabled}
-              aria-label="Insert snippet"
-              className="border-input bg-background h-8 max-w-44 rounded-md border px-2 text-xs"
-              onChange={(event) => {
-                const snippet = config.snippets.find((candidate) => candidate.id === event.target.value);
-                setLastInsertedSnippet(event.target.value);
-                if (snippet) insertMarkdown(`\n${snippet.markdown}`);
-                globalThis.setTimeout(() => setLastInsertedSnippet(''), 0);
-              }}
-            >
-              <option value="">{config.label}</option>
-              {config.snippets.map((snippet) => (
-                <option
-                  key={snippet.id}
-                  value={snippet.id}
-                >
-                  {snippet.label}
-                </option>
-              ))}
-            </select>
-          ) : null}
-          <ViewModeButton
-            mode="write"
-            activeMode={viewMode}
-            onClick={setViewMode}
-            title="Write"
-            icon={<TextCursorInput className="size-3.5" />}
-          />
-          <ViewModeButton
-            mode="split"
-            activeMode={viewMode}
-            onClick={setViewMode}
-            title="Split"
-            icon={<SplitSquareHorizontal className="size-3.5" />}
-          />
-          <ViewModeButton
-            mode="preview"
-            activeMode={viewMode}
-            onClick={setViewMode}
-            title="Preview"
-            icon={<Eye className="size-3.5" />}
-          />
-        </div>
-      </div>
-
+      {/* Content area */}
       <div
         className={cn(
           'grid min-h-0',
           viewMode === 'split' && 'md:grid-cols-2',
           viewMode === 'preview' && 'grid-cols-1',
+          isFullscreen && 'flex-1 overflow-hidden',
         )}
-        style={{
-          minHeight: effectiveMinHeight,
-          maxHeight: effectiveMaxHeight,
-        }}
+        style={
+          !isFullscreen
+            ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight }
+            : undefined
+        }
       >
-        {viewMode !== 'preview' ? (
+        {viewMode !== 'preview' && (
           <EditorContent
             editor={editor}
             className={cn(
@@ -303,109 +184,54 @@ export function MarkdownEditor({
               '[&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0',
               '[&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]',
               disabled && 'pointer-events-none',
+              isFullscreen && 'h-full',
             )}
-            style={{ minHeight: effectiveMinHeight }}
+            style={!isFullscreen ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight } : undefined}
           />
-        ) : null}
-        {viewMode !== 'write' ? (
+        )}
+        {viewMode !== 'write' && (
           <div
             className={cn(
               'bg-background min-h-0 overflow-y-auto p-4',
               viewMode === 'split' && 'border-t md:border-t-0 md:border-l',
+              isFullscreen && 'h-full',
             )}
-            style={{ minHeight: effectiveMinHeight }}
+            style={!isFullscreen ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight } : undefined}
           >
             <MarkdownContent
               content={normalizedValue}
               mode={config.renderMode}
-              emptyFallback={<p className="text-muted-foreground text-sm">{config.placeholder}</p>}
+              allowImages={config.allowImages}
+              showHeadingAnchors={false}
+              emptyFallback={
+                <p className="text-muted-foreground text-sm">{config.placeholder}</p>
+              }
             />
           </div>
-        ) : null}
+        )}
       </div>
 
-      <div className="bg-muted/20 flex flex-wrap items-center justify-between gap-2 border-t px-3 py-1.5 text-[11px]">
-        <div className="text-muted-foreground flex items-center gap-2">
-          <span>{config.label}</span>
-          <span>/</span>
-          <span>{isMarkdownStructurallyEmpty(normalizedValue) ? 'Empty' : 'Markdown'}</span>
-          {saveState !== 'idle' ? (
-            <>
-              <span>/</span>
-              <span className={cn(saveState === 'error' && 'text-destructive')}>{saveState}</span>
-            </>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2">
-          {issues[0] ? (
-            <span className={cn(severity === 'error' ? 'text-destructive' : 'text-amber-600')}>{issues[0].message}</span>
-          ) : null}
-          <span className={cn(charCount > config.maxLength && 'text-destructive')}>
-            {charCount}/{config.maxLength}
-          </span>
-        </div>
-      </div>
+      {/* Status bar */}
+      <EditorStatusBar
+        config={config}
+        charCount={charCount}
+        wordCount={wordCount}
+        isEmpty={isMarkdownStructurallyEmpty(normalizedValue)}
+        saveState={saveState}
+        issues={issues}
+      />
     </div>
   );
-}
 
-function ToolbarButton({
-  title,
-  active,
-  disabled,
-  onClick,
-  children,
-}: {
-  title: string;
-  active?: boolean | null;
-  disabled?: boolean;
-  onClick?: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      disabled={disabled}
-      onMouseDown={(event) => {
-        event.preventDefault();
-        onClick?.();
-      }}
-      className={cn(
-        'hover:bg-muted flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground',
-        active && 'bg-muted text-foreground',
-        disabled && 'cursor-not-allowed opacity-50',
-      )}
-    >
-      {children}
-    </button>
-  );
-}
+  if (isFullscreen) {
+    return (
+      <>
+        {/* Backdrop */}
+        <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setIsFullscreen(false)} />
+        {editorPanel}
+      </>
+    );
+  }
 
-function ViewModeButton({
-  mode,
-  activeMode,
-  onClick,
-  title,
-  icon,
-}: {
-  mode: ViewMode;
-  activeMode: ViewMode;
-  onClick: (mode: ViewMode) => void;
-  title: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      onClick={() => onClick(mode)}
-      className={cn(
-        'flex size-8 items-center justify-center rounded-md transition-colors',
-        activeMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-      )}
-    >
-      {icon}
-    </button>
-  );
+  return editorPanel;
 }
