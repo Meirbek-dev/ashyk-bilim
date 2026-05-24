@@ -672,4 +672,89 @@ async def get_code_item_run(
     )
 
 
+async def validate_code_challenge_service(
+    assessment_uuid: str,
+    current_user: PublicUser,
+    db_session: Session,
+) -> dict[str, Any]:
+    assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
+    activity, course = _get_activity_and_course(assessment, db_session)
+    _require_submit_access(current_user, activity, course, db_session)
+
+    from src.db.assessments import AssessmentItem, ItemKind
+    item = db_session.exec(
+        select(AssessmentItem).where(
+            AssessmentItem.assessment_uuid == assessment_uuid,
+            AssessmentItem.kind == ItemKind.CODE
+        )
+    ).first()
+    if item is None:
+        raise HTTPException(
+            status_code=404, detail="Элемент типа CODE не найден"
+        )
+
+    body = ITEM_BODY_ADAPTER.validate_python(item.body_json)
+    if body.kind != "CODE":
+        raise HTTPException(
+            status_code=400, detail="Тело элемента не является типом CODE"
+        )
+
+    all_tests = body.tests
+    service = get_code_execution_service()
+    
+    results_by_lang = {}
+    from src.db.code_execution import CodeRunPurpose, CodeRunStatus
+
+    for lang_id in body.languages:
+        ref_sol = (body.reference_solutions or {}).get(str(lang_id))
+        if not ref_sol:
+            results_by_lang[lang_id] = {
+                "ok": False,
+                "status": "MISSING_SOLUTION",
+                "message": "Reference solution is not defined for this language.",
+            }
+            continue
+            
+        try:
+            result = await service.run(
+                db_session=db_session,
+                assessment_uuid=assessment_uuid,
+                item_uuid=item_uuid,
+                user_id=current_user.id,
+                purpose=CodeRunPurpose.REFERENCE_CHECK,
+                language_id=lang_id,
+                source_code=ref_sol,
+                test_cases=all_tests,
+                time_limit_seconds=body.time_limit_seconds,
+                memory_limit_mb=body.memory_limit_mb,
+            )
+            
+            results_by_lang[lang_id] = {
+                "ok": result.status == CodeRunStatus.ACCEPTED,
+                "status": result.status.value,
+                "passed": result.passed,
+                "total": result.total,
+                "score": result.score,
+                "compile_output": result.compile_output,
+                "details": [
+                    {
+                        "test_id": d.test_id,
+                        "passed": d.passed,
+                        "status_description": d.status_description,
+                        "time": d.time,
+                        "memory": d.memory,
+                    }
+                    for d in result.details
+                ]
+            }
+        except Exception as exc:
+            results_by_lang[lang_id] = {
+                "ok": False,
+                "status": "ERROR",
+                "message": str(exc),
+            }
+
+    return {"results": results_by_lang}
+
+
 # ── Readiness ─────────────────────────────────────────────────────────────────

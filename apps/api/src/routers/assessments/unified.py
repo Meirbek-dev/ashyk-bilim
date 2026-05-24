@@ -576,6 +576,21 @@ async def api_get_code_item_run(
     )
 
 
+@router.post(
+    "/{assessment_uuid}/code-challenge/validate",
+)
+async def api_validate_code_challenge(
+    assessment_uuid: str,
+    current_user: Annotated[PublicUser, Depends(get_public_user)],
+    db_session: Annotated[Session, Depends(get_db_session)],
+):
+    """Validate reference solutions for all configured languages against the test suite."""
+    from src.services.assessments.attempt_service import validate_code_challenge_service
+    return await validate_code_challenge_service(
+        assessment_uuid, current_user, db_session
+    )
+
+
 # ── Attempt state ──────────────────────────────────────────────────────────────
 
 

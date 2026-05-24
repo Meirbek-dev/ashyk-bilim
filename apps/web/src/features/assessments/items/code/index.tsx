@@ -115,8 +115,16 @@ export function useCodeSubmitControl() {
   return { submitControl, handleSubmitControlChange };
 }
 
-export function CodeItemReviewDetail({ answer }: ItemReviewDetailProps<CodeAttemptItem>) {
-  return <CodeSubmissionReview answer={answer as ItemAnswer | null | undefined} />;
+export function CodeItemReviewDetail({ item, answer }: ItemReviewDetailProps<CodeAttemptItem>) {
+  const codeAnswer = answer?.kind === 'CODE' ? answer : null;
+  const languageId = codeAnswer?.language ?? 0;
+  const starterTemplate = item.settings.starter_code?.[String(languageId)] ?? '';
+  return (
+    <CodeSubmissionReview
+      answer={answer as ItemAnswer | null | undefined}
+      starterTemplate={starterTemplate}
+    />
+  );
 }
 
 registerItemKind({

@@ -1,1 +1,5 @@
 export { CodeChallengeBuilder } from './CodeChallengeBuilder';
+export { ProblemStatementEditor } from './ProblemStatementEditor';
+export { TestSuiteBuilder } from './TestSuiteBuilder';
+export { ReferenceSolutionRunner } from './ReferenceSolutionRunner';
+export { PublishReadinessPanel } from './PublishReadinessPanel';
