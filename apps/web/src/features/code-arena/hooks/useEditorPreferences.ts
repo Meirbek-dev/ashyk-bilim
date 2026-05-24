@@ -6,16 +6,12 @@ export interface CodeEditorPreferences {
   fontSize: number;
   wordWrap: boolean;
   minimap: boolean;
-  theme: 'dark' | 'light' | 'hc-black';
-  keybindings: 'standard' | 'vim' | 'emacs';
 }
 
 const DEFAULT_PREFERENCES: CodeEditorPreferences = {
   fontSize: 14,
   wordWrap: true,
   minimap: true,
-  theme: 'dark',
-  keybindings: 'standard',
 };
 
 const STORAGE_KEY = 'code-arena:editor-preferences:v1';
@@ -27,7 +23,12 @@ export function useEditorPreferences() {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     try {
-      setPreferences({ ...DEFAULT_PREFERENCES, ...JSON.parse(raw) });
+      const parsed = JSON.parse(raw) as Partial<CodeEditorPreferences>;
+      setPreferences({
+        fontSize: typeof parsed.fontSize === 'number' ? parsed.fontSize : DEFAULT_PREFERENCES.fontSize,
+        wordWrap: typeof parsed.wordWrap === 'boolean' ? parsed.wordWrap : DEFAULT_PREFERENCES.wordWrap,
+        minimap: typeof parsed.minimap === 'boolean' ? parsed.minimap : DEFAULT_PREFERENCES.minimap,
+      });
     } catch {
       setPreferences(DEFAULT_PREFERENCES);
     }
@@ -42,12 +43,9 @@ export function useEditorPreferences() {
       fontSize: preferences.fontSize,
       minimap: { enabled: preferences.minimap },
       wordWrap: preferences.wordWrap ? ('on' as const) : ('off' as const),
-      theme: preferences.theme === 'dark' ? 'vs-dark' : preferences.theme === 'hc-black' ? 'hc-black' : 'vs',
-      cursorStyle: preferences.keybindings === 'vim' ? ('block' as const) : ('line' as const),
     }),
     [preferences],
   );
 
   return { preferences, setPreferences, monacoOptions };
 }
-

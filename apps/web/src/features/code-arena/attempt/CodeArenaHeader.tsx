@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Clock, HelpCircle, LayoutGrid, List, Play, Rocket, Send } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, List, Play, Rocket, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -11,8 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import type { CodeChallengeProblem, CodeVerdict } from '../domain';
-import { verdictLabel, verdictTone } from '../domain';
+import { verdictLabel } from '../domain';
 
 interface CodeArenaHeaderProps {
   problem: CodeChallengeProblem;
@@ -21,7 +22,6 @@ interface CodeArenaHeaderProps {
   onRunCustom: () => void;
   onRunTests: () => void;
   onSubmit: () => void;
-  onOpenShortcuts: () => void;
   disabled?: boolean;
 }
 
@@ -32,7 +32,6 @@ export function CodeArenaHeader({
   onRunCustom,
   onRunTests,
   onSubmit,
-  onOpenShortcuts,
   disabled = false,
 }: CodeArenaHeaderProps) {
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -117,14 +116,10 @@ export function CodeArenaHeader({
             {problem.points} pts
           </span>
         ) : null}
-        {verdict ? (
-          <Badge variant={verdictTone(verdict)} className="text-[10px] py-0 px-1.5 uppercase font-bold animate-pulse">
-            {verdictLabel(verdict)}
-          </Badge>
-        ) : null}
+        <VerdictStatus verdict={verdict} />
       </div>
 
-      {/* Right: Timer, Console Buttons, Fullscreen */}
+      {/* Right: Timer and execution actions */}
       <div className="flex items-center gap-2">
         <div className="bg-muted text-muted-foreground flex h-8 items-center gap-1.5 rounded-md px-2.5 font-mono text-xs select-none">
           <Clock className="size-3.5" />
@@ -165,36 +160,30 @@ export function CodeArenaHeader({
           <Send className="size-3.5" />
           Submit
         </Button>
-
-        <div className="bg-border h-4 w-px" />
-
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={onOpenShortcuts}
-          className="size-8"
-        >
-          <HelpCircle className="size-4" />
-        </Button>
-        
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => {
-            if (document.fullscreenElement) {
-              void document.exitFullscreen();
-            } else {
-              void document.documentElement.requestFullscreen();
-            }
-          }}
-          className="size-8"
-        >
-          <LayoutGrid className="size-4" />
-        </Button>
       </div>
     </div>
+  );
+}
+
+function VerdictStatus({ verdict }: { verdict: CodeVerdict | null }) {
+  if (!verdict) return null;
+
+  return (
+    <span className="text-muted-foreground hidden items-center gap-1.5 text-xs md:inline-flex">
+      <span
+        className={cn(
+          'size-1.5 rounded-full',
+          verdict === 'ACCEPTED'
+            ? 'bg-emerald-500'
+            : verdict === 'RUNNING'
+              ? 'bg-blue-500'
+              : verdict === 'IDLE'
+                ? 'bg-muted-foreground/50'
+                : 'bg-rose-500',
+        )}
+      />
+      {verdictLabel(verdict)}
+    </span>
   );
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import { AlignLeft, Code2, Command, RotateCcw, Settings2 } from 'lucide-react';
+import { AlignLeft, Code2, RotateCcw, Settings2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -32,7 +32,6 @@ interface EditorPaneProps {
   allowedLanguages?: number[];
   readOnly?: boolean;
   starterCode: string;
-  onOpenCommandPalette: () => void;
   preferences: CodeEditorPreferences;
   onPreferencesChange: (next: CodeEditorPreferences) => void;
   monacoOptions: Record<string, unknown>;
@@ -47,7 +46,6 @@ export function EditorPane({
   allowedLanguages,
   readOnly = false,
   starterCode,
-  onOpenCommandPalette,
   preferences,
   onPreferencesChange,
   monacoOptions,
@@ -127,9 +125,9 @@ export function EditorPane({
               >
                 Minimap
               </DropdownMenuCheckboxItem>
-              
+
               <DropdownMenuSeparator />
-              
+
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>Font Size</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
@@ -145,45 +143,8 @@ export function EditorPane({
                   </DropdownMenuRadioGroup>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>Theme</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuRadioGroup
-                    value={preferences.theme}
-                    onValueChange={(val) => onPreferencesChange({ ...preferences, theme: val as any })}
-                  >
-                    <DropdownMenuRadioItem value="dark">Dark Theme</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="light">Light Theme</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="hc-black">High Contrast</DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>Keybindings</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuRadioGroup
-                    value={preferences.keybindings}
-                    onValueChange={(val) => onPreferencesChange({ ...preferences, keybindings: val as any })}
-                  >
-                    <DropdownMenuRadioItem value="standard">Standard VS Code</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="vim">Vim Emulation</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="emacs">Emacs Emulation</DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={onOpenCommandPalette}
-          >
-            <Command className="size-4" />
-            CmdK
-          </Button>
         </div>
       </div>
 

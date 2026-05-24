@@ -1,11 +1,8 @@
 'use client';
 
-import { Loader2, Maximize2, PanelLeft, Rocket, Send, Terminal } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   CommandDialog,
   CommandEmpty,
@@ -34,12 +31,11 @@ import type {
   CodeVerdict,
   TestCaseResult,
 } from '../domain';
-import { normalizeStarterCode, verdictFromResults, verdictFromRun, verdictLabel, verdictTone } from '../domain';
-import { useEditorPreferences, useCodeArenaLayout } from '../hooks';
+import { normalizeStarterCode, verdictFromResults, verdictFromRun } from '../domain';
+import { useEditorPreferences } from '../hooks';
 import { EditorPane } from './EditorPane';
 import { ProblemPane } from './ProblemPane';
 import { ResultsDock } from './ResultsDock';
-import { ShortcutsDialog } from './ShortcutsDialog';
 import { CodeArenaHeader } from './CodeArenaHeader';
 import { HintDrawer } from './HintDrawer';
 
@@ -69,9 +65,7 @@ export function CodeArenaWorkspace({
   const [problemTab, setProblemTab] = useState<CodeArenaTab>('description');
   const [resultTab, setResultTab] = useState<CodeResultTab>('testcase');
   const [commandOpen, setCommandOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [hintsOpen, setHintsOpen] = useState(false);
-  const { horizontalStorage, verticalStorage } = useCodeArenaLayout();
   const [codeByLanguage, setCodeByLanguage] = useState<Record<number, string>>(() =>
     initialLanguageId > 0 ? { [initialLanguageId]: answer?.source ?? initialCode } : {},
   );
@@ -223,9 +217,6 @@ export function CodeArenaWorkspace({
       } else if (event.key.toLowerCase() === 'k') {
         event.preventDefault();
         setCommandOpen(true);
-      } else if (event.key === '/') {
-        event.preventDefault();
-        setShortcutsOpen(true);
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -241,13 +232,11 @@ export function CodeArenaWorkspace({
         onRunCustom={handleRunCustom}
         onRunTests={handleRunTests}
         onSubmit={handleSubmit}
-        onOpenShortcuts={() => setShortcutsOpen(true)}
         disabled={disabled}
       />
 
       <ResizablePanelGroup
         id="code-arena-main-layout"
-        storage={horizontalStorage}
         orientation="horizontal"
         className="min-h-0 flex-1"
       >
@@ -281,7 +270,6 @@ export function CodeArenaWorkspace({
         >
           <ResizablePanelGroup
             id="code-arena-editor-results-layout"
-            storage={verticalStorage}
             orientation="vertical"
             className="h-full"
           >
@@ -298,7 +286,6 @@ export function CodeArenaWorkspace({
                 allowedLanguages={allowedLanguages}
                 readOnly={disabled}
                 starterCode={starterCode}
-                onOpenCommandPalette={() => setCommandOpen(true)}
                 preferences={preferences}
                 onPreferencesChange={setPreferences}
                 monacoOptions={monacoOptions}
@@ -317,10 +304,6 @@ export function CodeArenaWorkspace({
                 consoleOutput={consoleOutput}
                 results={results}
                 verdict={verdict}
-                submissions={submissions}
-                isRunning={isRunning}
-                onRunCustom={handleRunCustom}
-                onRunTests={handleRunTests}
               />
             </ResizablePanel>
           </ResizablePanelGroup>
@@ -362,25 +345,13 @@ export function CodeArenaWorkspace({
             >
               Reset to starter code
             </CommandItem>
-            <CommandItem
-              onSelect={() => {
-                setCommandOpen(false);
-                setShortcutsOpen(true);
-              }}
-            >
-              Show shortcuts
-            </CommandItem>
           </CommandGroup>
         </CommandList>
       </CommandDialog>
-      <ShortcutsDialog
-        open={shortcutsOpen}
-        onOpenChange={setShortcutsOpen}
-      />
       <HintDrawer
         open={hintsOpen}
         onOpenChange={setHintsOpen}
-        hints={settings.hints}
+        hints={settings.hints ?? []}
       />
     </div>
   );

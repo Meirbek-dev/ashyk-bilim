@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CodeEditor } from '@/components/features/courses/code-challenges/CodeEditor';
 import { CodeDiffViewer } from './CodeDiffViewer';
 import type { ItemAnswer } from '@/features/assessments/domain/items';
+import { cn } from '@/lib/utils';
 
 interface CodeSubmissionReviewProps {
   answer: ItemAnswer | null | undefined;
@@ -122,9 +123,15 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
             <div className="grid gap-2.5">
               {latestRun.details.map((detail: Record<string, unknown>, index: number) => {
                 const passedCase = Boolean(detail.passed);
+                const testId = typeof detail.test_id === 'string' || typeof detail.test_id === 'number'
+                  ? String(detail.test_id)
+                  : null;
+                const message = typeof detail.message === 'string' ? detail.message : null;
+                const compileOutput = typeof detail.compile_output === 'string' ? detail.compile_output : null;
+
                 return (
                   <div
-                    key={String(detail.test_id ?? index)}
+                    key={testId ?? index}
                     className={cn(
                       'rounded-md border p-3.5 transition-all duration-150',
                       passedCase ? 'border-emerald-500/10 bg-emerald-500/[0.01]' : 'border-rose-500/20 bg-rose-500/[0.01]'
@@ -138,29 +145,26 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
                           <XCircle className="size-4 text-rose-500" />
                         )}
                         Case {index + 1}
-                        {detail.test_id && (
+                        {testId ? (
                           <span className="text-muted-foreground font-mono text-[10px] font-normal">
-                            ({String(detail.test_id)})
+                            ({testId})
                           </span>
-                        )}
+                        ) : null}
                       </div>
                       <Badge variant={passedCase ? 'success' : 'destructive'} className="text-[9px] px-1 py-0 uppercase">
                         {passedCase ? 'Passed' : 'Failed'}
                       </Badge>
                     </div>
 
-                    {detail.message && (
+                    {message ? (
                       <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                        {String(detail.message)}
+                        {message}
                       </p>
-                    )}
+                    ) : null}
 
-                    {typeof detail === 'object' &&
-                    detail !== null &&
-                    'compile_output' in detail &&
-                    detail.compile_output ? (
+                    {compileOutput ? (
                       <pre className="mt-2.5 overflow-x-auto rounded bg-rose-500/10 border border-rose-500/20 p-2.5 font-mono text-xs text-rose-700 dark:text-rose-300">
-                        {String(detail.compile_output)}
+                        {compileOutput}
                       </pre>
                     ) : null}
                   </div>

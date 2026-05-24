@@ -5,11 +5,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Clock,
   Copy,
-  MemoryStick,
-  Play,
-  Terminal,
   XCircle,
   Loader2,
 } from 'lucide-react';
@@ -21,9 +17,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import type { CodeResultTab, CodeSubmission, CodeVerdict, TestCaseResult } from '../domain';
+import type { CodeResultTab, CodeVerdict, TestCaseResult } from '../domain';
 import { firstFailingResult, verdictLabel, verdictTone } from '../domain';
-import { SubmissionTimeline } from './SubmissionTimeline';
 import { CodeDiffViewer } from '../review/CodeDiffViewer';
 
 interface ResultsDockProps {
@@ -34,10 +29,6 @@ interface ResultsDockProps {
   consoleOutput: string;
   results: TestCaseResult[] | null;
   verdict: CodeVerdict | null;
-  submissions: CodeSubmission[];
-  isRunning: boolean;
-  onRunCustom: () => void;
-  onRunTests: () => void;
 }
 
 export function ResultsDock({
@@ -48,10 +39,6 @@ export function ResultsDock({
   consoleOutput,
   results,
   verdict,
-  submissions,
-  isRunning,
-  onRunCustom,
-  onRunTests,
 }: ResultsDockProps) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
@@ -90,7 +77,7 @@ export function ResultsDock({
       onValueChange={(value) => onTabChange(value as CodeResultTab)}
       className="flex h-full min-h-0 flex-col"
     >
-      <div className="bg-background flex shrink-0 items-center justify-between border-b">
+      <div className="bg-background flex shrink-0 items-center border-b">
         <TabsList className="h-9 rounded-none bg-transparent p-0">
           <TabsTrigger
             value="testcase"
@@ -118,37 +105,7 @@ export function ResultsDock({
           >
             Console
           </TabsTrigger>
-          <TabsTrigger
-            value="submissions"
-            className="data-[state=active]:border-primary h-9 rounded-none border-b-2 border-transparent px-3"
-          >
-            Submissions
-          </TabsTrigger>
         </TabsList>
-        <div className="flex items-center gap-1 px-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={onRunCustom}
-            disabled={isRunning}
-            className="h-7 text-xs gap-1.5"
-          >
-            <Terminal className="size-3.5" />
-            Run
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={onRunTests}
-            disabled={isRunning}
-            className="h-7 text-xs gap-1.5"
-          >
-            <Play className="size-3.5" />
-            Run tests
-          </Button>
-        </div>
       </div>
 
       <TabsContent
@@ -157,21 +114,8 @@ export function ResultsDock({
       >
         <ScrollArea className="h-full">
           <div className="space-y-3 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold">Custom input</div>
-                <div className="text-muted-foreground text-xs">Run code against stdin without changing the grade.</div>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                onClick={onRunCustom}
-                disabled={isRunning}
-                className="h-8 gap-1.5"
-              >
-                <Terminal className="size-3.5" />
-                Run code
-              </Button>
+            <div>
+              <div className="text-sm font-semibold">Custom input</div>
             </div>
             <Textarea
               value={customInput}
@@ -268,13 +212,6 @@ export function ResultsDock({
             </pre>
           </div>
         </ScrollArea>
-      </TabsContent>
-
-      <TabsContent
-        value="submissions"
-        className="min-h-0 flex-1 overflow-hidden"
-      >
-        <SubmissionTimeline submissions={submissions} />
       </TabsContent>
     </Tabs>
   );

@@ -7,7 +7,7 @@ import type {
 } from '@/services/courses/code-challenges';
 
 export type CodeArenaTab = 'description' | 'hints' | 'submissions';
-export type CodeResultTab = 'testcase' | 'result' | 'console' | 'submissions';
+export type CodeResultTab = 'testcase' | 'result' | 'console';
 
 export interface CodeChallengeProblem {
   activityUuid: string;

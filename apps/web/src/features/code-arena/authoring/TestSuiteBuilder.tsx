@@ -2,8 +2,6 @@
 
 import {
   Download,
-  Eye,
-  EyeOff,
   Plus,
   Trash2,
   Upload,
@@ -14,6 +12,7 @@ import {
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
@@ -21,7 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import type { CodeChallengeSettings, TestCase } from '@/services/courses/code-challenges';
-import { generateUUID } from '@/lib/utils';
+import { cn, generateUUID } from '@/lib/utils';
 
 interface TestSuiteBuilderProps {
   draft: CodeChallengeSettings;
