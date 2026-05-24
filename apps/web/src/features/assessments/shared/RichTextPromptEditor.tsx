@@ -60,8 +60,7 @@ export function RichTextPromptEditor({
     if (current !== value) {
       editor.commands.setContent(value);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  }, [editor, value]);
 
   useEffect(() => {
     editor?.setEditable(!disabled);

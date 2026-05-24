@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { CodeItemAttempt, CodeItemLoading, useCodeSubmitControl } from '@/features/assessments/items/code';
-import type { CodeItemSettings } from '@/features/assessments/items/code';
+import { CodeItemLoading, useCodeSubmitControl } from '@/features/assessments/items/code';
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items';
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission';
 import { useAttemptShellControls } from '@/features/assessments/shell';
 import type { AttemptSaveState } from '@/features/assessments/shell';
+import { CodeArenaWorkspace } from '@/features/code-arena/attempt';
+import { codeItemToProblem } from '@/features/code-arena/domain';
+import type { CodeChallengeSettings } from '@/services/courses/code-challenges';
 import type { KindAttemptProps } from '../index';
 
 interface CodeChallengeTestCase {
@@ -18,6 +20,7 @@ interface CodeChallengeTestCase {
   description?: string;
   is_visible: boolean;
   weight?: number;
+  match_mode?: 'EXACT' | 'TRIMMED' | 'IGNORE_WHITESPACE' | 'NUMERIC_TOLERANCE' | 'CUSTOM_CHECKER';
 }
 
 export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAttemptProps) {
@@ -25,7 +28,10 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   const normalizedActivityUuid = activityUuid.replace(/^activity_/, '');
   const assessmentUuid = vm?.assessmentUuid ?? null;
   const codeItem = useMemo(() => vm?.items.find((item) => item.body.kind === 'CODE') ?? null, [vm?.items]);
-  const settings = useMemo(() => (codeItem ? codeItemToSettings(codeItem) : null), [codeItem]);
+  const settings = useMemo(
+    () => (codeItem ? codeItemToSettings(codeItem, vm?.title, vm?.description ?? undefined) : null),
+    [codeItem, vm?.description, vm?.title],
+  );
   const submissionState = useAssessmentSubmission(assessmentUuid, normalizedActivityUuid);
   const saveDraft = submissionState.save;
   const { saveState } = submissionState;
@@ -39,6 +45,19 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   const initialCode =
     primaryLanguageId !== undefined ? (settings?.starter_code?.[String(primaryLanguageId)] ?? '') : '';
   const isConfigured = Boolean(settings?.allowed_languages?.length);
+  const problem = useMemo(
+    () =>
+      codeItem && settings
+        ? codeItemToProblem({
+            activityUuid: normalizedActivityUuid,
+            item: codeItem,
+            settings,
+            title: vm?.title,
+            description: vm?.description,
+          })
+        : null,
+    [codeItem, normalizedActivityUuid, settings, vm?.description, vm?.title],
+  );
 
   const shellControls = useMemo(
     () => ({
@@ -92,7 +111,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
     return <CodeItemLoading />;
   }
 
-  if (!codeItem || !settings || !isConfigured) {
+  if (!codeItem || !settings || !problem || !isConfigured) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
         <h3 className="text-lg font-semibold">{t('notConfigured')}</h3>
@@ -102,27 +121,27 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   }
 
   return (
-    <CodeItemAttempt
-      item={{
-        activityUuid: normalizedActivityUuid,
-        settings,
-        initialCode: codeAnswer?.source ?? initialCode,
-        initialLanguageId: codeAnswer?.language ?? primaryLanguageId ?? 0,
-        title: vm?.title,
-        description: vm?.description ?? undefined,
-        onSubmitControlChange: handleSubmitControlChange,
-        onSubmit: handleCanonicalSubmit,
-      }}
+    <CodeArenaWorkspace
+      problem={problem}
+      settings={settings}
       answer={codeAnswer}
       disabled={!vm?.canEdit}
+      initialCode={codeAnswer?.source ?? initialCode}
+      initialLanguageId={codeAnswer?.language ?? primaryLanguageId ?? 0}
+      onSubmitControlChange={handleSubmitControlChange}
+      onSubmit={handleCanonicalSubmit}
       onAnswerChange={(answer) => {
-        submissionState.setItemAnswer(codeItem.item_uuid, answer as ItemAnswer);
+        submissionState.setItemAnswer(codeItem.item_uuid, answer);
       }}
     />
   );
 }
 
-function codeItemToSettings(item: AssessmentItem): CodeItemSettings | null {
+function codeItemToSettings(
+  item: AssessmentItem,
+  title?: string | null,
+  description?: string | null,
+): CodeChallengeSettings | null {
   if (item.body.kind !== 'CODE') return null;
   const visibleTests = item.body.tests.filter((test) => test.is_visible).map(toCodeChallengeTestCase);
   const hiddenTests = item.body.tests.filter((test) => !test.is_visible).map(toCodeChallengeTestCase);
@@ -131,6 +150,11 @@ function codeItemToSettings(item: AssessmentItem): CodeItemSettings | null {
 
   return {
     uuid: item.item_uuid,
+    title: title ?? item.title,
+    prompt: item.body.prompt || description || '',
+    input_spec: item.body.input_spec ?? '',
+    output_spec: item.body.output_spec ?? '',
+    constraints: item.body.constraints ?? [],
     time_limit: timeLimit,
     memory_limit: memoryLimit,
     time_limit_ms: timeLimit * 1000,
@@ -140,6 +164,7 @@ function codeItemToSettings(item: AssessmentItem): CodeItemSettings | null {
     visible_tests: visibleTests,
     hidden_tests: hiddenTests,
     starter_code: item.body.starter_code,
+    reference_solutions: item.body.reference_solutions ?? {},
   };
 }
 
@@ -150,6 +175,7 @@ function toCodeChallengeTestCase(test: {
   description?: string | null;
   is_visible: boolean;
   weight: number;
+  match_mode?: 'EXACT' | 'TRIMMED' | 'IGNORE_WHITESPACE' | 'NUMERIC_TOLERANCE' | 'CUSTOM_CHECKER';
 }): CodeChallengeTestCase {
   return {
     id: test.id,
@@ -158,6 +184,7 @@ function toCodeChallengeTestCase(test: {
     description: test.description ?? undefined,
     is_visible: test.is_visible,
     weight: test.weight,
+    match_mode: test.match_mode ?? 'EXACT',
   };
 }
 

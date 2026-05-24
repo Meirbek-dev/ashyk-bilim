@@ -110,7 +110,13 @@ class CodeTestCase(PydanticStrictBaseModel):
     is_visible: bool = True
     weight: int = 1
     description: str | None = None
-    match_mode: Literal["EXACT"] = "EXACT"
+    match_mode: Literal[
+        "EXACT",
+        "TRIMMED",
+        "IGNORE_WHITESPACE",
+        "NUMERIC_TOLERANCE",
+        "CUSTOM_CHECKER",
+    ] = "EXACT"
 
 
 class CodeItemBody(PydanticStrictBaseModel):
@@ -887,6 +893,10 @@ class CodeRunRequest(PydanticStrictBaseModel):
 class CodeRunTestResult(PydanticStrictBaseModel):
     test_id: str
     passed: bool
+    status_id: int | None = None
+    status_description: str | None = None
+    description: str | None = None
+    weight: float | None = None
     stdin: str | None = None
     expected: str | None = None
     actual: str | None = None

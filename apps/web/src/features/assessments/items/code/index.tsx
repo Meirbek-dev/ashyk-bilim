@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import { CodeChallengeEditor } from '@/components/features/courses/code-challenges';
 import type { CodeChallengeSubmitControl } from '@/components/features/courses/code-challenges';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CodeSubmissionReview } from '@/features/code-arena/review';
 import { registerItemKind, UnsupportedItemAuthor } from '../registry';
 import type { ItemAttemptProps, ItemReviewDetailProps } from '../registry';
 import type { ItemAnswer } from '@/features/assessments/domain/items';
@@ -115,11 +116,7 @@ export function useCodeSubmitControl() {
 }
 
 export function CodeItemReviewDetail({ answer }: ItemReviewDetailProps<CodeAttemptItem>) {
-  return (
-    <pre className="bg-muted max-h-96 overflow-auto rounded-md p-3 text-xs">
-      {JSON.stringify(answer ?? {}, null, 2)}
-    </pre>
-  );
+  return <CodeSubmissionReview answer={answer as ItemAnswer | null | undefined} />;
 }
 
 registerItemKind({

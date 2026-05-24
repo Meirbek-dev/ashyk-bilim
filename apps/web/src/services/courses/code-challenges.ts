@@ -7,6 +7,11 @@ import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/i
 
 export interface CodeChallengeSettings {
   uuid: string;
+  title?: string;
+  prompt?: string;
+  input_spec?: string;
+  output_spec?: string;
+  constraints?: string[];
   difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
   time_limit?: number;
   memory_limit?: number;
@@ -23,6 +28,7 @@ export interface CodeChallengeSettings {
   test_cases?: TestCase[];
   starter_code?: Record<string, string>;
   solution_code?: Record<string, string>;
+  reference_solutions?: Record<string, string>;
   hints?: { id?: string; order?: number; content: string; xp_penalty: number }[];
   lifecycle_status?: string;
   scheduled_at?: string | null;
@@ -38,6 +44,7 @@ export interface TestCase {
   is_visible: boolean;
   weight?: number;
   points?: number;
+  match_mode?: 'EXACT' | 'TRIMMED' | 'IGNORE_WHITESPACE' | 'NUMERIC_TOLERANCE' | 'CUSTOM_CHECKER';
 }
 
 export interface CodeSubmission {
@@ -97,8 +104,11 @@ export interface CodeChallengeDraft {
 export interface TestCaseResult {
   test_case_id: string;
   status: number;
+  status_id?: number | null;
   status_description: string;
   passed: boolean;
+  description?: string | null;
+  weight?: number | null;
   time_ms?: number | null;
   memory_kb?: number | null;
   stdout?: string | null;
@@ -117,8 +127,12 @@ export interface Judge0Language {
 interface CodeAssessmentItemBody {
   kind: 'CODE';
   prompt?: string;
+  input_spec?: string;
+  output_spec?: string;
+  constraints?: string[];
   languages?: number[];
   starter_code?: Record<string, string>;
+  reference_solutions?: Record<string, string>;
   tests?: TestCase[];
   time_limit_seconds?: number | null;
   memory_limit_mb?: number | null;
@@ -201,6 +215,7 @@ function toReadableTestCase(test: TestCase): TestCase {
     is_visible: test.is_visible,
     weight: test.weight,
     points: test.points ?? test.weight,
+    match_mode: test.match_mode ?? 'EXACT',
   };
 }
 
@@ -213,6 +228,7 @@ function toStoredTestCase(test: TestCase, isVisible: boolean): TestCase {
     is_visible: isVisible,
     weight: test.weight ?? test.points ?? 1,
     points: test.points,
+    match_mode: test.match_mode ?? 'EXACT',
   };
 }
 
@@ -246,6 +262,11 @@ function toCodeChallengeSettings(
 
   return {
     uuid: assessment.assessment_uuid,
+    title: assessment.title,
+    prompt: body?.prompt ?? assessment.description ?? '',
+    input_spec: body?.input_spec ?? '',
+    output_spec: body?.output_spec ?? '',
+    constraints: Array.isArray(body?.constraints) ? body.constraints : [],
     difficulty: (settings.difficulty as CodeChallengeSettings['difficulty'] | undefined) ?? 'EASY',
     time_limit: timeLimit,
     memory_limit: memoryLimit,
@@ -267,6 +288,8 @@ function toCodeChallengeSettings(
     hidden_tests: hiddenTests,
     test_cases: [...visibleTests, ...hiddenTests],
     starter_code: body?.starter_code ?? (settings.starter_code as Record<string, string> | undefined) ?? {},
+    reference_solutions:
+      body?.reference_solutions ?? (settings.reference_solutions as Record<string, string> | undefined) ?? {},
     solution_code:
       (settings.solution_code as Record<string, string> | undefined) ??
       (typeof settings.reference_solution === 'string' ? { solution: settings.reference_solution } : undefined),
@@ -287,17 +310,23 @@ function toCodeItemBody(
 ): CodeAssessmentItemBody {
   const existingBody = codeItem?.body;
   const prompt =
-    typeof existingBody?.prompt === 'string' && existingBody.prompt.trim().length > 0
-      ? existingBody.prompt
-      : assessment.description?.trim() || assessment.title;
+    typeof settings.prompt === 'string'
+      ? settings.prompt
+      : typeof existingBody?.prompt === 'string' && existingBody.prompt.trim().length > 0
+        ? existingBody.prompt
+        : assessment.description?.trim() || assessment.title;
   const visibleTests = Array.isArray(settings.visible_tests) ? settings.visible_tests : [];
   const hiddenTests = Array.isArray(settings.hidden_tests) ? settings.hidden_tests : [];
 
   return {
     kind: 'CODE',
     prompt,
+    input_spec: typeof settings.input_spec === 'string' ? settings.input_spec : (existingBody?.input_spec ?? ''),
+    output_spec: typeof settings.output_spec === 'string' ? settings.output_spec : (existingBody?.output_spec ?? ''),
+    constraints: Array.isArray(settings.constraints) ? settings.constraints : (existingBody?.constraints ?? []),
     languages: settings.allowed_languages ?? existingBody?.languages ?? [],
     starter_code: settings.starter_code ?? existingBody?.starter_code ?? {},
+    reference_solutions: settings.reference_solutions ?? existingBody?.reference_solutions ?? {},
     tests: [
       ...visibleTests.map((test) => toStoredTestCase(test, true)),
       ...hiddenTests.map((test) => toStoredTestCase(test, false)),
@@ -594,6 +623,10 @@ export async function getSubmissions(activityUuid: string): Promise<CodeSubmissi
 interface CanonicalCodeRunTestResult {
   test_id: string;
   passed: boolean;
+  status_id?: number | null;
+  status_description?: string | null;
+  description?: string | null;
+  weight?: number | null;
   stdin?: string | null;
   expected?: string | null;
   actual?: string | null;
@@ -622,8 +655,11 @@ function toTestCaseResult(
   return {
     test_case_id: result.test_id || `visible_${index + 1}`,
     status: result.passed ? 3 : runStatusCode(run.status, run.passed, run.total),
-    status_description: result.passed ? 'Accepted' : run.status,
+    status_id: result.status_id ?? null,
+    status_description: result.status_description ?? (result.passed ? 'Accepted' : run.status),
     passed: result.passed,
+    description: result.description ?? null,
+    weight: result.weight ?? null,
     time_ms: typeof result.time === 'number' ? Math.round(result.time * 1000) : null,
     memory_kb: typeof result.memory === 'number' ? result.memory : null,
     stdout: result.actual ?? run.stdout ?? null,

@@ -25,6 +25,7 @@ export interface CodeTestCase {
   is_visible: boolean;
   weight: number;
   description?: string | null;
+  match_mode?: 'EXACT' | 'TRIMMED' | 'IGNORE_WHITESPACE' | 'NUMERIC_TOLERANCE' | 'CUSTOM_CHECKER';
 }
 
 export type ItemBody =
@@ -41,11 +42,17 @@ export type ItemBody =
   | {
       kind: 'CODE';
       prompt: string;
+      input_spec?: string;
+      output_spec?: string;
+      constraints?: string[];
       languages: number[];
       starter_code: Record<string, string>;
+      reference_solutions?: Record<string, string>;
       tests: CodeTestCase[];
       time_limit_seconds?: number | null;
       memory_limit_mb?: number | null;
+      max_output_kb?: number | null;
+      scoring_strategy?: 'PARTIAL_CREDIT' | 'ALL_OR_NOTHING' | 'BEST_SUBMISSION' | 'LATEST_SUBMISSION';
     }
   | { kind: 'MATCHING'; prompt: string; pairs: MatchPair[]; explanation?: string | null };
 
@@ -53,7 +60,12 @@ export type ItemAnswer =
   | { kind: 'CHOICE'; selected: string[] }
   | { kind: 'OPEN_TEXT'; text: string }
   | { kind: 'FORM'; values: Record<string, string> }
-  | { kind: 'CODE'; language: number; source: string; latest_run?: { passed: number; total: number; score?: number } }
+  | {
+      kind: 'CODE';
+      language: number;
+      source: string;
+      latest_run?: { passed: number; total: number; score?: number; details?: Record<string, unknown>[] };
+    }
   | { kind: 'MATCHING'; matches: MatchPair[] };
 
 export interface AssessmentItem {

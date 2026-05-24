@@ -106,6 +106,10 @@ class CodeExecutionResult:
             CodeRunTestResult(
                 test_id=result.test_id,
                 passed=result.passed,
+                status_id=result.status_id,
+                status_description=result.status_description,
+                description=result.description,
+                weight=result.weight,
                 stdin=result.stdin,
                 expected=result.expected,
                 actual=result.actual,
