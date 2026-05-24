@@ -188,7 +188,7 @@ def _course_students(
 ) -> list[User]:
     activity_ids = [activity.id for activity in activities if activity.id is not None]
     
-    from sqlmodel import or_, exists
+    from sqlmodel import exists, or_
 
     user_group_exists = exists().where(
         UserGroupUser.user_id == User.id,

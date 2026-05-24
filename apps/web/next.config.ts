@@ -50,6 +50,7 @@ const nextConfig: NextConfig = {
   // Build & Environment
   output: 'standalone',
   reactStrictMode: true,
+  transpilePackages: ['@base-ui/react'],
 
   allowedDevOrigins: ['https://cs-mooc.tou.edu.kz', 'http://192.168.12.35', 'http://192.168.1.46'],
   experimental: {
@@ -58,7 +59,6 @@ const nextConfig: NextConfig = {
     },
     // Turbopack / Package Optimization
     optimizePackageImports: [
-      '@base-ui/react',
       '@icons-pack/react-simple-icons',
       'lucide-react',
       // Animation

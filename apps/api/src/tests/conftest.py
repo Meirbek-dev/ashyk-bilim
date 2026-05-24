@@ -19,6 +19,7 @@ os.environ["LOGFIRE_IGNORE_NO_CONFIG"] = "1"
 
 
 import pytest
+
 from src.security.rbac import PermissionChecker
 
 

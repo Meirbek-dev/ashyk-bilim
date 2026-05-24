@@ -38,6 +38,7 @@ export function RichTextPromptEditor({
     ],
     content: value,
     editable: !disabled,
+    immediatelyRender: false,
     onUpdate: ({ editor: ed }) => {
       const md: string = (ed.storage as any).markdown.getMarkdown();
       onChange(md);

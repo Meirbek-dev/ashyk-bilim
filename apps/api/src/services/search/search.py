@@ -1,10 +1,10 @@
 from typing import TypeVar
 
 from fastapi import Request
+from sqlalchemy import func
 from sqlalchemy import true as sa_true
 from sqlmodel import Session, and_, or_, select
 
-from sqlalchemy import func
 from src.db.collections import Collection, CollectionRead
 from src.db.collections_courses import CollectionCourse
 from src.db.courses.courses import Course, CourseRead

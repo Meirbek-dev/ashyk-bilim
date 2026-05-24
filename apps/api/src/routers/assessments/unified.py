@@ -331,7 +331,7 @@ async def api_submit_assessment(
 ) -> StudentSubmissionRead:
     try:
         await asyncio.wait_for(_SUBMIT_SEMAPHORE.acquire(), timeout=0.1)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={
