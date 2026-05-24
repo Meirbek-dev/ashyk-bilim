@@ -33,6 +33,7 @@ import type { MarkdownPresetConfig } from '../presets/presets';
 import { EditorLinkDialog } from './EditorLinkDialog';
 import { EditorImageDialog } from './EditorImageDialog';
 import { EditorSnippetPicker } from './EditorSnippetPicker';
+import { useTranslations } from 'next-intl';
 
 export type ViewMode = 'write' | 'source' | 'split' | 'preview';
 
@@ -55,6 +56,7 @@ export function EditorToolbar({
   isFullscreen,
   onFullscreenToggle,
 }: EditorToolbarProps) {
+  const t = useTranslations('MarkdownEditor');
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
 
@@ -85,14 +87,14 @@ export function EditorToolbar({
     <>
       <div
         role="toolbar"
-        aria-label="Markdown editor toolbar"
+        aria-label={t('toolbar.label')}
         className="bg-muted/25 flex flex-wrap items-center gap-0.5 border-b px-2 py-1.5"
       >
         {/* Formatting group */}
         {groups.includes('formatting') && (
           <ToolbarGroup>
             <ToolbarButton
-              title="Bold"
+              title={t('toolbar.bold')}
               shortcut="Ctrl+B"
               active={editor?.isActive('bold')}
               disabled={disabled}
@@ -101,7 +103,7 @@ export function EditorToolbar({
               <Bold className="size-3.5" />
             </ToolbarButton>
             <ToolbarButton
-              title="Italic"
+              title={t('toolbar.italic')}
               shortcut="Ctrl+I"
               active={editor?.isActive('italic')}
               disabled={disabled}
@@ -110,7 +112,7 @@ export function EditorToolbar({
               <Italic className="size-3.5" />
             </ToolbarButton>
             <ToolbarButton
-              title="Strikethrough"
+              title={t('toolbar.strikethrough')}
               shortcut="Ctrl+Shift+S"
               active={editor?.isActive('strike')}
               disabled={disabled}
@@ -119,7 +121,7 @@ export function EditorToolbar({
               <Strikethrough className="size-3.5" />
             </ToolbarButton>
             <ToolbarButton
-              title="Inline code"
+              title={t('toolbar.inlineCode')}
               shortcut="Ctrl+E"
               active={editor?.isActive('code')}
               disabled={disabled}
@@ -134,7 +136,7 @@ export function EditorToolbar({
         {groups.includes('headings') && (
           <ToolbarGroup>
             <ToolbarButton
-              title="Heading 1"
+              title={t('toolbar.h1')}
               shortcut="Ctrl+Alt+1"
               active={editor?.isActive('heading', { level: 1 })}
               disabled={disabled}
@@ -143,7 +145,7 @@ export function EditorToolbar({
               <Heading1 className="size-3.5" />
             </ToolbarButton>
             <ToolbarButton
-              title="Heading 2"
+              title={t('toolbar.h2')}
               shortcut="Ctrl+Alt+2"
               active={editor?.isActive('heading', { level: 2 })}
               disabled={disabled}
@@ -152,7 +154,7 @@ export function EditorToolbar({
               <Heading2 className="size-3.5" />
             </ToolbarButton>
             <ToolbarButton
-              title="Heading 3"
+              title={t('toolbar.h3')}
               shortcut="Ctrl+Alt+3"
               active={editor?.isActive('heading', { level: 3 })}
               disabled={disabled}
@@ -167,7 +169,7 @@ export function EditorToolbar({
         {groups.includes('lists') && (
           <ToolbarGroup>
             <ToolbarButton
-              title="Bullet list"
+              title={t('toolbar.bulletList')}
               active={editor?.isActive('bulletList')}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleBulletList().run()}
@@ -175,7 +177,7 @@ export function EditorToolbar({
               <List className="size-3.5" />
             </ToolbarButton>
             <ToolbarButton
-              title="Numbered list"
+              title={t('toolbar.orderedList')}
               active={editor?.isActive('orderedList')}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleOrderedList().run()}
@@ -184,7 +186,7 @@ export function EditorToolbar({
             </ToolbarButton>
             {config.allowTaskList && (
               <ToolbarButton
-                title="Task list"
+                title={t('toolbar.taskList')}
                 active={editor?.isActive('taskList')}
                 disabled={disabled}
                 onClick={() => {
@@ -203,7 +205,7 @@ export function EditorToolbar({
         {groups.includes('blocks') && (
           <ToolbarGroup>
             <ToolbarButton
-              title="Blockquote"
+              title={t('toolbar.blockquote')}
               active={editor?.isActive('blockquote')}
               disabled={disabled}
               onClick={() => editor?.chain().focus().toggleBlockquote().run()}
@@ -212,7 +214,7 @@ export function EditorToolbar({
             </ToolbarButton>
             {config.allowCodeBlock && (
               <ToolbarButton
-                title="Code block"
+                title={t('toolbar.codeBlock')}
                 active={editor?.isActive('codeBlock')}
                 disabled={disabled}
                 onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
@@ -227,7 +229,7 @@ export function EditorToolbar({
         {groups.includes('media') && (
           <ToolbarGroup>
             <ToolbarButton
-              title="Link"
+              title={t('toolbar.link')}
               shortcut="Ctrl+K"
               active={editor?.isActive('link')}
               disabled={disabled}
@@ -237,7 +239,7 @@ export function EditorToolbar({
             </ToolbarButton>
             {config.allowImages && (
               <ToolbarButton
-                title="Insert image"
+                title={t('toolbar.image')}
                 disabled={disabled}
                 onClick={() => setImageDialogOpen(true)}
               >
@@ -251,7 +253,7 @@ export function EditorToolbar({
         {groups.includes('table') && config.allowTable && (
           <ToolbarGroup>
             <ToolbarButton
-              title="Insert table"
+              title={t('toolbar.table')}
               disabled={disabled}
               onClick={() => (editor?.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
             >
@@ -264,7 +266,7 @@ export function EditorToolbar({
         {groups.includes('math') && config.allowMath && (
           <ToolbarGroup>
             <ToolbarButton
-              title="Math (inline)"
+              title={t('toolbar.math')}
               disabled={disabled}
               onClick={() => {
                 const pos = editor?.state.selection.to;
@@ -279,7 +281,7 @@ export function EditorToolbar({
         {/* Undo / Redo */}
         <ToolbarGroup>
           <ToolbarButton
-            title="Undo"
+            title={t('toolbar.undo')}
             shortcut="Ctrl+Z"
             disabled={disabled || !editor?.can().undo()}
             onClick={() => editor?.chain().focus().undo().run()}
@@ -287,7 +289,7 @@ export function EditorToolbar({
             <Undo2 className="size-3.5" />
           </ToolbarButton>
           <ToolbarButton
-            title="Redo"
+            title={t('toolbar.redo')}
             shortcut="Ctrl+Y"
             disabled={disabled || !editor?.can().redo()}
             onClick={() => editor?.chain().focus().redo().run()}
@@ -302,6 +304,8 @@ export function EditorToolbar({
             <EditorSnippetPicker
               snippets={config.snippets}
               disabled={disabled}
+              label={t('toolbar.snippets')}
+              ariaLabel={t('toolbar.insertSnippet')}
               onSelect={(markdown) => {
                 if (!editor) return;
                 const pos = editor.state.selection.to;
@@ -312,15 +316,15 @@ export function EditorToolbar({
 
           {/* View mode switcher */}
           <div className="flex items-center rounded-md border p-0.5">
-            <ViewModeButton mode="write" activeMode={viewMode} onClick={onViewModeChange} title="Write" icon={<TextCursorInput className="size-3.5" />} />
-            <ViewModeButton mode="source" activeMode={viewMode} onClick={onViewModeChange} title="Source" icon={<FileCode2 className="size-3.5" />} />
-            <ViewModeButton mode="split" activeMode={viewMode} onClick={onViewModeChange} title="Split preview" icon={<SplitSquareHorizontal className="size-3.5" />} />
-            <ViewModeButton mode="preview" activeMode={viewMode} onClick={onViewModeChange} title="Preview" icon={<Eye className="size-3.5" />} />
+            <ViewModeButton mode="write" activeMode={viewMode} onClick={onViewModeChange} title={t('toolbar.viewWrite')} icon={<TextCursorInput className="size-3.5" />} />
+            <ViewModeButton mode="source" activeMode={viewMode} onClick={onViewModeChange} title={t('toolbar.viewSource')} icon={<FileCode2 className="size-3.5" />} />
+            <ViewModeButton mode="split" activeMode={viewMode} onClick={onViewModeChange} title={t('toolbar.viewSplit')} icon={<SplitSquareHorizontal className="size-3.5" />} />
+            <ViewModeButton mode="preview" activeMode={viewMode} onClick={onViewModeChange} title={t('toolbar.viewPreview')} icon={<Eye className="size-3.5" />} />
           </div>
 
           {/* Fullscreen toggle */}
           <ToolbarButton
-            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            title={isFullscreen ? t('toolbar.exitFullscreen') : t('toolbar.fullscreen')}
             shortcut="F11"
             disabled={false}
             onClick={onFullscreenToggle}

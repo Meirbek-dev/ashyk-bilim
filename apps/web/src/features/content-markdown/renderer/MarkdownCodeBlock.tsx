@@ -89,7 +89,6 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
             ],
           )}
           // Shiki output is sanitized HTML from trusted highlighted code
-          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: highlighted }}
         />
       ) : (

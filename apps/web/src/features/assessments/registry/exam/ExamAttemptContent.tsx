@@ -445,12 +445,14 @@ function ExamTakingContent({
 
   const handleSubmit = useCallback(
     async (isAutoSubmit = false) => {
-      void isAutoSubmit;
       if (submissionState.isSubmitting) return;
       setIsConfirmingSubmit(false);
 
       try {
-        await submissionState.submit({ violationCount: violationCountRef.current });
+        await submissionState.submit({
+          violationCount: violationCountRef.current,
+          autoSubmit: isAutoSubmit,
+        });
         persistence.clearSavedAnswers();
         toast.success(t('examSubmittedSuccessfully'));
         await onComplete();

@@ -13,6 +13,11 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from src.auth.users import get_optional_public_user, get_public_user
+from src.db.assessment_access import (
+    AssessmentAccessPolicy,
+    AssessmentAccessUser,
+    AssessmentAccessUserGroup,
+)
 from src.db.assessments import (
     Assessment,
     AssessmentGradingType,
@@ -37,11 +42,6 @@ from src.db.grading.submissions import (
     GradingBreakdown,
     Submission,
     SubmissionStatus,
-)
-from src.db.assessment_access import (
-    AssessmentAccessPolicy,
-    AssessmentAccessUser,
-    AssessmentAccessUserGroup,
 )
 from src.db.resource_authors import ResourceAuthor
 from src.db.usergroup_resources import UserGroupResource

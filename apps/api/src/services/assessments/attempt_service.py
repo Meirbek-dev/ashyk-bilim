@@ -218,7 +218,7 @@ async def save_assessment_draft(
             **current_payload,
             "answers": merged_answers,
         }
-        draft.version += 1
+        draft.draft_version += 1
         draft.updated_at = datetime.now(UTC)
 
         db_session.add(draft)
@@ -273,22 +273,48 @@ async def submit_assessment(
     *,
     violation_count: int = 0,
     if_match: str | None = None,
+    auto_submit: bool = False,
 ) -> StudentSubmissionRead:
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
-    _assert_attempt_action_allowed(
-        action="submit",
-        assessment=assessment,
-        activity=activity,
-        course=course,
-        current_user=current_user,
-        db_session=db_session,
-    )
     is_teacher_preview = _is_teacher_preview_user(
         current_user, activity, course, db_session
     )
 
-    try:
+    if auto_submit:
+        # Bypasses the action-allowed checks, ignores any post-expiry payload modifications,
+        # and submits whatever answers are already saved in the database.
+        _require_submit_access(current_user, activity, course, db_session)
+        draft = _get_or_create_submission_draft(
+            assessment=assessment,
+            activity=activity,
+            current_user=current_user,
+            db_session=db_session,
+        )
+        _enforce_draft_version(draft, if_match)
+
+        # Lock metadata with expiration reason
+        metadata = draft.metadata_json or {}
+        metadata["auto_submit_reason"] = "TIME_EXPIRED"
+        metadata["auto_submitted_at"] = datetime.now(UTC).isoformat()
+        draft.metadata_json = metadata
+        db_session.add(draft)
+        db_session.commit()
+        db_session.refresh(draft)
+
+        answers_payload = draft.answers_json
+        submission_uuid = draft.submission_uuid
+        skip_constraints = True
+    else:
+        _assert_attempt_action_allowed(
+            action="submit",
+            assessment=assessment,
+            activity=activity,
+            course=course,
+            current_user=current_user,
+            db_session=db_session,
+        )
+
         if payload is not None:
             draft = await save_assessment_draft(
                 assessment_uuid,
@@ -310,7 +336,9 @@ async def submit_assessment(
             _enforce_draft_version(draft, if_match)
             answers_payload = draft.answers_json
             submission_uuid = draft.submission_uuid
+        skip_constraints = is_teacher_preview
 
+    try:
         settings = load_activity_settings(
             activity.id, AssessmentType(assessment.kind), db_session
         )
@@ -323,8 +351,8 @@ async def submit_assessment(
             db_session=db_session,
             violation_count=violation_count,
             submission_uuid=submission_uuid,
-            skip_permission=is_teacher_preview,
-            skip_policy_constraints=is_teacher_preview,
+            skip_permission=is_teacher_preview or auto_submit,
+            skip_policy_constraints=skip_constraints,
         )
         submission = db_session.exec(
             select(Submission).where(
@@ -681,7 +709,7 @@ async def validate_code_challenge_service(
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_submit_access(current_user, activity, course, db_session)
 
-    from src.db.assessments import AssessmentItem, ItemKind, Assessment
+    from src.db.assessments import AssessmentItem, ItemKind
     item = db_session.exec(
         select(AssessmentItem)
         .join(Assessment, Assessment.id == AssessmentItem.assessment_id)

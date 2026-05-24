@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MarkdownCodeBlock, MarkdownContent } from '@/features/content-markdown';
+import { MarkdownCodeBlock, MarkdownContent, extractMarkdownSummary } from '@/features/content-markdown';
 import { cn } from '@/lib/utils';
 import type { CodeArenaTab, CodeChallengeProblem, CodeChallengeSettings, CodeSubmission } from '../domain';
 import { SubmissionTimeline } from './SubmissionTimeline';
@@ -131,7 +131,7 @@ export function ProblemPane({
                         <div className="text-sm font-medium">
                           {t('exampleNumber', { number: index + 1 })}
                           {test.description ? (
-                            <span className="text-muted-foreground"> - {test.description}</span>
+                            <span className="text-muted-foreground"> - {extractMarkdownSummary(test.description, 100)}</span>
                           ) : null}
                         </div>
                         <Button

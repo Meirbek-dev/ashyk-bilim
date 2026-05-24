@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { isSafeMarkdownUrl } from '../utils/markdown-sanitize';
+import { useTranslations } from 'next-intl';
 
 interface EditorLinkDialogProps {
   /** Current href, or undefined if no link is active. */
@@ -20,6 +21,7 @@ interface EditorLinkDialogProps {
  * Renders as a floating panel anchored to the toolbar.
  */
 export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLinkDialogProps) {
+  const t = useTranslations('MarkdownEditor');
   const [url, setUrl] = useState(currentHref ?? '');
   const [newTab, setNewTab] = useState(true);
   const [touched, setTouched] = useState(false);
@@ -63,7 +65,7 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
       onKeyDown={(e) => e.key === 'Escape' && onClose()}
       role="dialog"
       aria-modal="true"
-      aria-label="Edit link"
+      aria-label={currentHref ? t('linkDialog.editTitle') : t('linkDialog.title')}
     >
       {/* Dialog panel */}
       <div
@@ -73,13 +75,15 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
       >
         <div className="mb-3 flex items-center gap-2">
           <Link className="text-muted-foreground size-4" />
-          <span className="text-sm font-semibold">{currentHref ? 'Edit link' : 'Insert link'}</span>
+          <span className="text-sm font-semibold">
+            {currentHref ? t('linkDialog.editTitle') : t('linkDialog.title')}
+          </span>
         </div>
 
         {/* URL input */}
         <div className="mb-2 space-y-1">
           <label htmlFor="link-dialog-url" className="text-muted-foreground text-xs font-medium">
-            URL
+            {t('linkDialog.urlLabel')}
           </label>
           <Input
             id="link-dialog-url"
@@ -90,14 +94,14 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
               setTouched(true);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="https://example.com or /relative/path"
+            placeholder={t('linkDialog.urlPlaceholder')}
             className={cn(showError && 'border-destructive focus-visible:ring-destructive')}
             aria-invalid={showError}
             aria-describedby={showError ? 'link-dialog-error' : undefined}
           />
           {showError && (
             <p id="link-dialog-error" className="text-destructive text-xs">
-              Please enter a safe URL (https, http, mailto, or relative path).
+              {t('linkDialog.urlError')}
             </p>
           )}
         </div>
@@ -111,7 +115,7 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
             className="rounded"
           />
           <ExternalLink className="text-muted-foreground size-3.5" />
-          <span>Open in new tab</span>
+          <span>{t('linkDialog.openNewTab')}</span>
         </label>
 
         {/* Actions */}
@@ -119,17 +123,17 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
           {currentHref ? (
             <Button type="button" variant="ghost" size="sm" onClick={handleRemove} className="text-destructive">
               <Unlink className="mr-1.5 size-3.5" />
-              Remove link
+              {t('linkDialog.removeLink')}
             </Button>
           ) : (
             <div />
           )}
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="sm" onClick={onClose}>
-              Cancel
+              {t('linkDialog.cancel')}
             </Button>
             <Button type="button" size="sm" onClick={handleConfirm} disabled={!isValid && !!url.trim()}>
-              {currentHref ? 'Update' : 'Insert'}
+              {currentHref ? t('linkDialog.update') : t('linkDialog.insert')}
             </Button>
           </div>
         </div>

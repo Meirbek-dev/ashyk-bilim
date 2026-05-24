@@ -1,5 +1,6 @@
 import logging
 import time
+
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker

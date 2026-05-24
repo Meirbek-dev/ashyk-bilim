@@ -13,6 +13,7 @@ import HintsPanel from './HintsPanel';
 import LanguagePolicyPanel from './LanguagePolicyPanel';
 import StarterCodeTabs from './StarterCodeTabs';
 import TestCaseListEditor from './TestCaseListEditor';
+import { getFirstBlockingCodeChallengeMarkdownIssue } from '@/features/code-arena/domain';
 
 export interface CodeChallengeTestCaseForm {
   id?: string;
@@ -94,6 +95,12 @@ export default function CodeChallengeStudio({ activityUuid }: CodeChallengeStudi
   }, [form, settings]);
 
   const onSubmit = async (values: CodeChallengeSettingsForm) => {
+    const markdownIssue = getFirstBlockingCodeChallengeMarkdownIssue(values);
+    if (markdownIssue) {
+      toast.error(`${markdownIssue.field}: ${markdownIssue.issue.message}`);
+      return;
+    }
+
     try {
       await saveSettings.mutateAsync({
         ...values,

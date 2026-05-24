@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import type { CodeChallengeSettings } from '@/services/courses/code-challenges';
 import { cn } from '@/lib/utils';
+import { getFirstBlockingCodeChallengeMarkdownIssue } from '../domain';
 
 interface PublishReadinessPanelProps {
   draft: CodeChallengeSettings;
@@ -88,6 +89,7 @@ function buildReadiness(settings: CodeChallengeSettings, t: any) {
   const hidden = settings.hidden_tests ?? [];
   const referenceSolutions = settings.reference_solutions ?? {};
   const starterCode = settings.starter_code ?? {};
+  const markdownIssue = getFirstBlockingCodeChallengeMarkdownIssue(settings);
 
   const items = [
     {
@@ -116,6 +118,13 @@ function buildReadiness(settings: CodeChallengeSettings, t: any) {
       label: t('readiness.limits.label'),
       ok: Boolean(settings.time_limit && settings.memory_limit),
       detail: t('readiness.limits.detail'),
+    },
+    {
+      label: 'Markdown safety',
+      ok: !markdownIssue,
+      detail: markdownIssue
+        ? `${markdownIssue.field}: ${markdownIssue.issue.message}`
+        : 'Problem text, sample explanations, and hints pass Markdown safety checks.',
     },
   ];
   return {

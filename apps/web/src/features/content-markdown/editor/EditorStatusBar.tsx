@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import type { MarkdownEditorSaveState, MarkdownPresetConfig } from '../presets/presets';
 import type { MarkdownValidationIssue } from '../hooks/useMarkdownValidation';
 import { getHighestMarkdownIssueSeverity } from '../hooks/useMarkdownValidation';
+import { useTranslations } from 'next-intl';
 
 interface EditorStatusBarProps {
   config: MarkdownPresetConfig;
@@ -24,6 +25,7 @@ export function EditorStatusBar({
   saveState,
   issues,
 }: EditorStatusBarProps) {
+  const t = useTranslations('MarkdownEditor');
   const [showAllIssues, setShowAllIssues] = useState(false);
   const severity = getHighestMarkdownIssueSeverity(issues);
   const firstIssue = issues[0];
@@ -32,10 +34,10 @@ export function EditorStatusBar({
 
   const saveLabel = {
     idle: null,
-    dirty: 'Unsaved',
-    saving: 'Saving…',
-    saved: 'Saved',
-    error: 'Save failed',
+    dirty: t('statusBar.unsaved'),
+    saving: t('statusBar.saving'),
+    saved: t('statusBar.saved'),
+    error: t('statusBar.saveFailed'),
   }[saveState];
 
   return (
@@ -44,11 +46,10 @@ export function EditorStatusBar({
       role="status"
       aria-live="polite"
     >
-      {/* Left: label / format / save state */}
       <div className="text-muted-foreground flex items-center gap-2">
         <span>{config.label}</span>
         <span aria-hidden="true">/</span>
-        <span>{isEmpty ? 'Empty' : 'Markdown'}</span>
+        <span>{isEmpty ? t('statusBar.empty') : t('statusBar.markdown')}</span>
         {saveLabel && (
           <>
             <span aria-hidden="true">/</span>
@@ -64,13 +65,11 @@ export function EditorStatusBar({
           </>
         )}
         <span className="text-muted-foreground/50 hidden sm:inline">
-          {wordCount} {wordCount === 1 ? 'word' : 'words'}
+          {wordCount} {wordCount === 1 ? t('statusBar.word') : t('statusBar.words')}
         </span>
       </div>
 
-      {/* Right: validation + char count */}
       <div className="flex items-center gap-2">
-        {/* Issues */}
         {firstIssue && (
           <div className="relative">
             <button
@@ -80,7 +79,7 @@ export function EditorStatusBar({
                 'flex items-center gap-1 rounded px-1 transition-colors',
                 severity === 'error' ? 'text-destructive' : 'text-amber-600',
               )}
-              aria-label={`${issues.length} ${issues.length === 1 ? 'issue' : 'issues'} — click to ${showAllIssues ? 'collapse' : 'expand'}`}
+              aria-label={t('statusBar.issueToggle', { count: issues.length })}
             >
               {severity === 'error' ? (
                 <AlertTriangle className="size-3" />
@@ -88,12 +87,9 @@ export function EditorStatusBar({
                 <Info className="size-3" />
               )}
               <span>{firstIssue.message}</span>
-              {issues.length > 1 && (
-                <span className="text-muted-foreground/60">+{issues.length - 1}</span>
-              )}
+              {issues.length > 1 && <span className="text-muted-foreground/60">+{issues.length - 1}</span>}
             </button>
 
-            {/* Expanded issue list */}
             {showAllIssues && issues.length > 1 && (
               <div className="bg-popover border-border absolute bottom-6 right-0 z-10 w-64 rounded-lg border p-2 shadow-lg">
                 {issues.map((issue) => (
@@ -115,7 +111,6 @@ export function EditorStatusBar({
           </div>
         )}
 
-        {/* Char count */}
         <span
           className={cn(
             'tabular-nums',

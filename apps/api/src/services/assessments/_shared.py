@@ -1215,7 +1215,7 @@ def _enforce_draft_version(draft: Submission, if_match: str | None) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Заголовок If-Match должен содержать текущую числовую версию отправки",
         ) from exc
-    if draft.version != expected:
+    if draft.draft_version != expected:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
@@ -1644,7 +1644,7 @@ def _hydrate_submission_grading_json(
         if isinstance(item, dict):
             existing_map[item.get("item_id")] = item
         elif hasattr(item, "item_id"):
-            existing_map[getattr(item, "item_id")] = item.model_dump() if hasattr(item, "model_dump") else item.__dict__
+            existing_map[item.item_id] = item.model_dump() if hasattr(item, "model_dump") else item.__dict__
 
     answers = submission.answers_json or {}
     answers_map = answers.get("answers", {})

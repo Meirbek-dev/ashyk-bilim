@@ -81,8 +81,7 @@ export function MarkdownEditor({
   // Stable extensions array — rebuilt only when preset changes
   const extensions = useMemo(
     () => buildEditorExtensions({ config, placeholder }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [preset, placeholder],
+    [config, placeholder],
   );
 
   const editor = useEditor({

@@ -1,6 +1,7 @@
 'use client';
 
 import { Link } from 'lucide-react';
+import { isValidElement } from 'react';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -16,8 +17,8 @@ export function slugifyMarkdownHeading(text: string): string {
 export function extractMarkdownHeadingText(children: ReactNode): string {
   if (typeof children === 'string') return children;
   if (Array.isArray(children)) return children.map(extractMarkdownHeadingText).join('');
-  if (children && typeof children === 'object' && 'props' in (children as object)) {
-    return extractMarkdownHeadingText((children as { props?: { children?: ReactNode } }).props?.children);
+  if (isValidElement<{ children?: ReactNode }>(children)) {
+    return extractMarkdownHeadingText(children.props.children);
   }
   return '';
 }
@@ -37,8 +38,17 @@ const HEADING_CLASS: Record<number, string> = {
   6: 'text-xs font-semibold mt-2 mb-1',
 };
 
+const HEADING_TAG = {
+  1: 'h1',
+  2: 'h2',
+  3: 'h3',
+  4: 'h4',
+  5: 'h5',
+  6: 'h6',
+} as const;
+
 export function MarkdownHeading({ level, anchorId, children, className, onAnchorClick, ...props }: MarkdownHeadingProps) {
-  const Tag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+  const Tag = HEADING_TAG[level];
   const text = extractMarkdownHeadingText(children);
   const id = anchorId ?? slugifyMarkdownHeading(text);
 

@@ -2468,6 +2468,7 @@
   },
   "MarkdownEditor": {
     "toolbar": {
+      "label": "Панель инструментов редактора Markdown",
       "bold": "Жирный",
       "italic": "Курсив",
       "strikethrough": "Зачёркнутый",
@@ -2489,7 +2490,9 @@
       "fullscreen": "Полный экран",
       "exitFullscreen": "Выйти из полного экрана",
       "snippets": "Фрагменты",
+      "insertSnippet": "Вставить фрагмент",
       "viewWrite": "Редактировать",
+      "viewSource": "Исходный код",
       "viewSplit": "Предварительный просмотр",
       "viewPreview": "Просмотр"
     },
@@ -2501,7 +2504,8 @@
       "unsaved": "Несохранено",
       "saving": "Сохранение…",
       "saved": "Сохранено",
-      "saveFailed": "Ошибка сохранения"
+      "saveFailed": "Ошибка сохранения",
+      "issueToggle": "{count, plural, one {# проблема} few {# проблемы} other {# проблем}}"
     },
     "linkDialog": {
       "title": "Вставить ссылку",
@@ -2518,10 +2522,10 @@
     "imageDialog": {
       "title": "Вставить изображение",
       "srcLabel": "URL изображения",
-      "srcPlaceholder": "https://example.com/image.png",
-      "srcError": "Введите корректный URL изображения.",
+      "srcPlaceholder": "Используйте ссылку на изображение, загруженное на платформу",
+      "srcError": "Пожалуйста, введите ссылку на изображение, загруженное на платформу.",
       "altLabel": "Альтернативный текст",
-      "altLabelOptional": "(необязательно, но рекомендуется)",
+      "altLabelOptional": "(обязательно для публикуемого контента)",
       "altPlaceholder": "Опишите изображение для программ чтения экрана",
       "cancel": "Отмена",
       "insert": "Вставить изображение"

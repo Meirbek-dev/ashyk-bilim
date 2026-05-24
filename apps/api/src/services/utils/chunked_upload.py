@@ -4,15 +4,14 @@ Chunks are stored under the app's persistent content directory so resumable
 uploads survive process restarts and can be cleaned up by a startup sweep.
 """
 
-from datetime import UTC, datetime, timedelta
 import shutil
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 
 import anyio
 from fastapi import HTTPException, UploadFile
 from ulid import ULID
-
 
 _CHUNKED_UPLOAD_ROOT = Path("content/chunked_uploads")
 _CHUNKED_UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)

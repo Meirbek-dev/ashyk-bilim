@@ -328,6 +328,7 @@ async def api_submit_assessment(
     db_session: Annotated[Session, Depends(get_db_session)] = None,
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
     violation_count: Annotated[int, Query(ge=0)] = 0,
+    auto_submit: Annotated[bool, Query()] = False,
 ) -> StudentSubmissionRead:
     try:
         await asyncio.wait_for(_SUBMIT_SEMAPHORE.acquire(), timeout=0.1)
@@ -349,6 +350,7 @@ async def api_submit_assessment(
             db_session,
             violation_count=violation_count,
             if_match=if_match,
+            auto_submit=auto_submit,
         )
     finally:
         _SUBMIT_SEMAPHORE.release()

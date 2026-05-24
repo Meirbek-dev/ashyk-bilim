@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, LoaderCircle, Maximize2 } from 'lucide-react';
+import { AlertTriangle, LoaderCircle, Maximize2, ShieldAlert } from 'lucide-react';
 
 import {
   AlertDialog,
@@ -177,8 +177,46 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
 
   return (
     <ActionBarContext.Provider value={contextValue}>
+      {/* ── Security countdown overlay ────────────────────────────────── */}
+      {guard.securityCountdown !== null ? (
+        <div className="bg-destructive/95 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md text-white animate-fade-in">
+          <div className="bg-card text-card-foreground w-full max-w-md rounded-lg border border-destructive/50 p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-lg font-semibold text-destructive">
+              <ShieldAlert className="size-6 animate-pulse" />
+              {t('securityViolationAlertTitle', { defaultValue: 'Security Violation Detected' })}
+            </div>
+            <p className="text-muted-foreground mt-3 text-sm">
+              {t('securityViolationAlertDescription', { defaultValue: 'Please return focus to the exam window immediately. Failure to comply will result in automatic submission of your exam.' })}
+            </p>
+            <div className="my-6 flex flex-col items-center justify-center gap-2">
+              <span className="text-6xl font-extrabold tabular-nums tracking-tighter text-destructive animate-pulse">
+                {guard.securityCountdown}
+              </span>
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {t('secondsRemaining', { defaultValue: 'seconds remaining' })}
+              </span>
+            </div>
+            {policy?.antiCheat.fullscreenEnforced && !guard.isFullscreen ? (
+              <Button
+                type="button"
+                variant="destructive"
+                className="w-full mt-2"
+                onClick={guard.requestFullscreen}
+              >
+                <Maximize2 className="size-4" />
+                {t('reEnterFullscreen', { defaultValue: 'Re-enter Fullscreen' })}
+              </Button>
+            ) : (
+              <p className="text-center text-xs text-muted-foreground animate-pulse">
+                {t('clickBackToResume', { defaultValue: 'Click back or refocus to resume.' })}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       {/* ── Fullscreen gate ─────────────────────────────────────────────── */}
-      {guard.fullscreenGateOpen ? (
+      {guard.fullscreenGateOpen && guard.securityCountdown === null ? (
         <div className="bg-background/95 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-card w-full max-w-md rounded-lg border p-6 shadow-lg">
             <div className="flex items-center gap-3 text-lg font-semibold">

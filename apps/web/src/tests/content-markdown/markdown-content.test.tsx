@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -53,7 +53,7 @@ describe('MarkdownContent', () => {
 
   it('renders actual image when allowImages is true', () => {
     const content = '![A cat](/uploads/cat.jpg)';
-    const { container } = render(<MarkdownContent content={content} allowImages={true} />);
+    const { container } = render(<MarkdownContent content={content} allowImages />);
     const img = container.querySelector('img');
     expect(img).toBeInTheDocument();
     expect(img?.getAttribute('src')).toBe('/uploads/cat.jpg');
@@ -62,7 +62,7 @@ describe('MarkdownContent', () => {
 
   it('renders image placeholder when src uses unsafe protocol even with allowImages=true', () => {
     const content = '![Bad](javascript:alert(1))';
-    const { container } = render(<MarkdownContent content={content} allowImages={true} />);
+    const { container } = render(<MarkdownContent content={content} allowImages />);
     // sanitizeMarkdownUrl should reject javascript: protocol
     expect(container.querySelector('img')).not.toBeInTheDocument();
   });
@@ -171,7 +171,7 @@ describe('MarkdownContent', () => {
 
   it('sets aria-live when streaming=true', () => {
     const { container } = render(
-      <MarkdownContent content="Generating..." streaming={true} />,
+      <MarkdownContent content="Generating..." streaming />,
     );
     const root = container.firstElementChild;
     expect(root?.getAttribute('aria-live')).toBe('polite');

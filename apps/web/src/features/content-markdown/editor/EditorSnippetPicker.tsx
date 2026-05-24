@@ -8,6 +8,8 @@ import type { MarkdownSnippet } from '../presets/presets';
 interface EditorSnippetPickerProps {
   snippets: MarkdownSnippet[];
   disabled?: boolean;
+  label?: string;
+  ariaLabel?: string;
   onSelect: (markdown: string) => void;
 }
 
@@ -15,7 +17,7 @@ interface EditorSnippetPickerProps {
  * Combobox-style snippet picker that replaces the native <select>.
  * Shows snippet preview on hover, supports keyboard navigation.
  */
-export function EditorSnippetPicker({ snippets, disabled, onSelect }: EditorSnippetPickerProps) {
+export function EditorSnippetPicker({ snippets, disabled, label = 'Snippets', ariaLabel = 'Insert snippet', onSelect }: EditorSnippetPickerProps) {
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
   const [hovered, setHovered] = useState<MarkdownSnippet | null>(null);
@@ -58,7 +60,7 @@ export function EditorSnippetPicker({ snippets, disabled, onSelect }: EditorSnip
         onKeyDown={handleKeyDown}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label="Insert snippet"
+        aria-label={ariaLabel}
         className={cn(
           'flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium',
           'bg-background text-muted-foreground hover:bg-muted hover:text-foreground transition-colors',
@@ -66,7 +68,7 @@ export function EditorSnippetPicker({ snippets, disabled, onSelect }: EditorSnip
         )}
       >
         <Wand2 className="size-3" />
-        Snippets
+        {label}
         <ChevronDown className={cn('size-3 transition-transform', open && 'rotate-180')} />
       </button>
 
@@ -78,7 +80,7 @@ export function EditorSnippetPicker({ snippets, disabled, onSelect }: EditorSnip
           {/* Dropdown */}
           <div className="absolute right-0 top-full z-40 mt-1 flex w-72 gap-0 overflow-hidden rounded-lg border bg-popover shadow-lg">
             {/* List */}
-            <div role="listbox" aria-label="Snippets" className="flex flex-col py-1 w-full">
+            <div role="listbox" aria-label={label} className="flex flex-col py-1 w-full">
               {snippets.map((snippet, idx) => (
                 <button
                   key={snippet.id}

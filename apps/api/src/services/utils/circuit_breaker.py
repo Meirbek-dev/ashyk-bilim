@@ -1,8 +1,9 @@
 import asyncio
-import time
 import logging
 import threading
-from typing import Callable, TypeVar, ParamSpec, Awaitable
+import time
+from collections.abc import Awaitable, Callable
+from typing import ParamSpec, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,6 @@ P = ParamSpec("P")
 
 class CircuitBreakerOpenException(Exception):
     """Exception raised when a call is attempted on an open circuit breaker."""
-    pass
 
 
 class CircuitBreaker:

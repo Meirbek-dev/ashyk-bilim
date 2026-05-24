@@ -15,6 +15,7 @@ import {
   useJudge0Languages,
   useSaveCodeChallengeSettings,
 } from '@/features/assessments/registry/code-challenge/hooks';
+import { getFirstBlockingCodeChallengeMarkdownIssue } from '../domain';
 import type { CodeChallengeSettings } from '@/services/courses/code-challenges';
 import { cn } from '@/lib/utils';
 
@@ -69,6 +70,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
 
   const readiness = useMemo(() => buildReadiness(draft, t), [draft, t]);
   const blockersCount = readiness.items.filter((item) => !item.ok).length;
+  const firstMarkdownIssue = useMemo(() => getFirstBlockingCodeChallengeMarkdownIssue(draft), [draft]);
 
   useEffect(() => {
     if (!settings) return;
@@ -92,11 +94,16 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
   };
 
   const save = async () => {
+    if (firstMarkdownIssue) {
+      toast.error(`${firstMarkdownIssue.field}: ${firstMarkdownIssue.issue.message}`);
+      return;
+    }
+
     try {
       await saveSettings.mutateAsync({
         ...draft,
-        visible_tests: (draft.visible_tests ?? []).map((test) => (Object.assign(test, { is_visible: true }))),
-        hidden_tests: (draft.hidden_tests ?? []).map((test) => (Object.assign(test, { is_visible: false }))),
+        visible_tests: (draft.visible_tests ?? []).map((test) => ({ ...test, is_visible: true })),
+        hidden_tests: (draft.hidden_tests ?? []).map((test) => ({ ...test, is_visible: false })),
       });
       toast.success(t('configSaved'));
     } catch (error) {
@@ -132,7 +139,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
           <Button
             type="button"
             onClick={save}
-            disabled={saveSettings.isPending}
+            disabled={saveSettings.isPending || Boolean(firstMarkdownIssue)}
             className="h-8 gap-1.5 text-xs font-semibold"
           >
             {saveSettings.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
@@ -346,6 +353,7 @@ function buildReadiness(settings: CodeChallengeSettings, t: any) {
   const hidden = settings.hidden_tests ?? [];
   const referenceSolutions = settings.reference_solutions ?? {};
   const starterCode = settings.starter_code ?? {};
+  const markdownIssue = getFirstBlockingCodeChallengeMarkdownIssue(settings);
 
   const items = [
     {
@@ -369,6 +377,10 @@ function buildReadiness(settings: CodeChallengeSettings, t: any) {
     {
       label: t('readiness.limits.label'),
       ok: Boolean(settings.time_limit && settings.memory_limit),
+    },
+    {
+      label: 'Markdown safety',
+      ok: !markdownIssue,
     },
   ];
   return {

@@ -10,7 +10,9 @@ import { queryKeys } from '@/lib/react-query/queryKeys';
 import { reportClientError } from '@/services/telemetry/client';
 import type { ItemAnswer } from '../domain/items';
 
-export type AssessmentSubmissionRead = components['schemas']['StudentSubmissionRead'];
+export type AssessmentSubmissionRead = components['schemas']['StudentSubmissionRead'] & {
+  draft_version?: number;
+};
 
 interface DraftRead {
   assessment_uuid: string;
@@ -19,6 +21,7 @@ interface DraftRead {
 
 interface SubmitOptions {
   violationCount?: number;
+  autoSubmit?: boolean;
 }
 
 interface ConflictState {
@@ -58,6 +61,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const [reportedLoadError, setReportedLoadError] = useState<string | null>(null);
   const localAnswersRef = useRef<Record<string, ItemAnswer>>({});
   const versionRef = useRef<number | undefined>(undefined);
+  const draftVersionRef = useRef<number | undefined>(undefined);
   const lastSaveTimeRef = useRef<number>(0);
   const nextSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAnswersRef = useRef<Record<string, ItemAnswer> | null>(null);
@@ -118,6 +122,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   const draft = draftQuery.data?.submission ?? null;
   const submission = draft ?? submissionsQuery.data?.[0] ?? null;
   const version = submission?.version;
+  const draftVersion = submission?.draft_version;
 
   useEffect(() => {
     localAnswersRef.current = localAnswers;
@@ -126,6 +131,10 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   useEffect(() => {
     versionRef.current = version;
   }, [version]);
+
+  useEffect(() => {
+    draftVersionRef.current = draftVersion;
+  }, [draftVersion]);
 
   const syncLatestSubmission = useCallback(
     (latest: AssessmentSubmissionRead) => {
@@ -174,7 +183,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          ...(versionRef.current ? { 'If-Match': String(versionRef.current) } : {}),
+          ...(draftVersionRef.current ? { 'If-Match': String(draftVersionRef.current) } : {}),
         },
         body: JSON.stringify({
           answers: Object.entries(answers).map(([item_uuid, answer]) => ({ item_uuid, answer })),
@@ -184,6 +193,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     },
     onMutate: () => setSaveState('saving'),
     onSuccess: async (latest) => {
+      draftVersionRef.current = latest.draft_version;
       versionRef.current = latest.version;
       syncLatestSubmission(latest);
       setConflictState(null);
@@ -194,6 +204,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       if (error.status === 409) {
         const latest = error.payload?.detail?.latest as AssessmentSubmissionRead | undefined;
         if (latest) {
+          draftVersionRef.current = latest.draft_version;
           versionRef.current = latest.version;
           const latestAnswers = answersFromSubmission(latest);
           if (areAnswersEqual(localAnswersRef.current, latestAnswers)) {
@@ -212,6 +223,11 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
         setSaveState('dirty');
         return;
       }
+      // Gentle offline recovery support
+      if (!error.status || error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        setSaveState('dirty');
+        return;
+      }
       setSaveState('error');
       void reportClientError({
         scope: 'assessment-flow',
@@ -227,21 +243,26 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
     mutationFn: async ({
       answers,
       violationCount,
+      autoSubmit,
     }: {
       answers: Record<string, ItemAnswer>;
       violationCount?: number;
+      autoSubmit?: boolean;
     }) => {
       if (!assessmentUuid) throw new Error('Assessment is not ready');
       const params = new URLSearchParams();
       if (typeof violationCount === 'number' && violationCount > 0) {
         params.set('violation_count', String(violationCount));
       }
+      if (autoSubmit) {
+        params.set('auto_submit', 'true');
+      }
       const suffix = params.size > 0 ? `?${params.toString()}` : '';
       const response = await apiFetch(`assessments/${assessmentUuid}/submit${suffix}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(versionRef.current ? { 'If-Match': String(versionRef.current) } : {}),
+          ...(draftVersionRef.current ? { 'If-Match': String(draftVersionRef.current) } : {}),
         },
         body: JSON.stringify({
           answers: Object.entries(answers).map(([item_uuid, answer]) => ({ item_uuid, answer })),
@@ -250,6 +271,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       return (await readJsonOrThrow(response)) as AssessmentSubmissionRead;
     },
     onSuccess: async (latest) => {
+      draftVersionRef.current = latest.draft_version;
       versionRef.current = latest.version;
       syncLatestSubmission(latest);
       setConflictState(null);
@@ -262,6 +284,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       if (error.status === 409) {
         const latest = error.payload?.detail?.latest as AssessmentSubmissionRead | undefined;
         if (latest) {
+          draftVersionRef.current = latest.draft_version;
           versionRef.current = latest.version;
           openConflict(latest);
         }
@@ -394,9 +417,24 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
 
   const submit = useCallback(
     (options?: SubmitOptions) =>
-      submitMutateAsync({ answers: localAnswersRef.current, violationCount: options?.violationCount }),
+      submitMutateAsync({
+        answers: localAnswersRef.current,
+        violationCount: options?.violationCount,
+        autoSubmit: options?.autoSubmit,
+      }),
     [submitMutateAsync],
   );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleOnline = () => {
+      if (localAnswersRef.current && Object.keys(localAnswersRef.current).length > 0) {
+        save();
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [save]);
 
   return useMemo(
     () => ({
@@ -413,7 +451,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
       conflict:
         conflictState !== null
           ? {
-              latestVersion: conflictState.latest.version,
+              latestVersion: conflictState.latest.draft_version ?? conflictState.latest.version,
               latestSavedAt: conflictState.latest.updated_at,
               localAnswerCount: Object.keys(conflictState.localAnswers).length,
               serverAnswerCount: Object.keys(answersFromSubmission(conflictState.latest)).length,

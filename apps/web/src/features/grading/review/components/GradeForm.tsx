@@ -27,11 +27,11 @@ import { queryKeys } from '@/lib/react-query/queryKeys';
 import { useAnnotations, formatAnnotationsAsFeedback } from '../AnnotationContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { MarkdownEditor } from '@/features/content-markdown';
 import type { ReviewNavigationState } from '../types';
 import { readLocalStorageString, writeLocalStorageString } from '@/lib/local-storage';
 
@@ -405,12 +405,13 @@ export default function GradeForm({
                       <span className="ml-auto text-xs text-amber-600">{t('needsReview')}</span>
                     )}
                   </div>
-                  <Textarea
+                  <MarkdownEditor
                     placeholder={tItemGrading('itemFeedback')}
                     value={entry?.feedback ?? item.feedback ?? ''}
                     disabled={!editable || isSaving}
-                    className="min-h-16 text-sm"
-                    onChange={(e) => patchItemDraft(item.item_id, 'feedback', e.target.value)}
+                    preset="explanation"
+                    minHeight={96}
+                    onChange={(markdown) => patchItemDraft(item.item_id, 'feedback', markdown)}
                   />
                 </div>
               );
@@ -467,12 +468,12 @@ export default function GradeForm({
               <MessageSquareText className="size-4" />
               {tItemGrading('overallFeedback')}
             </Label>
-            <Textarea
-              id="item-grade-overall-feedback"
+            <MarkdownEditor
               value={draft.feedback}
               disabled={!editable || isSaving}
-              className="min-h-24"
-              onChange={(e) => setDraft((cur) => ({ ...cur, feedback: e.target.value }))}
+              preset="explanation"
+              minHeight={140}
+              onChange={(markdown) => setDraft((cur) => ({ ...cur, feedback: markdown }))}
             />
           </div>
 
@@ -546,12 +547,12 @@ export default function GradeForm({
               <MessageSquareText className="size-4" />
               {t('feedback')}
             </Label>
-            <Textarea
-              id="review-feedback"
+            <MarkdownEditor
               value={draft.feedback}
               disabled={!editable || isSaving}
-              className="min-h-36"
-              onChange={(event) => setDraft((current) => ({ ...current, feedback: event.target.value }))}
+              preset="explanation"
+              minHeight={160}
+              onChange={(markdown) => setDraft((current) => ({ ...current, feedback: markdown }))}
             />
           </div>
 

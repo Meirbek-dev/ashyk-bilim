@@ -1,13 +1,13 @@
+import redis
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session
+from taskiq import InMemoryBroker
 
+from src.infra import redis as redis_infra
 from src.infra.db.session import session_scope
 from src.infra.settings import get_settings
-from src.infra import redis as redis_infra
 from src.worker.broker import broker
-from taskiq import InMemoryBroker
-import redis
 
 
 def get_liveness_status() -> dict[str, object]:

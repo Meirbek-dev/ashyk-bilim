@@ -2467,6 +2467,7 @@
   },
   "MarkdownEditor": {
     "toolbar": {
+      "label": "Markdown редакторының құралдар панелі",
       "bold": "Жирту",
       "italic": "Курсив",
       "strikethrough": "Сызу",
@@ -2488,7 +2489,9 @@
       "fullscreen": "Толық экран",
       "exitFullscreen": "Толық экраннан шығу",
       "snippets": "Үзінділер",
+      "insertSnippet": "Үзіндіні кірістіру",
       "viewWrite": "Жазу",
+      "viewSource": "Бастапқы код",
       "viewSplit": "Алдын ала қарау",
       "viewPreview": "Алдын ала қарау"
     },
@@ -2498,9 +2501,10 @@
       "word": "сөз",
       "words": "сөздер",
       "unsaved": "Сақталмаған",
-      "saving": "Сақталуда…",
+      "saving": "Saving…",
       "saved": "Сақталды",
-      "saveFailed": "Сақтау сәтсіз аяқталды"
+      "saveFailed": "Сақтау сәтсіз аяқталды",
+      "issueToggle": "{count} қате"
     },
     "linkDialog": {
       "title": "Сілтеме кірістіру",
@@ -2517,10 +2521,10 @@
     "imageDialog": {
       "title": "Кескін кірістіру",
       "srcLabel": "Кескін URL",
-      "srcPlaceholder": "https://example.com/image.png",
-      "srcError": "Жарамды кескін URL енгізіңіз.",
+      "srcPlaceholder": "Платформаға жүктелген кескін сілтемесін пайдаланыңыз",
+      "srcError": "Платформаға жүктелген кескін сілтемесін енгізіңіз.",
       "altLabel": "Балама мәтін",
-      "altLabelOptional": "(міндетті емес, бірақ ұсынылады)",
+      "altLabelOptional": "(жарияланған контент үшін міндетті)",
       "altPlaceholder": "Экран оқушылары үшін кескінді сипаттаңыз",
       "cancel": "Болдырмау",
       "insert": "Кескінді кірістіру"

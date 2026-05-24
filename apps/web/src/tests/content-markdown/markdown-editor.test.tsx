@@ -13,6 +13,18 @@ vi.mock('@/features/content-markdown/lib/shiki', () => ({
   getLanguageDisplayName: vi.fn((lang: string) => lang ?? 'Text'),
 }));
 
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string, values?: Record<string, string | number>) => {
+    const labels: Record<string, string> = {
+      'toolbar.label': 'Markdown editor toolbar',
+      'toolbar.viewSource': 'Source',
+    };
+    if (key === 'statusBar.issueToggle') return `${values?.count ?? 0} issues`;
+    if (labels[key]) return labels[key];
+    return key.split('.').at(-1) ?? key;
+  },
+}));
+
 describe('MarkdownEditor', () => {
   let editor: Editor | null = null;
 

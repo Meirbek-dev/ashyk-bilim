@@ -41,7 +41,7 @@ async def assessment_timer_tick() -> int:
     from src.tasks.assessment_timer import _auto_submit_expired_drafts
 
     try:
-        submitted: int = await asyncio.to_thread(_auto_submit_expired_drafts)
+        submitted: int = await _auto_submit_expired_drafts()
         if submitted:
             logger.info("assessment_timer_tick submitted=%d", submitted)
         return submitted

@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList';
 import type { ItemAnswer } from '@/features/assessments/domain/items';
 import type { SubmissionStatus } from '@/features/grading/domain';
+import { MarkdownContent, extractMarkdownSummary } from '@/features/content-markdown';
 import { LanguageSelector } from './LanguageSelector';
 import type { TestCaseResult } from './TestCaseCard';
 import { TestResultsList } from './TestCaseCard';
@@ -374,9 +375,10 @@ export function CodeChallengeEditor({
               <div className="border-b p-4">
                 {challengeTitle && <h2 className="mb-1 text-sm leading-snug font-semibold">{challengeTitle}</h2>}
                 {challengeDescription && (
-                  <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
-                    {challengeDescription}
-                  </p>
+                  <MarkdownContent
+                    content={challengeDescription}
+                    mode="codeProblem"
+                  />
                 )}
               </div>
             ) : null}
@@ -395,7 +397,7 @@ export function CodeChallengeEditor({
                     >
                       <div className="text-muted-foreground mb-2 text-xs font-medium">
                         {t('testCase')} #{index + 1}
-                        {tc.description ? ` — ${tc.description}` : ''}
+                        {tc.description ? ` - ${extractMarkdownSummary(tc.description, 100)}` : ''}
                       </div>
                       <div className="space-y-1.5">
                         <div>

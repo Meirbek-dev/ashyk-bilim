@@ -433,8 +433,8 @@ def test_validate_code_challenge_endpoint(
     db_session_factory,
     monkeypatch,
 ) -> None:
-    from src.services.code_execution.service import CodeExecutionCaseResult
     from src.db.code_execution import CodeRunStatus
+    from src.services.code_execution.service import CodeExecutionCaseResult
 
     assessment = _seed_assessment(
         db_session_factory,

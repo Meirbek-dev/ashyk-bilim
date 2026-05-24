@@ -2468,6 +2468,7 @@
   },
   "MarkdownEditor": {
     "toolbar": {
+      "label": "Markdown editor toolbar",
       "bold": "Bold",
       "italic": "Italic",
       "strikethrough": "Strikethrough",
@@ -2489,7 +2490,9 @@
       "fullscreen": "Fullscreen",
       "exitFullscreen": "Exit fullscreen",
       "snippets": "Snippets",
+      "insertSnippet": "Insert snippet",
       "viewWrite": "Write",
+      "viewSource": "Source",
       "viewSplit": "Split preview",
       "viewPreview": "Preview"
     },
@@ -2501,7 +2504,8 @@
       "unsaved": "Unsaved",
       "saving": "Saving…",
       "saved": "Saved",
-      "saveFailed": "Save failed"
+      "saveFailed": "Save failed",
+      "issueToggle": "{count, plural, one {# issue} other {# issues}}"
     },
     "linkDialog": {
       "title": "Insert link",
@@ -2518,10 +2522,10 @@
     "imageDialog": {
       "title": "Insert image",
       "srcLabel": "Image URL",
-      "srcPlaceholder": "https://example.com/image.png",
-      "srcError": "Please enter a valid image URL.",
+      "srcPlaceholder": "Use a platform-uploaded image URL",
+      "srcError": "Please enter a platform-uploaded image URL.",
       "altLabel": "Alt text",
-      "altLabelOptional": "(optional but recommended)",
+      "altLabelOptional": "(required for published content)",
       "altPlaceholder": "Describe the image for screen readers",
       "cancel": "Cancel",
       "insert": "Insert image"

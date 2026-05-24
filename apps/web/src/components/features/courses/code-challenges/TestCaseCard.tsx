@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
+import { extractMarkdownSummary } from '@/features/content-markdown';
 import { cn } from '@/lib/utils';
 
 // Judge0 status codes
@@ -171,7 +172,11 @@ export function TestCaseCard({
             <StatusIcon className={cn('h-5 w-5', config.color)} />
             <span className="font-medium">
               {t('testCase')} #{index + 1}
-              {testDescription && <span className="text-muted-foreground ml-2 text-sm">- {testDescription}</span>}
+              {testDescription && (
+                <span className="text-muted-foreground ml-2 text-sm">
+                  - {extractMarkdownSummary(testDescription, 100)}
+                </span>
+              )}
             </span>
           </div>
           <div className="flex items-center gap-3">

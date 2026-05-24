@@ -5,7 +5,8 @@ import { Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { isSafeMarkdownUrl } from '../utils/markdown-sanitize';
+import { isSafeMarkdownImageUrl } from '../utils/markdown-sanitize';
+import { useTranslations } from 'next-intl';
 
 interface EditorImageDialogProps {
   onConfirm: (src: string, alt: string) => void;
@@ -13,13 +14,14 @@ interface EditorImageDialogProps {
 }
 
 export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps) {
+  const t = useTranslations('MarkdownEditor');
   const [src, setSrc] = useState('');
   const [alt, setAlt] = useState('');
   const [touched, setTouched] = useState(false);
   const [previewFailed, setPreviewFailed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const srcValid = !src.trim() || isSafeMarkdownUrl(src.trim());
+  const srcValid = !src.trim() || isSafeMarkdownImageUrl(src.trim());
   const showError = touched && Boolean(src.trim()) && !srcValid;
 
   useEffect(() => {
@@ -28,6 +30,10 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
 
   const handleConfirm = () => {
     if (!src.trim() || !srcValid) return;
+    if (!alt.trim()) {
+      setTouched(true);
+      return;
+    }
     onConfirm(src.trim(), alt.trim());
     onClose();
   };
@@ -45,7 +51,7 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Insert image"
+      aria-label={t('imageDialog.title')}
     >
       <div
         className="bg-popover border-border shadow-xl w-[380px] rounded-lg border p-4"
@@ -54,13 +60,13 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
       >
         <div className="mb-3 flex items-center gap-2">
           <ImageIcon className="text-muted-foreground size-4" />
-          <span className="text-sm font-semibold">Insert image</span>
+          <span className="text-sm font-semibold">{t('imageDialog.title')}</span>
         </div>
 
         {/* Image URL */}
         <div className="mb-2 space-y-1">
           <label htmlFor="image-dialog-src" className="text-muted-foreground text-xs font-medium">
-            Image URL
+            {t('imageDialog.srcLabel')}
           </label>
           <Input
             id="image-dialog-src"
@@ -72,26 +78,26 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
               setPreviewFailed(false);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="https://example.com/image.png"
+            placeholder={t('imageDialog.srcPlaceholder')}
             className={cn(showError && 'border-destructive')}
             aria-invalid={showError}
           />
           {showError && (
-            <p className="text-destructive text-xs">Please enter a valid image URL.</p>
+            <p className="text-destructive text-xs">{t('imageDialog.srcError')}</p>
           )}
         </div>
 
         {/* Alt text */}
         <div className="mb-3 space-y-1">
           <label htmlFor="image-dialog-alt" className="text-muted-foreground text-xs font-medium">
-            Alt text <span className="text-muted-foreground/60">(optional but recommended)</span>
+            {t('imageDialog.altLabel')} <span className="text-muted-foreground/60">{t('imageDialog.altLabelOptional')}</span>
           </label>
           <Input
             id="image-dialog-alt"
             value={alt}
             onChange={(e) => setAlt(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe the image for screen readers"
+            placeholder={t('imageDialog.altPlaceholder')}
           />
         </div>
 
@@ -110,9 +116,9 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
 
         {/* Actions */}
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button type="button" size="sm" onClick={handleConfirm} disabled={!src.trim() || !srcValid}>
-            Insert image
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>{t('imageDialog.cancel')}</Button>
+          <Button type="button" size="sm" onClick={handleConfirm} disabled={!src.trim() || !srcValid || !alt.trim()}>
+            {t('imageDialog.insert')}
           </Button>
         </div>
       </div>

@@ -284,6 +284,7 @@ class SubmissionRead(SubmissionBase):
     updated_at: datetime
     grading_version: int = 1
     version: int = 1  # optimistic lock counter — include in If-Match header
+    draft_version: int = 1  # student draft concurrency lock counter
 
     # Populated by the teacher list endpoint; None for student-facing endpoints
     user: SubmissionUser | None = None

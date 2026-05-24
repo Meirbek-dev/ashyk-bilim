@@ -12,6 +12,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { MarkdownEditor, extractMarkdownSummary } from '@/features/content-markdown';
 import type { CodeChallengeSettings, TestCase } from '@/services/courses/code-challenges';
 import { cn, generateUUID } from '@/lib/utils';
 
@@ -348,12 +349,13 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                       </TableCell>
                       <TableCell className="py-2.5">
                         <div onClick={(e) => e.stopPropagation()}>
-                          <Input
-                            value={test.description ?? ''}
-                            onChange={(e) => updateTest(test.id, { description: e.target.value })}
-                            className="h-8 px-2"
-                            placeholder="e.g. Empty list check"
-                          />
+                          <button
+                            type="button"
+                            className="text-muted-foreground h-8 w-full truncate rounded-md border px-2 text-left text-sm hover:bg-muted/30"
+                            onClick={() => setSelectedCaseId(test.id)}
+                          >
+                            {test.description ? extractMarkdownSummary(test.description, 80) : 'e.g. Empty list check'}
+                          </button>
                         </div>
                       </TableCell>
                       <TableCell className="py-2.5">
@@ -426,6 +428,16 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
         <ScrollArea className="min-h-0 flex-1">
           {selectedTestCase ? (
             <div className="space-y-4 p-4">
+              <label className="grid gap-1.5">
+                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('descriptionLabel')}</span>
+                <MarkdownEditor
+                  value={selectedTestCase.description ?? ''}
+                  onChange={(description) => updateTest(selectedTestCase.id, { description })}
+                  preset="codeExampleExplanation"
+                  placeholder="Explain why this case matters..."
+                />
+              </label>
+
               <label className="grid gap-1.5">
                 <span className="text-muted-foreground text-xs font-semibold uppercase">{t('stdinInput')}</span>
                 <Textarea
