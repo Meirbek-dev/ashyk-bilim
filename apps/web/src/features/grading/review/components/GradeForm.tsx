@@ -221,7 +221,6 @@ export default function GradeForm({
       clearAnnotations,
       calculatedTotal,
       queryClient,
-      overrideReason,
     ],
   );
 

@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Clock, List, Play, Rocket, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ export function CodeArenaHeader({
   onSubmit,
   disabled = false,
 }: CodeArenaHeaderProps) {
+  const t = useTranslations('Activities.CodeChallenges');
   const [timeElapsed, setTimeElapsed] = useState(0);
 
   useEffect(() => {
@@ -53,7 +55,7 @@ export function CodeArenaHeader({
     <div className="bg-muted/40 flex h-14 shrink-0 items-center justify-between border-b px-4">
       {/* Left: Breadcrumbs & Problem Select */}
       <div className="flex items-center gap-3">
-        <span className="text-muted-foreground hidden text-xs font-medium md:inline-block">Course / Challenges</span>
+        <span className="text-muted-foreground hidden text-xs font-medium md:inline-block">{t('courseChallenges')}</span>
         <span className="text-muted-foreground hidden md:inline">/</span>
 
         <DropdownMenu>
@@ -68,12 +70,12 @@ export function CodeArenaHeader({
             }
           >
             <List className="size-4" />
-            Problems
+            {t('problems')}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuItem className="font-semibold">{problem.title}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-muted-foreground text-xs">Practice mode active</DropdownMenuItem>
+            <DropdownMenuItem className="text-muted-foreground text-xs">{t('practiceModeActive')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -113,7 +115,7 @@ export function CodeArenaHeader({
           </Badge>
         ) : null}
         {problem.points ? (
-          <span className="text-muted-foreground hidden text-xs md:inline-block">{problem.points} pts</span>
+          <span className="text-muted-foreground hidden text-xs md:inline-block">{problem.points} {t('pointsShort')}</span>
         ) : null}
         <VerdictStatus verdict={verdict} />
       </div>
@@ -136,7 +138,7 @@ export function CodeArenaHeader({
           className="h-8 gap-1.5 text-xs"
         >
           <Play className="size-3.5" />
-          Run
+          {t('runCodeShort')}
         </Button>
         <Button
           type="button"
@@ -147,7 +149,7 @@ export function CodeArenaHeader({
           className="h-8 gap-1.5 text-xs"
         >
           <Rocket className="size-3.5" />
-          Test
+          {t('testCodeShort')}
         </Button>
         <Button
           type="button"
@@ -157,7 +159,7 @@ export function CodeArenaHeader({
           className="h-8 gap-1.5 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
         >
           <Send className="size-3.5" />
-          Submit
+          {t('submitCodeShort')}
         </Button>
       </div>
     </div>

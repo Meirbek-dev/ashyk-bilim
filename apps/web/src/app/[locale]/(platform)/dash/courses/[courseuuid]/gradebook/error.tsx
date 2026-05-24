@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { reportClientError } from '@/services/telemetry/client';
 
 export default function GradebookError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const t = useTranslations('Errors');
+
   useEffect(() => {
     void reportClientError({
       digest: error.digest,
@@ -26,9 +29,9 @@ export default function GradebookError({ error, reset }: { error: Error & { dige
             <AlertTriangle className="size-5" />
           </div>
           <div className="space-y-1">
-            <h1 className="text-lg font-semibold">Gradebook failed to load</h1>
+            <h1 className="text-lg font-semibold">{t('gradebookLoadError')}</h1>
             <p className="text-muted-foreground text-sm">
-              Retry the request. If the error persists, the gradebook data may be temporarily unavailable.
+              {t('gradebookLoadErrorDescription')}
             </p>
           </div>
         </div>
@@ -40,10 +43,11 @@ export default function GradebookError({ error, reset }: { error: Error & { dige
             className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
           >
             <RotateCcw className="size-4" />
-            Retry
+            {t('retry')}
           </button>
         </div>
       </div>
     </div>
   );
 }
+

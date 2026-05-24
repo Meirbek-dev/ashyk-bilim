@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 import {
   CommandDialog,
@@ -62,6 +63,7 @@ export function CodeArenaWorkspace({
   onSubmit,
   onSubmitControlChange,
 }: CodeArenaWorkspaceProps) {
+  const t = useTranslations('Activities.CodeChallenges');
   const [problemTab, setProblemTab] = useState<CodeArenaTab>('description');
   const [resultTab, setResultTab] = useState<CodeResultTab>('testcase');
   const [commandOpen, setCommandOpen] = useState(false);
@@ -317,7 +319,7 @@ export function CodeArenaWorkspace({
       >
         <CommandInput placeholder="Run, submit, reset..." />
         <CommandList>
-          <CommandEmpty>No command found.</CommandEmpty>
+          <CommandEmpty>{t('noCommandFound')}</CommandEmpty>
           <CommandGroup heading="Actions">
             <CommandItem
               onSelect={() => {
@@ -325,8 +327,8 @@ export function CodeArenaWorkspace({
                 void handleRunTests();
               }}
             >
-              Run visible tests
-              <CommandShortcut>Ctrl Enter</CommandShortcut>
+              {t('runVisibleTests')}
+              <CommandShortcut>{t('ctrlEnter')}</CommandShortcut>
             </CommandItem>
             <CommandItem
               onSelect={() => {
@@ -334,8 +336,8 @@ export function CodeArenaWorkspace({
                 void handleSubmit();
               }}
             >
-              Submit solution
-              <CommandShortcut>Ctrl Shift Enter</CommandShortcut>
+              {t('submitSolution')}
+              <CommandShortcut>{t('ctrlShiftEnter')}</CommandShortcut>
             </CommandItem>
             <CommandItem
               onSelect={() => {
@@ -343,7 +345,7 @@ export function CodeArenaWorkspace({
                 updateCode(starterCode);
               }}
             >
-              Reset to starter code
+              {t('resetToStarterCode')}
             </CommandItem>
           </CommandGroup>
         </CommandList>

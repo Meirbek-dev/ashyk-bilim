@@ -92,7 +92,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     .filter((submission) => submission.status !== 'DRAFT')
     .map((submission, index) => {
       const plagiarism = getSubmissionPlagiarismState(submission);
-      let plagiarismText = '';
+      let plagiarismText: string;
       if (plagiarism.status === 'failed') {
         plagiarismText = 'Plagiarism: Failed';
       } else if (plagiarism.status === 'checking') {
@@ -764,6 +764,8 @@ function ExamTakingContent({
           reviewQuestions: t('reviewQuestions'),
           submitting: t('submitting'),
           confirmAndSubmit: t('confirmAndSubmit'),
+          unansweredQuestions: t('unansweredQuestions'),
+          flaggedForReview: t('flaggedForReview'),
         }}
         onCancel={() => setIsConfirmingSubmit(false)}
         onSubmit={() => void handleSubmit()}

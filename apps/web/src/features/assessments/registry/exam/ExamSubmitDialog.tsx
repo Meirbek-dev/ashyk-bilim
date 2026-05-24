@@ -37,6 +37,8 @@ interface ExamSubmitDialogProps {
     reviewQuestions: string;
     submitting: string;
     confirmAndSubmit: string;
+    unansweredQuestions: string;
+    flaggedForReview: string;
   };
   onCancel: () => void;
   onSubmit: () => void;
@@ -93,7 +95,7 @@ export default function ExamSubmitDialog({
             />
             {flaggedCount > 0 ? (
               <SummaryRow
-                label="Flagged for review"
+                label={labels.flaggedForReview}
                 value={flaggedCount}
                 variant="amber"
               />
@@ -104,7 +106,7 @@ export default function ExamSubmitDialog({
           {unansweredQuestions.length > 0 && onNavigateTo ? (
             <div className="mt-3 max-h-40 space-y-1 overflow-y-auto">
               <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-                Unanswered questions
+                {labels.unansweredQuestions}
               </p>
               {unansweredQuestions.map((q) => (
                 <button

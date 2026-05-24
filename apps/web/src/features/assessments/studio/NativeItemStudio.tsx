@@ -396,7 +396,7 @@ export function NativeItemAuthor({
   const [activeTab, setActiveTabState] = useState<StudioTab>(() => {
     if (typeof window !== 'undefined') {
       const raw = new URLSearchParams(window.location.search).get('tab')?.toUpperCase();
-      if (raw && VALID_TABS.has(raw as StudioTab)) return raw as StudioTab;
+      if (raw && VALID_TABS.has(raw)) return raw as StudioTab;
     }
     return 'BUILDER';
   });

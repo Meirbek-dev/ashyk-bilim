@@ -131,7 +131,9 @@ export function useAssessmentAttempt<T = unknown>({
       if (validate && !validate(entry.answers)) {
         try {
           localStorage.removeItem(storageKey);
-        } catch {}
+        } catch {
+          // Ignore storage access errors
+        }
         return null;
       }
       return entry;
