@@ -26,10 +26,11 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslations } from 'next-intl';
-import { useTransition, useCallback, useState, useRef, useEffect } from 'react';
+import { useTransition, useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import type { AssessmentItem } from '@/features/assessments/domain/items';
+import type { AssessmentItemMetadata } from '@/features/assessments/domain/items';
 import type { UnifiedItemKind } from '@/features/assessments/domain/items';
 import {
   classifyValidationIssue,
@@ -55,10 +56,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { readJsonLocalStorage, readVersionedLocalStorage, writeVersionedLocalStorage } from '@/lib/local-storage';
 
 type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>;
-const SECTION_STORAGE_VERSION = 1;
 
 const KIND_ICONS: Record<SupportedStudioItemKind, typeof ListTodo> = {
   CHOICE: ListTodo,
@@ -83,6 +82,7 @@ interface BuilderCanvasTabProps {
   onItemDeleted: () => Promise<void>;
   onItemDuplicated: (uuid: string) => Promise<void>;
   onReorder: (orderedUuids: string[]) => Promise<void>;
+  onItemMetadataChange: (itemUuid: string, metadata: AssessmentItemMetadata) => Promise<void>;
   onItemChange: (nextItem: EditableItem) => void;
   renderItemBodyEditor: (item: EditableItem) => React.ReactNode;
 }
@@ -94,79 +94,6 @@ export interface ExamSection {
   label: string;
   /** This section header appears immediately before the item with this uuid */
   beforeItemUuid: string;
-}
-
-function useSections(assessmentUuid: string) {
-  const key = `sections:${assessmentUuid}:v${SECTION_STORAGE_VERSION}`;
-  const [sections, setSections] = useState<ExamSection[]>(() => {
-    const isExamSectionArray = (value: unknown): value is ExamSection[] => {
-      if (!Array.isArray(value)) return false;
-      return value.every((section) => {
-        if (typeof section !== 'object' || section === null) return false;
-        const candidate = section as Partial<ExamSection>;
-        return (
-          typeof candidate.id === 'string' &&
-          typeof candidate.label === 'string' &&
-          typeof candidate.beforeItemUuid === 'string'
-        );
-      });
-    };
-
-    try {
-      const versioned = readVersionedLocalStorage<ExamSection[]>(key, SECTION_STORAGE_VERSION, isExamSectionArray);
-      if (versioned) return versioned;
-
-      const legacy = readJsonLocalStorage<ExamSection[]>(`sections:${assessmentUuid}`, isExamSectionArray);
-      if (legacy) {
-        writeVersionedLocalStorage(key, SECTION_STORAGE_VERSION, legacy);
-        return legacy;
-      }
-      return [];
-    } catch {
-      return [];
-    }
-  });
-
-  const persist = useCallback(
-    (next: ExamSection[]) => {
-      setSections(next);
-      writeVersionedLocalStorage(key, SECTION_STORAGE_VERSION, next);
-    },
-    [key],
-  );
-
-  const addSection = useCallback(
-    (beforeItemUuid: string, label: string) => {
-      const next: ExamSection = { id: crypto.randomUUID(), label, beforeItemUuid };
-      persist([...sections, next]);
-    },
-    [sections, persist],
-  );
-
-  const renameSection = useCallback(
-    (id: string, label: string) => {
-      persist(sections.map((s) => (s.id === id ? { ...s, label } : s)));
-    },
-    [sections, persist],
-  );
-
-  const deleteSection = useCallback(
-    (id: string) => {
-      persist(sections.filter((s) => s.id !== id));
-    },
-    [sections, persist],
-  );
-
-  /** Remove dangling sections after item deletion */
-  const pruneSections = useCallback(
-    (liveItemUuids: string[]) => {
-      const pruned = sections.filter((s) => liveItemUuids.includes(s.beforeItemUuid));
-      if (pruned.length !== sections.length) persist(pruned);
-    },
-    [sections, persist],
-  );
-
-  return { sections, addSection, renameSection, deleteSection, pruneSections };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -187,6 +114,7 @@ export default function BuilderCanvasTab({
   onItemDeleted,
   onItemDuplicated,
   onReorder,
+  onItemMetadataChange,
   onItemChange,
   renderItemBodyEditor,
 }: BuilderCanvasTabProps) {
@@ -196,7 +124,14 @@ export default function BuilderCanvasTab({
   const [isDuplicating, startDuplicateTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [inspectorOpen, setInspectorOpen] = useState(true);
-  const { sections, addSection, renameSection, deleteSection, pruneSections } = useSections(assessmentUuid);
+  const sections = useMemo(
+    () =>
+      items.flatMap((item) => {
+        const sectionLabel = item.metadata?.section_label;
+        return sectionLabel ? [{ id: item.item_uuid, label: sectionLabel, beforeItemUuid: item.item_uuid }] : [];
+      }),
+    [items],
+  );
 
   const kindLabels: Record<SupportedStudioItemKind, string> = {
     CHOICE: t('kindLabels.choice'),
@@ -260,6 +195,7 @@ export default function BuilderCanvasTab({
             title: itemState.title ? t('copyOf', { title: itemState.title }) : t('copyOfItem', { itemNoun }),
             max_score: itemState.max_score,
             body: structuredClone(itemState.body),
+            metadata: structuredClone(itemState.metadata),
           }),
         });
         if (!response.ok) throw new Error('Failed to duplicate item');
@@ -284,12 +220,18 @@ export default function BuilderCanvasTab({
         if (!response.ok) throw new Error('Failed to delete item');
         toast.success(t('itemDeleted', { itemNoun }));
         await onItemDeleted();
-        pruneSections(items.filter((i) => i.item_uuid !== itemState.item_uuid).map((i) => i.item_uuid));
       } catch {
         toast.error(t('deleteFailed', { itemNoun: itemNoun.toLowerCase() }));
       }
     });
   };
+
+  const patchItemMetadata = useCallback(
+    async (itemUuid: string, metadata: AssessmentItemMetadata) => {
+      await onItemMetadataChange(itemUuid, metadata);
+    },
+    [onItemMetadataChange],
+  );
 
   return (
     <div className="flex h-[calc(100vh-120px)] overflow-hidden">
@@ -365,8 +307,16 @@ export default function BuilderCanvasTab({
                             key={section.id}
                             section={section}
                             isEditable={isEditable}
-                            onRename={(label) => renameSection(section.id, label)}
-                            onDelete={() => deleteSection(section.id)}
+                            onRename={(label) => {
+                              const item = items.find((candidate) => candidate.item_uuid === section.beforeItemUuid);
+                              if (!item) return;
+                              void patchItemMetadata(item.item_uuid, { ...defaultMetadata(item.metadata), section_label: label });
+                            }}
+                            onDelete={() => {
+                              const item = items.find((candidate) => candidate.item_uuid === section.beforeItemUuid);
+                              if (!item) return;
+                              void patchItemMetadata(item.item_uuid, { ...defaultMetadata(item.metadata), section_label: null });
+                            }}
                           />
                         ))}
                         <SortableOutlineItem
@@ -380,9 +330,12 @@ export default function BuilderCanvasTab({
                           onAddSectionBefore={
                             isEditable
                               ? () =>
-                                  addSection(
+                                  void patchItemMetadata(
                                     item.item_uuid,
-                                    tBuilder('defaultSectionLabel', { n: sections.length + 1 }),
+                                    {
+                                      ...defaultMetadata(item.metadata),
+                                      section_label: tBuilder('defaultSectionLabel', { n: sections.length + 1 }),
+                                    },
                                   )
                               : undefined
                           }
@@ -837,4 +790,14 @@ function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTitle: st
 
 function createChoiceOption() {
   return { id: `option_${crypto.randomUUID()}`, text: '', is_correct: false };
+}
+
+function defaultMetadata(metadata: AssessmentItemMetadata | null | undefined): AssessmentItemMetadata {
+  return {
+    section_label: metadata?.section_label ?? null,
+    difficulty: metadata?.difficulty ?? null,
+    tags: metadata?.tags ?? [],
+    outcome_ids: metadata?.outcome_ids ?? [],
+    estimated_minutes: metadata?.estimated_minutes ?? null,
+  };
 }

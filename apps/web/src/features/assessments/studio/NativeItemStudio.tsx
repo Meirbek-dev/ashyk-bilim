@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 import { apiFetch, apiFetcher } from '@/lib/api-client';
 import { queryKeys } from '@/lib/react-query/queryKeys';
 import type { KindAuthorProps } from '@/features/assessments/registry';
-import type { AssessmentItem } from '@/features/assessments/domain/items';
+import type { AssessmentItem, AssessmentItemMetadata } from '@/features/assessments/domain/items';
 import type { UnifiedItemKind } from '@/features/assessments/domain/items';
 import { isAssessmentEditable } from '@/features/assessments/domain/lifecycle';
 import {
@@ -479,6 +479,7 @@ export function NativeItemAuthor({
             title: nextItem.title,
             max_score: nextItem.max_score,
             body: nextItem.body,
+            metadata: nextItem.metadata,
           }),
         });
         if (!response.ok)
@@ -537,6 +538,30 @@ export function NativeItemAuthor({
       }
     },
     [assessment.assessment_uuid, refresh],
+  );
+
+  const updateItemMetadata = useCallback(
+    async (itemUuid: string, metadata: AssessmentItemMetadata) => {
+      try {
+        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${itemUuid}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ metadata }),
+        });
+        if (!response.ok) {
+          throw new Error(
+            await responseError(response, t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() })),
+          );
+        }
+        await refresh();
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
+        );
+        throw error;
+      }
+    },
+    [assessment.assessment_uuid, displayItemNoun, refresh, t],
   );
 
   const setLifecycle = useCallback(
@@ -650,6 +675,7 @@ export function NativeItemAuthor({
             setSelectedItemUuid(uuid);
           }}
           onReorder={handleReorder}
+          onItemMetadataChange={updateItemMetadata}
           onItemChange={setItemState}
           renderItemBodyEditor={(currentItem) => (
             <NativeItemBodyEditor
@@ -1125,6 +1151,7 @@ function toEditableItem(item: AssessmentItem): EditableItem {
     title: item.title,
     max_score: item.max_score,
     body: structuredClone(item.body),
+    metadata: defaultItemMetadata(item.metadata),
   };
 }
 
@@ -1290,6 +1317,16 @@ function serializeAssessmentState(state: AssessmentEditorState) {
 
 function serializeItemState(item: EditableItem) {
   return JSON.stringify(item);
+}
+
+function defaultItemMetadata(metadata: AssessmentItem['metadata'] | null | undefined): AssessmentItemMetadata {
+  return {
+    section_label: metadata?.section_label ?? null,
+    difficulty: metadata?.difficulty ?? null,
+    tags: metadata?.tags ?? [],
+    outcome_ids: metadata?.outcome_ids ?? [],
+    estimated_minutes: metadata?.estimated_minutes ?? null,
+  };
 }
 
 function toDateTimeLocal(value: string | null | undefined) {

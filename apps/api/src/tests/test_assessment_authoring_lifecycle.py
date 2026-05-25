@@ -575,25 +575,44 @@ def test_add_multiple_items_preserves_order(api_client, db_session_factory) -> N
     """Items are returned in insertion order when fetched via GET."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
-    # Add two more items
-    api_client.post(
+    # Add two more supported exam items.
+    second_response = api_client.post(
         f"/assessments/{assessment_uuid}/items",
         json={
-            "kind": "OPEN_TEXT",
+            "kind": "CHOICE",
             "title": "Second question",
-            "body": {"kind": "OPEN_TEXT", "prompt": "Describe."},
+            "body": {
+                "kind": "CHOICE",
+                "prompt": "Choose the second answer.",
+                "options": [
+                    {"text": "Correct", "is_correct": True},
+                    {"text": "Incorrect", "is_correct": False},
+                ],
+                "multiple": False,
+            },
             "max_score": 20,
         },
     )
-    api_client.post(
+    assert second_response.status_code == 200
+
+    third_response = api_client.post(
         f"/assessments/{assessment_uuid}/items",
         json={
-            "kind": "OPEN_TEXT",
+            "kind": "CHOICE",
             "title": "Third question",
-            "body": {"kind": "OPEN_TEXT", "prompt": "Explain."},
+            "body": {
+                "kind": "CHOICE",
+                "prompt": "Choose the third answer.",
+                "options": [
+                    {"text": "Correct", "is_correct": True},
+                    {"text": "Incorrect", "is_correct": False},
+                ],
+                "multiple": False,
+            },
             "max_score": 20,
         },
     )
+    assert third_response.status_code == 200
 
     # GET returns the full assessment with all items in insertion order
     response = api_client.get(f"/assessments/{assessment_uuid}")
@@ -611,9 +630,17 @@ def test_reorder_items_changes_order(api_client, db_session_factory) -> None:
     r = api_client.post(
         f"/assessments/{assessment_uuid}/items",
         json={
-            "kind": "OPEN_TEXT",
+            "kind": "CHOICE",
             "title": "Second",
-            "body": {"kind": "OPEN_TEXT", "prompt": "Q2"},
+            "body": {
+                "kind": "CHOICE",
+                "prompt": "Q2",
+                "options": [
+                    {"text": "Correct", "is_correct": True},
+                    {"text": "Incorrect", "is_correct": False},
+                ],
+                "multiple": False,
+            },
             "max_score": 10,
         },
     )

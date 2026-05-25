@@ -428,6 +428,100 @@ def test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind(
     assert lifecycle_payload["detail"]["issues"] == readiness_payload["issues"]
 
 
+def test_exam_item_create_rejects_unsupported_runtime_kind(
+    api_client: TestClient,
+    db_session_factory,
+) -> None:
+    assessment = _seed_assessment(
+        db_session_factory,
+        kind=AssessmentType.EXAM,
+        title="Midterm",
+        scheduled_at=None,
+    )
+
+    response = api_client.post(
+        f"/assessments/{assessment.assessment_uuid}/items",
+        json={
+            "kind": "OPEN_TEXT",
+            "title": "Essay",
+            "max_score": 10,
+            "body": {
+                "kind": "OPEN_TEXT",
+                "prompt": "Explain the theorem.",
+                "min_words": 50,
+            },
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "ITEM_KIND_UNSUPPORTED"
+    assert response.json()["detail"]["supported_kinds"] == ["CHOICE", "MATCHING"]
+
+
+def test_item_metadata_is_persisted_on_create_and_patch(
+    api_client: TestClient,
+    db_session_factory,
+) -> None:
+    assessment = _seed_assessment(
+        db_session_factory,
+        kind=AssessmentType.EXAM,
+        title="Midterm",
+        scheduled_at=None,
+    )
+
+    create_response = api_client.post(
+        f"/assessments/{assessment.assessment_uuid}/items",
+        json={
+            "kind": "CHOICE",
+            "title": "Capital",
+            "max_score": 1,
+            "metadata": {
+                "section_label": "Geography",
+                "difficulty": "easy",
+                "tags": ["Maps", "maps", "  capitals  "],
+                "outcome_ids": ["geo-1"],
+                "estimated_minutes": 2,
+            },
+            "body": {
+                "kind": "CHOICE",
+                "prompt": "Capital of Kazakhstan?",
+                "multiple": False,
+                "options": [
+                    {"id": "a", "text": "Astana", "is_correct": True},
+                    {"id": "b", "text": "Almaty", "is_correct": False},
+                ],
+            },
+        },
+    )
+
+    assert create_response.status_code == 200
+    created = create_response.json()
+    assert created["metadata"] == {
+        "section_label": "Geography",
+        "difficulty": "easy",
+        "tags": ["Maps", "capitals"],
+        "outcome_ids": ["geo-1"],
+        "estimated_minutes": 2,
+    }
+
+    patch_response = api_client.patch(
+        f"/assessments/{assessment.assessment_uuid}/items/{created['item_uuid']}",
+        json={
+            "metadata": {
+                "section_label": "Final section",
+                "difficulty": "hard",
+                "tags": [],
+                "outcome_ids": [],
+                "estimated_minutes": None,
+            }
+        },
+    )
+
+    assert patch_response.status_code == 200
+    assert patch_response.json()["metadata"]["section_label"] == "Final section"
+    assert patch_response.json()["metadata"]["difficulty"] == "hard"
+
+
 def test_validate_code_challenge_endpoint(
     api_client: TestClient,
     db_session_factory,

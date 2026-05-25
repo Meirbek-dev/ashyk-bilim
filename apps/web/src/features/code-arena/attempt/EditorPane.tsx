@@ -67,7 +67,7 @@ export function EditorPane({
     <div className="bg-background flex h-full min-h-0 flex-col">
       <div className="flex h-10 shrink-0 items-center justify-between border-b px-2">
         <div className="flex min-w-0 items-center gap-2">
-          <Code2 className="size-4 text-emerald-600" />
+          <Code2 className="size-4 text-gray-600" />
           <span className="text-sm font-semibold">{t('codeTab')}</span>
         </div>
         <div className="flex shrink-0 items-center gap-1">

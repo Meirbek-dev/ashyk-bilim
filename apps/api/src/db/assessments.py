@@ -214,6 +214,43 @@ type ItemAnswer = Annotated[
 ITEM_ANSWER_ADAPTER: TypeAdapter[ItemAnswer] = TypeAdapter(ItemAnswer)
 
 
+class AssessmentItemMetadata(PydanticStrictBaseModel):
+    section_label: str | None = None
+    difficulty: Literal["easy", "medium", "hard"] | None = None
+    tags: list[str] = Field(default_factory=list)
+    outcome_ids: list[str] = Field(default_factory=list)
+    estimated_minutes: int | None = None
+
+    @field_validator("section_label", mode="before")
+    @classmethod
+    def normalize_section_label(cls, value: object) -> object:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            return value
+        stripped = value.strip()
+        return stripped or None
+
+    @field_validator("tags", "outcome_ids", mode="before")
+    @classmethod
+    def normalize_string_list(cls, value: object) -> object:
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            return value
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for item in value:
+            if not isinstance(item, str):
+                continue
+            stripped = item.strip()
+            key = stripped.lower()
+            if stripped and key not in seen:
+                seen.add(key)
+                normalized.append(stripped)
+        return normalized
+
+
 # ── Tables ────────────────────────────────────────────────────────────────────
 
 
@@ -362,6 +399,10 @@ class AssessmentItem(SQLModelStrictBaseModel, table=True):
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
+    metadata_json: dict[str, object] = SQLField(
+        default_factory=dict,
+        sa_column=Column(JSON, nullable=False, server_default="{}"),
+    )
     max_score: float = SQLField(
         default=0.0,
         sa_column=Column(Float, nullable=False, server_default="0"),
@@ -496,6 +537,7 @@ class AssessmentReadItem(PydanticStrictBaseModel):
     kind: ItemKind
     title: str
     body: ItemBody
+    metadata: AssessmentItemMetadata = Field(default_factory=AssessmentItemMetadata)
     max_score: float
     created_at: datetime
     updated_at: datetime
@@ -758,6 +800,7 @@ class AssessmentItemCreate(PydanticStrictBaseModel):
     kind: ItemKind
     title: str = ""
     body: ItemBody
+    metadata: AssessmentItemMetadata = Field(default_factory=AssessmentItemMetadata)
     max_score: float = 0.0
 
     @field_validator("kind", mode="before")
@@ -778,6 +821,7 @@ class AssessmentItemUpdate(PydanticStrictBaseModel):
     kind: ItemKind | None = None
     title: str | None = None
     body: ItemBody | None = None
+    metadata: AssessmentItemMetadata | None = None
     max_score: float | None = None
 
     @field_validator("kind", mode="before")

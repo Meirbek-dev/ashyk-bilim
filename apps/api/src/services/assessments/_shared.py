@@ -31,6 +31,7 @@ from src.db.assessments import (
     AssessmentGradingType,
     AssessmentItem,
     AssessmentItemCreate,
+    AssessmentItemMetadata,
     AssessmentItemReorder,
     AssessmentItemUpdate,
     AssessmentLifecycle,
@@ -597,6 +598,7 @@ def _build_item_read(item: AssessmentItem) -> AssessmentReadItem:
         kind=item.kind,
         title=item.title,
         body=ITEM_BODY_ADAPTER.validate_python(item.body_json),
+        metadata=AssessmentItemMetadata.model_validate(item.metadata_json or {}),
         max_score=item.max_score,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -1706,6 +1708,7 @@ def _snapshot_submission(
                     "kind": str(item.kind),
                     "title": item.title,
                     "body_json": item.body_json,
+                    "metadata_json": item.metadata_json,
                     "max_score": item.max_score,
                     "order": item.order,
                 }

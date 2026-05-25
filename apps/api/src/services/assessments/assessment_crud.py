@@ -85,6 +85,11 @@ logger = logging.getLogger(__name__)
 # description, and explanation are always editable.
 _SCORING_FIELDS: frozenset[str] = frozenset({"body", "body_json", "kind", "max_score"})
 
+_SUPPORTED_ITEM_KINDS_BY_ASSESSMENT: dict[AssessmentType, frozenset[ItemKind]] = {
+    AssessmentType.EXAM: frozenset({ItemKind.CHOICE, ItemKind.MATCHING}),
+    AssessmentType.QUIZ: frozenset({ItemKind.CHOICE, ItemKind.MATCHING}),
+}
+
 
 def _is_assessment_locked(assessment: Assessment, db_session: Session) -> bool:
     """Return True if the assessment is PUBLISHED and has ≥1 non-DRAFT submission."""
@@ -103,6 +108,23 @@ def _is_assessment_locked(assessment: Assessment, db_session: Session) -> bool:
         .limit(1)
     ).first()
     return active_submission is not None
+
+
+def _ensure_item_kind_supported(assessment: Assessment, kind: ItemKind) -> None:
+    supported = _SUPPORTED_ITEM_KINDS_BY_ASSESSMENT.get(AssessmentType(assessment.kind))
+    if supported is None or kind in supported:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail={
+            "code": "ITEM_KIND_UNSUPPORTED",
+            "message": (
+                f"{kind.value} items are not supported for {AssessmentType(assessment.kind).value} "
+                "assessments by the current learner runtime and grading pipeline."
+            ),
+            "supported_kinds": sorted(item_kind.value for item_kind in supported),
+        },
+    )
 
 
 # ── Public assessment CRUD ────────────────────────────────────────────────────
@@ -356,6 +378,8 @@ async def create_assessment_item(
             },
         )
 
+    _ensure_item_kind_supported(assessment, payload.kind)
+
     max_order = db_session.exec(
         select(func.max(AssessmentItem.order)).where(
             AssessmentItem.assessment_id == assessment.id
@@ -369,6 +393,7 @@ async def create_assessment_item(
         kind=payload.kind,
         title=payload.title,
         body_json=payload.body.model_dump(mode="json"),
+        metadata_json=payload.metadata.model_dump(mode="json"),
         max_score=payload.max_score,
         created_at=now,
         updated_at=now,
@@ -413,10 +438,18 @@ async def update_assessment_item(
             )
 
     changes = payload.model_dump(exclude_unset=True)
+    next_kind = payload.kind
+    if payload.body is not None:
+        next_kind = ItemKind(payload.body.kind)
+    if next_kind is not None:
+        _ensure_item_kind_supported(assessment, next_kind)
+
     for field, value in changes.items():
         if field == "body" and value is not None:
             item.body_json = payload.body.model_dump(mode="json")
             item.kind = ItemKind(payload.body.kind)
+        elif field == "metadata" and value is not None:
+            item.metadata_json = payload.metadata.model_dump(mode="json")
         elif value is not None:
             setattr(item, field, value)
 
@@ -602,9 +635,8 @@ async def duplicate_assessment(
             order=src_item.order,
             kind=src_item.kind,
             title=src_item.title,
-            description=src_item.description,
-            explanation=src_item.explanation,
             body_json=src_item.body_json,
+            metadata_json=src_item.metadata_json,
             max_score=src_item.max_score,
             created_at=now,
             updated_at=now,

@@ -56,6 +56,14 @@ export type ItemBody =
     }
   | { kind: 'MATCHING'; prompt: string; pairs: MatchPair[]; explanation?: string | null };
 
+export interface AssessmentItemMetadata {
+  section_label?: string | null;
+  difficulty?: 'easy' | 'medium' | 'hard' | null;
+  tags: string[];
+  outcome_ids: string[];
+  estimated_minutes?: number | null;
+}
+
 export type ItemAnswer =
   | { kind: 'CHOICE'; selected: string[] }
   | { kind: 'OPEN_TEXT'; text: string }
@@ -75,6 +83,7 @@ export interface AssessmentItem {
   kind: UnifiedItemKind;
   title: string;
   body: ItemBody;
+  metadata?: AssessmentItemMetadata;
   max_score: number;
   created_at: string;
   updated_at: string;

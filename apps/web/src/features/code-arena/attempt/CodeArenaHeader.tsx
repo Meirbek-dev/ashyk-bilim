@@ -156,7 +156,7 @@ export function CodeArenaHeader({
           size="sm"
           onClick={onSubmit}
           disabled={disabled || isRunning}
-          className="h-8 gap-1.5 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
+          className="h-8 gap-1.5 text-xs"
         >
           <Send className="size-3.5" />
           {t('submitCodeShort')}

@@ -1,4 +1,4 @@
-import type { AssessmentItem } from '@/features/assessments/domain/items';
+import type { AssessmentItem, AssessmentItemMetadata } from '@/features/assessments/domain/items';
 
 export type StudioTab = 'SETUP' | 'BUILDER' | 'ACCESS' | 'RESULTS' | 'PUBLISH';
 
@@ -33,4 +33,6 @@ export interface AssessmentEditorState {
   negativeMarkingPercent: string;
 }
 
-export type EditableItem = Pick<AssessmentItem, 'item_uuid' | 'kind' | 'title' | 'max_score' | 'body'>;
+export type EditableItem = Pick<AssessmentItem, 'item_uuid' | 'kind' | 'title' | 'max_score' | 'body'> & {
+  metadata: AssessmentItemMetadata;
+};

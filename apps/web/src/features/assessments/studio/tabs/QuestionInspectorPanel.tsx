@@ -58,13 +58,10 @@ export default function QuestionInspectorPanel({
   const explanation = getExplanation(item);
   const supportsExplanation = SUPPORTS_EXPLANATION.has(item.kind);
 
-  // Difficulty is stored in a custom optional metadata field on the item body.
-  // We use a simple cast since this optional UI-layer field has no backend schema yet.
-  const difficulty: Difficulty = ((item as unknown as { _difficulty?: string })._difficulty as Difficulty) ?? 'medium';
+  const difficulty: Difficulty = item.metadata.difficulty ?? 'medium';
 
   const setDifficulty = (d: Difficulty) => {
-    const nextItem = { ...item, _difficulty: d } as unknown as EditableItem;
-    onChange(nextItem);
+    onChange({ ...item, metadata: { ...item.metadata, difficulty: d } });
   };
 
   return (
