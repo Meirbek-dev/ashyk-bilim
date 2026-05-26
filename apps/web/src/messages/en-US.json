@@ -7,8 +7,8 @@
       "closePanel": "Close Ashyk Ai panel",
       "copy": "Copy",
       "copied": "Copied!",
-      "errorTitle": "Something wrong happened",
-      "examplesAbbr": "ex. ",
+      "errorTitle": "Something went wrong",
+      "examplesAbbr": "Ex.",
       "hello": "Hello",
       "howCanWeHelp": "how can I help?",
       "logoAlt": "Ashyk Ai Logo",
@@ -65,7 +65,7 @@
         "default": {
           "understand": "Help me understand this activity",
           "concepts": "What are the key concepts here?",
-          "guidance": "Give me guidance on how to proceed"
+          "guidance": "Give me guidance on how to approach this"
         }
       }
     },
@@ -262,6 +262,7 @@
       "runCode": "Run",
       "runFailed": "Failed to run code",
       "runTests": "Run Tests",
+      "runningLabel": "Running...",
       "runningTests": "Running tests...",
       "saveConfig": "Save Configuration",
       "saveFailed": "Failed to save challenge",
@@ -283,6 +284,9 @@
         "unknown": "Unknown",
         "wrongAnswer": "Wrong Answer"
       },
+      "assertionDescriptionPlaceholder": "Explain why this case matters...",
+      "stdinPlaceholder": "Console inputs feed here",
+      "expectedAssertionPlaceholder": "Expected output assertion here",
       "stderr": "Error Output",
       "submission": {
         "accepted": "Accepted",
@@ -340,12 +344,21 @@
       "runCodeShort": "Run",
       "testCodeShort": "Test",
       "submitCodeShort": "Submit",
+      "actions": "Actions",
       "noCommandFound": "No command found.",
+      "commandPaletteTitle": "Code command palette",
+      "commandPalettePlaceholder": "Run, submit, reset...",
       "runVisibleTests": "Run visible tests",
       "ctrlEnter": "Ctrl Enter",
       "submitSolution": "Submit solution",
       "ctrlShiftEnter": "Ctrl Shift Enter",
       "resetToStarterCode": "Reset to starter code",
+      "writeCodeBeforeRun": "Write code before running it.",
+      "programFinishedNoOutput": "Program finished with no output.",
+      "codeExecutionFailed": "Code execution failed.",
+      "writeCodeBeforeTests": "Write code before running tests.",
+      "testRunFailed": "Test run failed.",
+      "writeCodeBeforeSubmit": "Write code before submitting.",
       "codeTab": "Code",
       "resetCode": "Reset",
       "formatCode": "Format",
@@ -374,6 +387,10 @@
       "customInputTitle": "Custom input",
       "passedFraction": "Passed {passed}/{total}",
       "diagnosticsHidden": "Input and output diagnostics are hidden to ensure evaluation integrity.",
+      "hiddenCaseTitle": "Hidden case {number}: {status}",
+      "noConsoleOutputYet": "No console output yet.",
+      "runningState": "running",
+      "idleState": "idle",
       "runTestsToSeeDiagnostics": "Run tests to see diagnostics.",
       "firstFailingCase": "First failing case: {caseId}. {description}",
       "locateAndInspect": "Locate & Inspect",
@@ -388,6 +405,9 @@
       "stepTestSuite": "3. Test Suite",
       "stepVerify": "4. Verify Solution",
       "stepReview": "5. Publish Review",
+      "referenceValidationFinished": "Reference solution validation finished.",
+      "validationEndpointFailed": "Validation endpoint failed.",
+      "referenceValidationFailed": "Failed to validate reference solutions.",
       "selectLanguagePrompt": "Select at least one allowed language in the sidebar to configure templates.",
       "starterTemplateCode": "Starter Template Code",
       "referenceSolution": "Reference Solution",
@@ -502,21 +522,11 @@
       "importFailed": "Invalid import file format.",
       "requirementsPending": "{count, plural, one {# requirement pending} other {# requirements pending}}",
       "allChecksPassed": "All checks passed",
-      "outputComparison": "Output Comparison",
-      "sideBySide": "Side-by-side",
-      "inline": "Inline",
-      "noCodeAnswerSubmitted": "No code answer was submitted for this item.",
       "solutionAccepted": "Solution Accepted",
       "submissionRequiresReview": "Submission Requires Review",
-      "evaluatedLanguageId": "Evaluated Language ID: {language}",
       "testCasesPassed": "{passed}/{total} Test Cases Passed",
-      "gradeValue": "Grade: {score}%",
-      "submittedCode": "Submitted Code",
-      "compareAgainstTemplate": "Compare against Template",
       "starterTemplate": "Starter Template",
-      "studentSubmission": "Student Submission",
-      "failed": "Failed",
-      "caseNumber": "Case {number}"
+      "studentSubmission": "Student Submission"
     },
     "DocumentPdf": {
       "viewerTitle": "PDF Document Viewer"
@@ -725,6 +735,7 @@
     "enterFocusMode": "Enter focus mode",
     "exitFocusMode": "Exit focus mode",
     "focusMode": "Focus Mode",
+    "aiAssistant": "AI Assistant",
     "keyboardShortcuts": "Keyboard shortcuts",
     "lastUpdated": "Last updated",
     "markAsComplete": "Mark as complete",
@@ -6500,6 +6511,7 @@
   "Errors": {
     "errorLabel": "Error:",
     "errorReference": "Error Reference:",
+    "pageRenderFailed": "The page failed to render. You can retry, or reload if the error keeps returning.",
     "somethingWentWrong": "Something went wrong!",
     "technicalDetails": "Technical details:",
     "tryAgain": "Try again",
@@ -7308,6 +7320,8 @@
       "na": "n/a",
       "searchPlaceholder": "Search learners, courses, or reason codes...",
       "emptyMessage": "No at-risk learners are visible for the current filters.",
+      "interventionLogged": "Intervention logged",
+      "interventionLogFailed": "Failed to log intervention",
       "gradeSubmissions": "Grade {count} pending submission(s) →",
       "riskComponents": {
         "inactivity": "Inactivity",
@@ -8085,7 +8099,6 @@
           "useLatestSavedVersion": "Use latest saved version",
           "returnedForRevisionTitle": "Returned for revision",
           "returnedForRevisionDescription": "The teacher has returned your submission for revisions. Please review the comments and resubmit.",
-          "violationsRecorded": "{count} violations recorded during the exam",
           "antiCheatDefaultNotice": "Copy protection, navigation tracking, and fullscreen requirements may apply.",
           "antiCheatCopyPaste": "copy-paste blocking",
           "antiCheatTabSwitch": "tab switch tracking",
@@ -8728,7 +8741,14 @@
       "teacherNoQuestionsWarning": "This exam doesn't have any questions yet. Click 'Manage Questions' to add some before publishing.",
       "testNotReadyTitle": "Test is not ready",
       "noQuestionsSidebar": "This exam cannot be started because it has no questions.",
-      "teacherNoQuestionsSidebar": "Please add questions before publishing."
+      "teacherNoQuestionsSidebar": "Please add questions before publishing.",
+      "startActivityFailed": "Unable to start this activity. Please refresh and try again.",
+      "focusRestoredResume": "Focus and screen compliance restored. Resuming exam.",
+      "fullscreenUnsupported": "Fullscreen is not supported in this browser.",
+      "fullscreenRecommended": "Fullscreen is recommended for this attempt.",
+      "fullscreenExited": "Fullscreen was exited.",
+      "answersUpdatedElsewhere": "Your answers were updated elsewhere. Review the latest draft before submitting.",
+      "submitFailed": "Failed to submit"
     }
   },
   "Themes": {
@@ -9297,6 +9317,11 @@
     "deleteConfirmDesc": "This will remove all accommodations for this student.",
     "cancel": "Cancel",
     "confirm": "Remove",
+    "placeholders": {
+      "userIdExample": "e.g. 42",
+      "inheritBlank": "Leave blank to inherit",
+      "optionalInternalNote": "Optional internal note"
+    },
     "toasts": {
       "created": "Override created",
       "updated": "Override updated",
@@ -9404,7 +9429,15 @@
     "returnForRevision": "Return for revision",
     "publishResult": "Publish result",
     "selectSubmission": "Select a submission.",
-    "rubric": "Rubric"
+    "rubric": "Rubric",
+    "submissionUpdated": "Submission updated",
+    "updateSubmissionFailed": "Unable to update submission",
+    "openFileFailed": "Unable to open file",
+    "previewFileFailed": "Unable to preview file",
+    "searchLearnersPlaceholder": "Search learners",
+    "scorePlaceholder": "0–100",
+    "feedbackPlaceholder": "Feedback",
+    "rubricScorePlaceholder": "0"
   },
   "FileSubmissionStudio": {
     "loadingStudio": "Loading file submission studio",
@@ -9427,6 +9460,13 @@
     "lateWork": "Late work",
     "allowedFiles": "Allowed files",
     "review": "Review",
-    "openSubmissions": "Open submissions"
+    "openSubmissions": "Open submissions",
+    "unavailableError": "File submission is unavailable",
+    "saveSuccess": "File submission saved",
+    "saveError": "Unable to save file submission",
+    "publishSuccess": "File submission published",
+    "publishError": "Unable to publish file submission",
+    "fixInstructionsBeforeSaving": "Fix the instruction content before saving",
+    "fixInstructionsBeforePublishing": "Fix the instruction content before publishing"
   }
 }

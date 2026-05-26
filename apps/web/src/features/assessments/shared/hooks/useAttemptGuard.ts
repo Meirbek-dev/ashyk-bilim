@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { useTestGuard } from '@/hooks/useTestGuard';
@@ -34,6 +35,7 @@ export interface AttemptGuardOptions {
 }
 
 export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions = {}) {
+  const t = useTranslations('Features.ActivityWorkspace');
   const { antiCheat } = policy;
   const enabled = options.enabled ?? isAntiCheatEnabled(antiCheat);
   const [violationCount, setViolationCount] = useState(options.initialViolationCount ?? 0);
@@ -126,7 +128,7 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
 
       if (isFocused && (!needsFullscreen || inFullscreen)) {
         setSecurityCountdown(null);
-        toast.success('Focus and screen compliance restored. Resuming exam.');
+        toast.success(t('focusRestoredResume'));
       }
     };
 
@@ -142,7 +144,7 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
       document.removeEventListener('fullscreenchange', checkCompliance);
       document.removeEventListener('webkitfullscreenchange', checkCompliance);
     };
-  }, [securityCountdown, antiCheat.fullscreenEnforced, getFullscreenElement]);
+  }, [securityCountdown, antiCheat.fullscreenEnforced, getFullscreenElement, t]);
 
   useTestGuard({
     enabled,
@@ -169,8 +171,8 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
 
     if (!canUseStandardFullscreen && !canUseWebkitFullscreen) {
       setFullscreenRequestFailed(true);
-      setFullscreenError('Fullscreen is not supported in this browser.');
-      toast.warning('Fullscreen is not supported in this browser.');
+      setFullscreenError(t('fullscreenUnsupported'));
+      toast.warning(t('fullscreenUnsupported'));
       return;
     }
 
@@ -191,10 +193,10 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
       fullscreenEnteredRef.current = true;
       setIsFullscreen(true);
     } catch (error) {
-      setFullscreenError(error instanceof Error ? error.message : 'Fullscreen is recommended for this attempt.');
-      toast.info('Fullscreen is recommended for this attempt.');
+      setFullscreenError(error instanceof Error ? error.message : t('fullscreenRecommended'));
+      toast.info(t('fullscreenRecommended'));
     }
-  }, [antiCheat.fullscreenEnforced, getFullscreenElement]);
+  }, [antiCheat.fullscreenEnforced, getFullscreenElement, t]);
 
   useEffect(() => {
     if (!enabled || !antiCheat.fullscreenEnforced) return;
@@ -214,7 +216,7 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
         if (fullscreenExitTimeout) clearTimeout(fullscreenExitTimeout);
         fullscreenExitTimeout = setTimeout(() => {
           if (!getFullscreenElement()) {
-            toast.warning('Fullscreen was exited.');
+            toast.warning(t('fullscreenExited'));
             reportViolation('FULLSCREEN_EXIT');
           }
         }, 3000);
@@ -233,7 +235,7 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
     };
-  }, [antiCheat.fullscreenEnforced, enabled, getFullscreenElement, reportViolation]);
+  }, [antiCheat.fullscreenEnforced, enabled, getFullscreenElement, reportViolation, t]);
 
   useEffect(() => {
     return () => {

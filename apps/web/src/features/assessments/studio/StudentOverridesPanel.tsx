@@ -159,7 +159,7 @@ export default function StudentOverridesPanel({ assessmentUuid }: StudentOverrid
                     type="number"
                     value={form.user_id}
                     onChange={(e) => setForm((prev) => ({ ...prev, user_id: e.target.value }))}
-                    placeholder="e.g. 42"
+                    placeholder={t('placeholders.userIdExample')}
                   />
                 </div>
               ) : null}
@@ -172,7 +172,7 @@ export default function StudentOverridesPanel({ assessmentUuid }: StudentOverrid
                   min={1}
                   value={form.max_attempts_override}
                   onChange={(e) => setForm((prev) => ({ ...prev, max_attempts_override: e.target.value }))}
-                  placeholder="Leave blank to inherit"
+                  placeholder={t('placeholders.inheritBlank')}
                 />
               </div>
 
@@ -201,7 +201,7 @@ export default function StudentOverridesPanel({ assessmentUuid }: StudentOverrid
                   id="override-note"
                   value={form.note}
                   onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
-                  placeholder="Optional internal note"
+                  placeholder={t('placeholders.optionalInternalNote')}
                 />
               </div>
             </div>

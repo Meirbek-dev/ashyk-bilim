@@ -110,7 +110,7 @@ export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: 
         setMode('ACTIVE_ATTEMPT');
         router.refresh();
       } catch {
-        toast.error('Unable to start this activity. Please refresh and try again.');
+        toast.error(t('startActivityFailed'));
       } finally {
         setIsPending(false);
       }

@@ -37,6 +37,7 @@ export default function ActivityHeader({
   aiOpen,
 }: ActivityHeaderProps) {
   const t = useTranslations('ActivityPage');
+  const tBreadcrumb = useTranslations('Components.Breadcrumb');
   const { mode } = useActivityLayout();
   const isAttemptActive = mode === 'ACTIVE_ATTEMPT';
 
@@ -90,7 +91,7 @@ export default function ActivityHeader({
           ) : null}
 
           <nav
-            aria-label="breadcrumb"
+            aria-label={tBreadcrumb('ariaLabel')}
             className="flex min-w-0 items-center gap-1 text-xs"
           >
             <Link
@@ -126,8 +127,8 @@ export default function ActivityHeader({
               variant={aiOpen ? 'default' : 'ghost'}
               size="icon"
               onClick={onToggleAi}
-              aria-label="AI Assistant"
-              title="AI Assistant"
+              aria-label={t('aiAssistant')}
+              title={t('aiAssistant')}
             >
               <Sparkles className="size-4" />
             </Button>

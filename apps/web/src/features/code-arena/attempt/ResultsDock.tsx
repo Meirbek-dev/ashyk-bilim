@@ -115,7 +115,7 @@ export function ResultsDock({
               value={customInput}
               onChange={(event) => onCustomInputChange(event.target.value)}
               className="min-h-28 resize-none font-mono text-xs"
-              placeholder="Paste stdin here"
+              placeholder={t('enterCustomInput')}
             />
           </div>
         </ScrollArea>
@@ -175,7 +175,10 @@ export function ResultsDock({
                               ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
                               : 'bg-rose-500/10 text-rose-600 border-rose-500/20',
                           )}
-                          title={`Hidden case ${idx + 1}: ${result.passed ? 'Passed' : result.status_description}`}
+                          title={t('hiddenCaseTitle', {
+                            number: idx + 1,
+                            status: result.passed ? t('passed') : result.status_description,
+                          })}
                         >
                           {idx + 1}
                         </span>
@@ -200,7 +203,7 @@ export function ResultsDock({
         <ScrollArea className="h-full">
           <div className="p-4">
             <pre className="bg-muted/40 min-h-28 rounded-md border p-3 font-mono text-xs whitespace-pre-wrap">
-              {consoleOutput || 'No console output yet.'}
+              {consoleOutput || t('noConsoleOutputYet')}
             </pre>
           </div>
         </ScrollArea>
@@ -244,8 +247,8 @@ function VerdictBanner({
           {results
             ? `${results.filter((result) => result.passed).length}/${results.length}`
             : isRunning
-              ? 'running'
-              : 'idle'}
+              ? t('runningState')
+              : t('idleState')}
         </Badge>
       </div>
       {firstFail ? (
@@ -297,7 +300,7 @@ function RunProgressTimeline() {
     <div className="bg-muted/20 space-y-3.5 rounded-lg border p-4">
       <div className="text-muted-foreground flex items-center justify-between text-xs">
         <span>{t('executingEnvironment')}</span>
-        <span className="animate-pulse font-mono">Running...</span>
+        <span className="animate-pulse font-mono">{t('runningLabel')}</span>
       </div>
 
       <div className="relative flex items-center justify-between">

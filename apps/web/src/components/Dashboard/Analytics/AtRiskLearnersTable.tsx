@@ -70,9 +70,9 @@ export default function AtRiskLearnersTable({
         },
         query,
       );
-      toast.success('Intervention logged');
+      toast.success(t('atRisk.interventionLogged'));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to log intervention');
+      toast.error(error instanceof Error ? error.message : t('atRisk.interventionLogFailed'));
     } finally {
       setPendingKey(null);
     }

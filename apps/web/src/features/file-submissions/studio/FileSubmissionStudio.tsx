@@ -130,9 +130,11 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
     });
   };
 
+  const t = useTranslations('FileSubmissionStudio');
+
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!data) throw new Error('File submission is unavailable');
+      if (!data) throw new Error(t('unavailableError'));
       return await updateFileSubmissionActivity(data.file_submission_uuid, {
         title,
         instructions,
@@ -146,26 +148,26 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
       await queryClient.invalidateQueries({
         queryKey: queryKey(cleanActivityUuid),
       });
-      toast.success('File submission saved');
+      toast.success(t('saveSuccess'));
     },
     onError: (saveError) => {
-      toast.error(saveError instanceof Error ? saveError.message : 'Unable to save file submission');
+      toast.error(saveError instanceof Error ? saveError.message : t('saveError'));
     },
   });
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      if (!data) throw new Error('File submission is unavailable');
+      if (!data) throw new Error(t('unavailableError'));
       return await publishFileSubmissionActivity(data.file_submission_uuid);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: queryKey(cleanActivityUuid),
       });
-      toast.success('File submission published');
+      toast.success(t('publishSuccess'));
     },
     onError: (publishError) => {
-      toast.error(publishError instanceof Error ? publishError.message : 'Unable to publish file submission');
+      toast.error(publishError instanceof Error ? publishError.message : t('publishError'));
     },
   });
 
@@ -176,13 +178,11 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
       required: true,
     });
     if (!gate.canSave) {
-      toast.error(gate.errors[0]?.message ?? 'Fix the instruction content before saving');
+      toast.error(gate.errors[0]?.message ?? t('fixInstructionsBeforeSaving'));
       return;
     }
     saveMutation.mutate();
   }
-
-  const t = useTranslations('FileSubmissionStudio');
   const publishGate = getMarkdownSaveGate(instructions, 'fileSubmissionInstructions', {
     intent: 'publish',
     required: true,
@@ -254,7 +254,7 @@ export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileS
               size="sm"
               onClick={() => {
                 if (!publishGate.canPublish) {
-                  toast.error(publishGate.errors[0]?.message ?? 'Fix the instruction content before publishing');
+                  toast.error(publishGate.errors[0]?.message ?? t('fixInstructionsBeforePublishing'));
                   return;
                 }
                 publishMutation.mutate();

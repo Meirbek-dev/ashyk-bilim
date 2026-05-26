@@ -130,10 +130,10 @@ export default function FileSubmissionReviewWorkspace({
         await queryClient.invalidateQueries({
           queryKey: queueQueryKey(config.file_submission_uuid),
         });
-      toast.success('Submission updated');
+      toast.success(t('submissionUpdated'));
     },
     onError: (gradeError) => {
-      toast.error(gradeError instanceof Error ? gradeError.message : 'Unable to update submission');
+      toast.error(gradeError instanceof Error ? gradeError.message : t('updateSubmissionFailed'));
     },
   });
 
@@ -167,7 +167,7 @@ export default function FileSubmissionReviewWorkspace({
       const result = await getFileSubmissionFileUrl(attemptFileUuid);
       window.open(result.get_url, '_blank', 'noopener,noreferrer');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to open file');
+      toast.error(error instanceof Error ? error.message : t('openFileFailed'));
     }
   }
 
@@ -178,7 +178,7 @@ export default function FileSubmissionReviewWorkspace({
       setPreviewUrl(result.get_url);
       setPreviewFilename(filename);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to preview file');
+      toast.error(error instanceof Error ? error.message : t('previewFileFailed'));
     } finally {
       setIsFetchingPreview(null);
     }
@@ -214,7 +214,7 @@ export default function FileSubmissionReviewWorkspace({
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search learners"
+              placeholder={t('searchLearnersPlaceholder')}
               className="pl-8"
             />
           </div>
@@ -406,7 +406,7 @@ export default function FileSubmissionReviewWorkspace({
                         max={100}
                         value={score}
                         onChange={(event) => setScore(event.target.value)}
-                        placeholder="0–100"
+                        placeholder={t('scorePlaceholder')}
                         className="w-24"
                       />
                       <span className="text-muted-foreground text-sm">{t('scoreSlash')}</span>
@@ -428,7 +428,7 @@ export default function FileSubmissionReviewWorkspace({
                     onChange={setFeedback}
                     preset="explanation"
                     minHeight={160}
-                    placeholder="Feedback"
+                    placeholder={t('feedbackPlaceholder')}
                   />
                   <div className="grid gap-2">
                     <Button
@@ -532,7 +532,7 @@ function RubricGrid({
                 max={c.max_score}
                 step={0.5}
                 value={current ?? ''}
-                placeholder="0"
+                placeholder={t('rubricScorePlaceholder')}
                 className="h-7 w-20 text-sm"
                 onChange={(e) => {
                   const v = Number.parseFloat(e.target.value);

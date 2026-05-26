@@ -434,7 +434,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                   value={selectedTestCase.description ?? ''}
                   onChange={(description) => updateTest(selectedTestCase.id, { description })}
                   preset="codeExampleExplanation"
-                  placeholder="Explain why this case matters..."
+                  placeholder={t('assertionDescriptionPlaceholder')}
                 />
               </label>
 
@@ -444,7 +444,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                   value={selectedTestCase.input}
                   onChange={(e) => updateTest(selectedTestCase.id, { input: e.target.value })}
                   className="min-h-36 font-mono text-xs leading-relaxed"
-                  placeholder="Console inputs feed here"
+                  placeholder={t('stdinPlaceholder')}
                 />
               </label>
 
@@ -454,7 +454,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                   value={selectedTestCase.expected_output}
                   onChange={(e) => updateTest(selectedTestCase.id, { expected_output: e.target.value })}
                   className="min-h-36 font-mono text-xs leading-relaxed"
-                  placeholder="Expected output assertion here"
+                  placeholder={t('expectedAssertionPlaceholder')}
                 />
               </label>
 

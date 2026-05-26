@@ -157,7 +157,7 @@ export function ProblemPane({
                         </Button>
                       </div>
                       <div className="grid gap-3 p-3">
-                        <CodeBlock label={t('input')}>{test.input || 'No input'}</CodeBlock>
+                        <CodeBlock label={t('input')}>{test.input || t('noInput')}</CodeBlock>
                         <CodeBlock label={t('output')}>{test.expected_output}</CodeBlock>
                       </div>
                     </div>

@@ -137,27 +137,27 @@ export function CodeArenaWorkspace({
 
   const handleRunCustom = useCallback(async () => {
     if (!code.trim()) {
-      toast.error('Write code before running it.');
+      toast.error(t('writeCodeBeforeRun'));
       return;
     }
     setResultTab('console');
     setConsoleOutput('');
     try {
       const result = await runCustom.mutateAsync({ sourceCode: code, languageId, stdin: customInput });
-      const output = result.compile_output || result.stderr || result.stdout || 'Program finished with no output.';
+      const output = result.compile_output || result.stderr || result.stdout || t('programFinishedNoOutput');
       setConsoleOutput(output);
       setVerdict(verdictFromRun(result.status_description, result.status === 3 ? 1 : 0, 1));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Code execution failed.';
+      const message = error instanceof Error ? error.message : t('codeExecutionFailed');
       setConsoleOutput(message);
       setVerdict('DEGRADED');
       toast.error(message);
     }
-  }, [code, customInput, languageId, runCustom]);
+  }, [code, customInput, languageId, runCustom, t]);
 
   const handleRunTests = useCallback(async () => {
     if (!code.trim()) {
-      toast.error('Write code before running tests.');
+      toast.error(t('writeCodeBeforeTests'));
       return;
     }
     setResultTab('result');
@@ -168,28 +168,28 @@ export function CodeArenaWorkspace({
       setResults(result.results);
       setVerdict(verdictFromResults(result.results));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Test run failed.';
+      const message = error instanceof Error ? error.message : t('testRunFailed');
       setVerdict('DEGRADED');
       toast.error(message);
     }
-  }, [code, languageId, runTests]);
+  }, [code, languageId, runTests, t]);
 
   const handleSubmit = useCallback(async () => {
     if (!code.trim()) {
-      toast.error('Write code before submitting.');
+      toast.error(t('writeCodeBeforeSubmit'));
       return;
     }
     setIsSubmitting(true);
     try {
       updateAnswer(languageId, code);
       await onSubmit();
-      toast.success('Submission queued.');
+      toast.success(t('submissionQueued'));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Submission failed.');
+      toast.error(error instanceof Error ? error.message : t('submissionFailed'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [code, languageId, onSubmit, updateAnswer]);
+  }, [code, languageId, onSubmit, t, updateAnswer]);
 
   const submitControl = useMemo<CodeChallengeSubmitControl>(
     () => ({
@@ -315,12 +315,12 @@ export function CodeArenaWorkspace({
       <CommandDialog
         open={commandOpen}
         onOpenChange={setCommandOpen}
-        title="Code command palette"
+        title={t('commandPaletteTitle')}
       >
-        <CommandInput placeholder="Run, submit, reset..." />
+        <CommandInput placeholder={t('commandPalettePlaceholder')} />
         <CommandList>
           <CommandEmpty>{t('noCommandFound')}</CommandEmpty>
-          <CommandGroup heading="Actions">
+          <CommandGroup heading={t('actions')}>
             <CommandItem
               onSelect={() => {
                 setCommandOpen(false);

@@ -1,6 +1,7 @@
 'use client';
 
 import { Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
 import { cn } from '@/lib/utils';
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime';
@@ -22,11 +23,12 @@ interface ActivityOutlineContentProps {
  * the mobile Sheet drawer.
  */
 export default function ActivityOutlineContent({ runtime, className }: ActivityOutlineContentProps) {
+  const t = useTranslations('ActivityPage');
   const currentId = runtime.activity?.id ?? null;
 
   return (
     <nav
-      aria-label="Course outline"
+      aria-label={t('courseContent')}
       className={cn('px-2 pb-4', className)}
     >
       <div className="space-y-4">

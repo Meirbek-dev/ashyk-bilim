@@ -58,13 +58,13 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
       });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.detail || 'Validation endpoint failed.');
+        throw new Error(error.detail || t('validationEndpointFailed'));
       }
       const data = await response.json();
       setResults(data.results);
-      toast.success('Reference solution validation finished.');
+      toast.success(t('referenceValidationFinished'));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to validate reference solutions.');
+      toast.error(error instanceof Error ? error.message : t('referenceValidationFailed'));
     } finally {
       setIsValidating(false);
     }

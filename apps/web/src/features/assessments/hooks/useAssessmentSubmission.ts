@@ -2,6 +2,7 @@
 
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { apiFetch } from '@/lib/api-client';
@@ -54,6 +55,7 @@ async function readJsonOrThrow(response: Response) {
 }
 
 export function useAssessmentSubmission(assessmentUuid: string | null | undefined, activityUuid?: string | null) {
+  const t = useTranslations('Features.ActivityWorkspace');
   const queryClient = useQueryClient();
   const [localAnswers, setLocalAnswers] = useState<Record<string, ItemAnswer>>({});
   const [saveState, setSaveState] = useState<AssessmentSaveState>('idle');
@@ -288,7 +290,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           versionRef.current = latest.version;
           openConflict(latest);
         }
-        toast.error('Your answers were updated elsewhere. Review the latest draft before submitting.');
+        toast.error(t('answersUpdatedElsewhere'));
         return;
       }
       setSaveState('error');
@@ -300,7 +302,7 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
           error: error.message || 'Failed to submit assessment',
         }).catch(() => undefined);
       }
-      toast.error(error.message || 'Failed to submit');
+      toast.error(error.message || t('submitFailed'));
     },
   });
 

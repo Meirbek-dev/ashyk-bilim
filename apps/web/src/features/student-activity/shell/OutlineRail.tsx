@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { StudentActivityRuntime } from '@/features/student-activity/api/runtime';
 import ActivityOutlineContent from './ActivityOutlineContent';
@@ -23,6 +24,8 @@ interface OutlineRailProps {
  * Dismisses on Escape (handled by StudentActivityWorkspace) or click-outside backdrop.
  */
 export default function OutlineRail({ runtime, open, onClose }: OutlineRailProps) {
+  const t = useTranslations('ActivityPage');
+
   return (
     <>
       {/* Overlay panel — always position:fixed, zero DOM-flow impact */}
@@ -34,7 +37,7 @@ export default function OutlineRail({ runtime, open, onClose }: OutlineRailProps
           'transition-[transform,opacity] duration-200 ease-out will-change-transform',
           open ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none',
         )}
-        aria-label="Course outline"
+        aria-label={t('courseContent')}
         role="navigation"
       >
         <div className="flex-1 overflow-y-auto">
