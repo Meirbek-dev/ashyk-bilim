@@ -179,20 +179,23 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
     <ActionBarContext.Provider value={contextValue}>
       {/* ── Security countdown overlay ────────────────────────────────── */}
       {guard.securityCountdown !== null ? (
-        <div className="bg-destructive/95 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md text-white animate-fade-in">
-          <div className="bg-card text-card-foreground w-full max-w-md rounded-lg border border-destructive/50 p-6 shadow-2xl">
-            <div className="flex items-center gap-3 text-lg font-semibold text-destructive">
+        <div className="bg-destructive/95 animate-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 text-white backdrop-blur-md">
+          <div className="bg-card text-card-foreground border-destructive/50 w-full max-w-md rounded-lg border p-6 shadow-2xl">
+            <div className="text-destructive flex items-center gap-3 text-lg font-semibold">
               <ShieldAlert className="size-6 animate-pulse" />
               {t('securityViolationAlertTitle', { defaultValue: 'Security Violation Detected' })}
             </div>
             <p className="text-muted-foreground mt-3 text-sm">
-              {t('securityViolationAlertDescription', { defaultValue: 'Please return focus to the exam window immediately. Failure to comply will result in automatic submission of your exam.' })}
+              {t('securityViolationAlertDescription', {
+                defaultValue:
+                  'Please return focus to the exam window immediately. Failure to comply will result in automatic submission of your exam.',
+              })}
             </p>
             <div className="my-6 flex flex-col items-center justify-center gap-2">
-              <span className="text-6xl font-extrabold tabular-nums tracking-tighter text-destructive animate-pulse">
+              <span className="text-destructive animate-pulse text-6xl font-extrabold tracking-tighter tabular-nums">
                 {guard.securityCountdown}
               </span>
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                 {t('secondsRemaining', { defaultValue: 'seconds remaining' })}
               </span>
             </div>
@@ -200,14 +203,14 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
               <Button
                 type="button"
                 variant="destructive"
-                className="w-full mt-2"
+                className="mt-2 w-full"
                 onClick={guard.requestFullscreen}
               >
                 <Maximize2 className="size-4" />
                 {t('reEnterFullscreen', { defaultValue: 'Re-enter Fullscreen' })}
               </Button>
             ) : (
-              <p className="text-center text-xs text-muted-foreground animate-pulse">
+              <p className="text-muted-foreground animate-pulse text-center text-xs">
                 {t('clickBackToResume', { defaultValue: 'Click back or refocus to resume.' })}
               </p>
             )}

@@ -102,8 +102,8 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
     try {
       await saveSettings.mutateAsync({
         ...draft,
-        visible_tests: (draft.visible_tests ?? []).map((test) => ({ ...test, is_visible: true })),
-        hidden_tests: (draft.hidden_tests ?? []).map((test) => ({ ...test, is_visible: false })),
+        visible_tests: (draft.visible_tests ?? []).map((test) => (Object.assign(test, { is_visible: true }))),
+        hidden_tests: (draft.hidden_tests ?? []).map((test) => (Object.assign(test, { is_visible: false }))),
       });
       toast.success(t('configSaved'));
     } catch (error) {

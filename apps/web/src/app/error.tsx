@@ -7,7 +7,8 @@ import { reportClientError } from '@/services/telemetry/client';
 const MESSAGES = {
   'ru-RU': {
     title: 'Что-то пошло не так',
-    description: 'Не удалось отобразить страницу. Вы можете повторить попытку или перезагрузить страницу, если ошибка повторится.',
+    description:
+      'Не удалось отобразить страницу. Вы можете повторить попытку или перезагрузить страницу, если ошибка повторится.',
     retry: 'Повторить',
   },
   'en-US': {
@@ -17,7 +18,8 @@ const MESSAGES = {
   },
   'kk-KZ': {
     title: 'Бірдеңе дұрыс болмады',
-    description: 'Бетті көрсету мүмкін болмады. Әрекетті қайталауға немесе қате қайталана берсе, бетті қайта жүктеуге болады.',
+    description:
+      'Бетті көрсету мүмкін болмады. Әрекетті қайталауға немесе қате қайталана берсе, бетті қайта жүктеуге болады.',
     retry: 'Қайталау',
   },
 };
@@ -57,9 +59,7 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
           </div>
           <div className="space-y-1">
             <h1 className="text-lg font-semibold">{t.title}</h1>
-            <p className="text-muted-foreground text-sm">
-              {t.description}
-            </p>
+            <p className="text-muted-foreground text-sm">{t.description}</p>
           </div>
         </div>
 
@@ -77,4 +77,3 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
     </div>
   );
 }
-

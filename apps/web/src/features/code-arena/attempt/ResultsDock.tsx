@@ -164,9 +164,7 @@ export function ResultsDock({
                         {t('passedFraction', { passed: hiddenPassed, total: hiddenTotal })}
                       </Badge>
                     </div>
-                    <p className="text-muted-foreground mt-2 text-xs">
-                      {t('diagnosticsHidden')}
-                    </p>
+                    <p className="text-muted-foreground mt-2 text-xs">{t('diagnosticsHidden')}</p>
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {hiddenResults.map((result, idx) => (
                         <span
@@ -394,14 +392,18 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
         <div className="bg-background/50 space-y-3 border-t p-3">
           {result.stdin && (
             <div>
-              <div className="text-muted-foreground mb-1 text-[10px] font-bold tracking-wider uppercase">{t('input')}</div>
+              <div className="text-muted-foreground mb-1 text-[10px] font-bold tracking-wider uppercase">
+                {t('input')}
+              </div>
               <pre className="bg-muted/30 overflow-x-auto rounded border p-2 font-mono text-xs">{result.stdin}</pre>
             </div>
           )}
 
           {diffExists ? (
             <div className="space-y-1.5">
-              <div className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">{t('difference')}</div>
+              <div className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                {t('difference')}
+              </div>
               <CodeDiffViewer
                 expected={result.expected!}
                 actual={result.stdout!}

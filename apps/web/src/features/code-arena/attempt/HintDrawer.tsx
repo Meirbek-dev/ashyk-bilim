@@ -55,9 +55,7 @@ export function HintDrawer({ open, onOpenChange, hints }: HintDrawerProps) {
             <Lightbulb className="size-5 fill-amber-500/20 text-amber-500" />
             {t('hintsAndHelp')}
           </SheetTitle>
-          <SheetDescription>
-            {t('unlockHintsDescription')}
-          </SheetDescription>
+          <SheetDescription>{t('unlockHintsDescription')}</SheetDescription>
         </SheetHeader>
 
         <div className="space-y-4 pt-2">
@@ -82,8 +80,12 @@ export function HintDrawer({ open, onOpenChange, hints }: HintDrawerProps) {
                 >
                   <div className="flex items-center justify-between gap-4 p-4">
                     <div className="space-y-0.5">
-                      <h4 className="text-foreground text-sm font-semibold">{t('hintNumber', { number: index + 1 })}</h4>
-                      <p className="text-xs font-medium text-amber-600">{t('xpPenaltyValue', { penalty: hint.xp_penalty })}</p>
+                      <h4 className="text-foreground text-sm font-semibold">
+                        {t('hintNumber', { number: index + 1 })}
+                      </h4>
+                      <p className="text-xs font-medium text-amber-600">
+                        {t('xpPenaltyValue', { penalty: hint.xp_penalty })}
+                      </p>
                     </div>
 
                     {!isRevealed && !isConfirming && (

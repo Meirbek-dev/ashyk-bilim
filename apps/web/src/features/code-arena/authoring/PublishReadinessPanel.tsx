@@ -43,9 +43,7 @@ export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
               )}
               {blockersCount > 0 ? t('checklistPending') : t('checklistAllPassed')}
             </h3>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              {t('publishReadinessDescription')}
-            </p>
+            <p className="text-muted-foreground text-xs leading-relaxed">{t('publishReadinessDescription')}</p>
           </div>
 
           <div className="grid gap-3">

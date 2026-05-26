@@ -14,12 +14,7 @@ interface CodeDiffViewerProps {
   labelActual?: string;
 }
 
-export function CodeDiffViewer({
-  expected,
-  actual,
-  labelExpected,
-  labelActual,
-}: CodeDiffViewerProps) {
+export function CodeDiffViewer({ expected, actual, labelExpected, labelActual }: CodeDiffViewerProps) {
   const t = useTranslations('Activities.CodeChallenges');
   const [isSideBySide, setIsSideBySide] = useState(true);
 
@@ -33,7 +28,9 @@ export function CodeDiffViewer({
   return (
     <div className="bg-card text-card-foreground rounded-lg border shadow-xs">
       <div className="bg-muted/40 flex items-center justify-between border-b px-4 py-2">
-        <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">{t('outputComparison')}</span>
+        <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+          {t('outputComparison')}
+        </span>
         <div className="flex gap-1">
           <Button
             type="button"

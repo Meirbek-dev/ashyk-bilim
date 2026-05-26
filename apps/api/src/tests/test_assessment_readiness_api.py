@@ -595,6 +595,7 @@ def test_validate_code_challenge_endpoint(
         return FakeResult()
 
     from src.services.code_execution.service import CodeExecutionService
+
     monkeypatch.setattr(CodeExecutionService, "run", mock_run)
 
     response = api_client.post(
@@ -607,4 +608,3 @@ def test_validate_code_challenge_endpoint(
     assert "71" in payload["results"]
     assert payload["results"]["71"]["ok"] is True
     assert payload["results"]["71"]["passed"] == 1
-

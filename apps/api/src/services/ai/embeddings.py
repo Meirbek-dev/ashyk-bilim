@@ -82,6 +82,7 @@ async def embed_texts(texts: list[str], model_name: str) -> list[list[float]]:
 
         for attempt in range(3):
             try:
+
                 async def _call():
                     return await asyncio.wait_for(
                         client.embeddings.create(
@@ -91,6 +92,7 @@ async def embed_texts(texts: list[str], model_name: str) -> list[list[float]]:
                         ),
                         timeout=request_timeout,
                     )
+
                 response = await openai_breaker.call_async(_call)
                 fetched_embeddings.extend(item.embedding for item in response.data)
                 last_error = None

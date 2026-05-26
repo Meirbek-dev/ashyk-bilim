@@ -47,7 +47,14 @@ const HEADING_TAG = {
   6: 'h6',
 } as const;
 
-export function MarkdownHeading({ level, anchorId, children, className, onAnchorClick, ...props }: MarkdownHeadingProps) {
+export function MarkdownHeading({
+  level,
+  anchorId,
+  children,
+  className,
+  onAnchorClick,
+  ...props
+}: MarkdownHeadingProps) {
   const Tag = HEADING_TAG[level];
   const text = extractMarkdownHeadingText(children);
   const id = anchorId ?? slugifyMarkdownHeading(text);

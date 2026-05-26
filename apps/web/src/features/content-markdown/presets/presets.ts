@@ -1,13 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import {
-  BookOpen,
-  ClipboardCheck,
-  Code2,
-  FileText,
-  GraduationCap,
-  Lightbulb,
-  MessageSquareText,
-} from 'lucide-react';
+import { BookOpen, ClipboardCheck, Code2, FileText, GraduationCap, Lightbulb, MessageSquareText } from 'lucide-react';
 
 export type MarkdownEditorPreset =
   | 'assessmentDescription'
@@ -41,13 +33,13 @@ export interface MarkdownSnippet {
 
 /** Groups of toolbar actions for preset-driven toolbar composition. */
 export type ToolbarGroup =
-  | 'formatting'      // Bold, italic, strikethrough, inline code
-  | 'headings'        // H1–H3
-  | 'lists'           // Bullet, ordered, task
-  | 'blocks'          // Code block, blockquote
-  | 'media'           // Link, image
-  | 'table'           // Insert table
-  | 'math';           // Math inline / block
+  | 'formatting' // Bold, italic, strikethrough, inline code
+  | 'headings' // H1–H3
+  | 'lists' // Bullet, ordered, task
+  | 'blocks' // Code block, blockquote
+  | 'media' // Link, image
+  | 'table' // Insert table
+  | 'math'; // Math inline / block
 
 export interface MarkdownPresetConfig {
   label: string;

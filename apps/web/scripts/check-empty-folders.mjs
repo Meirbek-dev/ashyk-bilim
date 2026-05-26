@@ -48,7 +48,9 @@ for (const directory of scanRoots) {
   scan(directory);
 }
 
-const newEmptyFolders = emptyFolders.filter((folder) => !baselineEmptyFolders.has(toPortablePath(relative(root, folder))));
+const newEmptyFolders = emptyFolders.filter(
+  (folder) => !baselineEmptyFolders.has(toPortablePath(relative(root, folder))),
+);
 
 if (newEmptyFolders.length > 0) {
   console.error('Empty folders are not allowed:');

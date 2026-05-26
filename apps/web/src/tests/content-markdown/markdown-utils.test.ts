@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  validateMarkdownContent,
-  getHighestMarkdownIssueSeverity,
-} from '@/features/content-markdown';
+import { validateMarkdownContent, getHighestMarkdownIssueSeverity } from '@/features/content-markdown';
 import {
   isSafeMarkdownUrl,
   hasRawHtml,

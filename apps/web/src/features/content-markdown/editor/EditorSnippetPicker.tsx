@@ -17,7 +17,13 @@ interface EditorSnippetPickerProps {
  * Combobox-style snippet picker that replaces the native <select>.
  * Shows snippet preview on hover, supports keyboard navigation.
  */
-export function EditorSnippetPicker({ snippets, disabled, label = 'Snippets', ariaLabel = 'Insert snippet', onSelect }: EditorSnippetPickerProps) {
+export function EditorSnippetPicker({
+  snippets,
+  disabled,
+  label = 'Snippets',
+  ariaLabel = 'Insert snippet',
+  onSelect,
+}: EditorSnippetPickerProps) {
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
   const [hovered, setHovered] = useState<MarkdownSnippet | null>(null);
@@ -32,10 +38,17 @@ export function EditorSnippetPicker({ snippets, disabled, label = 'Snippets', ar
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true); }
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setOpen(true);
+      }
       return;
     }
-    if (e.key === 'Escape') { e.preventDefault(); setOpen(false); return; }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setOpen(false);
+      return;
+    }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActiveIdx((i) => Math.min(i + 1, snippets.length - 1));
@@ -52,7 +65,10 @@ export function EditorSnippetPicker({ snippets, disabled, label = 'Snippets', ar
   };
 
   return (
-    <div ref={containerRef} className="relative">
+    <div
+      ref={containerRef}
+      className="relative"
+    >
       <button
         type="button"
         disabled={disabled}
@@ -75,12 +91,19 @@ export function EditorSnippetPicker({ snippets, disabled, label = 'Snippets', ar
       {open && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div
+            className="fixed inset-0 z-30"
+            onClick={() => setOpen(false)}
+          />
 
           {/* Dropdown */}
-          <div className="absolute right-0 top-full z-40 mt-1 flex w-72 gap-0 overflow-hidden rounded-lg border bg-popover shadow-lg">
+          <div className="bg-popover absolute top-full right-0 z-40 mt-1 flex w-72 gap-0 overflow-hidden rounded-lg border shadow-lg">
             {/* List */}
-            <div role="listbox" aria-label={label} className="flex flex-col py-1 w-full">
+            <div
+              role="listbox"
+              aria-label={label}
+              className="flex w-full flex-col py-1"
+            >
               {snippets.map((snippet, idx) => (
                 <button
                   key={snippet.id}
@@ -88,8 +111,14 @@ export function EditorSnippetPicker({ snippets, disabled, label = 'Snippets', ar
                   role="option"
                   aria-selected={activeIdx === idx}
                   onClick={() => handleSelect(snippet)}
-                  onMouseEnter={() => { setHovered(snippet); setActiveIdx(idx); }}
-                  onMouseLeave={() => { setHovered(null); setActiveIdx(-1); }}
+                  onMouseEnter={() => {
+                    setHovered(snippet);
+                    setActiveIdx(idx);
+                  }}
+                  onMouseLeave={() => {
+                    setHovered(null);
+                    setActiveIdx(-1);
+                  }}
                   className={cn(
                     'flex flex-col px-3 py-2 text-left transition-colors',
                     activeIdx === idx ? 'bg-accent text-accent-foreground' : 'hover:bg-muted',

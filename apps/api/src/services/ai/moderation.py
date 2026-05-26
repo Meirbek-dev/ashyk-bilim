@@ -43,6 +43,7 @@ async def moderate_text_input(text: str, *, stage: ModerationStage = "input") ->
         return
 
     try:
+
         async def _call() -> Any:
             return await asyncio.wait_for(
                 get_openai_client().moderations.create(

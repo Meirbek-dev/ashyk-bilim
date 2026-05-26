@@ -178,7 +178,6 @@ export default function AnnotatableText({
             })}
           </p>
           <Textarea
-            
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder={t('commentPlaceholder')}

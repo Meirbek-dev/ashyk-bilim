@@ -32,23 +32,38 @@ describe('MarkdownCodeBlock', () => {
   });
 
   it('renders language display name in header', async () => {
-    render(<MarkdownCodeBlock code='const x = 1' language='typescript' />);
+    render(
+      <MarkdownCodeBlock
+        code="const x = 1"
+        language="typescript"
+      />,
+    );
     expect(screen.getByText('TypeScript')).toBeInTheDocument();
   });
 
   it('shows Text as fallback when no language', () => {
-    render(<MarkdownCodeBlock code='some text' />);
+    render(<MarkdownCodeBlock code="some text" />);
     expect(screen.getByText('Text')).toBeInTheDocument();
   });
 
   it('shows fallback pre while Shiki loads', () => {
     // highlightCode is mocked but resolves async — we check before resolve
-    const { container } = render(<MarkdownCodeBlock code='const x = 1' language='typescript' />);
+    const { container } = render(
+      <MarkdownCodeBlock
+        code="const x = 1"
+        language="typescript"
+      />,
+    );
     expect(container.querySelector('pre')).toBeInTheDocument();
   });
 
   it('shows highlighted HTML after Shiki resolves', async () => {
-    const { container } = render(<MarkdownCodeBlock code='const x = 1' language='typescript' />);
+    const { container } = render(
+      <MarkdownCodeBlock
+        code="const x = 1"
+        language="typescript"
+      />,
+    );
     await waitFor(() => {
       // The mocked HTML contains <pre> from the mocked highlighter
       expect(container.innerHTML).toContain('console.log("hi")');
@@ -56,19 +71,34 @@ describe('MarkdownCodeBlock', () => {
   });
 
   it('renders copy button', () => {
-    render(<MarkdownCodeBlock code='hello' language='text' />);
+    render(
+      <MarkdownCodeBlock
+        code="hello"
+        language="text"
+      />,
+    );
     expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument();
   });
 
   it('copies code to clipboard on copy button click', async () => {
-    render(<MarkdownCodeBlock code='const x = 1' language='typescript' />);
+    render(
+      <MarkdownCodeBlock
+        code="const x = 1"
+        language="typescript"
+      />,
+    );
     fireEvent.click(screen.getByRole('button', { name: /copy/i }));
     await waitFor(() => expect(mockWriteText).toHaveBeenCalledWith('const x = 1'));
   });
 
   it('shows check icon after copying', async () => {
     const user = userEvent.setup({ writeToClipboard: false });
-    render(<MarkdownCodeBlock code='const x = 1' language='typescript' />);
+    render(
+      <MarkdownCodeBlock
+        code="const x = 1"
+        language="typescript"
+      />,
+    );
     await user.click(screen.getByRole('button', { name: /copy/i }));
     // After clicking, the copied state should show a Check icon
     // We verify that the Copy button no longer shows "Copy" (it shows "Copied" via aria-label change)
@@ -78,7 +108,12 @@ describe('MarkdownCodeBlock', () => {
   });
 
   it('renders compact mode with reduced padding', () => {
-    const { container } = render(<MarkdownCodeBlock code='x' compact />);
+    const { container } = render(
+      <MarkdownCodeBlock
+        code="x"
+        compact
+      />,
+    );
     expect(container.firstElementChild?.className).toContain('my-1.5');
   });
 });

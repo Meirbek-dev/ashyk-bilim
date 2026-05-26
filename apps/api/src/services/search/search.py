@@ -62,11 +62,8 @@ async def search_platform_content(
         )
     else:
         pattern = f"%{normalized_query}%"
-        collections_query = (
-            select(Collection)
-            .where(
-                or_(Collection.name.ilike(pattern), Collection.description.ilike(pattern))
-            )
+        collections_query = select(Collection).where(
+            or_(Collection.name.ilike(pattern), Collection.description.ilike(pattern))
         )
 
     # Search users

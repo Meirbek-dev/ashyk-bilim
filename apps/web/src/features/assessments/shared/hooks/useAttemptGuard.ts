@@ -42,7 +42,7 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
   const [fullscreenError, setFullscreenError] = useState<string | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [securityCountdown, setSecurityCountdown] = useState<number | null>(null);
-  
+
   const fullscreenEnteredRef = useRef(false);
   const violationCountRef = useRef(violationCount);
   const onViolationRef = useRef(options.onViolation);

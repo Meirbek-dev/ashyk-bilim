@@ -2260,6 +2260,9 @@
             "title": "Max Score",
             "type": "number"
           },
+          "metadata": {
+            "$ref": "#/components/schemas/AssessmentItemMetadata"
+          },
           "title": {
             "default": "",
             "title": "Title",
@@ -2271,6 +2274,64 @@
           "body"
         ],
         "title": "AssessmentItemCreate",
+        "type": "object"
+      },
+      "AssessmentItemMetadata": {
+        "properties": {
+          "difficulty": {
+            "anyOf": [
+              {
+                "enum": [
+                  "easy",
+                  "medium",
+                  "hard"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          },
+          "estimated_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Minutes"
+          },
+          "outcome_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Outcome Ids",
+            "type": "array"
+          },
+          "section_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Label"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "title": "AssessmentItemMetadata",
         "type": "object"
       },
       "AssessmentItemReorder": {
@@ -2339,6 +2400,16 @@
               }
             ],
             "title": "Max Score"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssessmentItemMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "title": {
             "anyOf": [
@@ -3126,6 +3197,9 @@
           "max_score": {
             "title": "Max Score",
             "type": "number"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/AssessmentItemMetadata"
           },
           "order": {
             "title": "Order",
@@ -5674,6 +5748,17 @@
             ],
             "title": "Actual"
           },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
           "expected": {
             "anyOf": [
               {
@@ -5705,6 +5790,28 @@
             "title": "Passed",
             "type": "boolean"
           },
+          "status_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Description"
+          },
+          "status_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Id"
+          },
           "stdin": {
             "anyOf": [
               {
@@ -5730,6 +5837,17 @@
               }
             ],
             "title": "Time"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
           }
         },
         "required": [
@@ -5772,8 +5890,14 @@
             "type": "boolean"
           },
           "match_mode": {
-            "const": "EXACT",
             "default": "EXACT",
+            "enum": [
+              "EXACT",
+              "TRIMMED",
+              "IGNORE_WHITESPACE",
+              "NUMERIC_TOLERANCE",
+              "CUSTOM_CHECKER"
+            ],
             "title": "Match Mode",
             "type": "string"
           },
@@ -12587,6 +12711,11 @@
             "title": "Created At",
             "type": "string"
           },
+          "draft_version": {
+            "default": 1,
+            "title": "Draft Version",
+            "type": "integer"
+          },
           "final_score": {
             "anyOf": [
               {
@@ -12914,6 +13043,11 @@
             "format": "date-time",
             "title": "Created At",
             "type": "string"
+          },
+          "draft_version": {
+            "default": 1,
+            "title": "Draft Version",
+            "type": "integer"
           },
           "final_score": {
             "anyOf": [
@@ -14388,6 +14522,11 @@
             "format": "date-time",
             "title": "Created At",
             "type": "string"
+          },
+          "draft_version": {
+            "default": 1,
+            "title": "Draft Version",
+            "type": "integer"
           },
           "final_score": {
             "anyOf": [
@@ -21120,6 +21259,52 @@
         ]
       }
     },
+    "/api/v1/assessments/{assessment_uuid}/code-challenge/validate": {
+      "post": {
+        "description": "Validate reference solutions for all configured languages against the test suite.",
+        "operationId": "api_validate_code_challenge_api_v1_assessments__assessment_uuid__code_challenge_validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_uuid",
+            "required": true,
+            "schema": {
+              "title": "Assessment Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Api Validate Code Challenge",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
     "/api/v1/assessments/{assessment_uuid}/draft": {
       "get": {
         "operationId": "api_get_draft_api_v1_assessments__assessment_uuid__draft_get",
@@ -22715,6 +22900,16 @@
               "minimum": 0,
               "title": "Violation Count",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "auto_submit",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Auto Submit",
+              "type": "boolean"
             }
           },
           {
@@ -30248,6 +30443,47 @@
           }
         ],
         "summary": "Upload Chunk",
+        "tags": [
+          "uploads"
+        ]
+      }
+    },
+    "/api/v1/uploads/chunked/{upload_id}": {
+      "delete": {
+        "description": "Cancel a resumable chunked upload and remove all staged chunk files.",
+        "operationId": "cancel_chunked_upload_api_v1_uploads_chunked__upload_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "title": "Upload Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Cancel Chunked Upload",
         "tags": [
           "uploads"
         ]

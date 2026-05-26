@@ -426,14 +426,14 @@ export function useAssessmentSubmission(assessmentUuid: string | null | undefine
   );
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof globalThis.window === 'undefined') return;
     const handleOnline = () => {
       if (localAnswersRef.current && Object.keys(localAnswersRef.current).length > 0) {
         save();
       }
     };
-    window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
+    globalThis.addEventListener('online', handleOnline);
+    return () => globalThis.removeEventListener('online', handleOnline);
   }, [save]);
 
   return useMemo(

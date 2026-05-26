@@ -26,8 +26,8 @@ export async function compressImage(
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        let {width} = img;
-        let {height} = img;
+        let { width } = img;
+        let { height } = img;
 
         // Calculate aspect ratio and target dimensions
         if (width > maxWidth || height > maxHeight) {

@@ -518,7 +518,10 @@ async def get_item_analytics(
     graded_submissions = db_session.exec(
         select(Submission).where(
             Submission.activity_id == activity.id,
-            Submission.status.in_([SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED]),
+            Submission.status.in_([
+                SubmissionStatus.GRADED,
+                SubmissionStatus.PUBLISHED,
+            ]),
         )
     ).all()
 
@@ -577,7 +580,11 @@ async def get_item_analytics(
         for submission in graded_submissions:
             uuid = submission.submission_uuid
             raw2 = submission.grading_json  # type: ignore[attr-defined]
-            grading2 = GradingBreakdown.model_validate(raw2) if isinstance(raw2, dict) else raw2
+            grading2 = (
+                GradingBreakdown.model_validate(raw2)
+                if isinstance(raw2, dict)
+                else raw2
+            )
             for graded_item in grading2.items:
                 iid = graded_item.item_id or ""
                 correct = graded_item.correct
@@ -611,7 +618,9 @@ async def get_item_analytics(
                 max_score=item.max_score,
                 response_count=len(scores),
                 avg_score_pct=round(sum(scores) / len(scores), 1) if scores else None,
-                correct_pct=round(sum(corrects) / len(corrects) * 100, 1) if corrects else None,
+                correct_pct=round(sum(corrects) / len(corrects) * 100, 1)
+                if corrects
+                else None,
                 discrimination_index=disc_by_item.get(iid),
             )
         )

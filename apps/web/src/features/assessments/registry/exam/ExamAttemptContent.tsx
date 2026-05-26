@@ -355,7 +355,7 @@ function ExamTakingContent({
       for (const key of Object.keys(record)) {
         const ans = record[key];
         if (!ans || typeof ans !== 'object') return false;
-        const {kind} = (ans as any);
+        const { kind } = ans as any;
         if (!['CHOICE', 'OPEN_TEXT', 'FORM', 'CODE', 'MATCHING'].includes(kind)) {
           return false;
         }
@@ -576,26 +576,26 @@ function ExamTakingContent({
         : null,
     }),
     [
-	canSaveDraft,
-	canSubmit,
-	answeredCount,
-	attempt.created_at,
-	attempt.started_at,
-	currentIndex,
-	handleOpenSubmitConfirmation,
-	handleSubmit,
-	handleViolation,
-	orderedQuestions.length,
-	persistence,
-	policy,
-	recoveredAnswers,
-	showRecoveryDialog,
-	submissionState,
-	t,
-	timerExpiresAt,
-	viewMode,
-	scrollToQuestion
-],
+      canSaveDraft,
+      canSubmit,
+      answeredCount,
+      attempt.created_at,
+      attempt.started_at,
+      currentIndex,
+      handleOpenSubmitConfirmation,
+      handleSubmit,
+      handleViolation,
+      orderedQuestions.length,
+      persistence,
+      policy,
+      recoveredAnswers,
+      showRecoveryDialog,
+      submissionState,
+      t,
+      timerExpiresAt,
+      viewMode,
+      scrollToQuestion,
+    ],
   );
 
   useAttemptShellControls(shellControls);

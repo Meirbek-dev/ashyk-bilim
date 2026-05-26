@@ -351,7 +351,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                         <div onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
-                            className="text-muted-foreground h-8 w-full truncate rounded-md border px-2 text-left text-sm hover:bg-muted/30"
+                            className="text-muted-foreground hover:bg-muted/30 h-8 w-full truncate rounded-md border px-2 text-left text-sm"
                             onClick={() => setSelectedCaseId(test.id)}
                           >
                             {test.description ? extractMarkdownSummary(test.description, 80) : 'e.g. Empty list check'}

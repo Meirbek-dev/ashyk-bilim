@@ -54,7 +54,9 @@ def grade_canonical_choice_items(
         )
         answer = answers_by_item_uuid.get(item.item_uuid)
         if item.body.kind == "CHOICE":
-            graded = _grade_canonical_choice(item, answer, item_points, negative_marking_percent)
+            graded = _grade_canonical_choice(
+                item, answer, item_points, negative_marking_percent
+            )
         else:
             graded = _grade_canonical_matching(item, answer, item_points)
         total_score += graded.score
@@ -112,10 +114,18 @@ def _grade_canonical_choice(
         feedback = f"Partially correct ({correct_count}/{len(correct_option_ids)})"
     else:
         # Fully wrong — apply negative marking if configured
-        deduction = (negative_marking_percent / 100.0) * points if negative_marking_percent > 0 else 0.0
+        deduction = (
+            (negative_marking_percent / 100.0) * points
+            if negative_marking_percent > 0
+            else 0.0
+        )
         score = max(-points, -deduction)
         correct = False
-        feedback = "Incorrect" if deduction == 0.0 else f"Incorrect (−{round(deduction, 2)} pts)"
+        feedback = (
+            "Incorrect"
+            if deduction == 0.0
+            else f"Incorrect (−{round(deduction, 2)} pts)"
+        )
 
     return GradedItem(
         item_id=item.item_uuid,

@@ -33,12 +33,22 @@ describe('MarkdownContent', () => {
   });
 
   it('returns emptyFallback for empty content', () => {
-    render(<MarkdownContent content="" emptyFallback={<span>Nothing here</span>} />);
+    render(
+      <MarkdownContent
+        content=""
+        emptyFallback={<span>Nothing here</span>}
+      />,
+    );
     expect(screen.getByText('Nothing here')).toBeInTheDocument();
   });
 
   it('returns emptyFallback for whitespace-only content', () => {
-    render(<MarkdownContent content="   \n\n  " emptyFallback={<span>Empty</span>} />);
+    render(
+      <MarkdownContent
+        content="   \n\n  "
+        emptyFallback={<span>Empty</span>}
+      />,
+    );
     expect(screen.getByText('Empty')).toBeInTheDocument();
   });
 
@@ -46,14 +56,24 @@ describe('MarkdownContent', () => {
 
   it('renders image placeholder badge when allowImages is false (default)', () => {
     const content = '![A cat](https://example.com/cat.jpg)';
-    const { container } = render(<MarkdownContent content={content} allowImages={false} />);
+    const { container } = render(
+      <MarkdownContent
+        content={content}
+        allowImages={false}
+      />,
+    );
     expect(container.querySelector('img')).not.toBeInTheDocument();
     expect(screen.getByText('A cat')).toBeInTheDocument();
   });
 
   it('renders actual image when allowImages is true', () => {
     const content = '![A cat](/uploads/cat.jpg)';
-    const { container } = render(<MarkdownContent content={content} allowImages />);
+    const { container } = render(
+      <MarkdownContent
+        content={content}
+        allowImages
+      />,
+    );
     const img = container.querySelector('img');
     expect(img).toBeInTheDocument();
     expect(img?.getAttribute('src')).toBe('/uploads/cat.jpg');
@@ -62,7 +82,12 @@ describe('MarkdownContent', () => {
 
   it('renders image placeholder when src uses unsafe protocol even with allowImages=true', () => {
     const content = '![Bad](javascript:alert(1))';
-    const { container } = render(<MarkdownContent content={content} allowImages />);
+    const { container } = render(
+      <MarkdownContent
+        content={content}
+        allowImages
+      />,
+    );
     // sanitizeMarkdownUrl should reject javascript: protocol
     expect(container.querySelector('img')).not.toBeInTheDocument();
   });
@@ -72,7 +97,10 @@ describe('MarkdownContent', () => {
   it('renders math in prompt mode', async () => {
     // KaTeX transforms $..$ into .katex elements
     const { container } = render(
-      <MarkdownContent content="The formula $E=mc^2$ is famous." mode="prompt" />,
+      <MarkdownContent
+        content="The formula $E=mc^2$ is famous."
+        mode="prompt"
+      />,
     );
     // We don't fully assert KaTeX output (not loaded), but check content is there
     expect(container).toBeInTheDocument();
@@ -82,7 +110,10 @@ describe('MarkdownContent', () => {
 
   it('renders heading anchors in courseDescription mode', () => {
     const { container } = render(
-      <MarkdownContent content="## My section" mode="courseDescription" />,
+      <MarkdownContent
+        content="## My section"
+        mode="courseDescription"
+      />,
     );
     const heading = container.querySelector('h2');
     expect(heading).toBeInTheDocument();
@@ -93,7 +124,10 @@ describe('MarkdownContent', () => {
 
   it('does not render heading anchors in prompt mode', () => {
     const { container } = render(
-      <MarkdownContent content="## My section" mode="prompt" />,
+      <MarkdownContent
+        content="## My section"
+        mode="prompt"
+      />,
     );
     const anchor = container.querySelector('a[href^="#"]');
     expect(anchor).not.toBeInTheDocument();
@@ -118,26 +152,20 @@ describe('MarkdownContent', () => {
   // ── Links ────────────────────────────────────────────────────────────────────
 
   it('opens external links in new tab', () => {
-    const { container } = render(
-      <MarkdownContent content="[Visit](https://example.com)" />,
-    );
+    const { container } = render(<MarkdownContent content="[Visit](https://example.com)" />);
     const link = container.querySelector('a');
     expect(link?.getAttribute('target')).toBe('_blank');
     expect(link?.getAttribute('rel')).toContain('noopener');
   });
 
   it('keeps internal links without target', () => {
-    const { container } = render(
-      <MarkdownContent content="[Home](/home)" />,
-    );
+    const { container } = render(<MarkdownContent content="[Home](/home)" />);
     const link = container.querySelector('a');
     expect(link?.getAttribute('target')).toBeNull();
   });
 
   it('renders unsafe links as plain text', () => {
-    const { container } = render(
-      <MarkdownContent content="[Evil](javascript:alert(1))" />,
-    );
+    const { container } = render(<MarkdownContent content="[Evil](javascript:alert(1))" />);
     expect(container.querySelector('a')).not.toBeInTheDocument();
     expect(screen.getByText('Evil')).toBeInTheDocument();
   });
@@ -145,9 +173,7 @@ describe('MarkdownContent', () => {
   // ── Code blocks ──────────────────────────────────────────────────────────────
 
   it('renders code block with Shiki after async highlight', async () => {
-    const { container } = render(
-      <MarkdownContent content={'```typescript\nconst x = 1;\n```'} />,
-    );
+    const { container } = render(<MarkdownContent content={'```typescript\nconst x = 1;\n```'} />);
     // Initially shows fallback pre
     expect(container.querySelector('pre')).toBeInTheDocument();
 
@@ -158,9 +184,7 @@ describe('MarkdownContent', () => {
   });
 
   it('renders inline code without a code block wrapper', () => {
-    const { container } = render(
-      <MarkdownContent content="Use `console.log` here." />,
-    );
+    const { container } = render(<MarkdownContent content="Use `console.log` here." />);
     const code = container.querySelector('code');
     expect(code).toBeInTheDocument();
     // Should NOT have the MarkdownCodeBlock header bar
@@ -171,7 +195,10 @@ describe('MarkdownContent', () => {
 
   it('sets aria-live when streaming=true', () => {
     const { container } = render(
-      <MarkdownContent content="Generating..." streaming />,
+      <MarkdownContent
+        content="Generating..."
+        streaming
+      />,
     );
     const root = container.firstElementChild;
     expect(root?.getAttribute('aria-live')).toBe('polite');
@@ -179,7 +206,10 @@ describe('MarkdownContent', () => {
 
   it('does not set aria-live when streaming=false', () => {
     const { container } = render(
-      <MarkdownContent content="Done." streaming={false} />,
+      <MarkdownContent
+        content="Done."
+        streaming={false}
+      />,
     );
     const root = container.firstElementChild;
     expect(root?.getAttribute('aria-live')).toBeNull();

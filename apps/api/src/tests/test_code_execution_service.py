@@ -561,6 +561,7 @@ async def test_code_execution_with_different_source_code_and_hash_in_key(
 @pytest.mark.asyncio
 async def test_code_execution_match_modes(monkeypatch, db_session):
     outputs = []
+
     def fake_run(**_kwargs):
         return [
             SimpleNamespace(
@@ -590,9 +591,15 @@ async def test_code_execution_match_modes(monkeypatch, db_session):
         language_id=71,
         source_code="print('hello')",
         test_cases=[
-            CodeTestCase(id="c1", input="x", expected_output="hello", match_mode="EXACT"),
-            CodeTestCase(id="c2", input="x", expected_output="hello", match_mode="EXACT"),
-            CodeTestCase(id="c3_fail", input="x", expected_output="hello", match_mode="EXACT"),
+            CodeTestCase(
+                id="c1", input="x", expected_output="hello", match_mode="EXACT"
+            ),
+            CodeTestCase(
+                id="c2", input="x", expected_output="hello", match_mode="EXACT"
+            ),
+            CodeTestCase(
+                id="c3_fail", input="x", expected_output="hello", match_mode="EXACT"
+            ),
         ],
     )
     assert run.details[0].passed is True
@@ -610,8 +617,12 @@ async def test_code_execution_match_modes(monkeypatch, db_session):
         language_id=71,
         source_code="print('hello')",
         test_cases=[
-            CodeTestCase(id="c3", input="x", expected_output="hello", match_mode="TRIMMED"),
-            CodeTestCase(id="c4", input="x", expected_output="world  ", match_mode="TRIMMED"),
+            CodeTestCase(
+                id="c3", input="x", expected_output="hello", match_mode="TRIMMED"
+            ),
+            CodeTestCase(
+                id="c4", input="x", expected_output="world  ", match_mode="TRIMMED"
+            ),
         ],
     )
     assert run.details[0].passed is True
@@ -628,7 +639,12 @@ async def test_code_execution_match_modes(monkeypatch, db_session):
         language_id=71,
         source_code="print('hello')",
         test_cases=[
-            CodeTestCase(id="c5", input="x", expected_output="hello", match_mode="IGNORE_WHITESPACE"),
+            CodeTestCase(
+                id="c5",
+                input="x",
+                expected_output="hello",
+                match_mode="IGNORE_WHITESPACE",
+            ),
         ],
     )
     assert run.details[0].passed is True
@@ -644,9 +660,24 @@ async def test_code_execution_match_modes(monkeypatch, db_session):
         language_id=71,
         source_code="print('hello')",
         test_cases=[
-            CodeTestCase(id="c6", input="x", expected_output="3.141593", match_mode="NUMERIC_TOLERANCE"),  # diff is ~3.5e-7
-            CodeTestCase(id="c7", input="x", expected_output="100.0", match_mode="NUMERIC_TOLERANCE"),  # diff is 1e-7
-            CodeTestCase(id="c8", input="x", expected_output="abc 123", match_mode="NUMERIC_TOLERANCE"),  # non-numeric token match
+            CodeTestCase(
+                id="c6",
+                input="x",
+                expected_output="3.141593",
+                match_mode="NUMERIC_TOLERANCE",
+            ),  # diff is ~3.5e-7
+            CodeTestCase(
+                id="c7",
+                input="x",
+                expected_output="100.0",
+                match_mode="NUMERIC_TOLERANCE",
+            ),  # diff is 1e-7
+            CodeTestCase(
+                id="c8",
+                input="x",
+                expected_output="abc 123",
+                match_mode="NUMERIC_TOLERANCE",
+            ),  # non-numeric token match
         ],
     )
     assert run.details[0].passed is True

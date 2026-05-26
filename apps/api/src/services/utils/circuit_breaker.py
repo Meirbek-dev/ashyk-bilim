@@ -26,7 +26,7 @@ class CircuitBreaker:
         failure_threshold: int = 5,
         recovery_timeout: float = 30.0,
         expected_exceptions: tuple[type[BaseException], ...] = (Exception,),
-    ):
+    ) -> None:
         self.name = name
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
@@ -41,17 +41,26 @@ class CircuitBreaker:
     def _before_call(self) -> None:
         now = time.monotonic()
         if self.state == "OPEN":
-            if self.last_failure_time and (now - self.last_failure_time) > self.recovery_timeout:
+            if (
+                self.last_failure_time
+                and (now - self.last_failure_time) > self.recovery_timeout
+            ):
                 self.state = "HALF_OPEN"
                 logger.info("Circuit breaker %s entered HALF_OPEN state", self.name)
             else:
-                raise CircuitBreakerOpenException(f"Circuit breaker {self.name} is OPEN")
+                msg = f"Circuit breaker {self.name} is OPEN"
+                raise CircuitBreakerOpenException(
+                    msg
+                )
 
     def _on_success(self) -> None:
         if self.state == "HALF_OPEN":
             self.state = "CLOSED"
             self.failures = 0
-            logger.info("Circuit breaker %s entered CLOSED state after successful test", self.name)
+            logger.info(
+                "Circuit breaker %s entered CLOSED state after successful test",
+                self.name,
+            )
         elif self.state == "CLOSED":
             self.failures = 0
 
@@ -83,7 +92,9 @@ class CircuitBreaker:
                 self._on_failure(exc)
             raise
 
-    async def call_async(self, func: Callable[P, Awaitable[T]], *args: P.args, **kwargs: P.kwargs) -> T:
+    async def call_async(
+        self, func: Callable[P, Awaitable[T]], *args: P.args, **kwargs: P.kwargs
+    ) -> T:
         """Execute an asynchronous function wrapped by the circuit breaker."""
         async with self._lock:
             self._before_call()

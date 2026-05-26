@@ -337,9 +337,9 @@ async def api_submit_assessment(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={
                 "code": "SERVER_OVERLOADED",
-                "message": "Система временно перегружена. Пожалуйста, попробуйте позже."
+                "message": "Система временно перегружена. Пожалуйста, попробуйте позже.",
             },
-            headers={"Retry-After": "10"}
+            headers={"Retry-After": "10"},
         )
 
     try:
@@ -588,6 +588,7 @@ async def api_validate_code_challenge(
 ):
     """Validate reference solutions for all configured languages against the test suite."""
     from src.services.assessments.attempt_service import validate_code_challenge_service
+
     return await validate_code_challenge_service(
         assessment_uuid, current_user, db_session
     )

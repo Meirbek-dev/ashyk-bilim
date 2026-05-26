@@ -535,7 +535,9 @@ class ItemAnalytics(SQLModelStrictBaseModel):
     title: str
     kind: str
     max_score: float
-    response_count: int   # number of graded submissions that include this item
+    response_count: int  # number of graded submissions that include this item
     avg_score_pct: float | None  # average (item.score / item.max_score) * 100
-    correct_pct: float | None    # percentage of responses where correct == True
-    discrimination_index: float | None  # classic item discrimination (top27 − bottom27) / n
+    correct_pct: float | None  # percentage of responses where correct == True
+    discrimination_index: (
+        float | None
+    )  # classic item discrimination (top27 − bottom27) / n

@@ -24,9 +24,7 @@ export interface MarkdownValidatedCodeChallenge {
   hints?: MarkdownValidatedHint[] | null;
 }
 
-export function getCodeChallengeMarkdownIssues(
-  settings: MarkdownValidatedCodeChallenge,
-): CodeChallengeMarkdownIssue[] {
+export function getCodeChallengeMarkdownIssues(settings: MarkdownValidatedCodeChallenge): CodeChallengeMarkdownIssue[] {
   const issues: CodeChallengeMarkdownIssue[] = [];
 
   collectMarkdownIssues(issues, 'Problem statement', settings.prompt ?? '', 'codeProblemStatement');

@@ -72,17 +72,12 @@ export function MarkdownEditor({
   }, [issues, onValidationChange]);
 
   const charCount = normalizedValue.length;
-  const wordCount = normalizedValue.trim()
-    ? normalizedValue.trim().split(/\s+/).length
-    : 0;
+  const wordCount = normalizedValue.trim() ? normalizedValue.trim().split(/\s+/).length : 0;
   const effectiveMinHeight = minHeight ?? config.minHeight;
   const effectiveMaxHeight = maxHeight ?? config.maxHeight;
 
   // Stable extensions array — rebuilt only when preset changes
-  const extensions = useMemo(
-    () => buildEditorExtensions({ config, placeholder }),
-    [config, placeholder],
-  );
+  const extensions = useMemo(() => buildEditorExtensions({ config, placeholder }), [config, placeholder]);
 
   const editor = useEditor({
     extensions,
@@ -99,10 +94,10 @@ export function MarkdownEditor({
     },
     editorProps: {
       attributes: {
-        class: cn('outline-none px-4 py-3 focus:outline-none'),
+        'class': cn('outline-none px-4 py-3 focus:outline-none'),
         'aria-label': `${config.label} editor`,
         'aria-multiline': 'true',
-        role: 'textbox',
+        'role': 'textbox',
       },
     },
   });
@@ -136,8 +131,8 @@ export function MarkdownEditor({
         setIsFullscreen(false);
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, [isFullscreen]);
 
   const handleFullscreenToggle = useCallback(() => {
@@ -196,11 +191,7 @@ export function MarkdownEditor({
           (viewMode === 'preview' || viewMode === 'source') && 'grid-cols-1',
           isFullscreen && 'flex-1 overflow-hidden',
         )}
-        style={
-          !isFullscreen
-            ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight }
-            : undefined
-        }
+        style={!isFullscreen ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight } : undefined}
       >
         {viewMode === 'source' && (
           <textarea
@@ -249,9 +240,7 @@ export function MarkdownEditor({
               mode={config.renderMode}
               allowImages={config.allowImages}
               showHeadingAnchors={false}
-              emptyFallback={
-                <p className="text-muted-foreground text-sm">{config.placeholder}</p>
-              }
+              emptyFallback={<p className="text-muted-foreground text-sm">{config.placeholder}</p>}
             />
           </div>
         )}
@@ -273,7 +262,10 @@ export function MarkdownEditor({
     return (
       <>
         {/* Backdrop */}
-        <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setIsFullscreen(false)} />
+        <div
+          className="fixed inset-0 z-40 bg-black/50"
+          onClick={() => setIsFullscreen(false)}
+        />
         {editorPanel}
       </>
     );

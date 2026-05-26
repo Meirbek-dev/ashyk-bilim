@@ -55,7 +55,9 @@ export function CodeArenaHeader({
     <div className="bg-muted/40 flex h-14 shrink-0 items-center justify-between border-b px-4">
       {/* Left: Breadcrumbs & Problem Select */}
       <div className="flex items-center gap-3">
-        <span className="text-muted-foreground hidden text-xs font-medium md:inline-block">{t('courseChallenges')}</span>
+        <span className="text-muted-foreground hidden text-xs font-medium md:inline-block">
+          {t('courseChallenges')}
+        </span>
         <span className="text-muted-foreground hidden md:inline">/</span>
 
         <DropdownMenu>
@@ -115,7 +117,9 @@ export function CodeArenaHeader({
           </Badge>
         ) : null}
         {problem.points ? (
-          <span className="text-muted-foreground hidden text-xs md:inline-block">{problem.points} {t('pointsShort')}</span>
+          <span className="text-muted-foreground hidden text-xs md:inline-block">
+            {problem.points} {t('pointsShort')}
+          </span>
         ) : null}
         <VerdictStatus verdict={verdict} />
       </div>

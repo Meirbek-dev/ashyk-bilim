@@ -269,13 +269,13 @@ async def api_get_course(
         db_session=db_session,
         checker=checker,
     )
-    
+
     up_time = _get_timestamp(getattr(course, "update_date", None))
     etag = f'W/"{course.id}-{up_time}"'
-    
+
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304)
-        
+
     response.headers["ETag"] = etag
     response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=120"
     return course

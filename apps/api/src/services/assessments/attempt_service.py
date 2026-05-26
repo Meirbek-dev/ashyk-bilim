@@ -710,18 +710,17 @@ async def validate_code_challenge_service(
     _require_submit_access(current_user, activity, course, db_session)
 
     from src.db.assessments import AssessmentItem, ItemKind
+
     item = db_session.exec(
         select(AssessmentItem)
         .join(Assessment, Assessment.id == AssessmentItem.assessment_id)
         .where(
             Assessment.assessment_uuid == assessment_uuid,
-            AssessmentItem.kind == ItemKind.CODE
+            AssessmentItem.kind == ItemKind.CODE,
         )
     ).first()
     if item is None:
-        raise HTTPException(
-            status_code=404, detail="Элемент типа CODE не найден"
-        )
+        raise HTTPException(status_code=404, detail="Элемент типа CODE не найден")
 
     body = ITEM_BODY_ADAPTER.validate_python(item.body_json)
     if body.kind != "CODE":
@@ -731,7 +730,7 @@ async def validate_code_challenge_service(
 
     all_tests = body.tests
     service = get_code_execution_service()
-    
+
     results_by_lang = {}
     from src.db.code_execution import CodeRunPurpose, CodeRunStatus
 
@@ -744,7 +743,7 @@ async def validate_code_challenge_service(
                 "message": "Reference solution is not defined for this language.",
             }
             continue
-            
+
         try:
             result = await service.run(
                 db_session=db_session,
@@ -758,7 +757,7 @@ async def validate_code_challenge_service(
                 time_limit_seconds=body.time_limit_seconds,
                 memory_limit_mb=body.memory_limit_mb,
             )
-            
+
             results_by_lang[lang_id] = {
                 "ok": result.status == CodeRunStatus.ACCEPTED,
                 "status": result.status.value,
@@ -775,7 +774,7 @@ async def validate_code_challenge_service(
                         "memory": d.memory,
                     }
                     for d in result.details
-                ]
+                ],
             }
         except Exception as exc:
             results_by_lang[lang_id] = {

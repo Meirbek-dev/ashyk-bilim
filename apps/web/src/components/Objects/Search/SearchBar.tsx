@@ -266,7 +266,9 @@ export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false
                       {t('courseType')}
                     </span>
                   </div>
-                  <p className="text-muted-foreground truncate text-xs">{extractMarkdownSummary(course.description, 120)}</p>
+                  <p className="text-muted-foreground truncate text-xs">
+                    {extractMarkdownSummary(course.description, 120)}
+                  </p>
                 </div>
               </Link>
             ))}

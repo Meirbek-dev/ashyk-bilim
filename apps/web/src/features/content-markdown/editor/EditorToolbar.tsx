@@ -68,7 +68,11 @@ export function EditorToolbar({
       editor.chain().focus().unsetLink().run();
       return;
     }
-    editor.chain().focus().setLink({ href, target: openInNewTab ? '_blank' : null }).run();
+    editor
+      .chain()
+      .focus()
+      .setLink({ href, target: openInNewTab ? '_blank' : null })
+      .run();
   };
 
   const handleImageConfirm = (src: string, alt: string) => {
@@ -255,7 +259,9 @@ export function EditorToolbar({
             <ToolbarButton
               title={t('toolbar.table')}
               disabled={disabled}
-              onClick={() => (editor?.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+              onClick={() =>
+                (editor?.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+              }
             >
               <Rows3 className="size-3.5" />
             </ToolbarButton>
@@ -316,10 +322,34 @@ export function EditorToolbar({
 
           {/* View mode switcher */}
           <div className="flex items-center rounded-md border p-0.5">
-            <ViewModeButton mode="write" activeMode={viewMode} onClick={onViewModeChange} title={t('toolbar.viewWrite')} icon={<TextCursorInput className="size-3.5" />} />
-            <ViewModeButton mode="source" activeMode={viewMode} onClick={onViewModeChange} title={t('toolbar.viewSource')} icon={<FileCode2 className="size-3.5" />} />
-            <ViewModeButton mode="split" activeMode={viewMode} onClick={onViewModeChange} title={t('toolbar.viewSplit')} icon={<SplitSquareHorizontal className="size-3.5" />} />
-            <ViewModeButton mode="preview" activeMode={viewMode} onClick={onViewModeChange} title={t('toolbar.viewPreview')} icon={<Eye className="size-3.5" />} />
+            <ViewModeButton
+              mode="write"
+              activeMode={viewMode}
+              onClick={onViewModeChange}
+              title={t('toolbar.viewWrite')}
+              icon={<TextCursorInput className="size-3.5" />}
+            />
+            <ViewModeButton
+              mode="source"
+              activeMode={viewMode}
+              onClick={onViewModeChange}
+              title={t('toolbar.viewSource')}
+              icon={<FileCode2 className="size-3.5" />}
+            />
+            <ViewModeButton
+              mode="split"
+              activeMode={viewMode}
+              onClick={onViewModeChange}
+              title={t('toolbar.viewSplit')}
+              icon={<SplitSquareHorizontal className="size-3.5" />}
+            />
+            <ViewModeButton
+              mode="preview"
+              activeMode={viewMode}
+              onClick={onViewModeChange}
+              title={t('toolbar.viewPreview')}
+              icon={<Eye className="size-3.5" />}
+            />
           </div>
 
           {/* Fullscreen toggle */}
@@ -358,7 +388,10 @@ function ToolbarGroup({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div className="flex items-center gap-0.5">{children}</div>
-      <div className="bg-border mx-0.5 h-5 w-px" aria-hidden="true" />
+      <div
+        className="bg-border mx-0.5 h-5 w-px"
+        aria-hidden="true"
+      />
     </>
   );
 }
@@ -425,9 +458,7 @@ function ViewModeButton({
       onClick={() => onClick(mode)}
       className={cn(
         'flex size-7 items-center justify-center rounded transition-colors',
-        isActive
-          ? 'bg-primary text-primary-foreground'
-          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+        isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
     >
       {icon}

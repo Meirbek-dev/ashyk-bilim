@@ -10,6 +10,7 @@ This is intentionally simple: it runs in-process on the same DB session and
 does not need a distributed lock because the deletes are idempotent.
 """
 
+import contextlib
 import logging
 from datetime import UTC, datetime, timedelta
 
@@ -75,9 +76,7 @@ def reap_orphan_uploads(db_session: Session) -> dict[str, int]:
         for p in temp_uploads_root.iterdir():
             if p.is_dir():
                 if p.name == "assessment":
-                    for subp in p.iterdir():
-                        if subp.is_dir():
-                            dirs_to_check.append(subp)
+                    dirs_to_check.extend(subp for subp in p.iterdir() if subp.is_dir())
                 else:
                     dirs_to_check.append(p)
 
@@ -85,15 +84,17 @@ def reap_orphan_uploads(db_session: Session) -> dict[str, int]:
             try:
                 mtime = d.stat().st_mtime
                 for filepath in d.rglob("*"):
-                    try:
+                    with contextlib.suppress(Exception):
                         mtime = max(mtime, filepath.stat().st_mtime)
-                    except Exception:
-                        pass
                 if (now_ts - mtime) > cutoff_seconds:
                     shutil.rmtree(d)
                     log.info("upload_reaper: deleted stale temp upload directory %s", d)
             except Exception as e:
-                log.warning("upload_reaper: failed to delete stale temp upload directory %s: %s", d, e)
+                log.warning(
+                    "upload_reaper: failed to delete stale temp upload directory %s: %s",
+                    d,
+                    e,
+                )
 
     log.info("upload_reaper: cancelled=%d deleted=%d", cancelled, deleted)
     return {"cancelled": cancelled, "deleted": deleted}

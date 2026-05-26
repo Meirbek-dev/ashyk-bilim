@@ -9,9 +9,7 @@ export interface MarkdownValidationIssue {
 }
 
 function hasUnbalancedMathDelimiters(markdown: string): boolean {
-  const withoutCode = markdown
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/`[^`\n]*`/g, '');
+  const withoutCode = markdown.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
   let inlineOpen = false;
   let blockOpen = false;
 
@@ -99,7 +97,7 @@ export function validateMarkdownContent(
   // Count triple-backtick fences that are NOT inside code spans (simplified: count ```)
   // Strip inline code spans first so embedded backticks don't count
   const withoutInlineCode = markdown.replace(/`[^`\n]+`/g, '');
-  const fenceCount = (withoutInlineCode.match(/```/g)?.length ?? 0);
+  const fenceCount = withoutInlineCode.match(/```/g)?.length ?? 0;
   if (fenceCount % 2 !== 0) {
     issues.push({
       severity: 'warning',

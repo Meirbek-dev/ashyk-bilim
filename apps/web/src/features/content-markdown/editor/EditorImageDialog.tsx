@@ -39,8 +39,14 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') { e.preventDefault(); handleConfirm(); }
-    if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleConfirm();
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+    }
   };
 
   const showPreview = src.trim() && srcValid && !previewFailed;
@@ -54,7 +60,7 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
       aria-label={t('imageDialog.title')}
     >
       <div
-        className="bg-popover border-border shadow-xl w-[380px] rounded-lg border p-4"
+        className="bg-popover border-border w-[380px] rounded-lg border p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
@@ -65,7 +71,10 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
 
         {/* Image URL */}
         <div className="mb-2 space-y-1">
-          <label htmlFor="image-dialog-src" className="text-muted-foreground text-xs font-medium">
+          <label
+            htmlFor="image-dialog-src"
+            className="text-muted-foreground text-xs font-medium"
+          >
             {t('imageDialog.srcLabel')}
           </label>
           <Input
@@ -82,15 +91,17 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
             className={cn(showError && 'border-destructive')}
             aria-invalid={showError}
           />
-          {showError && (
-            <p className="text-destructive text-xs">{t('imageDialog.srcError')}</p>
-          )}
+          {showError && <p className="text-destructive text-xs">{t('imageDialog.srcError')}</p>}
         </div>
 
         {/* Alt text */}
         <div className="mb-3 space-y-1">
-          <label htmlFor="image-dialog-alt" className="text-muted-foreground text-xs font-medium">
-            {t('imageDialog.altLabel')} <span className="text-muted-foreground/60">{t('imageDialog.altLabelOptional')}</span>
+          <label
+            htmlFor="image-dialog-alt"
+            className="text-muted-foreground text-xs font-medium"
+          >
+            {t('imageDialog.altLabel')}{' '}
+            <span className="text-muted-foreground/60">{t('imageDialog.altLabelOptional')}</span>
           </label>
           <Input
             id="image-dialog-alt"
@@ -103,7 +114,7 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
 
         {/* Preview */}
         {showPreview && (
-          <div className="mb-3 flex items-center justify-center rounded-md border bg-muted/30 p-2">
+          <div className="bg-muted/30 mb-3 flex items-center justify-center rounded-md border p-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={src}
@@ -116,8 +127,20 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
 
         {/* Actions */}
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>{t('imageDialog.cancel')}</Button>
-          <Button type="button" size="sm" onClick={handleConfirm} disabled={!src.trim() || !srcValid || !alt.trim()}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onClose}
+          >
+            {t('imageDialog.cancel')}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleConfirm}
+            disabled={!src.trim() || !srcValid || !alt.trim()}
+          >
             {t('imageDialog.insert')}
           </Button>
         </div>

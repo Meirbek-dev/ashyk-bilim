@@ -68,7 +68,7 @@ def _compare_output(actual: str | None, expected: str | None, match_mode: str) -
         exp_tokens = exp.split()
         if len(act_tokens) != len(exp_tokens):
             return False
-        for a, e in zip(act_tokens, exp_tokens):
+        for a, e in zip(act_tokens, exp_tokens, strict=False):
             try:
                 af = float(a)
                 ef = float(e)
@@ -492,11 +492,10 @@ class CodeExecutionService:
                 client=client,
                 source_code=source_code,
                 language=language_id,
-                test_cases=[
-                    judge0.TestCase(test.input, None)
-                    for test in test_cases
-                ],
-                cpu_time_limit=float(time_limit_seconds) if time_limit_seconds else None,
+                test_cases=[judge0.TestCase(test.input, None) for test in test_cases],
+                cpu_time_limit=float(time_limit_seconds)
+                if time_limit_seconds
+                else None,
                 wall_time_limit=float(time_limit_seconds + 1)
                 if time_limit_seconds
                 else None,
@@ -523,22 +522,20 @@ class CodeExecutionService:
 
         for test, submission in zip(test_cases, submissions, strict=False):
             case_status = normalize_status(submission.status)
-            
+
             # Extract standard status
             status_id = (
-                int(submission.status)
-                if submission.status is not None
-                else None
+                int(submission.status) if submission.status is not None else None
             )
             status_description = (
-                str(submission.status)
-                if submission.status is not None
-                else ""
+                str(submission.status) if submission.status is not None else ""
             )
 
             if scored and case_status == CodeRunStatus.ACCEPTED:
                 match_mode = getattr(test, "match_mode", "EXACT")
-                if not _compare_output(submission.stdout, test.expected_output, match_mode):
+                if not _compare_output(
+                    submission.stdout, test.expected_output, match_mode
+                ):
                     case_status = CodeRunStatus.WRONG_ANSWER
                     case_passed = False
                     status_id = 4

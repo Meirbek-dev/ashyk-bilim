@@ -623,7 +623,9 @@ def file_submission_attempts_for_gradebook(
 ) -> dict[tuple[int, int], FileSubmissionAttempt]:
     if not activity_ids:
         return {}
-    query = select(FileSubmissionAttempt).where(FileSubmissionAttempt.activity_id.in_(activity_ids))
+    query = select(FileSubmissionAttempt).where(
+        FileSubmissionAttempt.activity_id.in_(activity_ids)
+    )
     if student_ids is not None:
         if not student_ids:
             return {}

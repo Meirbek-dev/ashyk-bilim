@@ -9,17 +9,10 @@ import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import type { MarkdownRenderMode } from '../presets/presets';
 import { extractMarkdownSummary } from '../utils/markdown-extract';
-import {
-  sanitizeMarkdownImageUrl,
-  sanitizeMarkdownUrl,
-} from '../utils/markdown-sanitize';
+import { sanitizeMarkdownImageUrl, sanitizeMarkdownUrl } from '../utils/markdown-sanitize';
 import { MarkdownCodeBlock } from './MarkdownCodeBlock';
 import { MarkdownImage } from './MarkdownImage';
-import {
-  extractMarkdownHeadingText,
-  MarkdownHeading,
-  slugifyMarkdownHeading,
-} from './MarkdownHeading';
+import { extractMarkdownHeadingText, MarkdownHeading, slugifyMarkdownHeading } from './MarkdownHeading';
 import { AiStreamingCursor } from './MarkdownStreaming';
 
 interface MarkdownContentProps {
@@ -38,8 +31,8 @@ interface MarkdownContentProps {
   onHeadingAnchorClick?: (id: string) => void;
 }
 
-const MODE_WITH_ANCHORS: Set<MarkdownRenderMode> = new Set(['courseDescription', 'codeProblem']);
-const MODE_WITH_MATH: Set<MarkdownRenderMode> = new Set([
+const MODE_WITH_ANCHORS = new Set<MarkdownRenderMode>(['courseDescription', 'codeProblem']);
+const MODE_WITH_MATH = new Set<MarkdownRenderMode>([
   'prompt',
   'taskDescription',
   'codeProblem',
@@ -109,7 +102,7 @@ export function MarkdownContent({
     return () => cursor.remove();
   });
 
-  if (!content || !content.replace(/\\[nr]/g, '\n').trim()) return <>{emptyFallback}</>;
+  if (!content?.replace(/\\[nr]/g, '\n').trim()) return <>{emptyFallback}</>;
   if (mode === 'plainSummary') return <>{extractMarkdownSummary(content)}</>;
 
   const remarkPlugins: Parameters<typeof ReactMarkdown>[0]['remarkPlugins'] = [remarkGfm];
@@ -139,7 +132,12 @@ export function MarkdownContent({
           // ── Headings ────────────────────────────────────────────────────────
           h1: ({ children, ...props }) =>
             shouldShowAnchors ? (
-              <MarkdownHeading level={1} anchorId={nextHeadingId(children)} onAnchorClick={onHeadingAnchorClick} {...props}>
+              <MarkdownHeading
+                level={1}
+                anchorId={nextHeadingId(children)}
+                onAnchorClick={onHeadingAnchorClick}
+                {...props}
+              >
                 {children}
               </MarkdownHeading>
             ) : (
@@ -147,7 +145,12 @@ export function MarkdownContent({
             ),
           h2: ({ children, ...props }) =>
             shouldShowAnchors ? (
-              <MarkdownHeading level={2} anchorId={nextHeadingId(children)} onAnchorClick={onHeadingAnchorClick} {...props}>
+              <MarkdownHeading
+                level={2}
+                anchorId={nextHeadingId(children)}
+                onAnchorClick={onHeadingAnchorClick}
+                {...props}
+              >
                 {children}
               </MarkdownHeading>
             ) : (
@@ -155,7 +158,12 @@ export function MarkdownContent({
             ),
           h3: ({ children, ...props }) =>
             shouldShowAnchors ? (
-              <MarkdownHeading level={3} anchorId={nextHeadingId(children)} onAnchorClick={onHeadingAnchorClick} {...props}>
+              <MarkdownHeading
+                level={3}
+                anchorId={nextHeadingId(children)}
+                onAnchorClick={onHeadingAnchorClick}
+                {...props}
+              >
                 {children}
               </MarkdownHeading>
             ) : (
@@ -166,11 +174,7 @@ export function MarkdownContent({
           a: ({ href, children, ...props }) => {
             const safeHref = sanitizeMarkdownUrl(href);
             if (!safeHref) {
-              return (
-                <span className="text-muted-foreground underline decoration-dotted">
-                  {children}
-                </span>
-              );
+              return <span className="text-muted-foreground underline decoration-dotted">{children}</span>;
             }
             const external = /^https?:\/\//i.test(safeHref);
             return (
@@ -193,9 +197,7 @@ export function MarkdownContent({
             // Inline code: no language class AND no newlines
             if (!match && !code.includes('\n')) {
               return (
-                <code className={cn('rounded bg-muted px-1 py-0.5 text-[0.92em]', codeClassName)}>
-                  {children}
-                </code>
+                <code className={cn('rounded bg-muted px-1 py-0.5 text-[0.92em]', codeClassName)}>{children}</code>
               );
             }
 
@@ -226,7 +228,13 @@ export function MarkdownContent({
               );
             }
             const safeHref = sanitizeMarkdownImageUrl(typeof src === 'string' ? src : undefined);
-            return <MarkdownImage src={safeHref} alt={alt} title={title} />;
+            return (
+              <MarkdownImage
+                src={safeHref}
+                alt={alt}
+                title={title}
+              />
+            );
           },
 
           // ── Paragraphs (streaming cursor) ──────────────────────────────────

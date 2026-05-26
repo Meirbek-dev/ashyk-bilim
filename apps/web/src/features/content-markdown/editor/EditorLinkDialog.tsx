@@ -69,7 +69,7 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
     >
       {/* Dialog panel */}
       <div
-        className="bg-popover border-border shadow-xl w-[360px] rounded-lg border p-4"
+        className="bg-popover border-border w-[360px] rounded-lg border p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
@@ -82,7 +82,10 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
 
         {/* URL input */}
         <div className="mb-2 space-y-1">
-          <label htmlFor="link-dialog-url" className="text-muted-foreground text-xs font-medium">
+          <label
+            htmlFor="link-dialog-url"
+            className="text-muted-foreground text-xs font-medium"
+          >
             {t('linkDialog.urlLabel')}
           </label>
           <Input
@@ -100,7 +103,10 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
             aria-describedby={showError ? 'link-dialog-error' : undefined}
           />
           {showError && (
-            <p id="link-dialog-error" className="text-destructive text-xs">
+            <p
+              id="link-dialog-error"
+              className="text-destructive text-xs"
+            >
               {t('linkDialog.urlError')}
             </p>
           )}
@@ -121,7 +127,13 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
         {/* Actions */}
         <div className="flex items-center justify-between gap-2">
           {currentHref ? (
-            <Button type="button" variant="ghost" size="sm" onClick={handleRemove} className="text-destructive">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleRemove}
+              className="text-destructive"
+            >
               <Unlink className="mr-1.5 size-3.5" />
               {t('linkDialog.removeLink')}
             </Button>
@@ -129,10 +141,20 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
             <div />
           )}
           <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+            >
               {t('linkDialog.cancel')}
             </Button>
-            <Button type="button" size="sm" onClick={handleConfirm} disabled={!isValid && !!url.trim()}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleConfirm}
+              disabled={!isValid && !!url.trim()}
+            >
               {currentHref ? t('linkDialog.update') : t('linkDialog.insert')}
             </Button>
           </div>

@@ -310,12 +310,18 @@ export default function BuilderCanvasTab({
                             onRename={(label) => {
                               const item = items.find((candidate) => candidate.item_uuid === section.beforeItemUuid);
                               if (!item) return;
-                              void patchItemMetadata(item.item_uuid, { ...defaultMetadata(item.metadata), section_label: label });
+                              void patchItemMetadata(item.item_uuid, {
+                                ...defaultMetadata(item.metadata),
+                                section_label: label,
+                              });
                             }}
                             onDelete={() => {
                               const item = items.find((candidate) => candidate.item_uuid === section.beforeItemUuid);
                               if (!item) return;
-                              void patchItemMetadata(item.item_uuid, { ...defaultMetadata(item.metadata), section_label: null });
+                              void patchItemMetadata(item.item_uuid, {
+                                ...defaultMetadata(item.metadata),
+                                section_label: null,
+                              });
                             }}
                           />
                         ))}
@@ -330,13 +336,10 @@ export default function BuilderCanvasTab({
                           onAddSectionBefore={
                             isEditable
                               ? () =>
-                                  void patchItemMetadata(
-                                    item.item_uuid,
-                                    {
-                                      ...defaultMetadata(item.metadata),
-                                      section_label: tBuilder('defaultSectionLabel', { n: sections.length + 1 }),
-                                    },
-                                  )
+                                  void patchItemMetadata(item.item_uuid, {
+                                    ...defaultMetadata(item.metadata),
+                                    section_label: tBuilder('defaultSectionLabel', { n: sections.length + 1 }),
+                                  })
                               : undefined
                           }
                         />

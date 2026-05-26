@@ -222,7 +222,7 @@ dev = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.18.4" },
     { name = "cachebox", specifier = ">=5.2.3" },
-    { name = "fastapi", specifier = ">=0.136.1" },
+    { name = "fastapi", specifier = ">=0.136.3" },
     { name = "fastapi-pagination", specifier = ">=0.15.13" },
     { name = "fastapi-users", extras = ["sqlalchemy"], specifier = ">=15.0.5" },
     { name = "granian", extras = ["reload", "uvloop"], specifier = ">=2.7.4" },

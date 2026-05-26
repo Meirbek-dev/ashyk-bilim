@@ -1638,7 +1638,11 @@ def _hydrate_submission_grading_json(
 
     existing_grading = submission.grading_json or {}
     if not isinstance(existing_grading, dict):
-        existing_grading = existing_grading.model_dump() if hasattr(existing_grading, "model_dump") else existing_grading.__dict__
+        existing_grading = (
+            existing_grading.model_dump()
+            if hasattr(existing_grading, "model_dump")
+            else existing_grading.__dict__
+        )
 
     existing_items = existing_grading.get("items", [])
     existing_map = {}
@@ -1646,7 +1650,9 @@ def _hydrate_submission_grading_json(
         if isinstance(item, dict):
             existing_map[item.get("item_id")] = item
         elif hasattr(item, "item_id"):
-            existing_map[item.item_id] = item.model_dump() if hasattr(item, "model_dump") else item.__dict__
+            existing_map[item.item_id] = (
+                item.model_dump() if hasattr(item, "model_dump") else item.__dict__
+            )
 
     answers = submission.answers_json or {}
     answers_map = answers.get("answers", {})
@@ -1658,19 +1664,21 @@ def _hydrate_submission_grading_json(
 
         needs_review = existing.get("needs_manual_review")
         if needs_review is None:
-            needs_review = (item.kind == "OPEN_TEXT")
+            needs_review = item.kind == "OPEN_TEXT"
 
-        hydrated_items.append(GradedItem(
-            item_id=item.item_uuid,
-            item_text=item.title or "",
-            score=existing.get("score") or 0.0,
-            max_score=item.max_score if item.max_score > 0 else 1.0,
-            correct=existing.get("correct"),
-            feedback=existing.get("feedback") or "",
-            needs_manual_review=needs_review,
-            user_answer=user_ans,
-            correct_answer=existing.get("correct_answer"),
-        ))
+        hydrated_items.append(
+            GradedItem(
+                item_id=item.item_uuid,
+                item_text=item.title or "",
+                score=existing.get("score") or 0.0,
+                max_score=item.max_score if item.max_score > 0 else 1.0,
+                correct=existing.get("correct"),
+                feedback=existing.get("feedback") or "",
+                needs_manual_review=needs_review,
+                user_answer=user_ans,
+                correct_answer=existing.get("correct_answer"),
+            )
+        )
 
     result.grading_json = GradingBreakdown(
         items=hydrated_items,

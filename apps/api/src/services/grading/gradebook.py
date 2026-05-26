@@ -187,7 +187,7 @@ def _course_students(
     db_session: Session,
 ) -> list[User]:
     activity_ids = [activity.id for activity in activities if activity.id is not None]
-    
+
     from sqlmodel import exists, or_
 
     user_group_exists = exists().where(
@@ -249,7 +249,9 @@ def _submissions_by_id(
     return {submission.id: submission for submission in submissions if submission.id}
 
 
-def _policies_by_activity(activity_ids: set[int], db_session: Session) -> dict[int, AssessmentPolicy]:
+def _policies_by_activity(
+    activity_ids: set[int], db_session: Session
+) -> dict[int, AssessmentPolicy]:
     if not activity_ids:
         return {}
     policies = db_session.exec(

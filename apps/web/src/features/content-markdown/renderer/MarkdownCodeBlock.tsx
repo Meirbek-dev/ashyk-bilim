@@ -53,12 +53,7 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
     >
       {/* Header bar */}
       <div className="flex h-8 items-center justify-between border-b border-white/10 px-3">
-        <span
-          className={cn(
-            'font-mono font-medium text-zinc-400',
-            compact ? 'text-[10px]' : 'text-[11px]',
-          )}
-        >
+        <span className={cn('font-mono font-medium text-zinc-400', compact ? 'text-[10px]' : 'text-[11px]')}>
           {displayName}
         </span>
         <Button
@@ -82,7 +77,8 @@ export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers
             'overflow-x-auto',
             '[&_pre]:m-0 [&_pre]:bg-transparent! [&_pre]:p-3 [&_pre]:font-mono [&_pre]:leading-6',
             compact && '[&_pre]:p-2 [&_pre]:text-xs [&_pre]:leading-5',
-            lineNumbers && '[&_.line]:before:mr-4 [&_.line]:before:inline-block [&_.line]:before:w-4 [&_.line]:before:text-right [&_.line]:before:text-zinc-600 [&_.line]:before:content-[attr(data-line)]',
+            lineNumbers &&
+              '[&_.line]:before:mr-4 [&_.line]:before:inline-block [&_.line]:before:w-4 [&_.line]:before:text-right [&_.line]:before:text-zinc-600 [&_.line]:before:content-[attr(data-line)]',
             isDiff && [
               '[&_.line]:has-[[data-diff="add"]]:bg-emerald-500/10',
               '[&_.line]:has-[[data-diff="remove"]]:bg-red-500/10',

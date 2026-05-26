@@ -30,9 +30,7 @@ export default function GradebookError({ error, reset }: { error: Error & { dige
           </div>
           <div className="space-y-1">
             <h1 className="text-lg font-semibold">{t('gradebookLoadError')}</h1>
-            <p className="text-muted-foreground text-sm">
-              {t('gradebookLoadErrorDescription')}
-            </p>
+            <p className="text-muted-foreground text-sm">{t('gradebookLoadErrorDescription')}</p>
           </div>
         </div>
 
@@ -50,4 +48,3 @@ export default function GradebookError({ error, reset }: { error: Error & { dige
     </div>
   );
 }
-

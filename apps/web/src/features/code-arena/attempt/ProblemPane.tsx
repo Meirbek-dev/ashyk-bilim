@@ -86,10 +86,20 @@ export function ProblemPane({
                   {problem.difficulty ? (
                     <Badge variant={difficultyTone(problem.difficulty)}>{problem.difficulty}</Badge>
                   ) : null}
-                  {typeof problem.points === 'number' ? <Badge variant="outline">{problem.points} {t('pointsShort')}</Badge> : null}
-                  {problem.timeLimitSeconds ? <Badge variant="secondary">{t('timeSecondsValue', { value: problem.timeLimitSeconds })}</Badge> : null}
-                  {problem.memoryLimitMb ? <Badge variant="secondary">{t('memoryLimitValue', { value: problem.memoryLimitMb })}</Badge> : null}
-                  {hiddenCount > 0 ? <Badge variant="outline">{t('hiddenTestsCount', { count: hiddenCount })}</Badge> : null}
+                  {typeof problem.points === 'number' ? (
+                    <Badge variant="outline">
+                      {problem.points} {t('pointsShort')}
+                    </Badge>
+                  ) : null}
+                  {problem.timeLimitSeconds ? (
+                    <Badge variant="secondary">{t('timeSecondsValue', { value: problem.timeLimitSeconds })}</Badge>
+                  ) : null}
+                  {problem.memoryLimitMb ? (
+                    <Badge variant="secondary">{t('memoryLimitValue', { value: problem.memoryLimitMb })}</Badge>
+                  ) : null}
+                  {hiddenCount > 0 ? (
+                    <Badge variant="outline">{t('hiddenTestsCount', { count: hiddenCount })}</Badge>
+                  ) : null}
                 </div>
                 <h1 className="text-2xl font-semibold tracking-normal">{problem.title}</h1>
               </header>
@@ -124,14 +134,17 @@ export function ProblemPane({
                   </div>
                   {visibleTests.map((test, index) => (
                     <div
-                       key={`${test.id}-${index}`}
+                      key={`${test.id}-${index}`}
                       className="bg-card rounded-md border"
                     >
                       <div className="flex items-center justify-between border-b px-3 py-2">
                         <div className="text-sm font-medium">
                           {t('exampleNumber', { number: index + 1 })}
                           {test.description ? (
-                            <span className="text-muted-foreground"> - {extractMarkdownSummary(test.description, 100)}</span>
+                            <span className="text-muted-foreground">
+                              {' '}
+                              - {extractMarkdownSummary(test.description, 100)}
+                            </span>
                           ) : null}
                         </div>
                         <Button
@@ -192,7 +205,9 @@ export function ProblemPane({
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <div className="text-sm font-semibold">{t('hintNumber', { number: index + 1 })}</div>
-                            <div className="text-muted-foreground text-xs">{t('xpPenaltyValue', { penalty: hint.xp_penalty })}</div>
+                            <div className="text-muted-foreground text-xs">
+                              {t('xpPenaltyValue', { penalty: hint.xp_penalty })}
+                            </div>
                           </div>
                           {!revealed ? (
                             <Button

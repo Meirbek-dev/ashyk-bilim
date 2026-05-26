@@ -36,11 +36,11 @@ export default function CourseError({ error, reset }: { error: Error & { digest?
   return (
     <div className="my-6 flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
       <h3 className="mb-2 text-xl font-semibold text-zinc-900 dark:text-zinc-50">{t('somethingWentWrong')}</h3>
-      <p className="mb-6 max-w-md text-sm text-zinc-500 dark:text-zinc-400">
-        {t('courseLoadError')}
-      </p>
+      <p className="mb-6 max-w-md text-sm text-zinc-500 dark:text-zinc-400">{t('courseLoadError')}</p>
 
-      {error.digest && <p className="mb-4 font-mono text-xs text-zinc-400 dark:text-zinc-500">{t('ref', { digest: error.digest })}</p>}
+      {error.digest && (
+        <p className="mb-4 font-mono text-xs text-zinc-400 dark:text-zinc-500">{t('ref', { digest: error.digest })}</p>
+      )}
 
       <button
         onClick={reset}
@@ -51,4 +51,3 @@ export default function CourseError({ error, reset }: { error: Error & { digest?
     </div>
   );
 }
-

@@ -132,7 +132,9 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
             </div>
 
             <label className="grid gap-1.5">
-              <span className="text-muted-foreground text-xs font-semibold uppercase">{t('constraintsOnePerLine')}</span>
+              <span className="text-muted-foreground text-xs font-semibold uppercase">
+                {t('constraintsOnePerLine')}
+              </span>
               <Textarea
                 value={constraintsList.join('\n')}
                 onChange={(e) =>
@@ -160,7 +162,9 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                 >
                   {t(`difficulty.${(draft.difficulty ?? 'EASY').toLowerCase()}` as any)}
                 </Badge>
-                <Badge variant="outline">{draft.points ?? 100} {t('pointsShort')}</Badge>
+                <Badge variant="outline">
+                  {draft.points ?? 100} {t('pointsShort')}
+                </Badge>
                 {draft.time_limit && (
                   <Badge variant="secondary">
                     {t('timeLimit')}: {t('timeSecondsValue', { value: draft.time_limit })}

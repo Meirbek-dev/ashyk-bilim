@@ -32,7 +32,9 @@ export function SubmissionTimeline({ submissions, onRestoreSubmission }: Submiss
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold">{t('attemptNumber', { number: submissions.length - index })}</span>
+                    <span className="text-sm font-semibold">
+                      {t('attemptNumber', { number: submissions.length - index })}
+                    </span>
                     <Badge variant={submission.score === submission.max_score ? 'success' : 'secondary'}>
                       {submission.score !== undefined
                         ? `${Math.round(submission.score)}/${submission.max_score ?? 100}`
@@ -63,4 +65,3 @@ export function SubmissionTimeline({ submissions, onRestoreSubmission }: Submiss
     </ScrollArea>
   );
 }
-

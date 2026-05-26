@@ -916,8 +916,10 @@ async def search_courses(
             + func.coalesce(Course.tags, ""),
         )
         query = query.order_by(
-            func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
-            Course.id.desc()
+            func.ts_rank(
+                vector, func.plainto_tsquery("english", search_query.strip())
+            ).desc(),
+            Course.id.desc(),
         )
     else:
         query = _apply_lms_sort(query, current_user)
@@ -1547,8 +1549,10 @@ async def get_editable_courses(
             + func.coalesce(Course.tags, ""),
         )
         id_query = id_query.order_by(
-            func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
-            Course.id.desc()
+            func.ts_rank(
+                vector, func.plainto_tsquery("english", search_query.strip())
+            ).desc(),
+            Course.id.desc(),
         )
     else:
         id_query = _apply_course_sort(id_query, sort_by)
