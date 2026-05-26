@@ -30,7 +30,7 @@ async def create_pdf_block(
         activity_uuid,
         block_uuid,
         ["pdf"],
-        block_type,
+        "pdfBlock",
         str(course.course_uuid),
     )
 

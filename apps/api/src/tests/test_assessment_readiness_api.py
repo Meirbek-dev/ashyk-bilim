@@ -562,34 +562,35 @@ def test_validate_code_challenge_endpoint(
     )
 
     class FakeResult:
-        run_uuid = "run_123"
-        status = CodeRunStatus.ACCEPTED
-        passed = 1
-        total = 1
-        score = 100.0
-        compile_output = "compiled ok"
-        error_message = None
-        details = [
-            CodeExecutionCaseResult(
-                test_id="t1",
-                passed=True,
-                is_visible=True,
-                stdin="2",
-                expected="4",
-                actual="4",
-                stdout="4",
-                stderr=None,
-                compile_output=None,
-                message=None,
-                status_id=3,
-                status_description="Accepted",
-                judge0_token="token",
-                time=0.01,
-                memory=1024,
-                weight=1.0,
-                description="",
-            )
-        ]
+        def __init__(self):
+            self.run_uuid = "run_123"
+            self.status = CodeRunStatus.ACCEPTED
+            self.passed = 1
+            self.total = 1
+            self.score = 100.0
+            self.compile_output = "compiled ok"
+            self.error_message = None
+            self.details = [
+                CodeExecutionCaseResult(
+                    test_id="t1",
+                    passed=True,
+                    is_visible=True,
+                    stdin="2",
+                    expected="4",
+                    actual="4",
+                    stdout="4",
+                    stderr=None,
+                    compile_output=None,
+                    message=None,
+                    status_id=3,
+                    status_description="Accepted",
+                    judge0_token="token",
+                    time=0.01,
+                    memory=1024,
+                    weight=1.0,
+                    description="",
+                )
+            ]
 
     async def mock_run(*args, **kwargs):
         return FakeResult()

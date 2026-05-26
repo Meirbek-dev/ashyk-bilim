@@ -525,7 +525,7 @@ class SubmissionStats(SQLModelStrictBaseModel):
     late_count: int  # count of PENDING submissions where is_late=True
     avg_score: float | None
     pass_rate: float | None  # percentage of GRADED/PUBLISHED scoring ≥ 50
-    score_distribution: list[ScoreDistributionBucket] = []
+    score_distribution: list[ScoreDistributionBucket] = Field(default_factory=list)
 
 
 class ItemAnalytics(SQLModelStrictBaseModel):

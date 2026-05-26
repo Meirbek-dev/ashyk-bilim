@@ -120,11 +120,10 @@ async def api_feedback_stream(
             logger.warning("Redis unavailable for SSE connection check", exc_info=True)
             redis = None
 
-    if redis is None:
+    if redis is None and _local_conn_counts[user_id] >= _MAX_CONNECTIONS_PER_USER:
         # In-process fallback: enforce limit without Redis to prevent DoS.
-        if _local_conn_counts[user_id] >= _MAX_CONNECTIONS_PER_USER:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail={
                     "code": "SSE_CONNECTION_LIMIT",
                     "message": (

@@ -30,7 +30,7 @@ async def create_image_block(
         activity_uuid,
         block_uuid,
         ["jpg", "jpeg", "png", "gif", "webp", "avif"],
-        block_type,
+        "imageBlock",
         str(course.course_uuid),
     )
 
