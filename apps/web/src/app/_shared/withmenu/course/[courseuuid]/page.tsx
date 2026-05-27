@@ -1,6 +1,7 @@
 import { getCourseThumbnailMediaDirectory } from '@services/media/media';
 import { getCourseMetadata } from '@services/courses/courses';
 import { getSession } from '@/lib/auth/session';
+import { PLATFORM_BRAND_NAME } from '@/lib/constants';
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
@@ -24,7 +25,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
 
   // SEO
   return {
-    title: `${course_meta.name} - Ashyk Bilim`,
+    title: `${course_meta.name} - ${PLATFORM_BRAND_NAME}`,
     description: course_meta.description,
     keywords: course_meta.learnings,
     robots: {
@@ -38,7 +39,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       },
     },
     openGraph: {
-      title: `${course_meta.name} - Ashyk Bilim`,
+      title: `${course_meta.name} - ${PLATFORM_BRAND_NAME}`,
       description: course_meta.description || '',
       images: [
         {

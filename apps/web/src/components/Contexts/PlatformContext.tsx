@@ -1,6 +1,5 @@
 'use client';
 
-import PageLoading from '@components/Objects/Loaders/PageLoading';
 import type { Platform } from '@/types/platform';
 import { createContext, use } from 'react';
 import type { ReactNode } from 'react';
@@ -15,17 +14,15 @@ export const PlatformContextProvider = ({
   children: ReactNode;
   initialPlatform?: any;
 }) => {
-  const { data: platform, isPending: isPlatformLoading } = usePlatformConfig({
-    initialData: initialPlatform || undefined,
-    staleTime: initialPlatform ? 60_000 : 0,
-  });
-
-  // Only block on platform data — session state is independent of platform config.
-  if (!platform && isPlatformLoading) return <PageLoading />;
-
-  return <PlatformContext.Provider value={platform ?? null}>{children}</PlatformContext.Provider>;
+  return <PlatformContext.Provider value={initialPlatform ?? null}>{children}</PlatformContext.Provider>;
 };
 
 export function usePlatform(): Platform | null {
-  return use(PlatformContext);
+  const platform = use(PlatformContext);
+  const { data } = usePlatformConfig({
+    enabled: platform === null,
+    staleTime: 60_000,
+  });
+
+  return platform ?? data ?? null;
 }

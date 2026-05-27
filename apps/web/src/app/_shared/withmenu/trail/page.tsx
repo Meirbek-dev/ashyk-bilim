@@ -1,6 +1,7 @@
 import { getServerGamificationDashboard, getServerLeaderboard } from '@/services/gamification/server';
 import { GamificationProvider } from '@/components/Contexts/GamificationContext';
 import { getSession } from '@/lib/auth/session';
+import { PLATFORM_BRAND_NAME } from '@/lib/constants';
 import { getTranslations } from 'next-intl/server';
 import { connection } from 'next/server';
 import type { Metadata } from 'next';
@@ -15,7 +16,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   const t = await getTranslations('TrailPage');
 
   return {
-    title: `${t('title')} - Ashyk Bilim`,
+    title: `${t('title')} - ${PLATFORM_BRAND_NAME}`,
     description: t('metaDescription'),
   };
 }
