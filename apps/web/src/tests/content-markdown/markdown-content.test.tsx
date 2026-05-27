@@ -13,6 +13,11 @@ vi.mock('@/features/content-markdown/lib/shiki', () => ({
 // Mock KaTeX CSS dynamic import
 vi.mock('katex/dist/katex.min.css', () => ({}));
 
+// Mock next-intl
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key.split('.').at(-1) ?? key,
+}));
+
 describe('MarkdownContent', () => {
   // ── Basic rendering ─────────────────────────────────────────────────────────
 

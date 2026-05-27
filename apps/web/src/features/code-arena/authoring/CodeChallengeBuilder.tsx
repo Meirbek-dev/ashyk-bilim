@@ -59,7 +59,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
   const t = useTranslations('Activities.CodeChallenges');
   const [tab, setTab] = useState<BuilderTab>('problem');
   const [draft, setDraft] = useState<CodeChallengeSettings>(DEFAULT_SETTINGS);
-  const { data: settings, isLoading } = useCodeChallengeSettings(activityUuid);
+  const { data: settings, isLoading } = useCodeChallengeSettings<CodeChallengeSettings>(activityUuid);
   const { data: languages = [] } = useJudge0Languages();
   const saveSettings = useSaveCodeChallengeSettings(activityUuid);
 

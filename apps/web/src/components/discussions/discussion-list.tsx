@@ -128,7 +128,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
       }
 
       // Transform API response to match UI expectations
-      const newPost = transformDiscussionToPost(newDiscussion);
+      const newPost = transformDiscussionToPost(newDiscussion, anonymousLabel);
 
       setPosts([newPost, ...posts]);
 
