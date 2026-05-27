@@ -8,7 +8,6 @@ import {
   THEME_FONT_LINK_ATTRIBUTE,
 } from '@/lib/theme-fonts';
 import type { CSSProperties } from 'react';
-import { Suspense } from 'react';
 
 import '@styles/globals.css';
 
@@ -63,9 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="relative"
         suppressHydrationWarning
       >
-        <div className="relative isolate flex min-h-svh flex-col">
-          <Suspense fallback={null}>{children}</Suspense>
-        </div>
+        <div className="relative isolate flex min-h-svh flex-col">{children}</div>
       </body>
     </html>
   );

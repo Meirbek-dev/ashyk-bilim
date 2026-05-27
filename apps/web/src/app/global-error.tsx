@@ -2,7 +2,7 @@
 
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import * as React from 'react';
+import type { Viewport } from 'next';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -10,54 +10,23 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { reportClientError } from '@/services/telemetry/client';
+import { ERROR_MESSAGES, detectLocale, type SupportedLocale } from '@/lib/error-i18n';
 
-const MESSAGES = {
-  'ru-RU': {
-    title: 'Что-то пошло не так',
-    description: 'Произошла непредвиденная ошибка при загрузке страницы',
-    error: 'Ошибка',
-    errorId: 'Идентификатор ошибки:',
-    updateInfo:
-      'Ошибка может быть связана с обновлением приложения или временной недоступностью ресурсов. Полная перезагрузка страницы обычно решает проблему.',
-    devDetails: 'Детали ошибки (dev)',
-    retry: 'Повторить',
-    defaultError: 'Не удалось корректно обработать запрос. Попробуйте повторить попытку.',
-  },
-  'en-US': {
-    title: 'Something went wrong',
-    description: 'An unexpected error occurred while loading the page',
-    error: 'Error',
-    errorId: 'Error ID:',
-    updateInfo:
-      'The error might be related to an application update or temporary unavailability of resources. A full page reload usually solves the problem.',
-    devDetails: 'Error details (dev)',
-    retry: 'Retry',
-    defaultError: 'Failed to correctly process the request. Please try again.',
-  },
-  'kk-KZ': {
-    title: 'Бірдеңе дұрыс болмады',
-    description: 'Бетті жүктеу кезінде күтпеген қате орын алды',
-    error: 'Қате',
-    errorId: 'Қате идентификаторы:',
-    updateInfo:
-      'Қате қолданбаның жаңартылуына немесе ресурстардың уақытша қолжетімсіздігіне байланысты болуы мүмкін. Бетті толық қайта жүктеу әдетте мәселені шешеді.',
-    devDetails: 'Қате туралы мәліметтер (dev)',
-    retry: 'Қайталау',
-    defaultError: 'Сұранысты дұрыс өңдеу мүмкін болмады. Қайталап көріңіз.',
-  },
+/**
+ * Viewport export is required in global-error.tsx because this component
+ * replaces the entire root layout (including <head>) when a global error occurs.
+ * Without this, the viewport meta tag is missing on mobile during a crash.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
-
-type SupportedLocale = keyof typeof MESSAGES;
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const [locale, setLocale] = useState<SupportedLocale>('ru-RU');
 
   useEffect(() => {
-    const match = /NEXT_LOCALE=([^;]+)/.exec(document.cookie);
-    const cookieLocale = match?.[1] as SupportedLocale;
-    if (cookieLocale && MESSAGES[cookieLocale]) {
-      setLocale(cookieLocale);
-    }
+    setLocale(detectLocale());
 
     console.error('Global Error Caught:', {
       message: error.message,
@@ -81,7 +50,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
     });
   }, [error]);
 
-  const t = MESSAGES[locale];
+  const t = ERROR_MESSAGES[locale];
   const isChunkError = error?.name === 'ChunkLoadError' || /Failed to load chunk/i.test(error?.message || '');
 
   const handleRetry = () => {
@@ -109,7 +78,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
                 </div>
                 <div>
                   <CardTitle>{t.title}</CardTitle>
-                  <CardDescription>{t.description}</CardDescription>
+                  <CardDescription>{t.globalDescription}</CardDescription>
                 </div>
               </div>
             </CardHeader>

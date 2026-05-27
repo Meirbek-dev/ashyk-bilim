@@ -13,8 +13,9 @@ export default function MainShell({ children }: MainShellProps) {
   return (
     <GamificationProvider>
       <NavBar />
-      <div style={{ height: NAVBAR_HEIGHT }} />
-      {children}
+      {/* Content area offset via CSS — resilient to viewport/notch changes */}
+      <div style={{ paddingTop: NAVBAR_HEIGHT }}>{children}</div>
     </GamificationProvider>
   );
 }
+

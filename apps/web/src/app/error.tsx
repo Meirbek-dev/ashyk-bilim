@@ -3,38 +3,13 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { reportClientError } from '@/services/telemetry/client';
-
-const MESSAGES = {
-  'ru-RU': {
-    title: 'Что-то пошло не так',
-    description:
-      'Не удалось отобразить страницу. Вы можете повторить попытку или перезагрузить страницу, если ошибка повторится.',
-    retry: 'Повторить',
-  },
-  'en-US': {
-    title: 'Something went wrong',
-    description: 'The page failed to render. You can retry, or reload if the error keeps returning.',
-    retry: 'Retry',
-  },
-  'kk-KZ': {
-    title: 'Бірдеңе дұрыс болмады',
-    description:
-      'Бетті көрсету мүмкін болмады. Әрекетті қайталауға немесе қате қайталана берсе, бетті қайта жүктеуге болады.',
-    retry: 'Қайталау',
-  },
-};
-
-type SupportedLocale = keyof typeof MESSAGES;
+import { ERROR_MESSAGES, detectLocale, type SupportedLocale } from '@/lib/error-i18n';
 
 export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const [locale, setLocale] = useState<SupportedLocale>('ru-RU');
 
   useEffect(() => {
-    const match = /NEXT_LOCALE=([^;]+)/.exec(document.cookie);
-    const cookieLocale = match?.[1] as SupportedLocale;
-    if (cookieLocale && MESSAGES[cookieLocale]) {
-      setLocale(cookieLocale);
-    }
+    setLocale(detectLocale());
 
     void reportClientError({
       digest: error.digest,
@@ -48,7 +23,7 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
     }).catch(() => undefined);
   }, [error]);
 
-  const t = MESSAGES[locale];
+  const t = ERROR_MESSAGES[locale];
 
   return (
     <div className="flex min-h-svh items-center justify-center px-4">

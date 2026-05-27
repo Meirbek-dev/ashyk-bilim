@@ -16,7 +16,7 @@ interface RootProvidersProps {
   initialThemeMode?: ThemeMode;
 }
 
-function ThemedRootChrome({ children }: { children: ReactNode }) {
+function TopLoaderWithTheme({ children }: { children: ReactNode }) {
   const { theme: currentTheme } = useTheme();
 
   const topLoaderProps = {
@@ -49,7 +49,7 @@ export default function RootProviders({ children, initialSession, initialThemeMo
           initialMode={initialThemeMode}
         >
           <ValibotProvider>
-            <ThemedRootChrome>{children}</ThemedRootChrome>
+            <TopLoaderWithTheme>{children}</TopLoaderWithTheme>
           </ValibotProvider>
         </ThemeProvider>
       </SessionProvider>
