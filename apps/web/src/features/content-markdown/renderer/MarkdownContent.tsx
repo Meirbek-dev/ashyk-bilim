@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { cn } from '@/lib/utils';
 import type { MarkdownRenderMode } from '../presets/presets';
@@ -61,6 +62,7 @@ export function MarkdownContent({
   showHeadingAnchors,
   onHeadingAnchorClick,
 }: MarkdownContentProps) {
+  const t = useTranslations('Features.ContentMarkdown');
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldShowAnchors = showHeadingAnchors ?? MODE_WITH_ANCHORS.has(mode);
   const hasMath = MODE_WITH_MATH.has(mode) && /\$/.test(content);
@@ -223,7 +225,7 @@ export function MarkdownContent({
               return (
                 <span className="text-muted-foreground inline-flex items-center gap-1 rounded border border-dashed px-2 py-1 text-xs">
                   <span aria-hidden="true">🖼</span>
-                  <span>{alt || 'Image'}</span>
+                  <span>{alt || t('imageLabel')}</span>
                 </span>
               );
             }

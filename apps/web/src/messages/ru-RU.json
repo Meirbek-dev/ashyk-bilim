@@ -161,6 +161,7 @@
       "enterCustomInput": "Введите тестовые данные здесь...",
       "expectedOutput": "Ожидаемый вывод",
       "expectedOutputPlaceholder": "Введите ожидаемый вывод...",
+      "exampleTestCaseLabel": "напр., Проверка пустого списка",
       "failed": "Провален",
       "form": {
         "addHint": "Добавить подсказку",
@@ -226,6 +227,7 @@
       "hiddenTestCases": "Скрытые тестовые сценарии",
       "hiddenTestCasesDescription": "Тесты, используемые только при финальной отправке",
       "history": "История",
+      "languageIdFallback": "Язык {id}",
       "input": "Ввод",
       "inputPlaceholder": "Введите тестовые данные...",
       "latestSubmission": "Последняя отправка",
@@ -291,6 +293,7 @@
       },
       "submissionFailed": "Ошибка отправки",
       "submissionQueued": "Решение добавлено в очередь на проверку",
+      "submissionHistoryItem": "Попытка {attempt} · {language}",
       "submit": "Отправить",
       "testCase": "Тестовый случай",
       "testCases": "Тестовые сценарии",
@@ -1313,7 +1316,9 @@
     "AiChat": {
       "placeholder": "Спросите Ashyk Ai…",
       "sendMessage": "Отправить сообщение",
-      "stopGeneration": "Остановить генерацию"
+      "stopGeneration": "Остановить генерацию",
+      "copyResponse": "Копировать ответ",
+      "copied": "Скопировано"
     },
     "Spinner": {
       "loading": "Загрузка"
@@ -2804,6 +2809,7 @@
     "confirmDeleteReply": "Вы уверены, что хотите удалить этот ответ?",
     "content": "Содержание",
     "contributeToActivity": "Внести вклад в учебная задача",
+      "anonymous": "Аноним",
     "contributors": "Участники",
     "courseContent": "Содержание курса",
     "courseDiscussions": "Обсуждения курса",
@@ -5227,11 +5233,13 @@
           "ariaLabelLogo": "Выберите логотип для загрузки",
           "ariaLabelPreview": "Выберите предварительное изображение для загрузки",
           "ariaLabelThumbnail": "Выберите миниатюру для загрузки",
+          "organizationLogoAlt": "Логотип организации",
           "selectLogoFile": "Выберите файл логотипа",
           "selectPreviewFile": "Выберите предварительный просмотр файла",
           "selectThumbnailFile": "Выберите файл миниатюры",
           "uploadNewLogo": "Загрузить новый логотип",
           "uploadNewThumbnail": "Загрузить новый эскиз",
+          "platformThumbnailAlt": "Миниатюра платформы",
           "uploadingLogo": "Загрузка...",
           "uploadingThumbnail": "Загрузка..."
         },
@@ -7528,6 +7536,9 @@
     }
   },
   "Features": {
+    "ContentMarkdown": {
+      "imageLabel": "Изображение"
+    },
     "Grading": {
       "Gradebook": {
         "title": "Прогресс курса",
@@ -8205,6 +8216,7 @@
           "matching": {
             "left": "Левая часть",
             "right": "Правая часть",
+            "matchLabel": "Соответствие: {term}",
             "addPair": "Добавить пару"
           }
         },
@@ -8303,6 +8315,7 @@
           "termPlaceholder": "Термин {number}",
           "matchPlaceholder": "Соответствие {number}",
           "selectMatch": "Выберите соответствие",
+          "matchForLabel": "Соответствие для: {term}",
           "removePair": "Удалить пару",
           "addPair": "Добавить пару"
         },
@@ -9454,6 +9467,8 @@
     "reviewUnavailable": "Просмотр недоступен.",
     "fileSubmissionReview": "Проверка файлов",
     "refresh": "Обновить",
+    "openButton": "Открыть",
+    "downloadButton": "Скачать",
     "noSubmissions": "Нет отправок, соответствующих этому фильтру.",
     "attemptInfo": "Попытка {attemptNumber} · {count, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}",
     "submittedAt": "Отправлено {date}",

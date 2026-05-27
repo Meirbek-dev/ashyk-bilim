@@ -155,7 +155,7 @@ export function MatchingItemAttempt({
                 value={selected}
                 disabled={disabled}
                 onChange={(e) => updateMatch(pair.left, e.target.value)}
-                aria-label={`Match for: ${pair.left}`}
+                aria-label={t('matchForLabel', { term: pair.left })}
                 className={cn('sm:max-w-xs', !selected && 'text-muted-foreground')}
               >
                 <NativeSelectOption

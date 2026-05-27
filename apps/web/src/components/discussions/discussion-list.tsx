@@ -23,7 +23,7 @@ interface DiscussionListProps {
 }
 
 // Helper function to transform API response to UI format
-const transformDiscussionToPost = (discussion: any) => {
+const transformDiscussionToPost = (discussion: any, anonymousLabel: string) => {
   // Handle date formatting properly
   const formatDate = (dateStr: string) => {
     if (!dateStr) return new Date().toISOString();
@@ -43,7 +43,7 @@ const transformDiscussionToPost = (discussion: any) => {
   return {
     id: discussion.id?.toString() || '',
     discussion_uuid: discussion.discussion_uuid || '',
-    username: discussion.user?.username || 'Anonymous',
+    username: discussion.user?.username || anonymousLabel,
     firstName: discussion.user?.first_name || '',
     lastName: discussion.user?.last_name || '',
     postMessage: discussion.content || '',
@@ -58,7 +58,7 @@ const transformDiscussionToPost = (discussion: any) => {
       discussion.replies?.map((reply: any) => ({
         id: reply.id?.toString() || '',
         discussion_uuid: reply.discussion_uuid || '',
-        username: reply.user?.username || 'Anonymous',
+        username: reply.user?.username || anonymousLabel,
         firstName: reply.user?.first_name || '',
         lastName: reply.user?.last_name || '',
         replyMessage: reply.content || '',
@@ -75,10 +75,11 @@ const transformDiscussionToPost = (discussion: any) => {
 
 export default function DiscussionList({ initialPosts, currentUser, courseUuid, onMutate }: DiscussionListProps) {
   const t = useTranslations('CoursePage');
+  const anonymousLabel = t('anonymous');
   // Use lazy initialization to transform initial posts
   const [posts, setPosts] = useState<any[]>(() => {
     if (Array.isArray(initialPosts)) {
-      return initialPosts.map(transformDiscussionToPost);
+      return initialPosts.map((discussion) => transformDiscussionToPost(discussion, anonymousLabel));
     }
     return [];
   });
@@ -87,7 +88,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
   // Update posts when initialPosts changes
   useEffect(() => {
     if (Array.isArray(initialPosts)) {
-      const transformedPosts = initialPosts.map(transformDiscussionToPost);
+      const transformedPosts = initialPosts.map((discussion) => transformDiscussionToPost(discussion, anonymousLabel));
       // Schedule update on next animation frame to avoid synchronous update in render
       if (postsRafRef.current) cancelAnimationFrame(postsRafRef.current);
       postsRafRef.current = requestAnimationFrame(() => setPosts(transformedPosts));
@@ -101,7 +102,7 @@ export default function DiscussionList({ initialPosts, currentUser, courseUuid, 
         if (postsRafRef.current) cancelAnimationFrame(postsRafRef.current);
       };
     }
-  }, [initialPosts]);
+  }, [anonymousLabel, initialPosts]);
 
   const handleSubmitDiscussion = async (content: string) => {
     try {

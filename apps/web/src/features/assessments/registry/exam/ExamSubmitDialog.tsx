@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 interface UnansweredQuestion {
   index: number;
@@ -57,6 +58,7 @@ export default function ExamSubmitDialog({
   onSubmit,
   onNavigateTo,
 }: ExamSubmitDialogProps) {
+  const tQuestion = useTranslations('Features.Assessments.Shared.PostSubmissionFeedback');
   const unansweredCount = totalQuestions - answeredCount;
   const hasWarning = unansweredCount > 0 || flaggedCount > 0;
 
@@ -118,7 +120,9 @@ export default function ExamSubmitDialog({
                   <span className="bg-muted-foreground/20 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold">
                     {q.index + 1}
                   </span>
-                  <span className="min-w-0 truncate text-xs">{q.question_text || `Question ${q.index + 1}`}</span>
+                  <span className="min-w-0 truncate text-xs">
+                    {q.question_text || tQuestion('questionNumber', { id: q.index + 1 })}
+                  </span>
                 </button>
               ))}
             </div>

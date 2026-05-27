@@ -4,6 +4,7 @@ import { AiMarkdownRenderer } from './AiMarkdownRenderer';
 import UserAvatar from '@components/Objects/UserAvatar';
 import { useEffect, useRef, useState } from 'react';
 import { Check, Copy } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 interface AiMessageBubbleProps {
@@ -19,6 +20,7 @@ interface AiMessageBubbleProps {
  * - User: right-aligned, indigo tint, plain text (user input is never markdown).
  */
 export function AiMessageBubble({ role, content, isStreaming = false }: AiMessageBubbleProps) {
+  const t = useTranslations('AiChat');
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -63,7 +65,7 @@ export function AiMessageBubble({ role, content, isStreaming = false }: AiMessag
             {!isStreaming && content && (
               <button
                 onClick={handleCopy}
-                aria-label={copied ? 'Copied' : 'Copy response'}
+                aria-label={copied ? t('copied') : t('copyResponse')}
                 className={cn(
                   'absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-md border border-zinc-700',
                   'bg-zinc-800 text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300',

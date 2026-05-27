@@ -336,7 +336,7 @@ export function CodeChallengeEditor({
   // Get language name from ID
   const getLanguageName = (languageId: number): string => {
     const lang = judge0Languages.find((l) => l.id === languageId);
-    return lang?.name ?? `Language ${languageId}`;
+    return lang?.name ?? t('languageIdFallback', { id: languageId });
   };
 
   // Get visible test cases - use visible_tests from settings
@@ -619,7 +619,10 @@ export function CodeChallengeEditor({
                           title={t('history')}
                           items={submissions.map((submission: Submission, index: number) => ({
                             id: submission.submission_uuid ?? submission.uuid ?? index,
-                            label: `Attempt ${submissions.length - index} · ${getLanguageName(submission.language_id)}`,
+                            label: t('submissionHistoryItem', {
+                              attempt: submissions.length - index,
+                              language: getLanguageName(submission.language_id),
+                            }),
                             submittedAt: submission.created_at,
                             status: submission.submission_status ?? codeRunToSubmissionStatus(submission.status),
                             scoreLabel:

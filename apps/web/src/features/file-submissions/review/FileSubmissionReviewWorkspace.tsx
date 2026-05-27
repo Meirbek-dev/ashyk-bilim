@@ -340,7 +340,7 @@ export default function FileSubmissionReviewWorkspace({
                             onClick={() => openFile(file.attempt_file_uuid)}
                           >
                             {previewable ? <ExternalLink className="size-4" /> : <Download className="size-4" />}
-                            {previewable ? 'Open' : 'Download'}
+                            {previewable ? t('openButton') : t('downloadButton')}
                           </Button>
                         </div>
                       </div>

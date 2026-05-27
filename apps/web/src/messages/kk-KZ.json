@@ -161,6 +161,7 @@
       "enterCustomInput": "Тест деректерін енгізіңіз...",
       "expectedOutput": "Күтілетін шығару",
       "expectedOutputPlaceholder": "Күтілетін нәтижені енгізіңіз...",
+      "exampleTestCaseLabel": "мыс., Бос тізімді тексеру",
       "failed": "Өтпеді",
       "form": {
         "addHint": "Кеңес қосу",
@@ -225,6 +226,7 @@
       "hiddenTestCases": "Жасырын сынақ сценарийлері",
       "hiddenTestCasesDescription": "Тек соңғы тапсыру үшін қолданылатын сынақтар",
       "history": "Тарих",
+      "languageIdFallback": "Тіл {id}",
       "input": "Енгізу",
       "inputPlaceholder": "Сынақ деректерін енгізіңіз...",
       "latestSubmission": "Соңғы жөнелтілім",
@@ -290,6 +292,7 @@
       },
       "submissionFailed": "Жіберу қатесі",
       "submissionQueued": "Шешім тексеруге қойылды",
+      "submissionHistoryItem": "{attempt}-әрекет · {language}",
       "submit": "Жіберу",
       "testCase": "Тест-кейс",
       "testCases": "Тест-кейстер",
@@ -1312,7 +1315,9 @@
     "AiChat": {
       "placeholder": "Ashyk Ai-дан сұраңыз…",
       "sendMessage": "Хабар жіберу",
-      "stopGeneration": "Генерацияны тоқтату"
+      "stopGeneration": "Генерацияны тоқтату",
+      "copyResponse": "Жауапты көшіру",
+      "copied": "Көшірілді"
     },
     "Spinner": {
       "loading": "Жүктелуде"
@@ -2803,6 +2808,7 @@
     "confirmDeleteReply": "Бұл жауапты жойғыңыз келетініне сенімдісіз бе?",
     "content": "Мазмұн",
     "contributeToActivity": "Белсенділікке үлес қосу",
+      "anonymous": "Аноним",
     "contributors": "Қатысушылар",
     "courseContent": "Курс мазмұны",
     "courseDiscussions": "Курс талқылауы",
@@ -5226,11 +5232,13 @@
           "ariaLabelLogo": "Жүктеу үшін ұйымның логотипін таңдаңыз",
           "ariaLabelPreview": "Жүктеу үшін алдын ала қарау кескінін таңдаңыз",
           "ariaLabelThumbnail": "Жүктеу үшін Ұйымның нобайын таңдаңыз",
+          "organizationLogoAlt": "Ұйым логотипі",
           "selectLogoFile": "Логотип файлын таңдаңыз",
           "selectPreviewFile": "Алдын-ала қарау файлын таңдаңыз",
           "selectThumbnailFile": "Thumbnail файлын таңдаңыз",
           "uploadNewLogo": "Жаңа логотип жүктеу",
           "uploadNewThumbnail": "Жаңа нобай жүктеу",
+          "platformThumbnailAlt": "Платформа нобайы",
           "uploadingLogo": "Жүктелуде...",
           "uploadingThumbnail": "Жүктелуде..."
         },
@@ -7527,6 +7535,9 @@
     }
   },
   "Features": {
+    "ContentMarkdown": {
+      "imageLabel": "Сурет"
+    },
     "Grading": {
       "Gradebook": {
         "title": "Курс прогресі",
@@ -8204,6 +8215,7 @@
           "matching": {
             "left": "Сол",
             "right": "Оң",
+            "matchLabel": "Сәйкестік: {term}",
             "addPair": "Жұп қосу"
           }
         },
@@ -8217,6 +8229,7 @@
           "rightLabel": "Оң (сәйкес)",
           "termPlaceholder": "{number}-термин",
           "matchPlaceholder": "{number}-сәйкес",
+          "matchForLabel": "{term} үшін сәйкестік",
           "removePair": "Жұпты жою",
           "addPair": "Жұп қосу"
         },
@@ -9610,6 +9623,8 @@
     "reviewUnavailable": "Шолу қолжетімді емес.",
     "fileSubmissionReview": "Файлдық тапсырмаларды тексеру",
     "refresh": "Жаңарту",
+    "openButton": "Ашу",
+    "downloadButton": "Жүктеп алу",
     "noSubmissions": "Бұл көрініске сәйкес келетін тапсырыстар жоқ.",
     "attemptInfo": "{attemptNumber}-әрекет · {count, plural, one {# файл} other {# файл}}",
     "submittedAt": "Тапсырылды: {date}",

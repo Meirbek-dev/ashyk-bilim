@@ -525,7 +525,7 @@ export default function EditImages() {
                         ? localLogo || getLogoMediaDirectory(platform?.logo_image)
                         : '/empty_thumbnail.avif'
                     }
-                    alt="Лого организации"
+                    alt={t('Buttons.organizationLogoAlt')}
                     fill
                     className={cn(
                       'rounded-lg bg-background object-contain shadow-md',
@@ -593,7 +593,7 @@ export default function EditImages() {
                         ? localThumbnail || getPlatformThumbnailImage(platform.thumbnail_image)
                         : '/empty_thumbnail.avif'
                     }
-                    alt="Platform thumbnail"
+                    alt={t('Buttons.platformThumbnailAlt')}
                     fill
                     className={cn(
                       'rounded-lg bg-white object-contain shadow-md',

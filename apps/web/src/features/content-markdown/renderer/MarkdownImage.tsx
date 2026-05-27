@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -14,6 +15,7 @@ interface MarkdownImageProps {
  * Shows a placeholder badge when src is absent or load fails.
  */
 export function MarkdownImage({ src, alt, title, className }: MarkdownImageProps) {
+  const t = useTranslations('Features.ContentMarkdown');
   const [failed, setFailed] = useState(false);
 
   if (!src || failed) {
@@ -26,7 +28,7 @@ export function MarkdownImage({ src, alt, title, className }: MarkdownImageProps
         title={title}
       >
         <span aria-hidden="true">🖼</span>
-        <span>{alt || 'Image'}</span>
+          <span>{alt || t('imageLabel')}</span>
       </span>
     );
   }

@@ -354,7 +354,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                             className="text-muted-foreground hover:bg-muted/30 h-8 w-full truncate rounded-md border px-2 text-left text-sm"
                             onClick={() => setSelectedCaseId(test.id)}
                           >
-                            {test.description ? extractMarkdownSummary(test.description, 80) : 'e.g. Empty list check'}
+                            {test.description ? extractMarkdownSummary(test.description, 80) : t('exampleTestCaseLabel')}
                           </button>
                         </div>
                       </TableCell>

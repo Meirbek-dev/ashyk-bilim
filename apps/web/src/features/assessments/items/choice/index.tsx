@@ -90,7 +90,7 @@ export function ChoiceItemAttempt({
               value={current[pair.left] ?? ''}
               disabled={disabled}
               onChange={(event) => onAnswerChange({ ...current, [pair.left]: event.target.value })}
-              aria-label={`Match ${pair.left}`}
+              aria-label={t('matching.matchLabel', { term: pair.left })}
             >
               <NativeSelectOption
                 value=""
