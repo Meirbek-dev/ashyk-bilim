@@ -9,7 +9,6 @@ import {
 } from '@/lib/theme-fonts';
 import type { CSSProperties } from 'react';
 import { Suspense } from 'react';
-import { Spinner } from '@/components/ui/spinner';
 
 import '@styles/globals.css';
 
@@ -74,8 +73,33 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
            */}
           <Suspense
             fallback={
+              // Raw inline fallback — cannot use <Spinner> here because it calls
+              // useTranslations(), which requires NextIntlClientProvider.
+              // That provider only mounts inside LocaleLayout (our Suspense child),
+              // so the fallback must be fully self-contained with no i18n dependency.
               <main className="flex min-h-svh items-center justify-center">
-                <Spinner className="size-8" />
+                <svg
+                  aria-label="Loading"
+                  className="size-8 animate-spin text-primary"
+                  fill="none"
+                  role="status"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    fill="currentColor"
+                  />
+                </svg>
               </main>
             }
           >
