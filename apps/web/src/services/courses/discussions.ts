@@ -3,6 +3,31 @@
 import { errorHandling } from '@/lib/api-client';
 import { apiFetch } from '@/lib/api-client';
 import { tags } from '@/lib/cacheTags';
+import { getServerAPIUrl } from '@services/config/config';
+
+export async function getCourseDiscussions(
+  course_uuid: string,
+  includeReplies = true,
+  limit = 50,
+  offset = 0,
+): Promise<Discussion[]> {
+  const normalizedCourseUuid = course_uuid.startsWith('course_') ? course_uuid : `course_${course_uuid}`;
+  const result = await apiFetch(
+    `courses/${normalizedCourseUuid}/discussions?include_replies=${includeReplies}&limit=${limit}&offset=${offset}`,
+    {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      baseUrl: getServerAPIUrl(),
+      timeoutMs: 10_000,
+    },
+  );
+  if (!result.ok) return [];
+  try {
+    return (await result.json()) as Discussion[];
+  } catch {
+    return [];
+  }
+}
 
 /*
  This file includes POST, PUT, DELETE requests for course discussions

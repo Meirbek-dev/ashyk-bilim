@@ -24,12 +24,10 @@ import CourseBreadcrumbs from '@components/Pages/Courses/CourseBreadcrumbs';
 import { getCourseThumbnailMediaDirectory } from '@services/media/media';
 import { useSession } from '@/hooks/useSession';
 import PageLoading from '@components/Objects/Loaders/PageLoading';
-import { useQueryClient } from '@tanstack/react-query';
-import { useCourseDiscussions } from '@/features/courses/hooks/useCourseQueries';
-import { useTrailCurrent } from '@/features/trail/hooks/useTrail';
 // Import the new discussions component
 import CourseDiscussions from '@/components/discussions';
 import { getAbsoluteUrl } from '@services/config/config';
+import { useRouter } from 'next/navigation';
 // Import UI components
 import { Card, CardContent } from '@/components/ui/card';
 import { useEffect, useMemo, useState } from 'react';
@@ -39,7 +37,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
 import Link from '@components/ui/AppLink';
-import { queryKeys } from '@/lib/react-query/queryKeys';
 import { cn } from '@/lib/utils';
 import { MarkdownContent } from '@/features/content-markdown';
 
@@ -49,23 +46,13 @@ const CourseClient = (props: any) => {
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({});
   const [activeThumbnailType, setActiveThumbnailType] = useState<'image' | 'video'>('image');
 
-  const { courseuuid } = props;
-  const { course } = props;
+  const { courseuuid, course, initialDiscussions = [], trailData } = props;
   const isMobile = useIsMobile();
-  const { user: currentUser, isAuthenticated } = useSession();
-  const queryClient = useQueryClient();
-  const discussionsQueryKey = queryKeys.discussions.list(course?.course_uuid ?? 'disabled', true, 50, 0);
-
-  const { data: discussionPosts = [] } = useCourseDiscussions(course?.course_uuid, {
-    includeReplies: true,
-    enabled: isAuthenticated,
-  });
-
-  const { data: trailData } = useTrailCurrent({ enabled: isAuthenticated });
+  const { user: currentUser } = useSession();
+  const router = useRouter();
 
   const mutateDiscussions = () => {
-    if (!course?.course_uuid) return;
-    void queryClient.invalidateQueries({ queryKey: discussionsQueryKey });
+    router.refresh();
   };
 
   // Normalizes various formats of `course.learnings` into an array that the UI can render
@@ -509,7 +496,7 @@ const CourseClient = (props: any) => {
 
                 {/* Discussions */}
                 <CourseDiscussions
-                  initialPosts={discussionPosts}
+                  initialPosts={initialDiscussions}
                   currentUser={currentUser}
                   courseUuid={course?.course_uuid}
                   onMutate={mutateDiscussions}

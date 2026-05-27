@@ -4,9 +4,7 @@ import { getSession } from '@/lib/auth/session';
 import { jetBrainsMono } from '@/lib/fonts';
 import type { Metadata } from 'next';
 import { cache } from 'react';
-import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 import { getStudentActivityRuntime } from '@/features/student-activity/api/runtime';
-import { queryKeys } from '@/lib/react-query/queryKeys';
 
 import ActivityClient from '@/app/_shared/withmenu/course/[courseuuid]/activity/[activityid]/activity';
 
@@ -63,22 +61,15 @@ export default async function PlatformActivityPage(props: {
     isCourseEnd ? Promise.resolve(null) : getStudentActivityRuntime(courseuuid, activityid),
   ]);
 
-  const queryClient = new QueryClient();
-  if (runtime) {
-    queryClient.setQueryData(queryKeys.studentActivity.runtime(courseuuid, activityid), runtime);
-  }
-
   return (
     <div className={jetBrainsMono.variable}>
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <ActivityClient
-          activityid={activityid}
-          courseuuid={courseuuid}
-          activity={activity}
-          course={course_meta}
-          runtime={runtime}
-        />
-      </HydrationBoundary>
+      <ActivityClient
+        activityid={activityid}
+        courseuuid={courseuuid}
+        activity={activity}
+        course={course_meta}
+        runtime={runtime}
+      />
     </div>
   );
 }

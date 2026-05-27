@@ -1,11 +1,11 @@
 import { getCourseThumbnailMediaDirectory } from '@services/media/media';
 import { getCourseMetadata } from '@services/courses/courses';
+import { getCourseDiscussions } from '@services/courses/discussions';
+import { getCurrentTrail } from '@services/courses/activity';
 import { getSession } from '@/lib/auth/session';
 import { PLATFORM_BRAND_NAME } from '@/lib/constants';
 import { cache } from 'react';
 import type { Metadata } from 'next';
-import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
-import { courseDiscussionsQueryOptions, trailCurrentQueryOptions } from '@/features/courses/queries/course.query';
 
 import CourseClient from '@/app/_shared/withmenu/course/[courseuuid]/course';
 
@@ -59,23 +59,19 @@ export default async function PlatformCoursePage(props: { params: Promise<{ cour
 
   const [course_meta, session] = await Promise.all([fetchCourseMetadata(courseuuid), getSession()]);
 
-  const queryClient = new QueryClient();
-
-  if (session?.user && course_meta?.course_uuid) {
-    await Promise.all([
-      queryClient.prefetchQuery(
-        courseDiscussionsQueryOptions(course_meta.course_uuid, { includeReplies: true, limit: 50, offset: 0 }),
-      ),
-      queryClient.prefetchQuery(trailCurrentQueryOptions()),
-    ]);
-  }
+  const [discussions, trailData] = await Promise.all([
+    session?.user && course_meta?.course_uuid
+      ? getCourseDiscussions(course_meta.course_uuid, true, 50, 0)
+      : Promise.resolve([]),
+    session?.user ? getCurrentTrail() : Promise.resolve(null),
+  ]);
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <CourseClient
-        courseuuid={courseuuid}
-        course={course_meta}
-      />
-    </HydrationBoundary>
+    <CourseClient
+      courseuuid={courseuuid}
+      course={course_meta}
+      initialDiscussions={discussions}
+      trailData={trailData}
+    />
   );
 }

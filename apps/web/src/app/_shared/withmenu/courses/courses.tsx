@@ -1,17 +1,16 @@
-'use client';
-
 import TypeOfContentTitle from '@/components/Objects/Elements/Titles/TypeOfContentTitle';
 import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrapper';
-import { Actions, Resources, Scopes } from '@/components/Security';
-import { useSession } from '@/hooks/useSession';
 import CreateCourseTrigger from '@/components/Landings/CreateCourseTrigger';
 import CourseGridClient from '@components/Landings/CourseGridClient';
-
 import { useTranslations } from 'next-intl';
 
 interface CourseProps {
   courses: any[];
   totalCourses: number;
+  trailData: any;
+  currentPage: number;
+  isAuthenticated: boolean;
+  canManagePlatform: boolean;
 }
 
 const EmptyStateMessage = ({ canManagePlatform, t, createCourseTrigger }: any) => (
@@ -43,12 +42,9 @@ const EmptyStateMessage = ({ canManagePlatform, t, createCourseTrigger }: any) =
 
 const Courses = (props: CourseProps) => {
   const t = useTranslations('CoursesPage');
-  const { courses, totalCourses } = props;
-  const { can } = useSession();
-  const canManagePlatform = can(Resources.PLATFORM, Actions.MANAGE, Scopes.OWN);
+  const { courses, totalCourses, trailData, currentPage, isAuthenticated, canManagePlatform } = props;
 
   const createCourseTrigger = <CreateCourseTrigger />;
-
   const hasCourses = courses.length > 0 || totalCourses > 0;
 
   return (
@@ -73,6 +69,9 @@ const Courses = (props: CourseProps) => {
             <CourseGridClient
               initialCourses={courses}
               initialTotal={totalCourses}
+              trailData={trailData}
+              currentPage={currentPage}
+              isAuthenticated={isAuthenticated}
             />
           )}
         </div>

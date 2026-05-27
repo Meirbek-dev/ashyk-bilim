@@ -22,6 +22,8 @@ interface LandingClassicProps {
   totalCourses: number;
   collections: any[];
   gamificationData?: DashboardData | null;
+  trailData: any;
+  isAuthenticated: boolean;
 }
 
 interface EmptyStateProps {
@@ -99,7 +101,14 @@ const SectionHeader = ({ title, type, action }: { title: string; type: 'cou' | '
 );
 
 // Main Component
-const LandingClassic = async ({ courses, totalCourses, collections, gamificationData }: LandingClassicProps) => {
+const LandingClassic = async ({
+  courses,
+  totalCourses,
+  collections,
+  gamificationData,
+  trailData,
+  isAuthenticated,
+}: LandingClassicProps) => {
   const t = await getTranslations('HomePage');
   const gamificationProfile = gamificationData?.profile;
   const userRank = gamificationData?.user_rank;
@@ -136,6 +145,9 @@ const LandingClassic = async ({ courses, totalCourses, collections, gamification
                   <CourseGridClient
                     initialCourses={courses}
                     initialTotal={totalCourses}
+                    trailData={trailData}
+                    currentPage={1}
+                    isAuthenticated={isAuthenticated}
                   />
                 ) : (
                   <EmptyCoursesState t={t} />

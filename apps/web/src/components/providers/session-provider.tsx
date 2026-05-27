@@ -168,7 +168,14 @@ export function useSessionContext(): SessionContextValue {
   const context = use(SessionContext);
 
   if (context === undefined) {
-    throw new Error('useSessionContext must be used within a SessionProvider');
+    return {
+      status: 'unauthenticated',
+      isAuthenticated: false,
+      session: null,
+      user: null,
+      can: () => false,
+      refresh: () => {},
+    };
   }
 
   return context;
