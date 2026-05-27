@@ -9,8 +9,8 @@ import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeePlatform, canSeeUser
 import { requireSession } from '@/lib/auth/session';
 import { sessionCan } from '@/lib/auth/permissions';
 
-import platformLogoFull from '@public/platform_logo_full.svg';
-import platformLogoLightFull from '@public/platform_logo_light_full.svg';
+import platformLogoFull from '@public/app_logo_full.svg';
+import platformLogoLightFull from '@public/app_logo_light_full.svg';
 import type { Action, Resource, Scope } from '@/types/permissions';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

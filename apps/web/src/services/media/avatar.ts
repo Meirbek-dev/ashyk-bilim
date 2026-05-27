@@ -10,7 +10,7 @@ const GOOGLE_AVATAR_HOSTS = new Set([
 const AVATAR_CONTENT_PREFIX = 'content/users/';
 
 export const DEFAULT_AVATAR_PATH = '/empty_avatar.avif';
-export const AI_AVATAR_PATH = '/platform_logo_light.svg';
+export const AI_AVATAR_PATH = '/app_logo_light.svg';
 
 export interface AvatarUser {
   avatar_image?: string | null;

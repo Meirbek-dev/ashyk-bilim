@@ -9,7 +9,7 @@ from src.services.platform import get_platform
 from src.services.utils.upload_content import upload_file
 
 
-async def upload_platform_logo(logo_file: UploadFile) -> str:
+async def upload_app_logo(logo_file: UploadFile) -> str:
     return await upload_file(
         file=logo_file,
         directory="logos",
@@ -80,7 +80,7 @@ def update_platform(
     return PlatformRead.model_validate(platform_record)
 
 
-async def update_platform_logo(
+async def update_app_logo(
     request: Request,
     logo_file: UploadFile,
     current_user: PublicUser | AnonymousUser,
@@ -88,7 +88,7 @@ async def update_platform_logo(
 ):
     platform_record = get_platform(db_session)
 
-    filename = await upload_platform_logo(logo_file)
+    filename = await upload_app_logo(logo_file)
     platform_record.logo_image = filename
     platform_record.update_date = str(datetime.now())
 

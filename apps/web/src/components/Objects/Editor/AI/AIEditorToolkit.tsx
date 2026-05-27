@@ -12,8 +12,8 @@ import {
 import { useActivityAIChat } from '@components/Contexts/AI/ActivityAIChatContext';
 import { AiMarkdownRenderer } from '@components/Shared/AI/AiMarkdownRenderer';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import platformLogo from '@public/platform_logo.svg';
-import platformLogoLight from '@public/platform_logo_light.svg';
+import platformLogo from '@public/app_logo.svg';
+import platformLogoLight from '@public/app_logo_light.svg';
 import type { ChangeEvent, KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { TextPart } from '@tanstack/ai-client';

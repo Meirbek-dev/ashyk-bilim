@@ -7,7 +7,7 @@ import type { Session } from '@/lib/auth/types';
 import { AlertTriangle, BadgeInfo, NotebookTabs, X } from 'lucide-react';
 import { AiMessageBubble } from '@components/Shared/AI/AiMessageBubble';
 import { AiChatInput } from '@components/Shared/AI/AiChatInput';
-import platformLogoLight from '@public/platform_logo_light.svg';
+import platformLogoLight from '@public/app_logo_light.svg';
 import UserAvatar from '@components/Objects/UserAvatar';
 import { ScrollArea } from '@components/ui/scroll-area';
 import { AnimatePresence, motion } from 'motion/react';

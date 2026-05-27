@@ -30,8 +30,8 @@ vi.mock('next/image', () => ({
 }));
 
 // Mock SVG imports used by EditorToolbar
-vi.mock('@public/platform_logo.svg', () => ({ default: '/platform_logo.svg' }));
-vi.mock('@public/platform_logo_light.svg', () => ({ default: '/platform_logo_light.svg' }));
+vi.mock('@public/app_logo.svg', () => ({ default: '/app_logo.svg' }));
+vi.mock('@public/app_logo_light.svg', () => ({ default: '/app_logo_light.svg' }));
 
 // Mock theme provider
 vi.mock('@/components/providers/theme-provider', () => ({

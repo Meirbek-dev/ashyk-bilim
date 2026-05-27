@@ -27,8 +27,8 @@ import { NAVBAR_HEIGHT } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 // Assets
-import platformLogoFull from '@public/platform_logo_full.svg';
-import platformLogoLightFull from '@public/platform_logo_light_full.svg';
+import platformLogoFull from '@public/app_logo_full.svg';
+import platformLogoLightFull from '@public/app_logo_light_full.svg';
 
 // ----------------------------------------------------------------------
 // Types & Config

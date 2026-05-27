@@ -17,8 +17,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { BarChart3, BookCopy, Home, LogOut, Moon, School, Settings, ShieldCheck, Sun, Users } from 'lucide-react';
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions';
 import { useSession } from '@/hooks/useSession';
-import platformLogo from '@public/platform_logo.svg';
-import platformLogoLight from '@public/platform_logo_light.svg';
+import platformLogo from '@public/app_logo.svg';
+import platformLogoLight from '@public/app_logo_light.svg';
 import { useTheme } from '@/components/providers/theme-provider';
 import { logout } from '@services/auth/auth';
 import { getAbsoluteUrl } from '@services/config/config';

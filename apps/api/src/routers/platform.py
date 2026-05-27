@@ -17,7 +17,7 @@ from src.services.platform import get_platform
 from src.services.platform_admin import (
     update_platform,
     update_platform_landing,
-    update_platform_logo,
+    update_app_logo,
     update_platform_preview,
     update_platform_thumbnail,
     upload_platform_landing_content_service,
@@ -128,7 +128,7 @@ def api_remove_user_from_platform(
 
 
 @router.put("/logo", response_model=PlatformDetailResponse)
-async def api_update_platform_logo(
+async def api_update_app_logo(
     request: Request,
     logo_file: UploadFile,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
@@ -141,7 +141,7 @@ async def api_update_platform_logo(
     **Required Permission**: `platform:update`
     """
     checker.require(current_user.id, "platform:update")
-    return await update_platform_logo(
+    return await update_app_logo(
         request=request,
         logo_file=logo_file,
         current_user=current_user,

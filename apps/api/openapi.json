@@ -4396,6 +4396,20 @@
         "title": "Body_api_create_video_file_block_api_v1_blocks_video_post",
         "type": "object"
       },
+      "Body_api_update_app_logo_api_v1_logo_put": {
+        "properties": {
+          "logo_file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Logo File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "logo_file"
+        ],
+        "title": "Body_api_update_app_logo_api_v1_logo_put",
+        "type": "object"
+      },
       "Body_api_update_avatar_user_api_v1_users_update_avatar__user_id__put": {
         "properties": {
           "avatar_file": {
@@ -4412,20 +4426,6 @@
           }
         },
         "title": "Body_api_update_avatar_user_api_v1_users_update_avatar__user_id__put",
-        "type": "object"
-      },
-      "Body_api_update_platform_logo_api_v1_logo_put": {
-        "properties": {
-          "logo_file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "Logo File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "logo_file"
-        ],
-        "title": "Body_api_update_platform_logo_api_v1_logo_put",
         "type": "object"
       },
       "Body_api_update_platform_preview_api_v1_preview_put": {
@@ -28892,12 +28892,12 @@
     "/api/v1/logo": {
       "put": {
         "description": "Update the platform logo.\n\n**Required Permission**: `platform:update`",
-        "operationId": "api_update_platform_logo_api_v1_logo_put",
+        "operationId": "api_update_app_logo_api_v1_logo_put",
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_api_update_platform_logo_api_v1_logo_put"
+                "$ref": "#/components/schemas/Body_api_update_app_logo_api_v1_logo_put"
               }
             }
           },
@@ -28930,7 +28930,7 @@
             "APIKeyCookie": []
           }
         ],
-        "summary": "Api Update Platform Logo",
+        "summary": "Api Update App Logo",
         "tags": [
           "platform"
         ]

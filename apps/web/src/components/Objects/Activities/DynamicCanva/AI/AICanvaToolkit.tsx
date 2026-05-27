@@ -1,8 +1,8 @@
 import { AlertTriangle, BookOpen, Check, FormInput, Languages, Loader2 } from 'lucide-react';
 import { useActivityAIChat } from '@components/Contexts/AI/ActivityAIChatContext';
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip';
-import platformLogo from '@public/platform_logo.svg';
-import platformLogoLight from '@public/platform_logo_light.svg';
+import platformLogo from '@public/app_logo.svg';
+import platformLogoLight from '@public/app_logo_light.svg';
 import { BubbleMenu } from '@tiptap/react/menus';
 import { Button } from '@components/ui/button';
 import type { Editor } from '@tiptap/react';

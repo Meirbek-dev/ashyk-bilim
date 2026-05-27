@@ -1,5 +1,5 @@
-import platformLogoFull from '@public/platform_logo_full.svg';
-import platformLogoLightFull from '@public/platform_logo_light_full.svg';
+import platformLogoFull from '@public/app_logo_full.svg';
+import platformLogoLightFull from '@public/app_logo_light_full.svg';
 import { getTranslations } from 'next-intl/server';
 import { Button } from '@components/ui/button';
 import Link from '@components/ui/ServerLink';

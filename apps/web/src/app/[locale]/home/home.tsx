@@ -2,8 +2,8 @@
 
 import { useSession } from '@/hooks/useSession';
 import { logout } from '@/services/auth/auth';
-import platformLogoFull from '@public/platform_logo_full.svg';
-import platformLogoLightFull from '@public/platform_logo_light_full.svg';
+import platformLogoFull from '@public/app_logo_full.svg';
+import platformLogoLightFull from '@public/app_logo_light_full.svg';
 import UserAvatar from '@components/Objects/UserAvatar';
 import { useTheme } from '@/components/providers/theme-provider';
 import { useTranslations } from 'next-intl';
