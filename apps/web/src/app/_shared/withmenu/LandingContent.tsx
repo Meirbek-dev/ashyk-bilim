@@ -5,7 +5,6 @@ import LandingCustom from '@components/Landings/LandingCustom';
 import { getCollections } from '@services/courses/collections';
 import { getPlatform } from '@/services/platform/platform';
 import { getCourses } from '@services/courses/courses';
-import { connection } from 'next/server';
 
 function isExpectedPrerenderCancellation(error: unknown): boolean {
   if (!(error instanceof Error)) {
@@ -34,10 +33,6 @@ function logLandingFetchError(scope: string, error: unknown) {
 }
 
 export async function LandingContent() {
-  // Must be outside any try/catch — this is a Next.js prerender-completion
-  // signal that has to propagate unchanged up the component tree.
-  await connection();
-
   try {
     // Fetch platform info with detailed error handling
     let platform;

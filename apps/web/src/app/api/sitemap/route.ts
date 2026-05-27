@@ -2,11 +2,9 @@ import { getCollections } from '@services/courses/collections';
 import { getAbsoluteUrl } from '@services/config/config';
 import { getCourses } from '@services/courses/courses';
 import type { NextRequest } from 'next/server';
-import { connection, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
-  await connection();
-
   // Fetch all courses with pagination (20 per page)
   const COURSES_PER_PAGE = 20;
   const allCourses: { course_uuid: string }[] = [];

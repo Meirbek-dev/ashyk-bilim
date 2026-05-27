@@ -2,7 +2,6 @@ import { PLATFORM_BRAND_NAME, PLATFORM_DESCRIPTION } from '@/lib/constants';
 import { getPlatformThumbnailImage } from '@services/media/media';
 import { getCourses } from '@services/courses/courses';
 import { getTranslations } from 'next-intl/server';
-import { connection } from 'next/server';
 import type { Metadata } from 'next';
 
 import Courses from './courses';
@@ -46,7 +45,6 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
 }
 
 const CoursesPage = async () => {
-  await connection();
   const { courses, total } = await getCourses();
 
   return (

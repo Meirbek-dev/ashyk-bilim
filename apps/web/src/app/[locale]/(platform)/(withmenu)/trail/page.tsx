@@ -3,7 +3,6 @@ import { GamificationProvider } from '@/components/Contexts/GamificationContext'
 import { getSession } from '@/lib/auth/session';
 import { PLATFORM_BRAND_NAME } from '@/lib/constants';
 import { getTranslations } from 'next-intl/server';
-import { connection } from 'next/server';
 import type { Metadata } from 'next';
 
 import Trail from '@/app/_shared/withmenu/trail/trail';
@@ -18,8 +17,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PlatformTrailPage() {
-  await connection();
-
   const content = (
     <div>
       <Trail />
