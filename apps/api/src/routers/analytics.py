@@ -120,7 +120,7 @@ async def admin_analytics_overview_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
     if not scope.has_platform_scope:
-        raise HTTPException(status_code=403, detail="Platform analytics scope required")
+        raise HTTPException(status_code=403, detail="Требуется область платформенной аналитики")
     return get_admin_analytics(db_session, scope, filters)
 
 
@@ -151,7 +151,7 @@ async def teacher_course_detail_by_uuid_platform(
         )
     ).first()
     if course is None:
-        raise HTTPException(status_code=404, detail="Course not found in scope")
+        raise HTTPException(status_code=404, detail="Курс не найден в этой области")
     try:
         return get_teacher_course_detail(db_session, scope, course.id, filters)
     except ValueError as exc:
@@ -297,7 +297,7 @@ async def delete_teacher_saved_view_platform(
     scope = await _scope_for(db_session, current_user, filters, action="read")
     deleted = delete_analytics_view(db_session, scope, view_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Saved view not found")
+        raise HTTPException(status_code=404, detail="Сохраненное представление не найдено")
     return Response(status_code=204)
 
 
@@ -321,7 +321,7 @@ async def teacher_drillthrough_platform(
         if assessment_type is None or assessment_id is None:
             raise HTTPException(
                 status_code=422,
-                detail="assessment_type and assessment_id are required for pass_rate",
+                detail="assessment_type и assessment_id обязательны для pass_rate",
             )
         ensure_assessment_in_scope(
             db_session,

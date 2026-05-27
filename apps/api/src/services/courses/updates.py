@@ -28,7 +28,7 @@ async def create_update(
 
     if not course or course.id is None:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Course does not exist"
+            status_code=status.HTTP_409_CONFLICT, detail="Курс не существует"
         )
 
     # RBAC check
@@ -141,7 +141,7 @@ async def get_updates_by_course_uuid(
 
     if not course or course.id is None:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Course does not exist"
+            status_code=status.HTTP_409_CONFLICT, detail="Курс не существует"
         )
 
     statement = (

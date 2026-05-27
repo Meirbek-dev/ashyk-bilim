@@ -160,7 +160,7 @@ def _get_activity_or_404(activity_id: int, db_session: Session) -> Activity:
     if activity is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
+            detail="Активность не найдена",
         )
     return activity
 

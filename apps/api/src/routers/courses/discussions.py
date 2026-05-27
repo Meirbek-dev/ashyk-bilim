@@ -35,12 +35,12 @@ async def api_get_course_discussions(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     include_replies: Annotated[
-        bool, Query(description="Include replies in response")
+        bool, Query(description="Включать ответы в ответ")
     ] = False,
     limit: Annotated[
-        int, Query(le=100, description="Number of discussions to return")
+        int, Query(le=100, description="Количество обсуждений для возврата")
     ] = 50,
-    offset: Annotated[int, Query(description="Number of discussions to skip")] = 0,
+    offset: Annotated[int, Query(description="Количество обсуждений для пропуска")] = 0,
 ) -> list[CourseDiscussionReadWithPermissions]:
     """
     Get Course Discussions by course_uuid
@@ -165,9 +165,9 @@ async def api_get_discussion_replies(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     limit: Annotated[
-        int, Query(le=100, description="Number of replies to return")
+        int, Query(le=100, description="Количество ответов для возврата")
     ] = 50,
-    offset: Annotated[int, Query(description="Number of replies to skip")] = 0,
+    offset: Annotated[int, Query(description="Количество ответов для пропуска")] = 0,
 ) -> list[CourseDiscussionRead]:
     """
     Get replies for a specific discussion

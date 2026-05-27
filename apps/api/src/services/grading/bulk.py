@@ -64,7 +64,7 @@ def get_bulk_action(
     if activity is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
+            detail="Активность не найдена",
         )
     PermissionChecker(db_session).require(
         current_user.id,
@@ -97,7 +97,7 @@ def create_deadline_extension_action(
     if activity is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
+            detail="Активность не найдена",
         )
     PermissionChecker(db_session).require(
         current_user.id,

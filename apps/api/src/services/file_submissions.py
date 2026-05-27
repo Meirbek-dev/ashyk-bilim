@@ -76,7 +76,7 @@ async def create_file_submission(
     course = _get_course_or_404(payload.course_id, db_session)
     chapter = _get_chapter_or_404(payload.chapter_id, db_session)
     if chapter.course_id != course.id:
-        raise HTTPException(status_code=400, detail="Chapter does not belong to course")
+        raise HTTPException(status_code=400, detail="Глава не принадлежит курсу")
     _require_author(current_user, course, db_session)
 
     now = _now()
@@ -207,9 +207,9 @@ async def publish_file_submission(
     file_submission, activity, course = _get_context(file_submission_uuid, db_session)
     _require_author(current_user, course, db_session)
     if not activity.name.strip():
-        raise HTTPException(status_code=422, detail="Title is required")
+        raise HTTPException(status_code=422, detail="Требуется название")
     if not file_submission.instructions.strip():
-        raise HTTPException(status_code=422, detail="Instructions are required")
+        raise HTTPException(status_code=422, detail="Требуются инструкции")
 
     now = _now()
     file_submission.lifecycle = FileSubmissionLifecycle.PUBLISHED
@@ -264,7 +264,7 @@ async def start_file_submission_draft(
         file_submission.max_attempts is not None
         and completed_attempts >= file_submission.max_attempts
     ):
-        raise HTTPException(status_code=409, detail="Attempt limit reached")
+        raise HTTPException(status_code=409, detail="Достигнут лимит попыток")
 
     now = _now()
     attempt = FileSubmissionAttempt(
@@ -338,7 +338,7 @@ async def submit_file_submission(
         )
     files = _attempt_files(draft, db_session)
     if not files:
-        raise HTTPException(status_code=422, detail="At least one file is required")
+        raise HTTPException(status_code=422, detail="Требуется хотя бы один файл")
 
     now = _now()
     late_penalty = _late_penalty(file_submission, now)
@@ -452,7 +452,7 @@ async def grade_file_submission_attempt(
     now = _now()
 
     if payload.status in {"GRADED", "PUBLISHED"} and payload.final_score is None:
-        raise HTTPException(status_code=422, detail="final_score is required")
+        raise HTTPException(status_code=422, detail="Требуется итоговый балл")
 
     attempt.final_score = payload.final_score
     attempt.feedback_json = {"feedback": payload.feedback, "rubric": payload.rubric}
@@ -564,7 +564,7 @@ async def build_file_submission_zip(
                     archive.writestr(
                         f"{name}.missing.txt",
                         (
-                            "File content was not available in local storage.\n"
+                            "Содержимое файла недоступно в локальном хранилище.\n"
                             f"storage_key={file.storage_key or ''}\n"
                             f"sha256={file.sha256 or ''}\n"
                         ),
@@ -583,16 +583,16 @@ async def get_file_submission_attempt_file_upload(
         )
     ).first()
     if attempt_file is None:
-        raise HTTPException(status_code=404, detail="Submitted file not found")
+        raise HTTPException(status_code=404, detail="Отправленный файл не найден")
     attempt = db_session.get(FileSubmissionAttempt, attempt_file.attempt_id)
     if attempt is None:
-        raise HTTPException(status_code=404, detail="Submission attempt not found")
+        raise HTTPException(status_code=404, detail="Попытка отправки не найдена")
     file_submission = db_session.get(FileSubmissionActivity, attempt.file_submission_id)
     if file_submission is None:
-        raise HTTPException(status_code=404, detail="File submission not found")
+        raise HTTPException(status_code=404, detail="Файловая отправка не найдена")
     activity = db_session.get(Activity, attempt.activity_id)
     if activity is None:
-        raise HTTPException(status_code=404, detail="Activity not found")
+        raise HTTPException(status_code=404, detail="Активность не найдена")
     course = _get_course_for_activity(activity, db_session)
 
     if attempt.user_id == current_user.id:
@@ -602,16 +602,16 @@ async def get_file_submission_attempt_file_upload(
 
     upload = db_session.get(Upload, attempt_file.upload_id)
     if upload is None:
-        raise HTTPException(status_code=404, detail="Upload not found")
+        raise HTTPException(status_code=404, detail="Загрузка не найдена")
     if upload.status != UploadStatus.FINALIZED:
-        raise HTTPException(status_code=409, detail="Upload is not finalised")
+        raise HTTPException(status_code=409, detail="Загрузка не завершена")
     return upload
 
 
 def read_file_submission_upload_bytes(upload: Upload, db_session: Session) -> bytes:
     body = _read_upload_bytes(upload, db_session)
     if body is None:
-        raise HTTPException(status_code=404, detail="File bytes not found")
+        raise HTTPException(status_code=404, detail="Байты файла не найдены")
     return body
 
 
@@ -666,7 +666,7 @@ async def _create_draft_without_commit(
         file_submission.max_attempts is not None
         and completed_attempts >= file_submission.max_attempts
     ):
-        raise HTTPException(status_code=409, detail="Attempt limit reached")
+        raise HTTPException(status_code=409, detail="Достигнут лимит попыток")
     now = _now()
     draft = FileSubmissionAttempt(
         attempt_uuid=f"filesub_attempt_{ULID()}",
@@ -692,12 +692,12 @@ def _replace_attempt_files(
     db_session: Session,
 ) -> None:
     if len(files) > file_submission.max_files:
-        raise HTTPException(status_code=422, detail="Too many files")
+        raise HTTPException(status_code=422, detail="Слишком много файлов")
     seen: set[str] = set()
     uploads: list[Upload] = []
     for file_ref in files:
         if file_ref.upload_uuid in seen:
-            raise HTTPException(status_code=422, detail="Duplicate file upload")
+            raise HTTPException(status_code=422, detail="Дублирующаяся загрузка файла")
         seen.add(file_ref.upload_uuid)
         upload = db_session.exec(
             select(Upload).where(Upload.upload_uuid == file_ref.upload_uuid)
@@ -707,18 +707,18 @@ def _replace_attempt_files(
             or upload.user_id != current_user.id
             or upload.status != UploadStatus.FINALIZED
         ):
-            raise HTTPException(status_code=422, detail="Upload is not finalized")
+            raise HTTPException(status_code=422, detail="Загрузка не завершена")
         if (
             file_submission.allowed_mime_types
             and upload.content_type not in file_submission.allowed_mime_types
         ):
-            raise HTTPException(status_code=422, detail="File type is not allowed")
+            raise HTTPException(status_code=422, detail="Тип файла не разрешен")
         if (
             file_submission.max_file_size_mb is not None
             and upload.size_bytes is not None
             and upload.size_bytes > file_submission.max_file_size_mb * 1024 * 1024
         ):
-            raise HTTPException(status_code=422, detail="File is too large")
+            raise HTTPException(status_code=422, detail="Файл слишком большой")
         uploads.append(upload)
 
     for existing in _attempt_files(attempt, db_session):
@@ -827,7 +827,7 @@ def _late_penalty(
     if file_submission.due_at is None or submitted_at <= file_submission.due_at:
         return 0.0
     if not file_submission.allow_late:
-        raise HTTPException(status_code=409, detail="Late submissions are closed")
+        raise HTTPException(status_code=409, detail="Поздние отправки закрыты")
     policy = LATE_POLICY_ADAPTER.validate_python(
         file_submission.late_policy_json or {"kind": "NONE"}
     )
@@ -849,10 +849,10 @@ def _get_context(
         )
     ).first()
     if file_submission is None:
-        raise HTTPException(status_code=404, detail="File submission not found")
+        raise HTTPException(status_code=404, detail="Файловая отправка не найдена")
     activity = db_session.get(Activity, file_submission.activity_id)
     if activity is None:
-        raise HTTPException(status_code=404, detail="Activity not found")
+        raise HTTPException(status_code=404, detail="Активность не найдена")
     course = _get_course_for_activity(activity, db_session)
     return file_submission, activity, course
 
@@ -868,7 +868,7 @@ def _get_context_by_activity_uuid(
         )
     ).first()
     if file_submission is None:
-        raise HTTPException(status_code=404, detail="File submission not found")
+        raise HTTPException(status_code=404, detail="Файловая отправка не найдена")
     return file_submission, activity, _get_course_for_activity(activity, db_session)
 
 
@@ -880,7 +880,7 @@ def _build_file_submission_read(
 ) -> FileSubmissionRead:
     activity = db_session.get(Activity, file_submission.activity_id)
     if activity is None:
-        raise HTTPException(status_code=404, detail="Activity not found")
+        raise HTTPException(status_code=404, detail="Активность не найдена")
     course = _get_course_for_activity(activity, db_session)
     attempts: list[FileSubmissionAttemptRead] = []
     current_attempt = None
@@ -1045,7 +1045,7 @@ def _get_attempt_or_404(
         )
     ).first()
     if attempt is None:
-        raise HTTPException(status_code=404, detail="Submission not found")
+        raise HTTPException(status_code=404, detail="Отправка не найдена")
     return attempt
 
 
@@ -1069,7 +1069,7 @@ def _check_version(attempt: FileSubmissionAttempt, if_match: str | None) -> None
     try:
         expected = int(if_match)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid If-Match header")
+        raise HTTPException(status_code=400, detail="Некорректный заголовок If-Match")
     if expected != attempt.version:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -1098,7 +1098,7 @@ def _require_published(
         == FileSubmissionLifecycle.PUBLISHED
     ):
         return
-    raise HTTPException(status_code=409, detail="File submission is not published")
+    raise HTTPException(status_code=409, detail="Файловая отправка не опубликована")
 
 
 def _ensure_authorable(file_submission: FileSubmissionActivity) -> None:
@@ -1107,7 +1107,7 @@ def _ensure_authorable(file_submission: FileSubmissionActivity) -> None:
         == FileSubmissionLifecycle.ARCHIVED
     ):
         raise HTTPException(
-            status_code=409, detail="Archived submissions are read-only"
+            status_code=409, detail="Архивные отправки доступны только для чтения"
         )
 
 
@@ -1121,20 +1121,20 @@ def _get_course_for_activity(activity: Activity, db_session: Session) -> Course:
         course = db_session.get(Course, chapter.course_id)
         if course is not None:
             return course
-    raise HTTPException(status_code=404, detail="Course not found")
+    raise HTTPException(status_code=404, detail="Курс не найден")
 
 
 def _get_course_or_404(course_id: int, db_session: Session) -> Course:
     course = db_session.get(Course, course_id)
     if course is None:
-        raise HTTPException(status_code=404, detail="Course not found")
+        raise HTTPException(status_code=404, detail="Курс не найден")
     return course
 
 
 def _get_chapter_or_404(chapter_id: int, db_session: Session) -> Chapter:
     chapter = db_session.get(Chapter, chapter_id)
     if chapter is None:
-        raise HTTPException(status_code=404, detail="Chapter not found")
+        raise HTTPException(status_code=404, detail="Глава не найдена")
     return chapter
 
 
@@ -1171,7 +1171,7 @@ def _require_submit_access(
     db_session: Session,
 ) -> None:
     if not user_has_course_access(user.id, course, db_session):
-        raise HTTPException(status_code=403, detail="Course enrollment is required")
+        raise HTTPException(status_code=403, detail="Требуется зачисление на курс")
     checker = PermissionChecker(db_session)
     checker.require(
         user.id,

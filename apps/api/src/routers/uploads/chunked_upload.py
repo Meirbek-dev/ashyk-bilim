@@ -111,14 +111,14 @@ def _read_upload(upload_uuid: str, db_session: Session) -> Upload | None:
 def _owned_upload(upload_uuid: str, user_id: int, db_session: Session) -> Upload:
     upload = _read_upload(upload_uuid, db_session)
     if upload is None or upload.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Upload not found")
+        raise HTTPException(status_code=404, detail="Загрузка не найдена")
     return upload
 
 
 def _owned_chunked_session(upload_id: str, user_id: int):
     session = get_upload_session(upload_id)
     if session.owner_user_id != user_id:
-        raise HTTPException(status_code=404, detail="Upload session not found")
+        raise HTTPException(status_code=404, detail="Сессия загрузки не найдена")
     return session
 
 
@@ -173,9 +173,9 @@ async def put_assessment_upload_bytes(
 ) -> UploadRead:
     upload = _owned_upload(upload_id, current_user.id, db_session)
     if upload.status in {UploadStatus.FINALIZED, UploadStatus.CANCELLED}:
-        raise HTTPException(status_code=409, detail="Upload is already closed")
+        raise HTTPException(status_code=409, detail="Загрузка уже закрыта")
     if upload.expires_at < datetime.now(UTC):
-        raise HTTPException(status_code=410, detail="Upload has expired")
+        raise HTTPException(status_code=410, detail="Срок загрузки истек")
 
     content = await request.body()
 
@@ -186,7 +186,7 @@ async def put_assessment_upload_bytes(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail={
                 "code": "FILE_TOO_LARGE",
-                "message": "Upload exceeds the maximum allowed size of 100 MB.",
+                "message": "Загрузка превышает максимально допустимый размер 100 МБ.",
                 "max_bytes": MAX_UPLOAD_BYTES,
                 "actual_bytes": len(content),
             },
@@ -216,15 +216,15 @@ async def finalize_assessment_upload(
     if upload.status == UploadStatus.FINALIZED:
         return UploadRead.model_validate(upload)
     if upload.status == UploadStatus.CANCELLED:
-        raise HTTPException(status_code=409, detail="Upload is cancelled")
+        raise HTTPException(status_code=409, detail="Загрузка отменена")
 
     temp_path = _temp_upload_path(upload.upload_uuid)
     if not temp_path.exists():
-        raise HTTPException(status_code=400, detail="Upload bytes are missing")
+        raise HTTPException(status_code=400, detail="Байты загрузки отсутствуют")
     content = temp_path.read_bytes()
     sha256 = hashlib.sha256(content).hexdigest()
     if sha256.lower() != payload.sha256.lower():
-        raise HTTPException(status_code=422, detail="Upload sha256 mismatch")
+        raise HTTPException(status_code=422, detail="Несовпадение sha256 загрузки")
 
     user_uuid = current_user.user_uuid or str(current_user.id)
     key = _upload_key(upload, sha256, user_uuid)
@@ -264,7 +264,7 @@ async def delete_assessment_upload(
     if upload.referenced_count > 0:
         raise HTTPException(
             status_code=409,
-            detail="Upload is referenced by a submission and cannot be deleted",
+            detail="Загрузка используется отправкой и не может быть удалена",
         )
     upload.status = UploadStatus.CANCELLED
     upload.updated_at = datetime.now(UTC)
@@ -302,7 +302,7 @@ async def get_assessment_upload_url(
     """Return a short-lived signed URL to read a finalised upload."""
     upload = _owned_upload(upload_id, current_user.id, db_session)
     if upload.status != UploadStatus.FINALIZED:
-        raise HTTPException(status_code=409, detail="Upload is not finalised")
+        raise HTTPException(status_code=409, detail="Загрузка не завершена")
     # In development / without a real object-store, return the finalize URL as a
     # placeholder.  In production this would be replaced with a presigned S3 GET URL.
     get_url = str(request.url_for("put_assessment_upload_bytes", upload_id=upload_id))
@@ -348,7 +348,7 @@ async def initiate_chunked_upload(
 
     return {
         "upload_uuid": upload_id,
-        "message": "Upload session initiated",
+        "message": "Сессия загрузки начата",
     }
 
 
@@ -419,7 +419,7 @@ async def complete_chunked_upload(
             "success": True,
             "filename": session.filename,
             "file_size": session.file_size,
-            "message": "Upload completed successfully",
+            "message": "Загрузка успешно завершена",
         }
 
     except Exception:

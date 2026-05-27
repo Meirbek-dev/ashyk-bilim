@@ -17,9 +17,9 @@ async def link_preview(url: Annotated[str, Query(description="URL to preview")] 
         return await fetch_link_preview(url)
     except UnsafeLinkPreviewURL as e:
         raise HTTPException(
-            status_code=400, detail=f"Unsafe link preview URL: {e!s}"
+            status_code=400, detail=f"Небезопасный URL для предпросмотра ссылки: {e!s}"
         ) from e
     except LinkPreviewError as e:
         raise HTTPException(
-            status_code=400, detail=f"Failed to fetch link preview: {e!s}"
+            status_code=400, detail=f"Не удалось получить предпросмотр ссылки: {e!s}"
         ) from e

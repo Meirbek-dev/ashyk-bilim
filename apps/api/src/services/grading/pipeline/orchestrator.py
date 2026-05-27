@@ -280,7 +280,7 @@ def _get_activity_or_404(activity_id: int, db_session: Session) -> Activity:
     ).first()
     if not activity:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
         )
     return activity
 
@@ -320,7 +320,7 @@ def _get_or_create_draft(
         ).first()
         if draft is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена"
             )
         if draft.status != SubmissionStatus.DRAFT:
             raise HTTPException(

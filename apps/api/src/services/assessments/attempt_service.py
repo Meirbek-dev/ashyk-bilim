@@ -196,8 +196,8 @@ async def save_assessment_draft(
                 detail={
                     "code": "DRAFT_SAVE_THROTTLED",
                     "message": (
-                        "Draft saved too recently. "
-                        f"Wait {DRAFT_THROTTLE_TTL} seconds between saves."
+                        "Черновик сохранен слишком недавно. "
+                        f"Подождите {DRAFT_THROTTLE_TTL} секунд между сохранениями."
                     ),
                     "retry_after_seconds": DRAFT_THROTTLE_TTL,
                 },
@@ -490,7 +490,7 @@ async def save_grading_draft(
             "rubric_criteria": [c.model_dump() for c in entry.rubric_criteria],
         })
 
-    # Calculate final score (0–100 percentage)
+    # Вычислить итоговый балл (процент 0–100)
     if payload.override_score and payload.final_score is not None:
         calculated_score = payload.final_score
     elif total_possible > 0:
@@ -672,7 +672,7 @@ async def get_code_item_run(
     if item.kind != ItemKind.CODE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This endpoint is only available for CODE items",
+            detail="Этот эндпоинт доступен только для элементов типа CODE",
         )
     result = get_code_execution_service().get_run(
         db_session=db_session,
@@ -682,7 +682,7 @@ async def get_code_item_run(
     )
     if result is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Code run not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Запуск кода не найден"
         )
     return CodeRunResponse(
         run_id=result.run_uuid,
@@ -741,7 +741,7 @@ async def validate_code_challenge_service(
             results_by_lang[lang_id] = {
                 "ok": False,
                 "status": "MISSING_SOLUTION",
-                "message": "Reference solution is not defined for this language.",
+                "message": "Эталонное решение не определено для этого языка.",
             }
             continue
 

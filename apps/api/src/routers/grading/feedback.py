@@ -40,7 +40,7 @@ def _submission_with_activity(
     if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
     return row
 
@@ -84,7 +84,7 @@ def _latest_or_create_grading_entry(
         if entry is None or entry.submission_id != submission.id:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Grading entry does not belong to this submission",
+                detail="Запись проверки не относится к этой отправке",
             )
         return entry
 
@@ -138,7 +138,7 @@ async def api_list_item_feedback(
     submission, activity = _submission_with_activity(submission_uuid, db_session)
     if not _can_read_feedback(submission, activity, current_user, db_session):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Доступ запрещен"
         )
 
     query = (
@@ -209,12 +209,12 @@ async def api_update_item_feedback(
     row = db_session.get(ItemFeedbackEntry, feedback_id)
     if row is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Feedback not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Обратная связь не найдена"
         )
     existing_submission = db_session.get(Submission, row.submission_id)
     if existing_submission is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена"
         )
     submission, activity = _submission_with_activity(
         existing_submission.submission_uuid, db_session
@@ -245,17 +245,17 @@ async def api_delete_item_feedback(
     row = db_session.get(ItemFeedbackEntry, feedback_id)
     if row is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Feedback not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Обратная связь не найдена"
         )
     submission = db_session.get(Submission, row.submission_id)
     if submission is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена"
         )
     activity = db_session.get(Activity, submission.activity_id)
     if activity is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
         )
     _require_teacher(activity, current_user, db_session)
 

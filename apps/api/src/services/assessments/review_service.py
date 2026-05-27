@@ -66,7 +66,7 @@ def _validate_policy_override_ceilings(
         errors.append({
             "field": "max_attempts_override",
             "code": "EXCEEDS_CEILING",
-            "message": f"max_attempts_override cannot exceed {_MAX_ATTEMPTS_CEILING}.",
+            "message": f"max_attempts_override не может превышать {_MAX_ATTEMPTS_CEILING}.",
             "ceiling": _MAX_ATTEMPTS_CEILING,
             "provided": max_attempts,
         })
@@ -78,8 +78,8 @@ def _validate_policy_override_ceilings(
             "field": "time_limit_override_seconds",
             "code": "EXCEEDS_CEILING",
             "message": (
-                f"time_limit_override_seconds cannot exceed {_MAX_TIME_LIMIT_SECONDS} "
-                f"({_MAX_TIME_LIMIT_MINUTES} minutes)."
+                f"time_limit_override_seconds не может превышать {_MAX_TIME_LIMIT_SECONDS} "
+                f"({_MAX_TIME_LIMIT_MINUTES} минут)."
             ),
             "ceiling": _MAX_TIME_LIMIT_SECONDS,
             "provided": time_limit_override_seconds,
@@ -263,7 +263,7 @@ async def get_assessment_submission(
     if submission is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
 
     result = _build_teacher_submission_read(submission, assessment, db_session)

@@ -221,7 +221,7 @@ def _get_activity_or_404(activity_id: int, db_session: Session) -> Activity:
     if not activity:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
+            detail="Активность не найдена",
         )
     return activity
 
@@ -238,7 +238,7 @@ def _get_own_submission_or_404(
     if not submission:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
     return submission
 
@@ -283,7 +283,7 @@ def _validate_transition(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=(
-                f"Cannot transition from {current_status} to {requested_status}. "
+                f"Нельзя перейти из {current_status} в {requested_status}. "
                 f"Allowed transitions: {[s.value for s in allowed]}"
             ),
         )

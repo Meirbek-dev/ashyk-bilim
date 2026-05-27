@@ -52,7 +52,7 @@ async def _monitor_disconnect(
             if await request.is_disconnected():
                 cancel_event.set()
                 logger.info(
-                    "Disconnect monitor (%s): client gone, cancelling stream", label
+                    "Монитор отключения (%s): клиент ушел, поток отменяется", label
                 )
                 return
             await asyncio.sleep(0.1)
@@ -78,12 +78,12 @@ async def api_ai_start_activity_chat_session(
 
     Raises:
         HTTPException 429: Rate limit exceeded
-        HTTPException 404: Activity not found
+        HTTPException 404: Активность не найдена
         HTTPException 403: AI feature disabled
         HTTPException 504: AI processing timeout
         HTTPException 500: AI processing error
     """
-    logger.info("AI chat session start request from user %s", current_user.id)
+    logger.info("Запрос на старт AI-чата от пользователя %s", current_user.id)
 
     try:
         return await ai_start_activity_chat_session(
@@ -92,8 +92,8 @@ async def api_ai_start_activity_chat_session(
     except HTTPException:
         raise
     except Exception:
-        logger.exception("Unexpected error in AI start endpoint")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.exception("Непредвиденная ошибка в AI start endpoint")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 
 @router.post(
@@ -114,12 +114,12 @@ async def api_ai_send_activity_chat_message(
 
     Raises:
         HTTPException 429: Rate limit exceeded
-        HTTPException 404: Activity not found
+        HTTPException 404: Активность не найдена
         HTTPException 403: AI feature disabled
         HTTPException 504: AI processing timeout
         HTTPException 500: AI processing error
     """
-    logger.info("AI chat message request from user %s", current_user.id)
+    logger.info("Запрос AI-сообщения от пользователя %s", current_user.id)
 
     try:
         return await ai_send_activity_chat_message(
@@ -128,8 +128,8 @@ async def api_ai_send_activity_chat_message(
     except HTTPException:
         raise
     except Exception:
-        logger.exception("Unexpected error in AI send endpoint")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.exception("Непредвиденная ошибка в AI send endpoint")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 
 @router.post(
@@ -161,12 +161,12 @@ async def api_ai_start_activity_chat_session_stream(
 
     Raises:
         HTTPException 429: Rate limit exceeded
-        HTTPException 404: Activity not found
+        HTTPException 404: Активность не найдена
         HTTPException 403: AI feature disabled or streaming not enabled
         HTTPException 504: AI processing timeout
         HTTPException 500: AI processing error
     """
-    logger.info("AI streaming chat session start request from user %s", current_user.id)
+    logger.info("Запрос на старт стримингового AI-чата от пользователя %s", current_user.id)
 
     try:
         cancel_event = asyncio.Event()
@@ -177,7 +177,7 @@ async def api_ai_start_activity_chat_session_stream(
                     if await request.is_disconnected():
                         cancel_event.set()
                         logger.info(
-                            "Disconnect monitor: client gone, aborting start-session stream"
+                            "Монитор отключения: клиент ушел, поток start-session отменяется"
                         )
                         break
                     await asyncio.sleep(0.5)
@@ -198,7 +198,7 @@ async def api_ai_start_activity_chat_session_stream(
                         return
                     yield sse_string
             except Exception:
-                logger.exception("Error in streaming generator")
+                logger.exception("Ошибка в генераторе стриминга")
                 yield format_sse_message({
                     "type": "error",
                     "error": "Внутренняя ошибка.",
@@ -223,8 +223,8 @@ async def api_ai_start_activity_chat_session_stream(
     except HTTPException:
         raise
     except Exception:
-        logger.exception("Unexpected error in AI streaming endpoint")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.exception("Непредвиденная ошибка в AI streaming endpoint")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 
 @router.post(
@@ -247,12 +247,12 @@ async def api_ai_send_activity_chat_message_stream(
 
     Raises:
         HTTPException 429: Rate limit exceeded
-        HTTPException 404: Activity not found
+        HTTPException 404: Активность не найдена
         HTTPException 403: AI feature disabled or streaming not enabled
         HTTPException 504: AI processing timeout
         HTTPException 500: AI processing error
     """
-    logger.info("AI streaming chat message request from user %s", current_user.id)
+    logger.info("Запрос стримингового AI-сообщения от пользователя %s", current_user.id)
 
     try:
         cancel_event = asyncio.Event()
@@ -273,7 +273,7 @@ async def api_ai_send_activity_chat_message_stream(
                         return
                     yield sse_string
             except Exception:
-                logger.exception("Error in streaming generator")
+                logger.exception("Ошибка в генераторе стриминга")
                 yield format_sse_message({
                     "type": "error",
                     "error": "Внутренняя ошибка.",
@@ -298,5 +298,5 @@ async def api_ai_send_activity_chat_message_stream(
     except HTTPException:
         raise
     except Exception:
-        logger.exception("Unexpected error in AI streaming endpoint")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.exception("Непредвиденная ошибка в AI streaming endpoint")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")

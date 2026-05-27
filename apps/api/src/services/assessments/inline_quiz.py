@@ -59,7 +59,7 @@ async def create_inline_quiz(
     if activity is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Parent activity not found",
+            detail="Родительская активность не найдена",
         )
 
     checker = PermissionChecker(db_session)

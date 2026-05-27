@@ -413,7 +413,7 @@ async def api_get_item_analytics(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[ItemAnalytics]:
-    """Return per-question analytics for the teacher Results dashboard."""
+    """Вернуть аналитику по каждому вопросу для страницы результатов преподавателя."""
     return await get_item_analytics(assessment_uuid, current_user, db_session)
 
 
@@ -425,19 +425,19 @@ async def api_export_assessment_submissions_csv(
     assessment_type: Annotated[
         str | None,
         Query(
-            description="Filter by assessment type (QUIZ, OPEN_TEXT, CODE_CHALLENGE, etc.)"
+            description="Фильтр по типу оценивания (QUIZ, OPEN_TEXT, CODE_CHALLENGE и т. д.)"
         ),
     ] = None,
     submitted_after: Annotated[
         datetime | None,
         Query(
-            description="Only include submissions submitted after this ISO-8601 datetime"
+            description="Включать только отправки после этой даты и времени в формате ISO-8601"
         ),
     ] = None,
     submitted_before: Annotated[
         datetime | None,
         Query(
-            description="Only include submissions submitted before this ISO-8601 datetime"
+            description="Включать только отправки до этой даты и времени в формате ISO-8601"
         ),
     ] = None,
 ) -> StreamingResponse:
@@ -530,7 +530,7 @@ async def api_save_grading_draft(
     db_session: Annotated[Session, Depends(get_db_session)],
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ) -> TeacherSubmissionRead:
-    """Save an item-level grading draft. Final score is computed from item scores."""
+    """Сохранить черновик оценки по элементам. Итоговый балл вычисляется по сумме баллов элементов."""
     return await save_grading_draft(
         assessment_uuid,
         submission_uuid,
@@ -555,7 +555,7 @@ async def api_run_code_item(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> CodeRunResponse:
-    """Run student code against visible test cases (does not affect grade)."""
+    """Запустить код студента на видимых тестах (не влияет на оценку)."""
     return await run_code_item(
         assessment_uuid, item_uuid, payload, current_user, db_session
     )
@@ -572,7 +572,7 @@ async def api_get_code_item_run(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> CodeRunResponse:
-    """Fetch a previously-created student-safe code run."""
+    """Получить ранее созданный безопасный для студента запуск кода."""
     return await get_code_item_run(
         assessment_uuid, item_uuid, run_uuid, current_user, db_session
     )
@@ -586,7 +586,7 @@ async def api_validate_code_challenge(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ):
-    """Validate reference solutions for all configured languages against the test suite."""
+    """Проверить эталонные решения для всех настроенных языков на тестовом наборе."""
     from src.services.assessments.attempt_service import validate_code_challenge_service
 
     return await validate_code_challenge_service(
@@ -606,7 +606,7 @@ async def api_get_attempt_state(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> AssessmentAttemptProjection:
-    """Return the authoritative attempt state for the current student."""
+    """Вернуть каноническое состояние попытки для текущего студента."""
     return await get_attempt_state(assessment_uuid, current_user, db_session)
 
 
@@ -621,12 +621,12 @@ async def api_get_policy_preset(
     kind: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> AssessmentPolicyPreset:
-    """Return default policy settings for a given assessment kind."""
+    """Вернуть настройки политики по умолчанию для заданного типа оценивания."""
     try:
         assessment_kind = AssessmentType(kind)
     except ValueError:
         raise HTTPException(
-            status_code=400, detail=f"Unknown assessment kind: {kind!r}"
+            status_code=400, detail=f"Неизвестный тип оценивания: {kind!r}"
         )
     return get_policy_preset(assessment_kind)
 
@@ -643,7 +643,7 @@ async def api_list_overrides(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[StudentPolicyOverrideRead]:
-    """List per-student policy overrides for this assessment."""
+    """Показать индивидуальные исключения политики для этого оценивания."""
     return await list_student_policy_overrides(
         assessment_uuid, current_user, db_session
     )
@@ -660,7 +660,7 @@ async def api_create_override(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> StudentPolicyOverrideRead:
-    """Create a per-student policy exception (due date extension, attempt limit, etc.)."""
+    """Создать индивидуальное исключение политики для студента (продление срока, лимит попыток и т. д.)."""
     return await create_student_policy_override(
         assessment_uuid, payload, current_user, db_session
     )
@@ -703,7 +703,7 @@ async def api_create_inline_quiz(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> InlineQuizResponse:
-    """Create a new inline quiz assessment linked to a parent activity."""
+    """Создать новое встроенное оценивание-quiz, привязанное к родительской активности."""
     return await create_inline_quiz(payload, current_user, db_session)
 
 
@@ -718,7 +718,7 @@ async def api_get_audit_trail(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 50,
 ):
-    """List audit events for an assessment (teacher-only)."""
+    """Показать события аудита для оценивания (только для преподавателя)."""
     from sqlalchemy import desc, func
     from sqlmodel import select
 

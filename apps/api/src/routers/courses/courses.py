@@ -331,7 +331,7 @@ async def api_get_course_meta(
             response.headers["X-Structure-Version"] = version_str
             response.headers["Access-Control-Expose-Headers"] = "X-Structure-Version"
     except Exception:
-        logger.debug("Failed to emit structure version", exc_info=True)
+        logger.debug("Не удалось передать версию структуры", exc_info=True)
 
     up_time = _get_timestamp(getattr(result, "update_date", None))
     struct_time = _get_timestamp(latest_chapter_update)
@@ -385,10 +385,10 @@ async def api_get_platform_courses(
                         return Response(status_code=304)
                 except Exception:
                     logger.debug(
-                        "Failed to parse If-Modified-Since header", exc_info=True
+                        "Не удалось разобрать заголовок If-Modified-Since", exc_info=True
                     )
     except Exception:
-        logger.debug("Failed to set Last-Modified header", exc_info=True)
+        logger.debug("Не удалось установить заголовок Last-Modified", exc_info=True)
 
     return courses
 

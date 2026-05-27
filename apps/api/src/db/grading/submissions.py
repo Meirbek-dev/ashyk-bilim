@@ -195,7 +195,7 @@ class TeacherGradeInput(PydanticStrictBaseModel):
         ...,
         ge=0,
         le=100,
-        description="Final score 0–100",
+        description="Итоговый балл 0–100",
     )
     item_feedback: list[ItemFeedback] = Field(
         default_factory=list,
@@ -412,7 +412,7 @@ class Submission(SubmissionBase, table=True):
         sa_column=Column(Boolean, nullable=False, server_default="false"),
     )
 
-    # Penalty applied to this submission's final score (0–100, snapshotted at submit).
+    # Штраф, применённый к итоговому баллу этой отправки (0–100, зафиксирован при отправке).
     late_penalty_pct: float = SQLField(
         default=0.0,
         sa_column=Column(

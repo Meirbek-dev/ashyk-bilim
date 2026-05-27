@@ -57,7 +57,7 @@ async def api_move_chapter_to_order(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> ChapterRead:
-    """Move a chapter to a specific position within its course (atomic)."""
+    """Переместить главу на заданную позицию внутри курса (атомарно)."""
     return await move_chapter_to_order(
         request, chapter_uuid, payload.position, current_user, db_session
     )
@@ -72,7 +72,7 @@ async def api_move_activity_to_order(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> dict:
-    """Move an activity to a specific position, optionally into a different chapter (atomic)."""
+    """Переместить активность на заданную позицию, при необходимости в другую главу (атомарно)."""
     return await move_activity_to_order(
         request,
         activity_uuid,
@@ -91,7 +91,7 @@ async def api_reorder_chapters_and_activities(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> dict:
-    """Bulk reorder all chapters and activities (legacy — prefer atomic endpoints)."""
+    """Массово переупорядочить все главы и активности (устаревший вариант — предпочтительнее атомарные методы)."""
     return await reorder_chapters_and_activities(
         request, course_uuid, order, current_user, db_session
     )

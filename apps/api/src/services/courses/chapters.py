@@ -33,7 +33,7 @@ def _get_chapter_by_uuid(chapter_uuid: str, db_session) -> Chapter:
     chapter = db_session.exec(statement).first()
     if not chapter:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chapter does not exist"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Глава не существует"
         )
     return chapter
 
@@ -44,7 +44,7 @@ def _get_course_for_chapter(chapter: Chapter, db_session: Session) -> Course:
     ).first()
     if not course:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course does not exist"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Курс не существует"
         )
     return course
 
@@ -74,7 +74,7 @@ async def create_chapter(
     ).first()
     if not course:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course does not exist"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Курс не существует"
         )
 
     checker = PermissionChecker(db_session)
@@ -182,7 +182,7 @@ async def move_chapter_to_order(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> ChapterRead:
-    """Move a chapter to a new position within its course."""
+    """Переместить главу на новую позицию внутри курса."""
     chapter = _get_chapter_by_uuid(chapter_uuid, db_session)
     course = _get_course_for_chapter(chapter, db_session)
 
@@ -222,7 +222,7 @@ async def move_activity_to_order(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-    """Move an activity to a new position, optionally into a different chapter."""
+    """Переместить активность на новую позицию, при необходимости в другую главу."""
     activity = _get_activity_by_uuid_or_404(activity_uuid, db_session)
 
     # Resolve source chapter and its course for permission check.
@@ -271,7 +271,7 @@ async def move_activity_to_order(
 
     activity.order = new_order
     db_session.commit()
-    return {"detail": "activity moved"}
+    return {"detail": "Активность перемещена"}
 
 
 async def get_course_chapters(
@@ -286,7 +286,7 @@ async def get_course_chapters(
     course = db_session.exec(select(Course).where(Course.id == course_id)).first()
     if not course:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course does not exist"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Курс не существует"
         )
 
     checker = PermissionChecker(db_session)
@@ -357,13 +357,13 @@ async def reorder_chapters_and_activities(
     current_user: PublicUser,
     db_session: Session,
 ):
-    """Bulk reorder all chapters and activities in a course (used by drag-and-drop)."""
+    """Массово переупорядочить все главы и активности в курсе (для drag-and-drop)."""
     course = db_session.exec(
         select(Course).where(Course.course_uuid == course_uuid)
     ).first()
     if not course:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course does not exist"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Курс не существует"
         )
 
     checker = PermissionChecker(db_session)
@@ -394,8 +394,8 @@ async def reorder_chapters_and_activities(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
-                "error": "Payload does not match the current course structure. "
-                "Reload and try again.",
+                "error": "Полезная нагрузка не совпадает с текущей структурой курса. "
+                "Перезагрузите страницу и попробуйте снова.",
                 "missing_chapters": sorted(missing),
                 "unknown_chapters": sorted(unknown),
             },
@@ -415,7 +415,7 @@ async def reorder_chapters_and_activities(
     if len(all_activity_uuids_flat) != len(payload_activity_uuids):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Duplicate activity UUIDs detected in the payload.",
+            detail="В полезной нагрузке обнаружены дублирующиеся UUID активностей.",
         )
 
     db_activities = db_session.exec(
@@ -430,8 +430,8 @@ async def reorder_chapters_and_activities(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
-                "error": "Payload does not match the current course activities. "
-                "Reload and try again.",
+                "error": "Полезная нагрузка не совпадает с текущими активностями курса. "
+                "Перезагрузите страницу и попробуйте снова.",
                 "missing_activities": sorted(missing_acts),
                 "unknown_activities": sorted(unknown_acts),
             },
@@ -458,4 +458,4 @@ async def reorder_chapters_and_activities(
     course.update_date = now
     db_session.commit()
 
-    return {"detail": "Chapters and activities reordered successfully"}
+    return {"detail": "Главы и активности успешно переупорядочены"}

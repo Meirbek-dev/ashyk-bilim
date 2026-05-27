@@ -85,8 +85,8 @@ def _resolve_google_redirect_uri() -> str:
     port_suffix = f":{port}" if port not in {80, 443} else ""
     uri = f"{proto}://{domain}{port_suffix}/api/v1/auth/google/callback"
     logger.warning(
-        "PLATFORM_GOOGLE_REDIRECT_URI is not set — using auto-constructed '%s'. "
-        "Set PLATFORM_GOOGLE_REDIRECT_URI explicitly to avoid redirect_uri_mismatch errors.",
+        "PLATFORM_GOOGLE_REDIRECT_URI не задана — используем автоматически собранный '%s'. "
+        "Задайте PLATFORM_GOOGLE_REDIRECT_URI явно, чтобы избежать ошибок redirect_uri_mismatch.",
         uri,
     )
     return uri
@@ -129,7 +129,7 @@ def _validate_callback_url(callback: str) -> None:
 
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Invalid callback URL",
+        detail="Некорректный URL обратного вызова",
     )
 
 
@@ -151,7 +151,7 @@ def _rate_limit_http_error(exc: RateLimitExceeded) -> HTTPException:
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         detail={
             "error_code": "RATE_LIMIT_EXCEEDED",
-            "message": "Too many attempts. Please try again later.",
+            "message": "Слишком много попыток. Попробуйте позже.",
             "retry_after": exc.retry_after,
         },
         headers={"Retry-After": str(exc.retry_after)},
@@ -170,7 +170,7 @@ async def login(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail={
                 "error_code": "ACCOUNT_TEMPORARILY_LOCKED",
-                "message": "Too many failed login attempts. Please try again later.",
+                "message": "Слишком много неудачных попыток входа. Попробуйте позже.",
             },
             headers={"Retry-After": "900"},
         )
@@ -244,7 +244,7 @@ async def refresh_token(
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing refresh token",
+            detail="Отсутствует refresh-токен",
         )
 
     inspection = await inspect_refresh_session(db_session, token)
@@ -254,7 +254,7 @@ async def refresh_token(
             await revoke_token_family(inspection.token_family_id, inspection.user_id)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token reuse detected — all sessions have been revoked",
+            detail="Обнаружено повторное использование refresh-токена — все сессии отозваны",
         )
 
     if (
@@ -264,14 +264,14 @@ async def refresh_token(
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token",
+            detail="Недействительный или просроченный refresh-токен",
         )
 
     user = db_session.exec(select(User).where(User.id == inspection.user_id)).first()
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive",
+            detail="Пользователь не найден или неактивен",
         )
 
     ip = _client_ip(request)
@@ -301,7 +301,7 @@ async def google_authorize(
     if not settings.google_oauth.client_id:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Google OAuth is not configured",
+            detail="Google OAuth не настроен",
         )
 
     auth_url = await get_google_authorize_url(
@@ -335,7 +335,7 @@ async def google_callback(
         pass
 
     if error:
-        logger.error("Google OAuth error: %s", error)
+        logger.error("Ошибка Google OAuth: %s", error)
         return RedirectResponse(
             url=_build_google_error_redirect(frontend_callback, "google_oauth_error"),
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,
@@ -376,7 +376,7 @@ async def google_callback(
 
     except HTTPException as exc:
         logger.warning(
-            "Google OAuth callback failed | status=%s | detail=%s",
+            "Ошибка callback Google OAuth | status=%s | detail=%s",
             exc.status_code,
             exc.detail,
         )
@@ -385,7 +385,7 @@ async def google_callback(
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,
         )
     except Exception:
-        logger.exception("Unexpected error during Google OAuth callback")
+        logger.exception("Непредвиденная ошибка во время callback Google OAuth")
         return RedirectResponse(
             url=_build_google_error_redirect(frontend_callback, "google_auth_failed"),
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,

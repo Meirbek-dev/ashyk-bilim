@@ -85,7 +85,7 @@ def get_policy_preset(kind: AssessmentType) -> AssessmentPolicyPreset:
     if kind not in presets:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Assessment policy preset not found",
+            detail="Предустановка политики оценивания не найдена",
         )
     return presets[kind]
 
@@ -135,7 +135,7 @@ async def create_student_policy_override(
     if policy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Assessment policy not found",
+            detail="Политика оценивания не найдена",
         )
 
     # Check for existing override
@@ -148,7 +148,7 @@ async def create_student_policy_override(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Override already exists for this student",
+            detail="Исключение для этого студента уже существует",
         )
 
     now = datetime.now(UTC)
@@ -207,7 +207,7 @@ async def update_student_policy_override(
     if policy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Assessment policy not found",
+            detail="Политика оценивания не найдена",
         )
 
     override = db_session.exec(
@@ -219,7 +219,7 @@ async def update_student_policy_override(
     if override is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Override not found",
+            detail="Исключение не найдено",
         )
 
     changes = payload.model_dump(exclude_unset=True)
@@ -261,7 +261,7 @@ async def delete_student_policy_override(
     if policy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Assessment policy not found",
+            detail="Политика оценивания не найдена",
         )
 
     override = db_session.exec(
@@ -273,7 +273,7 @@ async def delete_student_policy_override(
     if override is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Override not found",
+            detail="Исключение не найдено",
         )
 
     record_audit_event(
@@ -287,7 +287,7 @@ async def delete_student_policy_override(
 
     db_session.delete(override)
     db_session.commit()
-    return {"detail": "Override deleted"}
+    return {"detail": "Исключение удалено"}
 
 
 def _build_override_read(override: StudentPolicyOverride) -> StudentPolicyOverrideRead:

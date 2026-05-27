@@ -234,35 +234,35 @@ def _build_request_policy(ctx: _ChatContext, question: str) -> _RequestPolicy:
         return _RequestPolicy(
             mode=mode,
             retrieval_enabled=False,
-            task_instruction="Use the user-provided text as the primary source. Preserve structure and do not invent extra content.",
+            task_instruction="Используйте предоставленный пользователем текст как основной источник. Сохраняйте структуру и не добавляйте лишний контент.",
         )
 
     if mode == RequestMode.CRITIQUE:
         return _RequestPolicy(
             mode=mode,
             retrieval_enabled=False,
-            task_instruction="Focus on precise critique and revision suggestions for the text provided in the user's message.",
+            task_instruction="Сосредоточьтесь на точной критике и предложениях по правке текста из сообщения пользователя.",
         )
 
     if mode == RequestMode.EDITORIAL:
         return _RequestPolicy(
             mode=mode,
             retrieval_enabled=False,
-            task_instruction="Focus on writing quality, clarity, and continuity based on the user-provided text.",
+            task_instruction="Сосредоточьтесь на качестве текста, ясности и связности на основе предоставленного пользователем текста.",
         )
 
     if mode == RequestMode.FOLLOW_UP:
         return _RequestPolicy(
             mode=mode,
             retrieval_enabled=False,
-            task_instruction="Use recent conversation context first. Only rely on general knowledge if the recent exchange is insufficient.",
+            task_instruction="Сначала используйте недавний контекст разговора. Обращайтесь к общим знаниям только если недавнего обмена недостаточно.",
         )
 
     if _documents_are_small(ctx.documents) and len(question.strip()) <= 80:
         return _RequestPolicy(
             mode=mode,
             retrieval_enabled=False,
-            task_instruction="The activity context is small. Prefer the provided request and recent context before expanding into retrieval.",
+            task_instruction="Контекст активности небольшой. Сначала опирайтесь на предоставленный запрос и недавний контекст, прежде чем переходить к поиску.",
         )
 
     return _RequestPolicy(mode=mode, retrieval_enabled=True)
@@ -310,7 +310,7 @@ async def _retrieve_chunks_for_policy(
         )
     except RetrievalError as exc:
         logger.warning(
-            "AI retrieval unavailable for activity %s; continuing without retrieved context: %s",
+            "Извлечение контекста AI недоступно для активности %s; продолжаем без найденного контекста: %s",
             ctx.activity.activity_uuid,
             exc.message,
             exc_info=exc,
@@ -328,7 +328,7 @@ async def _get_activity_data(
     cache_key = f"activity_{activity_uuid}"
     cached_pair = cache_manager.db_cache.get(cache_key)
     if cached_pair:
-        logger.info("Activity data cache HIT: %s", activity_uuid)
+        logger.info("Кэш данных активности: HIT %s", activity_uuid)
         return cast("tuple[ActivityRead, CourseRead]", cached_pair)
 
     try:
@@ -357,7 +357,7 @@ async def _get_documents(
     context_text_key = f"context_text_{activity_uuid}"
     cached_documents = cache_manager.db_cache.get(context_text_key)
     if cached_documents:
-        logger.debug("Context text cache HIT: %s", activity_uuid)
+        logger.debug("Кэш текста контекста: HIT %s", activity_uuid)
         return cached_documents
 
     structured = await asyncio.to_thread(
@@ -372,7 +372,7 @@ async def _get_documents(
     )
     documents = structured or [ai_text]
     cache_manager.db_cache.set(context_text_key, documents)
-    logger.debug("Context text cache MISS: %s — cached", activity_uuid)
+    logger.debug("Кэш текста контекста: MISS %s — сохранено", activity_uuid)
     return documents
 
 
@@ -432,20 +432,20 @@ async def generate_chat_answer(
     cancel_event: asyncio.Event | None = None,
 ) -> AgentAnswer:
     if not question or not question.strip():
-        raise AIProcessingError("Question cannot be empty")
+        raise AIProcessingError("Вопрос не может быть пустым")
 
     settings = get_settings().ai_config
     timeout_seconds = settings.request_timeout
 
     if cancel_event and cancel_event.is_set():
-        raise AIProcessingError("AI processing cancelled before execution")
+        raise AIProcessingError("Обработка AI отменена до запуска")
 
     try:
         async with asyncio.timeout(timeout_seconds):
             await moderate_text_input(question, stage="input")
             policy = _build_request_policy(ctx, question)
             logger.info(
-                "AI request policy: session=%s mode=%s retrieval=%s summary=%s question_chars=%d",
+                "Политика AI-запроса: session=%s mode=%s retrieval=%s summary=%s question_chars=%d",
                 ctx.session_id,
                 policy.mode.value,
                 policy.retrieval_enabled,
@@ -460,7 +460,7 @@ async def generate_chat_answer(
             )
             if policy.retrieval_enabled:
                 logger.info(
-                    "AI retrieval complete: session=%s chunks=%d duration_ms=%.1f",
+                    "Извлечение контекста AI завершено: session=%s chunks=%d duration_ms=%.1f",
                     ctx.session_id,
                     len(retrieved_chunks),
                     retrieval_ms,
@@ -484,7 +484,7 @@ async def generate_chat_answer(
     except (AITimeoutError, ContentModerationError, RetrievalError):
         raise
     except Exception as exc:
-        msg = f"Unexpected error during AI processing: {exc!s}"
+        msg = f"Непредвиденная ошибка при обработке AI: {exc!s}"
         raise AIProcessingError(
             msg,
             details={"error_type": type(exc).__name__, "session_id": ctx.session_id},
@@ -492,7 +492,7 @@ async def generate_chat_answer(
 
     output = result.output.strip()
     if not output:
-        raise AIProcessingError("AI returned an empty response")
+        raise AIProcessingError("AI вернул пустой ответ")
 
     append_messages(
         ctx.session_id,
@@ -523,7 +523,7 @@ async def stream_chat_answer(
     cancel_event: asyncio.Event | None = None,
 ) -> AsyncGenerator[StatusEvent | DeltaEvent | FinalEvent]:
     if not question or not question.strip():
-        raise AIProcessingError("Question cannot be empty")
+        raise AIProcessingError("Вопрос не может быть пустым")
 
     settings = get_settings().ai_config
     timeout_seconds = settings.request_timeout
@@ -550,7 +550,7 @@ async def stream_chat_answer(
             await moderate_text_input(question, stage="input")
             policy = _build_request_policy(ctx, question)
             logger.info(
-                "AI streaming request policy: session=%s mode=%s retrieval=%s summary=%s question_chars=%d",
+                "Политика потокового AI-запроса: session=%s mode=%s retrieval=%s summary=%s question_chars=%d",
                 ctx.session_id,
                 policy.mode.value,
                 policy.retrieval_enabled,
@@ -574,7 +574,7 @@ async def stream_chat_answer(
                     retrieval_enabled=True,
                 )
                 logger.info(
-                    "AI streaming retrieval complete: session=%s chunks=%d duration_ms=%.1f",
+                    "Потоковое извлечение контекста AI завершено: session=%s chunks=%d duration_ms=%.1f",
                     ctx.session_id,
                     len(retrieved_chunks),
                     retrieval_ms,
@@ -646,14 +646,14 @@ async def stream_chat_answer(
     except (AITimeoutError, ContentModerationError):
         raise
     except Exception as exc:
-        msg = f"Unexpected error during AI streaming: {exc!s}"
+        msg = f"Непредвиденная ошибка при потоковой обработке AI: {exc!s}"
         raise AIProcessingError(
             msg,
             details={"error_type": type(exc).__name__, "session_id": ctx.session_id},
         ) from exc
 
     if not full_response:
-        raise AIProcessingError("AI returned an empty response")
+        raise AIProcessingError("AI вернул пустой ответ")
 
     append_messages(
         ctx.session_id,
@@ -698,7 +698,7 @@ async def run_activity_chat(
         ctx=ctx, question=message, cancel_event=cancel_event
     )
     logger.info(
-        "AI chat %s completed in %.1fms",
+        "AI-чат %s завершён за %.1f мс",
         ctx.session_id,
         (time.perf_counter() - trace_start) * 1000,
     )

@@ -196,7 +196,7 @@ def validate_upload(
         HTTPException: If validation fails
     """
     if not file or not file.filename:
-        raise HTTPException(status_code=400, detail="No file provided")
+        raise HTTPException(status_code=400, detail="Файл не предоставлен")
 
     # Read file content once
     content = file.file.read()
@@ -206,7 +206,7 @@ def validate_upload(
     ext = "." + file.filename.split(".")[-1].lower()
     if ext == ".svg":
         raise HTTPException(
-            status_code=415, detail="SVG files are not allowed for security reasons"
+            status_code=415, detail="SVG-файлы запрещены по соображениям безопасности"
         )
 
     # Find matching file type configuration
@@ -223,7 +223,7 @@ def validate_upload(
             for ext in FILE_TYPES.get(t, {}).get("extensions", [])
         ]
         raise HTTPException(
-            status_code=415, detail=f"File type not allowed. Allowed: {allowed_exts}"
+            status_code=415, detail=f"Тип файла не разрешен. Разрешены: {allowed_exts}"
         )
 
     # Check file size
@@ -231,13 +231,13 @@ def validate_upload(
     if len(content) > size_limit:
         raise HTTPException(
             status_code=413,
-            detail=f"File too large ({len(content) / 1024 / 1024:.1f}MB > {size_limit / 1024 / 1024:.1f}MB)",
+            detail=f"Файл слишком большой ({len(content) / 1024 / 1024:.1f}МБ > {size_limit / 1024 / 1024:.1f}МБ)",
         )
 
     # Validate file content
     if not config["validator"](content):
         raise HTTPException(
-            status_code=415, detail="File appears to be corrupted or invalid"
+            status_code=415, detail="Файл выглядит поврежденным или недействительным"
         )
 
     return file.content_type, content

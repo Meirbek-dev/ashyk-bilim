@@ -51,7 +51,7 @@ async def publish_grading_event(
     submission_uuid: str,
     payload: dict | None = None,
 ) -> None:
-    """Durably enqueue a grading event publication."""
+    """Надёжно поставить публикацию события оценки в очередь."""
     from src.worker.tasks.sse import publish_grading_event_task
 
     await publish_grading_event_task.kiq(event_type, submission_uuid, payload)
@@ -63,7 +63,7 @@ async def _award_xp_on_publish(
     user_id: int,
     assessment_type: str,
 ) -> None:
-    """Durably enqueue XP award side effects for a published submission."""
+    """Надёжно поставить в очередь побочные эффекты начисления XP для опубликованной отправки."""
     from src.worker.tasks.xp_award import award_xp_for_submission
 
     await award_xp_for_submission.kiq(
@@ -128,9 +128,9 @@ async def get_submissions_for_activity(
     page_size: int = 25,
 ) -> SubmissionListResponse:
     """
-    Return paginated, filterable, searchable submissions for an activity (teacher view).
+     Вернуть постраничные, фильтруемые и поисковые отправки для активности (вид преподавателя).
 
-    Uses SQL LIMIT/OFFSET — no in-memory loading.
+     Использует SQL LIMIT/OFFSET — без загрузки в память.
     """
     activity = db_session.exec(
         select(Activity).where(Activity.id == activity_id)
@@ -139,7 +139,7 @@ async def get_submissions_for_activity(
     if not activity:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
+            detail="Активность не найдена",
         )
 
     checker = PermissionChecker(db_session)
@@ -157,7 +157,7 @@ async def get_submissions_for_activity(
     )
 
     if status_filter:
-        # "NEEDS_GRADING" is a virtual filter mapping to PENDING
+        # "NEEDS_GRADING" — виртуальный фильтр, соответствующий PENDING
         if status_filter == "NEEDS_GRADING":
             query = query.where(Submission.status == SubmissionStatus.PENDING)
         else:
@@ -168,7 +168,7 @@ async def get_submissions_for_activity(
             except ValueError:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid status '{status_filter}'",
+                    detail=f"Некорректный статус '{status_filter}'",
                 )
 
     if late_only:
@@ -224,7 +224,7 @@ async def get_submission_stats(
     ).first()
     if not activity:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
         )
 
     checker = PermissionChecker(db_session)
@@ -295,17 +295,17 @@ async def get_submission_for_teacher(
     db_session: Session,
 ) -> SubmissionRead:
     """
-    Fetch a single submission with full answers and grading breakdown.
+    Получить одну отправку с полными ответами и детализацией оценивания.
 
-    Requires assessment:read permission scoped to the activity's creator,
-    preventing cross-activity and cross-course data leakage.
+    Требует права assessment:read, ограниченного создателем активности,
+    чтобы исключить утечку данных между активностями и курсами.
     """
     submission = db_session.exec(
         select(Submission).where(Submission.submission_uuid == submission_uuid)
     ).first()
     if not submission:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена"
         )
 
     activity = db_session.exec(
@@ -313,7 +313,7 @@ async def get_submission_for_teacher(
     ).first()
     if not activity:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
         )
 
     checker = PermissionChecker(db_session)
@@ -341,23 +341,24 @@ def export_grades_csv(
     submitted_before: datetime | None = None,
 ) -> Generator[str]:
     """
-    Stream CSV rows of all non-draft submissions one batch at a time.
+     Потоково отдавать CSV-строки всех отправок, кроме черновиков, по одному батчу за раз.
 
-    Yields the header line first, then rows in batches of 200 so the
-    response starts immediately and memory usage stays bounded regardless
-    of class size.  Uses Python's csv module for safe escaping.
+    Сначала возвращает строку заголовков, затем строки батчами по 200,
+    чтобы ответ начинался сразу и использование памяти оставалось
+    ограниченным независимо от размера группы. Использует модуль csv
+    для безопасного экранирования.
 
-    Optional filters:
-    - ``assessment_type_filter``: restrict to a specific ``AssessmentType`` value.
-    - ``submitted_after``: only include submissions submitted after this datetime.
-    - ``submitted_before``: only include submissions submitted before this datetime.
+    Необязательные фильтры:
+    - ``assessment_type_filter``: ограничить конкретным значением ``AssessmentType``.
+    - ``submitted_after``: включать только отправки после этой даты и времени.
+    - ``submitted_before``: включать только отправки до этой даты и времени.
     """
     activity = db_session.exec(
         select(Activity).where(Activity.id == activity_id)
     ).first()
     if not activity:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
         )
 
     checker = PermissionChecker(db_session)
@@ -386,15 +387,15 @@ def export_grades_csv(
                 item_headers.append(item_text or item_id)
 
     header = [
-        "Student Name",
-        "Email",
-        "Attempt",
-        "Status",
-        "Late",
-        "Submitted At",
-        "Auto Score",
-        "Final Score",
-    ] + [f"Item: {h}" for h in item_headers]
+        "Имя студента",
+        "Электронная почта",
+        "Попытка",
+        "Статус",
+        "Опоздание",
+        "Отправлено",
+        "Автоматический балл",
+        "Итоговый балл",
+    ] + [f"Элемент: {h}" for h in item_headers]
 
     writer.writerow(header)
     yield buf.getvalue()
@@ -426,7 +427,7 @@ def export_grades_csv(
             name = " ".join(parts) if parts else u.username
             email = str(u.email)
         else:
-            name = f"User #{s.user_id}"
+            name = f"Пользователь #{s.user_id}"
             email = ""
 
         submitted = s.submitted_at.isoformat() if s.submitted_at else ""
@@ -454,7 +455,7 @@ def export_grades_csv(
             email,
             s.attempt_number,
             s.status,
-            "yes" if s.is_late else "no",
+            "да" if s.is_late else "нет",
             submitted,
             s.auto_score if s.auto_score is not None else "",
             s.final_score if s.final_score is not None else "",
@@ -473,11 +474,11 @@ async def save_grade(
     *,
     expected_version: int | None = None,
 ) -> SubmissionRead:
-    """Apply a teacher-entered final score and optional per-item feedback.
+    """Сохранить оценку, введённую преподавателем, после проверки доступа.
 
-    Pass ``expected_version`` (from the ``If-Match`` request header) to enable
-    optimistic concurrency control.  If the submission has been modified since
-    the teacher loaded it, a 412 Precondition Failed is returned.
+    Передайте ``expected_version`` (из заголовка ``If-Match``), чтобы включить
+    оптимистичный контроль конкурентного доступа. Если отправка была изменена
+    после того, как преподаватель её открыл, возвращается 412 Precondition Failed.
     """
     submission, activity = _get_submission_with_activity(submission_uuid, db_session)
 
@@ -503,14 +504,14 @@ async def batch_grade_submissions(
     current_user: PublicUser,
     db_session: Session,
 ) -> BatchGradeResponse:
-    """Apply teacher grades to multiple submissions in one atomic request.
+    """Применить оценки преподавателя к нескольким отправкам одним атомарным запросом.
 
-    All-or-Nothing semantics: every submission is validated first.  If *any*
-    validation fails, **no** grade is written and the error is reported for the
-    offending item.  Only after all validations pass do we apply all changes in
-    a single commit.
+    Семантика all-or-nothing: сначала проверяется каждая отправка. Если хотя бы
+    одна проверка не проходит, **ни одна** оценка не записывается, а ошибка
+    возвращается для проблемного элемента. Только после прохождения всех
+    проверок изменения применяются одним коммитом.
 
-    Batch size is capped at 50 submissions per request.
+    Размер пакета ограничен 50 отправками за запрос.
     """
     BATCH_CAP = 50
     if len(batch_request.grades) > BATCH_CAP:
@@ -518,7 +519,7 @@ async def batch_grade_submissions(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "code": "BATCH_SIZE_EXCEEDED",
-                "message": f"Batch grading supports at most {BATCH_CAP} submissions per request.",
+                "message": f"Пакетное оценивание поддерживает не более {BATCH_CAP} отправок за один запрос.",
                 "limit": BATCH_CAP,
                 "provided": len(batch_request.grades),
             },
@@ -547,7 +548,7 @@ async def batch_grade_submissions(
                 BatchGradeResultItem(
                     submission_uuid=grade.submission_uuid,
                     success=False,
-                    error="Submission not found",
+                    error="Отправка не найдена",
                 )
             )
             continue
@@ -562,7 +563,7 @@ async def batch_grade_submissions(
                 BatchGradeResultItem(
                     submission_uuid=grade.submission_uuid,
                     success=False,
-                    error="Not authorized to grade this submission",
+                    error="Нет прав на оценивание этой отправки",
                 )
             )
 
@@ -584,7 +585,7 @@ async def batch_grade_submissions(
                     BatchGradeResultItem(
                         submission_uuid=grade.submission_uuid,
                         success=False,
-                        error="Aborted — batch contains invalid entries",
+                        error="Отменено — пакет содержит некорректные элементы",
                     )
                 )
         return BatchGradeResponse(
@@ -630,7 +631,7 @@ async def batch_grade_submissions(
                 else str(exc)
             )
             logger.exception(
-                "Unexpected batch grading failure for submission %s",
+                "Непредвиденный сбой пакетного оценивания для отправки %s",
                 grade.submission_uuid,
             )
             abort_results = list(results)
@@ -638,7 +639,7 @@ async def batch_grade_submissions(
                 BatchGradeResultItem(
                     submission_uuid=pending.submission_uuid,
                     success=False,
-                    error="Aborted due to earlier failure",
+                    error="Отменено из-за предыдущей ошибки",
                 )
                 for pending in batch_request.grades[len(results) :]
             )
@@ -666,15 +667,15 @@ async def _save_teacher_grade(
     db_session: Session,
     expected_version: int | None = None,
 ) -> SubmissionRead:
-    """Persist a teacher-entered grade after the caller has validated access.
+    """Сохранить оценку, введённую преподавателем, после проверки доступа.
 
-    Atomicity guarantee: the submission update, ActivityProgress, and
-    CourseProgress are all flushed inside a single ``db_session.commit()``.
-    If any step raises, the whole operation rolls back.
+    Гарантия атомарности: обновление отправки, ActivityProgress и CourseProgress
+    фиксируются внутри одного ``db_session.commit()``. Если любой шаг падает,
+    вся операция откатывается.
 
-    Optimistic locking: if ``expected_version`` is supplied and does not match
-    ``submission.version``, raises 412 Precondition Failed so the caller knows
-    a concurrent edit already landed.
+    Оптимистичная блокировка: если ``expected_version`` задан и не совпадает с
+    ``submission.version``, вызывается 412 Precondition Failed, чтобы показать
+    наличие параллельного изменения.
     """
 
     # ── Optimistic lock check ─────────────────────────────────────────────────
@@ -682,8 +683,8 @@ async def _save_teacher_grade(
         raise HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
             detail=(
-                f"Submission was modified concurrently (version {submission.version}). "
-                "Refresh and retry."
+                f"Отправка была изменена одновременно (версия {submission.version}). "
+                "Обновите страницу и повторите попытку."
             ),
         )
 
@@ -695,7 +696,7 @@ async def _save_teacher_grade(
         allowed = _ALLOWED_TEACHER_TRANSITIONS.get(current_status, frozenset())
         if requested_status not in allowed:
             logger.warning(
-                "Invalid teacher grade transition from %s to %s for submission %s",
+                "Некорректный переход статуса оценки от %s к %s для отправки %s",
                 current_status,
                 requested_status,
                 submission_uuid,
@@ -703,8 +704,8 @@ async def _save_teacher_grade(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=(
-                    f"Cannot transition from {current_status} to {requested_status}. "
-                    f"Allowed transitions: {[s.value for s in allowed]}"
+                    f"Нельзя перейти из {current_status} в {requested_status}. "
+                    f"Разрешённые переходы: {[s.value for s in allowed]}"
                 ),
             )
 
@@ -848,20 +849,21 @@ async def bulk_publish_grades(
     current_user: PublicUser,
     db_session: Session,
 ) -> BulkPublishGradesResponse:
-    """Publish all graded submissions for an activity at once (BATCH release mode).
+    """Опубликовать все оценённые отправки для активности сразу (режим BATCH).
 
-    For each PUBLISHED submission that does not yet have a GradingEntry row with
-    published_at set, a new immutable GradingEntry is inserted with published_at
-    stamped to now.  This makes the grade visible on the student-facing endpoint.
+    Для каждой отправки в статусе PUBLISHED, у которой ещё нет строки GradingEntry
+    с заполненным published_at, вставляется новая неизменяемая запись GradingEntry
+    с published_at, равным текущему времени. Это делает оценку видимой на
+    студенческом endpoint.
 
-    Returns counts of how many grades were published vs already visible.
+    Возвращает количество опубликованных оценок и уже видимых.
     """
     activity = db_session.exec(
         select(Activity).where(Activity.id == activity_id)
     ).first()
     if not activity:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
         )
 
     checker = PermissionChecker(db_session)
@@ -1030,7 +1032,7 @@ def _get_submission_with_activity(
     if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
     return row
 

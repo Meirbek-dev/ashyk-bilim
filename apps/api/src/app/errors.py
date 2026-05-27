@@ -22,7 +22,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     FASTAPI_USERS_ERROR_MAP: dict[str, dict] = {
         "REGISTER_USER_ALREADY_EXISTS": {
             "error_code": "email_taken",
-            "message": "Email already exists",
+            "message": "Электронная почта уже существует",
             "detail": {"code": "email_taken"},
         },
     }
@@ -66,7 +66,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=422,
             content={
                 "error_code": "VALIDATION_ERROR",
-                "message": "Request validation failed",
+                "message": "Ошибка валидации запроса",
                 "detail": _serialize_validation_errors(exc),
             },
         )

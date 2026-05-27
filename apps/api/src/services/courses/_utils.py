@@ -29,7 +29,7 @@ def _get_activity_by_uuid_or_404(activity_uuid: str, db_session: Session) -> Act
     ).first()
 
     if not activity:
-        raise HTTPException(status_code=404, detail="Activity not found")
+        raise HTTPException(status_code=404, detail="Активность не найдена")
     return activity
 
 

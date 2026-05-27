@@ -119,8 +119,8 @@ def _ensure_item_kind_supported(assessment: Assessment, kind: ItemKind) -> None:
         detail={
             "code": "ITEM_KIND_UNSUPPORTED",
             "message": (
-                f"{kind.value} items are not supported for {AssessmentType(assessment.kind).value} "
-                "assessments by the current learner runtime and grading pipeline."
+                f"Элементы типа {kind.value} не поддерживаются для оцениваний типа {AssessmentType(assessment.kind).value} "
+                "в текущем механизме выполнения и проверки для учащихся."
             ),
             "supported_kinds": sorted(item_kind.value for item_kind in supported),
         },
@@ -370,8 +370,8 @@ async def create_assessment_item(
             detail={
                 "code": "ITEM_LIMIT_EXCEEDED",
                 "message": (
-                    f"Assessment already has {item_count} items. "
-                    f"Maximum allowed: {MAX_ITEMS_PER_ASSESSMENT}."
+                    f"В оценивании уже есть {item_count} элементов. "
+                    f"Максимально допустимо: {MAX_ITEMS_PER_ASSESSMENT}."
                 ),
                 "max": MAX_ITEMS_PER_ASSESSMENT,
                 "current": item_count,
@@ -429,9 +429,9 @@ async def update_assessment_item(
                 detail={
                     "code": "ASSESSMENT_LOCKED",
                     "message": (
-                        "Cannot modify scoring fields of a published assessment "
-                        "that has active submissions. Only title, description, and "
-                        "explanation may be updated."
+                        "Нельзя изменять поля, влияющие на оценку, у опубликованного оценивания "
+                        "с активными отправками. Можно обновлять только название, описание и "
+                        "пояснение."
                     ),
                     "locked_fields": sorted(forbidden_changes),
                 },
@@ -526,8 +526,7 @@ async def delete_assessment_item(
             detail={
                 "code": "ASSESSMENT_LOCKED",
                 "message": (
-                    "Cannot delete items from a published assessment that has "
-                    "active submissions."
+                    "Нельзя удалять элементы из опубликованного оценивания с активными отправками."
                 ),
             },
         )

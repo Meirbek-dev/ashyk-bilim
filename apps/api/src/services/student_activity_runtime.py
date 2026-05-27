@@ -55,7 +55,7 @@ async def get_student_activity_runtime(
     activity = _get_activity_for_course(course.id, activity_uuid, db_session)
     if activity is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
         )
 
     checker = PermissionChecker(db_session)
@@ -158,7 +158,7 @@ async def run_student_activity_action(
     activity = _get_activity_for_course(course.id, activity_uuid, db_session)
     if activity is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
         )
 
     if action.command == "mark_complete":

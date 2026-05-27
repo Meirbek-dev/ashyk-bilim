@@ -670,7 +670,7 @@ def _get_assessment_submission_or_404(
     if submission is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+            detail="Отправка не найдена",
         )
     return submission
 
@@ -765,7 +765,7 @@ def _require_submit_access(
     if not _assessment_access_allows_user(activity.id or 0, user.id, db_session):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This assessment is restricted to selected course learners.",
+            detail="Это оценивание доступно только выбранным учащимся курса.",
         )
     checker = PermissionChecker(db_session)
     if checker.check(
@@ -1106,7 +1106,7 @@ def _default_activity_settings(kind: AssessmentType) -> dict[str, object]:
         return validate_settings({"kind": "CODE_CHALLENGE"}).model_dump(mode="json")
     if kind == AssessmentType.QUIZ:
         return validate_settings({"kind": "QUIZ"}).model_dump(mode="json")
-    msg = f"Unsupported assessment kind: {kind}"
+    msg = f"Неподдерживаемый тип оценивания: {kind}"
     raise ValueError(msg)
 
 

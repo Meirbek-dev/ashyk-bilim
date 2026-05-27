@@ -98,7 +98,7 @@ async def api_bulk_publish_grades(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
 ) -> BulkPublishGradesResponse:
     """
-    Publish all graded submissions for an activity at once (BATCH release mode).
+    Опубликовать все оценённые отправки для активности сразу (режим BATCH).
 
     For each PUBLISHED submission without an existing published GradingEntry,
     a new immutable GradingEntry is inserted with published_at stamped to now.
@@ -177,7 +177,7 @@ async def api_list_submissions(
     - activity_id: required
     - status: DRAFT | PENDING | GRADED | PUBLISHED | RETURNED | NEEDS_GRADING (virtual)
     - late_only: filter PENDING submissions to only those submitted after the deadline
-    - search: student name or email filter
+    - search: фильтр по имени студента или электронной почте
     - sort_by: submitted_at | final_score | created_at | attempt_number
     - sort_dir: asc | desc
     - page, page_size: pagination
@@ -284,7 +284,7 @@ async def api_save_grade(
     ] = None,
 ) -> SubmissionRead:
     """
-    Save a teacher-entered final score and optional per-item feedback.
+    Сохранить оценку, введённую преподавателем, и необязательную обратную связь по элементам.
 
     Permission is checked in save_grade via the activity's creator_id.
 

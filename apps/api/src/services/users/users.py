@@ -175,7 +175,7 @@ def update_user_preferences(
     locale: str | None = None,
 ):
     if user_id != current_user.id:
-        raise ResourceAccessDenied(reason="You can only update your own preferences")
+        raise ResourceAccessDenied(reason="Вы можете изменять только свои настройки")
 
     user = _get_user_by_field(db_session, "id", user_id, use_cache=False)
     user_data = {
@@ -229,7 +229,7 @@ async def update_user_avatar(
         except Exception as e:
             raise HTTPException(
                 status_code=400,
-                detail=f"Avatar upload failed: {e!s}",
+                detail=f"Не удалось загрузить аватар: {e!s}",
             )
 
     # Update user in database
@@ -267,7 +267,7 @@ def update_user_password(
 
     if not security_verify_password(form.old_password, user.hashed_password):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong password"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный пароль"
         )
 
     # Update user
@@ -343,7 +343,7 @@ def get_user_session(
         permissions = sorted(effective)
         permissions_timestamp = int(now.timestamp())
     except Exception:
-        _logger.exception(f"Error loading permissions for user {current_user.id}")
+        _logger.exception(f"Ошибка загрузки разрешений для пользователя {current_user.id}")
 
     expires_at = int((now + ACCESS_TOKEN_EXPIRE).timestamp())
     session_version = int(now.timestamp())
@@ -386,7 +386,7 @@ def delete_user_by_id(
     except Exception:
         pass
 
-    return "User deleted"
+    return "Пользователь удален"
 
 
 # Utils & Security functions
@@ -429,7 +429,7 @@ def _validate_unique_email(
     if db_session.exec(statement).first():
         raise HTTPException(
             status_code=400,
-            detail="Email already exists",
+            detail="Электронная почта уже существует",
         )
 
 
@@ -445,7 +445,7 @@ async def _create_and_validate_user(
     if user_object.password and len(user_object.password) < MIN_PASSWORD_LENGTH:
         raise HTTPException(
             status_code=400,
-            detail=f"Password must be at least {MIN_PASSWORD_LENGTH} characters",
+            detail=f"Пароль должен содержать не менее {MIN_PASSWORD_LENGTH} символов",
         )
 
     # Create user with completed fields
@@ -469,7 +469,7 @@ def _safe_role_read(role: Role) -> RoleRead:
         return RoleRead.model_validate(role)
     except ValidationError as exc:  # pragma: no cover - defensive path
         _logger.warning(
-            "Role validation failed for role_id=%s. Using fallback. Error: %s",
+            "Ошибка валидации роли для role_id=%s. Используется запасной вариант. Ошибка: %s",
             getattr(role, "id", None),
             exc,
         )
@@ -493,7 +493,7 @@ def _assign_default_role(db_session: Session, user_id: int | None) -> None:
     # Get user role ID
     user_role = db_session.exec(select(Role).where(Role.slug == RoleSlug.USER)).first()
     if not user_role:
-        raise HTTPException(500, detail="User role not found")
+        raise HTTPException(500, detail="Роль пользователя не найдена")
 
     checker = PermissionChecker(db_session)
     checker.assign_role(
@@ -569,14 +569,14 @@ def _get_user_by_field(
     elif field == "email":
         statement = select(User).where(User.email == value)
     else:
-        msg = f"Invalid field: {field}"
+        msg = f"Недопустимое поле: {field}"
         raise ValueError(msg)
 
     user = db_session.exec(statement).first()
     if not user:
         raise HTTPException(
             status_code=400,
-            detail="User does not exist",
+            detail="Пользователь не существует",
         )
 
     # Populate cache asynchronously (best-effort)

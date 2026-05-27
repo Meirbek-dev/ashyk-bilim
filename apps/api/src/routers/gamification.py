@@ -119,7 +119,7 @@ async def get_unified_dashboard(
 
     except Exception:
         logger.exception("Dashboard error for user %s", user.id)
-        raise HTTPException(status_code=500, detail="Failed to get dashboard")
+        raise HTTPException(status_code=500, detail="Не удалось получить панель управления")
 
 
 @router.post("/xp", response_model=XPAwardResponse)
@@ -136,7 +136,7 @@ async def award_xp(
             if payload.source != XPSource.ADMIN_AWARD:
                 raise HTTPException(
                     status_code=400,
-                    detail="custom_amount allowed only with ADMIN_AWARD source",
+                    detail="custom_amount можно использовать только с источником ADMIN_AWARD",
                 )
             checker.require(user.id, "platform:manage")
 
@@ -147,7 +147,7 @@ async def award_xp(
                 else XPSource(str(payload.source)).value
             )
         except Exception:
-            raise HTTPException(status_code=400, detail="Invalid XP source")
+            raise HTTPException(status_code=400, detail="Некорректный источник XP")
 
         profile, transaction, level_up, is_new = service.award_xp(
             db=db,
@@ -165,16 +165,16 @@ async def award_xp(
             is_new_transaction=is_new,
         )
     except DailyLimitExceededError as e:
-        logger.warning(f"Daily limit exceeded for user {user.id}: {e}")
+        logger.warning(f"Превышен дневной лимит для пользователя {user.id}: {e}")
         raise HTTPException(status_code=429, detail=str(e))
     except GamificationError as e:
-        logger.warning(f"Gamification error for user {user.id}: {e}")
+        logger.warning(f"Ошибка gamification для пользователя {user.id}: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception:
         logger.exception("Award XP error for user %s", user.id)
-        raise HTTPException(status_code=500, detail="Failed to award XP")
+        raise HTTPException(status_code=500, detail="Не удалось начислить XP")
 
 
 @router.post("/streaks/{streak_type}", response_model=StreakUpdateRead)
@@ -202,7 +202,7 @@ async def update_streak(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception:
         logger.exception("Update streak error for user %s", user.id)
-        raise HTTPException(status_code=500, detail="Failed to update streak")
+        raise HTTPException(status_code=500, detail="Не удалось обновить streak")
 
 
 @router.patch("/preferences", response_model=ProfileRead)
@@ -212,13 +212,13 @@ async def update_preferences(
     db: Annotated[Session, Depends(get_db_session)] = None,
 ):
     if not isinstance(data, dict):
-        raise HTTPException(status_code=400, detail="Invalid preferences body")
+        raise HTTPException(status_code=400, detail="Некорректное тело настроек")
     try:
         profile = service.update_preferences(db, user.id, data)
         return _profile_to_read(profile)
     except Exception:
         logger.exception("Update preferences error for user %s", user.id)
-        raise HTTPException(status_code=500, detail="Failed to update preferences")
+        raise HTTPException(status_code=500, detail="Не удалось обновить настройки")
 
 
 @router.get("/leaderboard", response_model=LeaderboardRead)
@@ -232,7 +232,7 @@ async def get_leaderboard(
         return service.get_leaderboard_read(db, limit=limit, offset=offset)
     except Exception:
         logger.exception("Leaderboard error")
-        raise HTTPException(status_code=500, detail="Failed to get leaderboard")
+        raise HTTPException(status_code=500, detail="Не удалось получить таблицу лидеров")
 
 
 @router.get("/rank", response_model=UserRankRead)
@@ -249,4 +249,4 @@ async def get_user_rank(
         return UserRankRead(user_id=user.id, rank=rank)
     except Exception:
         logger.exception("User rank error for user %s", user.id)
-        raise HTTPException(status_code=500, detail="Failed to get user rank")
+        raise HTTPException(status_code=500, detail="Не удалось получить ранг пользователя")

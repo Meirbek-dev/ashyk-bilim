@@ -119,7 +119,7 @@ def create_role(
     checker.require(current_user.id, "role:create")
     if body.priority > _caller_max_priority(checker, current_user.id):
         raise HTTPException(
-            403, detail="Cannot create a role with higher priority than your own"
+            403, detail="Нельзя создать роль с более высоким приоритетом, чем у вашей роли"
         )
     role = repo.create_role(body)
     audit_log.info(
@@ -148,13 +148,13 @@ def update_role(
     role = repo.get_or_404(role_id)
     is_admin = checker.check(current_user.id, "role:manage")
     if role.is_system and not is_admin:
-        raise HTTPException(403, detail="System roles cannot be modified")
+        raise HTTPException(403, detail="Системные роли нельзя изменять")
     requested_priority = body.priority if body.priority is not None else role.priority
     if not is_admin and requested_priority > _caller_max_priority(
         checker, current_user.id
     ):
         raise HTTPException(
-            403, detail="Cannot set a role priority higher than your own"
+            403, detail="Нельзя назначить приоритет роли выше, чем у вашей собственной роли"
         )
     role, changed = repo.update_role(role, body)
     audit_log.info(
@@ -187,7 +187,7 @@ def delete_role(
     role = repo.get_or_404(role_id)
     is_admin = checker.check(current_user.id, "role:manage")
     if role.is_system and not is_admin:
-        raise HTTPException(403, detail="System roles cannot be deleted")
+        raise HTTPException(403, detail="Системные роли нельзя удалять")
     audit_log.info(
         "role_deleted",
         extra={
@@ -249,14 +249,14 @@ def add_permission_to_role(
     role = repo.get_or_404(role_id)
     is_admin = checker.check(current_user.id, "role:manage")
     if role.is_system and not is_admin:
-        raise HTTPException(403, detail="System roles cannot be modified")
+        raise HTTPException(403, detail="Системные роли нельзя изменять")
     perm = repo.get_permission_or_404(body.permission_id)
     if not is_admin and perm.name not in checker.get_expanded_permissions(
         current_user.id
     ):
         raise HTTPException(
             403,
-            detail=f"Cannot grant permission '{perm.name}' that you do not have",
+            detail=f"Нельзя выдать разрешение '{perm.name}', которого у вас нет",
         )
     repo.add_permission_to_role(role_id, body.permission_id)
     audit_log.info(
@@ -291,7 +291,7 @@ def remove_permission_from_role(
     role = repo.get_or_404(role_id)
     is_admin = checker.check(current_user.id, "role:manage")
     if role.is_system and not is_admin:
-        raise HTTPException(403, detail="System roles cannot be modified")
+        raise HTTPException(403, detail="Системные роли нельзя изменять")
     perm = repo.remove_permission_from_role(role_id, permission_id)
     audit_log.info(
         "permission_removed_from_role",

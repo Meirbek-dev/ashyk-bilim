@@ -43,7 +43,7 @@ async def create_discussion(
 
     if not course or course.id is None:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Course does not exist"
+            status_code=status.HTTP_409_CONFLICT, detail="Курс не существует"
         )
 
     # RBAC check - users need read access to participate in discussions
@@ -112,7 +112,7 @@ async def get_discussions_by_course_uuid(
 
     if not course or course.id is None:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Course does not exist"
+            status_code=status.HTTP_409_CONFLICT, detail="Курс не существует"
         )
 
     # RBAC check

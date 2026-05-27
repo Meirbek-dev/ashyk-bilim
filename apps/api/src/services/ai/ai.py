@@ -36,11 +36,11 @@ def _map_ai_errors_to_http(exc: Exception) -> HTTPException:
         return HTTPException(status_code=400, detail=exc.message)
     if isinstance(exc, (AIProcessingError, RetrievalError, ChatSessionError)):
         return HTTPException(
-            status_code=500, detail=f"AI processing failed: {exc.message}"
+            status_code=500, detail=f"Ошибка обработки AI: {exc.message}"
         )
     return HTTPException(
         status_code=500,
-        detail="An unexpected error occurred. Please try again later.",
+        detail="Произошла непредвиденная ошибка. Попробуйте позже.",
     )
 
 
@@ -60,14 +60,14 @@ def _map_ai_error_to_sse(exc: Exception) -> str:
     if isinstance(exc, (AIProcessingError, RetrievalError, ChatSessionError)):
         return format_sse_message(
             ErrorEvent(
-                error=f"AI processing failed: {exc.message}",
+                error=f"Ошибка обработки AI: {exc.message}",
                 error_code=exc.error_code,
                 status=500,
             )
         )
     return format_sse_message(
         ErrorEvent(
-            error="An unexpected error occurred.",
+            error="Произошла непредвиденная ошибка.",
             error_code="AI_INTERNAL_ERROR",
             status=500,
         )
@@ -100,7 +100,7 @@ async def ai_start_activity_chat_session(
         logger.exception("Unexpected error in AI start")
         raise HTTPException(
             status_code=500,
-            detail="An unexpected error occurred. Please try again later.",
+            detail="Произошла непредвиденная ошибка. Попробуйте позже.",
         ) from exc
 
 
@@ -130,7 +130,7 @@ async def ai_send_activity_chat_message(
         logger.exception("Unexpected error sending AI message")
         raise HTTPException(
             status_code=500,
-            detail="An unexpected error occurred. Please try again later.",
+            detail="Произошла непредвиденная ошибка. Попробуйте позже.",
         ) from exc
 
 

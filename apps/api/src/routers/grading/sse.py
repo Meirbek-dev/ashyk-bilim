@@ -51,8 +51,8 @@ def _get_streamable_submission(
     ).first()
     if submission is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found",
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Отправка не найдена",
         )
     if submission.user_id == current_user.id:
         return submission
@@ -60,8 +60,8 @@ def _get_streamable_submission(
     activity = db_session.get(Activity, submission.activity_id)
     if activity is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Activity not found",
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Активность не найдена",
         )
     PermissionChecker(db_session).require(
         current_user.id,
@@ -106,8 +106,8 @@ async def api_feedback_stream(
                     detail={
                         "code": "SSE_CONNECTION_LIMIT",
                         "message": (
-                            f"Too many concurrent SSE connections "
-                            f"(limit: {_MAX_CONNECTIONS_PER_USER})."
+                                f"Слишком много одновременных SSE-соединений "
+                                f"(лимит: {_MAX_CONNECTIONS_PER_USER})."
                         ),
                         "limit": _MAX_CONNECTIONS_PER_USER,
                     },
@@ -117,7 +117,7 @@ async def api_feedback_stream(
             raise
         except Exception:
             # Redis unavailable — fall through to in-process counter
-            logger.warning("Redis unavailable for SSE connection check", exc_info=True)
+            logger.warning("Redis недоступен для проверки SSE-соединения", exc_info=True)
             redis = None
 
     if redis is None and _local_conn_counts[user_id] >= _MAX_CONNECTIONS_PER_USER:
@@ -127,8 +127,8 @@ async def api_feedback_stream(
                 detail={
                     "code": "SSE_CONNECTION_LIMIT",
                     "message": (
-                        f"Too many concurrent SSE connections "
-                        f"(limit: {_MAX_CONNECTIONS_PER_USER})."
+                        f"Слишком много одновременных SSE-соединений "
+                        f"(лимит: {_MAX_CONNECTIONS_PER_USER})."
                     ),
                     "limit": _MAX_CONNECTIONS_PER_USER,
                 },
@@ -145,7 +145,7 @@ async def api_feedback_stream(
                 await redis.expire(conn_key, 3600)  # auto-clean stale counter
             except Exception:
                 logger.warning(
-                    "Failed to increment SSE connection counter", exc_info=True
+                    "Не удалось увеличить счетчик SSE-соединений", exc_info=True
                 )
         else:
             _local_conn_counts[user_id] += 1
@@ -159,7 +159,7 @@ async def api_feedback_stream(
                         event_type = str(event_data.get("event", "message"))
                         yield encode_sse(event_type, event_data)
                 except Exception:
-                    logger.warning("SSE replay failed", exc_info=True)
+                    logger.warning("Не удалось повторно воспроизвести SSE", exc_info=True)
 
             # ── Send connected event ──────────────────────────────────────────
             yield encode_sse(
@@ -194,7 +194,7 @@ async def api_feedback_stream(
                     try:
                         payload = json.loads(raw)
                     except Exception:
-                        logger.warning("Failed to decode SSE payload: %s", raw)
+                        logger.warning("Не удалось декодировать SSE-полезную нагрузку: %s", raw)
                         continue
                     event_type = str(payload.get("event", "message"))
                     yield encode_sse(event_type, payload)
@@ -210,7 +210,7 @@ async def api_feedback_stream(
                         await redis.delete(conn_key)
                 except Exception:
                     logger.warning(
-                        "Failed to decrement SSE connection counter", exc_info=True
+                        "Не удалось уменьшить счетчик SSE-соединений", exc_info=True
                     )
             else:
                 _local_conn_counts[user_id] = max(0, _local_conn_counts[user_id] - 1)
