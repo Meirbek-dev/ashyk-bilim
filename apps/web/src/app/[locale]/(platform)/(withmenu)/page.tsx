@@ -1,4 +1,4 @@
-import { PLATFORM_BRAND_NAME, PLATFORM_DESCRIPTION } from '@/lib/constants';
+import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
 import { LandingContent } from '@/app/_shared/withmenu/LandingContent';
 import { getPlatformThumbnailImage } from '@services/media/media';
 import { PageSuspense } from '@components/Utils/PageSuspense';
@@ -50,8 +50,8 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
   const t = await getTranslations('General');
 
   return {
-    title: `${t('home')} - ${PLATFORM_BRAND_NAME}`,
-    description: PLATFORM_DESCRIPTION,
+    title: `${t('home')} - ${APP_NAME}`,
+    description: APP_DESCRIPTION,
     robots: {
       index: true,
       follow: true,
@@ -63,15 +63,15 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
       },
     },
     openGraph: {
-      title: `${t('home')} - ${PLATFORM_BRAND_NAME}`,
-      description: PLATFORM_DESCRIPTION,
+      title: `${t('home')} - ${APP_NAME}`,
+      description: APP_DESCRIPTION,
       type: 'website',
       images: [
         {
           url: getPlatformThumbnailImage(),
           width: 800,
           height: 600,
-          alt: PLATFORM_BRAND_NAME,
+          alt: APP_NAME,
         },
       ],
     },

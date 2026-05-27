@@ -2,7 +2,7 @@ import GeneralWrapper from '@/components/Objects/Elements/Wrappers/GeneralWrappe
 import { getCourseThumbnailMediaDirectory } from '@services/media/media';
 import { getCollectionById } from '@services/courses/collections';
 import { getAbsoluteUrl } from '@services/config/config';
-import { PLATFORM_BRAND_NAME } from '@/lib/constants';
+import { APP_NAME } from '@/lib/constants';
 import { getTranslations } from 'next-intl/server';
 import Link from '@/components/ui/ServerLink';
 import { Layers } from 'lucide-react';
@@ -19,7 +19,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   const col = await getCollectionById(params.collectionid);
 
   return {
-    title: `${t('collection')}: ${col.name} - ${PLATFORM_BRAND_NAME}`,
+    title: `${t('collection')}: ${col.name} - ${APP_NAME}`,
     description: `${col.description}`,
     robots: {
       index: true,
@@ -32,7 +32,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
       },
     },
     openGraph: {
-      title: `${t('collection')}: ${col.name} - ${PLATFORM_BRAND_NAME}`,
+      title: `${t('collection')}: ${col.name} - ${APP_NAME}`,
       description: `${col.description}`,
       type: 'website',
     },

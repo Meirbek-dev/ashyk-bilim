@@ -8,7 +8,7 @@ import { getPlatformThumbnailImage } from '@services/media/media';
 import { Actions, Resources, Scopes } from '@/types/permissions';
 import { getCollections } from '@services/courses/collections';
 import { getAbsoluteUrl } from '@services/config/config';
-import { PLATFORM_BRAND_NAME } from '@/lib/constants';
+import { APP_NAME } from '@/lib/constants';
 import { getTranslations } from 'next-intl/server';
 import Link from '@components/ui/AppLink';
 import type { Metadata } from 'next';
@@ -21,8 +21,8 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
   const t = await getTranslations('HomePage.Collections');
 
   return {
-    title: `${t('title')} - ${PLATFORM_BRAND_NAME}`,
-    description: t('collectionOfCourses', { platformName: PLATFORM_BRAND_NAME }),
+    title: `${t('title')} - ${APP_NAME}`,
+    description: t('collectionOfCourses', { platformName: APP_NAME }),
     robots: {
       index: true,
       follow: true,
@@ -34,15 +34,15 @@ export async function generateMetadata(_props: MetadataProps): Promise<Metadata>
       },
     },
     openGraph: {
-      title: `${t('title')} - ${PLATFORM_BRAND_NAME}`,
-      description: t('collectionOfCourses', { platformName: PLATFORM_BRAND_NAME }),
+      title: `${t('title')} - ${APP_NAME}`,
+      description: t('collectionOfCourses', { platformName: APP_NAME }),
       type: 'website',
       images: [
         {
           url: getPlatformThumbnailImage(),
           width: 800,
           height: 600,
-          alt: PLATFORM_BRAND_NAME,
+          alt: APP_NAME,
         },
       ],
     },

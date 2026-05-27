@@ -1,4 +1,4 @@
-import { PLATFORM_THUMBNAIL_IMAGE_PATH } from '@/lib/constants';
+import { APP_THUMBNAIL_IMAGE_PATH } from '@/lib/constants';
 import { getPublicConfig } from '@services/config/env';
 import { resolveAvatarUrl } from './avatar';
 
@@ -69,9 +69,9 @@ export function getPlatformThumbnailImage(fileId?: string | null): string {
     return getThumbnailMediaDirectory(fileId);
   }
 
-  const thumbnailPath = PLATFORM_THUMBNAIL_IMAGE_PATH.startsWith('/')
-    ? PLATFORM_THUMBNAIL_IMAGE_PATH.slice(1)
-    : PLATFORM_THUMBNAIL_IMAGE_PATH;
+  const thumbnailPath = APP_THUMBNAIL_IMAGE_PATH.startsWith('/')
+    ? APP_THUMBNAIL_IMAGE_PATH.slice(1)
+    : APP_THUMBNAIL_IMAGE_PATH;
 
   return `${getPublicConfig().siteUrl}${thumbnailPath}`;
 }

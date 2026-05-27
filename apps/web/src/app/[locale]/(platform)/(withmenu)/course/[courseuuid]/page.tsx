@@ -3,7 +3,7 @@ import { getCourseMetadata } from '@services/courses/courses';
 import { getCourseDiscussions } from '@services/courses/discussions';
 import { getCurrentTrail } from '@services/courses/activity';
 import { getSession } from '@/lib/auth/session';
-import { PLATFORM_BRAND_NAME } from '@/lib/constants';
+import { APP_NAME } from '@/lib/constants';
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import { redirect } from '@/i18n/navigation';
@@ -27,7 +27,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
     const course_meta = await fetchCourseMetadata(params.courseuuid);
 
     return {
-      title: `${course_meta.name} - ${PLATFORM_BRAND_NAME}`,
+      title: `${course_meta.name} - ${APP_NAME}`,
       description: course_meta.description,
       keywords: course_meta.learnings,
       robots: {
@@ -41,7 +41,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
         },
       },
       openGraph: {
-        title: `${course_meta.name} - ${PLATFORM_BRAND_NAME}`,
+        title: `${course_meta.name} - ${APP_NAME}`,
         description: course_meta.description || '',
         images: [
           {
@@ -59,7 +59,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   } catch (error: any) {
     if (error.status === 401 || error.status === 403) {
       return {
-        title: `Access Denied - ${PLATFORM_BRAND_NAME}`,
+        title: `Access Denied - ${APP_NAME}`,
       };
     }
     throw error;

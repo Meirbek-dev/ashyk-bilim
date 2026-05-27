@@ -1,4 +1,4 @@
-import { PLATFORM_BRAND_NAME, PLATFORM_DESCRIPTION } from '@/lib/constants';
+import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
 import { getEditableCourses } from '@services/courses/courses';
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
@@ -40,9 +40,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('General');
 
   return {
-    title: `${t('courses')} - ${PLATFORM_BRAND_NAME}`,
-    description: PLATFORM_DESCRIPTION,
-    keywords: `${PLATFORM_BRAND_NAME}, ${PLATFORM_DESCRIPTION}, ${t('courses')}, learning, education, online learning, edu, online courses, ${PLATFORM_BRAND_NAME} ${t('courses')}`,
+    title: `${t('courses')} - ${APP_NAME}`,
+    description: APP_DESCRIPTION,
+    keywords: `${APP_NAME}, ${APP_DESCRIPTION}, ${t('courses')}, learning, education, online learning, edu, online courses, ${APP_NAME} ${t('courses')}`,
     robots: {
       index: true,
       follow: true,
@@ -54,8 +54,8 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
     openGraph: {
-      title: `${t('courses')} - ${PLATFORM_BRAND_NAME}`,
-      description: PLATFORM_DESCRIPTION,
+      title: `${t('courses')} - ${APP_NAME}`,
+      description: APP_DESCRIPTION,
       type: 'website',
     },
   };
