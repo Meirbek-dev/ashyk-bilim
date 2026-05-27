@@ -42,7 +42,7 @@ export default function CourseGridClient({
     return `?${params.toString()}`;
   };
 
-  const isTrailLoading = false; 
+  const isTrailLoading = false;
 
   // Generate pagination range
   const paginationRange = useMemo(() => {

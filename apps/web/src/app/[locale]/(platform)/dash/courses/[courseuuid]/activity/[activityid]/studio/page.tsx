@@ -22,19 +22,24 @@ export default async function PlatformAssessmentStudioPage(props: {
   let assessment;
 
   try {
-    [activity, course] = await Promise.all([
-      getActivity(activityid),
-      getCourseMetadata(courseuuid, undefined, true),
-    ]);
+    [activity, course] = await Promise.all([getActivity(activityid), getCourseMetadata(courseuuid, undefined, true)]);
     assessment = await getAssessmentByActivityUuid(activity.activity_uuid);
   } catch (error: any) {
     if (error.status === 401) {
       const locale = await getLocale();
-      redirect({ href: `/login?returnTo=${encodeURIComponent(`/dash/courses/${courseuuid}/activity/${activityid}/studio`)}`, locale });
+      redirect({
+        href: `/login?returnTo=${encodeURIComponent(`/dash/courses/${courseuuid}/activity/${activityid}/studio`)}`,
+        locale,
+      });
     }
     if (error.status === 403) {
       const activeSession = await getSession();
-      return <AccessDenied courseuuid={courseuuid} session={activeSession} />;
+      return (
+        <AccessDenied
+          courseuuid={courseuuid}
+          session={activeSession}
+        />
+      );
     }
     throw error;
   }

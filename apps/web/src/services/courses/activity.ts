@@ -60,7 +60,7 @@ export async function getCurrentTrail(): Promise<{ runs: any[] } | null> {
   const result = await apiFetch('trail', { method: 'GET' });
   if (!result.ok) return null;
   try {
-    return await result.json() as { runs: any[] };
+    return (await result.json()) as { runs: any[] };
   } catch {
     return null;
   }

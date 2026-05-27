@@ -80,7 +80,12 @@ export default async function PlatformCoursePage(props: { params: Promise<{ cour
     }
     if (error.status === 403) {
       const activeSession = await getSession();
-      return <AccessDenied courseuuid={courseuuid} session={activeSession} />;
+      return (
+        <AccessDenied
+          courseuuid={courseuuid}
+          session={activeSession}
+        />
+      );
     }
     throw error;
   }

@@ -32,14 +32,12 @@ export default function AccessDenied({ courseuuid, session }: AccessDeniedProps)
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-500">
           <ShieldAlert className="h-8 w-8" />
         </div>
-        
+
         <h1 className="mb-3 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
           {tErrors('accessDenied')}
         </h1>
-        
-        <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
-          {tErrors('accessDeniedMessage')}
-        </p>
+
+        <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">{tErrors('accessDeniedMessage')}</p>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Button
