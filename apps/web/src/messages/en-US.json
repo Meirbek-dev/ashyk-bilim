@@ -6523,6 +6523,8 @@
     "somethingWentWrong": "Something went wrong!",
     "technicalDetails": "Technical details:",
     "tryAgain": "Try again",
+    "accessDenied": "Access Denied",
+    "accessDeniedMessage": "You don't have permission to access this course.",
     "assessmentsLoadError": "An error occurred while loading this assessment view. Please try reloading or check your connection.",
     "courseLoadError": "An error occurred while loading this course. Please try reloading or check back shortly.",
     "coursesListLoadError": "An error occurred while loading the courses list. Please try reloading the page.",

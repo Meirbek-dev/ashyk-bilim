@@ -6,6 +6,10 @@ import { getActivity } from '@services/courses/activities';
 import { getCourseMetadata } from '@services/courses/courses';
 import EditorWrapper from '@/components/Objects/Editor/EditorWrapper';
 import { getTranslations } from 'next-intl/server';
+import { getSession } from '@/lib/auth/session';
+import { redirect } from '@/i18n/navigation';
+import { getLocale } from 'next-intl/server';
+import AccessDenied from '@/components/Errors/AccessDenied';
 
 export default async function PlatformAssessmentStudioPage(props: {
   params: Promise<{ courseuuid: string; activityid: string }>;
@@ -13,11 +17,27 @@ export default async function PlatformAssessmentStudioPage(props: {
   const t = await getTranslations('Features.Assessments.Studio');
   const { courseuuid, activityid } = await props.params;
 
-  const [activity, course] = await Promise.all([
-    getActivity(activityid),
-    getCourseMetadata(courseuuid, undefined, true),
-  ]);
-  const assessment = await getAssessmentByActivityUuid(activity.activity_uuid);
+  let activity;
+  let course;
+  let assessment;
+
+  try {
+    [activity, course] = await Promise.all([
+      getActivity(activityid),
+      getCourseMetadata(courseuuid, undefined, true),
+    ]);
+    assessment = await getAssessmentByActivityUuid(activity.activity_uuid);
+  } catch (error: any) {
+    if (error.status === 401) {
+      const locale = await getLocale();
+      redirect({ href: `/login?returnTo=${encodeURIComponent(`/dash/courses/${courseuuid}/activity/${activityid}/studio`)}`, locale });
+    }
+    if (error.status === 403) {
+      const activeSession = await getSession();
+      return <AccessDenied courseuuid={courseuuid} session={activeSession} />;
+    }
+    throw error;
+  }
 
   return renderCourseWorkspacePage({
     courseuuid,
