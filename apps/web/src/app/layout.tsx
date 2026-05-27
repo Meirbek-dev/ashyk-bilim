@@ -8,6 +8,8 @@ import {
   THEME_FONT_LINK_ATTRIBUTE,
 } from '@/lib/theme-fonts';
 import type { CSSProperties } from 'react';
+import { Suspense } from 'react';
+import { Spinner } from '@/components/ui/spinner';
 
 import '@styles/globals.css';
 
@@ -62,7 +64,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="relative"
         suppressHydrationWarning
       >
-        <div className="relative isolate flex min-h-svh flex-col">{children}</div>
+        <div className="relative isolate flex min-h-svh flex-col">
+          {/*
+           * LocaleLayout (and all its children) awaits `params`, `cookies()`,
+           * and `getSession()` — all dynamic APIs in cacheComponents mode.
+           * This Suspense in the fully-static root layout is the correct boundary:
+           * the <html>/<head>/<body> shell is streamed immediately, then the
+           * locale segment hydrates once its dynamic data resolves.
+           */}
+          <Suspense
+            fallback={
+              <main className="flex min-h-svh items-center justify-center">
+                <Spinner className="size-8" />
+              </main>
+            }
+          >
+            {children}
+          </Suspense>
+        </div>
       </body>
     </html>
   );

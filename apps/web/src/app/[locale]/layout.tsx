@@ -7,7 +7,6 @@ import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { setRequestLocale, getMessages } from 'next-intl/server';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { connection } from 'next/server';
 
 interface LocaleLayoutProps {
   children: React.ReactNode;
@@ -18,6 +17,11 @@ function getInitialThemeMode(rawMode: string | undefined): ThemeMode {
   return rawMode === 'dark' ? 'dark' : DEFAULT_THEME_MODE;
 }
 
+/**
+ * All dynamic API access in this layout (params, cookies, getSession) is
+ * covered by the <Suspense> in the root layout (app/layout.tsx), which is
+ * the fully-static ancestor that owns the boundary for cacheComponents mode.
+ */
 export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
   const { locale } = await params;
 
@@ -26,12 +30,6 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   }
 
   setRequestLocale(locale);
-
-  // Explicitly opt into dynamic rendering.
-  // getSession() makes an uncached network fetch (cache: 'no-store') which
-  // Next.js 16 treats as a blocking-route violation when called outside <Suspense>.
-  // connection() is the idiomatic signal that this layout requires a live request.
-  await connection();
 
   const [cookieStore, initialSession, messages] = await Promise.all([cookies(), getSession(), getMessages()]);
   const initialThemeMode = getInitialThemeMode(cookieStore.get(THEME_MODE_STORAGE_KEY)?.value);
