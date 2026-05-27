@@ -28,7 +28,7 @@ import UserAvatar from '../../Objects/UserAvatar';
 import { useCallback, useEffect, useEffectEvent } from 'react';
 import AppLink from '@/components/ui/AppLink';
 import { Badge } from '@/components/ui/badge';
-import { usePathname } from 'next/navigation';
+import { usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 

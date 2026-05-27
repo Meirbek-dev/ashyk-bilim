@@ -4,7 +4,7 @@ import { BarChart3, BookCopy, Home, School, Settings, ShieldCheck, Users } from 
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions';
 import AppLink from '@/components/ui/AppLink';
 import { cn } from '@/lib/utils';
-import { usePathname } from 'next/navigation';
+import { usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import type { LucideIcon } from 'lucide-react';
 

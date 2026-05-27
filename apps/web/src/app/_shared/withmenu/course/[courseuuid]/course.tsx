@@ -279,6 +279,7 @@ const CourseClient = (props: any) => {
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 100vw, 75vw"
+                          loading="eager"
                         />
                         {course.thumbnail_type === 'both' && mediaSwitcher}
                       </div>
@@ -293,6 +294,7 @@ const CourseClient = (props: any) => {
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, 75vw"
+                        loading="eager"
                       />
                     </div>
                   );
