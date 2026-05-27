@@ -166,7 +166,9 @@ async def api_ai_start_activity_chat_session_stream(
         HTTPException 504: AI processing timeout
         HTTPException 500: AI processing error
     """
-    logger.info("Запрос на старт стримингового AI-чата от пользователя %s", current_user.id)
+    logger.info(
+        "Запрос на старт стримингового AI-чата от пользователя %s", current_user.id
+    )
 
     try:
         cancel_event = asyncio.Event()

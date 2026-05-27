@@ -13220,7 +13220,6 @@
             "title": "Pass Rate"
           },
           "score_distribution": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ScoreDistributionBucket"
             },
@@ -14002,7 +14001,7 @@
             "type": "string"
           },
           "final_score": {
-            "description": "Final score 0–100",
+            "description": "Итоговый балл 0–100",
             "maximum": 100.0,
             "minimum": 0.0,
             "title": "Final Score",
@@ -16617,7 +16616,7 @@
     },
     "/api/v1/ai/send/activity_chat_message": {
       "post": {
-        "description": "Send a message to an AI Chat session with a Course Activity.\n\nRate limit: 20 requests per minute per IP address.\n\nRaises:\n    HTTPException 429: Rate limit exceeded\n    HTTPException 404: Activity not found\n    HTTPException 403: AI feature disabled\n    HTTPException 504: AI processing timeout\n    HTTPException 500: AI processing error",
+        "description": "Send a message to an AI Chat session with a Course Activity.\n\nRate limit: 20 requests per minute per IP address.\n\nRaises:\n    HTTPException 429: Rate limit exceeded\n    HTTPException 404: Активность не найдена\n    HTTPException 403: AI feature disabled\n    HTTPException 504: AI processing timeout\n    HTTPException 500: AI processing error",
         "operationId": "api_ai_send_activity_chat_message_api_v1_ai_send_activity_chat_message_post",
         "requestBody": {
           "content": {
@@ -16664,7 +16663,7 @@
     },
     "/api/v1/ai/send/activity_chat_message_stream": {
       "post": {
-        "description": "Send a message to AI Chat session with streaming responses (SSE).\n\nRate limit: 20 requests per minute per IP address.\n\nReturns:\n    Server-Sent Events (SSE) stream with AI response chunks\n\nRaises:\n    HTTPException 429: Rate limit exceeded\n    HTTPException 404: Activity not found\n    HTTPException 403: AI feature disabled or streaming not enabled\n    HTTPException 504: AI processing timeout\n    HTTPException 500: AI processing error",
+        "description": "Send a message to AI Chat session with streaming responses (SSE).\n\nRate limit: 20 requests per minute per IP address.\n\nReturns:\n    Server-Sent Events (SSE) stream with AI response chunks\n\nRaises:\n    HTTPException 429: Rate limit exceeded\n    HTTPException 404: Активность не найдена\n    HTTPException 403: AI feature disabled or streaming not enabled\n    HTTPException 504: AI processing timeout\n    HTTPException 500: AI processing error",
         "operationId": "api_ai_send_activity_chat_message_stream_api_v1_ai_send_activity_chat_message_stream_post",
         "requestBody": {
           "content": {
@@ -16709,7 +16708,7 @@
     },
     "/api/v1/ai/start/activity_chat_session": {
       "post": {
-        "description": "Start a new AI Chat session with a Course Activity.\n\nRate limit: 10 requests per minute per IP address.\n\nRaises:\n    HTTPException 429: Rate limit exceeded\n    HTTPException 404: Activity not found\n    HTTPException 403: AI feature disabled\n    HTTPException 504: AI processing timeout\n    HTTPException 500: AI processing error",
+        "description": "Start a new AI Chat session with a Course Activity.\n\nRate limit: 10 requests per minute per IP address.\n\nRaises:\n    HTTPException 429: Rate limit exceeded\n    HTTPException 404: Активность не найдена\n    HTTPException 403: AI feature disabled\n    HTTPException 504: AI processing timeout\n    HTTPException 500: AI processing error",
         "operationId": "api_ai_start_activity_chat_session_api_v1_ai_start_activity_chat_session_post",
         "requestBody": {
           "content": {
@@ -16756,7 +16755,7 @@
     },
     "/api/v1/ai/start/activity_chat_session_stream": {
       "post": {
-        "description": "Start a new AI Chat session with streaming responses (SSE).\n\nThis endpoint provides real-time streaming of AI responses for better\nperceived performance. Clients receive response chunks as they're generated.\n\nRate limit: 10 requests per minute per IP address.\n\nReturns:\n    Server-Sent Events (SSE) stream with AI response chunks\n\nEvent types:\n    - status: Processing status updates\n    - chunk: Individual response chunks\n    - final: Complete response\n    - error: Error information\n\nRaises:\n    HTTPException 429: Rate limit exceeded\n    HTTPException 404: Activity not found\n    HTTPException 403: AI feature disabled or streaming not enabled\n    HTTPException 504: AI processing timeout\n    HTTPException 500: AI processing error",
+        "description": "Start a new AI Chat session with streaming responses (SSE).\n\nThis endpoint provides real-time streaming of AI responses for better\nperceived performance. Clients receive response chunks as they're generated.\n\nRate limit: 10 requests per minute per IP address.\n\nReturns:\n    Server-Sent Events (SSE) stream with AI response chunks\n\nEvent types:\n    - status: Processing status updates\n    - chunk: Individual response chunks\n    - final: Complete response\n    - error: Error information\n\nRaises:\n    HTTPException 429: Rate limit exceeded\n    HTTPException 404: Активность не найдена\n    HTTPException 403: AI feature disabled or streaming not enabled\n    HTTPException 504: AI processing timeout\n    HTTPException 500: AI processing error",
         "operationId": "api_ai_start_activity_chat_session_stream_api_v1_ai_start_activity_chat_session_stream_post",
         "requestBody": {
           "content": {
@@ -20743,7 +20742,7 @@
     },
     "/api/v1/assessments/inline-quiz": {
       "post": {
-        "description": "Create a new inline quiz assessment linked to a parent activity.",
+        "description": "Создать новое встроенное оценивание-quiz, привязанное к родительской активности.",
         "operationId": "api_create_inline_quiz_api_v1_assessments_inline_quiz_post",
         "requestBody": {
           "content": {
@@ -20790,7 +20789,7 @@
     },
     "/api/v1/assessments/policy-preset/{kind}": {
       "get": {
-        "description": "Return default policy settings for a given assessment kind.",
+        "description": "Вернуть настройки политики по умолчанию для заданного типа оценивания.",
         "operationId": "api_get_policy_preset_api_v1_assessments_policy_preset__kind__get",
         "parameters": [
           {
@@ -21144,7 +21143,7 @@
     },
     "/api/v1/assessments/{assessment_uuid}/attempt-state": {
       "get": {
-        "description": "Return the authoritative attempt state for the current student.",
+        "description": "Вернуть каноническое состояние попытки для текущего студента.",
         "operationId": "api_get_attempt_state_api_v1_assessments__assessment_uuid__attempt_state_get",
         "parameters": [
           {
@@ -21192,7 +21191,7 @@
     },
     "/api/v1/assessments/{assessment_uuid}/audit": {
       "get": {
-        "description": "List audit events for an assessment (teacher-only).",
+        "description": "Показать события аудита для оценивания (только для преподавателя).",
         "operationId": "api_get_audit_trail_api_v1_assessments__assessment_uuid__audit_get",
         "parameters": [
           {
@@ -21261,7 +21260,7 @@
     },
     "/api/v1/assessments/{assessment_uuid}/code-challenge/validate": {
       "post": {
-        "description": "Validate reference solutions for all configured languages against the test suite.",
+        "description": "Проверить эталонные решения для всех настроенных языков на тестовом наборе.",
         "operationId": "api_validate_code_challenge_api_v1_assessments__assessment_uuid__code_challenge_validate_post",
         "parameters": [
           {
@@ -21473,7 +21472,7 @@
     },
     "/api/v1/assessments/{assessment_uuid}/item-analytics": {
       "get": {
-        "description": "Return per-question analytics for the teacher Results dashboard.",
+        "description": "Вернуть аналитику по каждому вопросу для страницы результатов преподавателя.",
         "operationId": "api_get_item_analytics_api_v1_assessments__assessment_uuid__item_analytics_get",
         "parameters": [
           {
@@ -21706,7 +21705,7 @@
     },
     "/api/v1/assessments/{assessment_uuid}/items/{item_uuid}/runs": {
       "post": {
-        "description": "Run student code against visible test cases (does not affect grade).",
+        "description": "Запустить код студента на видимых тестах (не влияет на оценку).",
         "operationId": "api_run_code_item_api_v1_assessments__assessment_uuid__items__item_uuid__runs_post",
         "parameters": [
           {
@@ -21773,7 +21772,7 @@
     },
     "/api/v1/assessments/{assessment_uuid}/items/{item_uuid}/runs/{run_uuid}": {
       "get": {
-        "description": "Fetch a previously-created student-safe code run.",
+        "description": "Получить ранее созданный безопасный для студента запуск кода.",
         "operationId": "api_get_code_item_run_api_v1_assessments__assessment_uuid__items__item_uuid__runs__run_uuid__get",
         "parameters": [
           {
@@ -22008,7 +22007,7 @@
     },
     "/api/v1/assessments/{assessment_uuid}/overrides": {
       "get": {
-        "description": "List per-student policy overrides for this assessment.",
+        "description": "Показать индивидуальные исключения политики для этого оценивания.",
         "operationId": "api_list_overrides_api_v1_assessments__assessment_uuid__overrides_get",
         "parameters": [
           {
@@ -22058,7 +22057,7 @@
         ]
       },
       "post": {
-        "description": "Create a per-student policy exception (due date extension, attempt limit, etc.).",
+        "description": "Создать индивидуальное исключение политики для студента (продление срока, лимит попыток и т. д.).",
         "operationId": "api_create_override_api_v1_assessments__assessment_uuid__overrides_post",
         "parameters": [
           {
@@ -22525,7 +22524,7 @@
             }
           },
           {
-            "description": "Filter by assessment type (QUIZ, OPEN_TEXT, CODE_CHALLENGE, etc.)",
+            "description": "Фильтр по типу оценивания (QUIZ, OPEN_TEXT, CODE_CHALLENGE и т. д.)",
             "in": "query",
             "name": "assessment_type",
             "required": false,
@@ -22538,12 +22537,12 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by assessment type (QUIZ, OPEN_TEXT, CODE_CHALLENGE, etc.)",
+              "description": "Фильтр по типу оценивания (QUIZ, OPEN_TEXT, CODE_CHALLENGE и т. д.)",
               "title": "Assessment Type"
             }
           },
           {
-            "description": "Only include submissions submitted after this ISO-8601 datetime",
+            "description": "Включать только отправки после этой даты и времени в формате ISO-8601",
             "in": "query",
             "name": "submitted_after",
             "required": false,
@@ -22557,12 +22556,12 @@
                   "type": "null"
                 }
               ],
-              "description": "Only include submissions submitted after this ISO-8601 datetime",
+              "description": "Включать только отправки после этой даты и времени в формате ISO-8601",
               "title": "Submitted After"
             }
           },
           {
-            "description": "Only include submissions submitted before this ISO-8601 datetime",
+            "description": "Включать только отправки до этой даты и времени в формате ISO-8601",
             "in": "query",
             "name": "submitted_before",
             "required": false,
@@ -22576,7 +22575,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Only include submissions submitted before this ISO-8601 datetime",
+              "description": "Включать только отправки до этой даты и времени в формате ISO-8601",
               "title": "Submitted Before"
             }
           }
@@ -22797,7 +22796,7 @@
     },
     "/api/v1/assessments/{assessment_uuid}/submissions/{submission_uuid}/grade": {
       "patch": {
-        "description": "Save an item-level grading draft. Final score is computed from item scores.",
+        "description": "Сохранить черновик оценки по элементам. Итоговый балл вычисляется по сумме баллов элементов.",
         "operationId": "api_save_grading_draft_api_v1_assessments__assessment_uuid__submissions__submission_uuid__grade_patch",
         "parameters": [
           {
@@ -24122,7 +24121,7 @@
     },
     "/api/v1/chapters/course/{course_uuid}/order": {
       "patch": {
-        "description": "Bulk reorder all chapters and activities (legacy — prefer atomic endpoints).",
+        "description": "Массово переупорядочить все главы и активности (устаревший вариант — предпочтительнее атомарные методы).",
         "operationId": "api_reorder_chapters_and_activities_api_v1_chapters_course__course_uuid__order_patch",
         "parameters": [
           {
@@ -24331,7 +24330,7 @@
     },
     "/api/v1/chapters/{chapter_uuid}/activities/{activity_uuid}/order": {
       "patch": {
-        "description": "Move an activity to a specific position, optionally into a different chapter (atomic).",
+        "description": "Переместить активность на заданную позицию, при необходимости в другую главу (атомарно).",
         "operationId": "api_move_activity_to_order_api_v1_chapters__chapter_uuid__activities__activity_uuid__order_patch",
         "parameters": [
           {
@@ -24400,7 +24399,7 @@
     },
     "/api/v1/chapters/{chapter_uuid}/order": {
       "patch": {
-        "description": "Move a chapter to a specific position within its course (atomic).",
+        "description": "Переместить главу на заданную позицию внутри курса (атомарно).",
         "operationId": "api_move_chapter_to_order_api_v1_chapters__chapter_uuid__order_patch",
         "parameters": [
           {
@@ -25600,38 +25599,38 @@
             }
           },
           {
-            "description": "Include replies in response",
+            "description": "Включать ответы в ответ",
             "in": "query",
             "name": "include_replies",
             "required": false,
             "schema": {
               "default": false,
-              "description": "Include replies in response",
+              "description": "Включать ответы в ответ",
               "title": "Include Replies",
               "type": "boolean"
             }
           },
           {
-            "description": "Number of discussions to return",
+            "description": "Количество обсуждений для возврата",
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
               "default": 50,
-              "description": "Number of discussions to return",
+              "description": "Количество обсуждений для возврата",
               "maximum": 100,
               "title": "Limit",
               "type": "integer"
             }
           },
           {
-            "description": "Number of discussions to skip",
+            "description": "Количество обсуждений для пропуска",
             "in": "query",
             "name": "offset",
             "required": false,
             "schema": {
               "default": 0,
-              "description": "Number of discussions to skip",
+              "description": "Количество обсуждений для пропуска",
               "title": "Offset",
               "type": "integer"
             }
@@ -26092,26 +26091,26 @@
             }
           },
           {
-            "description": "Number of replies to return",
+            "description": "Количество ответов для возврата",
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
               "default": 50,
-              "description": "Number of replies to return",
+              "description": "Количество ответов для возврата",
               "maximum": 100,
               "title": "Limit",
               "type": "integer"
             }
           },
           {
-            "description": "Number of replies to skip",
+            "description": "Количество ответов для пропуска",
             "in": "query",
             "name": "offset",
             "required": false,
             "schema": {
               "default": 0,
-              "description": "Number of replies to skip",
+              "description": "Количество ответов для пропуска",
               "title": "Offset",
               "type": "integer"
             }
@@ -27856,7 +27855,7 @@
     },
     "/api/v1/grading/activities/{activity_id}/publish-grades": {
       "post": {
-        "description": "Publish all graded submissions for an activity at once (BATCH release mode).\n\nFor each PUBLISHED submission without an existing published GradingEntry,\na new immutable GradingEntry is inserted with published_at stamped to now.\nAfter this call, students can see their grades for this activity.\n\nUse when AssessmentPolicy.grade_release_mode == BATCH to control when\nstudents can first see their grades (e.g., after the deadline has passed).",
+        "description": "Опубликовать все оценённые отправки для активности сразу (режим BATCH).\n\nFor each PUBLISHED submission without an existing published GradingEntry,\na new immutable GradingEntry is inserted with published_at stamped to now.\nAfter this call, students can see their grades for this activity.\n\nUse when AssessmentPolicy.grade_release_mode == BATCH to control when\nstudents can first see their grades (e.g., after the deadline has passed).",
         "operationId": "api_bulk_publish_grades_api_v1_grading_activities__activity_id__publish_grades_post",
         "parameters": [
           {
@@ -28171,7 +28170,7 @@
     },
     "/api/v1/grading/submissions": {
       "get": {
-        "description": "Paginated, filterable, searchable submissions list for a teacher.\n\nQuery params:\n- activity_id: required\n- status: DRAFT | PENDING | GRADED | PUBLISHED | RETURNED | NEEDS_GRADING (virtual)\n- late_only: filter PENDING submissions to only those submitted after the deadline\n- search: student name or email filter\n- sort_by: submitted_at | final_score | created_at | attempt_number\n- sort_dir: asc | desc\n- page, page_size: pagination",
+        "description": "Paginated, filterable, searchable submissions list for a teacher.\n\nQuery params:\n- activity_id: required\n- status: DRAFT | PENDING | GRADED | PUBLISHED | RETURNED | NEEDS_GRADING (virtual)\n- late_only: filter PENDING submissions to only those submitted after the deadline\n- search: фильтр по имени студента или электронной почте\n- sort_by: submitted_at | final_score | created_at | attempt_number\n- sort_dir: asc | desc\n- page, page_size: pagination",
         "operationId": "api_list_submissions_api_v1_grading_submissions_get",
         "parameters": [
           {
@@ -28491,7 +28490,7 @@
         ]
       },
       "patch": {
-        "description": "Save a teacher-entered final score and optional per-item feedback.\n\nPermission is checked in save_grade via the activity's creator_id.\n\nSupply `If-Match: <version>` to enable optimistic concurrency control and\nprevent silent overwrites when two teachers grade the same submission.",
+        "description": "Сохранить оценку, введённую преподавателем, и необязательную обратную связь по элементам.\n\nPermission is checked in save_grade via the activity's creator_id.\n\nSupply `If-Match: <version>` to enable optimistic concurrency control and\nprevent silent overwrites when two teachers grade the same submission.",
         "operationId": "api_save_grade_api_v1_grading_submissions__submission_uuid__patch",
         "parameters": [
           {

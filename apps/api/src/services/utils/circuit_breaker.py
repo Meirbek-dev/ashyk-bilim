@@ -49,9 +49,7 @@ class CircuitBreaker:
                 logger.info("Circuit breaker %s entered HALF_OPEN state", self.name)
             else:
                 msg = f"Circuit breaker {self.name} is OPEN"
-                raise CircuitBreakerOpenException(
-                    msg
-                )
+                raise CircuitBreakerOpenException(msg)
 
     def _on_success(self) -> None:
         if self.state == "HALF_OPEN":

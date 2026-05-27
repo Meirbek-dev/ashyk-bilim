@@ -281,7 +281,9 @@ async def add_users_to_usergroup(
     new_entries = []
     for user_id in parsed_ids:
         if user_id in existing_user_ids:
-            logger.error("Пользователь с id %s уже есть в группе пользователей", user_id)
+            logger.error(
+                "Пользователь с id %s уже есть в группе пользователей", user_id
+            )
             continue
 
         user = users_map.get(user_id)
@@ -351,7 +353,9 @@ async def remove_users_from_usergroup(
     found_user_ids = {ugu.user_id for ugu in usergroup_users}
     for user_id in parsed_ids:
         if user_id not in found_user_ids:
-            logger.error("Пользователь с id %s не найден в группе пользователей", user_id)
+            logger.error(
+                "Пользователь с id %s не найден в группе пользователей", user_id
+            )
 
     for usergroup_user in usergroup_users:
         db_session.delete(usergroup_user)
@@ -463,7 +467,9 @@ async def remove_resources_from_usergroup(
     found_uuids = {ugr.resource_uuid for ugr in usergroup_resources}
     for resource_uuid in resources_uuids_array:
         if resource_uuid not in found_uuids:
-            logger.error("Ресурс с uuid %s не найден в группе пользователей", resource_uuid)
+            logger.error(
+                "Ресурс с uuid %s не найден в группе пользователей", resource_uuid
+            )
 
     for usergroup_resource in usergroup_resources:
         db_session.delete(usergroup_resource)

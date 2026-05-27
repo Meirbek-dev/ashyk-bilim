@@ -385,7 +385,8 @@ async def api_get_platform_courses(
                         return Response(status_code=304)
                 except Exception:
                     logger.debug(
-                        "Не удалось разобрать заголовок If-Modified-Since", exc_info=True
+                        "Не удалось разобрать заголовок If-Modified-Since",
+                        exc_info=True,
                     )
     except Exception:
         logger.debug("Не удалось установить заголовок Last-Modified", exc_info=True)

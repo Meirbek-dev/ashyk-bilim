@@ -95,7 +95,7 @@ lint.ignore = [
   "RUF001",
   "E501", # line-too-long: Line is too long
 ]
-# lint.select = ["ALL"]
+lint.select = ["ALL"]
 lint.fixable = ["ALL"]
 target-version = "py315"
 preview = true

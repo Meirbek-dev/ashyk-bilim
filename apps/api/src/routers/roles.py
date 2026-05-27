@@ -119,7 +119,8 @@ def create_role(
     checker.require(current_user.id, "role:create")
     if body.priority > _caller_max_priority(checker, current_user.id):
         raise HTTPException(
-            403, detail="Нельзя создать роль с более высоким приоритетом, чем у вашей роли"
+            403,
+            detail="Нельзя создать роль с более высоким приоритетом, чем у вашей роли",
         )
     role = repo.create_role(body)
     audit_log.info(
@@ -154,7 +155,8 @@ def update_role(
         checker, current_user.id
     ):
         raise HTTPException(
-            403, detail="Нельзя назначить приоритет роли выше, чем у вашей собственной роли"
+            403,
+            detail="Нельзя назначить приоритет роли выше, чем у вашей собственной роли",
         )
     role, changed = repo.update_role(role, body)
     audit_log.info(

@@ -13,7 +13,6 @@ import {
   codeChallengeSubmissionsQueryOptions,
   judge0LanguagesQueryOptions,
 } from './queries';
-import type { CodeChallengeSettings } from '@/services/courses/code-challenges';
 
 function codeChallengeSettingsHookOptions<TSettings = unknown>(activityUuid: string | null | undefined) {
   const normalizedActivityUuid = activityUuid ?? '';
@@ -48,8 +47,8 @@ function codeChallengeSubmissionHookOptions(
   });
 }
 
-export function useCodeChallengeSettings<TSettings = CodeChallengeSettings>(activityUuid: string | null | undefined) {
-  return useQuery(codeChallengeSettingsHookOptions<TSettings>(activityUuid));
+export function useCodeChallengeSettings(activityUuid: string | null | undefined) {
+  return useQuery(codeChallengeSettingsHookOptions<unknown>(activityUuid));
 }
 
 export function useJudge0Languages() {

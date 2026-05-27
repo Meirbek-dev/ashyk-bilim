@@ -128,9 +128,9 @@ async def get_submissions_for_activity(
     page_size: int = 25,
 ) -> SubmissionListResponse:
     """
-     Вернуть постраничные, фильтруемые и поисковые отправки для активности (вид преподавателя).
+    Вернуть постраничные, фильтруемые и поисковые отправки для активности (вид преподавателя).
 
-     Использует SQL LIMIT/OFFSET — без загрузки в память.
+    Использует SQL LIMIT/OFFSET — без загрузки в память.
     """
     activity = db_session.exec(
         select(Activity).where(Activity.id == activity_id)
@@ -863,7 +863,7 @@ async def bulk_publish_grades(
     ).first()
     if not activity:
         raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
         )
 
     checker = PermissionChecker(db_session)

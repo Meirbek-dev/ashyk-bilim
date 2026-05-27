@@ -120,7 +120,9 @@ async def admin_analytics_overview_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
     if not scope.has_platform_scope:
-        raise HTTPException(status_code=403, detail="Требуется область платформенной аналитики")
+        raise HTTPException(
+            status_code=403, detail="Требуется область платформенной аналитики"
+        )
     return get_admin_analytics(db_session, scope, filters)
 
 
@@ -297,7 +299,9 @@ async def delete_teacher_saved_view_platform(
     scope = await _scope_for(db_session, current_user, filters, action="read")
     deleted = delete_analytics_view(db_session, scope, view_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Сохраненное представление не найдено")
+        raise HTTPException(
+            status_code=404, detail="Сохраненное представление не найдено"
+        )
     return Response(status_code=204)
 
 

@@ -165,16 +165,18 @@ def _decode_state(state: str) -> tuple[str, str]:
             [_GOOGLE_STATE_AUDIENCE],
         )
     except jwt.ExpiredSignatureError as exc:
-           raise HTTPException(status_code=400, detail="Состояние OAuth истекло") from exc
+        raise HTTPException(status_code=400, detail="Состояние OAuth истекло") from exc
     except jwt.PyJWTError as exc:
-           raise HTTPException(status_code=400, detail="Некорректное состояние OAuth") from exc
+        raise HTTPException(
+            status_code=400, detail="Некорректное состояние OAuth"
+        ) from exc
 
     if payload.get("type") != "google_state":
-           raise HTTPException(status_code=400, detail="Некорректный тип состояния OAuth")
+        raise HTTPException(status_code=400, detail="Некорректный тип состояния OAuth")
     callback = payload.get("callback")
     jti = payload.get("jti")
     if not isinstance(callback, str) or not callback:
-           raise HTTPException(status_code=400, detail="Некорректное состояние OAuth")
+        raise HTTPException(status_code=400, detail="Некорректное состояние OAuth")
     return callback, jti or ""
 
 
@@ -198,7 +200,7 @@ async def _store_pkce_verifier(state_jti: str, code_verifier: str) -> None:
         # "session expired" error at callback time.
         raise HTTPException(
             status_code=503,
-                detail="Сервис аутентификации временно недоступен. Попробуйте еще раз.",
+            detail="Сервис аутентификации временно недоступен. Попробуйте еще раз.",
         )
     await r.set(f"pkce:{state_jti}", code_verifier, ex=PKCE_TTL)
 
@@ -243,7 +245,7 @@ async def _post_google_token(
             if attempt >= _TOKEN_REQUEST_ATTEMPTS:
                 break
             logger.warning(
-                    "Временная сетевая ошибка при обмене Google-токена; повторяем попытку | endpoint=%s | redirect_uri=%s | pkce=%s | attempt=%s/%s | error_type=%s",
+                "Временная сетевая ошибка при обмене Google-токена; повторяем попытку | endpoint=%s | redirect_uri=%s | pkce=%s | attempt=%s/%s | error_type=%s",
                 token_endpoint,
                 redirect_uri,
                 "yes" if code_verifier_present else "no",
@@ -268,20 +270,20 @@ async def _get_google_userinfo(
         )
     except _RETRYABLE_HTTP_ERRORS as exc:
         logger.exception(
-                "Сетевая ошибка при получении Google userinfo | endpoint=%s | error_type=%s",
+            "Сетевая ошибка при получении Google userinfo | endpoint=%s | error_type=%s",
             userinfo_endpoint,
             type(exc).__name__,
             exc_info=exc,
         )
         raise HTTPException(
             status_code=503,
-                detail="Сервис Google OAuth временно недоступен",
+            detail="Сервис Google OAuth временно недоступен",
         ) from exc
 
     if response.status_code != 200:
         raise HTTPException(
             status_code=400,
-                detail="Не удалось получить данные пользователя Google",
+            detail="Не удалось получить данные пользователя Google",
         )
     return response.json()
 
@@ -330,13 +332,13 @@ async def exchange_google_code(
         code_verifier = await _consume_pkce_verifier(state_jti)
         if not code_verifier:
             logger.warning(
-                    "Отсутствует Google PKCE verifier для callback | state_jti=%s | redirect_uri=%s",
+                "Отсутствует Google PKCE verifier для callback | state_jti=%s | redirect_uri=%s",
                 state_jti,
                 redirect_uri,
             )
             raise HTTPException(
                 status_code=400,
-                    detail="Сессия Google OAuth истекла. Попробуйте еще раз.",
+                detail="Сессия Google OAuth истекла. Попробуйте еще раз.",
             )
 
     async with _build_google_client(_TOKEN_TIMEOUT) as client:
@@ -365,7 +367,7 @@ async def exchange_google_code(
             except ValueError:
                 google_error = exc.response.text
             logger.exception(
-                    "Ошибка обмена Google-токена: HTTP %s | redirect_uri=%s | pkce=%s | error=%s",
+                "Ошибка обмена Google-токена: HTTP %s | redirect_uri=%s | pkce=%s | error=%s",
                 exc.response.status_code,
                 redirect_uri,
                 "yes" if code_verifier else "no",
@@ -373,11 +375,11 @@ async def exchange_google_code(
             )
             raise HTTPException(
                 status_code=400,
-                    detail="Не удалось обменять код авторизации Google",
+                detail="Не удалось обменять код авторизации Google",
             ) from exc
         except httpx.HTTPError as exc:
             logger.exception(
-                    "Сетевая ошибка при обмене Google-токена | endpoint=%s | redirect_uri=%s | pkce=%s | error_type=%s",
+                "Сетевая ошибка при обмене Google-токена | endpoint=%s | redirect_uri=%s | pkce=%s | error_type=%s",
                 metadata["token_endpoint"],
                 redirect_uri,
                 "yes" if code_verifier else "no",
@@ -386,7 +388,7 @@ async def exchange_google_code(
             )
             raise HTTPException(
                 status_code=503,
-                    detail="Сервис Google OAuth временно недоступен",
+                detail="Сервис Google OAuth временно недоступен",
             ) from exc
 
         token = token_resp.json()
@@ -394,7 +396,7 @@ async def exchange_google_code(
         if not isinstance(access_token, str) or not access_token:
             raise HTTPException(
                 status_code=400,
-                    detail="В ответе Google token отсутствует access_token",
+                detail="В ответе Google token отсутствует access_token",
             )
         id_token_claims = _claims_from_google_id_token(
             token.get("id_token"),

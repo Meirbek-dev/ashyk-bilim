@@ -28,7 +28,7 @@ export function MarkdownImage({ src, alt, title, className }: MarkdownImageProps
         title={title}
       >
         <span aria-hidden="true">🖼</span>
-          <span>{alt || t('imageLabel')}</span>
+        <span>{alt || t('imageLabel')}</span>
       </span>
     );
   }

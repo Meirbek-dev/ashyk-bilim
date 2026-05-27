@@ -562,7 +562,7 @@ def test_validate_code_challenge_endpoint(
     )
 
     class FakeResult:
-        def __init__(self):
+        def __init__(self) -> None:
             self.run_uuid = "run_123"
             self.status = CodeRunStatus.ACCEPTED
             self.passed = 1

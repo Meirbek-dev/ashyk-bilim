@@ -343,7 +343,9 @@ def get_user_session(
         permissions = sorted(effective)
         permissions_timestamp = int(now.timestamp())
     except Exception:
-        _logger.exception(f"Ошибка загрузки разрешений для пользователя {current_user.id}")
+        _logger.exception(
+            f"Ошибка загрузки разрешений для пользователя {current_user.id}"
+        )
 
     expires_at = int((now + ACCESS_TOKEN_EXPIRE).timestamp())
     session_version = int(now.timestamp())
