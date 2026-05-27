@@ -559,7 +559,7 @@ export default function RBACAdminClient() {
           <PermissionGuard
             action={Actions.CREATE}
             resource={Resources.ROLE}
-            scope={Scopes.PLATFORM}
+            scope={Scopes.APP}
           >
             <Button
               variant="ghost"
@@ -573,7 +573,7 @@ export default function RBACAdminClient() {
           <PermissionGuard
             action={Actions.UPDATE}
             resource={Resources.ROLE}
-            scope={Scopes.PLATFORM}
+            scope={Scopes.APP}
           >
             <Button
               variant="ghost"
@@ -588,7 +588,7 @@ export default function RBACAdminClient() {
           <PermissionGuard
             action={Actions.DELETE}
             resource={Resources.ROLE}
-            scope={Scopes.PLATFORM}
+            scope={Scopes.APP}
           >
             <Button
               variant="ghost"
@@ -699,7 +699,7 @@ export default function RBACAdminClient() {
         <PermissionGuard
           action={Actions.CREATE}
           resource={Resources.ROLE}
-          scope={Scopes.PLATFORM}
+          scope={Scopes.APP}
         >
           <Dialog
             open={isRoleDialogOpen}

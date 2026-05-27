@@ -14,6 +14,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PlatformAdminUsersPage() {
-  await requirePermission(Actions.MANAGE, Resources.ROLE, Scopes.PLATFORM);
+  await requirePermission(Actions.MANAGE, Resources.ROLE, Scopes.APP);
   return <UserRolesClient />;
 }

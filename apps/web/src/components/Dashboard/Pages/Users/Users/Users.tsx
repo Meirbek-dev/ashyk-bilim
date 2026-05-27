@@ -122,8 +122,8 @@ const Users = () => {
   const { session: sessionData, user: currentUser, can } = useSession();
   const t = useTranslations('DashPage.UserSettings.usersSection');
   const userRoles = sessionData?.roles ?? [];
-  const canUpdateRole = can(Resources.ROLE, Actions.UPDATE, Scopes.PLATFORM);
-  const canDeleteUser = can(Resources.USER, Actions.DELETE, Scopes.PLATFORM);
+  const canUpdateRole = can(Resources.ROLE, Actions.UPDATE, Scopes.APP);
+  const canDeleteUser = can(Resources.USER, Actions.DELETE, Scopes.APP);
 
   const getRolePriority = (roleObj: any) => {
     if (!roleObj) return 0;

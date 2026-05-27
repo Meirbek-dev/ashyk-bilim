@@ -87,7 +87,7 @@ const CoursesHome = ({
   const [searchInput, setSearchInput] = useState(searchQuery);
   const viewMode = searchParams.get('view') === 'table' ? 'table' : 'cards';
   const { can, isAuthenticated } = useSession();
-  const canCreateCourse = can(Resources.COURSE, Actions.CREATE, Scopes.PLATFORM);
+  const canCreateCourse = can(Resources.COURSE, Actions.CREATE, Scopes.APP);
   const [selectedCourseUuids, setSelectedCourseUuids] = useState<string[]>([]);
   const [isBulkPending, startBulkTransition] = useTransition();
   const [pendingBulkAction, setPendingBulkAction] = useState<BulkActionKind | null>(null);
@@ -152,14 +152,14 @@ const CoursesHome = ({
 
   const canManageCourse = useCallback(
     (course: ManageableCourse) =>
-      can(Resources.COURSE, Actions.MANAGE, Scopes.PLATFORM) ||
+      can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
       Boolean(course.is_owner && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN)),
     [can],
   );
 
   const canDeleteCourse = useCallback(
     (course: ManageableCourse) =>
-      can(Resources.COURSE, Actions.DELETE, Scopes.PLATFORM) ||
+      can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
       Boolean(course.is_owner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN)),
     [can],
   );
@@ -751,10 +751,10 @@ function CourseRowActions({
   const [isPending, startTransition] = useTransition();
 
   const canManageCourse =
-    can(Resources.COURSE, Actions.MANAGE, Scopes.PLATFORM) ||
+    can(Resources.COURSE, Actions.MANAGE, Scopes.APP) ||
     Boolean(course.is_owner && can(Resources.COURSE, Actions.MANAGE, Scopes.OWN));
   const canDeleteCourse =
-    can(Resources.COURSE, Actions.DELETE, Scopes.PLATFORM) ||
+    can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
     Boolean(course.is_owner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN));
 
   const handleDelete = () => {

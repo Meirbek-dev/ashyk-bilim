@@ -100,7 +100,7 @@ describe('Security Audit - Frontend', () => {
             <PermissionGuard
               action={Actions.DELETE}
               resource={Resources.COURSE}
-              scope={Scopes.PLATFORM}
+              scope={Scopes.APP}
               fallback={<div data-testid="fallback">Denied</div>}
             >
               <div data-testid="protected-content">Secret Content</div>

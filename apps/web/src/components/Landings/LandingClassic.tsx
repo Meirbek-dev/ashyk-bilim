@@ -164,7 +164,7 @@ const LandingClassic = async ({
                   <PermissionGuard
                     action={Actions.CREATE}
                     resource={Resources.COLLECTION}
-                    scope={Scopes.PLATFORM}
+                    scope={Scopes.APP}
                   >
                     <Link
                       href={getAbsoluteUrl('/collections/new')}

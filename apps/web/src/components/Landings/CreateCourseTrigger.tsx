@@ -13,7 +13,7 @@ export default function CreateCourseTrigger() {
     <PermissionGuard
       action={Actions.CREATE}
       resource={Resources.COURSE}
-      scope={Scopes.PLATFORM}
+      scope={Scopes.APP}
       fallback={null}
     >
       <Button

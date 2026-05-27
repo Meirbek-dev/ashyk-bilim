@@ -157,7 +157,7 @@ const UpdatesSection = ({ courseUuid }: { courseUuid: string }) => {
   const [selectedView, setSelectedView] = useState('list');
   const { can, isAuthenticated } = useSession();
   const canManageCourse =
-    can(Resources.COURSE, Actions.MANAGE, Scopes.OWN) || can(Resources.COURSE, Actions.MANAGE, Scopes.PLATFORM);
+    can(Resources.COURSE, Actions.MANAGE, Scopes.OWN) || can(Resources.COURSE, Actions.MANAGE, Scopes.APP);
   const { data: updates } = useCourseUpdates(courseUuid, { enabled: isAuthenticated });
   const t = useTranslations('Courses.CourseAuthors');
 
@@ -325,7 +325,7 @@ const NewUpdateForm = ({
 const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
   const { can, isAuthenticated } = useSession();
   const canManageCourse =
-    can(Resources.COURSE, Actions.MANAGE, Scopes.OWN) || can(Resources.COURSE, Actions.MANAGE, Scopes.PLATFORM);
+    can(Resources.COURSE, Actions.MANAGE, Scopes.OWN) || can(Resources.COURSE, Actions.MANAGE, Scopes.APP);
   const { data: updates } = useCourseUpdates(courseUuid, { enabled: isAuthenticated });
   const t = useTranslations('Courses.CourseAuthors');
   const locale = useDateFnsLocale();

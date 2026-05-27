@@ -102,7 +102,7 @@ describe('Teacher (Instructor) Workflow', () => {
           <PermissionGuard
             action={Actions.CREATE}
             resource={Resources.COURSE}
-            scope={Scopes.PLATFORM}
+            scope={Scopes.APP}
           >
             <button data-testid="create-course">Create Course</button>
           </PermissionGuard>
@@ -118,7 +118,7 @@ describe('Teacher (Instructor) Workflow', () => {
           <PermissionGuard
             action={Actions.DELETE}
             resource={Resources.COURSE}
-            scope={Scopes.PLATFORM}
+            scope={Scopes.APP}
           >
             <button data-testid="delete-course">Delete Course</button>
           </PermissionGuard>
@@ -134,7 +134,7 @@ describe('Teacher (Instructor) Workflow', () => {
           <PermissionGuard
             action={Actions.DELETE}
             resource={Resources.COURSE}
-            scope={Scopes.PLATFORM}
+            scope={Scopes.APP}
             fallback={<div data-testid="no-access">No Access</div>}
           >
             <button>Delete Course</button>
@@ -167,7 +167,7 @@ describe('Teacher (Instructor) Workflow', () => {
           <PermissionGuard
             action={Actions.GRADE}
             resource={Resources.ASSESSMENT}
-            scope={Scopes.PLATFORM}
+            scope={Scopes.APP}
           >
             <button data-testid="grade-all">Grade All ManualAssessments</button>
           </PermissionGuard>
@@ -211,7 +211,7 @@ describe('Security Invariants', () => {
         <PermissionGuard
           action={Actions.MANAGE}
           resource={Resources.ROLE}
-          scope={Scopes.PLATFORM}
+          scope={Scopes.APP}
         >
           <div data-testid="admin-only">Admin Only</div>
         </PermissionGuard>

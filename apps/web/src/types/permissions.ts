@@ -28,7 +28,7 @@ export const Actions = {
 export type Action = (typeof Actions)[keyof typeof Actions];
 
 export const Resources = {
-  PLATFORM: 'platform',
+  APP: 'platform',
   COURSE: 'course',
   CHAPTER: 'chapter',
   ACTIVITY: 'activity',
@@ -53,7 +53,7 @@ export const Scopes = {
   ALL: 'all',
   OWN: 'own',
   ASSIGNED: 'assigned',
-  PLATFORM: 'platform',
+  APP: 'platform',
 } as const;
 
 export type Scope = (typeof Scopes)[keyof typeof Scopes];

@@ -5,11 +5,11 @@ import type { ReactNode } from 'react';
 export default async function PlatformSettingsLayout({ children }: { children: ReactNode }) {
   await requireAnyPermission(
     [
-      { action: Actions.READ, resource: Resources.PLATFORM, scope: Scopes.OWN },
-      { action: Actions.UPDATE, resource: Resources.PLATFORM, scope: Scopes.OWN },
-      { action: Actions.READ, resource: Resources.PLATFORM, scope: Scopes.PLATFORM },
-      { action: Actions.UPDATE, resource: Resources.PLATFORM, scope: Scopes.PLATFORM },
-      { action: Actions.MANAGE, resource: Resources.PLATFORM, scope: Scopes.PLATFORM },
+      { action: Actions.READ, resource: Resources.APP, scope: Scopes.OWN },
+      { action: Actions.UPDATE, resource: Resources.APP, scope: Scopes.OWN },
+      { action: Actions.READ, resource: Resources.APP, scope: Scopes.APP },
+      { action: Actions.UPDATE, resource: Resources.APP, scope: Scopes.APP },
+      { action: Actions.MANAGE, resource: Resources.APP, scope: Scopes.APP },
     ],
     '/dash',
   );

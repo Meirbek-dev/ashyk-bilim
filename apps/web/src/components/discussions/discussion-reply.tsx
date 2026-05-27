@@ -45,7 +45,7 @@ export default function DiscussionReply({
   const format = useFormatter();
   const now = useNow();
   const { can } = useSession();
-  const canModerateDiscussion = can(Resources.DISCUSSION, Actions.MODERATE, Scopes.PLATFORM);
+  const canModerateDiscussion = can(Resources.DISCUSSION, Actions.MODERATE, Scopes.APP);
 
   const isOwnReply = reply.username === currentUser?.username;
   const netScore = reply.upvotes - reply.downvotes;

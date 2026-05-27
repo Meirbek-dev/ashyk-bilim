@@ -64,7 +64,7 @@ export default async function PlatformCollectionsPage() {
           <PermissionGuard
             action={Actions.CREATE}
             resource={Resources.COLLECTION}
-            scope={Scopes.PLATFORM}
+            scope={Scopes.APP}
             fallback={null}
           >
             <Link href={getAbsoluteUrl('/collections/new')}>
@@ -90,14 +90,14 @@ export default async function PlatformCollectionsPage() {
                     text={t('noContentUserAdmin')}
                     action={Actions.CREATE}
                     resource={Resources.COLLECTION}
-                    scope={Scopes.PLATFORM}
+                    scope={Scopes.APP}
                   />
                 </p>
                 <div className="mt-4 flex justify-center">
                   <PermissionGuard
                     action={Actions.CREATE}
                     resource={Resources.COLLECTION}
-                    scope={Scopes.PLATFORM}
+                    scope={Scopes.APP}
                     fallback={null}
                   >
                     <Link href={getAbsoluteUrl('/collections/new')}>

@@ -184,7 +184,7 @@ export default function UserRolesClient() {
             <PermissionGuard
               action={Actions.DELETE}
               resource={Resources.ROLE}
-              scope={Scopes.PLATFORM}
+              scope={Scopes.APP}
             >
               <Button
                 variant="ghost"
@@ -227,7 +227,7 @@ export default function UserRolesClient() {
         <PermissionGuard
           action={Actions.MANAGE}
           resource={Resources.ROLE}
-          scope={Scopes.PLATFORM}
+          scope={Scopes.APP}
         >
           <Dialog
             open={isAddDialogOpen}

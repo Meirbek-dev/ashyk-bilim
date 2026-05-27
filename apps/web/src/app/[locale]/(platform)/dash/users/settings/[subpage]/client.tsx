@@ -62,11 +62,11 @@ export default function PlatformUsersSettingsClient({ subpage }: { subpage: stri
         switch (tab.id) {
           case 'users': {
             return (
-              can(Resources.USER, Actions.READ, Scopes.PLATFORM) || can(Resources.USER, Actions.UPDATE, Scopes.PLATFORM)
+              can(Resources.USER, Actions.READ, Scopes.APP) || can(Resources.USER, Actions.UPDATE, Scopes.APP)
             );
           }
           case 'usergroups': {
-            return can(Resources.USERGROUP, Actions.MANAGE, Scopes.PLATFORM);
+            return can(Resources.USERGROUP, Actions.MANAGE, Scopes.APP);
           }
           default: {
             return true;

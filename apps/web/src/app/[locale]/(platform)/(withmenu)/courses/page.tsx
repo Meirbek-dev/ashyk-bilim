@@ -110,7 +110,7 @@ async function CoursesContent({ searchParams }: CoursesContentProps) {
   const permissionsSet = new Set<string>(session?.permissions ?? []);
   const canManagePlatform =
     permissionsSet.has(AUTH_PERMISSION_WILDCARD) ||
-    permissionsSet.has(perm(Resources.PLATFORM, Actions.MANAGE, Scopes.OWN));
+    permissionsSet.has(perm(Resources.APP, Actions.MANAGE, Scopes.OWN));
 
   return (
     <Courses
