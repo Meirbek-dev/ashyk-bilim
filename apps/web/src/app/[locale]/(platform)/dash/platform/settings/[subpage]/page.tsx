@@ -1,6 +1,6 @@
-import PlatformSettingsClient from './client';
+import AppSettingsClient from './client';
 
-export default async function PlatformSettingsPage(props: { params: Promise<{ subpage: string }> }) {
+export default async function AppSettingsPage(props: { params: Promise<{ subpage: string }> }) {
   const { subpage } = await props.params;
-  return <PlatformSettingsClient subpage={subpage} />;
+  return <AppSettingsClient subpage={subpage} />;
 }

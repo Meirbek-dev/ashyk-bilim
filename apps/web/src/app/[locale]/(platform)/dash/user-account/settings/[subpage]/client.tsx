@@ -20,7 +20,7 @@ interface NavigationItem {
   component: ComponentType;
 }
 
-export default function PlatformUserSettingsClient({ subpage }: { subpage: string }) {
+export default function AppUserSettingsClient({ subpage }: { subpage: string }) {
   const t = useTranslations('DashPage.UserAccountSettings');
 
   const navigationItems: NavigationItem[] = useMemo(

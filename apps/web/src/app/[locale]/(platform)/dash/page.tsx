@@ -9,8 +9,8 @@ import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeePlatform, canSeeUser
 import { requireSession } from '@/lib/auth/session';
 import { sessionCan } from '@/lib/auth/permissions';
 
-import platformLogoFull from '@public/app_logo_full.svg';
-import platformLogoLightFull from '@public/app_logo_light_full.svg';
+import appLogoFull from '@public/app_logo_full.svg';
+import appLogoLightFull from '@public/app_logo_light_full.svg';
 import type { Action, Resource, Scope } from '@/types/permissions';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,19 +73,19 @@ export default async function PlatformDashHomePage() {
       {/* Logo */}
       <div className="mb-12">
         <Image
-          alt={t('platformLogo')}
+          alt={t('appLogo')}
           width={210}
           height={77}
-          src={platformLogoFull}
+          src={appLogoFull}
           className="theme-logo-dark w-40 sm:w-[210px]"
           style={{ height: 'auto' }}
           loading="eager"
         />
         <Image
-          alt={t('platformLogo')}
+          alt={t('appLogo')}
           width={210}
           height={77}
-          src={platformLogoLightFull}
+          src={appLogoLightFull}
           className="theme-logo-light w-40 sm:w-[210px]"
           style={{ height: 'auto' }}
           loading="eager"

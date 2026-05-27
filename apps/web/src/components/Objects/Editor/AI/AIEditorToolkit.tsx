@@ -12,8 +12,8 @@ import {
 import { useActivityAIChat } from '@components/Contexts/AI/ActivityAIChatContext';
 import { AiMarkdownRenderer } from '@components/Shared/AI/AiMarkdownRenderer';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import platformLogo from '@public/app_logo.svg';
-import platformLogoLight from '@public/app_logo_light.svg';
+import appLogo from '@public/app_logo.svg';
+import appLogoLight from '@public/app_logo_light.svg';
 import type { ChangeEvent, KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { TextPart } from '@tanstack/ai-client';
@@ -417,7 +417,7 @@ function UserFeedbackModal({
 }: FeedbackModalProps) {
   const t = useTranslations('Activities.AIEditorToolkit');
   const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? platformLogoLight : platformLogo;
+  const logoSrc = resolvedTheme === 'dark' ? appLogoLight : appLogo;
 
   const { getSelectedText, getSelectedBlockText, getEntireText, typeText } = useEditorOperations(editor);
 
@@ -561,7 +561,7 @@ function UserFeedbackModal({
               width={18}
               height={18}
               src={logoSrc}
-              alt={t('platformLogoAlt')}
+              alt={t('appLogoAlt')}
               className="rounded-sm"
               style={{ height: 'auto' }}
             />
@@ -639,7 +639,7 @@ export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorT
   const { editor } = useTiptap();
   const t = useTranslations('Activities.AIEditorToolkit');
   const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? platformLogoLight : platformLogo;
+  const logoSrc = resolvedTheme === 'dark' ? appLogoLight : appLogo;
   const { messages, sendMessageAndGetResponse, isLoading, error, clear, stop, abort, resetConversation } =
     useActivityAIChat();
 

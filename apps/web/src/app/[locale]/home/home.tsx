@@ -2,8 +2,8 @@
 
 import { useSession } from '@/hooks/useSession';
 import { logout } from '@/services/auth/auth';
-import platformLogoFull from '@public/app_logo_full.svg';
-import platformLogoLightFull from '@public/app_logo_light_full.svg';
+import appLogoFull from '@public/app_logo_full.svg';
+import appLogoLightFull from '@public/app_logo_light_full.svg';
 import UserAvatar from '@components/Objects/UserAvatar';
 import { useTheme } from '@/components/providers/theme-provider';
 import { useTranslations } from 'next-intl';
@@ -14,7 +14,7 @@ const HomeClient = () => {
   const tCommon = useTranslations('Common');
   const { user: viewer } = useSession();
   const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? platformLogoLightFull : platformLogoFull;
+  const logoSrc = resolvedTheme === 'dark' ? appLogoLightFull : appLogoFull;
 
   return (
     <div className="flex flex-col">
@@ -24,7 +24,7 @@ const HomeClient = () => {
           width={230}
           height={84}
           src={logoSrc}
-          alt={tCommon('platformLogoAlt')}
+          alt={tCommon('appLogoAlt')}
           style={{ width: '100%', height: 'auto' }}
           loading="eager"
         />

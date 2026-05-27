@@ -109,7 +109,7 @@
       "dismissError": "Dismiss error",
       "errorTitle": "Something wrong happened",
       "longerPlaceholder": "Select text to make longer",
-      "platformLogoAlt": "Ashyk Bilim logo",
+      "appLogoAlt": "Ashyk Bilim logo",
       "processingRequest": "Processing your request",
       "prompt_continueWriting": "Continue writing about {selection}",
       "prompt_critisize": "Critique this lecture section and suggest improvements: {selection}",
@@ -1220,7 +1220,7 @@
     "googleLogo": "Google logo",
     "loading": "Loading...",
     "logoAlt": "Ashyk Bilim logo",
-    "platformLogoAlt": "Ashyk Bilim logo",
+    "appLogoAlt": "Ashyk Bilim logo",
     "owner": "Owner",
     "save": "Save draft",
     "saved": "Saved",
@@ -3466,7 +3466,7 @@
         "badge": "System"
       },
       "noAccess": "You don’t have access to dashboard features yet.",
-      "platformLogo": "Ashyk Bilim Logo",
+      "appLogo": "Ashyk Bilim Logo",
       "touUniversity": "Toraighyrov University"
     },
     "CourseOverview": {
@@ -7023,7 +7023,7 @@
       "manageCourses": "Manage courses",
       "manageUsers": "Manage users",
       "platformSettings": "Platform settings",
-      "platformLogo": "Ashyk Bilim logo",
+      "appLogo": "Ashyk Bilim logo",
       "userAccountSettings": "User account settings",
       "userSettings": "User settings"
     },
@@ -9288,7 +9288,7 @@
     "scope": "Scope",
     "description": "Description"
   },
-  "platformLogo": "Ashyk Bilim logo",
+  "appLogo": "Ashyk Bilim logo",
   "previous": "Previous",
   "seconds": "Seconds",
   "selectDeadline": "Select a deadline for completing the task",

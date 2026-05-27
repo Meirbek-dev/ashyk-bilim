@@ -45,7 +45,7 @@ const SETTING_TABS: TabItem[] = [
   },
 ];
 
-export default function PlatformSettingsClient({ subpage }: { subpage: string }) {
+export default function AppSettingsClient({ subpage }: { subpage: string }) {
   const t = useTranslations('DashPage.PlatformSettings');
 
   const currentTab = useMemo<TabItem>(() => {

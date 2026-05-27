@@ -6,8 +6,8 @@ import Image from 'next/image';
 import { useRef } from 'react';
 import { Globe2 } from 'lucide-react';
 import { useTheme } from '@/components/providers/theme-provider';
-import platformLogoDark from '@public/app_logo.svg';
-import platformLogoLight from '@public/app_logo_light.svg';
+import appLogoDark from '@public/app_logo.svg';
+import appLogoLight from '@public/app_logo_light.svg';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -82,7 +82,7 @@ export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
   const t = useTranslations('DashPage.Editor.Toolbar');
   const tCommon = useTranslations('Common');
   const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? platformLogoDark : platformLogoLight;
+  const logoSrc = resolvedTheme === 'dark' ? appLogoDark : appLogoLight;
 
   // Access the editor instance from the <Tiptap> context (Requirement 1.1).
   const { editor } = useTiptap();
@@ -187,7 +187,7 @@ export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
             width={18}
             height={18}
             src={logoSrc}
-            alt={tCommon('platformLogoAlt')}
+            alt={tCommon('appLogoAlt')}
             style={{ height: 'auto' }}
           />
           <span>{t('aiEditor')}</span>

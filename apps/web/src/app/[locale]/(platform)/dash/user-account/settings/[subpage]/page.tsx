@@ -1,6 +1,6 @@
-import PlatformUserSettingsClient from './client';
+import AppUserSettingsClient from './client';
 
-export default async function PlatformUserSettingsPage(props: { params: Promise<{ subpage: string }> }) {
+export default async function AppUserSettingsPage(props: { params: Promise<{ subpage: string }> }) {
   const { subpage } = await props.params;
-  return <PlatformUserSettingsClient subpage={subpage} />;
+  return <AppUserSettingsClient subpage={subpage} />;
 }

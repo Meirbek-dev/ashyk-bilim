@@ -109,7 +109,7 @@
       "dismissError": "Қатені жабу",
       "errorTitle": "Бірдеңе дұрыс болмады",
       "longerPlaceholder": "Ұзарту үшін мәтінді таңдаңыз",
-      "platformLogoAlt": "Ashyk Bilim логотипі",
+      "appLogoAlt": "Ashyk Bilim логотипі",
       "processingRequest": "Сұранысыңызды өңдеп жатыр",
       "prompt_continueWriting": "{selection} туралы жазуды жалғастыру",
       "prompt_critisize": "Осы лекция бөлігін сынап, жақсарту ұсыныстарын бер: {selection}",
@@ -1229,7 +1229,7 @@
     "googleLogo": "Google логотипі",
     "loading": "Жүктелуде...",
     "logoAlt": "Ashyk Bilim логотипі",
-    "platformLogoAlt": "Ashyk Bilim логотипі",
+    "appLogoAlt": "Ashyk Bilim логотипі",
     "owner": "Иесі",
     "save": "Сақтау",
     "saved": "Сақталды",
@@ -3490,7 +3490,7 @@
         "badge": "Жүйелік"
       },
       "noAccess": "Сізде әлі бақылау тақтасының функцияларына рұқсат жоқ.",
-      "platformLogo": "Ashyk Bilim логотипі",
+      "appLogo": "Ashyk Bilim логотипі",
       "touUniversity": "Торайғыров Университеті"
     },
     "CourseOverview": {
@@ -7052,7 +7052,7 @@
       "manageCourses": "Курстарды басқару",
       "manageUsers": "Пайдаланушыларды басқару",
       "platformSettings": "Платформа параметрлері",
-      "platformLogo": "Ashyk Bilim логотипі",
+      "appLogo": "Ashyk Bilim логотипі",
       "userAccountSettings": "Пайдаланушы шот параметрлері",
       "userSettings": "Пайдаланушы параметрлері"
     },
@@ -9484,7 +9484,7 @@
     "scope": "Аясы",
     "description": "Сипаттама"
   },
-  "platformLogo": "Ashyk Bilim логотипі",
+  "appLogo": "Ashyk Bilim логотипі",
   "previous": "Алдыңғы",
   "seconds": "Секунд",
   "selectDeadline": "Оқу әрекетіны аяқтау үшін мерзімді таңдаңыз",

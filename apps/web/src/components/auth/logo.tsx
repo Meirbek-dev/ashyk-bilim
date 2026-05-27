@@ -15,7 +15,7 @@ const AuthLogo = ({ width = 240 }: AuthLogoProps) => {
     <div className="m-4">
       <Image
         src={src}
-        alt={t('platformLogoAlt')}
+        alt={t('appLogoAlt')}
         width={width}
         height={Math.round((width * 119.28) / 327.34)}
         priority

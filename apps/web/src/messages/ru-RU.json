@@ -109,7 +109,7 @@
       "dismissError": "Закрыть ошибку",
       "errorTitle": "Что-то пошло не так",
       "longerPlaceholder": "Выберите текст, чтобы сделать его длиннее",
-      "platformLogoAlt": "Логотип Ashyk Bilim",
+      "appLogoAlt": "Логотип Ashyk Bilim",
       "processingRequest": "Обрабатываю ваш запрос",
       "prompt_continueWriting": "Продолжить писать о {selection}",
       "prompt_critisize": "Раскритикуй этот фрагмент лекции и предложи улучшения: {selection}",
@@ -1230,7 +1230,7 @@
     "googleLogo": "Логотип Google",
     "loading": "Загрузка...",
     "logoAlt": "Логотип Ashyk Bilim",
-    "platformLogoAlt": "Логотип Ashyk Bilim",
+    "appLogoAlt": "Логотип Ashyk Bilim",
     "owner": "Создатель",
     "save": "Сохранить",
     "saved": "Сохранено",
@@ -3491,7 +3491,7 @@
         "badge": "Системно"
       },
       "noAccess": "У вас пока нет доступа к функциям панели управления.",
-      "platformLogo": "Логотип Ashyk Bilim",
+      "appLogo": "Логотип Ashyk Bilim",
       "touUniversity": "Торайгыров Университет"
     },
     "CourseOverview": {
@@ -7053,7 +7053,7 @@
       "manageCourses": "Управление курсами",
       "manageUsers": "Управление пользователями",
       "platformSettings": "Настройки платформы",
-      "platformLogo": "Логотип Ashyk Bilim",
+      "appLogo": "Логотип Ashyk Bilim",
       "userAccountSettings": "Настройки аккаунта пользователя",
       "userSettings": "Настройки пользователя"
     },
@@ -9328,7 +9328,7 @@
     "scope": "Область",
     "description": "Описание"
   },
-  "platformLogo": "Логотип Ashyk Bilim",
+  "appLogo": "Логотип Ashyk Bilim",
   "previous": "Назад",
   "seconds": "Секунды",
   "selectDeadline": "Выберите дедлайн для выполнения задачи",

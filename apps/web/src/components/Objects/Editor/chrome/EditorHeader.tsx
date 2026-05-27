@@ -5,8 +5,8 @@ import { Eye } from 'lucide-react';
 import Link from '@components/ui/AppLink';
 import Image from 'next/image';
 import { useTheme } from '@/components/providers/theme-provider';
-import platformLogoDark from '@public/app_logo.svg';
-import platformLogoLight from '@public/app_logo_light.svg';
+import appLogoDark from '@public/app_logo.svg';
+import appLogoLight from '@public/app_logo_light.svg';
 import UserAvatar from '../../UserAvatar';
 import { Separator } from '@/components/ui/separator';
 import { EditorSaveIndicator } from './EditorSaveIndicator';
@@ -31,7 +31,7 @@ export function EditorHeader({
   const t = useTranslations('DashPage.Editor.Editor');
   const tCommon = useTranslations('Common');
   const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? platformLogoLight : platformLogoDark;
+  const logoSrc = resolvedTheme === 'dark' ? appLogoLight : appLogoDark;
 
   return (
     <div className="border-border bg-background flex h-12 items-center justify-between border-b px-3">
@@ -43,7 +43,7 @@ export function EditorHeader({
             width={22}
             height={22}
             src={logoSrc}
-            alt={tCommon('platformLogoAlt')}
+            alt={tCommon('appLogoAlt')}
             style={{ height: 'auto' }}
           />
         </Link>

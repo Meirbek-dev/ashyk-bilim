@@ -1,8 +1,8 @@
 import { AlertTriangle, BookOpen, Check, FormInput, Languages, Loader2 } from 'lucide-react';
 import { useActivityAIChat } from '@components/Contexts/AI/ActivityAIChatContext';
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip';
-import platformLogo from '@public/app_logo.svg';
-import platformLogoLight from '@public/app_logo_light.svg';
+import appLogo from '@public/app_logo.svg';
+import appLogoLight from '@public/app_logo_light.svg';
 import { BubbleMenu } from '@tiptap/react/menus';
 import { Button } from '@components/ui/button';
 import type { Editor } from '@tiptap/react';
@@ -27,7 +27,7 @@ interface AICanvaToolkitProps {
 const AICanvaToolkit = (props: AICanvaToolkitProps) => {
   const t = useTranslations('Activities.AICanvaToolkit');
   const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? platformLogoLight : platformLogo;
+  const logoSrc = resolvedTheme === 'dark' ? appLogoLight : appLogo;
 
   if (!props.editor) {
     return null;

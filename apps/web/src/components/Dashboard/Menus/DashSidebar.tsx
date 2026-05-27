@@ -17,8 +17,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { BarChart3, BookCopy, Home, LogOut, Moon, School, Settings, ShieldCheck, Sun, Users } from 'lucide-react';
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions';
 import { useSession } from '@/hooks/useSession';
-import platformLogo from '@public/app_logo.svg';
-import platformLogoLight from '@public/app_logo_light.svg';
+import appLogo from '@public/app_logo.svg';
+import appLogoLight from '@public/app_logo_light.svg';
 import { useTheme } from '@/components/providers/theme-provider';
 import { logout } from '@services/auth/auth';
 import { getAbsoluteUrl } from '@services/config/config';
@@ -202,7 +202,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
   const { user } = useSession();
   const { state, toggleSidebar } = useSidebar();
   const { resolvedTheme, isDark, toggleMode } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? platformLogo : platformLogoLight;
+  const logoSrc = resolvedTheme === 'dark' ? appLogo : appLogoLight;
   const t = useTranslations('SidebarMenu');
   const tThemeSelector = useTranslations('DashPage.UserAccountSettings.generalSection.themeSelector');
   const navigationItems = useNavigationItems();
@@ -271,7 +271,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
             <div className="bg-primary/80 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-linear-to-br p-1.5 shadow-sm">
               <div className="relative h-full w-full">
                 <Image
-                  alt={t('ariaLabels.platformLogo')}
+                  alt={t('ariaLabels.appLogo')}
                   src={logoSrc}
                   fill
                   sizes="28px"

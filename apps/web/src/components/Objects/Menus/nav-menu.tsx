@@ -27,8 +27,8 @@ import { NAVBAR_HEIGHT } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 // Assets
-import platformLogoFull from '@public/app_logo_full.svg';
-import platformLogoLightFull from '@public/app_logo_light_full.svg';
+import appLogoFull from '@public/app_logo_full.svg';
+import appLogoLightFull from '@public/app_logo_light_full.svg';
 
 // ----------------------------------------------------------------------
 // Types & Config
@@ -204,7 +204,7 @@ export default function NavBar() {
   const tLinks = useTranslations('Components.NavMenuLinks');
   const { isAuthenticated } = useSession();
   const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'dark' ? platformLogoLightFull : platformLogoFull;
+  const logoSrc = resolvedTheme === 'dark' ? appLogoLightFull : appLogoFull;
 
   const isActivityChromeHidden = useActivityChromeHidden();
   const isScrolled = useScrollElevation();

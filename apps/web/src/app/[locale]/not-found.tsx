@@ -1,5 +1,5 @@
-import platformLogoFull from '@public/app_logo_full.svg';
-import platformLogoLightFull from '@public/app_logo_light_full.svg';
+import appLogoFull from '@public/app_logo_full.svg';
+import appLogoLightFull from '@public/app_logo_light_full.svg';
 import { getTranslations } from 'next-intl/server';
 import { Button } from '@components/ui/button';
 import Link from '@components/ui/ServerLink';
@@ -17,8 +17,8 @@ export default async function NotFound() {
           quality={100}
           width={270}
           height={98}
-          src={platformLogoFull}
-          alt={tCommon('platformLogoAlt')}
+          src={appLogoFull}
+          alt={tCommon('appLogoAlt')}
           style={{ height: 'auto' }}
           loading="eager"
           className="theme-logo-dark"
@@ -27,8 +27,8 @@ export default async function NotFound() {
           quality={100}
           width={270}
           height={98}
-          src={platformLogoLightFull}
-          alt={tCommon('platformLogoAlt')}
+          src={appLogoLightFull}
+          alt={tCommon('appLogoAlt')}
           style={{ height: 'auto' }}
           loading="eager"
           className="theme-logo-light"
