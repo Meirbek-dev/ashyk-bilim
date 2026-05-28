@@ -263,7 +263,7 @@ function getNextMilestone(currentLevel: number) {
     {
       level: 10,
       title: 'Scholar',
-      color: 'text-purple-500',
+      color: 'text-slate-500',
       icon: Zap,
       minXP: 3000,
     },

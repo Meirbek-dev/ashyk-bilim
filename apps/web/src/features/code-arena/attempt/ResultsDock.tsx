@@ -312,7 +312,7 @@ function RunProgressTimeline() {
       <div className="relative flex items-center justify-between">
         <div className="bg-border absolute top-1/2 right-0 left-0 z-0 h-0.5 -translate-y-1/2" />
         <div
-          className="absolute top-1/2 left-0 z-0 h-0.5 -translate-y-1/2 bg-blue-500 transition-all duration-300"
+          className="absolute top-1/2 left-0 z-0 h-0.5 -translate-y-1/2 bg-primary transition-all duration-300"
           style={{ width: `${(currentIdx / (steps.length - 1)) * 100}%` }}
         />
 
@@ -326,9 +326,9 @@ function RunProgressTimeline() {
                 className={cn(
                   'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors duration-300',
                   isCurrent
-                    ? 'bg-blue-600 text-white border-blue-600 scale-110 shadow-xs'
+                    ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-xs'
                     : isActive
-                      ? 'bg-blue-500 text-white border-blue-500'
+                      ? 'bg-primary/80 text-primary-foreground border-primary/80'
                       : 'bg-background text-muted-foreground border-border',
                 )}
               >

@@ -52,15 +52,15 @@ export function MarkdownCodeBlock({
   return (
     <div
       className={cn(
-        'not-prose group my-3 overflow-hidden rounded-md border bg-zinc-950 text-zinc-50',
+        'not-prose group my-3 overflow-hidden rounded-md border border-neutral-800 bg-neutral-950 text-neutral-50',
         compact && 'my-1.5',
       )}
     >
       {/* Header bar */}
-      <div className="flex h-8 items-center justify-between border-b border-white/10 px-3">
+      <div className="flex h-8 items-center justify-between border-b border-neutral-800 px-3">
         <span
           className={cn(
-            'font-mono font-medium text-zinc-400',
+            'font-mono font-medium text-neutral-400',
             compact ? 'text-[10px]' : 'text-[11px]',
           )}
         >
@@ -70,7 +70,7 @@ export function MarkdownCodeBlock({
           type="button"
           size="icon"
           variant="ghost"
-          className="size-6 text-zinc-400 hover:bg-white/10 hover:text-zinc-50"
+          className="size-6 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
           onClick={copy}
           aria-label={copied ? 'Copied code' : 'Copy code'}
         >
@@ -88,10 +88,10 @@ export function MarkdownCodeBlock({
             '[&_pre]:m-0 [&_pre]:bg-transparent! [&_pre]:p-3 [&_pre]:font-mono [&_pre]:leading-6',
             compact && '[&_pre]:p-2 [&_pre]:text-xs [&_pre]:leading-5',
             lineNumbers &&
-              '[&_.line]:before:mr-4 [&_.line]:before:inline-block [&_.line]:before:w-4 [&_.line]:before:text-right [&_.line]:before:text-zinc-600 [&_.line]:before:content-[attr(data-line)]',
+              '[&_.line]:before:mr-4 [&_.line]:before:inline-block [&_.line]:before:w-4 [&_.line]:before:text-right [&_.line]:before:text-neutral-600 [&_.line]:before:content-[attr(data-line)]',
             isDiff && [
-              '[&_.line]:has-[[data-diff="add"]]:bg-emerald-500/10',
-              '[&_.line]:has-[[data-diff="remove"]]:bg-red-500/10',
+              '[&_.line]:has-[[data-diff="add"]]:bg-lime-500/10',
+              '[&_.line]:has-[[data-diff="remove"]]:bg-rose-500/10',
             ],
           )}
           // Shiki output is sanitized HTML from trusted highlighted code
@@ -101,7 +101,7 @@ export function MarkdownCodeBlock({
         // Skeleton / fallback while Shiki loads
         <pre
           className={cn(
-            'overflow-x-auto p-3 font-mono text-[13px] leading-6 text-zinc-300',
+          'overflow-x-auto p-3 font-mono text-[13px] leading-6 text-neutral-300',
             compact && 'p-2 text-xs leading-5',
           )}
         >

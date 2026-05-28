@@ -207,7 +207,7 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
                 icon={TrendingUp}
                 label={t('stats.rank')}
                 value={userRank ? `#${userRank}` : '-'}
-                iconColor="text-sky-500"
+                iconColor="text-blue-500"
               />
               <StatCard
                 icon={Calendar}
@@ -217,7 +217,7 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
                     ? `${t('progress.levelShort')} ${nextMilestone}`
                     : t('stats.maxLevel')
                 }
-                iconColor="text-violet-500"
+                iconColor="text-stone-500"
               />
             </div>
           </div>

@@ -59,7 +59,7 @@ export function AiMessageBubble({ role, content, isStreaming = false }: AiMessag
       >
         {role === 'assistant' ? (
           <>
-            <div className="rounded-lg bg-zinc-800 px-3 py-2">
+            <div className="bg-muted rounded-lg px-3 py-2">
               <AiMarkdownRenderer content={content} isStreaming={isStreaming} />
             </div>
 
@@ -69,12 +69,12 @@ export function AiMessageBubble({ role, content, isStreaming = false }: AiMessag
                 onClick={handleCopy}
                 aria-label={copied ? t('copied') : t('copyResponse')}
                 className={cn(
-                  'absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-md border border-zinc-700',
-                  'bg-zinc-800 text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300',
+                  'absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-md border border-border',
+                  'bg-muted text-muted-foreground transition-all hover:border-muted-foreground hover:text-foreground',
                   'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
                   // Always show on touch devices
                   'sm:opacity-0',
-                  copied && 'border-stone-500/60 text-stone-300 dark:border-stone-400/60 dark:text-stone-300',
+                  copied && 'border-muted-foreground/60 text-foreground',
                 )}
                 type="button"
               >
@@ -84,7 +84,7 @@ export function AiMessageBubble({ role, content, isStreaming = false }: AiMessag
           </>
         ) : (
           <div className="rounded-lg bg-muted/50 px-3 py-2">
-            <p className="text-sm leading-relaxed text-zinc-100">{content}</p>
+            <p className="text-foreground text-sm leading-relaxed">{content}</p>
           </div>
         )}
       </div>

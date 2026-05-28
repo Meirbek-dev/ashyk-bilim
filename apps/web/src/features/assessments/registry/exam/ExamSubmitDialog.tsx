@@ -70,7 +70,7 @@ export default function ExamSubmitDialog({
             {hasWarning ? (
               <AlertTriangle className="size-6 text-amber-500" />
             ) : (
-              <CheckCircle2 className="size-6 text-green-600" />
+              <CheckCircle2 className="size-6 text-lime-600" />
             )}
           </AlertDialogMedia>
           <AlertDialogTitle>{labels.confirmSubmission}</AlertDialogTitle>
@@ -123,7 +123,7 @@ export default function ExamSubmitDialog({
             className={cn(
               hasWarning
                 ? 'bg-amber-600 hover:bg-amber-700 focus-visible:ring-amber-500'
-                : 'bg-green-600 hover:bg-green-700 focus-visible:ring-green-500',
+                : '',
             )}
           >
             {isSubmitting ? labels.submitting : labels.confirmAndSubmit}

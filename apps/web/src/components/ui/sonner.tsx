@@ -20,11 +20,11 @@ const Toaster = ({ position = 'top-center', ...props }: ToasterProps) => {
       theme={resolvedTheme}
       className="toaster group"
       icons={{
-        success: <CircleCheckIcon color="green" className="size-4" />,
-        info: <InfoIcon color="blue" className="size-4" />,
-        warning: <TriangleAlertIcon color="orange" className="size-4" />,
-        error: <OctagonXIcon color="red" className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+        success: <CircleCheckIcon className="size-4 text-lime-600" />,
+        info: <InfoIcon className="size-4 text-blue-600" />,
+        warning: <TriangleAlertIcon className="size-4 text-amber-600" />,
+        error: <OctagonXIcon className="size-4 text-rose-600" />,
+        loading: <Loader2Icon className="size-4 animate-spin text-muted-foreground" />,
       }}
       style={
         {

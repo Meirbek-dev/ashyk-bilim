@@ -214,8 +214,8 @@ export default function DiscussionPost({
                       className={cn(
                         'h-8 rounded-none border-border border-r px-3 transition-all',
                         post.userVote === 'up'
-                          ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                          : 'text-muted-foreground hover:bg-muted/70 hover:text-emerald-600',
+                          ? 'bg-lime-100 text-lime-800 hover:bg-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:hover:bg-lime-900/50'
+                          : 'text-muted-foreground hover:bg-muted/70 hover:text-lime-700 dark:hover:text-lime-400',
                       )}
                     >
                       <ArrowBigUp size={16} className="mr-1" />
@@ -229,8 +229,8 @@ export default function DiscussionPost({
                       className={cn(
                         'h-8 rounded-none px-3 transition-all',
                         post.userVote === 'down'
-                          ? 'bg-red-50 text-red-700 hover:bg-red-100'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-red-600',
+                          ? 'bg-destructive/20 text-destructive hover:bg-destructive/30'
+                          : 'text-muted-foreground hover:bg-muted/70 hover:text-destructive',
                       )}
                     >
                       <ArrowBigDown size={16} className="mr-1" />
@@ -244,7 +244,9 @@ export default function DiscussionPost({
                       <div
                         className={cn(
                           'rounded-full px-2 py-1 font-medium text-xs',
-                          netScore > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700',
+                          netScore > 0
+                            ? 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300'
+                            : 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
                         )}
                       >
                         {netScore > 0 ? '+' : ''}

@@ -21,7 +21,7 @@ export function EditorSaveIndicator({ saveState }: EditorSaveIndicatorProps) {
         </>
       ) : saveState === 'saved' ? (
         <>
-          <Check className="size-3 text-lime-600 dark:text-lime-500" />
+          <Check className="size-3 text-lime-700 dark:text-lime-500" />
           <span>{t('saveSuccess')}</span>
         </>
       ) : (

@@ -56,7 +56,7 @@ export function EditorStatusBar({
             <span
               className={cn(
                 saveState === 'error' && 'text-destructive',
-                saveState === 'saved' && 'text-emerald-600',
+                saveState === 'saved' && 'text-lime-700 dark:text-lime-500',
                 saveState === 'saving' && 'text-amber-600',
               )}
             >

@@ -245,8 +245,8 @@ function LeaderboardEntryRow({
         <div
           className={cn(
             'flex items-center gap-1 text-xs font-semibold',
-            entry.rank_change > 0 && 'text-green-500',
-            entry.rank_change < 0 && 'text-red-500',
+            entry.rank_change > 0 && 'text-lime-600 dark:text-lime-400',
+            entry.rank_change < 0 && 'text-rose-600 dark:text-rose-400',
           )}
         >
           {entry.rank_change > 0 && (
