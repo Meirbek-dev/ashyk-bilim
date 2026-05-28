@@ -1,9 +1,41 @@
 root = true
 
 [*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
 indent_style = space
 indent_size = 2
-end_of_line = lf
-charset = utf-8
-trim_trailing_whitespace = true
-insert_final_newline = true
+
+max_line_length = 100
+
+# Keep aligned with formatter/linter stack.
+quote_type = single
+
+# TypeScript / JavaScript ecosystem
+[*.{js,cjs,mjs,jsx,ts,cts,mts,tsx,json,jsonc}]
+quote_type = single
+
+# Markdown should preserve author formatting.
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
+
+# YAML benefits from smaller line width for readability.
+[*.{yml,yaml}]
+indent_size = 2
+max_line_length = 100
+
+# Python interoperability
+[*.py]
+indent_size = 4
+
+# Shell scripts
+[*.{sh,bash,zsh}]
+indent_size = 2
+
+# Generated / lock files
+[*.{lock,min.js,min.css}]
+max_line_length = off
