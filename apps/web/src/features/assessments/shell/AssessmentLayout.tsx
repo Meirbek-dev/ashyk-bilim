@@ -102,10 +102,10 @@ export default function AssessmentLayout({ activityUuid, courseUuid, vm: supplie
 
   const guard = useAttemptGuard(policy ?? DEFAULT_POLICY_VIEW, {
     enabled: antiCheatEnabled,
-    timer: controls.timer,
-    initialViolationCount: controls.initialViolationCount,
-    onViolation: controls.onViolation,
-    onThresholdReached: controls.onGuardAutoSubmit,
+    ...(controls.timer === undefined ? {} : { timer: controls.timer }),
+    ...(controls.initialViolationCount === undefined ? {} : { initialViolationCount: controls.initialViolationCount }),
+    ...(controls.onViolation === undefined ? {} : { onViolation: controls.onViolation }),
+    ...(controls.onGuardAutoSubmit === undefined ? {} : { onThresholdReached: controls.onGuardAutoSubmit }),
   })
 
   // ── Kind component ─────────────────────────────────────────────────────────

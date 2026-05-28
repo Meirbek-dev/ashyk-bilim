@@ -64,11 +64,18 @@ function toChoiceItem(question: QuestionData): ChoiceAttemptItem {
           : 'TRUE_FALSE',
     prompt: question.question_text,
     points: question.points,
-    options: question.answer_options.map((option, index) => ({
-      id: getAnswerOptionId(option, index),
-      text: option.text,
-      isCorrect: option.is_correct,
-    })),
+    options: question.answer_options.map((option, index) =>
+      option.is_correct === undefined
+        ? {
+            id: getAnswerOptionId(option, index),
+            text: option.text,
+          }
+        : {
+            id: getAnswerOptionId(option, index),
+            text: option.text,
+            isCorrect: option.is_correct,
+          },
+    ),
   }
 }
 

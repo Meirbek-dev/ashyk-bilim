@@ -28,12 +28,12 @@ export function useDndAnnouncements(items: string[]): Announcements {
       const index = getPosition(active.id)
       return t('liftItem', { index, count })
     },
-    onDragOver({ active, over }) {
+    onDragOver({ over }) {
       if (!over) return
       const index = getPosition(over.id)
       return t('moveItem', { index, count })
     },
-    onDragEnd({ active, over }) {
+    onDragEnd({ over }) {
       if (!over) return
       const index = getPosition(over.id)
       return t('dropItem', { index, count })

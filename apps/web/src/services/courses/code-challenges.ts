@@ -353,6 +353,9 @@ function toCodeChallengeSettings(
     : typeof settings['reference_solution'] === 'string'
       ? { solution: settings['reference_solution'] }
       : undefined
+  const difficulty: NonNullable<CodeChallengeSettings['difficulty']> = isDifficulty(settings['difficulty'])
+    ? settings['difficulty']
+    : 'EASY'
   const hints = isHintArray(settings['hints']) ? settings['hints'] : []
   const points =
     typeof codeItem?.max_score === 'number'
@@ -363,12 +366,11 @@ function toCodeChallengeSettings(
 
   return {
     uuid: assessment.assessment_uuid,
-    title: assessment.title,
     prompt: body?.prompt ?? assessment.description ?? '',
     input_spec: body?.input_spec ?? '',
     output_spec: body?.output_spec ?? '',
     constraints: Array.isArray(body?.constraints) ? body.constraints : [],
-    difficulty: isDifficulty(settings['difficulty']) ? settings['difficulty'] : 'EASY',
+    difficulty,
     time_limit: timeLimit,
     memory_limit: memoryLimit,
     time_limit_ms: timeLimit * 1000,
@@ -388,6 +390,7 @@ function toCodeChallengeSettings(
     scheduled_at: assessment.scheduled_at ?? null,
     published_at: assessment.published_at ?? null,
     archived_at: assessment.archived_at ?? null,
+    ...(assessment.title === undefined ? {} : { title: assessment.title }),
     ...(maxSubmissions !== undefined ? { max_submissions: maxSubmissions } : {}),
     ...(solutionCode ? { solution_code: solutionCode } : {}),
   }

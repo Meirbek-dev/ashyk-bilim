@@ -52,10 +52,6 @@ function normalizeProfile(payload: ApiProfileResponse | undefined): UserGamifica
     total_activities_completed: Math.max(0, numberOr(payload.total_activities_completed)),
     total_courses_completed: Math.max(0, numberOr(payload.total_courses_completed)),
     daily_xp_earned: Math.max(0, numberOr(payload.daily_xp_earned)),
-    xp_to_next_level: payload.xp_to_next_level !== undefined ? numberOr(payload.xp_to_next_level) : undefined,
-    level_progress_percent:
-      payload.level_progress_percent !== undefined ? numberOr(payload.level_progress_percent) : undefined,
-    xp_in_current_level: payload.xp_in_current_level !== undefined ? numberOr(payload.xp_in_current_level) : undefined,
     last_xp_award_date: stringOrNull(payload.last_xp_award_date),
     last_login_date: stringOrNull(payload.last_login_date),
     last_learning_date: stringOrNull(payload.last_learning_date),

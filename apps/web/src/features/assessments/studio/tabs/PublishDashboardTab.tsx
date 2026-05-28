@@ -54,7 +54,7 @@ interface PublishDashboardTabProps {
 }
 
 export default function PublishDashboardTab({
-  assessmentUuid,
+  assessmentUuid: _assessmentUuid,
   lifecycle,
   items,
   totalPoints,
@@ -62,11 +62,10 @@ export default function PublishDashboardTab({
   validationIssues,
   canPublish,
   canSchedule,
-  canArchive,
+  canArchive: _canArchive,
   onSwitchToBuilder,
   onLifecycleChange,
 }: PublishDashboardTabProps) {
-  const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const tPublish = useTranslations('Features.Assessments.Studio.PublishDashboard')
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [scheduledAt, setScheduledAt] = useState('')
@@ -91,7 +90,6 @@ export default function PublishDashboardTab({
   const timeLimitMinutes = assessmentState.timeLimitMinutes ? Number(assessmentState.timeLimitMinutes) : null
   const isPublished = lifecycle === 'PUBLISHED'
   const isScheduled = lifecycle === 'SCHEDULED'
-  const isDraft = lifecycle === 'DRAFT'
 
   const handlePublish = () => {
     startTransition(() => {
@@ -305,8 +303,8 @@ export default function PublishDashboardTab({
                         <ChecklistItem
                           key={i}
                           message={issue.message}
-                          context={itemTitle ?? undefined}
-                          onNavigate={issue.itemUuid ? () => onSwitchToBuilder(issue.itemUuid) : undefined}
+                          {...(itemTitle === null ? {} : { context: itemTitle })}
+                          {...(issue.itemUuid ? { onNavigate: () => onSwitchToBuilder(issue.itemUuid) } : {})}
                           navigateLabel={tPublish('goToQuestion')}
                         />
                       )

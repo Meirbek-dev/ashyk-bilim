@@ -14,8 +14,6 @@ import { tags, courseTag } from '@/lib/cacheTags'
 type CourseRead = components['schemas']['CourseRead']
 type CourseReadWithPermissions = components['schemas']['CourseReadWithPermissions']
 type FullCourseRead = components['schemas']['FullCourseRead']
-type CourseUserRightsResponse = components['schemas']['CourseUserRightsResponse']
-type CourseDetailResponse = components['schemas']['CourseDetailResponse']
 type AuthorWithRole = components['schemas']['AuthorWithRole']
 type NormalizedCourseAuthor = Omit<AuthorWithRole, 'user'> & {
   user: {
@@ -123,65 +121,105 @@ function normalizeTags(tags: string | null | undefined): string[] {
 
 function normalizeAuthors(authors: AuthorWithRole[] | undefined): NormalizedCourseAuthor[] {
   return (authors ?? []).map(author =>
-    Object.assign(author, {
+    Object.assign({}, author, {
       user: {
         ...author.user,
         avatar_image: author.user.avatar_image ?? ``,
         first_name: author.user.first_name ?? ``,
         last_name: author.user.last_name ?? ``,
-        middle_name: author.user.middle_name ?? undefined,
         user_uuid: author.user.user_uuid ?? ``,
+        ...(author.user.middle_name == null ? {} : { middle_name: author.user.middle_name }),
       },
     }),
   )
 }
 
 function normalizeCourse(course: CourseRead): NormalizedCourse {
+  const {
+    about,
+    authors,
+    description,
+    learnings,
+    tags,
+    thumbnail_image,
+    thumbnail_type,
+    thumbnail_video,
+    ...rest
+  } = course
+
   return {
-    ...course,
-    about: course.about ?? '',
-    authors: normalizeAuthors(course.authors),
-    description: course.description ?? '',
-    learnings: course.learnings ?? '',
-    mini_description: course.description ?? '',
-    tags: normalizeTags(course.tags),
-    thumbnail_image: course.thumbnail_image ?? '',
-    thumbnail_video: course.thumbnail_video ?? '',
-    ...(course.thumbnail_type !== undefined ? { thumbnail_type: course.thumbnail_type } : {}),
+    ...rest,
+    about: about ?? '',
+    authors: normalizeAuthors(authors),
+    description: description ?? '',
+    learnings: learnings ?? '',
+    mini_description: description ?? '',
+    tags: normalizeTags(tags),
+    thumbnail_image: thumbnail_image ?? '',
+    thumbnail_video: thumbnail_video ?? '',
+    ...(thumbnail_type == null ? {} : { thumbnail_type }),
   }
 }
 
 function normalizeCourseWithPermissions(course: CourseReadWithPermissions): NormalizedCourseWithPermissions {
+  const {
+    about,
+    authors,
+    description,
+    learnings,
+    tags,
+    thumbnail_image,
+    thumbnail_type,
+    thumbnail_video,
+    ...rest
+  } = course
+
   return {
-    ...course,
-    about: course.about ?? '',
-    authors: normalizeAuthors(course.authors),
-    description: course.description ?? '',
-    learnings: course.learnings ?? '',
-    mini_description: course.description ?? '',
-    tags: normalizeTags(course.tags),
-    thumbnail_image: course.thumbnail_image ?? '',
-    thumbnail_video: course.thumbnail_video ?? '',
-    ...(course.thumbnail_type !== undefined ? { thumbnail_type: course.thumbnail_type } : {}),
+    ...rest,
+    about: about ?? '',
+    authors: normalizeAuthors(authors),
+    description: description ?? '',
+    learnings: learnings ?? '',
+    mini_description: description ?? '',
+    tags: normalizeTags(tags),
+    thumbnail_image: thumbnail_image ?? '',
+    thumbnail_video: thumbnail_video ?? '',
+    ...(thumbnail_type == null ? {} : { thumbnail_type }),
   }
 }
 
 function normalizeFullCourse(course: FullCourseRead): NormalizedFullCourse {
+  const {
+    about,
+    authors,
+    chapters,
+    course_uuid,
+    creation_date,
+    description,
+    learnings,
+    tags,
+    thumbnail_image,
+    thumbnail_type,
+    thumbnail_video,
+    update_date,
+    ...rest
+  } = course
+
   return {
-    ...course,
-    about: course.about ?? '',
-    authors: normalizeAuthors(course.authors),
-    chapters: course.chapters ?? [],
-    course_uuid: course.course_uuid ?? '',
-    description: course.description ?? '',
-    learnings: course.learnings ?? '',
-    mini_description: course.description ?? '',
-    tags: normalizeTags(course.tags),
-    thumbnail_image: course.thumbnail_image ?? '',
-    thumbnail_video: course.thumbnail_video ?? '',
-    ...(course.creation_date !== undefined ? { creation_date: course.creation_date } : {}),
-    ...(course.thumbnail_type !== undefined ? { thumbnail_type: course.thumbnail_type } : {}),
-    ...(course.update_date !== undefined ? { update_date: course.update_date } : {}),
+    ...rest,
+    about: about ?? '',
+    authors: normalizeAuthors(authors),
+    chapters: chapters ?? [],
+    course_uuid: course_uuid ?? '',
+    description: description ?? '',
+    learnings: learnings ?? '',
+    mini_description: description ?? '',
+    tags: normalizeTags(tags),
+    thumbnail_image: thumbnail_image ?? '',
+    thumbnail_video: thumbnail_video ?? '',
+    ...(creation_date == null ? {} : { creation_date }),
+    ...(thumbnail_type == null ? {} : { thumbnail_type }),
+    ...(update_date == null ? {} : { update_date }),
   }
 }
 
@@ -291,7 +329,7 @@ export async function getCourseUserRights(course_uuid: string) {
   return await errorHandling(result)
 }
 
-export async function searchCourses(query: string, page = 1, limit = 20, next: any) {
+export async function searchCourses(query: string, page = 1, limit = 20, _next: any) {
   const result = await apiFetch(`courses/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
   const courses: CourseRead[] = await errorHandling(result)
   return courses.map(course => normalizeCourse(course))
@@ -421,7 +459,7 @@ export async function updateCourseThumbnail(course_uuid: string, formData: FormD
 export async function createNewCourse(
   course_body: any,
   thumbnail: any,
-  options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
+  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   // Send file thumbnail as form data
   const formData = new FormData()
@@ -472,7 +510,7 @@ export async function searchEditableCourses(query: string, limit = 20) {
 
 export async function deleteCourseFromBackend(
   course_uuid: string,
-  options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
+  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(`courses/${course_uuid}`, { method: 'DELETE' })
   const data = await errorHandling(result)
@@ -496,7 +534,7 @@ export async function editContributor(
   contributor_id: number,
   authorship: any,
   authorship_status: any,
-  options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
+  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(
     `courses/${course_uuid}/contributors/${contributor_id}?authorship=${authorship}&authorship_status=${authorship_status}`,
@@ -533,7 +571,7 @@ export async function applyForContributor(course_uuid: string, data: any) {
 export async function bulkAddContributors(
   course_uuid: string,
   data: any,
-  options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
+  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(`courses/${course_uuid}/bulk-add-contributors`, {
     method: 'POST',
@@ -554,7 +592,7 @@ export async function bulkAddContributors(
 export async function bulkRemoveContributors(
   course_uuid: string,
   data: any,
-  options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
+  _options?: Pick<CourseWriteOptions, 'includeEditableList' | 'includePublicList'>,
 ) {
   const result = await apiFetch(`courses/${course_uuid}/bulk-remove-contributors`, {
     method: 'DELETE',

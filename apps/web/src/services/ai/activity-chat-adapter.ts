@@ -75,36 +75,48 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
 
   switch (type) {
     case 'status': {
+      const aichatUuid = readOptionalString(value['aichat_uuid'])
+      const status = readOptionalString(value['status'])
+      const message = readOptionalString(value['message'])
+
       return {
         type,
         ...(version !== undefined ? { version } : {}),
-        ...(readOptionalString(value['aichat_uuid']) ? { aichat_uuid: readOptionalString(value['aichat_uuid']) } : {}),
-        ...(readOptionalString(value['status']) ? { status: readOptionalString(value['status']) } : {}),
-        ...(readOptionalString(value['message']) ? { message: readOptionalString(value['message']) } : {}),
+        ...(aichatUuid === undefined ? {} : { aichat_uuid: aichatUuid }),
+        ...(status === undefined ? {} : { status }),
+        ...(message === undefined ? {} : { message }),
       }
     }
     case 'delta':
     case 'chunk': {
+      const content = readOptionalString(value['content'])
+
       return {
         type,
         ...(version !== undefined ? { version } : {}),
-        ...(readOptionalString(value['content']) ? { content: readOptionalString(value['content']) } : {}),
+        ...(content === undefined ? {} : { content }),
       }
     }
     case 'final': {
+      const aichatUuid = readOptionalString(value['aichat_uuid'])
+      const content = readOptionalString(value['content'])
+
       return {
         type,
         ...(version !== undefined ? { version } : {}),
-        ...(readOptionalString(value['aichat_uuid']) ? { aichat_uuid: readOptionalString(value['aichat_uuid']) } : {}),
-        ...(readOptionalString(value['content']) ? { content: readOptionalString(value['content']) } : {}),
+        ...(aichatUuid === undefined ? {} : { aichat_uuid: aichatUuid }),
+        ...(content === undefined ? {} : { content }),
       }
     }
     case 'error': {
+      const error = readOptionalString(value['error'])
+      const errorCode = readOptionalString(value['error_code'])
+
       return {
         type,
         ...(version !== undefined ? { version } : {}),
-        ...(readOptionalString(value['error']) ? { error: readOptionalString(value['error']) } : {}),
-        ...(readOptionalString(value['error_code']) ? { error_code: readOptionalString(value['error_code']) } : {}),
+        ...(error === undefined ? {} : { error }),
+        ...(errorCode === undefined ? {} : { error_code: errorCode }),
       }
     }
     default: {

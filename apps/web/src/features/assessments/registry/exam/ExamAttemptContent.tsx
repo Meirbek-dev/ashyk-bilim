@@ -31,7 +31,9 @@ import { isAnswered as isItemAnswered } from '@/features/assessments/domain/item
 import type { AssessmentItem, ItemAnswer } from '@/features/assessments/domain/items'
 import AttemptEntryPanel from '@/features/assessments/shared/AttemptEntryPanel'
 import AttemptHistoryList from '@/features/assessments/shared/AttemptHistoryList'
+import type { AttemptHistoryItem } from '@/features/assessments/shared/AttemptHistoryList'
 import { useAttemptShellControls } from '@/features/assessments/shell'
+import type { AttemptShellRegistration } from '@/features/assessments/shell/AssessmentActionBar'
 import { useAssessmentAttempt } from '@/features/assessments/shell/hooks/useAssessmentAttempt'
 import { useAssessmentSubmission } from '@/features/assessments/hooks/useAssessmentSubmission'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
@@ -102,38 +104,48 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
     return <div className="text-destructive rounded-lg border p-6 text-sm">{t('errorLoadingExam')}</div>
   }
 
+  const buildHistoryItem = (
+    submission: (typeof submissionState.submissions)[number],
+    index: number,
+  ): AttemptHistoryItem => {
+    const plagiarism = getSubmissionPlagiarismState(submission)
+    let plagiarismText: string
+
+    if (plagiarism.status === 'failed') {
+      plagiarismText = 'Plagiarism: Failed'
+    } else if (plagiarism.status === 'checking') {
+      plagiarismText = 'Plagiarism: Checking'
+    } else if (plagiarism.status === 'pending') {
+      plagiarismText = 'Plagiarism: Pending'
+    } else if (plagiarism.flagged) {
+      plagiarismText = `Plagiarism Flagged (${Math.round((plagiarism.score ?? 0) * 100)}% match)`
+    } else {
+      plagiarismText = 'Plagiarism: Checked Clear'
+    }
+
+    const label =
+      index === 0
+        ? t('latestSubmission')
+        : t('attemptNumber', {
+            number: submissionState.submissions.length - index,
+          })
+    const submittedAt = submission.submitted_at ?? submission.updated_at ?? null
+
+    return {
+      id: submission.submission_uuid,
+      label,
+      submittedAt,
+      status: submission.status,
+      scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
+      metaLabel: plagiarismText || null,
+    }
+  }
+
   const latestCompletedSubmission =
     submissionState.submissions.find(submission => submission.status !== 'DRAFT') ?? null
   const historyItems = submissionState.submissions
     .filter(submission => submission.status !== 'DRAFT')
-    .map((submission, index) => {
-      const plagiarism = getSubmissionPlagiarismState(submission)
-      let plagiarismText: string
-      if (plagiarism.status === 'failed') {
-        plagiarismText = 'Plagiarism: Failed'
-      } else if (plagiarism.status === 'checking') {
-        plagiarismText = 'Plagiarism: Checking'
-      } else if (plagiarism.status === 'pending') {
-        plagiarismText = 'Plagiarism: Pending'
-      } else if (plagiarism.flagged) {
-        plagiarismText = `Plagiarism Flagged (${Math.round((plagiarism.score ?? 0) * 100)}% match)`
-      } else {
-        plagiarismText = 'Plagiarism: Checked Clear'
-      }
-      return {
-        id: submission.submission_uuid,
-        label:
-          index === 0
-            ? t('latestSubmission')
-            : t('attemptNumber', {
-                number: submissionState.submissions.length - index,
-              }),
-        submittedAt: submission.submitted_at ?? submission.updated_at,
-        status: submission.status,
-        scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
-        metaLabel: plagiarismText || null,
-      }
-    })
+    .map(buildHistoryItem)
 
   const handleStartExam = async () => {
     if (!assessmentUuid || !vm.canEdit) return
@@ -203,15 +215,6 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
               ? t('readyToReviseDescription')
               : t('readyToStartSubtitle')
         }
-        actionLabel={
-          questions.length === 0
-            ? undefined
-            : vm.canEdit
-              ? vm.isReturnedForRevision
-                ? t('startRevision')
-                : t('startExam')
-              : undefined
-        }
         actionDisabled={!vm.canEdit || questions.length === 0}
         actionPending={isStarting}
         blockedMessage={
@@ -223,7 +226,12 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
               ? t('noEditableDraft')
               : null
         }
-        onAction={vm.canEdit && questions.length > 0 ? handleStartExam : undefined}
+        {...(questions.length > 0 && vm.canEdit
+          ? {
+              actionLabel: vm.isReturnedForRevision ? t('startRevision') : t('startExam'),
+              onAction: handleStartExam,
+            }
+          : {})}
         notices={
           <div className="space-y-4">
             {questions.length === 0 ? (
@@ -499,7 +507,7 @@ function ExamTakingContent({
     return () => clearTimeout(timeout)
   }, [submissionState])
 
-  const shellControls = useMemo(
+  const shellControls = useMemo<AttemptShellRegistration>(
     () => ({
       saveState: submissionState.isSubmitting
         ? ('saving' as const)
@@ -519,8 +527,8 @@ function ExamTakingContent({
       canSubmit,
       isSaving: submissionState.isSaving,
       isSubmitting: submissionState.isSubmitting,
-      onSave: canSaveDraft && submissionState.saveState === 'dirty' ? () => submissionState.save() : undefined,
-      onSubmit: canSubmit ? handleOpenSubmitConfirmation : undefined,
+      ...(canSaveDraft && submissionState.saveState === 'dirty' ? { onSave: () => submissionState.save() } : {}),
+      ...(canSubmit ? { onSubmit: handleOpenSubmitConfirmation } : {}),
       navigation: {
         current: currentIndex + 1,
         total: orderedQuestions.length,
@@ -814,7 +822,7 @@ function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
         question_type:
           body.variant === 'TRUE_FALSE' ? 'TRUE_FALSE' : body.multiple ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE',
         points: item.max_score,
-        explanation: body.explanation ?? undefined,
+        ...(body.explanation == null ? {} : { explanation: body.explanation }),
         answer_options: body.options.map(option => ({
           text: option.text,
           is_correct: option.is_correct,
@@ -831,7 +839,7 @@ function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
         question_text: body.prompt,
         question_type: 'MATCHING',
         points: item.max_score,
-        explanation: body.explanation ?? undefined,
+        ...(body.explanation == null ? {} : { explanation: body.explanation }),
         answer_options: body.pairs.map((pair, index) => ({
           text: '',
           left: pair.left,

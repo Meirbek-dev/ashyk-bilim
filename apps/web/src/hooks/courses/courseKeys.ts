@@ -9,14 +9,6 @@ export interface CourseListKeyOptions {
   preset?: string
 }
 
-interface NormalizedCourseListOptions {
-  limit: number
-  page: number
-  preset?: string
-  query?: string
-  sortBy?: string
-}
-
 const buildQueryString = (params: Record<string, string | number | undefined>) => {
   const searchParams = new URLSearchParams()
 

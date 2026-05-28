@@ -242,7 +242,7 @@ export function EditorToolbar({
               <LinkIcon className="size-3.5" />
             </ToolbarButton>
             {config.allowImages && (
-              <ToolbarButton title={t('toolbar.image')} disabled={disabled} onClick={() => setImageDialogOpen(true)}>
+              <ToolbarButton title={t('toolbar.image')} active={editor?.isActive('image') ?? null} disabled={disabled} onClick={() => setImageDialogOpen(true)}>
                 <ImageIcon className="size-3.5" />
               </ToolbarButton>
             )}
@@ -254,6 +254,7 @@ export function EditorToolbar({
           <ToolbarGroup>
             <ToolbarButton
               title={t('toolbar.table')}
+              active={null}
               disabled={disabled}
               onClick={() =>
                 (editor?.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
@@ -269,6 +270,7 @@ export function EditorToolbar({
           <ToolbarGroup>
             <ToolbarButton
               title={t('toolbar.math')}
+              active={null}
               disabled={disabled}
               onClick={() => {
                 const pos = editor?.state.selection.to

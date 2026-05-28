@@ -25,7 +25,7 @@ function courseStructureHookOptions<TCourseStructure = unknown>(
   return queryOptions({
     ...courseStructureQueryOptions<TCourseStructure>(courseUuid, withUnpublishedActivities),
     enabled: Boolean(courseUuid),
-    initialData: options?.fallbackData,
+    ...(options?.fallbackData === undefined ? {} : { initialData: options.fallbackData }),
   })
 }
 

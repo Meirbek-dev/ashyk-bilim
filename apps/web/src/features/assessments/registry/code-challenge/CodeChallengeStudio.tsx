@@ -31,6 +31,15 @@ export interface CodeChallengeHintForm {
   xp_penalty: number
 }
 
+function toHintForm(hint: Partial<CodeChallengeHintForm>, index: number): CodeChallengeHintForm {
+  return {
+    ...(hint.id === undefined ? {} : { id: hint.id }),
+    order: hint.order ?? index + 1,
+    content: hint.content ?? '',
+    xp_penalty: hint.xp_penalty ?? 5,
+  }
+}
+
 export interface CodeChallengeSettingsForm {
   difficulty: 'EASY' | 'MEDIUM' | 'HARD'
   allowed_languages: number[]
@@ -94,12 +103,7 @@ export default function CodeChallengeStudio({ activityUuid }: CodeChallengeStudi
       allowed_languages: settings.allowed_languages?.length ? settings.allowed_languages : [],
       visible_tests: normalizeTests(settings.visible_tests, true, DEFAULT_VALUES.visible_tests),
       hidden_tests: normalizeTests(settings.hidden_tests, false, []),
-      hints: (settings.hints ?? []).map((hint, index) => ({
-        id: hint.id,
-        order: hint.order ?? index + 1,
-        content: hint.content ?? '',
-        xp_penalty: hint.xp_penalty ?? 5,
-      })),
+      hints: (settings.hints ?? []).map(toHintForm),
       starter_code: settings.starter_code ?? {},
     })
   }, [form, settings])

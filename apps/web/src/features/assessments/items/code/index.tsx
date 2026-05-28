@@ -55,22 +55,24 @@ export function CodeItemAttempt({
   disabled,
   onAnswerChange,
 }: ItemAttemptProps<CodeAttemptItem, Extract<ItemAnswer, { kind: 'CODE' }> | undefined>) {
+  const initialCode = answer?.source ?? item.initialCode
+
   return (
     <div className="bg-card h-full overflow-hidden">
       <CodeChallengeEditor
         activityUuid={item.activityUuid}
         settings={item.settings}
-        initialCode={answer?.source ?? item.initialCode}
         initialLanguageId={answer?.language ?? item.initialLanguageId}
-        answer={answer}
-        onAnswerChange={onAnswerChange}
-        onSubmit={item.onSubmit}
-        disabled={disabled}
-        challengeTitle={item.title}
-        challengeDescription={item.description}
+        {...(initialCode === undefined ? {} : { initialCode })}
+        {...(answer === undefined ? {} : { answer })}
+        {...(onAnswerChange === undefined ? {} : { onAnswerChange })}
+        {...(item.onSubmit === undefined ? {} : { onSubmit: item.onSubmit })}
+        {...(disabled === undefined ? {} : { disabled })}
+        {...(item.title === undefined ? {} : { challengeTitle: item.title })}
+        {...(item.description === undefined ? {} : { challengeDescription: item.description })}
         hideHeader
-        hideSubmitButton={disabled}
-        onSubmitControlChange={item.onSubmitControlChange}
+        {...(disabled === undefined ? {} : { hideSubmitButton: disabled })}
+        {...(item.onSubmitControlChange === undefined ? {} : { onSubmitControlChange: item.onSubmitControlChange })}
       />
     </div>
   )

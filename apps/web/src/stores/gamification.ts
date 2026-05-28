@@ -64,9 +64,6 @@ const FETCH_COOLDOWN_MS = 60_000
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
-// Transient state that should never be persisted (UI queues, loading flags)
-type TransientKeys = 'isLoading' | 'error' | 'levelUpQueue' | 'pendingXPToasts' | 'fetchAttempts' | 'lastFetchTime'
-
 export const useGamificationStore = create<GamificationState & GamificationActions>()(
   devtools(
     persist(
@@ -248,7 +245,7 @@ export const useGamificationStore = create<GamificationState & GamificationActio
 
         showXPToast: (amount, source) =>
           set(s => ({
-            pendingXPToasts: [...s.pendingXPToasts, { amount, source }],
+            pendingXPToasts: [...s.pendingXPToasts, source === undefined ? { amount } : { amount, source }],
           })),
 
         showLevelUpCelebration: newLevel => set(s => ({ levelUpQueue: [...s.levelUpQueue, { newLevel }] })),

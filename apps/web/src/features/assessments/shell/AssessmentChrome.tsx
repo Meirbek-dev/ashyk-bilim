@@ -63,13 +63,22 @@ export function AssessmentChrome({
   className,
 }: AssessmentChromeProps) {
   const t = useTranslations('Features.Assessments.Attempt.Exam')
-  const releaseNotice = getReleaseNotice({
-    releaseState,
-    submissionStatus,
-    returned,
-    isResultVisible,
-    t,
-  })
+  const releaseNotice = getReleaseNotice(
+    releaseState === undefined
+      ? {
+          submissionStatus,
+          returned,
+          isResultVisible,
+          t,
+        }
+      : {
+          releaseState,
+          submissionStatus,
+          returned,
+          isResultVisible,
+          t,
+        },
+  )
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>

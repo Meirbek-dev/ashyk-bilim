@@ -92,6 +92,12 @@ export function normalizeAnalyticsQuery(searchParams: Record<string, string | st
   const teacherUserId = getFirstQueryValue(searchParams['teacher_user_id'])
   const page = getFirstQueryValue(searchParams['page'])
   const pageSize = getFirstQueryValue(searchParams['page_size'])
+  const courseIds = getFirstQueryValue(searchParams['course_ids'])
+  const cohortIds = getFirstQueryValue(searchParams['cohort_ids'])
+  const teacherUserIdValue = getOptionalInteger(teacherUserId)
+  const timezone = getFirstQueryValue(searchParams['timezone'])
+  const sortBy = getFirstQueryValue(searchParams['sort_by'])
+  const bucketStart = getFirstQueryValue(searchParams['bucket_start'])
 
   return {
     window: (getFirstQueryValue(searchParams['window']) as AnalyticsQuery['window']) || '28d',
@@ -100,20 +106,12 @@ export function normalizeAnalyticsQuery(searchParams: Record<string, string | st
     page: getPositiveInteger(page, 1),
     page_size: getPositiveInteger(pageSize, 25),
     sort_order: (getFirstQueryValue(searchParams['sort_order']) as AnalyticsQuery['sort_order']) || 'desc',
-    ...(getFirstQueryValue(searchParams['course_ids'])
-      ? { course_ids: getFirstQueryValue(searchParams['course_ids']) }
-      : {}),
-    ...(getFirstQueryValue(searchParams['cohort_ids'])
-      ? { cohort_ids: getFirstQueryValue(searchParams['cohort_ids']) }
-      : {}),
-    ...(getOptionalInteger(teacherUserId) !== undefined ? { teacher_user_id: getOptionalInteger(teacherUserId) } : {}),
-    ...(getFirstQueryValue(searchParams['timezone'])
-      ? { timezone: getFirstQueryValue(searchParams['timezone']) }
-      : { timezone: 'UTC' }),
-    ...(getFirstQueryValue(searchParams['sort_by']) ? { sort_by: getFirstQueryValue(searchParams['sort_by']) } : {}),
-    ...(getFirstQueryValue(searchParams['bucket_start'])
-      ? { bucket_start: getFirstQueryValue(searchParams['bucket_start']) }
-      : {}),
+    ...(courseIds === undefined ? {} : { course_ids: courseIds }),
+    ...(cohortIds === undefined ? {} : { cohort_ids: cohortIds }),
+    ...(teacherUserIdValue === undefined ? {} : { teacher_user_id: teacherUserIdValue }),
+    ...(timezone === undefined ? { timezone: 'UTC' } : { timezone }),
+    ...(sortBy === undefined ? {} : { sort_by: sortBy }),
+    ...(bucketStart === undefined ? {} : { bucket_start: bucketStart }),
   }
 }
 

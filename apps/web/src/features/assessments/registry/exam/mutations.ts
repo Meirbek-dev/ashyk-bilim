@@ -61,8 +61,8 @@ async function createExamWithActivityRequest(
 
   return {
     ...payload,
-    exam_uuid: payload.assessment_uuid,
-    activity_uuid: payload.activity_uuid,
+    ...(payload.assessment_uuid === undefined ? {} : { exam_uuid: payload.assessment_uuid }),
+    ...(payload.activity_uuid === undefined ? {} : { activity_uuid: payload.activity_uuid }),
   }
 }
 

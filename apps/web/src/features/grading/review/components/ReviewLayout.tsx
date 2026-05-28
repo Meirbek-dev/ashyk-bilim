@@ -59,7 +59,7 @@ export default function ReviewLayout({
               {...(assessmentUuid !== undefined ? { assessmentUuid } : {})}
             />
           </div>
-          <StatsGrid stats={stats} />
+          <StatsGrid {...(stats === undefined ? {} : { stats })} />
         </div>
       </div>
 

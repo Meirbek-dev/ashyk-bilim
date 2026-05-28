@@ -90,7 +90,7 @@ export default function StudentOverridesPanel({ assessmentUuid }: StudentOverrid
           max_attempts_override: form.max_attempts_override ? Number.parseInt(form.max_attempts_override, 10) : null,
           due_at_override: form.due_at_override ? new Date(form.due_at_override).toISOString() : null,
           waive_late_penalty: form.waive_late_penalty,
-          note: form.note || undefined,
+          ...(form.note ? { note: form.note } : {}),
         }
 
         if (editingId !== null) {

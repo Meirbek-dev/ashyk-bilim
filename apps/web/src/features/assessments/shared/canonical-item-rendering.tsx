@@ -16,7 +16,7 @@ export function CanonicalAttemptItem({
   item,
   answer,
   disabled,
-  assessmentUuid,
+  assessmentUuid: _assessmentUuid,
   onChange,
 }: {
   item: AssessmentItem
@@ -189,7 +189,6 @@ export function CanonicalAttemptItem({
             kind: 'CODE' as const,
             language: body.languages[0] ?? 0,
             source: '',
-            latest_run: undefined,
           }
     return (
       <div className="space-y-4">
@@ -201,12 +200,20 @@ export function CanonicalAttemptItem({
             value={String(currentAnswer.language)}
             disabled={disabled}
             onChange={event =>
-              onChange({
-                kind: 'CODE',
-                language: Number(event.target.value),
-                source: currentAnswer.source,
-                latest_run: currentAnswer.latest_run,
-              })
+              onChange(
+                currentAnswer.latest_run === undefined
+                  ? {
+                      kind: 'CODE',
+                      language: Number(event.target.value),
+                      source: currentAnswer.source,
+                    }
+                  : {
+                      kind: 'CODE',
+                      language: Number(event.target.value),
+                      source: currentAnswer.source,
+                      latest_run: currentAnswer.latest_run,
+                    },
+              )
             }
           >
             {body.languages.map(language => (
@@ -221,12 +228,20 @@ export function CanonicalAttemptItem({
           disabled={disabled}
           className="min-h-[20rem] font-mono text-sm"
           onChange={event =>
-            onChange({
-              kind: 'CODE',
-              language: currentAnswer.language,
-              source: event.target.value,
-              latest_run: currentAnswer.latest_run,
-            })
+            onChange(
+              currentAnswer.latest_run === undefined
+                ? {
+                    kind: 'CODE',
+                    language: currentAnswer.language,
+                    source: event.target.value,
+                  }
+                : {
+                    kind: 'CODE',
+                    language: currentAnswer.language,
+                    source: event.target.value,
+                    latest_run: currentAnswer.latest_run,
+                  },
+            )
           }
         />
       </div>

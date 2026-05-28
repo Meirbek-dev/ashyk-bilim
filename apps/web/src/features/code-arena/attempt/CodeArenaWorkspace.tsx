@@ -114,11 +114,20 @@ export function CodeArenaWorkspace({
 
   const updateAnswer = useCallback(
     (nextLanguageId: number, nextCode: string) => {
+      if (answer?.latest_run === undefined) {
+        onAnswerChange({
+          kind: 'CODE',
+          language: nextLanguageId,
+          source: nextCode,
+        })
+        return
+      }
+
       onAnswerChange({
         kind: 'CODE',
         language: nextLanguageId,
         source: nextCode,
-        latest_run: answer?.latest_run,
+        latest_run: answer.latest_run,
       })
     },
     [answer?.latest_run, onAnswerChange],

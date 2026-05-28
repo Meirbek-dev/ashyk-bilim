@@ -48,13 +48,6 @@ export function useReducedData(): boolean {
     const connection =
       (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection
 
-    // Compute initial state synchronously (already computed in useState initializer)
-    const initialReduced = Boolean(
-      mediaQuery.matches ||
-      (connection &&
-        (connection.saveData === true || connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g')),
-    )
-
     // Handlers
     const handleChange = (event: MediaQueryListEvent) => {
       setPrefersReducedData(event.matches)

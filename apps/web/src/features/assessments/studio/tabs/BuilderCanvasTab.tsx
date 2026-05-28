@@ -319,17 +319,17 @@ export default function BuilderCanvasTab({
                           validationIssues={validationIssues}
                           disabled={!isEditable}
                           onSelect={() => onSelectItem(item.item_uuid)}
-                          onAddSectionBefore={
-                            isEditable
-                              ? () =>
+                          {...(isEditable
+                            ? {
+                                onAddSectionBefore: () =>
                                   void patchItemMetadata(item.item_uuid, {
                                     ...defaultMetadata(item.metadata),
                                     section_label: tBuilder('defaultSectionLabel', {
                                       n: sections.length + 1,
                                     }),
-                                  })
-                              : undefined
-                          }
+                                  }),
+                              }
+                            : {})}
                         />
                       </div>
                     )

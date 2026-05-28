@@ -191,7 +191,7 @@ interface XPNotificationContainerProps {
 export function XPNotificationContainer({
   notifications,
   position = 'bottom-right',
-  onDismiss,
+  onDismiss: _onDismiss,
   renderNotification,
 }: XPNotificationContainerProps) {
   const prefersReducedMotion = useReducedMotion()

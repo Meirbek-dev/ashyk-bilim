@@ -365,8 +365,6 @@ interface NativeItemAuthorProps {
   allowedKinds?: SupportedStudioItemKind[]
 }
 
-type EditableItemInternal = EditableItem
-
 export function NativeItemAuthor({
   mode,
   itemNoun,
@@ -1061,7 +1059,7 @@ function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTitle: st
   }
 }
 
-function buildAssessmentPatch(mode: StudioMode, assessment: AssessmentStudioDetail, state: AssessmentEditorState) {
+function buildAssessmentPatch(_mode: StudioMode, assessment: AssessmentStudioDetail, state: AssessmentEditorState) {
   const dueAt = state.dueAt ? new Date(state.dueAt).toISOString() : null
   const payload: Record<string, unknown> = {
     title: state.title,
@@ -1357,14 +1355,6 @@ function toDateTimeLocal(value: string | null | undefined) {
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16)
 }
 
-function formatStudioDate(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date)
-}
 
 async function responseError(response: Response, fallback: string) {
   const payload = await response.json().catch(() => null)

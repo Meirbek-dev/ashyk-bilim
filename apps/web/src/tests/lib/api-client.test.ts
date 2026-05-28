@@ -25,7 +25,7 @@ describe('apiFetch timeout', () => {
 
   it('should abort the request when it exceeds DEFAULT_TIMEOUT_MS', async () => {
     // Mock fetch to reject when the signal is aborted
-    ;(global.fetch as any).mockImplementation((url: string | Request | URL, options: RequestInit | undefined) => {
+    ;(global.fetch as any).mockImplementation((_url: string | Request | URL, options: RequestInit | undefined) => {
       return new Promise((_, reject) => {
         if (options?.signal) {
           if (options.signal.aborted) {

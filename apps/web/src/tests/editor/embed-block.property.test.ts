@@ -49,7 +49,7 @@ function htmlRoundTrip(attrs: { type: EmbedType; url: string; width: string; hei
   // Serialize to DOM fragment
   const serializer = DOMSerializer.fromSchema(schema)
   const container = document.createElement('div')
-  const fragment = serializer.serializeFragment(pmNode.content, { document }, container)
+  serializer.serializeFragment(pmNode.content, { document }, container)
   // serializeFragment appends to container; for an atom node we need to serialize the node itself
   const nodeContainer = document.createElement('div')
   const serializedNode = serializer.serializeNode(pmNode, { document })

@@ -52,11 +52,6 @@ const rawRegistry = rawThemeRegistry as unknown as {
   items?: ShadcnRegistryItem[]
 }
 
-interface CachedThemePayload {
-  name: string
-  tokensByMode: ThemeStyles
-}
-
 // Merge `theme` (shared) block into both light and dark so every preset is self-contained.
 const registry: Record<string, ThemePreset> = Object.fromEntries(
   (rawRegistry.items ?? []).map(item => [
@@ -93,10 +88,6 @@ function buildThemeDefinition(name: string, preset: ThemePreset, mode: ThemeMode
     colors: buildColors(tokens),
     resolvedTheme: mode,
   }
-}
-
-function isThemeMode(value: string | null | undefined): value is ThemeMode {
-  return value === 'light' || value === 'dark'
 }
 
 export const themeNames = Object.keys(registry)

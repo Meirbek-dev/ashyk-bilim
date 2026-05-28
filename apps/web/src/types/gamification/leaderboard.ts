@@ -88,7 +88,7 @@ export const UserRankSchema = v.object({
 
 // Helper functions
 export function assignBadges(entries: LeaderboardEntry[]): LeaderboardEntry[] {
-  return entries.map((entry, index) => {
+  return entries.map(entry => {
     let badge: LeaderboardBadge | null = null
     if (entry.rank === 1) badge = 'gold'
     else if (entry.rank === 2) badge = 'silver'
@@ -137,7 +137,6 @@ export function getTopEntries(leaderboard: PlatformLeaderboard, limit = 10): Lea
 export function enrichUserRank(
   leaderboard: PlatformLeaderboard,
   userId: number,
-  previousRank?: number,
 ): UserRank | null {
   const userEntry = findUserInLeaderboard(leaderboard, userId)
   if (!userEntry) return null
