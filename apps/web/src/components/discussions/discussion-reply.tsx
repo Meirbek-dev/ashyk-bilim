@@ -214,10 +214,10 @@ export default function DiscussionReply({
                   <div className="flex items-center">
                     <div
                       className={cn(
-                      'flex items-center gap-1 rounded-full px-2 py-1 font-medium text-xs',
-                      netScore > 0
-                        ? 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300'
-                        : 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+                        'flex items-center gap-1 rounded-full px-2 py-1 font-medium text-xs',
+                        netScore > 0
+                          ? 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300'
+                          : 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
                       )}
                     >
                       {netScore > 0 ? '+' : ''}

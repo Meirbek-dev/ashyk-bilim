@@ -31,8 +31,7 @@ function getButtonStyle(
     return 'bg-amber-100 text-amber-800 ring-1 ring-amber-400 dark:bg-amber-900/40 dark:text-amber-200'
   if (flagged.has(i))
     return 'bg-amber-50 text-amber-700 ring-1 ring-amber-300 dark:bg-amber-900/20 dark:text-amber-300'
-  if (answered.has(i))
-    return 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300'
+  if (answered.has(i)) return 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300'
   return 'bg-muted text-muted-foreground hover:bg-muted/80'
 }
 

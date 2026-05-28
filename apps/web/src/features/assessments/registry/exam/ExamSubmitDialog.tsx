@@ -121,9 +121,7 @@ export default function ExamSubmitDialog({
             onClick={onSubmit}
             disabled={isSubmitting}
             className={cn(
-              hasWarning
-                ? 'bg-amber-600 hover:bg-amber-700 focus-visible:ring-amber-500'
-                : '',
+              hasWarning ? 'bg-amber-600 hover:bg-amber-700 focus-visible:ring-amber-500' : '',
             )}
           >
             {isSubmitting ? labels.submitting : labels.confirmAndSubmit}

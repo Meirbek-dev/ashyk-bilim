@@ -101,7 +101,7 @@ export function MarkdownCodeBlock({
         // Skeleton / fallback while Shiki loads
         <pre
           className={cn(
-          'overflow-x-auto p-3 font-mono text-[13px] leading-6 text-neutral-300',
+            'overflow-x-auto p-3 font-mono text-[13px] leading-6 text-neutral-300',
             compact && 'p-2 text-xs leading-5',
           )}
         >

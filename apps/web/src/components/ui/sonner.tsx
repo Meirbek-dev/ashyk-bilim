@@ -24,7 +24,7 @@ const Toaster = ({ position = 'top-center', ...props }: ToasterProps) => {
         info: <InfoIcon className="size-4 text-blue-600" />,
         warning: <TriangleAlertIcon className="size-4 text-amber-600" />,
         error: <OctagonXIcon className="size-4 text-rose-600" />,
-        loading: <Loader2Icon className="size-4 animate-spin text-muted-foreground" />,
+        loading: <Loader2Icon className="text-muted-foreground size-4 animate-spin" />,
       }}
       style={
         {

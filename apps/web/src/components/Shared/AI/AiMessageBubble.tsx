@@ -83,7 +83,7 @@ export function AiMessageBubble({ role, content, isStreaming = false }: AiMessag
             )}
           </>
         ) : (
-          <div className="rounded-lg bg-muted/50 px-3 py-2">
+          <div className="bg-muted/50 rounded-lg px-3 py-2">
             <p className="text-foreground text-sm leading-relaxed">{content}</p>
           </div>
         )}

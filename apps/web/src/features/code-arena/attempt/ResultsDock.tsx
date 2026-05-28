@@ -312,7 +312,7 @@ function RunProgressTimeline() {
       <div className="relative flex items-center justify-between">
         <div className="bg-border absolute top-1/2 right-0 left-0 z-0 h-0.5 -translate-y-1/2" />
         <div
-          className="absolute top-1/2 left-0 z-0 h-0.5 -translate-y-1/2 bg-primary transition-all duration-300"
+          className="bg-primary absolute top-1/2 left-0 z-0 h-0.5 -translate-y-1/2 transition-all duration-300"
           style={{ width: `${(currentIdx / (steps.length - 1)) * 100}%` }}
         />
 
