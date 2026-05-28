@@ -20,7 +20,9 @@ const InfoCalloutComponent = (props: TypedNodeViewProps<InfoCalloutAttrs>) => {
 
   // Extract options from props or use defaults
   const options: CalloutOptions = {
-    dismissible: props.node?.attrs?.dismissible,
+    ...(props.node?.attrs?.dismissible === undefined
+      ? {}
+      : { dismissible: props.node.attrs.dismissible }),
     variant: props.node?.attrs?.variant || 'default',
     size: props.node?.attrs?.size || 'md',
   }

@@ -73,7 +73,7 @@ const EditCourseAccess = () => {
       updateAccess(
         { public: draftPublic },
         {
-          lastKnownUpdateDate: courseStructure.update_date,
+          lastKnownUpdateDate: courseStructure['update_date'],
         },
       ),
     )

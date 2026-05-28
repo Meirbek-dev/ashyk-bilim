@@ -3,7 +3,7 @@ import { getActivityMediaDirectory } from '@services/media/media'
 import { YouTubeEmbed } from '@next/third-parties/google'
 import { getYouTubeVideoId } from '@/lib/utils'
 import type ArtplayerType from 'artplayer'
-import { useLocale, useTranslations } from 'next-intl'
+import { useLocale } from 'next-intl'
 
 interface VideoDetails {
   startTime?: number
@@ -40,7 +40,6 @@ interface VideoActivityProps {
 
 const VideoActivity = ({ activity, course }: VideoActivityProps) => {
   const fullLocale = useLocale()
-  const t = useTranslations('Components.Video')
   const locale = fullLocale.split('-')[0]
 
   // Extract YouTube ID from activity content
@@ -94,18 +93,27 @@ const VideoActivity = ({ activity, course }: VideoActivityProps) => {
         <div className="my-3 w-full md:my-5">
           <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xs ring-1 ring-gray-300/30 sm:shadow-none sm:ring-gray-200/10 dark:ring-gray-600/30 sm:dark:ring-gray-700/20">
             {activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED' && (
-              <ArtPlayer
-                option={{
+              (() => {
+                const playerOption = {
                   url: getVideoSrc(),
-                  muted: activity.details?.muted,
-                  autoplay: activity.details?.autoplay,
+                  ...(activity.details?.muted === undefined
+                    ? {}
+                    : { muted: activity.details.muted }),
+                  ...(activity.details?.autoplay === undefined
+                    ? {}
+                    : { autoplay: activity.details.autoplay }),
                   lang: locale,
                   pip: false,
-                }}
-                subtitle={
-                  getDefaultSubtitleUrl()
-                    ? {
-                        url: getDefaultSubtitleUrl(),
+                }
+                const defaultSubtitleUrl = getDefaultSubtitleUrl()
+
+                return (
+              <ArtPlayer
+                option={playerOption}
+                {...(defaultSubtitleUrl
+                  ? {
+                      subtitle: {
+                        url: defaultSubtitleUrl,
                         type: 'srt',
                         style: {
                           color: '#ffffff',
@@ -114,16 +122,22 @@ const VideoActivity = ({ activity, course }: VideoActivityProps) => {
                           textAlign: 'center',
                         },
                         encoding: 'utf8',
-                      }
-                    : undefined
-                }
+                      },
+                    }
+                  : {})}
                 locale={locale}
                 subtitleEntries={subtitleEntries}
                 className="size-full"
-                startTime={activity.details?.startTime}
-                endTime={activity.details?.endTime}
+                {...(activity.details?.startTime === undefined
+                  ? {}
+                  : { startTime: activity.details.startTime })}
+                {...(activity.details?.endTime === undefined
+                  ? {}
+                  : { endTime: activity.details.endTime })}
                 onPlayerReady={(_art: ArtplayerType) => {}}
               />
+                )
+              })()
             )}
             {activity.activity_sub_type === 'SUBTYPE_VIDEO_YOUTUBE' && videoId && (
               <YouTubeEmbed

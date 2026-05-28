@@ -61,7 +61,10 @@ export function GamificationProvider({ children, initialData }: GamificationProv
     if (pendingXPToasts.length === 0) return
     const toasts = consumeXPToasts()
     for (const toast of toasts) {
-      showEnhancedXPToast({ amount: toast.amount, source: toast.source })
+      showEnhancedXPToast({
+        amount: toast.amount,
+        ...(toast.source === undefined ? {} : { source: toast.source }),
+      })
     }
   }, [pendingXPToasts, consumeXPToasts, showEnhancedXPToast])
 

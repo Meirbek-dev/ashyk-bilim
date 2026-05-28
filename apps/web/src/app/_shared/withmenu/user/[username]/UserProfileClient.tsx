@@ -23,6 +23,7 @@ import UserAvatar from '@components/Objects/UserAvatar'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import type { FC } from 'react'
+import type { Course as CourseThumbnailData } from '@components/Objects/Thumbnails/CourseThumbnail'
 import Image from 'next/image'
 
 interface UserProfileClientProps {
@@ -327,30 +328,47 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                             </div>
                           ) : userCourses.length > 0 ? (
                             <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
-                              {userCourses.map(course => (
-                                <div key={course.id} className="mx-auto w-full max-w-[300px]">
-                                  <CourseThumbnail
-                                    course={{
-                                      ...course,
-                                      authors: course.authors?.map(author => ({
-                                        authorship: author.authorship,
-                                        authorship_status: author.authorship_status,
-                                        user: {
-                                          id: author.user.id,
-                                          user_uuid: author.user.user_uuid,
-                                          avatar_image: author.user.avatar_image ?? '',
-                                          first_name: author.user.first_name,
-                                          middle_name: author.user.middle_name ?? undefined,
-                                          last_name: author.user.last_name,
-                                          username: author.user.username,
-                                        },
-                                      })),
-                                      description: course.description ?? '',
-                                      thumbnail_image: course.thumbnail_image ?? '',
-                                    }}
-                                  />
-                                </div>
-                              ))}
+                              {userCourses.map(
+                                course => {
+                                  const {
+                                    authors,
+                                    description,
+                                    thumbnail_image,
+                                    ...courseWithoutAuthors
+                                  } = course
+                                  const mappedAuthors: NonNullable<
+                                    CourseThumbnailData['authors']
+                                  > | undefined = authors?.map(author => ({
+                                    authorship: author.authorship,
+                                    authorship_status: author.authorship_status,
+                                    user: {
+                                      id: author.user.id,
+                                      user_uuid: author.user.user_uuid,
+                                      avatar_image: author.user.avatar_image ?? '',
+                                      first_name: author.user.first_name,
+                                      ...(author.user.middle_name
+                                        ? { middle_name: author.user.middle_name }
+                                        : {}),
+                                      last_name: author.user.last_name,
+                                      username: author.user.username,
+                                    },
+                                  }))
+                                  const courseThumbnailData: CourseThumbnailData = {
+                                    course_uuid: courseWithoutAuthors.course_uuid,
+                                    name: courseWithoutAuthors.name,
+                                    update_date: courseWithoutAuthors.update_date,
+                                    description: description ?? '',
+                                    thumbnail_image: thumbnail_image ?? '',
+                                    ...(mappedAuthors ? { authors: mappedAuthors } : {}),
+                                  }
+
+                                  return (
+                                    <div key={course.id} className="mx-auto w-full max-w-[300px]">
+                                      <CourseThumbnail course={courseThumbnailData} />
+                                    </div>
+                                  )
+                                },
+                              )}
                             </div>
                           ) : (
                             <div className="text-muted-foreground py-8 text-center">

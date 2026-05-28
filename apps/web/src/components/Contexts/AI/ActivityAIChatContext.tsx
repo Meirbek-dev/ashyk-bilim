@@ -15,7 +15,7 @@ import type { UseChatReturn } from '@tanstack/ai-react'
 import type { TextPart } from '@tanstack/ai-client'
 import type { PropsWithChildren } from 'react'
 import { useChat } from '@tanstack/ai-react'
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -49,7 +49,6 @@ export function ActivityAIChatProvider({
   children,
 }: PropsWithChildren<{ activityUuid: string }>) {
   const tStatus = useTranslations('Activities.AIStatus')
-  const locale = useLocale()
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')

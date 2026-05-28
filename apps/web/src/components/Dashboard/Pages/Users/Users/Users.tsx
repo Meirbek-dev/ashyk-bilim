@@ -144,7 +144,7 @@ const Users = () => {
     setIsMounted(true)
   }, [])
 
-  const { data: usersData, error, isLoading } = useMembers(currentPage, USERS_PER_PAGE)
+  const { data: usersData, isLoading } = useMembers(currentPage, USERS_PER_PAGE)
 
   const totalUsers = usersData?.total ?? 0
   const totalPages = usersData?.total_pages ?? 1

@@ -216,7 +216,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
                         ? getUserAvatarMediaDirectory(userData.user_uuid, userData.avatar_image)
                         : ''
                     }
-                    predefined_avatar={userData.avatar_image ? undefined : 'empty'}
+                    {...(!userData.avatar_image ? { predefined_avatar: 'empty' } : {})}
                     userId={userData.id}
                     showProfilePopup
                   />

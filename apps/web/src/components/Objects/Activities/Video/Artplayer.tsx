@@ -95,17 +95,17 @@ export default function ArtPlayer({
               html: 'Включить',
               switch: true,
               onSwitch: item => {
-                art.subtitle.show = !item.switch
-                return !item.switch
+                art.subtitle.show = !item['switch']
+                return !item['switch']
               },
             },
             ...subtitleEntries,
           ],
           onSelect: item => {
-            art.subtitle.switch(item.url, {
-              name: item.html,
+            art.subtitle.switch(item['url'], {
+              name: item['html'],
             })
-            return item.html
+            return item['html']
           },
         },
       ],

@@ -263,17 +263,6 @@ const PREDEFINED_GRADIENTS = {
   },
 } as const
 
-const _GRADIENT_DIRECTIONS = {
-  '45deg': '↗️ Top Right',
-  '90deg': '⬆️ Top',
-  '135deg': '↖️ Top Left',
-  '180deg': '⬅️ Left',
-  '225deg': '↙️ Bottom Left',
-  '270deg': '⬇️ Bottom',
-  '315deg': '↘️ Bottom Right',
-  '0deg': '➡️ Right',
-} as const
-
 // Map section type keys to translation keys
 const SECTION_TYPE_KEYS: Record<LandingSection['type'], string> = {
   hero: 'hero',
@@ -368,7 +357,6 @@ const createEmptySection = (t: Function, type: keyof typeof SECTION_TYPE_KEYS): 
           size: 'medium',
         },
         buttons: [],
-        illustration: undefined,
         contentAlign: 'center',
       }
     }
@@ -936,10 +924,11 @@ const HeroSectionEditor: FC<{
                     ...section,
                     background: {
                       type: safeBgType,
-                      color: bgType === 'solid' ? '#ffffff' : undefined,
-                      colors:
-                        bgType === 'gradient' ? PREDEFINED_GRADIENTS.sunrise.colors : undefined,
-                      image: bgType === 'image' ? '' : undefined,
+                      ...(bgType === 'solid' ? { color: '#ffffff' } : {}),
+                      ...(bgType === 'gradient'
+                        ? { colors: PREDEFINED_GRADIENTS.sunrise.colors }
+                        : {}),
+                      ...(bgType === 'image' ? { image: '' } : {}),
                     },
                   })
                 }}
@@ -1528,9 +1517,9 @@ const HeroSectionEditor: FC<{
                 <Button
                   variant="ghost"
                   onClick={() => {
+                    const { illustration: _illustration, ...sectionWithoutIllustration } = section
                     onChange({
-                      ...section,
-                      illustration: undefined,
+                      ...sectionWithoutIllustration,
                     })
                   }}
                   className="w-full text-red-500 hover:bg-red-50 hover:text-red-600"

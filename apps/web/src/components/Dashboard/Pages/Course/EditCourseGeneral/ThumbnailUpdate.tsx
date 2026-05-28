@@ -166,7 +166,8 @@ const ThumbnailUpdate = ({
       await saveWithoutRefresh(
         async () =>
           updateThumbnailMutation(formData, {
-            lastKnownUpdateDate: lastKnownUpdateDate ?? course.courseStructure.update_date ?? null,
+            lastKnownUpdateDate:
+              lastKnownUpdateDate ?? course.courseStructure['update_date'] ?? null,
           }),
         {
           onSuccess: () => setLocalThumbnail(null),
@@ -175,7 +176,7 @@ const ThumbnailUpdate = ({
       )
     },
     [
-      course.courseStructure.update_date,
+      course.courseStructure['update_date'],
       lastKnownUpdateDate,
       saveWithoutRefresh,
       t,
@@ -232,17 +233,17 @@ const ThumbnailUpdate = ({
   const getThumbnailUrl = useCallback(
     (type: 'image' | 'video') => {
       if (type === 'image') {
-        return course.courseStructure.thumbnail_image
+        return course.courseStructure['thumbnail_image']
           ? getCourseThumbnailMediaDirectory(
-              course.courseStructure.course_uuid,
-              course.courseStructure.thumbnail_image,
+              course.courseStructure['course_uuid'],
+              course.courseStructure['thumbnail_image'],
             )
           : '/empty_thumbnail.avif'
       }
-      return course.courseStructure.thumbnail_video
+      return course.courseStructure['thumbnail_video']
         ? getCourseThumbnailMediaDirectory(
-            course.courseStructure.course_uuid,
-            course.courseStructure.thumbnail_video,
+            course.courseStructure['course_uuid'],
+            course.courseStructure['thumbnail_video'],
           )
         : undefined
     },

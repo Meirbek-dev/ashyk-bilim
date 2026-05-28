@@ -106,7 +106,7 @@ export const CourseProvider = ({
     key: courseMetaUrl,
   } = useCourseStructure<CourseStructure>(courseuuid, {
     withUnpublishedActivities,
-    fallbackData: initialCourse || undefined,
+    ...(initialCourse ? { fallbackData: initialCourse } : {}),
   })
 
   const {
@@ -117,7 +117,7 @@ export const CourseProvider = ({
 
   useEffect(() => {
     if (courseStructureData) {
-      openEditor(courseuuid, courseStructureData.update_date)
+      openEditor(courseuuid, courseStructureData['update_date'])
     }
   }, [courseStructureData, courseuuid, openEditor])
 

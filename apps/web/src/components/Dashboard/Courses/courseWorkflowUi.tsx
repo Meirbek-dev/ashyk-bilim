@@ -85,7 +85,11 @@ export function CourseStatusBadge({
   }[status]
 
   return (
-    <CourseWorkflowBadge tone={config.tone} icon={config.icon} className={className}>
+    <CourseWorkflowBadge
+      tone={config.tone}
+      icon={config.icon}
+      {...(className === undefined ? {} : { className })}
+    >
       {config.label}
     </CourseWorkflowBadge>
   )

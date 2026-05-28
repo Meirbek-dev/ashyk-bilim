@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import GamifiedUserAvatar from '@/components/Objects/GamifiedUserAvatar'
 import type { LeaderboardEntry } from '@/types/gamification'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { getRankTheme } from '@/lib/gamification'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useTranslations } from 'next-intl'
@@ -35,11 +34,10 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
 
   const userEntry = entries.find(e => e.user_id === currentUserId)
 
-  let displayEntries, currentUserEntry, rankContext
+  let displayEntries, rankContext
 
   if (!userEntry || !userRank || showFull) {
     displayEntries = entries.slice(0, showFull ? undefined : 10)
-    currentUserEntry = userEntry
     rankContext = null
   } else {
     // Show top 3 + user's context (±2 ranks)
@@ -56,7 +54,6 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
     const xpToNext = nextRankEntry ? nextRankEntry.total_xp - userEntry.total_xp : 0
 
     displayEntries = userRank <= 3 ? top3 : [...top3, ...contextEntries]
-    currentUserEntry = userEntry
     rankContext = {
       rank: userRank,
       xpToNext,
@@ -111,7 +108,6 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
         <ScrollArea className={cn('pr-4', showFull ? 'h-[500px]' : 'h-[400px]')}>
           <div className="space-y-2">
             {displayEntries.map((entry, index) => {
-              const rankTheme = getRankTheme(entry.rank)
               const isCurrentUser = entry.user_id === currentUserId
               const isTop3 = entry.rank <= 3
 
@@ -132,7 +128,6 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
                     entry={entry}
                     isCurrentUser={isCurrentUser}
                     isTop3={isTop3}
-                    rankTheme={rankTheme}
                     t={t}
                   />
                 </div>
@@ -152,13 +147,11 @@ function LeaderboardEntryRow({
   entry,
   isCurrentUser,
   isTop3,
-  rankTheme,
   t,
 }: {
   entry: LeaderboardEntry
   isCurrentUser: boolean
   isTop3: boolean
-  rankTheme: ReturnType<typeof getRankTheme>
   t: any
 }) {
   return (
@@ -196,8 +189,8 @@ function LeaderboardEntryRow({
       {/* Avatar */}
       <GamifiedUserAvatar
         size="md"
-        avatar_url={entry.avatar_url || undefined}
-        username={entry.username || undefined}
+        {...(entry.avatar_url ? { avatar_url: entry.avatar_url } : {})}
+        {...(entry.username ? { username: entry.username } : {})}
         userId={entry.user_id}
         showProfilePopup
         showLevelBadge

@@ -6,16 +6,139 @@ import {
   getServerConfigResult,
 } from '@/services/config/env'
 
+interface DiagnosticsPayload {
+  timestamp: string
+  nodeEnv: string | undefined
+  checks: DiagnosticsChecks
+}
+
+type BackendErrorCheck =
+  | {
+      status: 'error'
+      error: string
+    }
+  | {
+      status: 'error'
+      error: string
+      code: string
+    }
+
+type StackErrorCheck =
+  | {
+      status: 'error'
+      error: string
+    }
+  | {
+      status: 'error'
+      error: string
+      stack: string
+    }
+
+interface DiagnosticsChecks {
+  envVars?: {
+    status: 'checking'
+    publicConfigValid: boolean
+    serverConfigValid: boolean
+    issues: unknown[]
+    resolved: {
+      siteUrl: string | null
+      apiUrl: string | null
+      mediaUrl: string | null
+      internalApiUrl: string | null
+      appUrl: string | null
+      cookieDomain: string | null
+      cookieSecure: boolean | null
+    }
+  }
+  backend?:
+    | {
+        status: 'healthy' | 'unhealthy'
+        statusCode: number
+        url: string
+      }
+    | BackendErrorCheck
+  cookies?:
+    | { status: 'working' }
+    | {
+        status: 'error'
+        error: string
+      }
+  i18n?:
+    | {
+        status: 'working'
+        currentLocale: string
+      }
+    | StackErrorCheck
+  auth?:
+    | {
+        status: 'working'
+        hasSession: boolean
+        hasUser: boolean
+      }
+    | StackErrorCheck
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error'
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  return error instanceof Error ? error.stack : undefined
+}
+
+function getErrorCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null || !('code' in error)) {
+    return undefined
+  }
+
+  const code = Reflect.get(error, 'code')
+  return typeof code === 'string' ? code : undefined
+}
+
+function buildBackendErrorCheck(error: unknown): BackendErrorCheck {
+  const code = getErrorCode(error)
+
+  if (code === undefined) {
+    return {
+      status: 'error',
+      error: getErrorMessage(error),
+    }
+  }
+
+  return {
+    status: 'error',
+    error: getErrorMessage(error),
+    code,
+  }
+}
+
+function buildStackErrorCheck(error: unknown): StackErrorCheck {
+  const stack = getErrorStack(error)
+
+  if (stack === undefined) {
+    return {
+      status: 'error',
+      error: getErrorMessage(error),
+    }
+  }
+
+  return {
+    status: 'error',
+    error: getErrorMessage(error),
+    stack,
+  }
+}
+
 export async function GET() {
   // Diagnostics expose internal URLs, config, and connectivity — block in production.
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  const diagnostics = {
+  const diagnostics: DiagnosticsPayload = {
     timestamp: new Date().toISOString(),
     nodeEnv: process.env.NODE_ENV,
-    checks: {} as Record<string, any>,
+    checks: {},
   }
 
   try {
@@ -61,12 +184,8 @@ export async function GET() {
         statusCode: response.status,
         url: backendUrl,
       }
-    } catch (error: any) {
-      diagnostics.checks.backend = {
-        status: 'error',
-        error: error.message,
-        code: error.code,
-      }
+    } catch (error: unknown) {
+      diagnostics.checks.backend = buildBackendErrorCheck(error)
     }
 
     // Check cookies functionality
@@ -74,10 +193,10 @@ export async function GET() {
       const { cookies } = await import('next/headers')
       await cookies()
       diagnostics.checks.cookies = { status: 'working' }
-    } catch (error: any) {
+    } catch (error: unknown) {
       diagnostics.checks.cookies = {
         status: 'error',
-        error: error.message,
+        error: getErrorMessage(error),
       }
     }
 
@@ -89,12 +208,8 @@ export async function GET() {
         status: 'working',
         currentLocale: locale,
       }
-    } catch (error: any) {
-      diagnostics.checks.i18n = {
-        status: 'error',
-        error: error.message,
-        stack: error.stack,
-      }
+    } catch (error: unknown) {
+      diagnostics.checks.i18n = buildStackErrorCheck(error)
     }
 
     // Check auth
@@ -106,12 +221,8 @@ export async function GET() {
         hasSession: Boolean(session),
         hasUser: Boolean(session?.user),
       }
-    } catch (error: any) {
-      diagnostics.checks.auth = {
-        status: 'error',
-        error: error.message,
-        stack: error.stack,
-      }
+    } catch (error: unknown) {
+      diagnostics.checks.auth = buildStackErrorCheck(error)
     }
 
     return NextResponse.json(diagnostics, {
@@ -121,12 +232,13 @@ export async function GET() {
         'Cache-Control': 'no-store, must-revalidate',
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorCheck = buildStackErrorCheck(error)
     return NextResponse.json(
       {
         error: 'Diagnostic failed',
-        message: error.message,
-        stack: error.stack,
+        message: getErrorMessage(error),
+        ...('stack' in errorCheck ? { stack: errorCheck.stack } : {}),
         ...diagnostics,
       },
       { status: 500 },

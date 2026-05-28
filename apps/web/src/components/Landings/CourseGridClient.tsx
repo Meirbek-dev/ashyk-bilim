@@ -28,7 +28,6 @@ export default function CourseGridClient({
   initialTotal,
   trailData,
   currentPage,
-  isAuthenticated,
 }: CourseGridClientProps) {
   const searchParams = useSearchParams()
   const router = useRouter()

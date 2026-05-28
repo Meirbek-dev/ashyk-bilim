@@ -23,12 +23,28 @@ interface LearningItem {
 interface LearningItemsListProps {
   value?: string
   onChange: (value: string) => void
-  error?: string
 }
 
 const PLACEHOLDER_ID_PREFIX = '__placeholder_'
 
-const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) => {
+const createLearningItem = ({
+  id,
+  text,
+  emoji,
+  link,
+}: {
+  id: string
+  text: string
+  emoji: string
+  link?: string
+}): LearningItem => ({
+  id,
+  text,
+  emoji,
+  ...(link === undefined ? {} : { link }),
+})
+
+const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
   // Helper function to standardize items.
   // Uses deterministic placeholder IDs to avoid SSR/hydration mismatch;
   // real UUIDs are assigned in a post-mount effect.
@@ -39,12 +55,12 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
         if (Array.isArray(parsedItems) && parsedItems.length > 0) {
           return parsedItems.map((item: unknown, index: number) => {
             const safeItem = item as Partial<LearningItem>
-            return {
+            return createLearningItem({
               id: safeItem.id || `${PLACEHOLDER_ID_PREFIX}${index}`,
               text: safeItem.text ?? '',
               emoji: safeItem.emoji || '📝',
-              link: safeItem.link || undefined,
-            }
+              ...(safeItem.link ? { link: safeItem.link } : {}),
+            })
           })
         }
       }
@@ -180,8 +196,14 @@ const LearningItemsList = ({ value, onChange, error }: LearningItemsListProps) =
 
   // Update item link
   const updateItemLink = (id: string, link: string) => {
+    const trimmedLink = link.trim()
     const newItems = items.map(item =>
-      item.id === id ? { ...item, link: link.trim() || undefined } : item,
+      item.id === id
+        ? (() => {
+            const { link: _link, ...itemWithoutLink } = item
+            return trimmedLink ? { ...itemWithoutLink, link: trimmedLink } : itemWithoutLink
+          })()
+        : item,
     )
     setItems(newItems)
     onChange(JSON.stringify(newItems))

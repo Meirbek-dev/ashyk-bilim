@@ -169,7 +169,7 @@ function EditCourseGeneral() {
     await saveWithoutRefresh(
       async () =>
         updateMetadata(values, {
-          lastKnownUpdateDate: course.courseStructure.update_date,
+          lastKnownUpdateDate: course.courseStructure['update_date'],
         }),
       {
         onSuccess: () => {
@@ -291,11 +291,7 @@ function EditCourseGeneral() {
                       {t('learnings.label')}
                     </FieldLabel>
                     <div role="group" aria-labelledby="learnings-label">
-                      <LearningItemsList
-                        value={field.value}
-                        onChange={field.onChange}
-                        error={fieldState.error?.message}
-                      />
+                      <LearningItemsList value={field.value} onChange={field.onChange} />
                     </div>
                     <FieldError errors={[fieldState.error]} />
                   </Field>

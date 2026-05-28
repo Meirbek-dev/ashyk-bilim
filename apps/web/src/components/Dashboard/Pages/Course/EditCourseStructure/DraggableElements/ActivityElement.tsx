@@ -116,7 +116,7 @@ const ACTION_ICON_BUTTON_CLASS = 'text-muted-foreground shadow-sm'
 
 const ActivityElement = ({
   activity,
-  activityIndex,
+  activityIndex: _activityIndex,
   course_uuid,
   isDragging,
   attributes,

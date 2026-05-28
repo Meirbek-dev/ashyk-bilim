@@ -71,7 +71,7 @@ export default function CourseReviewPublish({
           await updateAccess(
             { public: !wasPublic },
             {
-              lastKnownUpdateDate: course.courseStructure.update_date,
+              lastKnownUpdateDate: course.courseStructure['update_date'],
             },
           )
           toast.success(wasPublic ? t('toasts.movedPrivate') : t('toasts.published'))
@@ -84,7 +84,7 @@ export default function CourseReviewPublish({
                 await updateAccess(
                   { public: !wasPublic },
                   {
-                    lastKnownUpdateDate: course.courseStructure.update_date,
+                    lastKnownUpdateDate: course.courseStructure['update_date'],
                   },
                 )
               },

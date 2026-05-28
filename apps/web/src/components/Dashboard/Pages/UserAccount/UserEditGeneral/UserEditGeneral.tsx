@@ -96,16 +96,6 @@ interface DetailItem {
   text: string
 }
 
-interface FormValues {
-  username: string
-  first_name: string
-  middle_name?: string
-  last_name: string
-  email: string
-  bio?: string
-  details: Record<string, DetailItem>
-}
-
 const createValidationSchema = (t: (key: string, values?: any) => string) =>
   v.object({
     email: v.pipe(
@@ -139,6 +129,8 @@ const createValidationSchema = (t: (key: string, values?: any) => string) =>
       }),
     ),
   })
+
+type FormValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
 
 async function optimizeAvatarFile(file: File): Promise<File> {
   if (
@@ -698,7 +690,9 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                 <UserAvatar
                   size="3xl"
                   variant="outline"
-                  avatar_url={profilePicture.previewUrl ?? undefined}
+                  {...(profilePicture.previewUrl
+                    ? { avatar_url: profilePicture.previewUrl }
+                    : {})}
                   className="ring-background shadow-xl ring-4"
                   imageProps={{ loading: 'eager' }}
                 />

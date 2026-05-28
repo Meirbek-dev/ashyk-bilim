@@ -106,7 +106,7 @@ export default function UserGamificationSettings() {
   return (
     <div className="mx-8 space-y-6">
       {/* Profile Overview */}
-      <GamificationProfileSection variant="full" showUnlocks />
+      <GamificationProfileSection variant="full" />
 
       {/* Settings Card */}
       <Card>

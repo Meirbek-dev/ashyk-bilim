@@ -393,9 +393,9 @@ const SearchPage = () => {
                                         )
                                       : ''
                                   }
-                                  predefined_avatar={
-                                    course.authors[0].user.avatar_image ? undefined : 'empty'
-                                  }
+                                  {...(!course.authors[0].user.avatar_image
+                                    ? { predefined_avatar: 'empty' }
+                                    : {})}
                                   userId={course.authors[0].user.id}
                                   showProfilePopup={false}
                                 />
@@ -478,7 +478,7 @@ const SearchPage = () => {
                                 ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image)
                                 : ''
                             }
-                            predefined_avatar={user.avatar_image ? undefined : 'empty'}
+                            {...(!user.avatar_image ? { predefined_avatar: 'empty' } : {})}
                             userId={user.id}
                             showProfilePopup
                           />
@@ -489,9 +489,9 @@ const SearchPage = () => {
                                 .join(' ')}
                             </h3>
                             <p className="text-muted-foreground text-xs">@{user.username}</p>
-                            {user.details?.title?.text ? (
+                            {user.details?.['title']?.['text'] ? (
                               <p className="text-muted-foreground mt-1 text-xs">
-                                {user.details.title.text}
+                                {user.details['title']['text']}
                               </p>
                             ) : null}
                           </div>

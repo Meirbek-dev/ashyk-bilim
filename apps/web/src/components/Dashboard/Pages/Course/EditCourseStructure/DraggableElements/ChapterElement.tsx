@@ -112,7 +112,7 @@ const SortableActivityElement = ({
   )
 }
 
-const ChapterElement = ({ chapter, chapterIndex, course_uuid }: ChapterElementProps) => {
+const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: ChapterElementProps) => {
   const { deleteChapter, updateChapter } = useChapterMutations(course_uuid, true)
   const t = useTranslations('CourseEdit')
 

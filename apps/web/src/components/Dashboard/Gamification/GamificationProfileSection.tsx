@@ -3,7 +3,7 @@
 import { Activity, Crown, Flame, Star, Target, Trophy, Zap } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import GamifiedUserAvatar from '@/components/Objects/GamifiedUserAvatar'
-import { AVATAR_UNLOCKS, getLevelInfo } from '@/lib/gamification/levels'
+import { getLevelInfo } from '@/lib/gamification/levels'
 import { GlowingLevelBadge, LevelProgress } from '@/lib/gamification'
 import type { UserGamificationProfile } from '@/types/gamification'
 import { useGamificationStore } from '@/stores/gamification'
@@ -16,7 +16,6 @@ interface GamificationProfileSectionProps {
   userId?: number
   className?: string
   variant?: 'full' | 'compact'
-  showUnlocks?: boolean
   data?: UserGamificationProfile | null
 }
 
@@ -24,7 +23,6 @@ export function GamificationProfileSection({
   userId: _userId,
   className,
   variant: _variant = 'full',
-  showUnlocks = true,
   data,
 }: GamificationProfileSectionProps) {
   const t = useTranslations('DashPage.UserAccountSettings.Gamification')
@@ -32,20 +30,16 @@ export function GamificationProfileSection({
   const storeIsLoading = useGamificationStore(s => s.isLoading)
   const profile = data ?? storeProfile ?? null
   const isLoading = !profile && storeIsLoading
-  const { levelInfo, nextMilestone, unlockedFrames, unlockedAccessories } = (() => {
+  const { levelInfo, nextMilestone } = (() => {
     if (!profile) {
       return {
         levelInfo: null,
         nextMilestone: null,
-        unlockedFrames: [] as (typeof AVATAR_UNLOCKS.frames)[number][],
-        unlockedAccessories: [] as (typeof AVATAR_UNLOCKS.accessories)[number][],
       }
     }
     return {
       levelInfo: getLevelInfo(profile.level, t),
       nextMilestone: getNextMilestone(profile.level),
-      unlockedFrames: AVATAR_UNLOCKS.frames.filter(f => profile.level >= f.level),
-      unlockedAccessories: AVATAR_UNLOCKS.accessories.filter(a => profile.level >= a.level),
     }
   })()
 

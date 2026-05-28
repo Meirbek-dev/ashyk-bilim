@@ -130,7 +130,10 @@ const LandingClassic = async ({
             {/* Gamification Hero Section */}
             {gamificationProfile && (
               <section className="animate-in fade-in slide-in-from-top-4 duration-500">
-                <HeroSection profile={gamificationProfile} userRank={userRank} />
+                <HeroSection
+                  profile={gamificationProfile}
+                  {...(userRank === undefined ? {} : { userRank })}
+                />
               </section>
             )}
 

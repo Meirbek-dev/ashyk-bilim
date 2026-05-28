@@ -109,8 +109,8 @@ const Trail = () => {
         <div className="grid gap-6 lg:grid-cols-2">
           <Leaderboard
             entries={leaderboardData?.entries || []}
-            currentUserId={currentUser?.id || undefined}
-            userRank={userRankData?.rank}
+            {...(currentUser?.id === undefined ? {} : { currentUserId: currentUser.id })}
+            {...(userRankData?.rank === undefined ? {} : { userRank: userRankData.rank })}
           />
           <RecentActivityFeed
             transactions={gamificationData?.recent_transactions || []}

@@ -21,9 +21,17 @@ interface RateEntry {
 const _ipCounters = new Map<string, RateEntry>()
 let _lastEviction = Date.now()
 
+function getBodyString(body: Record<string, unknown>, key: string): string | undefined {
+  const value = body[key]
+  return typeof value === 'string' ? value : undefined
+}
+
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0]!.trim()
+  if (forwarded) {
+    const firstForwarded = forwarded.split(',')[0]
+    return firstForwarded ? firstForwarded.trim() : 'unknown'
+  }
   return 'unknown'
 }
 
@@ -79,17 +87,21 @@ export async function POST(request: NextRequest) {
     }
 
     const isProd = process.env.NODE_ENV === 'production'
+    const url = getBodyString(body, 'url') ?? request.url
+    const errorMessage = getBodyString(body, 'error')
+    const digest = getBodyString(body, 'digest')
+    const page = getBodyString(body, 'page')
 
     console.error('[CLIENT ERROR LOG]', {
       timestamp: new Date().toISOString(),
-      url: typeof body.url === 'string' ? body.url : request.url,
+      url,
       // Do not log full user-agent in production to avoid PII leakage in logs.
       userAgent: isProd ? undefined : request.headers.get('user-agent'),
-      error: typeof body.error === 'string' ? body.error.slice(0, 1000) : undefined,
-      digest: typeof body.digest === 'string' ? body.digest : undefined,
+      error: errorMessage?.slice(0, 1000),
+      digest,
       // Component stacks can contain source paths and PII — strip in production.
-      componentStack: isProd ? undefined : body.componentStack,
-      page: typeof body.page === 'string' ? body.page : undefined,
+      componentStack: isProd ? undefined : body['componentStack'],
+      page,
     })
 
     return NextResponse.json({ logged: true }, { status: 200 })

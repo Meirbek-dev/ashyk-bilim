@@ -172,13 +172,13 @@ const NavItem = ({ item, isCollapsed }: { item: NavigationItem; isCollapsed: boo
           aria-current={item.isActive ? 'page' : undefined}
         />
       }
-      tooltip={isCollapsed ? item.tooltip : undefined}
-      isActive={item.isActive}
+      {...(isCollapsed ? { tooltip: item.tooltip } : {})}
+      {...(item.isActive === undefined ? {} : { isActive: item.isActive })}
       size="default"
       className={`group hover:bg-sidebar-accent/50 relative transition-all duration-200 ${
         isCollapsed ? 'flex h-10 w-10 items-center justify-center p-0' : 'w-full gap-3'
       } flex min-w-0 items-center`}
-      disabled={item.disabled}
+      {...(item.disabled === undefined ? {} : { disabled: item.disabled })}
     >
       <item.icon className="h-4 w-4 shrink-0" aria-hidden />
       {!isCollapsed && (
@@ -364,9 +364,9 @@ const DashSidebar = ({ className }: SidebarProps) => {
                   aria-label={t('ariaLabels.userSettings')}
                 />
               }
-              tooltip={
-                isCollapsed ? t('tooltips.userSettings', { username: user.username }) : undefined
-              }
+              {...(isCollapsed
+                ? { tooltip: t('tooltips.userSettings', { username: user.username }) }
+                : {})}
               size="sm"
               className={`hover:bg-sidebar-accent/50 flex-1 transition-all duration-200 ${
                 isCollapsed ? 'w-full justify-center' : ''
@@ -379,7 +379,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
             </SidebarMenuButton>
 
             <SidebarMenuButton
-              tooltip={isCollapsed ? t('tooltips.logout') : undefined}
+              {...(isCollapsed ? { tooltip: t('tooltips.logout') } : {})}
               size="sm"
               onClick={handleLogout}
               className={`text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground flex-1 transition-all duration-200 ${

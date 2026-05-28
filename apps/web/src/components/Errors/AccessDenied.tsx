@@ -12,7 +12,7 @@ interface AccessDeniedProps {
   session?: any
 }
 
-export default function AccessDenied({ courseuuid, session }: AccessDeniedProps) {
+export default function AccessDenied({ session }: AccessDeniedProps) {
   const tErrors = useTranslations('Errors')
   const tGeneral = useTranslations('General')
   const tHeader = useTranslations('Header')

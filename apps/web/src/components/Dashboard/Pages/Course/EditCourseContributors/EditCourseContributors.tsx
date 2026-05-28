@@ -210,7 +210,7 @@ const EditCourseContributors = () => {
   } = useCoursesMutations(courseStructure?.course_uuid ?? '')
 
   const [isOpenToContributors, setIsOpenToContributors] = useState<boolean | undefined>(
-    () => courseStructure?.open_to_contributors,
+    () => courseStructure?.['open_to_contributors'],
   )
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -242,13 +242,21 @@ const EditCourseContributors = () => {
     ? (searchResultsOverride ?? fetchedSearchResults)
     : []
 
+  const buildContributorUpdatePayload = (
+    contributor: Contributor,
+    data: { authorship?: ContributorRole; authorship_status?: ContributorStatus },
+  ) => ({
+    authorship: data.authorship ?? contributor.authorship,
+    authorship_status: data.authorship_status ?? contributor.authorship_status,
+  })
+
   const isDirtyRef = useRef(false)
   isDirtyRef.current =
     isOpenToContributors !== undefined &&
-    isOpenToContributors !== courseStructure?.open_to_contributors
+    isOpenToContributors !== courseStructure?.['open_to_contributors']
   const isDirty = isDirtyRef.current
 
-  const handleDiscard = () => setIsOpenToContributors(courseStructure?.open_to_contributors)
+  const handleDiscard = () => setIsOpenToContributors(courseStructure?.['open_to_contributors'])
 
   useSyncDirtySection('contributors', isDirty)
 
@@ -259,9 +267,9 @@ const EditCourseContributors = () => {
   // Rehydrate from server when not dirty
   useEffect(() => {
     if (!isDirtyRef.current) {
-      setIsOpenToContributors(courseStructure?.open_to_contributors)
+      setIsOpenToContributors(courseStructure?.['open_to_contributors'])
     }
-  }, [courseStructure?.open_to_contributors])
+  }, [courseStructure?.['open_to_contributors']])
 
   const masterCheckboxChecked = (() => {
     const nonCreatorContributors = contributors.filter(c => c.authorship !== 'CREATOR')
@@ -294,7 +302,7 @@ const EditCourseContributors = () => {
     setIsAdding(true)
     try {
       const response = await addContributors(selectedUsers, selectedUserObjects, {
-        lastKnownUpdateDate: courseStructure.update_date,
+        lastKnownUpdateDate: courseStructure['update_date'],
       })
       const result = response.data as BulkAddResponse
 
@@ -320,7 +328,7 @@ const EditCourseContributors = () => {
       if (error?.status === 409) {
         raiseContributorConflict(error?.detail || error?.message, async () => {
           await addContributors(selectedUsers, selectedUserObjects, {
-            lastKnownUpdateDate: courseStructure.update_date,
+            lastKnownUpdateDate: courseStructure['update_date'],
           })
         })
         return
@@ -343,12 +351,9 @@ const EditCourseContributors = () => {
         toast.error(t('cannotModifyCreator'))
         return
       }
-      const updatedData = {
-        authorship: data.authorship || currentContributor.authorship,
-        authorship_status: data.authorship_status || currentContributor.authorship_status,
-      }
+      const updatedData = buildContributorUpdatePayload(currentContributor, data)
       const res = await updateContributorMutation(contributorId, updatedData, {
-        lastKnownUpdateDate: courseStructure.update_date,
+        lastKnownUpdateDate: courseStructure['update_date'],
       })
 
       if (res.status === 200 && res.data?.status === 'success') {
@@ -359,19 +364,16 @@ const EditCourseContributors = () => {
     } catch (error: any) {
       if (error?.status === 409) {
         raiseContributorConflict(error?.detail || error?.message, async () => {
+          const retryContributor = contributors.find(
+            contributor => contributor.user_id === contributorId,
+          )
+          if (!retryContributor) return
+
           await updateContributorMutation(
             contributorId,
+            buildContributorUpdatePayload(retryContributor, data),
             {
-              authorship:
-                data.authorship ||
-                contributors.find(contributor => contributor.user_id === contributorId)?.authorship,
-              authorship_status:
-                data.authorship_status ||
-                contributors.find(contributor => contributor.user_id === contributorId)
-                  ?.authorship_status,
-            },
-            {
-              lastKnownUpdateDate: courseStructure.update_date,
+              lastKnownUpdateDate: courseStructure['update_date'],
             },
           )
         })
@@ -416,7 +418,7 @@ const EditCourseContributors = () => {
         .filter(c => selectedContributors.includes(c.user_id))
         .map(c => c.user_id)
       const response = await removeContributors(selectedUsernames, selectedUserIds, {
-        lastKnownUpdateDate: courseStructure.update_date,
+        lastKnownUpdateDate: courseStructure['update_date'],
       })
       const result = response.data as BulkAddResponse
 
@@ -453,7 +455,7 @@ const EditCourseContributors = () => {
             retryRows.map(contributor => contributor.user.username),
             retryRows.map(contributor => contributor.user_id),
             {
-              lastKnownUpdateDate: courseStructure.update_date,
+              lastKnownUpdateDate: courseStructure['update_date'],
             },
           )
         })
@@ -475,7 +477,7 @@ const EditCourseContributors = () => {
       updateAccess(
         { open_to_contributors: isOpenToContributors },
         {
-          lastKnownUpdateDate: courseStructure.update_date,
+          lastKnownUpdateDate: courseStructure['update_date'],
         },
       ),
     )
@@ -606,8 +608,8 @@ const EditCourseContributors = () => {
                                 />
                                 <UserAvatar
                                   size="sm"
-                                  avatar_url={user.avatar_url}
-                                  predefined_avatar={user.avatar_image ? undefined : 'empty'}
+                                  {...(user.avatar_url ? { avatar_url: user.avatar_url } : {})}
+                                  {...(!user.avatar_image ? { predefined_avatar: 'empty' } : {})}
                                   userId={user.id}
                                   showProfilePopup
                                 />
@@ -778,9 +780,9 @@ const EditCourseContributors = () => {
                                   )
                                 : ''
                             }
-                            predefined_avatar={
-                              contributor.user.avatar_image === '' ? 'empty' : undefined
-                            }
+                            {...(contributor.user.avatar_image === ''
+                              ? { predefined_avatar: 'empty' }
+                              : {})}
                           />
                         </TableCell>
                         <TableCell className="font-medium">

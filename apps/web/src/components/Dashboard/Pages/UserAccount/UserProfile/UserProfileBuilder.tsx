@@ -244,6 +244,8 @@ interface ProfileSkill {
   category?: string
 }
 
+type ProfileSkillLevel = NonNullable<ProfileSkill['level']>
+
 interface ProfileExperience {
   title: string
   organization: string
@@ -267,14 +269,6 @@ interface ProfileAffiliation {
   name: string
   description: string
   logoUrl: string
-}
-
-interface Course {
-  id: string
-  title: string
-  description: string
-  thumbnail?: string
-  status: string
 }
 
 interface BaseSection {
@@ -388,8 +382,8 @@ const UserProfileBuilder = () => {
         try {
           const profileSections =
             typeof userData.profile === 'string'
-              ? JSON.parse(userData.profile).sections
-              : userData.profile.sections
+              ? JSON.parse(userData.profile)['sections']
+              : userData.profile['sections']
 
           setProfileData({
             sections: profileSections || [],
@@ -728,7 +722,7 @@ const DatePicker: FC<{
       >
         <CalendarIcon className="mr-2 h-4 w-4" />
         {value && selectedDate ? (
-          format(selectedDate, 'PPP', { locale })
+          locale ? format(selectedDate, 'PPP', { locale }) : format(selectedDate, 'PPP')
         ) : (
           <span>{placeholder}</span>
         )}
@@ -1083,7 +1077,7 @@ const SkillsEditor: FC<{
                     const newSkills = [...section.skills]
                     newSkills[index] = {
                       ...skill,
-                      level: value as ProfileSkill['level'],
+                      level: value as ProfileSkillLevel,
                     }
                     onChange({ ...section, skills: newSkills })
                   }}
@@ -1269,11 +1263,16 @@ const ExperienceEditor: FC<{
                         checked={experience.current}
                         onCheckedChange={checked => {
                           const newExperiences = [...section.experiences]
-                          newExperiences[index] = {
-                            ...experience,
-                            current: checked,
-                            endDate: checked ? undefined : experience.endDate,
-                          }
+                          const { endDate: _endDate, ...experienceWithoutEndDate } = experience
+                          const nextEndDate = checked ? undefined : experience.endDate
+                          newExperiences[index] =
+                            nextEndDate === undefined
+                              ? { ...experienceWithoutEndDate, current: checked }
+                              : {
+                                  ...experienceWithoutEndDate,
+                                  current: checked,
+                                  endDate: nextEndDate,
+                                }
                           onChange({ ...section, experiences: newExperiences })
                         }}
                       />
@@ -1477,11 +1476,16 @@ const EducationEditor: FC<{
                         checked={edu.current}
                         onCheckedChange={checked => {
                           const newEducation = [...section.education]
-                          newEducation[index] = {
-                            ...edu,
-                            current: checked,
-                            endDate: checked ? undefined : edu.endDate,
-                          }
+                          const { endDate: _endDate, ...educationWithoutEndDate } = edu
+                          const nextEndDate = checked ? undefined : edu.endDate
+                          newEducation[index] =
+                            nextEndDate === undefined
+                              ? { ...educationWithoutEndDate, current: checked }
+                              : {
+                                  ...educationWithoutEndDate,
+                                  current: checked,
+                                  endDate: nextEndDate,
+                                }
                           onChange({ ...section, education: newEducation })
                         }}
                       />

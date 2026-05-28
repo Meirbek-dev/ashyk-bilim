@@ -91,7 +91,7 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
                   ? getUserAvatarMediaDirectory(author.user.user_uuid, author.user.avatar_image)
                   : ''
               }
-              predefined_avatar={author.user.avatar_image ? undefined : 'empty'}
+              {...(!author.user.avatar_image ? { predefined_avatar: 'empty' } : {})}
             />
           </div>
         ))}
