@@ -26,7 +26,7 @@ interface FormValues {
 
 type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
 
-const DocumentPdfModal = ({ submitFileActivity, chapterId, course }: any) => {
+const DocumentPdfModal = ({ submitFileActivity, chapterId }: any) => {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Components.DocumentPdfModal')
   const validationSchema = createValidationSchema(validationT)

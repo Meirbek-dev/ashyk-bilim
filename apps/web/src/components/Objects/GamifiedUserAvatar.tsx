@@ -66,7 +66,7 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
       <UserAvatar
         {...avatarProps}
         size={size}
-        userId={userId}
+        {...(userId === undefined ? {} : { userId })}
         showProfilePopup={false}
         className={cn(frame?.color && 'border-4', frame?.color, className)}
       />

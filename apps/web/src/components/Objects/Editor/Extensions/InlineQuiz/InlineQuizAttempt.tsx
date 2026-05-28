@@ -19,7 +19,7 @@ interface InlineQuizAttemptProps {
 export default function InlineQuizAttempt({ assessmentUuid }: InlineQuizAttemptProps) {
   const t = useTranslations('DashPage.Editor.InlineQuizExtension')
   const [submitted, setSubmitted] = useState(false)
-  const [score, setScore] = useState<number | null>(null)
+  const [score] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // TODO: Wire to useAssessment + useAssessmentSubmission hooks

@@ -26,7 +26,10 @@ export function useEditorInstance(options: UseEditorInstanceOptions) {
   const presetDef = getEditorPresetDefinition(preset)
 
   // Memoize extensions — only recompute when preset or activity identity changes
-  const extensions = useMemo(() => createEditorExtensions({ preset, activity }), [preset, activity])
+  const extensions = useMemo(
+    () => createEditorExtensions({ preset, ...(activity === undefined ? {} : { activity }) }),
+    [preset, activity],
+  )
 
   // Resolve content once on mount
   const [resolvedContent] = useState(() => resolveEditorContent(content))
@@ -38,7 +41,7 @@ export function useEditorInstance(options: UseEditorInstanceOptions) {
     injectCSS: false,
     shouldRerenderOnTransaction: preset === 'discussion',
     editable: presetDef.isEditable,
-    onUpdate: onUpdate ? ({ editor }) => onUpdate(editor.getJSON()) : undefined,
+    ...(onUpdate === undefined ? {} : { onUpdate: ({ editor }) => onUpdate(editor.getJSON()) }),
     ...overrides,
   })
 }

@@ -44,10 +44,6 @@ interface Course {
   }
 }
 
-interface EditorState {
-  isEditable: boolean
-}
-
 interface VideoBlockObject {
   block_uuid: string
   content: {

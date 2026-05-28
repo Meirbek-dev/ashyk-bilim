@@ -205,12 +205,20 @@ export function CodeChallengeEditor({
           ...current,
           [selectedLanguageId]: starterCode,
         }))
-        onAnswerChange?.({
-          kind: 'CODE',
-          language: selectedLanguageId,
-          source: starterCode,
-          latest_run: answer?.latest_run,
-        })
+        if (answer?.latest_run === undefined) {
+          onAnswerChange?.({
+            kind: 'CODE',
+            language: selectedLanguageId,
+            source: starterCode,
+          })
+        } else {
+          onAnswerChange?.({
+            kind: 'CODE',
+            language: selectedLanguageId,
+            source: starterCode,
+            latest_run: answer.latest_run,
+          })
+        }
       }
     }
   }, [answer?.latest_run, code, onAnswerChange, selectedLanguageId, settings])
@@ -222,12 +230,20 @@ export function CodeChallengeEditor({
         ...current,
         [selectedLanguageId]: nextCode,
       }))
-      onAnswerChange?.({
-        kind: 'CODE',
-        language: selectedLanguageId,
-        source: nextCode,
-        latest_run: answer?.latest_run,
-      })
+      if (answer?.latest_run === undefined) {
+        onAnswerChange?.({
+          kind: 'CODE',
+          language: selectedLanguageId,
+          source: nextCode,
+        })
+      } else {
+        onAnswerChange?.({
+          kind: 'CODE',
+          language: selectedLanguageId,
+          source: nextCode,
+          latest_run: answer.latest_run,
+        })
+      }
     },
     [answer?.latest_run, onAnswerChange, selectedLanguageId],
   )
@@ -237,12 +253,20 @@ export function CodeChallengeEditor({
       const nextSource = codeByLanguage[nextLanguageId] ?? settings?.starter_code?.[String(nextLanguageId)] ?? ''
       setSelectedLanguageId(nextLanguageId)
       setCode(nextSource)
-      onAnswerChange?.({
-        kind: 'CODE',
-        language: nextLanguageId,
-        source: nextSource,
-        latest_run: answer?.latest_run,
-      })
+      if (answer?.latest_run === undefined) {
+        onAnswerChange?.({
+          kind: 'CODE',
+          language: nextLanguageId,
+          source: nextSource,
+        })
+      } else {
+        onAnswerChange?.({
+          kind: 'CODE',
+          language: nextLanguageId,
+          source: nextSource,
+          latest_run: answer.latest_run,
+        })
+      }
     },
     [answer?.latest_run, codeByLanguage, onAnswerChange, settings?.starter_code],
   )
@@ -357,13 +381,22 @@ export function CodeChallengeEditor({
       {/* Compact top bar (only shown when hideHeader is false and no left problem panel) */}
       {!hideHeader && !challengeTitle && !challengeDescription && visibleTestCases.length === 0 ? (
         <div className="flex shrink-0 items-center justify-between border-b px-4 py-2">
-          <LanguageSelector
-            languages={availableLanguages}
-            selectedId={selectedLanguageId}
-            onSelect={updateLanguage}
-            allowedLanguages={settings?.allowed_languages}
-            disabled={disabled}
-          />
+          {settings?.allowed_languages === undefined ? (
+            <LanguageSelector
+              languages={availableLanguages}
+              selectedId={selectedLanguageId}
+              onSelect={updateLanguage}
+              disabled={disabled}
+            />
+          ) : (
+            <LanguageSelector
+              languages={availableLanguages}
+              selectedId={selectedLanguageId}
+              onSelect={updateLanguage}
+              allowedLanguages={settings.allowed_languages}
+              disabled={disabled}
+            />
+          )}
         </div>
       ) : null}
 
@@ -438,25 +471,67 @@ export function CodeChallengeEditor({
               <div className="flex h-full flex-col">
                 {/* Language selector bar */}
                 <div className="flex shrink-0 items-center justify-end border-b px-3 py-1.5">
-                  <LanguageSelector
-                    languages={availableLanguages}
-                    selectedId={selectedLanguageId}
-                    onSelect={updateLanguage}
-                    allowedLanguages={settings?.allowed_languages}
-                    disabled={disabled}
-                  />
+                  {settings?.allowed_languages === undefined ? (
+                    <LanguageSelector
+                      languages={availableLanguages}
+                      selectedId={selectedLanguageId}
+                      onSelect={updateLanguage}
+                      disabled={disabled}
+                    />
+                  ) : (
+                    <LanguageSelector
+                      languages={availableLanguages}
+                      selectedId={selectedLanguageId}
+                      onSelect={updateLanguage}
+                      allowedLanguages={settings.allowed_languages}
+                      disabled={disabled}
+                    />
+                  )}
                 </div>
                 {/* Monaco */}
-                <CodeEditor
-                  value={code}
-                  onChange={updateCode}
-                  languageId={selectedLanguageId}
-                  monacoLanguage={selectedLanguage?.monaco_language}
-                  readOnly={disabled}
-                  readOnlyMessage={disabled ? t('editorReadOnly') : undefined}
-                  height="100%"
-                  className="min-h-0 flex-1"
-                />
+                {selectedLanguage?.monaco_language === undefined ? (
+                  disabled ? (
+                    <CodeEditor
+                      value={code}
+                      onChange={updateCode}
+                      languageId={selectedLanguageId}
+                      readOnly={disabled}
+                      readOnlyMessage={t('editorReadOnly')}
+                      height="100%"
+                      className="min-h-0 flex-1"
+                    />
+                  ) : (
+                    <CodeEditor
+                      value={code}
+                      onChange={updateCode}
+                      languageId={selectedLanguageId}
+                      readOnly={disabled}
+                      height="100%"
+                      className="min-h-0 flex-1"
+                    />
+                  )
+                ) : disabled ? (
+                  <CodeEditor
+                    value={code}
+                    onChange={updateCode}
+                    languageId={selectedLanguageId}
+                    monacoLanguage={selectedLanguage.monaco_language}
+                    readOnly={disabled}
+                    readOnlyMessage={t('editorReadOnly')}
+                    height="100%"
+                    className="min-h-0 flex-1"
+                  />
+                ) : (
+                  <CodeEditor
+                    value={code}
+                    onChange={updateCode}
+                    languageId={selectedLanguageId}
+                    monacoLanguage={selectedLanguage.monaco_language}
+                    readOnly={disabled}
+                    height="100%"
+                    className="min-h-0 flex-1"
+                  />
+                )}
               </div>
             </ResizablePanel>
 

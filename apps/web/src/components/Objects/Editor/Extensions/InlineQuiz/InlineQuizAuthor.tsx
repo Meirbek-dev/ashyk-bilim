@@ -14,10 +14,9 @@ import { Button } from '@/components/ui/button'
 
 interface InlineQuizAuthorProps {
   assessmentUuid: string | null
-  onAssessmentCreated: (uuid: string) => void
 }
 
-export default function InlineQuizAuthor({ assessmentUuid, onAssessmentCreated }: InlineQuizAuthorProps) {
+export default function InlineQuizAuthor({ assessmentUuid }: InlineQuizAuthorProps) {
   const t = useTranslations('DashPage.Editor.InlineQuizExtension')
   const [isCreating, setIsCreating] = useState(false)
   const [isEditorOpen, setIsEditorOpen] = useState(false)

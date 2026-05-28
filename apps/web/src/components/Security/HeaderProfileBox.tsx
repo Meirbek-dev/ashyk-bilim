@@ -105,7 +105,7 @@ export const HeaderProfileBox = () => {
           .filter((role: SessionRole) => !role.role?.is_system)
           .map((role: SessionRole) => ({
             name: role.role.name || t('profile.customRole'),
-            description: role.role.description ?? undefined,
+            ...(role.role.description ? { description: role.role.description } : {}),
           }))
       : []
 

@@ -21,13 +21,6 @@ const createValidationSchema = (t: (key: string) => string) =>
     subtype: v.picklist(['general', 'competitive']),
   })
 
-interface FormValues {
-  name: string
-  description: string
-  difficulty: 'easy' | 'medium' | 'hard'
-  subtype: 'general' | 'competitive'
-}
-
 interface CodeChallengeActivityModalProps {
   submitActivity?: (data: any) => Promise<void>
   chapterId: number

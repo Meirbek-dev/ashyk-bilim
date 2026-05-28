@@ -16,7 +16,7 @@ export default function CourseDiscussions({ initialPosts, currentUser, courseUui
         initialPosts={initialPosts}
         currentUser={currentUser}
         courseUuid={courseUuid}
-        onMutate={onMutate}
+        {...(onMutate === undefined ? {} : { onMutate })}
       />
     </div>
   )

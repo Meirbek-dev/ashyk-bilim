@@ -40,5 +40,5 @@ export default function NextImage({
     )
   }
 
-  return <Image src={src} alt={alt ?? ''} unoptimized={unoptimized ?? isBrowserOnlyImage(src)} fill={fill} {...props} />
+  return <Image src={src} alt={alt ?? ''} unoptimized={unoptimized ?? isBrowserOnlyImage(src)} {...(fill !== undefined ? { fill } : {})} {...props} />
 }

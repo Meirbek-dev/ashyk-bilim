@@ -424,7 +424,7 @@ export default function ImageBlockComponent({ node, updateAttributes, extension 
   }, [blockObject, course, activityUuid])
 
   // Upload handling
-  const { file, preview, isUploading, error, handleFileSelect, handleUpload, reset } = useImageUpload({
+  const { preview, isUploading, error, handleFileSelect, handleUpload, reset } = useImageUpload({
     activityUuid,
     onSuccess: newBlockObject => {
       setBlockObject(newBlockObject)

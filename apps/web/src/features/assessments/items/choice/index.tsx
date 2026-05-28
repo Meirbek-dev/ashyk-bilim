@@ -197,16 +197,26 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
       options:
         kind === 'TRUE_FALSE'
           ? [
-              {
-                id: 0,
-                text: t('trueLabel'),
-                isCorrect: value.kind !== 'MATCHING' ? value.options[0]?.isCorrect : false,
-              },
-              {
-                id: 1,
-                text: t('falseLabel'),
-                isCorrect: value.kind !== 'MATCHING' ? value.options[1]?.isCorrect : false,
-              },
+              value.kind !== 'MATCHING' && value.options[0]?.isCorrect !== undefined
+                ? {
+                    id: 0,
+                    text: t('trueLabel'),
+                    isCorrect: value.options[0].isCorrect,
+                  }
+                : {
+                    id: 0,
+                    text: t('trueLabel'),
+                  },
+              value.kind !== 'MATCHING' && value.options[1]?.isCorrect !== undefined
+                ? {
+                    id: 1,
+                    text: t('falseLabel'),
+                    isCorrect: value.options[1].isCorrect,
+                  }
+                : {
+                    id: 1,
+                    text: t('falseLabel'),
+                  },
             ]
           : value.kind === 'MATCHING'
             ? value.pairs.map(pair => ({
@@ -249,9 +259,9 @@ export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<
       </div>
 
       {value.kind === 'MATCHING' ? (
-        <MatchingAuthor value={value} disabled={disabled} onChange={onChange} />
+        <MatchingAuthor value={value} disabled={disabled ?? false} onChange={onChange} />
       ) : (
-        <OptionsAuthor value={value} disabled={disabled} onChange={onChange} />
+        <OptionsAuthor value={value} disabled={disabled ?? false} onChange={onChange} />
       )}
     </div>
   )
@@ -268,14 +278,17 @@ function OptionsAuthor({
 
   const toggleCorrect = (index: number) => {
     const options = value.options.map((option, candidateIndex) =>
-      buildChoiceOption({
-        ...option,
-        isCorrect: isMultiple
+      (() => {
+        const nextIsCorrect = isMultiple
           ? candidateIndex === index
             ? !option.isCorrect
             : option.isCorrect
-          : candidateIndex === index,
-      }),
+          : candidateIndex === index
+
+        return nextIsCorrect === undefined
+          ? buildChoiceOption(option)
+          : buildChoiceOption({ id: option.id, text: option.text, isCorrect: nextIsCorrect })
+      })(),
     )
     onChange({ ...value, options })
   }

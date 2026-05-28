@@ -22,7 +22,7 @@ interface FormValues {
 
 type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
 
-const DynamicCanvaModal = ({ submitActivity, chapterId, course }: any) => {
+const DynamicCanvaModal = ({ submitActivity, chapterId }: any) => {
   const validationT = useTranslations('Validation')
   const t = useTranslations('Components.DynamicCanvaModal')
   const validationSchema = createValidationSchema(validationT)

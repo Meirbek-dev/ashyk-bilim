@@ -221,8 +221,6 @@ interface ProfileSkill {
   category?: string
 }
 
-type ProfileSkillLevel = NonNullable<ProfileSkill['level']>
-
 interface ProfileExperience {
   title: string
   organization: string
@@ -1044,7 +1042,7 @@ const SkillsEditor: FC<{
                     const newSkills = [...section.skills]
                     newSkills[index] = {
                       ...skill,
-                      level: value!,
+                      level: value as NonNullable<ProfileSkill['level']>,
                     }
                     onChange({ ...section, skills: newSkills })
                   }}

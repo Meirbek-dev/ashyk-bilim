@@ -109,7 +109,7 @@ const TimeInput = ({
           min="0"
           value={minutes}
           onChange={e => onMinutesChange(Math.max(0, Number.parseInt(e.target.value, 10) || 0))}
-          placeholder="0"
+          placeholder={placeholder}
           className="h-9 text-center tabular-nums"
           disabled={disabled}
         />
@@ -123,7 +123,7 @@ const TimeInput = ({
           max="59"
           value={seconds}
           onChange={e => onSecondsChange(Math.max(0, Math.min(59, Number.parseInt(e.target.value, 10) || 0)))}
-          placeholder="00"
+          placeholder={placeholder}
           className="h-9 text-center tabular-nums"
           disabled={disabled}
         />

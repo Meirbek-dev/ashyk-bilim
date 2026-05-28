@@ -7,7 +7,6 @@
  * attempt view (for students consuming the lesson).
  */
 
-import { useCallback } from 'react'
 import { NodeViewWrapper } from '@tiptap/react'
 import { useTranslations } from 'next-intl'
 import type { TypedNodeViewProps } from '@components/Objects/Editor/core'
@@ -16,21 +15,14 @@ import InlineQuizAuthor from './InlineQuizAuthor'
 import InlineQuizAttempt from './InlineQuizAttempt'
 
 const InlineQuizComponent = (props: TypedNodeViewProps<InlineQuizAttrs>) => {
-  const { node, updateAttributes, editor } = props
+  const { node, editor } = props
   const { assessmentUuid } = node.attrs
   const editable = editor.isEditable
   const t = useTranslations('DashPage.Editor.InlineQuizExtension')
 
-  const handleAssessmentCreated = useCallback(
-    (uuid: string) => {
-      updateAttributes({ assessmentUuid: uuid })
-    },
-    [updateAttributes],
-  )
-
   const renderContent = () => {
     if (editable) {
-      return <InlineQuizAuthor assessmentUuid={assessmentUuid} onAssessmentCreated={handleAssessmentCreated} />
+      return <InlineQuizAuthor assessmentUuid={assessmentUuid} />
     }
 
     if (!assessmentUuid) {

@@ -28,16 +28,7 @@ const createValidationSchema = (t: (key: string) => string, limits?: any) =>
     allow_result_review: v.boolean(),
   })
 
-interface FormValues {
-  exam_title: string
-  activity_name: string
-  exam_description: string
-  time_limit?: number
-  has_time_limit: boolean
-  shuffle_questions: boolean
-  allow_result_review: boolean
-}
-
+type FormValues = v.InferInput<ReturnType<typeof createValidationSchema>>
 type SubmitValues = v.InferOutput<ReturnType<typeof createValidationSchema>>
 
 const getDefaultTimeLimit = (limits?: any) =>

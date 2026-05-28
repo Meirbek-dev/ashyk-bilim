@@ -81,7 +81,7 @@ export function CodeEditor({
       smoothScrolling: true,
       padding: { top: 16, bottom: 16 },
       readOnly,
-      readOnlyMessage: readOnlyMessage ? { value: readOnlyMessage } : undefined,
+      ...(readOnlyMessage ? { readOnlyMessage: { value: readOnlyMessage } } : {}),
       ...options,
     }),
     [readOnly, options, readOnlyMessage],

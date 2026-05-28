@@ -445,7 +445,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                 </div>
               </a>
               <FaviconDisplay
-                favicon={previewData.favicon ?? undefined}
+                {...(previewData.favicon ? { favicon: previewData.favicon } : {})}
                 url={previewUrl ?? ''}
                 faviconAlt={t('faviconAlt')}
               />

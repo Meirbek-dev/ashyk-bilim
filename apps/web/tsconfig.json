@@ -1,83 +1,90 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-
   "compilerOptions": {
-    /* Runtime / platform */
+    /* ── Runtime ─────────────────────────────────────────────────── */
     "target": "ESNext",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "moduleDetection": "force",
     "jsx": "react-jsx",
-
-    /* Module semantics */
+    /* ── Module semantics ────────────────────────────────────────── */
+    // verbatimModuleSyntax supersedes isolatedModules + esModuleInterop
     "verbatimModuleSyntax": true,
-    "isolatedModules": true,
     "resolveJsonModule": true,
-    "allowImportingTsExtensions": false,
-    "esModuleInterop": true,
-
-    /* Strictness */
+    /* ── Strictness ──────────────────────────────────────────────── */
+    // strict: true already covers: noImplicitAny, noImplicitThis,
+    // strictNullChecks, strictFunctionTypes, strictBindCallApply,
+    // alwaysStrict, useUnknownInCatchVariables
     "strict": true,
-    "alwaysStrict": true,
-    "noImplicitAny": true,
-    "noImplicitOverride": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "strictBindCallApply": true,
-    "strictFunctionTypes": true,
-    "strictNullChecks": true,
-    "useUnknownInCatchVariables": true,
-
-    /* Agentic / LLM-safe constraints */
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noPropertyAccessFromIndexSignature": false, // bullshit rule
+    "noImplicitOverride": true, // not in strict bundle
+    "noImplicitReturns": true, // not in strict bundle
+    /* ── Agentic / LLM-safe ──────────────────────────────────────── */
+    "noUncheckedIndexedAccess": true, // arr[i] → T | undefined
+    "exactOptionalPropertyTypes": true, // no undefined-widening on optionals
     "forceConsistentCasingInFileNames": true,
-
-    /* Dead code prevention */
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "noFallthroughCasesInSwitch": true,
-
-    /* Hygiene */
+    /* ── Dead code ───────────────────────────────────────────────── */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-
-    /* JS interop */
-    "allowJs": false,
-    "checkJs": false,
-
-    /* Build */
+    "noFallthroughCasesInSwitch": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    /* ── Build ───────────────────────────────────────────────────── */
     "noEmit": true,
     "incremental": true,
     "tsBuildInfoFile": ".next/cache/tsconfig.tsbuildinfo",
     "skipLibCheck": true,
-
-    /* DX */
+    /* ── Paths ───────────────────────────────────────────────────── */
     "paths": {
-      "@/*": ["./src/*"],
-      "@components/*": ["./src/components/*"],
-      "@public/*": ["./public/*"],
-      "@styles/*": ["./src/styles/*"],
-      "@services/*": ["./src/services/*"],
-      "@hooks/*": ["./src/hooks/*"],
-      "@editor/*": ["./src/components/Objects/Editor/*"],
-      "@images/*": ["./public/img/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@components/*": [
+        "./src/components/*"
+      ],
+      "@hooks/*": [
+        "./src/hooks/*"
+      ],
+      "@services/*": [
+        "./src/services/*"
+      ],
+      "@styles/*": [
+        "./src/styles/*"
+      ],
+      "@editor/*": [
+        "./src/components/Objects/Editor/*"
+      ],
+      "@public/*": [
+        "./public/*"
+      ],
+      "@images/*": [
+        "./public/img/*"
+      ]
     },
-
-    /* Framework */
-    "plugins": [{ "name": "next" }]
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "allowJs": true,
+    "esModuleInterop": true
   },
-
   "include": [
     "next-env.d.ts",
+    "next.config.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "next.config.ts"
+    ".next/dev/types/**/*.ts"
   ],
-
-  "exclude": ["node_modules", ".next", "dist", "out"]
+  "exclude": [
+    "node_modules",
+    ".next",
+    "dist",
+    "out"
+  ]
 }

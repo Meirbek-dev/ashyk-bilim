@@ -15,7 +15,6 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { apiFetcher } from '@/lib/api-client'
-import type { components } from '@/lib/api/generated/schema'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { reportClientError } from '@/services/telemetry/client'
 
@@ -28,8 +27,6 @@ import { assessmentTypeToKind } from '../domain/view-models'
 import type { AssessmentKind, AssessmentSurface, StudioViewModel, AttemptViewModel } from '../domain/view-models'
 import type { AssessmentItem } from '../domain/items'
 import type { SubmissionStatus } from '../domain/submission-status'
-
-type AssessmentDetail = components['schemas']['AssessmentRead']
 
 interface ReadinessPayload {
   ok: boolean

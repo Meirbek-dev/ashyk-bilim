@@ -81,32 +81,6 @@ function getActivityTypeIconColor(activityType: string): string {
   }
 }
 
-function getActivityTypeBadgeColor(activityType: string): string {
-  switch (activityType) {
-    case 'TYPE_VIDEO': {
-      return 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
-    }
-    case 'TYPE_DOCUMENT': {
-      return 'bg-purple-50 text-purple-600 ring-1 ring-purple-200'
-    }
-    case 'TYPE_DYNAMIC': {
-      return 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
-    }
-    case 'TYPE_FILE_SUBMISSION': {
-      return 'bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200'
-    }
-    case 'TYPE_EXAM': {
-      return 'bg-amber-50 text-amber-600 ring-1 ring-amber-200'
-    }
-    case 'TYPE_CODE_CHALLENGE': {
-      return 'bg-cyan-50 text-cyan-600 ring-1 ring-cyan-200'
-    }
-    default: {
-      return 'bg-gray-50 text-gray-600 ring-1 ring-gray-200'
-    }
-  }
-}
-
 const ActivityTypeIcon = ({ activityType, size = 14 }: { activityType: string; size?: number }) => {
   const colorClass = getActivityTypeIconColor(activityType)
   switch (activityType) {
@@ -319,11 +293,6 @@ const ActivityIndicators = (props: Props) => {
         router.push(`${getAbsoluteUrl('')}/course/${courseid}/activity/${nextActivity.cleanUuid}`)
       }
     }
-  }
-
-  // Add function to count completed activities in a chapter
-  function getChapterProgress(chapterActivities: any[]) {
-    return chapterActivities.reduce((acc, activity) => acc + (isActivityDone(activity) ? 1 : 0), 0)
   }
 
   // Check if all activities are completed

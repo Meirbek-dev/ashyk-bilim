@@ -299,9 +299,11 @@ export function TestResultsList({ results, visibleTestIds, testCases = [] }: Tes
               result={result}
               index={index}
               isVisible={isVisible}
-              testDescription={testCase?.description}
-              expectedOutput={isVisible ? testCase?.expected_output : undefined}
-              input={isVisible ? testCase?.input : undefined}
+              {...(testCase?.description === undefined ? {} : { testDescription: testCase.description })}
+              {...(isVisible && testCase?.expected_output !== undefined
+                ? { expectedOutput: testCase.expected_output }
+                : {})}
+              {...(isVisible && testCase?.input !== undefined ? { input: testCase.input } : {})}
             />
           )
         })}
