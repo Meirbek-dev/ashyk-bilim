@@ -99,9 +99,9 @@ function normalizeLeaderboard(payload?: ApiLeaderboardResponse | null): Platform
         level: Math.max(1, numberOr(data.level, 1)),
         rank: Math.max(1, numberOr(data.rank, index + 1)),
         username: typeof data.username === 'string' ? data.username : null,
-        first_name: 'first_name' in data ? ((data.first_name as string | null) ?? null) : null,
-        last_name: 'last_name' in data ? ((data.last_name as string | null) ?? null) : null,
-        avatar_url: 'avatar_url' in data ? ((data.avatar_url as string | null) ?? null) : null,
+        first_name: 'first_name' in data ? (data.first_name ?? null) : null,
+        last_name: 'last_name' in data ? (data.last_name ?? null) : null,
+        avatar_url: 'avatar_url' in data ? (data.avatar_url ?? null) : null,
         rank_change: typeof data.rank_change === 'number' ? data.rank_change : undefined,
       }
     }),

@@ -1,43 +1,60 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
+
   "compilerOptions": {
-    "noImplicitOverride": true,
-    "alwaysStrict": true,
-    "target": "esnext",
+    /* Runtime / platform */
+    "target": "ESNext",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "moduleDetection": "force",
     "jsx": "react-jsx",
+
+    /* Module semantics */
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
-    "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": false,
     "esModuleInterop": true,
+
+    /* Strictness */
     "strict": true,
+    "alwaysStrict": true,
     "noImplicitAny": true,
+    "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
-    "noFallthroughCasesInSwitch": true,
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "useUnknownInCatchVariables": true,
+
+    /* Agentic / LLM-safe constraints */
     "noUncheckedIndexedAccess": true,
-    "noPropertyAccessFromIndexSignature": false,
+    "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true,
     "forceConsistentCasingInFileNames": true,
 
-    // enable at some point
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "exactOptionalPropertyTypes": false,
-
+    /* Dead code prevention */
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Hygiene */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    /* JS interop */
+    "allowJs": false,
+    "checkJs": false,
+
+    /* Build */
     "noEmit": true,
     "incremental": true,
     "tsBuildInfoFile": ".next/cache/tsconfig.tsbuildinfo",
     "skipLibCheck": true,
+
+    /* DX */
     "paths": {
       "@/*": ["./src/*"],
       "@components/*": ["./src/components/*"],
@@ -48,21 +65,19 @@
       "@editor/*": ["./src/components/Objects/Editor/*"],
       "@images/*": ["./public/img/*"]
     },
-    "allowJs": false,
-    "checkJs": false,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+
+    /* Framework */
+    "plugins": [{ "name": "next" }]
   },
-  "exclude": ["node_modules", ".next", "out", "dist"],
+
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "next.config.ts",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
-  ]
+    ".next/dev/types/**/*.ts",
+    "next.config.ts"
+  ],
+
+  "exclude": ["node_modules", ".next", "dist", "out"]
 }

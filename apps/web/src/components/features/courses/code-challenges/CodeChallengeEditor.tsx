@@ -329,7 +329,7 @@ export function CodeChallengeEditor({
       })
       const nextSubmissionId =
         typeof submission === 'object' && submission !== null && 'submission_uuid' in submission
-          ? String(submission.submission_uuid)
+          ? submission.submission_uuid
           : submission.uuid
       setActiveSubmissionId(nextSubmissionId)
       toast.info(t('submissionQueued'))
