@@ -17,7 +17,7 @@ interface AiMessageBubbleProps {
 /**
  * Role-aware chat message bubble.
  * - Assistant: left-aligned, dark background, markdown rendered with copy button.
- * - User: right-aligned, indigo tint, plain text (user input is never markdown).
+ * - User: right-aligned, muted tint, plain text (user input is never markdown).
  */
 export function AiMessageBubble({ role, content, isStreaming = false }: AiMessageBubbleProps) {
   const t = useTranslations('AiChat')
@@ -74,7 +74,7 @@ export function AiMessageBubble({ role, content, isStreaming = false }: AiMessag
                   'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
                   // Always show on touch devices
                   'sm:opacity-0',
-                  copied && 'border-emerald-700/60 text-emerald-400',
+                  copied && 'border-stone-500/60 text-stone-300 dark:border-stone-400/60 dark:text-stone-300',
                 )}
                 type="button"
               >
@@ -83,7 +83,7 @@ export function AiMessageBubble({ role, content, isStreaming = false }: AiMessag
             )}
           </>
         ) : (
-          <div className="rounded-lg bg-indigo-600/20 px-3 py-2">
+          <div className="rounded-lg bg-muted/50 px-3 py-2">
             <p className="text-sm leading-relaxed text-zinc-100">{content}</p>
           </div>
         )}

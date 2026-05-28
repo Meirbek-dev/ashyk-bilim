@@ -153,7 +153,7 @@ export function ResultsDock({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {hiddenPassed === hiddenTotal ? (
-                          <CheckCircle2 className="size-5 text-emerald-600" />
+                          <CheckCircle2 className="size-5 text-lime-600" />
                         ) : (
                           <XCircle className="size-5 text-rose-500" />
                         )}
@@ -174,7 +174,7 @@ export function ResultsDock({
                           className={cn(
                             'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border',
                             result.passed
-                              ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                              ? 'bg-lime-500/10 text-lime-600 border-lime-500/20'
                               : 'bg-rose-500/10 text-rose-600 border-rose-500/20',
                           )}
                           title={t('hiddenCaseTitle', {
@@ -237,7 +237,7 @@ function VerdictBanner({
       className={cn(
         'rounded-md border p-3.5 transition-colors duration-200',
         verdict === 'ACCEPTED'
-          ? 'border-emerald-200 bg-emerald-50 text-emerald-950 dark:bg-emerald-950/20 dark:text-emerald-100'
+          ? 'border-lime-200 bg-lime-50 text-lime-950 dark:bg-lime-950/20 dark:text-lime-100'
           : isRunning
             ? 'border-blue-200 bg-blue-50/50 text-blue-950 dark:bg-blue-950/10 dark:text-blue-200'
             : 'bg-card',
@@ -366,7 +366,7 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
     <div
       className={cn(
         'rounded-md border bg-card transition-all duration-200',
-        result.passed ? 'border-emerald-500/20' : 'border-rose-500/25',
+        result.passed ? 'border-lime-500/20' : 'border-rose-500/25',
       )}
     >
       <div
@@ -375,7 +375,7 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
       >
         <div className="flex min-w-0 items-center gap-2">
           {result.passed ? (
-            <CheckCircle2 className="size-4 text-emerald-600" />
+            <CheckCircle2 className="size-4 text-lime-600" />
           ) : (
             <XCircle className="size-4 text-rose-500" />
           )}

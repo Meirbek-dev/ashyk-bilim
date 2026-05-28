@@ -614,7 +614,7 @@ function SortableOutlineItem({
               </TooltipContent>
             </Tooltip>
           ) : (
-            <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
+            <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-lime-500" />
           )}
           {onAddSectionBefore ? (
             <Tooltip>
@@ -748,7 +748,7 @@ function ItemCanvas({
       </div>
 
       {/* Item Metadata */}
-      <section className="bg-card rounded-2xl border p-5 shadow-sm">
+      <section className="bg-card rounded-xl border p-5 shadow-sm">
         <h3 className="mb-4 text-sm font-semibold">{t('itemMetadataTitle', { itemNoun })}</h3>
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_10rem]">
           <div className="space-y-2">
@@ -789,7 +789,7 @@ function ItemCanvas({
       </section>
 
       {/* Item Body Editor */}
-      <section className="bg-card rounded-2xl border p-5 shadow-sm">
+      <section className="bg-card rounded-xl border p-5 shadow-sm">
         <h3 className="mb-4 text-sm font-semibold">{t('itemContentTitle', { itemNoun })}</h3>
         {renderBodyEditor(item)}
       </section>

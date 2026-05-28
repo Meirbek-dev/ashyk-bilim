@@ -151,7 +151,7 @@ function SummaryRow({
       <span
         className={cn(
           'font-semibold',
-          variant === 'success' && 'text-emerald-600 dark:text-emerald-400',
+          variant === 'success' && 'text-lime-600 dark:text-lime-400',
           variant === 'warning' && value > 0 && 'text-destructive',
           variant === 'amber' && 'text-amber-600 dark:text-amber-400',
         )}

@@ -41,7 +41,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
       <div className="bg-card flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4 shadow-xs">
         <div className="flex items-center gap-3">
           {accepted ? (
-            <CheckCircle2 className="size-6 animate-bounce fill-emerald-600/10 text-emerald-600" />
+            <CheckCircle2 className="size-6 animate-bounce fill-lime-600/10 text-lime-600" />
           ) : (
             <XCircle className="size-6 fill-rose-600/10 text-rose-600" />
           )}
@@ -144,14 +144,14 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
                     className={cn(
                       'rounded-md border p-3.5 transition-all duration-150',
                       passedCase
-                        ? 'border-emerald-500/10 bg-emerald-500/[0.01]'
+                        ? 'border-lime-500/10 bg-lime-500/[0.01]'
                         : 'border-rose-500/20 bg-rose-500/[0.01]',
                     )}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2 text-xs font-semibold">
                         {passedCase ? (
-                          <CheckCircle2 className="size-4 text-emerald-600" />
+                          <CheckCircle2 className="size-4 text-lime-600" />
                         ) : (
                           <XCircle className="size-4 text-rose-500" />
                         )}

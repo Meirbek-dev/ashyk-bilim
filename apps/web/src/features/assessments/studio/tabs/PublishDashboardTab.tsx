@@ -122,25 +122,25 @@ export default function PublishDashboardTab({
       {/* Status Banner */}
       <div
         className={cn(
-          'flex items-center justify-between gap-4 rounded-2xl border p-5',
+          'flex items-center justify-between gap-4 rounded-xl border p-5',
           isPublished
-            ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30'
+            ? 'border-lime-300 bg-lime-50 dark:border-lime-800 dark:bg-lime-950/30'
             : isScheduled
               ? 'border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30'
               : hasIssues
                 ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
-                : 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30',
+                : 'border-lime-300 bg-lime-50 dark:border-lime-800 dark:bg-lime-950/30',
         )}
       >
         <div className="flex items-center gap-3">
           {isPublished ? (
-            <CheckCircle2 className="size-6 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle2 className="size-6 text-lime-600 dark:text-lime-400" />
           ) : isScheduled ? (
             <CalendarClock className="size-6 text-blue-600 dark:text-blue-400" />
           ) : hasIssues ? (
             <AlertTriangle className="size-6 text-amber-600 dark:text-amber-400" />
           ) : (
-            <CheckCircle2 className="size-6 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle2 className="size-6 text-lime-600 dark:text-lime-400" />
           )}
           <div>
             <p className="font-semibold">
@@ -286,9 +286,9 @@ export default function PublishDashboardTab({
           <h3 className="text-sm font-semibold">{tPublish('preflightTitle')}</h3>
 
           {!hasIssues ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 p-8 text-center dark:border-emerald-800 dark:bg-emerald-950/30">
-              <CheckCircle2 className="size-10 text-emerald-600 dark:text-emerald-400" />
-              <p className="mt-3 font-semibold text-emerald-900 dark:text-emerald-100">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-lime-300 bg-lime-50 p-8 text-center dark:border-lime-800 dark:bg-lime-950/30">
+              <CheckCircle2 className="size-10 text-lime-600 dark:text-lime-400" />
+              <p className="mt-3 font-semibold text-lime-900 dark:text-lime-100">
                 {tPublish('noIssues')}
               </p>
               <p className="text-muted-foreground mt-1 text-sm">{tPublish('noIssuesDesc')}</p>

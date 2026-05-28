@@ -77,7 +77,7 @@ export function CodeDiffViewer({
                     className={cn(
                       'flex items-start px-1.5 py-0.5 rounded-sm',
                       differs && line
-                        ? 'bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border-l-2 border-emerald-500'
+                        ? 'bg-lime-500/10 text-lime-700 dark:bg-lime-500/15 dark:text-lime-300 border-l-2 border-lime-500'
                         : '',
                     )}
                   >
@@ -145,11 +145,11 @@ export function CodeDiffViewer({
             return (
               <div key={`inline-diff-${idx}`} className="space-y-0.5">
                 {expLine !== undefined && (
-                  <div className="flex items-start rounded-sm border-l-2 border-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                    <span className="w-12 shrink-0 pr-4 text-right text-emerald-600/60 select-none">
+                  <div className="flex items-start rounded-sm border-l-2 border-lime-500 bg-lime-500/10 px-1.5 py-0.5 text-lime-700 dark:bg-lime-500/15 dark:text-lime-300">
+                    <span className="w-12 shrink-0 pr-4 text-right text-lime-600/60 select-none">
                       {idx + 1}
                     </span>
-                    <span className="w-4 shrink-0 text-emerald-500 select-none">+</span>
+                    <span className="w-4 shrink-0 text-lime-500 select-none">+</span>
                     <span className="whitespace-pre">{expLine || ' '}</span>
                   </div>
                 )}

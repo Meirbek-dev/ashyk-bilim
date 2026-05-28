@@ -87,13 +87,13 @@ function StatsGrid({ stats }: { stats?: SubmissionStats | null }) {
         label={t('layout.stats.avgScore')}
         value={stats.avg_score !== null ? `${stats.avg_score.toFixed(1)}%` : '--'}
         icon={TrendingUp}
-        accent="sky"
+        accent="blue"
       />
       <StatTile
         label={t('layout.stats.passRate')}
         value={stats.pass_rate !== null ? `${stats.pass_rate.toFixed(0)}%` : '--'}
         icon={BookOpenCheck}
-        accent="emerald"
+        accent="lime"
       />
     </div>
   )
@@ -108,13 +108,13 @@ function StatTile({
   label: string
   value: string | number
   icon: React.ElementType
-  accent?: 'amber' | 'emerald' | 'sky' | 'default'
+  accent?: 'amber' | 'lime' | 'blue' | 'default'
 }) {
   const colorMap = {
     default: 'text-muted-foreground',
     amber: 'text-amber-600',
-    emerald: 'text-emerald-600',
-    sky: 'text-sky-600',
+    lime: 'text-lime-600',
+    blue: 'text-blue-600',
   }
 
   return (

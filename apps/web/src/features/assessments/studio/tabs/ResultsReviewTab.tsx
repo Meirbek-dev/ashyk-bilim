@@ -135,7 +135,7 @@ export default function ResultsReviewTab({
               ? `${stats.avg_score.toFixed(1)}%`
               : '--'
           }
-          accent="sky"
+          accent="blue"
         />
         <ResultMetric
           icon={BookOpenCheck}
@@ -145,7 +145,7 @@ export default function ResultsReviewTab({
               ? `${stats.pass_rate.toFixed(0)}%`
               : '--'
           }
-          accent="emerald"
+          accent="lime"
         />
       </div>
 
@@ -282,13 +282,13 @@ export default function ResultsReviewTab({
 }
 
 function PercentBadge({ value }: { value: number }) {
-  const color = value >= 70 ? 'text-emerald-600' : value >= 40 ? 'text-amber-600' : 'text-red-600'
+  const color = value >= 70 ? 'text-lime-600' : value >= 40 ? 'text-amber-600' : 'text-red-600'
   return <span className={cn('font-medium', color)}>{value.toFixed(1)}%</span>
 }
 
 function DiscriminationBadge({ value }: { value: number }) {
   // discrimination index: ≥ 0.3 good (green), 0.1–0.3 fair (amber), < 0.1 poor (red)
-  const color = value >= 0.3 ? 'text-emerald-600' : value >= 0.1 ? 'text-amber-600' : 'text-red-600'
+  const color = value >= 0.3 ? 'text-lime-600' : value >= 0.1 ? 'text-amber-600' : 'text-red-600'
   return <span className={cn('font-medium', color)}>{value.toFixed(2)}</span>
 }
 
@@ -301,13 +301,13 @@ function ResultMetric({
   icon: React.ElementType
   label: string
   value: string | number
-  accent?: 'default' | 'amber' | 'sky' | 'emerald'
+  accent?: 'default' | 'amber' | 'blue' | 'lime'
 }) {
   const color = {
     default: 'text-muted-foreground',
     amber: 'text-amber-600',
-    sky: 'text-sky-600',
-    emerald: 'text-emerald-600',
+    blue: 'text-blue-600',
+    lime: 'text-lime-600',
   }[accent]
   return (
     <div className="bg-card rounded-lg border p-4">

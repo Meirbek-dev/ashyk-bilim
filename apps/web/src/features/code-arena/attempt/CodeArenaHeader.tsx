@@ -169,7 +169,7 @@ function VerdictStatus({ verdict }: { verdict: CodeVerdict | null }) {
         className={cn(
           'size-1.5 rounded-full',
           verdict === 'ACCEPTED'
-            ? 'bg-emerald-500'
+            ? 'bg-lime-500'
             : verdict === 'RUNNING'
               ? 'bg-blue-500'
               : verdict === 'IDLE'
