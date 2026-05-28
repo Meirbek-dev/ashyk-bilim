@@ -1,13 +1,13 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "categories": {
-    "correctness": "warn",
+    "correctness": "error",
     "nursery": "warn",
     "pedantic": "off",
-    "perf": "warn",
+    "perf": "error",
     "restriction": "warn",
     "style": "warn",
-    "suspicious": "warn"
+    "suspicious": "error"
   },
   "env": {
     "builtin": true,
@@ -137,7 +137,22 @@
     "unicorn/prefer-string-raw": "off",
     "unicorn/no-array-reduce": "off",
     "unicorn/no-nested-ternary": "off",
-    "unicorn/filename-case": "off"
+    "unicorn/filename-case": "off",
+
+    /* High-Density Agentic & Token Optimization Enforcements */
+    "no-extra-boolean-cast": "error",
+    "no-regex-spaces": "error",
+    "no-useless-catch": "error",
+    "no-useless-computed-key": "error",
+    "no-useless-concat": "error",
+    "no-useless-rename": "error",
+    "object-shorthand": "error",
+    "import/no-duplicates": "error",
+    "import/no-self-import": "error",
+    "typescript/no-extra-non-null-assertion": "error",
+    "typescript/no-unnecessary-type-constraint": "error",
+    "unicorn/prefer-array-find": "error",
+    "unicorn/prefer-includes": "error"
   },
   "settings": {}
 }

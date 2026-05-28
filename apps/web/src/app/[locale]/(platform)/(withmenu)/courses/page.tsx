@@ -56,7 +56,7 @@ interface CoursesContentProps {
 function sortCoursesByProgress(courses: any[], trailData: any) {
   if (!trailData?.runs) return courses
 
-  return [...courses].sort((a, b) => {
+  return [...courses].toSorted((a, b) => {
     const aCleanUuid = a.course_uuid?.replace('course_', '')
     const bCleanUuid = b.course_uuid?.replace('course_', '')
 
@@ -114,7 +114,7 @@ async function CoursesContent({ searchParams }: CoursesContentProps) {
   const sortedCourses = sortCoursesByProgress(coursesData.courses, trailData)
 
   // Calculate permissions server-side
-  const permissionsSet = new Set<string>(session?.permissions ?? [])
+  const permissionsSet = new Set<string>(session?.permissions)
   const canManagePlatform =
     permissionsSet.has(AUTH_PERMISSION_WILDCARD) ||
     permissionsSet.has(perm(Resources.APP, Actions.MANAGE, Scopes.OWN))

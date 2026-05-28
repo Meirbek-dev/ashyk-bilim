@@ -1,7 +1,6 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
 
-  // Prioritize compact diffs, predictable formatting, and AI-friendly structure.
   "printWidth": 100,
   "tabWidth": 2,
   "useTabs": false,

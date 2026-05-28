@@ -43,7 +43,7 @@ function logLandingFetchError(scope: string, error: unknown) {
 function sortCoursesByProgress(courses: any[], trailData: any) {
   if (!trailData?.runs) return courses
 
-  return [...courses].sort((a, b) => {
+  return [...courses].toSorted((a, b) => {
     const aCleanUuid = a.course_uuid?.replace('course_', '')
     const bCleanUuid = b.course_uuid?.replace('course_', '')
 

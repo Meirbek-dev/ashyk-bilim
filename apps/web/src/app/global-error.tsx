@@ -17,7 +17,8 @@ import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { reportClientError } from '@/services/telemetry/client'
-import { ERROR_MESSAGES, detectLocale, type SupportedLocale } from '@/lib/error-i18n'
+import { ERROR_MESSAGES, detectLocale } from '@/lib/error-i18n'
+import type { SupportedLocale } from '@/lib/error-i18n'
 
 /**
  * Viewport export is required in global-error.tsx because this component

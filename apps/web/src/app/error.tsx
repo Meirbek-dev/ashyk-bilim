@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { AlertTriangle, RotateCcw } from 'lucide-react'
 import { reportClientError } from '@/services/telemetry/client'
-import { ERROR_MESSAGES, detectLocale, type SupportedLocale } from '@/lib/error-i18n'
+import { ERROR_MESSAGES, detectLocale } from '@/lib/error-i18n'
+import type { SupportedLocale } from '@/lib/error-i18n'
 
 export default function AppError({
   error,
