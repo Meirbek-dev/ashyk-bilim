@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/session';
 import { DEFAULT_THEME_MODE, THEME_MODE_STORAGE_KEY } from '@/lib/themes';
 import type { ThemeMode } from '@/lib/themes';
 import RootProviders from '../root-providers';
+import { HtmlLangSync } from '@/components/providers/HtmlLangSync';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { setRequestLocale, getMessages } from 'next-intl/server';
 import { cookies } from 'next/headers';
@@ -39,17 +40,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
       locale={locale}
       messages={messages}
     >
-      {/*
-       * Synchronously patch html[lang] on first paint.
-       * The root layout sets lang={defaultLocale} as an SSR placeholder;
-       * this script runs before any React hydration to correct it per-locale.
-       * suppressHydrationWarning on <html> prevents the mismatch warning.
-       */}
-      <script
-        suppressHydrationWarning
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: `document.documentElement.lang=${JSON.stringify(locale)};` }}
-      />
+      <HtmlLangSync locale={locale} />
       <RootProviders
         initialSession={initialSession}
         initialThemeMode={initialThemeMode}
