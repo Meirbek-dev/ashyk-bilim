@@ -136,8 +136,7 @@ async def _auto_submit_expired_drafts() -> int:
 
                 count += 1
                 logger.info(
-                    "assessment_timer: auto-submitted and graded submission_uuid=%s user_id=%s "
-                    "(deadline=%s)",
+                    "assessment_timer: auto-submitted and graded submission_uuid=%s user_id=%s (deadline=%s)",
                     submission.submission_uuid,
                     submission.user_id,
                     deadline.isoformat(),

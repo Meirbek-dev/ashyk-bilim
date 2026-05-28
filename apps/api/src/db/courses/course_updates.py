@@ -9,9 +9,7 @@ class CourseUpdate(SQLModelStrictBaseModel, table=True):
     courseupdate_uuid: str
     title: str
     content: str
-    course_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE"))
-    )
+    course_id: int = Field(sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE")))
     linked_activity_uuids: str | None = Field(default=None)
     creation_date: str
     update_date: str

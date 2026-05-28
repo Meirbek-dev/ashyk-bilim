@@ -26,14 +26,11 @@ def _hydrate_trail(trail: Trail, user_id: int, db_session: Session) -> TrailRead
     Centralizes repeated query logic used across endpoints, avoiding divergence.
     """
     # Fetch runs for this trail/user
-    runs_stmt = select(TrailRun).where(
-        TrailRun.trail_id == trail.id, TrailRun.user_id == user_id
-    )
+    runs_stmt = select(TrailRun).where(TrailRun.trail_id == trail.id, TrailRun.user_id == user_id)
     runs = db_session.exec(runs_stmt).all()
 
     run_reads: list[TrailRunRead] = [
-        TrailRunRead(**tr.model_dump(), course={}, steps=[], course_total_steps=0)
-        for tr in runs
+        TrailRunRead(**tr.model_dump(), course={}, steps=[], course_total_steps=0) for tr in runs
     ]
 
     if not run_reads:
@@ -53,15 +50,10 @@ def _hydrate_trail(trail: Trail, user_id: int, db_session: Session) -> TrailRead
     for s in all_steps:
         steps_by_run.setdefault(s.trailrun_id, []).append(s)
 
-    courses_by_id = {
-        c.id: c
-        for c in db_session.exec(select(Course).where(Course.id.in_(course_ids))).all()
-    }
+    courses_by_id = {c.id: c for c in db_session.exec(select(Course).where(Course.id.in_(course_ids))).all()}
 
     chapter_act_count: dict[int, int] = {}
-    for a in db_session.exec(
-        select(Activity).where(Activity.course_id.in_(course_ids))
-    ).all():
+    for a in db_session.exec(select(Activity).where(Activity.course_id.in_(course_ids))).all():
         if a.course_id is not None:
             chapter_act_count[a.course_id] = chapter_act_count.get(a.course_id, 0) + 1
 
@@ -120,9 +112,7 @@ async def get_user_trails(
     trail = db_session.exec(statement).first()
 
     if not trail:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Trail not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trail not found")
 
     return _hydrate_trail(trail, user.id, db_session)
 
@@ -235,9 +225,7 @@ async def add_activity_to_trail(
     # After ensuring the step exists (created or already present), check if the course is now
     # completed and create a certificate if appropriate. This is idempotent and inexpensive.
     try:
-        await check_course_completion_and_create_certificate(
-            request, user.id, course.id, db_session
-        )
+        await check_course_completion_and_create_certificate(request, user.id, course.id, db_session)
     except Exception as err:
         logger.warning(
             "check_course_completion_and_create_certificate failed (user_id=%s, course_id=%s): %s",
@@ -264,9 +252,7 @@ async def remove_activity_from_trail(
     trail = db_session.exec(statement).first()
 
     if not trail:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Trail not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trail not found")
 
     # Delete the trail step for this activity
     statement = select(TrailStep).where(
@@ -294,20 +280,14 @@ async def add_course_to_trail(
     course = db_session.exec(statement).first()
 
     if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
 
     # check if run already exists
-    statement = select(TrailRun).where(
-        TrailRun.course_id == course.id, TrailRun.user_id == user.id
-    )
+    statement = select(TrailRun).where(TrailRun.course_id == course.id, TrailRun.user_id == user.id)
     trailrun = db_session.exec(statement).first()
 
     if trailrun:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="TrailRun already exists"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="TrailRun already exists")
 
     trail = await check_trail_presence(
         user_id=user.id,
@@ -348,17 +328,13 @@ async def remove_course_from_trail(
     course = db_session.exec(statement).first()
 
     if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
 
     statement = select(Trail).where(Trail.user_id == user.id)
     trail = db_session.exec(statement).first()
 
     if not trail:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Trail not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trail not found")
 
     statement = select(TrailRun).where(
         TrailRun.trail_id == trail.id,
@@ -372,9 +348,7 @@ async def remove_course_from_trail(
         db_session.commit()
 
     # Delete all trail steps for this course
-    statement = select(TrailStep).where(
-        TrailStep.course_id == course.id, TrailStep.user_id == user.id
-    )
+    statement = select(TrailStep).where(TrailStep.course_id == course.id, TrailStep.user_id == user.id)
     trail_steps = db_session.exec(statement).all()
 
     for trail_step in trail_steps:

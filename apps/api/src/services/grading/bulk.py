@@ -51,9 +51,7 @@ def get_bulk_action(
     current_user: PublicUser,
     db_session: Session,
 ) -> BulkAction:
-    action = db_session.exec(
-        select(BulkAction).where(BulkAction.action_uuid == action_uuid)
-    ).first()
+    action = db_session.exec(select(BulkAction).where(BulkAction.action_uuid == action_uuid)).first()
     if action is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -105,9 +103,7 @@ def create_deadline_extension_action(
         resource_owner_id=activity.creator_id,
     )
 
-    policy = db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)
-    ).first()
+    policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).first()
     if policy is None or policy.id is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -159,14 +155,8 @@ async def run_deadline_extension_action(
     if session_factory is None:
         session_factory = build_session_factory(get_bg_engine())
     with session_factory() as session:
-        action = session.exec(
-            select(BulkAction).where(BulkAction.action_uuid == action_uuid)
-        ).one()
-        policy = session.exec(
-            select(AssessmentPolicy).where(
-                AssessmentPolicy.activity_id == action.activity_id
-            )
-        ).one()
+        action = session.exec(select(BulkAction).where(BulkAction.action_uuid == action_uuid)).one()
+        policy = session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == action.activity_id)).one()
         raw_due_at = str(action.params.get("new_due_at", ""))
         new_due_at = datetime.fromisoformat(raw_due_at)
         if new_due_at.tzinfo is None:
@@ -194,9 +184,7 @@ def _execute_deadline_extension_sync(
     Does NOT publish SSE events — callers that need SSE should use the
     async ``execute_deadline_extension`` via the taskiq worker instead.
     """
-    action = db_session.exec(
-        select(BulkAction).where(BulkAction.action_uuid == action_uuid)
-    ).one()
+    action = db_session.exec(select(BulkAction).where(BulkAction.action_uuid == action_uuid)).one()
     action.status = BulkActionStatus.RUNNING
     db_session.add(action)
     db_session.commit()
@@ -246,9 +234,7 @@ async def execute_deadline_extension(
     reason: str,
     db_session: Session,
 ) -> None:
-    action = db_session.exec(
-        select(BulkAction).where(BulkAction.action_uuid == action_uuid)
-    ).one()
+    action = db_session.exec(select(BulkAction).where(BulkAction.action_uuid == action_uuid)).one()
     action.status = BulkActionStatus.RUNNING
     db_session.add(action)
     db_session.commit()
@@ -286,9 +272,7 @@ async def execute_deadline_extension(
                 submitted_at = submission.submitted_at
                 if submitted_at is not None and submitted_at.tzinfo is None:
                     submitted_at = submitted_at.replace(tzinfo=UTC)
-                submission.is_late = (
-                    submitted_at is not None and submitted_at > new_due_at
-                )
+                submission.is_late = submitted_at is not None and submitted_at > new_due_at
                 submission.updated_at = now
                 db_session.add(submission)
                 recalculate_activity_progress(

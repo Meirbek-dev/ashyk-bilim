@@ -36,9 +36,7 @@ async def api_start_trail(
 @router.get("")
 async def api_get_user_trail(
     request: Request,
-    user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ] = None,
+    user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> TrailRead:
     """

@@ -136,9 +136,7 @@ class GamificationProfile(SQLModel, table=True):
         next_level_xp = get_xp_for_level(self.level + 1)
         if next_level_xp == current_level_xp:
             return 100.0
-        progress = (self.total_xp - current_level_xp) / (
-            next_level_xp - current_level_xp
-        )
+        progress = (self.total_xp - current_level_xp) / (next_level_xp - current_level_xp)
         return round(progress * 100.0, 1)
 
     @property

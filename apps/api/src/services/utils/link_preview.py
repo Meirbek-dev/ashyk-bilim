@@ -130,9 +130,7 @@ async def _assert_public_destination(url: str) -> None:
         _assert_public_ip(ipaddress.ip_address(ip_text), host)
 
 
-def _assert_public_ip(
-    address: ipaddress.IPv4Address | ipaddress.IPv6Address, host: str
-) -> None:
+def _assert_public_ip(address: ipaddress.IPv4Address | ipaddress.IPv6Address, host: str) -> None:
     if address.is_global:
         return
 
@@ -158,18 +156,14 @@ async def _fetch_html(url: str, settings: LinkPreviewConfig) -> tuple[str, str]:
                         raise LinkPreviewError("Too many redirects")
                     location = response.headers.get("location")
                     if not location:
-                        raise LinkPreviewError(
-                            "Redirect response did not include Location"
-                        )
+                        raise LinkPreviewError("Redirect response did not include Location")
                     current_url = _normalize_user_url(urljoin(current_url, location))
                     await _assert_public_destination(current_url)
                     continue
 
                 response.raise_for_status()
                 _assert_html_response(response)
-                body = await _read_limited_response(
-                    response, settings.max_response_bytes
-                )
+                body = await _read_limited_response(response, settings.max_response_bytes)
                 encoding = response.encoding or "utf-8"
                 return str(response.url), body.decode(encoding, errors="replace")
         except httpx.HTTPError as exc:
@@ -303,9 +297,7 @@ async def _sanitize_preview_assets(
     return sanitized
 
 
-async def _get_cached_preview(
-    url: str, settings: LinkPreviewConfig
-) -> dict[str, str | None] | None:
+async def _get_cached_preview(url: str, settings: LinkPreviewConfig) -> dict[str, str | None] | None:
     redis = get_async_redis_client()
     cache_key = _cache_key(url)
     if redis is not None:
@@ -369,9 +361,4 @@ def _get_memory_cache(
 
 def _coerce_preview(value: dict[str, Any]) -> dict[str, str | None]:
     keys = ("title", "description", "og_image", "favicon", "og_type", "og_url", "url")
-    return {
-        key: raw
-        if isinstance((raw := value.get(key)), str) or raw is None
-        else str(raw)
-        for key in keys
-    }
+    return {key: raw if isinstance((raw := value.get(key)), str) or raw is None else str(raw) for key in keys}

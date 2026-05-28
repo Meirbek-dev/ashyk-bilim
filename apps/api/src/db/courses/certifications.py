@@ -8,18 +8,14 @@ from src.db.strict_base_model import SQLModelStrictBaseModel
 
 
 class CertificationBase(SQLModelStrictBaseModel):
-    course_id: int = Field(
-        sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE"))
-    )
+    course_id: int = Field(sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE")))
     config: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class Certifications(CertificationBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     certification_uuid: str = Field(unique=True)
-    course_id: int = Field(
-        sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE"))
-    )
+    course_id: int = Field(sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE")))
     config: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
     creation_date: str = ""
     update_date: str = ""
@@ -70,26 +66,18 @@ class CertificationRead(SQLModelStrictBaseModel):
 
 
 class CertificateUserBase(SQLModelStrictBaseModel):
-    user_id: int = Field(
-        sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    user_id: int = Field(sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE")))
     certification_id: int = Field(
-        sa_column=Column(
-            "certification_id", ForeignKey("certifications.id", ondelete="CASCADE")
-        )
+        sa_column=Column("certification_id", ForeignKey("certifications.id", ondelete="CASCADE"))
     )
     user_certification_uuid: str
 
 
 class CertificateUser(CertificateUserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(
-        sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    user_id: int = Field(sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE")))
     certification_id: int = Field(
-        sa_column=Column(
-            "certification_id", ForeignKey("certifications.id", ondelete="CASCADE")
-        )
+        sa_column=Column("certification_id", ForeignKey("certifications.id", ondelete="CASCADE"))
     )
     user_certification_uuid: str
     created_at: str = ""

@@ -41,9 +41,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             error_code = detail.get("error_code")
             message = detail.get("message")
             if isinstance(error_code, str) and isinstance(message, str):
-                return JSONResponse(
-                    status_code=exc.status_code, content=detail, headers=headers
-                )
+                return JSONResponse(status_code=exc.status_code, content=detail, headers=headers)
             return JSONResponse(
                 status_code=exc.status_code,
                 content={
@@ -59,9 +57,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(RequestValidationError)
-    def request_validation_exception_handler(
-        request: Request, exc: RequestValidationError
-    ) -> JSONResponse:
+    def request_validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
         return JSONResponse(
             status_code=422,
             content={

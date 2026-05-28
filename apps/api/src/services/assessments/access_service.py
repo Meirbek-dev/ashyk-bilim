@@ -60,11 +60,7 @@ async def update_assessment_access(
     usergroup_ids = sorted(set(payload.usergroup_ids))
 
     if payload.mode == AssessmentAccessMode.RESTRICTED:
-        invalid_user_ids = [
-            user_id
-            for user_id in user_ids
-            if not user_has_course_access(user_id, course, db_session)
-        ]
+        invalid_user_ids = [user_id for user_id in user_ids if not user_has_course_access(user_id, course, db_session)]
         if invalid_user_ids:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -74,12 +70,8 @@ async def update_assessment_access(
                 },
             )
 
-        eligible_group_ids = _eligible_usergroup_ids_for_course(
-            course.course_uuid, db_session
-        )
-        invalid_group_ids = [
-            group_id for group_id in usergroup_ids if group_id not in eligible_group_ids
-        ]
+        eligible_group_ids = _eligible_usergroup_ids_for_course(course.course_uuid, db_session)
+        invalid_group_ids = [group_id for group_id in usergroup_ids if group_id not in eligible_group_ids]
         if invalid_group_ids:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -137,9 +129,7 @@ async def list_assessment_access_eligible_usergroups(
     eligible_ids = _eligible_usergroup_ids_for_course(course.course_uuid, db_session)
     if not eligible_ids:
         return []
-    groups = db_session.exec(
-        select(UserGroup).where(UserGroup.id.in_(eligible_ids))
-    ).all()  # type: ignore[union-attr]
+    groups = db_session.exec(select(UserGroup).where(UserGroup.id.in_(eligible_ids))).all()  # type: ignore[union-attr]
     return [_usergroup_read(group, db_session) for group in groups]
 
 
@@ -148,9 +138,7 @@ def _get_or_create_access_policy(
     db_session: Session,
 ) -> AssessmentAccessPolicy:
     policy = db_session.exec(
-        select(AssessmentAccessPolicy).where(
-            AssessmentAccessPolicy.assessment_id == assessment_id
-        )
+        select(AssessmentAccessPolicy).where(AssessmentAccessPolicy.assessment_id == assessment_id)
     ).first()
     if policy is not None:
         return policy
@@ -171,9 +159,7 @@ def _replace_policy_users(
     user_ids: list[int],
     db_session: Session,
 ) -> None:
-    existing = db_session.exec(
-        select(AssessmentAccessUser).where(AssessmentAccessUser.policy_id == policy_id)
-    ).all()
+    existing = db_session.exec(select(AssessmentAccessUser).where(AssessmentAccessUser.policy_id == policy_id)).all()
     for row in existing:
         db_session.delete(row)
     for user_id in user_ids:
@@ -186,16 +172,12 @@ def _replace_policy_usergroups(
     db_session: Session,
 ) -> None:
     existing = db_session.exec(
-        select(AssessmentAccessUserGroup).where(
-            AssessmentAccessUserGroup.policy_id == policy_id
-        )
+        select(AssessmentAccessUserGroup).where(AssessmentAccessUserGroup.policy_id == policy_id)
     ).all()
     for row in existing:
         db_session.delete(row)
     for usergroup_id in usergroup_ids:
-        db_session.add(
-            AssessmentAccessUserGroup(policy_id=policy_id, usergroup_id=usergroup_id)
-        )
+        db_session.add(AssessmentAccessUserGroup(policy_id=policy_id, usergroup_id=usergroup_id))
 
 
 def _build_access_read(
@@ -203,9 +185,7 @@ def _build_access_read(
     db_session: Session,
 ) -> AssessmentAccessRead:
     policy = db_session.exec(
-        select(AssessmentAccessPolicy).where(
-            AssessmentAccessPolicy.assessment_id == assessment_id
-        )
+        select(AssessmentAccessPolicy).where(AssessmentAccessPolicy.assessment_id == assessment_id)
     ).first()
     if policy is None or policy.id is None:
         return AssessmentAccessRead(mode=AssessmentAccessMode.ALL_COURSE_LEARNERS)
@@ -228,9 +208,7 @@ def _build_access_read(
     if group_rows:
         group_ids = [group.id for group in group_rows if group.id is not None]
         member_rows = db_session.exec(
-            select(UserGroupUser.user_id).where(
-                UserGroupUser.usergroup_id.in_(group_ids)
-            )  # type: ignore[union-attr]
+            select(UserGroupUser.user_id).where(UserGroupUser.usergroup_id.in_(group_ids))  # type: ignore[union-attr]
         ).all()
         effective_user_ids.update(member_rows)
 
@@ -248,9 +226,7 @@ def _eligible_usergroup_ids_for_course(
 ) -> set[int]:
     linked_group_ids = set(
         db_session.exec(
-            select(UserGroupResource.usergroup_id).where(
-                UserGroupResource.resource_uuid == course_uuid
-            )
+            select(UserGroupResource.usergroup_id).where(UserGroupResource.resource_uuid == course_uuid)
         ).all()
     )
     if linked_group_ids:
@@ -273,9 +249,7 @@ def _usergroup_read(
     group: UserGroup,
     db_session: Session,
 ) -> AssessmentAccessUserGroupRead:
-    member_count = db_session.exec(
-        select(UserGroupUser.id).where(UserGroupUser.usergroup_id == group.id)
-    ).all()
+    member_count = db_session.exec(select(UserGroupUser.id).where(UserGroupUser.usergroup_id == group.id)).all()
     return AssessmentAccessUserGroupRead(
         id=group.id or 0,
         usergroup_uuid=group.usergroup_uuid,

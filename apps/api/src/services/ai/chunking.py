@@ -110,9 +110,7 @@ def chunk_documents(documents: list[str], model_name: str) -> list[DocumentChunk
                 sentence_buffer_tokens = 0
 
                 for sentence in _sentence_split(paragraph):
-                    sentence_tokens = len(
-                        encoding.encode(sentence, disallowed_special=())
-                    )
+                    sentence_tokens = len(encoding.encode(sentence, disallowed_special=()))
                     if sentence_tokens > chunk_size:
                         # Flush sentence buffer if a massive sentence interrupts
                         if sentence_buffer:
@@ -129,10 +127,7 @@ def chunk_documents(documents: list[str], model_name: str) -> list[DocumentChunk
                             )
                         )
                     # Buffer sentences so we don't get tiny chunks
-                    elif (
-                        sentence_buffer
-                        and sentence_buffer_tokens + sentence_tokens > chunk_size
-                    ):
+                    elif sentence_buffer and sentence_buffer_tokens + sentence_tokens > chunk_size:
                         packed_chunks.append(" ".join(sentence_buffer))
                         sentence_buffer = [sentence]
                         sentence_buffer_tokens = sentence_tokens
@@ -188,9 +183,7 @@ def chunk_documents(documents: list[str], model_name: str) -> list[DocumentChunk
                     document=clean_chunk,
                     source_index=source_index,
                     chunk_index=chunk_index,
-                    token_count=len(
-                        encoding.encode(clean_chunk, disallowed_special=())
-                    ),
+                    token_count=len(encoding.encode(clean_chunk, disallowed_special=())),
                     metadata={"source_index": source_index, "chunk_index": chunk_index},
                 )
             )

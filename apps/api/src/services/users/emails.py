@@ -60,10 +60,7 @@ def send_password_reset_email_by_fields(
     username: str,
     email: str,
 ) -> None:
-    reset_link = (
-        f"{_get_public_web_origin()}/reset"
-        f"?email={email}&resetCode={generated_reset_code}"
-    )
+    reset_link = f"{_get_public_web_origin()}/reset?email={email}&resetCode={generated_reset_code}"
 
     return send_email(
         to=email,

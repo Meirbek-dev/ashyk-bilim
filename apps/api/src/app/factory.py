@@ -16,9 +16,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
         title="Ashyk Bilim",
         description="Образовательная платформа Ashyk Bilim",
         docs_url="/docs" if resolved_settings.general_config.development_mode else None,
-        redoc_url="/redoc"
-        if resolved_settings.general_config.development_mode
-        else None,
+        redoc_url="/redoc" if resolved_settings.general_config.development_mode else None,
         version="0.1.0",
         lifespan=create_lifespan(resolved_settings),
     )

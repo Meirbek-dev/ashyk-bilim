@@ -205,11 +205,7 @@ async def logout(
         inspection = await inspect_refresh_session(db_session, refresh_token)
         if inspection.status == "active" and inspection.session and inspection.user_id:
             await revoke_session(inspection.session.session_id, inspection.user_id)
-        elif (
-            inspection.status == "reused"
-            and inspection.token_family_id
-            and inspection.user_id
-        ):
+        elif inspection.status == "reused" and inspection.token_family_id and inspection.user_id:
             await revoke_token_family(inspection.token_family_id, inspection.user_id)
 
     response = await auth_backend.transport.get_logout_response()
@@ -257,11 +253,7 @@ async def refresh_token(
             detail="Обнаружено повторное использование refresh-токена — все сессии отозваны",
         )
 
-    if (
-        inspection.status != "active"
-        or inspection.session is None
-        or inspection.user_id is None
-    ):
+    if inspection.status != "active" or inspection.session is None or inspection.user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Недействительный или просроченный refresh-токен",
@@ -343,9 +335,7 @@ async def google_callback(
 
     if not code:
         return RedirectResponse(
-            url=_build_google_error_redirect(
-                frontend_callback, "missing_authorization_code"
-            ),
+            url=_build_google_error_redirect(frontend_callback, "missing_authorization_code"),
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,
         )
 

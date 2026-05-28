@@ -37,9 +37,7 @@ async def search_platform_content(
     normalized_query = search_query.strip()
 
     # Search courses using existing search_courses function
-    courses = await search_courses(
-        request, current_user, search_query, db_session, page, limit
-    )
+    courses = await search_courses(request, current_user, search_query, db_session, page, limit)
 
     dialect_name = db_session.bind.dialect.name
 
@@ -47,9 +45,7 @@ async def search_platform_content(
     if dialect_name == "postgresql":
         vector = func.to_tsvector(
             "english",
-            func.coalesce(Collection.name, "")
-            + " "
-            + func.coalesce(Collection.description, ""),
+            func.coalesce(Collection.name, "") + " " + func.coalesce(Collection.description, ""),
         )
         query = func.websearch_to_tsquery("english", normalized_query)
         collections_query = (

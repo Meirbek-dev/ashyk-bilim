@@ -95,9 +95,7 @@ def downgrade() -> None:
     )
     op.drop_index(op.f("ix_auth_sessions_token_family_id"), table_name="auth_sessions")
     op.drop_index(op.f("ix_auth_sessions_session_id"), table_name="auth_sessions")
-    op.drop_index(
-        op.f("ix_auth_sessions_refresh_token_hash"), table_name="auth_sessions"
-    )
+    op.drop_index(op.f("ix_auth_sessions_refresh_token_hash"), table_name="auth_sessions")
     op.alter_column(
         "auth_sessions",
         "created_at",

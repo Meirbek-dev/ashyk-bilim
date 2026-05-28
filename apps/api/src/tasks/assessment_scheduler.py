@@ -26,9 +26,7 @@ POLL_INTERVAL_SECONDS: int = 60
 
 async def assessment_scheduler_loop(settings: AppSettings) -> None:
     """Periodic loop that auto-publishes SCHEDULED assessments."""
-    logger.info(
-        "Assessment scheduler started (poll interval: %ds)", POLL_INTERVAL_SECONDS
-    )
+    logger.info("Assessment scheduler started (poll interval: %ds)", POLL_INTERVAL_SECONDS)
     while True:
         await asyncio.sleep(POLL_INTERVAL_SECONDS)
         try:

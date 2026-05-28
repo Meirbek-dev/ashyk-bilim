@@ -45,9 +45,7 @@ class BulkAction(SQLModelStrictBaseModel, table=True):
             nullable=False,
         )
     )
-    action_type: BulkActionType = Field(
-        sa_column=Column("action_type", String, nullable=False)
-    )
+    action_type: BulkActionType = Field(sa_column=Column("action_type", String, nullable=False))
     params: dict = Field(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),

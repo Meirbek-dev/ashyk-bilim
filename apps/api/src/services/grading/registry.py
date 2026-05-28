@@ -46,9 +46,7 @@ class GraderRegistry:
         return grader_cls()
 
     @classmethod
-    def grade(
-        cls, assessment_type: AssessmentType, ctx: GradingContext
-    ) -> GradingResult:
+    def grade(cls, assessment_type: AssessmentType, ctx: GradingContext) -> GradingResult:
         return cls.get(assessment_type).grade(ctx)
 
 
@@ -64,9 +62,7 @@ class QuizGrader(BaseGrader):
             )
         else:
             raw_score = 0.0
-            breakdown = GradingBreakdown(
-                items=[], needs_manual_review=True, auto_graded=False
-            )
+            breakdown = GradingBreakdown(items=[], needs_manual_review=True, auto_graded=False)
         penalized = apply_attempt_penalty(
             base_score=raw_score,
             attempt_number=ctx.attempt_number,
@@ -92,9 +88,7 @@ class ExamGrader(BaseGrader):
         else:
             # No canonical items — return empty (exams must have items)
             raw_score = 0.0
-            breakdown = GradingBreakdown(
-                items=[], needs_manual_review=True, auto_graded=False
-            )
+            breakdown = GradingBreakdown(items=[], needs_manual_review=True, auto_graded=False)
         return GradingResult(
             auto_score=raw_score,
             breakdown=breakdown,

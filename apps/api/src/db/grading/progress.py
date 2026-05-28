@@ -133,9 +133,7 @@ class AssessmentPolicy(SQLModelStrictBaseModel, table=True):
             nullable=False,
         )
     )
-    assessment_type: AssessmentType = Field(
-        sa_column=Column("assessment_type", String, nullable=False)
-    )
+    assessment_type: AssessmentType = Field(sa_column=Column("assessment_type", String, nullable=False))
     grading_mode: AssessmentGradingMode = Field(
         default=AssessmentGradingMode.MANUAL,
         sa_column=Column("grading_mode", String, nullable=False),

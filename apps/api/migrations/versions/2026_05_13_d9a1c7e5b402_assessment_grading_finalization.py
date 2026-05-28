@@ -89,9 +89,7 @@ def _column_exists(conn: sa.Connection, table_name: str, column_name: str) -> bo
     )
 
 
-def _first_existing_column(
-    conn: sa.Connection, table_name: str, columns: Iterable[str]
-) -> str | None:
+def _first_existing_column(conn: sa.Connection, table_name: str, columns: Iterable[str]) -> str | None:
     for column in columns:
         if _column_exists(conn, table_name, column):
             return column
@@ -115,8 +113,7 @@ def _assert_no_unmapped_activity_types(conn: sa.Connection) -> None:
     ).fetchall()
     if rows:
         formatted = ", ".join(
-            f"{row.activity_type}:{row.activity_uuid or row.id}({row.assessment_count})"
-            for row in rows
+            f"{row.activity_type}:{row.activity_uuid or row.id}({row.assessment_count})" for row in rows
         )
         msg = (
             "Cannot finalize assessment grading while legacy activities are not "
@@ -128,18 +125,14 @@ def _assert_no_unmapped_activity_types(conn: sa.Connection) -> None:
 def _assert_legacy_submissions_have_canonical_rows(conn: sa.Connection) -> None:
     checks: list[str] = []
 
-    if _table_exists(conn, "assignmentusersubmission") and _table_exists(
-        conn, "assignment"
-    ):
+    if _table_exists(conn, "assignmentusersubmission") and _table_exists(conn, "assignment"):
         activity_col = _first_existing_column(conn, "assignment", ("activity_id",))
         assignment_fk = _first_existing_column(
             conn,
             "assignmentusersubmission",
             ("assignment_id", "assignmentId"),
         )
-        user_col = _first_existing_column(
-            conn, "assignmentusersubmission", ("user_id", "userId")
-        )
+        user_col = _first_existing_column(conn, "assignmentusersubmission", ("user_id", "userId"))
         if activity_col and assignment_fk and user_col:
             checks.append(
                 f"""
@@ -158,12 +151,8 @@ def _assert_legacy_submissions_have_canonical_rows(conn: sa.Connection) -> None:
             )
 
     if _table_exists(conn, "assignmenttasksubmission"):
-        activity_col = _first_existing_column(
-            conn, "assignmenttasksubmission", ("activity_id",)
-        )
-        user_col = _first_existing_column(
-            conn, "assignmenttasksubmission", ("user_id", "userId")
-        )
+        activity_col = _first_existing_column(conn, "assignmenttasksubmission", ("activity_id",))
+        user_col = _first_existing_column(conn, "assignmenttasksubmission", ("user_id", "userId"))
         if activity_col and user_col:
             checks.append(
                 f"""
@@ -203,9 +192,7 @@ def _assert_legacy_submissions_have_canonical_rows(conn: sa.Connection) -> None:
 
     if _table_exists(conn, "code_submission"):
         activity_col = _first_existing_column(conn, "code_submission", ("activity_id",))
-        user_col = _first_existing_column(
-            conn, "code_submission", ("user_id", "userId")
-        )
+        user_col = _first_existing_column(conn, "code_submission", ("user_id", "userId"))
         if activity_col and user_col:
             checks.append(
                 f"""

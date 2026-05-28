@@ -49,9 +49,7 @@ def upgrade() -> None:
     for table_name in ("assignment", "assignmenttask"):
         if table_name not in existing_tables:
             continue
-        row = conn.execute(
-            sa.text(f"SELECT COUNT(*) AS cnt FROM {table_name}")
-        ).scalar()
+        row = conn.execute(sa.text(f"SELECT COUNT(*) AS cnt FROM {table_name}")).scalar()
         if row and int(row) > 0:
             msg = (
                 f"Cannot drop '{table_name}': {row} rows remain. "
@@ -109,9 +107,7 @@ def upgrade() -> None:
         conn.execute(
             sa.text(
                 "UPDATE submission "
-                "SET metadata_json = (COALESCE(metadata_json, '{}'::json)::jsonb "
-                + removal_expr
-                + ")::json "
+                "SET metadata_json = (COALESCE(metadata_json, '{}'::json)::jsonb " + removal_expr + ")::json "
                 "WHERE metadata_json IS NOT NULL"
             )
         )
@@ -156,9 +152,7 @@ def downgrade() -> None:
         sa.UniqueConstraint("assignment_uuid"),
     )
     op.create_index("idx_assignment_status", "assignment", ["status"], unique=False)
-    op.create_index(
-        "idx_assignment_activity_id", "assignment", ["activity_id"], unique=False
-    )
+    op.create_index("idx_assignment_activity_id", "assignment", ["activity_id"], unique=False)
 
     # ── Recreate ``assignmenttask`` child table ───────────────────────────────
     op.create_table(
@@ -168,9 +162,7 @@ def downgrade() -> None:
         sa.Column("title", sa.String(), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("assignment_type", sa.String(), nullable=False),
-        sa.Column(
-            "max_grade_value", sa.Integer(), nullable=False, server_default=sa.text("0")
-        ),
+        sa.Column("max_grade_value", sa.Integer(), nullable=False, server_default=sa.text("0")),
         sa.Column("task_content", sa.JSON(), nullable=True),
         sa.Column("assignment_id", sa.Integer(), nullable=False),
         sa.Column("activity_id", sa.Integer(), nullable=True),

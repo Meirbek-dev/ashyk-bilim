@@ -100,9 +100,7 @@ def get_role(
     checker.require(current_user.id, "role:read")
     role = repo.get_or_404(role_id)
     perm_count, user_count = repo.get_counts(role_id)
-    return RoleRead.model_validate(role).model_copy(
-        update={"permissions_count": perm_count, "users_count": user_count}
-    )
+    return RoleRead.model_validate(role).model_copy(update={"permissions_count": perm_count, "users_count": user_count})
 
 
 # ── Create / Update / Delete ──────────────────────────────────────────────────
@@ -151,9 +149,7 @@ def update_role(
     if role.is_system and not is_admin:
         raise HTTPException(403, detail="Системные роли нельзя изменять")
     requested_priority = body.priority if body.priority is not None else role.priority
-    if not is_admin and requested_priority > _caller_max_priority(
-        checker, current_user.id
-    ):
+    if not is_admin and requested_priority > _caller_max_priority(checker, current_user.id):
         raise HTTPException(
             403,
             detail="Нельзя назначить приоритет роли выше, чем у вашей собственной роли",
@@ -233,9 +229,7 @@ def get_role_permissions(
     """Get all permissions assigned to a role."""
     checker.require(current_user.id, "role:read")
     repo.get_or_404(role_id)
-    return [
-        PermissionRead.model_validate(p) for p in repo.get_role_permissions(role_id)
-    ]
+    return [PermissionRead.model_validate(p) for p in repo.get_role_permissions(role_id)]
 
 
 @router.post("/{role_id}/permissions")
@@ -253,9 +247,7 @@ def add_permission_to_role(
     if role.is_system and not is_admin:
         raise HTTPException(403, detail="Системные роли нельзя изменять")
     perm = repo.get_permission_or_404(body.permission_id)
-    if not is_admin and perm.name not in checker.get_expanded_permissions(
-        current_user.id
-    ):
+    if not is_admin and perm.name not in checker.get_expanded_permissions(current_user.id):
         raise HTTPException(
             403,
             detail=f"Нельзя выдать разрешение '{perm.name}', которого у вас нет",

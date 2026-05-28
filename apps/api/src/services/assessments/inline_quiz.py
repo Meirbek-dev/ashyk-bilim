@@ -53,9 +53,7 @@ async def create_inline_quiz(
 
     Idempotent: if an inline quiz already exists for this activity, returns it.
     """
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == payload.activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == payload.activity_id)).first()
     if activity is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

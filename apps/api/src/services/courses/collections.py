@@ -33,9 +33,7 @@ async def get_collection(
     collection = db_session.exec(statement).first()
 
     if not collection:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Collection does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Collection does not exist")
 
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -48,10 +46,7 @@ async def get_collection(
 
     # get courses in collection
     statement_all = (
-        select(Course)
-        .join(CollectionCourse)
-        .where(CollectionCourse.collection_id == collection.id)
-        .distinct()
+        select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
     )
 
     statement_public = (
@@ -126,18 +121,14 @@ async def create_collection(
     # SECURITY: Link courses to collection - ensure user has access to all courses being added
     if collection and collection_object.courses:
         # Batch-fetch all requested courses in a single query instead of one per course
-        found_courses = db_session.exec(
-            select(Course).where(Course.id.in_(collection_object.courses))
-        ).all()
+        found_courses = db_session.exec(select(Course).where(Course.id.in_(collection_object.courses))).all()
 
         if found_courses:
             # Permission check — verify access to each course individually
             try:
                 for course in found_courses:
                     if not course.public:
-                        require_course_permission(
-                            "course:read", current_user, course, checker
-                        )
+                        require_course_permission("course:read", current_user, course, checker)
             except HTTPException:
                 raise HTTPException(
                     status_code=403,
@@ -157,12 +148,7 @@ async def create_collection(
     db_session.refresh(collection)
 
     # Get courses once again
-    statement = (
-        select(Course)
-        .join(CollectionCourse)
-        .where(CollectionCourse.collection_id == collection.id)
-        .distinct()
-    )
+    statement = select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
     courses = list(db_session.exec(statement).all())
 
     collection = CollectionRead(**collection.model_dump(), courses=courses)
@@ -182,9 +168,7 @@ async def update_collection(
     collection = db_session.exec(statement).first()
 
     if not collection:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Collection does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Collection does not exist")
 
     # RBAC check
     if checker is None:
@@ -207,9 +191,7 @@ async def update_collection(
 
     collection.update_date = str(datetime.now())
 
-    statement = select(CollectionCourse).where(
-        CollectionCourse.collection_id == collection.id
-    )
+    statement = select(CollectionCourse).where(CollectionCourse.collection_id == collection.id)
     collection_courses = db_session.exec(statement).all()
 
     # Delete all collection_courses
@@ -231,12 +213,7 @@ async def update_collection(
     db_session.refresh(collection)
 
     # Get courses once again
-    statement = (
-        select(Course)
-        .join(CollectionCourse)
-        .where(CollectionCourse.collection_id == collection.id)
-        .distinct()
-    )
+    statement = select(Course).join(CollectionCourse).where(CollectionCourse.collection_id == collection.id).distinct()
     courses = list(db_session.exec(statement).all())
 
     return CollectionRead(**collection.model_dump(), courses=courses)
@@ -343,9 +320,7 @@ async def get_collections(
             if current_user.id
             else False
         )
-        is_owner = (
-            current_user.id is not None and collection.creator_id == current_user.id
-        )
+        is_owner = current_user.id is not None and collection.creator_id == current_user.id
 
         enriched = CollectionReadWithPermissions(
             **collection.model_dump(),

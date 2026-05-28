@@ -35,9 +35,7 @@ def _map_ai_errors_to_http(exc: Exception) -> HTTPException:
     if isinstance(exc, ContentModerationError):
         return HTTPException(status_code=400, detail=exc.message)
     if isinstance(exc, (AIProcessingError, RetrievalError, ChatSessionError)):
-        return HTTPException(
-            status_code=500, detail=f"Ошибка обработки AI: {exc.message}"
-        )
+        return HTTPException(status_code=500, detail=f"Ошибка обработки AI: {exc.message}")
     return HTTPException(
         status_code=500,
         detail="Произошла непредвиденная ошибка. Попробуйте позже.",
@@ -46,17 +44,11 @@ def _map_ai_errors_to_http(exc: Exception) -> HTTPException:
 
 def _map_ai_error_to_sse(exc: Exception) -> str:
     if isinstance(exc, ActivityNotFoundError):
-        return format_sse_message(
-            ErrorEvent(error=exc.message, error_code=exc.error_code, status=404)
-        )
+        return format_sse_message(ErrorEvent(error=exc.message, error_code=exc.error_code, status=404))
     if isinstance(exc, AITimeoutError):
-        return format_sse_message(
-            ErrorEvent(error=exc.message, error_code=exc.error_code, status=504)
-        )
+        return format_sse_message(ErrorEvent(error=exc.message, error_code=exc.error_code, status=504))
     if isinstance(exc, ContentModerationError):
-        return format_sse_message(
-            ErrorEvent(error=exc.message, error_code=exc.error_code, status=400)
-        )
+        return format_sse_message(ErrorEvent(error=exc.message, error_code=exc.error_code, status=400))
     if isinstance(exc, (AIProcessingError, RetrievalError, ChatSessionError)):
         return format_sse_message(
             ErrorEvent(

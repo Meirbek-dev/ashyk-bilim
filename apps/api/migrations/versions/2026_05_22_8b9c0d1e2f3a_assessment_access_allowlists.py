@@ -39,13 +39,9 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(
-            ["assessment_id"], ["assessment.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["assessment_id"], ["assessment.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint(
-            "assessment_id", name="uq_assessment_access_policy_assessment"
-        ),
+        sa.UniqueConstraint("assessment_id", name="uq_assessment_access_policy_assessment"),
     )
     op.create_index(
         "ix_assessment_access_policy_assessment_id",
@@ -64,21 +60,13 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(
-            ["policy_id"], ["assessment_access_policy.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["policy_id"], ["assessment_access_policy.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint(
-            "policy_id", "user_id", name="uq_assessment_access_user_policy_user"
-        ),
+        sa.UniqueConstraint("policy_id", "user_id", name="uq_assessment_access_user_policy_user"),
     )
-    op.create_index(
-        "ix_assessment_access_user_policy_id", "assessment_access_user", ["policy_id"]
-    )
-    op.create_index(
-        "ix_assessment_access_user_user_id", "assessment_access_user", ["user_id"]
-    )
+    op.create_index("ix_assessment_access_user_policy_id", "assessment_access_user", ["policy_id"])
+    op.create_index("ix_assessment_access_user_user_id", "assessment_access_user", ["user_id"])
 
     op.create_table(
         "assessment_access_usergroup",
@@ -91,9 +79,7 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(
-            ["policy_id"], ["assessment_access_policy.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["policy_id"], ["assessment_access_policy.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["usergroup_id"], ["usergroup.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
@@ -124,12 +110,8 @@ def downgrade() -> None:
         table_name="assessment_access_usergroup",
     )
     op.drop_table("assessment_access_usergroup")
-    op.drop_index(
-        "ix_assessment_access_user_user_id", table_name="assessment_access_user"
-    )
-    op.drop_index(
-        "ix_assessment_access_user_policy_id", table_name="assessment_access_user"
-    )
+    op.drop_index("ix_assessment_access_user_user_id", table_name="assessment_access_user")
+    op.drop_index("ix_assessment_access_user_policy_id", table_name="assessment_access_user")
     op.drop_table("assessment_access_user")
     op.drop_index(
         "ix_assessment_access_policy_assessment_id",

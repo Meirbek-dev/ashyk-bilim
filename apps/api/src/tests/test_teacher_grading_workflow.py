@@ -114,9 +114,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(
-    db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch
-):
+def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch):
     app = FastAPI()
     app.include_router(assessments_router, prefix="/assessments")
 
@@ -136,15 +134,9 @@ def api_client_fixture(
     monkeypatch.setattr(core, "_require_author", lambda *_a, **_kw: None)
     monkeypatch.setattr(PermissionChecker, "require", lambda *_a, **_kw: None)
     monkeypatch.setattr(PermissionChecker, "check", lambda *_a, **_kw: True)
-    monkeypatch.setattr(
-        teacher_service, "recalculate_activity_progress", lambda *_a, **_kw: None
-    )
-    monkeypatch.setattr(
-        teacher_service, "publish_grading_event", lambda *_a, **_kw: None
-    )
-    monkeypatch.setattr(
-        teacher_service, "_award_xp_on_publish", lambda *_a, **_kw: None
-    )
+    monkeypatch.setattr(teacher_service, "recalculate_activity_progress", lambda *_a, **_kw: None)
+    monkeypatch.setattr(teacher_service, "publish_grading_event", lambda *_a, **_kw: None)
+    monkeypatch.setattr(teacher_service, "_award_xp_on_publish", lambda *_a, **_kw: None)
     return TestClient(app)
 
 
@@ -308,11 +300,7 @@ def _seed_course_and_assessment(
             user_id=alice.id,
             status=SubmissionStatus.PENDING,
             attempt_number=1,
-            answers_json={
-                "answers": {
-                    "item_grade_1": {"kind": "OPEN_TEXT", "text": "Alice's answer"}
-                }
-            },
+            answers_json={"answers": {"item_grade_1": {"kind": "OPEN_TEXT", "text": "Alice's answer"}}},
             grading_json=GradingBreakdown().model_dump(),
             started_at=now - timedelta(hours=2),
             submitted_at=now - timedelta(hours=1),
@@ -327,11 +315,7 @@ def _seed_course_and_assessment(
             user_id=bob.id,
             status=SubmissionStatus.GRADED,
             attempt_number=1,
-            answers_json={
-                "answers": {
-                    "item_grade_1": {"kind": "OPEN_TEXT", "text": "Bob's answer"}
-                }
-            },
+            answers_json={"answers": {"item_grade_1": {"kind": "OPEN_TEXT", "text": "Bob's answer"}}},
             grading_json=GradingBreakdown(feedback="Good work.").model_dump(),
             auto_score=None,
             final_score=78,
@@ -351,9 +335,7 @@ def _seed_course_and_assessment(
 # ---------------------------------------------------------------------------
 
 
-def test_get_submissions_returns_all_for_assessment(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_get_submissions_returns_all_for_assessment(api_client: TestClient, db_session_factory) -> None:
     """Teacher sees all submissions (PENDING and GRADED) in the queue."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
@@ -367,15 +349,11 @@ def test_get_submissions_returns_all_for_assessment(
     assert "submission_bob_grade" in uuids
 
 
-def test_get_submissions_filters_by_status(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_get_submissions_filters_by_status(api_client: TestClient, db_session_factory) -> None:
     """status=PENDING only returns Alice's not-yet-graded submission."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
-    response = api_client.get(
-        f"/assessments/{assessment_uuid}/submissions", params={"status": "PENDING"}
-    )
+    response = api_client.get(f"/assessments/{assessment_uuid}/submissions", params={"status": "PENDING"})
 
     assert response.status_code == 200
     data = response.json()
@@ -384,9 +362,7 @@ def test_get_submissions_filters_by_status(
     assert data["items"][0]["status"] == "PENDING"
 
 
-def test_get_submissions_needs_grading_virtual_filter(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_get_submissions_needs_grading_virtual_filter(api_client: TestClient, db_session_factory) -> None:
     """Virtual filter NEEDS_GRADING maps to PENDING status."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
@@ -400,15 +376,11 @@ def test_get_submissions_needs_grading_virtual_filter(
     assert response.json()["items"][0]["status"] == "PENDING"
 
 
-def test_get_submissions_search_by_name(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_get_submissions_search_by_name(api_client: TestClient, db_session_factory) -> None:
     """Search by partial first name narrows the queue to matching students."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
-    response = api_client.get(
-        f"/assessments/{assessment_uuid}/submissions", params={"search": "alice"}
-    )
+    response = api_client.get(f"/assessments/{assessment_uuid}/submissions", params={"search": "alice"})
 
     assert response.status_code == 200
     data = response.json()
@@ -416,9 +388,7 @@ def test_get_submissions_search_by_name(
     assert data["items"][0]["submission_uuid"] == "submission_alice_grade"
 
 
-def test_get_submissions_invalid_status_returns_400(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_get_submissions_invalid_status_returns_400(api_client: TestClient, db_session_factory) -> None:
     """An unrecognised status filter returns 400 Bad Request."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
@@ -460,9 +430,7 @@ def test_get_submissions_pagination(api_client: TestClient, db_session_factory) 
 # ---------------------------------------------------------------------------
 
 
-def test_get_submission_stats_reflects_seeded_data(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_get_submission_stats_reflects_seeded_data(api_client: TestClient, db_session_factory) -> None:
     """Stats endpoint aggregates PENDING / GRADED counts correctly."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
@@ -475,9 +443,7 @@ def test_get_submission_stats_reflects_seeded_data(
     assert stats["graded_count"] == 1
 
 
-def test_get_submission_stats_includes_avg_score(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_get_submission_stats_includes_avg_score(api_client: TestClient, db_session_factory) -> None:
     """avg_score is computed only from GRADED/PUBLISHED rows with non-null final_score."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
@@ -494,15 +460,11 @@ def test_get_submission_stats_includes_avg_score(
 # ---------------------------------------------------------------------------
 
 
-def test_get_submission_detail_returns_answers(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_get_submission_detail_returns_answers(api_client: TestClient, db_session_factory) -> None:
     """Teacher can see the full answers JSON for a specific submission."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
-    response = api_client.get(
-        f"/assessments/{assessment_uuid}/submissions/submission_alice_grade"
-    )
+    response = api_client.get(f"/assessments/{assessment_uuid}/submissions/submission_alice_grade")
 
     assert response.status_code == 200
     data = response.json()
@@ -511,15 +473,11 @@ def test_get_submission_detail_returns_answers(
     assert "item_grade_1" in str(data.get("answers_json", {}))
 
 
-def test_get_submission_detail_404_for_unknown(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_get_submission_detail_404_for_unknown(api_client: TestClient, db_session_factory) -> None:
     """Fetching a non-existent submission UUID returns 404."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
-    response = api_client.get(
-        f"/assessments/{assessment_uuid}/submissions/does-not-exist"
-    )
+    response = api_client.get(f"/assessments/{assessment_uuid}/submissions/does-not-exist")
 
     assert response.status_code == 404
 
@@ -529,9 +487,7 @@ def test_get_submission_detail_404_for_unknown(
 # ---------------------------------------------------------------------------
 
 
-def test_save_grade_transitions_to_graded(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_save_grade_transitions_to_graded(api_client: TestClient, db_session_factory) -> None:
     """PATCH grade with status=GRADED marks submission graded (teacher-only)."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
@@ -546,9 +502,7 @@ def test_save_grade_transitions_to_graded(
     assert data["final_score"] == 85
 
 
-def test_save_grade_and_publish_immediately(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_save_grade_and_publish_immediately(api_client: TestClient, db_session_factory) -> None:
     """PATCH grade with status=PUBLISHED makes grade visible to student."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
@@ -594,21 +548,15 @@ def test_published_grade_correction_stays_published_and_adds_audit_revision(
 
     with db_session_factory() as session:
         submission = session.exec(
-            select(Submission).where(
-                Submission.submission_uuid == "submission_alice_grade"
-            )
+            select(Submission).where(Submission.submission_uuid == "submission_alice_grade")
         ).one()
-        entries = session.exec(
-            select(GradingEntry).where(GradingEntry.submission_id == submission.id)
-        ).all()
+        entries = session.exec(select(GradingEntry).where(GradingEntry.submission_id == submission.id)).all()
 
     assert len(entries) == 2
     assert all(entry.published_at is not None for entry in entries)
 
 
-def test_published_grade_cannot_be_returned_for_hidden_correction(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_published_grade_cannot_be_returned_for_hidden_correction(api_client: TestClient, db_session_factory) -> None:
     """After publication, teachers must correct by publishing a new revision."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
@@ -626,9 +574,7 @@ def test_published_grade_cannot_be_returned_for_hidden_correction(
     assert response.status_code == 422
 
 
-def test_save_grade_return_for_revision(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_save_grade_return_for_revision(api_client: TestClient, db_session_factory) -> None:
     """PATCH grade with status=RETURNED sends submission back to student."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
@@ -645,9 +591,7 @@ def test_save_grade_return_for_revision(
     assert response.json()["status"] == "RETURNED"
 
 
-def test_save_grade_404_for_unknown_submission(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_save_grade_404_for_unknown_submission(api_client: TestClient, db_session_factory) -> None:
     """Grading a non-existent submission returns 404."""
     assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory)
 
@@ -664,9 +608,7 @@ def test_save_grade_404_for_unknown_submission(
 # ---------------------------------------------------------------------------
 
 
-def test_bulk_publish_grades_stamps_published_at(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_bulk_publish_grades_stamps_published_at(api_client: TestClient, db_session_factory) -> None:
     """POST publish-grades inserts GradingEntry rows with published_at set."""
     assessment_uuid, _activity_id, _ = _seed_course_and_assessment(
         db_session_factory, grade_release_mode=GradeReleaseMode.BATCH
@@ -680,11 +622,7 @@ def test_bulk_publish_grades_stamps_published_at(
     )
     # Bob is already GRADED in seed; also give him a GradingEntry
     with db_session_factory() as session:
-        bob_sub = session.exec(
-            select(Submission).where(
-                Submission.submission_uuid == "submission_bob_grade"
-            )
-        ).one()
+        bob_sub = session.exec(select(Submission).where(Submission.submission_uuid == "submission_bob_grade")).one()
         session.add(
             GradingEntry(
                 entry_uuid="entry_bob_grade_bulk",
@@ -710,24 +648,18 @@ def test_bulk_publish_grades_stamps_published_at(
 
     # Verify DB: at least one GradingEntry now has published_at set
     with db_session_factory() as session:
-        entries_with_publish = session.exec(
-            select(GradingEntry).where(GradingEntry.published_at.is_not(None))
-        ).all()
+        entries_with_publish = session.exec(select(GradingEntry).where(GradingEntry.published_at.is_not(None))).all()
     assert len(entries_with_publish) >= 1
 
 
-def test_bulk_publish_returns_zero_when_nothing_to_publish(
-    api_client: TestClient, db_session_factory
-) -> None:
+def test_bulk_publish_returns_zero_when_nothing_to_publish(api_client: TestClient, db_session_factory) -> None:
     """Publishing when there are no GRADED submissions returns published_count=0.
 
     We use the standard seed (alice=PENDING, bob already had grades published) and
     call publish-grades a second time — the second call should find no un-published
     grades and return 0.
     """
-    assessment_uuid, _, _ = _seed_course_and_assessment(
-        db_session_factory, grade_release_mode=GradeReleaseMode.BATCH
-    )
+    assessment_uuid, _, _ = _seed_course_and_assessment(db_session_factory, grade_release_mode=GradeReleaseMode.BATCH)
 
     # First publish — seeds bob's GRADED submission → published_count >= 1
     first = api_client.post(f"/assessments/{assessment_uuid}/publish-grades")

@@ -48,14 +48,10 @@ async def test_link_preview_rejects_private_ip_literal():
 
 
 def test_link_preview_requires_html_content_type():
-    _assert_html_response(
-        Response(200, headers={"content-type": "text/html; charset=utf-8"})
-    )
+    _assert_html_response(Response(200, headers={"content-type": "text/html; charset=utf-8"}))
 
     with pytest.raises(LinkPreviewError):
-        _assert_html_response(
-            Response(200, headers={"content-type": "application/json"})
-        )
+        _assert_html_response(Response(200, headers={"content-type": "application/json"}))
 
 
 def test_link_preview_revalidates_connected_peer_address():

@@ -59,9 +59,7 @@ def upgrade() -> None:
         sa.UniqueConstraint("activity_id", name="uq_assessment_policy_activity_id"),
         sa.UniqueConstraint("policy_uuid", name="uq_assessment_policy_uuid"),
     )
-    op.create_index(
-        "ix_assessment_policy_activity_id", "assessment_policy", ["activity_id"]
-    )
+    op.create_index("ix_assessment_policy_activity_id", "assessment_policy", ["activity_id"])
     op.create_index(
         "ix_assessment_policy_assessment_type",
         "assessment_policy",
@@ -126,12 +124,8 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(["activity_id"], ["activity.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["course_id"], ["course.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(
-            ["best_submission_id"], ["submission.id"], ondelete="SET NULL"
-        ),
-        sa.ForeignKeyConstraint(
-            ["latest_submission_id"], ["submission.id"], ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["best_submission_id"], ["submission.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(["latest_submission_id"], ["submission.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("activity_id", "user_id", name="uq_activity_progress_user"),
@@ -163,9 +157,7 @@ def upgrade() -> None:
             nullable=False,
             server_default="0",
         ),
-        sa.Column(
-            "total_required_count", sa.Integer(), nullable=False, server_default="0"
-        ),
+        sa.Column("total_required_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("progress_pct", sa.Float(), nullable=False, server_default="0"),
         sa.Column("grade_average", sa.Float(), nullable=True),
         sa.Column(
@@ -174,9 +166,7 @@ def upgrade() -> None:
             nullable=False,
             server_default="0",
         ),
-        sa.Column(
-            "needs_grading_count", sa.Integer(), nullable=False, server_default="0"
-        ),
+        sa.Column("needs_grading_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("last_activity_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
@@ -202,9 +192,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("course_id", "user_id", name="uq_course_progress_user"),
     )
-    op.create_index(
-        "ix_course_progress_course_user", "course_progress", ["course_id", "user_id"]
-    )
+    op.create_index("ix_course_progress_course_user", "course_progress", ["course_id", "user_id"])
 
     _backfill_assessment_policies()
     _link_existing_submissions_to_policies()
@@ -214,22 +202,16 @@ def downgrade() -> None:
     op.drop_index("ix_course_progress_course_user", table_name="course_progress")
     op.drop_table("course_progress")
 
-    op.drop_index(
-        "ix_activity_progress_course_teacher_action", table_name="activity_progress"
-    )
+    op.drop_index("ix_activity_progress_course_teacher_action", table_name="activity_progress")
     op.drop_index("ix_activity_progress_activity_state", table_name="activity_progress")
     op.drop_index("ix_activity_progress_course_user", table_name="activity_progress")
     op.drop_table("activity_progress")
 
     op.drop_index("idx_submission_policy_user_attempt", table_name="submission")
-    op.drop_constraint(
-        "fk_submission_assessment_policy_id", "submission", type_="foreignkey"
-    )
+    op.drop_constraint("fk_submission_assessment_policy_id", "submission", type_="foreignkey")
     op.drop_column("submission", "assessment_policy_id")
 
-    op.drop_index(
-        "ix_assessment_policy_assessment_type", table_name="assessment_policy"
-    )
+    op.drop_index("ix_assessment_policy_assessment_type", table_name="assessment_policy")
     op.drop_index("ix_assessment_policy_activity_id", table_name="assessment_policy")
     op.drop_table("assessment_policy")
 

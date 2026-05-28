@@ -74,9 +74,7 @@ class UserSession(PydanticStrictBaseModel):
     permissions: list[str] = Field(
         default_factory=list
     )  # Effective permissions: list of permission strings, e.g. "course:create:platform"
-    permissions_timestamp: int | None = (
-        None  # Unix timestamp when permissions were loaded
-    )
+    permissions_timestamp: int | None = None  # Unix timestamp when permissions were loaded
     expires_at: int | None = None
     session_version: int | None = None
     model_config = ConfigDict(arbitrary_types_allowed=True)

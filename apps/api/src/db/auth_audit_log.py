@@ -15,7 +15,5 @@ class AuthAuditLog(SQLModel, table=True):
     session_id: str | None = Field(default=None)
     ip_address: str | None = Field(default=None)
     user_agent: str | None = Field(default=None)
-    metadata_: dict[str, Any] | None = Field(
-        default=None, sa_column=Column("metadata", JSON)
-    )
+    metadata_: dict[str, Any] | None = Field(default=None, sa_column=Column("metadata", JSON))
     severity: str = Field(default="info")

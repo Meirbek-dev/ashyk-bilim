@@ -292,9 +292,7 @@ class SubmissionRead(SubmissionBase):
     @model_validator(mode="after")
     def populate_late_penalty_reason(self) -> Self:
         if self.is_late and self.late_penalty_pct > 0 and not self.late_penalty_reason:
-            self.late_penalty_reason = (
-                f"Late submission penalty applied: {self.late_penalty_pct:g}%"
-            )
+            self.late_penalty_reason = f"Late submission penalty applied: {self.late_penalty_pct:g}%"
         return self
 
     @field_validator("raw_grading_json", "grading_json", mode="before")
@@ -373,9 +371,7 @@ class Submission(SubmissionBase, table=True):
         sa_column=Column("status", String, nullable=False, server_default="DRAFT"),
     )
 
-    activity_id: int = SQLField(
-        sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE"))
-    )
+    activity_id: int = SQLField(sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE")))
     assessment_policy_id: int | None = SQLField(
         default=None,
         sa_column=Column(
@@ -384,9 +380,7 @@ class Submission(SubmissionBase, table=True):
             nullable=True,
         ),
     )
-    user_id: int = SQLField(
-        sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    user_id: int = SQLField(sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE")))
 
     # Typed payload — validated by Pydantic schemas before saving
     answers_json: dict = SQLField(
@@ -447,9 +441,7 @@ class Submission(SubmissionBase, table=True):
     # Schema version for safe JSON evolution
     grading_version: int = SQLField(
         default=1,
-        sa_column=Column(
-            "grading_version", Integer, nullable=False, server_default="1"
-        ),
+        sa_column=Column("grading_version", Integer, nullable=False, server_default="1"),
     )
 
     # Optimistic concurrency lock — incremented on every teacher grade write.
@@ -470,9 +462,7 @@ class Submission(SubmissionBase, table=True):
     # Phase 3: Versioning — snapshot at submit time
     content_version: int = SQLField(
         default=1,
-        sa_column=Column(
-            "content_version", Integer, nullable=False, server_default="1"
-        ),
+        sa_column=Column("content_version", Integer, nullable=False, server_default="1"),
     )
     policy_version: int = SQLField(
         default=1,
@@ -538,6 +528,4 @@ class ItemAnalytics(SQLModelStrictBaseModel):
     response_count: int  # number of graded submissions that include this item
     avg_score_pct: float | None  # average (item.score / item.max_score) * 100
     correct_pct: float | None  # percentage of responses where correct == True
-    discrimination_index: (
-        float | None
-    )  # classic item discrimination (top27 − bottom27) / n
+    discrimination_index: float | None  # classic item discrimination (top27 − bottom27) / n

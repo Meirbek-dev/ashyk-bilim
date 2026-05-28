@@ -53,9 +53,7 @@ def _require_superuser(
 
 
 CurrentActiveUser = Annotated[PublicUser, Depends(get_public_user)]
-CurrentOptionalUser = Annotated[
-    PublicUser | AnonymousUser, Depends(get_optional_public_user)
-]
+CurrentOptionalUser = Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)]
 CurrentSuperuser = Annotated[PublicUser, Depends(_require_superuser)]
 
 __all__ = [

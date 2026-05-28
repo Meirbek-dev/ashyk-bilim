@@ -158,9 +158,7 @@ class Course(CourseBase, table=True):
     )
     update_date: datetime = Field(
         default_factory=lambda: datetime.now(tz=UTC),
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
 

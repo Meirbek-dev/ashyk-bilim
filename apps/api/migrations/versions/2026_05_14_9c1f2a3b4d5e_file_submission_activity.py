@@ -66,9 +66,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["activity_id"], ["activity.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("activity_id", name="uq_file_submission_activity_id"),
-        sa.UniqueConstraint(
-            "file_submission_uuid", name="uq_file_submission_activity_uuid"
-        ),
+        sa.UniqueConstraint("file_submission_uuid", name="uq_file_submission_activity_uuid"),
     )
     op.create_index(
         "ix_file_submission_activity_uuid",
@@ -111,9 +109,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.ForeignKeyConstraint(["activity_id"], ["activity.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(
-            ["file_submission_id"], ["file_submission_activity.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["file_submission_id"], ["file_submission_activity.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("attempt_uuid", name="uq_file_submission_attempt_uuid"),
@@ -148,15 +144,11 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(
-            ["attempt_id"], ["file_submission_attempt.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["attempt_id"], ["file_submission_attempt.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["upload_id"], ["upload.id"], ondelete="RESTRICT"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("attempt_file_uuid", name="uq_file_submission_file_uuid"),
-        sa.UniqueConstraint(
-            "attempt_id", "upload_id", name="uq_file_submission_upload"
-        ),
+        sa.UniqueConstraint("attempt_id", "upload_id", name="uq_file_submission_upload"),
     )
     op.create_index(
         "ix_file_submission_file_attempt",
@@ -166,23 +158,13 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_file_submission_file_attempt", table_name="file_submission_attempt_file"
-    )
+    op.drop_index("ix_file_submission_file_attempt", table_name="file_submission_attempt_file")
     op.drop_table("file_submission_attempt_file")
-    op.drop_index(
-        "ix_file_submission_attempt_submission", table_name="file_submission_attempt"
-    )
-    op.drop_index(
-        "ix_file_submission_attempt_activity_user", table_name="file_submission_attempt"
-    )
+    op.drop_index("ix_file_submission_attempt_submission", table_name="file_submission_attempt")
+    op.drop_index("ix_file_submission_attempt_activity_user", table_name="file_submission_attempt")
     op.drop_table("file_submission_attempt")
-    op.drop_index(
-        "ix_file_submission_activity_lifecycle", table_name="file_submission_activity"
-    )
-    op.drop_index(
-        "ix_file_submission_activity_uuid", table_name="file_submission_activity"
-    )
+    op.drop_index("ix_file_submission_activity_lifecycle", table_name="file_submission_activity")
+    op.drop_index("ix_file_submission_activity_uuid", table_name="file_submission_activity")
     op.drop_table("file_submission_activity")
 
 

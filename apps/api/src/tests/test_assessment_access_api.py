@@ -92,9 +92,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(
-    db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch
-):
+def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch):
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
@@ -113,9 +111,7 @@ def api_client_fixture(
     return TestClient(app)
 
 
-def test_restricted_access_narrows_course_learners(
-    db_session_factory, api_client, monkeypatch
-):
+def test_restricted_access_narrows_course_learners(db_session_factory, api_client, monkeypatch):
     assessment_uuid, activity_id = _seed_assessment(db_session_factory)
     response = api_client.get(f"/assessments/{assessment_uuid}/access")
     assert response.status_code == 200
@@ -225,9 +221,7 @@ def _seed_assessment(db_session_factory) -> tuple[str, int]:
             update_date=now,
         )
         session.add(course)
-        chapter = Chapter(
-            id=401, chapter_uuid="chapter_access", name="Chapter", course_id=course.id
-        )
+        chapter = Chapter(id=401, chapter_uuid="chapter_access", name="Chapter", course_id=course.id)
         session.add(chapter)
         activity = Activity(
             id=501,

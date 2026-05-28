@@ -60,10 +60,7 @@ def upgrade() -> None:
         ),
     )
     # Backfill: rows that were published before this migration get PUBLISHED.
-    op.execute(
-        "UPDATE assignment SET status = CASE WHEN published = true "
-        "THEN 'PUBLISHED' ELSE 'DRAFT' END"
-    )
+    op.execute("UPDATE assignment SET status = CASE WHEN published = true THEN 'PUBLISHED' ELSE 'DRAFT' END")
 
     op.add_column(
         "assignment",
@@ -74,9 +71,7 @@ def upgrade() -> None:
         sa.Column("published_at", sa.DateTime(timezone=True), nullable=True),
     )
     # Backfill published_at for already-published rows (use updated_at as proxy).
-    op.execute(
-        "UPDATE assignment SET published_at = updated_at WHERE status = 'PUBLISHED'"
-    )
+    op.execute("UPDATE assignment SET published_at = updated_at WHERE status = 'PUBLISHED'")
 
     op.add_column(
         "assignment",

@@ -34,12 +34,8 @@ async def api_get_course_discussions(
     course_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    include_replies: Annotated[
-        bool, Query(description="Включать ответы в ответ")
-    ] = False,
-    limit: Annotated[
-        int, Query(le=100, description="Количество обсуждений для возврата")
-    ] = 50,
+    include_replies: Annotated[bool, Query(description="Включать ответы в ответ")] = False,
+    limit: Annotated[int, Query(le=100, description="Количество обсуждений для возврата")] = 50,
     offset: Annotated[int, Query(description="Количество обсуждений для пропуска")] = 0,
 ) -> list[CourseDiscussionReadWithPermissions]:
     """
@@ -61,9 +57,7 @@ async def api_create_course_discussion(
     """
     Create new Course Discussion
     """
-    return await create_discussion(
-        request, course_uuid, discussion_object, current_user, db_session
-    )
+    return await create_discussion(request, course_uuid, discussion_object, current_user, db_session)
 
 
 @router.put("/{course_uuid}/discussions/{discussion_uuid}")
@@ -78,9 +72,7 @@ async def api_update_course_discussion(
     """
     Update Course Discussion by discussion_uuid
     """
-    return await update_discussion(
-        request, discussion_uuid, discussion_object, current_user, db_session
-    )
+    return await update_discussion(request, discussion_uuid, discussion_object, current_user, db_session)
 
 
 @router.delete("/{course_uuid}/discussions/{discussion_uuid}")
@@ -136,9 +128,7 @@ async def api_toggle_course_discussion_like(
     """
     Toggle like status for a Course Discussion (like if not liked, unlike if liked)
     """
-    return await toggle_discussion_like(
-        request, discussion_uuid, current_user, db_session
-    )
+    return await toggle_discussion_like(request, discussion_uuid, current_user, db_session)
 
 
 @router.put("/{course_uuid}/discussions/{discussion_uuid}/dislike")
@@ -152,9 +142,7 @@ async def api_toggle_course_discussion_dislike(
     """
     Toggle dislike status for a Course Discussion (dislike if not disliked, undislike if disliked)
     """
-    return await toggle_discussion_dislike(
-        request, discussion_uuid, current_user, db_session
-    )
+    return await toggle_discussion_dislike(request, discussion_uuid, current_user, db_session)
 
 
 @router.get("/{course_uuid}/discussions/{discussion_uuid}/replies")
@@ -164,14 +152,10 @@ async def api_get_discussion_replies(
     discussion_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)],
-    limit: Annotated[
-        int, Query(le=100, description="Количество ответов для возврата")
-    ] = 50,
+    limit: Annotated[int, Query(le=100, description="Количество ответов для возврата")] = 50,
     offset: Annotated[int, Query(description="Количество ответов для пропуска")] = 0,
 ) -> list[CourseDiscussionRead]:
     """
     Get replies for a specific discussion
     """
-    return await get_discussion_replies(
-        request, discussion_uuid, current_user, db_session, limit, offset
-    )
+    return await get_discussion_replies(request, discussion_uuid, current_user, db_session, limit, offset)

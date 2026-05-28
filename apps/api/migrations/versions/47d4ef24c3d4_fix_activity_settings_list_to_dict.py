@@ -23,9 +23,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     connection = op.get_bind()
 
-    activity = sa.table(
-        "activity", sa.column("id", sa.Integer), sa.column("settings", sa.JSON)
-    )
+    activity = sa.table("activity", sa.column("id", sa.Integer), sa.column("settings", sa.JSON))
 
     res = connection.execute(sa.select(activity.c.id, activity.c.settings))
     updates = []
@@ -43,10 +41,7 @@ def upgrade() -> None:
     # Execute updates
     for update in updates:
         connection.execute(
-            activity
-            .update()
-            .where(activity.c.id == update["b_id"])
-            .values(settings=update["b_settings"])
+            activity.update().where(activity.c.id == update["b_id"]).values(settings=update["b_settings"])
         )
 
 

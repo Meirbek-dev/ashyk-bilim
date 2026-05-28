@@ -68,16 +68,10 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        "ix_assessment_uuid", "assessment", ["assessment_uuid"], unique=True
-    )
-    op.create_index(
-        "ix_assessment_activity_id", "assessment", ["activity_id"], unique=True
-    )
+    op.create_index("ix_assessment_uuid", "assessment", ["assessment_uuid"], unique=True)
+    op.create_index("ix_assessment_activity_id", "assessment", ["activity_id"], unique=True)
     op.create_index("ix_assessment_kind", "assessment", ["kind"], unique=False)
-    op.create_index(
-        "ix_assessment_lifecycle", "assessment", ["lifecycle"], unique=False
-    )
+    op.create_index("ix_assessment_lifecycle", "assessment", ["lifecycle"], unique=False)
 
     op.create_table(
         "assessment_item",
@@ -106,9 +100,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("now()"),
         ),
-        sa.ForeignKeyConstraint(
-            ["assessment_id"], ["assessment.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["assessment_id"], ["assessment.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(

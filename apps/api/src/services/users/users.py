@@ -133,14 +133,10 @@ def update_user(
     checker.require(current_user.id, "user:update", resource_owner_id=user_id)
 
     if user_object.username:
-        _validate_unique_username(
-            db_session, user_object.username, exclude_user_id=current_user.id
-        )
+        _validate_unique_username(db_session, user_object.username, exclude_user_id=current_user.id)
 
     if user_object.email:
-        _validate_unique_email(
-            db_session, user_object.email, exclude_user_id=current_user.id
-        )
+        _validate_unique_email(db_session, user_object.email, exclude_user_id=current_user.id)
 
     # Update user
     for key, value in user_data.items():
@@ -266,9 +262,7 @@ def update_user_password(
     checker.require(current_user.id, "user:update", resource_owner_id=user_id)
 
     if not security_verify_password(form.old_password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный пароль"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный пароль")
 
     # Update user
     user.hashed_password = security_hash_password(form.new_password)
@@ -343,9 +337,7 @@ def get_user_session(
         permissions = sorted(effective)
         permissions_timestamp = int(now.timestamp())
     except Exception:
-        _logger.exception(
-            f"Ошибка загрузки разрешений для пользователя {current_user.id}"
-        )
+        _logger.exception(f"Ошибка загрузки разрешений для пользователя {current_user.id}")
 
     expires_at = int((now + ACCESS_TOKEN_EXPIRE).timestamp())
     session_version = int(now.timestamp())
@@ -405,9 +397,7 @@ def security_get_user(request: Request, db_session: Session, email: str) -> User
 # Helper functions for user operations
 
 
-def _validate_unique_username(
-    db_session: Session, username: str, exclude_user_id: int | None = None
-) -> None:
+def _validate_unique_username(db_session: Session, username: str, exclude_user_id: int | None = None) -> None:
     """Validate that username is unique."""
     statement = select(User).where(User.username == username)
     if exclude_user_id:
@@ -420,9 +410,7 @@ def _validate_unique_username(
         )
 
 
-def _validate_unique_email(
-    db_session: Session, email: str, exclude_user_id: int | None = None
-) -> None:
+def _validate_unique_email(db_session: Session, email: str, exclude_user_id: int | None = None) -> None:
     """Validate that email is unique."""
     statement = select(User).where(User.email == email)
     if exclude_user_id:
@@ -435,9 +423,7 @@ def _validate_unique_email(
         )
 
 
-async def _create_and_validate_user(
-    db_session: Session, user_object: UserCreate
-) -> User:
+async def _create_and_validate_user(db_session: Session, user_object: UserCreate) -> User:
     """Create user with validation and proper initialization."""
     # Validate unique constraints
     _validate_unique_username(db_session, user_object.username)
@@ -452,9 +438,7 @@ async def _create_and_validate_user(
 
     # Create user with completed fields
     user = User.model_validate(user_object)
-    user.hashed_password = (
-        security_hash_password(user_object.password) if user_object.password else None
-    )
+    user.hashed_password = security_hash_password(user_object.password) if user_object.password else None
     user.auth_provider = "local"
 
     # Add user to database
@@ -504,9 +488,7 @@ def _assign_default_role(db_session: Session, user_id: int | None) -> None:
     )
 
 
-def _get_user_by_field(
-    db_session: Session, field: str, value: str | int, use_cache: bool = True
-) -> User:
+def _get_user_by_field(db_session: Session, field: str, value: str | int, use_cache: bool = True) -> User:
     """Generic function to get user by any field.
 
     Optimizations:
@@ -543,9 +525,7 @@ def _get_user_by_field(
             id_key = f"user:id:{getattr(user_obj, 'id', '')}"
             redis_client.set_json(id_key, data, USER_CACHE_TTL)
             if user_obj.username:
-                redis_client.set_json(
-                    f"user:username:{user_obj.username.lower()}", data, USER_CACHE_TTL
-                )
+                redis_client.set_json(f"user:username:{user_obj.username.lower()}", data, USER_CACHE_TTL)
         except Exception:
             pass
 

@@ -37,23 +37,16 @@ def build_forecasts(
     elapsed_days = max(1, (current_end - current_start).days)
 
     for course in course_rows[:12]:
-        course_snapshots = [
-            snapshot
-            for snapshot in snapshots.values()
-            if snapshot.course_id == course.course_id
-        ]
+        course_snapshots = [snapshot for snapshot in snapshots.values() if snapshot.course_id == course.course_id]
         active_recent = {
             event.user_id
             for event in events
-            if event.course_id == course.course_id
-            and event.ts >= context.generated_at - timedelta(days=7)
+            if event.course_id == course.course_id and event.ts >= context.generated_at - timedelta(days=7)
         }
         unlikely = [
             snapshot
             for snapshot in course_snapshots
-            if not snapshot.is_completed
-            and snapshot.progress_pct < 70
-            and snapshot.user_id not in active_recent
+            if not snapshot.is_completed and snapshot.progress_pct < 70 and snapshot.user_id not in active_recent
         ]
         if unlikely:
             forecasts.append(
@@ -67,9 +60,7 @@ def build_forecasts(
                     course_id=course.course_id,
                     course_name=course.course_name,
                     learner_count=len(unlikely),
-                    expected_value=safe_pct(
-                        len(course_snapshots) - len(unlikely), len(course_snapshots)
-                    ),
+                    expected_value=safe_pct(len(course_snapshots) - len(unlikely), len(course_snapshots)),
                     target_value=70,
                 )
             )
@@ -77,23 +68,17 @@ def build_forecasts(
         current_completion = course.completion_rate
         completed_now = sum(1 for snapshot in course_snapshots if snapshot.is_completed)
         completion_events = [
-            event
-            for event in events
-            if event.course_id == course.course_id and event.ts >= current_start
+            event for event in events if event.course_id == course.course_id and event.ts >= current_start
         ]
         completion_velocity = completed_now / elapsed_days
-        expected_completed = min(
-            len(course_snapshots), completed_now + round(completion_velocity * 14)
-        )
+        expected_completed = min(len(course_snapshots), completed_now + round(completion_velocity * 14))
         expected_completion = safe_pct(expected_completed, len(course_snapshots))
         if expected_completion is not None and len(course_snapshots) >= 5:
             forecasts.append(
                 ForecastItem(
                     id=f"course-completion-deadline-{course.course_id}",
                     type="course_completion_deadline",
-                    severity="warning"
-                    if expected_completion < max(60, current_completion)
-                    else "info",
+                    severity="warning" if expected_completion < max(60, current_completion) else "info",
                     title=f"{course.course_name}: прогноз завершения через 14 дней",
                     prediction=f"Ожидаемый уровень завершения — {expected_completion}%, если текущий темп сохранится.",
                     confidence_level="medium" if len(completion_events) >= 5 else "low",
@@ -135,8 +120,7 @@ def build_forecasts(
                 title=f"{assessment.title}: повышенный риск неудачи",
                 prediction=f"Ожидаемый уровень неудач составляет {round(100 - assessment.pass_rate, 1)}% до следующего срока сдачи.",
                 confidence_level="high"
-                if assessment.submission_rate is not None
-                and assessment.submission_rate >= 50
+                if assessment.submission_rate is not None and assessment.submission_rate >= 50
                 else "medium",
                 course_id=assessment.course_id,
                 course_name=assessment.course_name,

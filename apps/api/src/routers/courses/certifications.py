@@ -36,9 +36,7 @@ async def api_create_certification(
     """
     Create new certification for a course
     """
-    return await create_certification(
-        request, certification_object, current_user, db_session
-    )
+    return await create_certification(request, certification_object, current_user, db_session)
 
 
 @router.get("/{certification_uuid}")
@@ -51,9 +49,7 @@ async def api_get_certification(
     """
     Get single certification by certification_id
     """
-    return await get_certification(
-        request, certification_uuid, current_user, db_session
-    )
+    return await get_certification(request, certification_uuid, current_user, db_session)
 
 
 @router.get("/course/{course_uuid}")
@@ -66,9 +62,7 @@ async def api_get_certifications_by_course(
     """
     Get all certifications for a specific course
     """
-    return await get_certifications_by_course(
-        request, course_uuid, current_user, db_session
-    )
+    return await get_certifications_by_course(request, course_uuid, current_user, db_session)
 
 
 @router.put("/{certification_uuid}")
@@ -82,9 +76,7 @@ async def api_update_certification(
     """
     Update certification by certification_id
     """
-    return await update_certification(
-        request, certification_uuid, certification_object, current_user, db_session
-    )
+    return await update_certification(request, certification_uuid, certification_object, current_user, db_session)
 
 
 @router.delete("/{certification_uuid}")
@@ -117,9 +109,7 @@ async def api_get_user_certificates_for_course(
     """
     Get all certificates for the current user in a specific course with certification details
     """
-    return await get_user_certificates_for_course(
-        request, course_uuid, current_user, db_session
-    )
+    return await get_user_certificates_for_course(request, course_uuid, current_user, db_session)
 
 
 @router.get("/certificate/{user_certification_uuid}")
@@ -131,9 +121,7 @@ async def api_get_certificate_by_user_certification_uuid(
     """
     Get a certificate by user_certification_uuid with certification and course details
     """
-    return await get_certificate_by_user_certification_uuid(
-        request, user_certification_uuid, None, db_session
-    )
+    return await get_certificate_by_user_certification_uuid(request, user_certification_uuid, None, db_session)
 
 
 @router.get("/user/all")

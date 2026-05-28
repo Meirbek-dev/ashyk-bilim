@@ -103,9 +103,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(
-    db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch
-):
+def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch):
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
@@ -522,10 +520,7 @@ def test_assessment_submission_queue_supports_review_filters_and_sorting(
     assert filtered.status_code == 200
     filtered_payload = filtered.json()
     assert filtered_payload["total"] == 1
-    assert (
-        filtered_payload["items"][0]["submission_uuid"]
-        == seeded_review_data["alice_submission_uuid"]
-    )
+    assert filtered_payload["items"][0]["submission_uuid"] == seeded_review_data["alice_submission_uuid"]
     assert filtered_payload["items"][0]["user"]["first_name"] == "Alice"
     assert filtered_payload["items"][0]["status"] == "PENDING"
     assert filtered_payload["items"][0]["is_late"] is True
@@ -551,9 +546,7 @@ def test_assessment_submission_stats_aggregate_non_draft_review_counts(
     api_client: TestClient,
     seeded_review_data,
 ) -> None:
-    response = api_client.get(
-        f"/assessments/{seeded_review_data['assessment_uuid']}/submissions/stats"
-    )
+    response = api_client.get(f"/assessments/{seeded_review_data['assessment_uuid']}/submissions/stats")
 
     assert response.status_code == 200
     payload = response.json()
@@ -655,18 +648,13 @@ def test_assessment_submission_publish_transition_updates_state_and_ledger(
 
     with db_session_factory() as session:
         submission = session.exec(
-            select(Submission).where(
-                Submission.submission_uuid
-                == seeded_review_data["alice_submission_uuid"]
-            )
+            select(Submission).where(Submission.submission_uuid == seeded_review_data["alice_submission_uuid"])
         ).first()
         assert submission is not None
         assert submission.status == SubmissionStatus.PUBLISHED
         assert submission.final_score == 72.0
 
-        entries = session.exec(
-            select(GradingEntry).where(GradingEntry.submission_id == submission.id)
-        ).all()
+        entries = session.exec(select(GradingEntry).where(GradingEntry.submission_id == submission.id)).all()
         assert len(entries) == 1
         assert entries[0].published_at is not None
         assert entries[0].final_score == 72.0
@@ -688,9 +676,7 @@ def test_assessment_submission_return_flow_supports_pending_and_graded_states(
     expected_score: float,
 ) -> None:
     submission_uuid = seeded_review_data[submission_key]
-    detail = api_client.get(
-        f"/assessments/{seeded_review_data['assessment_uuid']}/submissions/{submission_uuid}"
-    )
+    detail = api_client.get(f"/assessments/{seeded_review_data['assessment_uuid']}/submissions/{submission_uuid}")
     assert detail.status_code == 200
     current_version = detail.json()["version"]
 
@@ -712,15 +698,11 @@ def test_assessment_submission_return_flow_supports_pending_and_graded_states(
     assert payload["version"] == current_version + 1
 
     with db_session_factory() as session:
-        submission = session.exec(
-            select(Submission).where(Submission.submission_uuid == submission_uuid)
-        ).first()
+        submission = session.exec(select(Submission).where(Submission.submission_uuid == submission_uuid)).first()
         assert submission is not None
         assert submission.status == SubmissionStatus.RETURNED
         assert submission.final_score == expected_score
 
-        entries = session.exec(
-            select(GradingEntry).where(GradingEntry.submission_id == submission.id)
-        ).all()
+        entries = session.exec(select(GradingEntry).where(GradingEntry.submission_id == submission.id)).all()
         assert len(entries) == 1
         assert entries[0].published_at is None

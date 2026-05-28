@@ -74,9 +74,7 @@ def _assert_no_deprecated_tables(conn: sa.Connection) -> None:
 def _assert_no_deprecated_activity_types(conn: sa.Connection) -> None:
     if not _table_exists(conn, "activity"):
         return
-    count = conn.execute(
-        sa.text("SELECT COUNT(*) FROM activity WHERE activity_type = 'TYPE_ASSIGNMENT'")
-    ).scalar_one()
+    count = conn.execute(sa.text("SELECT COUNT(*) FROM activity WHERE activity_type = 'TYPE_ASSIGNMENT'")).scalar_one()
     if count:
         msg = f"Deprecated TYPE_ASSIGNMENT activities remain: {count}"
         raise RuntimeError(msg)
@@ -85,14 +83,9 @@ def _assert_no_deprecated_activity_types(conn: sa.Connection) -> None:
 def _assert_no_deprecated_submission_metadata(conn: sa.Connection) -> None:
     if not _table_exists(conn, "submission"):
         return
-    key_checks = " OR ".join(
-        f"metadata_json::jsonb ? '{key}'" for key in DEPRECATED_METADATA_KEYS
-    )
+    key_checks = " OR ".join(f"metadata_json::jsonb ? '{key}'" for key in DEPRECATED_METADATA_KEYS)
     count = conn.execute(
-        sa.text(
-            "SELECT COUNT(*) FROM submission "
-            "WHERE metadata_json IS NOT NULL AND (" + key_checks + ")"
-        )
+        sa.text("SELECT COUNT(*) FROM submission WHERE metadata_json IS NOT NULL AND (" + key_checks + ")")
     ).scalar_one()
     if count:
         msg = f"Deprecated assignment metadata remains in submission rows: {count}"
@@ -117,10 +110,7 @@ def _assert_no_deprecated_foreign_keys(conn: sa.Connection) -> None:
         {"table_names": DEPRECATED_TABLES},
     ).fetchall()
     if rows:
-        formatted = ", ".join(
-            f"{row.table_name}.{row.constraint_name}->{row.referenced_table}"
-            for row in rows
-        )
+        formatted = ", ".join(f"{row.table_name}.{row.constraint_name}->{row.referenced_table}" for row in rows)
         msg = f"Foreign keys still reference deprecated assignment tables: {formatted}"
         raise RuntimeError(msg)
 

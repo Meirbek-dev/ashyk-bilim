@@ -73,9 +73,7 @@ async def api_create_user_without_platform(
     """
     Create User
     """
-    return await create_user_without_platform(
-        request, db_session, current_user, user_object
-    )
+    return await create_user_without_platform(request, db_session, current_user, user_object)
 
 
 @router.get("/id/{user_id}", tags=["users"])
@@ -255,9 +253,7 @@ def api_delete_user(
 
     # Prevent self-deletion
     if user_id == current_user.id:
-        raise ResourceAccessDenied(
-            reason="You cannot delete your own account through this endpoint"
-        )
+        raise ResourceAccessDenied(reason="You cannot delete your own account through this endpoint")
 
     return delete_user_by_id(request, db_session, current_user, user_id)
 

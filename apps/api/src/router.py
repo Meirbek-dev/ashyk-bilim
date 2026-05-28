@@ -82,12 +82,8 @@ v1_router.include_router(
     prefix="/file-submissions",
     tags=["file-submissions"],
 )
-v1_router.include_router(
-    certifications.router, prefix="/certifications", tags=["certifications"]
-)
-v1_router.include_router(
-    collections.router, prefix="/collections", tags=["collections"]
-)
+v1_router.include_router(certifications.router, prefix="/certifications", tags=["certifications"])
+v1_router.include_router(collections.router, prefix="/collections", tags=["collections"])
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
 
 # Gamification

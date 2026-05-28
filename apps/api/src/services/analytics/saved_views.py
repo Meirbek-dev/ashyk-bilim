@@ -26,9 +26,7 @@ def _row(saved_view: AnalyticsSavedView) -> SavedAnalyticsViewRow:
     )
 
 
-def list_saved_analytics_views(
-    db_session: Session, scope: TeacherAnalyticsScope
-) -> SavedAnalyticsViewListResponse:
+def list_saved_analytics_views(db_session: Session, scope: TeacherAnalyticsScope) -> SavedAnalyticsViewListResponse:
     items = list(
         db_session.exec(
             select(AnalyticsSavedView)
@@ -76,9 +74,7 @@ def save_analytics_view(
     return _row(saved_view)
 
 
-def delete_analytics_view(
-    db_session: Session, scope: TeacherAnalyticsScope, view_id: int
-) -> bool:
+def delete_analytics_view(db_session: Session, scope: TeacherAnalyticsScope, view_id: int) -> bool:
     saved_view = db_session.get(AnalyticsSavedView, view_id)
     if saved_view is None or saved_view.teacher_user_id != scope.teacher_user_id:
         return False

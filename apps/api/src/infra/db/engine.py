@@ -13,15 +13,11 @@ from src.infra.settings import AppSettings
 logger = logging.getLogger("src.infra.db.engine")
 
 
-def _before_cursor_execute(
-    conn, cursor, statement, parameters, context, executemany
-) -> None:
+def _before_cursor_execute(conn, cursor, statement, parameters, context, executemany) -> None:
     context._query_start_time = time.perf_counter()
 
 
-def _after_cursor_execute(
-    conn, cursor, statement, parameters, context, executemany
-) -> None:
+def _after_cursor_execute(conn, cursor, statement, parameters, context, executemany) -> None:
     start_time = getattr(context, "_query_start_time", None)
     if start_time is not None:
         duration = time.perf_counter() - start_time
@@ -118,7 +114,5 @@ def get_bg_engine() -> Engine:
     Raises ``RuntimeError`` if called before ``register_engine()``.
     """
     if _bg_engine is None:
-        raise RuntimeError(
-            "No engine registered. Ensure register_engine() is called during lifespan startup."
-        )
+        raise RuntimeError("No engine registered. Ensure register_engine() is called during lifespan startup.")
     return _bg_engine

@@ -97,9 +97,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(
-    db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch
-):
+def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch):
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
@@ -408,9 +406,7 @@ def test_readiness_endpoint_and_publish_block_forbidden_exam_item_kind(
         ],
     )
 
-    readiness_response = api_client.get(
-        f"/assessments/{assessment.assessment_uuid}/readiness"
-    )
+    readiness_response = api_client.get(f"/assessments/{assessment.assessment_uuid}/readiness")
 
     assert readiness_response.status_code == 200
     readiness_payload = readiness_response.json()
@@ -599,9 +595,7 @@ def test_validate_code_challenge_endpoint(
 
     monkeypatch.setattr(CodeExecutionService, "run", mock_run)
 
-    response = api_client.post(
-        f"/assessments/{assessment.assessment_uuid}/code-challenge/validate"
-    )
+    response = api_client.post(f"/assessments/{assessment.assessment_uuid}/code-challenge/validate")
 
     assert response.status_code == 200
     payload = response.json()

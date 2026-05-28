@@ -28,13 +28,9 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
 
     async def validate_password(self, password: str, user: Any) -> None:
         if len(password) < MIN_PASSWORD_LENGTH:
-            raise InvalidPasswordException(
-                reason=f"Password must be at least {MIN_PASSWORD_LENGTH} characters"
-            )
+            raise InvalidPasswordException(reason=f"Password must be at least {MIN_PASSWORD_LENGTH} characters")
 
-    async def on_after_forgot_password(
-        self, user: User, token: str, request: Request | None = None
-    ) -> None:
+    async def on_after_forgot_password(self, user: User, token: str, request: Request | None = None) -> None:
         from src.db.users import UserRead
         from src.services.users.emails import enqueue_password_reset_email
 
@@ -46,20 +42,14 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
                 email=str(user.email),
             )
         except Exception:
-            _logger.exception(
-                "Failed to schedule password reset email for user %s", user.id
-            )
+            _logger.exception("Failed to schedule password reset email for user %s", user.id)
 
-    async def on_after_reset_password(
-        self, user: User, request: Request | None = None
-    ) -> None:
+    async def on_after_reset_password(self, user: User, request: Request | None = None) -> None:
         from src.services.auth.sessions import revoke_all_user_sessions
 
         await revoke_all_user_sessions(user.id)
 
-    async def on_after_register(
-        self, user: User, request: Request | None = None
-    ) -> None:
+    async def on_after_register(self, user: User, request: Request | None = None) -> None:
         from src.services.users.users import ensure_user_has_default_role
 
         if user.id is None:
@@ -68,9 +58,7 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
 
         session_factory = getattr(self.user_db, "session_factory", None)
         if session_factory is None:
-            _logger.warning(
-                "Cannot assign default role: user DB has no session factory"
-            )
+            _logger.warning("Cannot assign default role: user DB has no session factory")
             return
 
         def _assign_default_role() -> None:

@@ -30,18 +30,12 @@ def grade_canonical_choice_items(
 ) -> tuple[float, GradingBreakdown]:
     """Grade canonical CHOICE and MATCHING items from answers[item_uuid]."""
 
-    gradable_items = [
-        item for item in items if item.body.kind in {"CHOICE", "MATCHING"}
-    ]
+    gradable_items = [item for item in items if item.body.kind in {"CHOICE", "MATCHING"}]
     if not gradable_items:
-        return 0.0, GradingBreakdown(
-            items=[], needs_manual_review=False, auto_graded=True
-        )
+        return 0.0, GradingBreakdown(items=[], needs_manual_review=False, auto_graded=True)
 
     total_defined_points = sum(float(item.max_score or 0) for item in gradable_items)
-    points_per_item = (
-        None if total_defined_points > 0 else max_score / len(gradable_items)
-    )
+    points_per_item = None if total_defined_points > 0 else max_score / len(gradable_items)
 
     total_score = 0.0
     breakdown_items: list[GradedItem] = []
@@ -54,9 +48,7 @@ def grade_canonical_choice_items(
         )
         answer = answers_by_item_uuid.get(item.item_uuid)
         if item.body.kind == "CHOICE":
-            graded = _grade_canonical_choice(
-                item, answer, item_points, negative_marking_percent
-            )
+            graded = _grade_canonical_choice(item, answer, item_points, negative_marking_percent)
         else:
             graded = _grade_canonical_matching(item, answer, item_points)
         total_score += graded.score
@@ -83,9 +75,7 @@ def _grade_canonical_choice(
         if isinstance(raw_selected, list):
             selected = [str(option_id) for option_id in raw_selected]
 
-    correct_option_ids = {
-        str(option.id) for option in item.body.options if option.is_correct
-    }
+    correct_option_ids = {str(option.id) for option in item.body.options if option.is_correct}
 
     if not selected:
         return GradedItem(
@@ -114,18 +104,10 @@ def _grade_canonical_choice(
         feedback = f"Partially correct ({correct_count}/{len(correct_option_ids)})"
     else:
         # Fully wrong — apply negative marking if configured
-        deduction = (
-            (negative_marking_percent / 100.0) * points
-            if negative_marking_percent > 0
-            else 0.0
-        )
+        deduction = (negative_marking_percent / 100.0) * points if negative_marking_percent > 0 else 0.0
         score = max(-points, -deduction)
         correct = False
-        feedback = (
-            "Incorrect"
-            if deduction == 0.0
-            else f"Incorrect (−{round(deduction, 2)} pts)"
-        )
+        feedback = "Incorrect" if deduction == 0.0 else f"Incorrect (−{round(deduction, 2)} pts)"
 
     return GradedItem(
         item_id=item.item_uuid,
@@ -167,11 +149,7 @@ def _grade_canonical_matching(
             correct_answer=item.body.model_dump(mode="json").get("pairs", []),
         )
 
-    correct_count = sum(
-        1
-        for left, right in expected_pairs.items()
-        if submitted_pairs.get(left) == right
-    )
+    correct_count = sum(1 for left, right in expected_pairs.items() if submitted_pairs.get(left) == right)
     total_pairs = max(len(expected_pairs), 1)
     score = round((correct_count / total_pairs) * points, 2)
     correct = correct_count == len(expected_pairs)
@@ -182,11 +160,7 @@ def _grade_canonical_matching(
         score=score,
         max_score=points,
         correct=correct,
-        feedback="Correct"
-        if correct
-        else f"Matched {correct_count}/{len(expected_pairs)} pairs",
-        user_answer=[
-            {"left": left, "right": right} for left, right in submitted_pairs.items()
-        ],
+        feedback="Correct" if correct else f"Matched {correct_count}/{len(expected_pairs)} pairs",
+        user_answer=[{"left": left, "right": right} for left, right in submitted_pairs.items()],
         correct_answer=item.body.model_dump(mode="json").get("pairs", []),
     )

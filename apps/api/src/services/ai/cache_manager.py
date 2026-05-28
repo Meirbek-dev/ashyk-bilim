@@ -104,9 +104,7 @@ class AICacheManager:
 
     def get_all_stats(self) -> dict[str, Any]:
         with self._index_lock:
-            retrieval_index_size = sum(
-                len(v) for v in self._retrieval_key_index.values()
-            )
+            retrieval_index_size = sum(len(v) for v in self._retrieval_key_index.values())
             agent_index_size = sum(len(v) for v in self._agent_key_index.values())
         return {
             "retrieval": {"size": len(self.retrieval_cache)},

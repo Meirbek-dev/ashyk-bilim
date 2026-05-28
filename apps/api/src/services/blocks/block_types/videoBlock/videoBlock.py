@@ -15,9 +15,7 @@ from src.services.courses._utils import (
 from src.services.users.users import PublicUser
 
 
-async def create_video_block(
-    request: Request, video_file: UploadFile, activity_uuid: str, db_session: Session
-):
+async def create_video_block(request: Request, video_file: UploadFile, activity_uuid: str, db_session: Session):
     activity = _get_activity_by_uuid_or_404(activity_uuid, db_session)
     course = _get_course_for_activity_or_404(activity, db_session)
 
@@ -53,15 +51,11 @@ async def create_video_block(
     return BlockRead.model_validate(block)
 
 
-async def get_video_block(
-    request: Request, block_uuid: str, current_user: PublicUser, db_session: Session
-):
+async def get_video_block(request: Request, block_uuid: str, current_user: PublicUser, db_session: Session):
     statement = select(Block).where(Block.block_uuid == block_uuid)
     block = db_session.exec(statement).first()
 
     if not block:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Video file does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Video file does not exist")
 
     return BlockRead.model_validate(block)

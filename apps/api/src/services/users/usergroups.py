@@ -133,9 +133,7 @@ async def get_usergroups_by_resource(
     resource_uuid: str,
     checker: PermissionChecker | None = None,
 ) -> list[UserGroupRead]:
-    statement = select(UserGroupResource).where(
-        UserGroupResource.resource_uuid == resource_uuid
-    )
+    statement = select(UserGroupResource).where(UserGroupResource.resource_uuid == resource_uuid)
     usergroup_resources = db_session.exec(statement).all()
 
     # RBAC check
@@ -148,9 +146,7 @@ async def get_usergroups_by_resource(
     if not usergroup_ids:
         return []
 
-    usergroups = db_session.exec(
-        select(UserGroup).where(UserGroup.id.in_(usergroup_ids))
-    ).all()
+    usergroups = db_session.exec(select(UserGroup).where(UserGroup.id.in_(usergroup_ids))).all()
 
     return [UserGroupRead.model_validate(usergroup) for usergroup in usergroups]
 
@@ -263,10 +259,7 @@ async def add_users_to_usergroup(
         return "Пользователи успешно добавлены в группу пользователей"
 
     # Batch fetch all users and existing memberships in 2 queries
-    users_map = {
-        u.id: u
-        for u in db_session.exec(select(User).where(User.id.in_(parsed_ids))).all()
-    }
+    users_map = {u.id: u for u in db_session.exec(select(User).where(User.id.in_(parsed_ids))).all()}
     existing_user_ids = {
         ugu.user_id
         for ugu in db_session.exec(
@@ -281,9 +274,7 @@ async def add_users_to_usergroup(
     new_entries = []
     for user_id in parsed_ids:
         if user_id in existing_user_ids:
-            logger.error(
-                "Пользователь с id %s уже есть в группе пользователей", user_id
-            )
+            logger.error("Пользователь с id %s уже есть в группе пользователей", user_id)
             continue
 
         user = users_map.get(user_id)
@@ -353,9 +344,7 @@ async def remove_users_from_usergroup(
     found_user_ids = {ugu.user_id for ugu in usergroup_users}
     for user_id in parsed_ids:
         if user_id not in found_user_ids:
-            logger.error(
-                "Пользователь с id %s не найден в группе пользователей", user_id
-            )
+            logger.error("Пользователь с id %s не найден в группе пользователей", user_id)
 
     for usergroup_user in usergroup_users:
         db_session.delete(usergroup_user)
@@ -459,17 +448,13 @@ async def remove_resources_from_usergroup(
 
     # Batch fetch all matching resource links in one query
     usergroup_resources = db_session.exec(
-        select(UserGroupResource).where(
-            UserGroupResource.resource_uuid.in_(resources_uuids_array)
-        )
+        select(UserGroupResource).where(UserGroupResource.resource_uuid.in_(resources_uuids_array))
     ).all()
 
     found_uuids = {ugr.resource_uuid for ugr in usergroup_resources}
     for resource_uuid in resources_uuids_array:
         if resource_uuid not in found_uuids:
-            logger.error(
-                "Ресурс с uuid %s не найден в группе пользователей", resource_uuid
-            )
+            logger.error("Ресурс с uuid %s не найден в группе пользователей", resource_uuid)
 
     for usergroup_resource in usergroup_resources:
         db_session.delete(usergroup_resource)

@@ -13,10 +13,7 @@ async def test_embed_texts_caches_by_text_model_and_dimensions(monkeypatch):
         async def create(self, *, model, input, dimensions):
             calls.append(list(input))
             return SimpleNamespace(
-                data=[
-                    SimpleNamespace(embedding=[float(len(text)), float(dimensions)])
-                    for text in input
-                ]
+                data=[SimpleNamespace(embedding=[float(len(text)), float(dimensions)]) for text in input]
             )
 
     fake_client = SimpleNamespace(embeddings=FakeEmbeddings())

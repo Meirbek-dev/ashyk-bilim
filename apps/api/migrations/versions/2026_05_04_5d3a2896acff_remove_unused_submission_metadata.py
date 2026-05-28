@@ -60,16 +60,12 @@ def upgrade() -> None:
         if needs_update:
             if bind.dialect.name == "postgresql":
                 bind.execute(
-                    sa.text(
-                        "UPDATE submission SET metadata_json = CAST(:val AS JSONB) WHERE id = :id"
-                    ),
+                    sa.text("UPDATE submission SET metadata_json = CAST(:val AS JSONB) WHERE id = :id"),
                     {"val": json.dumps(metadata_json), "id": row_id},
                 )
             else:
                 bind.execute(
-                    sa.text(
-                        "UPDATE submission SET metadata_json = :val WHERE id = :id"
-                    ),
+                    sa.text("UPDATE submission SET metadata_json = :val WHERE id = :id"),
                     {"val": json.dumps(metadata_json), "id": row_id},
                 )
 

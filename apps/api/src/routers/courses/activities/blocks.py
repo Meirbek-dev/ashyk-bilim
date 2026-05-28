@@ -46,9 +46,7 @@ async def api_get_image_file_block(
     request: Request,
     block_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ] = None,
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
 ) -> BlockRead:
     """
     Get image file
@@ -80,9 +78,7 @@ async def api_get_video_file_block(
     request: Request,
     block_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ] = None,
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
 ) -> BlockRead:
     """
     Get video file
@@ -114,9 +110,7 @@ async def api_get_pdf_file_block(
     request: Request,
     block_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)] = None,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ] = None,
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)] = None,
 ) -> BlockRead:
     """
     Get pdf file

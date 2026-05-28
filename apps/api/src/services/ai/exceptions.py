@@ -71,8 +71,6 @@ class ChatSessionError(AIServiceException):
 class ActivityNotFoundError(AIServiceException):
     """Raised when the requested activity does not exist (maps to HTTP 404)."""
 
-    def __init__(
-        self, activity_uuid: str, details: dict[str, Any] | None = None
-    ) -> None:
+    def __init__(self, activity_uuid: str, details: dict[str, Any] | None = None) -> None:
         message = f"Activity '{activity_uuid}' not found"
         super().__init__(message, "ACTIVITY_NOT_FOUND", details)

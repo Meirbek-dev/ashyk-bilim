@@ -26,34 +26,26 @@ def build_anomalies(
 ) -> list[AnomalyItem]:
     events = build_activity_events(context)
     current_start, current_end = filters.window_bounds(now=context.generated_at)
-    previous_start, previous_end = filters.previous_window_bounds(
-        now=context.generated_at
-    )
+    previous_start, previous_end = filters.previous_window_bounds(now=context.generated_at)
     anomalies: list[AnomalyItem] = []
 
     for row in course_rows:
         current_active = {
             event.user_id
             for event in events
-            if event.course_id == row.course_id
-            and current_start <= event.ts <= current_end
+            if event.course_id == row.course_id and current_start <= event.ts <= current_end
         }
         previous_active = {
             event.user_id
             for event in events
-            if event.course_id == row.course_id
-            and previous_start <= event.ts < previous_end
+            if event.course_id == row.course_id and previous_start <= event.ts < previous_end
         }
-        if previous_active and len(current_active) <= max(
-            1, len(previous_active) * 0.55
-        ):
+        if previous_active and len(current_active) <= max(1, len(previous_active) * 0.55):
             anomalies.append(
                 AnomalyItem(
                     id=f"engagement-drop-{row.course_id}",
                     type="engagement_drop",
-                    severity="critical"
-                    if len(current_active) <= len(previous_active) * 0.35
-                    else "warning",
+                    severity="critical" if len(current_active) <= len(previous_active) * 0.35 else "warning",
                     title=f"{row.course_name}: резкое снижение вовлеченности",
                     detail="Количество активных учащихся резко сократилось по сравнению с предыдущим периодом.",
                     observed_value=float(len(current_active)),
@@ -92,29 +84,17 @@ def build_anomalies(
 
     durations_by_activity: dict[int, list[float]] = defaultdict(list)
     for submission, activity in context.quiz_submissions:
-        metadata = (
-            submission.metadata_json
-            if isinstance(submission.metadata_json, dict)
-            else {}
-        )
+        metadata = submission.metadata_json if isinstance(submission.metadata_json, dict) else {}
         duration_seconds = metadata.get("duration_seconds")
-        if (
-            duration_seconds is None
-            and submission.started_at
-            and submission.submitted_at
-        ):
-            duration_seconds = (
-                submission.submitted_at - submission.started_at
-            ).total_seconds()
+        if duration_seconds is None and submission.started_at and submission.submitted_at:
+            duration_seconds = (submission.submitted_at - submission.started_at).total_seconds()
         if duration_seconds is not None and float(duration_seconds) > 0:
             durations_by_activity[activity.id].append(float(duration_seconds))
     for activity_id, durations in durations_by_activity.items():
         if len(durations) < 5:
             continue
         fast_cutoff = percentile(durations, 0.1) or 0
-        fast_count = sum(
-            1 for duration in durations if duration <= max(20, fast_cutoff)
-        )
+        fast_count = sum(1 for duration in durations if duration <= max(20, fast_cutoff))
         if fast_count >= max(3, len(durations) * 0.25):
             activity = context.activities_by_id.get(activity_id)
             anomalies.append(
@@ -128,8 +108,7 @@ def build_anomalies(
                     baseline_value=float(len(durations)),
                     course_id=activity.course_id if activity is not None else None,
                     course_name=context.courses_by_id.get(activity.course_id).name
-                    if activity is not None
-                    and activity.course_id in context.courses_by_id
+                    if activity is not None and activity.course_id in context.courses_by_id
                     else None,
                     assessment_type="quiz",
                     assessment_id=activity_id,
@@ -146,16 +125,10 @@ def build_anomalies(
         for submission, activity in context.quiz_submissions:
             if activity.id != assessment.activity_id:
                 continue
-            completed_at = parse_timestamp(submission.submitted_at) or parse_timestamp(
-                submission.started_at
-            )
+            completed_at = parse_timestamp(submission.submitted_at) or parse_timestamp(submission.started_at)
             if completed_at is None:
                 continue
-            score = (
-                submission.final_score
-                if submission.final_score is not None
-                else submission.auto_score
-            )
+            score = submission.final_score if submission.final_score is not None else submission.auto_score
             if score is None:
                 continue
             if completed_at < last_update:

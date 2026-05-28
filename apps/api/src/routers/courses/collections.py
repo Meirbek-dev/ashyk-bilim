@@ -41,9 +41,7 @@ async def api_create_collection(
 async def api_get_collection(
     request: Request,
     collection_uuid: str,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> CollectionReadWithPermissions:
     """
@@ -57,9 +55,7 @@ async def api_get_platform_collections(
     request: Request,
     page: int,
     limit: int,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> list[CollectionReadWithPermissions]:
     """
@@ -85,9 +81,7 @@ async def api_update_collection(
     """
     Update collection by ID
     """
-    return await update_collection(
-        request, collection_object, collection_uuid, current_user, db_session
-    )
+    return await update_collection(request, collection_object, collection_uuid, current_user, db_session)
 
 
 @router.delete("/{collection_uuid}")

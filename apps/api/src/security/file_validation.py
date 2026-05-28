@@ -178,9 +178,7 @@ FILE_TYPES = {
 }
 
 
-def validate_upload(
-    file: UploadFile, allowed_types: list[str], max_size: int | None = None
-) -> tuple[str, bytes]:
+def validate_upload(file: UploadFile, allowed_types: list[str], max_size: int | None = None) -> tuple[str, bytes]:
     """
     Validate uploaded file for security and type compliance.
 
@@ -205,9 +203,7 @@ def validate_upload(
     # Get file extension and block SVG explicitly
     ext = "." + file.filename.split(".")[-1].lower()
     if ext == ".svg":
-        raise HTTPException(
-            status_code=415, detail="SVG-файлы запрещены по соображениям безопасности"
-        )
+        raise HTTPException(status_code=415, detail="SVG-файлы запрещены по соображениям безопасности")
 
     # Find matching file type configuration
     config = None
@@ -217,14 +213,8 @@ def validate_upload(
             break
 
     if not config:
-        allowed_exts = [
-            ext
-            for t in allowed_types
-            for ext in FILE_TYPES.get(t, {}).get("extensions", [])
-        ]
-        raise HTTPException(
-            status_code=415, detail=f"Тип файла не разрешен. Разрешены: {allowed_exts}"
-        )
+        allowed_exts = [ext for t in allowed_types for ext in FILE_TYPES.get(t, {}).get("extensions", [])]
+        raise HTTPException(status_code=415, detail=f"Тип файла не разрешен. Разрешены: {allowed_exts}")
 
     # Check file size
     size_limit = max_size or config["max_size"]
@@ -236,9 +226,7 @@ def validate_upload(
 
     # Validate file content
     if not config["validator"](content):
-        raise HTTPException(
-            status_code=415, detail="Файл выглядит поврежденным или недействительным"
-        )
+        raise HTTPException(status_code=415, detail="Файл выглядит поврежденным или недействительным")
 
     return file.content_type, content
 

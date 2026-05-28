@@ -44,11 +44,7 @@ def build_insight_feed(
     for row in assessment_rows:
         if row.pass_rate is None or row.pass_rate >= 65:
             continue
-        reason = (
-            "диагностикой качества"
-            if row.discrimination_index is not None
-            else "низким уровнем прохождения"
-        )
+        reason = "диагностикой качества" if row.discrimination_index is not None else "низким уровнем прохождения"
         items.append(
             InsightFeedItem(
                 id=f"assessment-{row.assessment_type}-{row.assessment_id}",
@@ -70,9 +66,7 @@ def build_insight_feed(
             id=f"content-{bottleneck.signal}-{bottleneck.activity_id}",
             category="content",
             severity=bottleneck.severity,
-            priority=70
-            + (20 if bottleneck.severity == "critical" else 10)
-            + min(10, bottleneck.exit_count),
+            priority=70 + (20 if bottleneck.severity == "critical" else 10) + min(10, bottleneck.exit_count),
             title=f"{bottleneck.activity_name} является узким местом контента.",
             body=bottleneck.note,
             course_id=bottleneck.course_id,
@@ -99,8 +93,7 @@ def build_insight_feed(
     improved_courses = [
         row
         for row in course_rows
-        if row.historical_completion_delta_pct is not None
-        and row.historical_completion_delta_pct >= 10
+        if row.historical_completion_delta_pct is not None and row.historical_completion_delta_pct >= 10
     ]
     items.extend(
         InsightFeedItem(
@@ -117,7 +110,5 @@ def build_insight_feed(
     )
 
     severity_score = {"critical": 2, "warning": 1, "info": 0}
-    items.sort(
-        key=lambda item: (item.priority, severity_score[item.severity]), reverse=True
-    )
+    items.sort(key=lambda item: (item.priority, severity_score[item.severity]), reverse=True)
     return items[:limit]

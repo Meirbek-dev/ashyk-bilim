@@ -31,9 +31,7 @@ class SQLModelUserDatabase(BaseUserDatabase[User, int]):
     async def get_by_email(self, email: str) -> User | None:
         def _get_by_email() -> User | None:
             with self.session_factory() as session:
-                return session.exec(
-                    select(User).where(User.email == email.lower())
-                ).first()
+                return session.exec(select(User).where(User.email == email.lower())).first()
 
         return await asyncio.to_thread(_get_by_email)
 

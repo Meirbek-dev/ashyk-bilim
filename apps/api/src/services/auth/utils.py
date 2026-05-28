@@ -23,9 +23,7 @@ async def find_or_create_google_user(
     """
     user_email = google_user_data.get("email", "")
     if not user_email:
-        raise HTTPException(
-            status_code=400, detail="No email address available from Google"
-        )
+        raise HTTPException(status_code=400, detail="No email address available from Google")
 
     user = db_session.exec(select(User).where(User.email == user_email)).first()
 

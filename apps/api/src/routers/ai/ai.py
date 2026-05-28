@@ -43,17 +43,13 @@ _limit_ai_message = rate_limit_dependency(
 router = APIRouter()
 
 
-async def _monitor_disconnect(
-    request: Request, cancel_event: asyncio.Event, label: str = "stream"
-) -> None:
+async def _monitor_disconnect(request: Request, cancel_event: asyncio.Event, label: str = "stream") -> None:
     """Poll for client disconnect and set cancel_event when detected."""
     try:
         while not cancel_event.is_set():
             if await request.is_disconnected():
                 cancel_event.set()
-                logger.info(
-                    "Монитор отключения (%s): клиент ушел, поток отменяется", label
-                )
+                logger.info("Монитор отключения (%s): клиент ушел, поток отменяется", label)
                 return
             await asyncio.sleep(0.1)
     except asyncio.CancelledError:
@@ -86,9 +82,7 @@ async def api_ai_start_activity_chat_session(
     logger.info("Запрос на старт AI-чата от пользователя %s", current_user.id)
 
     try:
-        return await ai_start_activity_chat_session(
-            request, chat_session_object, current_user, db_session
-        )
+        return await ai_start_activity_chat_session(request, chat_session_object, current_user, db_session)
     except HTTPException:
         raise
     except Exception:
@@ -122,9 +116,7 @@ async def api_ai_send_activity_chat_message(
     logger.info("Запрос AI-сообщения от пользователя %s", current_user.id)
 
     try:
-        return await ai_send_activity_chat_message(
-            request, chat_session_object, current_user, db_session
-        )
+        return await ai_send_activity_chat_message(request, chat_session_object, current_user, db_session)
     except HTTPException:
         raise
     except Exception:
@@ -166,9 +158,7 @@ async def api_ai_start_activity_chat_session_stream(
         HTTPException 504: AI processing timeout
         HTTPException 500: AI processing error
     """
-    logger.info(
-        "Запрос на старт стримингового AI-чата от пользователя %s", current_user.id
-    )
+    logger.info("Запрос на старт стримингового AI-чата от пользователя %s", current_user.id)
 
     try:
         cancel_event = asyncio.Event()
@@ -178,9 +168,7 @@ async def api_ai_start_activity_chat_session_stream(
                 while not cancel_event.is_set():
                     if await request.is_disconnected():
                         cancel_event.set()
-                        logger.info(
-                            "Монитор отключения: клиент ушел, поток start-session отменяется"
-                        )
+                        logger.info("Монитор отключения: клиент ушел, поток start-session отменяется")
                         break
                     await asyncio.sleep(0.5)
             except asyncio.CancelledError:
@@ -260,9 +248,7 @@ async def api_ai_send_activity_chat_message_stream(
         cancel_event = asyncio.Event()
 
         async def event_generator():
-            monitor_task = asyncio.create_task(
-                _monitor_disconnect(request, cancel_event, "send-message")
-            )
+            monitor_task = asyncio.create_task(_monitor_disconnect(request, cancel_event, "send-message"))
             try:
                 async for sse_string in ai_send_activity_chat_message_stream(
                     request,

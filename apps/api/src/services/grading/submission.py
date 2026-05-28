@@ -134,9 +134,7 @@ def start_submission_v2(
     if not skip_attempt_limit:
         _enforce_attempt_limit_from_policy(activity_id, current_user.id, db_session)
 
-    attempt_number = (
-        _count_previous_attempts(activity_id, current_user.id, db_session) + 1
-    )
+    attempt_number = _count_previous_attempts(activity_id, current_user.id, db_session) + 1
     now = datetime.now(UTC)
 
     submission = Submission(
@@ -182,14 +180,10 @@ def create_resubmission_draft(
     _require_permission(current_user, activity, original.assessment_type, db_session)
 
     # max_attempts includes the attempt that was just RETURNED
-    _enforce_attempt_limit_from_policy(
-        original.activity_id, current_user.id, db_session
-    )
+    _enforce_attempt_limit_from_policy(original.activity_id, current_user.id, db_session)
 
     now = datetime.now(UTC)
-    next_attempt = (
-        _count_previous_attempts(original.activity_id, current_user.id, db_session) + 1
-    )
+    next_attempt = _count_previous_attempts(original.activity_id, current_user.id, db_session) + 1
 
     draft = Submission(
         submission_uuid=f"submission_{ULID()}",
@@ -215,9 +209,7 @@ def create_resubmission_draft(
 
 
 def _get_activity_or_404(activity_id: int, db_session: Session) -> Activity:
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
     if not activity:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -226,9 +218,7 @@ def _get_activity_or_404(activity_id: int, db_session: Session) -> Activity:
     return activity
 
 
-def _get_own_submission_or_404(
-    submission_uuid: str, user_id: int, db_session: Session
-) -> Submission:
+def _get_own_submission_or_404(submission_uuid: str, user_id: int, db_session: Session) -> Submission:
     submission = db_session.exec(
         select(Submission).where(
             Submission.submission_uuid == submission_uuid,
@@ -259,9 +249,7 @@ def _require_permission(
     )
 
 
-def _count_previous_attempts(
-    activity_id: int, user_id: int, db_session: Session
-) -> int:
+def _count_previous_attempts(activity_id: int, user_id: int, db_session: Session) -> int:
     """Count all non-DRAFT submissions as prior attempts."""
     return db_session.exec(
         select(sql_func.count()).where(
@@ -304,11 +292,7 @@ def _active_policy_override(
     if override is None:
         return None
     if override.expires_at is not None:
-        expires_at = (
-            override.expires_at
-            if override.expires_at.tzinfo
-            else override.expires_at.replace(tzinfo=UTC)
-        )
+        expires_at = override.expires_at if override.expires_at.tzinfo else override.expires_at.replace(tzinfo=UTC)
         if expires_at <= now:
             return None
     return override
@@ -326,9 +310,7 @@ def _enforce_attempt_limit_from_policy(
     canonical AssessmentPolicy row so limits are consistent regardless of which
     submit endpoint the student uses.
     """
-    policy = db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)
-    ).first()
+    policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).first()
 
     if policy is None:
         return

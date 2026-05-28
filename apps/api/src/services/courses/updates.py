@@ -27,9 +27,7 @@ async def create_update(
     course = db_session.exec(statement).first()
 
     if not course or course.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Курс не существует"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Курс не существует")
 
     # RBAC check
     checker = PermissionChecker(db_session)
@@ -62,24 +60,16 @@ async def update_update(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> CourseUpdateRead:
-    statement = select(CourseUpdate).where(
-        CourseUpdate.courseupdate_uuid == courseupdate_uuid
-    )
+    statement = select(CourseUpdate).where(CourseUpdate.courseupdate_uuid == courseupdate_uuid)
     update = db_session.exec(statement).first()
 
     if not update or update.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Update does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Update does not exist")
     # RBAC check
     checker = PermissionChecker(db_session)
-    update_course = (
-        db_session.get(Course, update.course_id) if update.course_id else None
-    )
+    update_course = db_session.get(Course, update.course_id) if update.course_id else None
     if not update_course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
     require_course_permission("course:update", current_user, update_course, checker)
 
     for key, value in update_object.model_dump(exclude_unset=True).items():
@@ -101,21 +91,15 @@ async def delete_update(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-    statement = select(CourseUpdate).where(
-        CourseUpdate.courseupdate_uuid == courseupdate_uuid
-    )
+    statement = select(CourseUpdate).where(CourseUpdate.courseupdate_uuid == courseupdate_uuid)
     update = db_session.exec(statement).first()
 
     if not update or update.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Update does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Update does not exist")
 
     # RBAC check
     checker = PermissionChecker(db_session)
-    update_course = (
-        db_session.get(Course, update.course_id) if update.course_id else None
-    )
+    update_course = db_session.get(Course, update.course_id) if update.course_id else None
     checker.require(
         current_user.id,
         "course:update",
@@ -140,14 +124,10 @@ async def get_updates_by_course_uuid(
     course = db_session.exec(statement).first()
 
     if not course or course.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Курс не существует"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Курс не существует")
 
     statement = (
-        select(CourseUpdate)
-        .where(CourseUpdate.course_id == course.id)
-        .order_by(col(CourseUpdate.creation_date).desc())
+        select(CourseUpdate).where(CourseUpdate.course_id == course.id).order_by(col(CourseUpdate.creation_date).desc())
     )  # https://sqlmodel.tiangolo.com/tutorial/where/#type-annotations-and-errors
     updates = db_session.exec(statement).all()
 

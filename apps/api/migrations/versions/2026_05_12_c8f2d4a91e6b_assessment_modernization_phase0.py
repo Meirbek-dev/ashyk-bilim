@@ -126,10 +126,7 @@ def upgrade() -> None:
     # ── Strip legacy_* keys from submission.metadata_json ─────────────────────
     conn = op.get_bind()
     rows = conn.execute(
-        sa.text(
-            "SELECT id, metadata_json FROM submission "
-            "WHERE metadata_json::text LIKE '%legacy_%'"
-        )
+        sa.text("SELECT id, metadata_json FROM submission WHERE metadata_json::text LIKE '%legacy_%'")
     ).fetchall()
 
     legacy_keys = [

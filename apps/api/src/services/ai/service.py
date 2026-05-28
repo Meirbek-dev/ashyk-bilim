@@ -269,9 +269,7 @@ def _build_request_policy(ctx: _ChatContext, question: str) -> _RequestPolicy:
 
 
 def _status_message(status: str, *, retrieval_enabled: bool, locale: str) -> str:
-    messages = _STATUS_MESSAGES.get(
-        _normalize_locale(locale), _STATUS_MESSAGES[_DEFAULT_LOCALE]
-    )
+    messages = _STATUS_MESSAGES.get(_normalize_locale(locale), _STATUS_MESSAGES[_DEFAULT_LOCALE])
 
     if status == "processing":
         return messages["processing"]
@@ -389,9 +387,7 @@ async def build_chat_context(
     documents = await _get_documents(activity_uuid, activity, course)
     session_window = await asyncio.to_thread(load_chat_session, aichat_uuid, user_id)
     request_id = request.headers.get("x-request-id") if request else None
-    resolved_locale = (
-        _extract_request_locale(request) or _match_locale(locale) or _DEFAULT_LOCALE
-    )
+    resolved_locale = _extract_request_locale(request) or _match_locale(locale) or _DEFAULT_LOCALE
 
     return _ChatContext(
         activity=activity,
@@ -476,9 +472,7 @@ async def generate_chat_answer(
                     message_history=ctx.session_history,
                 )
     except TimeoutError as exc:
-        raise AITimeoutError(
-            timeout_seconds, details={"activity_uuid": ctx.activity.activity_uuid}
-        ) from exc
+        raise AITimeoutError(timeout_seconds, details={"activity_uuid": ctx.activity.activity_uuid}) from exc
     except ActivityNotFoundError:
         raise
     except AITimeoutError, ContentModerationError, RetrievalError:
@@ -532,9 +526,7 @@ async def stream_chat_answer(
         status="processing",
         aichat_uuid=ctx.session_id,
         activity_uuid=ctx.activity.activity_uuid,
-        message=_status_message(
-            "processing", retrieval_enabled=True, locale=ctx.locale
-        ),
+        message=_status_message("processing", retrieval_enabled=True, locale=ctx.locale),
     )
 
     try:
@@ -543,9 +535,7 @@ async def stream_chat_answer(
                 status="moderating",
                 aichat_uuid=ctx.session_id,
                 activity_uuid=ctx.activity.activity_uuid,
-                message=_status_message(
-                    "moderating", retrieval_enabled=True, locale=ctx.locale
-                ),
+                message=_status_message("moderating", retrieval_enabled=True, locale=ctx.locale),
             )
             await moderate_text_input(question, stage="input")
             policy = _build_request_policy(ctx, question)
@@ -563,9 +553,7 @@ async def stream_chat_answer(
                     status="retrieving",
                     aichat_uuid=ctx.session_id,
                     activity_uuid=ctx.activity.activity_uuid,
-                    message=_status_message(
-                        "retrieving", retrieval_enabled=True, locale=ctx.locale
-                    ),
+                    message=_status_message("retrieving", retrieval_enabled=True, locale=ctx.locale),
                 )
                 retrieved_chunks, retrieval_ms = await _retrieve_chunks_for_policy(
                     ctx=ctx,
@@ -584,9 +572,7 @@ async def stream_chat_answer(
                     status="analyzing",
                     aichat_uuid=ctx.session_id,
                     activity_uuid=ctx.activity.activity_uuid,
-                    message=_status_message(
-                        "analyzing", retrieval_enabled=False, locale=ctx.locale
-                    ),
+                    message=_status_message("analyzing", retrieval_enabled=False, locale=ctx.locale),
                 )
                 retrieved_chunks = []
 
@@ -640,9 +626,7 @@ async def stream_chat_answer(
                     full_response = output
 
     except TimeoutError as exc:
-        raise AITimeoutError(
-            timeout_seconds, details={"activity_uuid": ctx.activity.activity_uuid}
-        ) from exc
+        raise AITimeoutError(timeout_seconds, details={"activity_uuid": ctx.activity.activity_uuid}) from exc
     except AITimeoutError, ContentModerationError:
         raise
     except Exception as exc:
@@ -694,9 +678,7 @@ async def run_activity_chat(
         locale=locale,
         request=request,
     )
-    answer = await generate_chat_answer(
-        ctx=ctx, question=message, cancel_event=cancel_event
-    )
+    answer = await generate_chat_answer(ctx=ctx, question=message, cancel_event=cancel_event)
     logger.info(
         "AI-чат %s завершён за %.1f мс",
         ctx.session_id,

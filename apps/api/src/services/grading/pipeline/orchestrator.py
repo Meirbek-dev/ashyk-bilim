@@ -251,20 +251,13 @@ async def _submit_assessment_inner(
 
     # 11. Emit events (post-commit, non-blocking)
     is_code_challenge = assessment_type == AssessmentType.CODE_CHALLENGE
-    immediate_release = (
-        policy is None or policy.grade_release_mode == GradeReleaseMode.IMMEDIATE
-    )
+    immediate_release = policy is None or policy.grade_release_mode == GradeReleaseMode.IMMEDIATE
     await emit_submission_events(
         draft,
         file_keys=_extract_file_keys(final_payload),
         violation_count=violation_count,
         grade_published_at=(
-            now
-            if (
-                not result.needs_manual_review
-                and (is_code_challenge or immediate_release)
-            )
-            else None
+            now if (not result.needs_manual_review and (is_code_challenge or immediate_release)) else None
         ),
     )
 
@@ -275,13 +268,9 @@ async def _submit_assessment_inner(
 
 
 def _get_activity_or_404(activity_id: int, db_session: Session) -> Activity:
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
     if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
     return activity
 
 
@@ -319,9 +308,7 @@ def _get_or_create_draft(
             )
         ).first()
         if draft is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена")
         if draft.status != SubmissionStatus.DRAFT:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -345,9 +332,7 @@ def _get_or_create_draft(
     )
 
 
-def _count_completed_attempts(
-    activity_id: int, user_id: int, db_session: Session
-) -> int:
+def _count_completed_attempts(activity_id: int, user_id: int, db_session: Session) -> int:
     return db_session.exec(
         select(sql_func.count()).where(
             Submission.activity_id == activity_id,
@@ -357,12 +342,8 @@ def _count_completed_attempts(
     ).one()
 
 
-def _get_assessment_policy(
-    activity_id: int, db_session: Session
-) -> AssessmentPolicy | None:
-    return db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)
-    ).first()
+def _get_assessment_policy(activity_id: int, db_session: Session) -> AssessmentPolicy | None:
+    return db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity_id)).first()
 
 
 def _active_policy_override(
@@ -382,11 +363,7 @@ def _active_policy_override(
     if override is None:
         return None
     if override.expires_at is not None:
-        expires_at = (
-            override.expires_at
-            if override.expires_at.tzinfo
-            else override.expires_at.replace(tzinfo=UTC)
-        )
+        expires_at = override.expires_at if override.expires_at.tzinfo else override.expires_at.replace(tzinfo=UTC)
         if expires_at <= now:
             return None
     return override
@@ -407,14 +384,8 @@ async def _run_final_code_answers(
         return answers_by_item_uuid, answers_payload
 
     service = get_code_execution_service()
-    assessment = db_session.exec(
-        select(Assessment).where(Assessment.activity_id == draft.activity_id)
-    ).first()
-    assessment_uuid = (
-        assessment.assessment_uuid
-        if assessment is not None
-        else f"activity_{draft.activity_id}"
-    )
+    assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == draft.activity_id)).first()
+    assessment_uuid = assessment.assessment_uuid if assessment is not None else f"activity_{draft.activity_id}"
     enriched_answers = dict(answers_by_item_uuid)
     for item in code_items:
         raw_answer = answers_by_item_uuid.get(item.item_uuid)
@@ -453,8 +424,7 @@ async def _run_final_code_answers(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail={
                     "code": "CODE_RUNNER_DEGRADED",
-                    "message": result.error_message
-                    or "Code runner temporarily unavailable.",
+                    "message": result.error_message or "Code runner temporarily unavailable.",
                     "is_retryable": True,
                 },
             )
@@ -465,9 +435,7 @@ async def _run_final_code_answers(
                     "code": "COMPILE_ERROR",
                     "message": "Source code failed to compile.",
                     "compile_output": (
-                        result.grading_details()[0].get("compile_output")
-                        if result.grading_details()
-                        else None
+                        result.grading_details()[0].get("compile_output") if result.grading_details() else None
                     ),
                     "item_uuid": item.item_uuid,
                 },
@@ -489,9 +457,7 @@ async def _run_final_code_answers(
     next_payload["answers"] = [
         {
             "item_uuid": uuid,
-            "answer": ans.model_dump(mode="json")
-            if hasattr(ans, "model_dump")
-            else ans,
+            "answer": ans.model_dump(mode="json") if hasattr(ans, "model_dump") else ans,
         }
         for uuid, ans in enriched_answers.items()
     ]

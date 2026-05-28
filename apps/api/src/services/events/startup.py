@@ -64,9 +64,7 @@ async def _enqueue_plagiarism_check(
 
     from src.worker.tasks.plagiarism import check_file_submission_plagiarism
 
-    submission_uuid = getattr(event, "submission_uuid", None) or getattr(
-        event, "attempt_uuid", ""
-    )
+    submission_uuid = getattr(event, "submission_uuid", None) or getattr(event, "attempt_uuid", "")
     await check_file_submission_plagiarism.kiq(
         submission_uuid=submission_uuid,
         file_keys=list(event.file_keys),

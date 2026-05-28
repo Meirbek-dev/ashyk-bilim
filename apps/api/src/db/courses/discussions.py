@@ -25,17 +25,11 @@ class CourseDiscussion(SQLModelStrictBaseModel, table=True):
     content: str
     type: DiscussionType = Field(default=DiscussionType.POST)
     status: DiscussionStatusEnum = Field(default=DiscussionStatusEnum.ACTIVE)
-    course_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE"))
-    )
-    user_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    course_id: int = Field(sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE")))
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
     parent_discussion_id: int | None = Field(
         default=None,
-        sa_column=Column(
-            Integer, ForeignKey("coursediscussion.id", ondelete="CASCADE")
-        ),
+        sa_column=Column(Integer, ForeignKey("coursediscussion.id", ondelete="CASCADE")),
     )
     likes_count: int = Field(default=0)
     dislikes_count: int = Field(default=0)
@@ -150,12 +144,8 @@ class CourseDiscussionUpdate(SQLModelStrictBaseModel):
 
 class DiscussionLike(SQLModelStrictBaseModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    discussion_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("coursediscussion.id", ondelete="CASCADE"))
-    )
-    user_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    discussion_id: int = Field(sa_column=Column(Integer, ForeignKey("coursediscussion.id", ondelete="CASCADE")))
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
     creation_date: str = Field(default="")
 
 
@@ -172,12 +162,8 @@ class DiscussionLikeRead(SQLModelStrictBaseModel):
 
 class DiscussionDislike(SQLModelStrictBaseModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    discussion_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("coursediscussion.id", ondelete="CASCADE"))
-    )
-    user_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    discussion_id: int = Field(sa_column=Column(Integer, ForeignKey("coursediscussion.id", ondelete="CASCADE")))
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
     creation_date: str = Field(default="")
 
 

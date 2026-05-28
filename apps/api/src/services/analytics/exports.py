@@ -99,9 +99,7 @@ def _csv_stream(headers: list[str], rows: Iterable[list[object]]) -> Iterator[st
         output.truncate(0)
 
 
-def export_at_risk_csv(
-    db_session: Session, scope: TeacherAnalyticsScope, filters: AnalyticsFilters
-) -> Iterator[str]:
+def export_at_risk_csv(db_session: Session, scope: TeacherAnalyticsScope, filters: AnalyticsFilters) -> Iterator[str]:
     context = load_analytics_context(db_session, scope.course_ids)
     rows = build_risk_rows(context, filters)
     return _csv_stream(
@@ -145,10 +143,7 @@ def export_grading_backlog_csv(
         for submission, manual_assessment in context.manual_assessment_submissions:
             if not manual_assessment_is_reviewable(submission):
                 continue
-            if (
-                allowed_user_ids is not None
-                and submission.user_id not in allowed_user_ids
-            ):
+            if allowed_user_ids is not None and submission.user_id not in allowed_user_ids:
                 continue
             user = context.users_by_id.get(submission.user_id)
             course = context.courses_by_id.get(manual_assessment.course_id)
@@ -156,9 +151,7 @@ def export_grading_backlog_csv(
                 submission.user_id,
                 user.username if user else "Неизвестно",
                 manual_assessment.course_id,
-                course.name
-                if course is not None
-                else f"Удаленный курс #{manual_assessment.course_id}",
+                course.name if course is not None else f"Удаленный курс #{manual_assessment.course_id}",
                 manual_assessment.id,
                 manual_assessment.title,
                 _status_ru(manual_assessment_submission_status(submission)),
@@ -201,9 +194,7 @@ def export_course_progress_csv(
                 snapshot.progress_pct,
                 snapshot.completed_steps,
                 snapshot.total_steps,
-                snapshot.last_activity_at.isoformat()
-                if snapshot.last_activity_at
-                else None,
+                snapshot.last_activity_at.isoformat() if snapshot.last_activity_at else None,
                 "Да" if snapshot.has_certificate else "Нет",
             ]
 

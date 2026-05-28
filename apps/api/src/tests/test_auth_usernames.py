@@ -14,9 +14,4 @@ def test_generated_username_falls_back_to_email_for_non_ascii_names() -> None:
 
 
 def test_generated_username_collapses_punctuation() -> None:
-    assert (
-        build_generated_username(
-            "John..", ".Doe", email="john@example.com", suffix="0001"
-        )
-        == "john.doe.0001"
-    )
+    assert build_generated_username("John..", ".Doe", email="john@example.com", suffix="0001") == "john.doe.0001"

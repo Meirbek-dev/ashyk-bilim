@@ -118,12 +118,7 @@ def upgrade() -> None:
 
         next_content, changed = _replace_legacy_block_quizzes(conn, row, content)
         if changed:
-            conn.execute(
-                activity_table
-                .update()
-                .where(activity_table.c.id == row.id)
-                .values(content=next_content)
-            )
+            conn.execute(activity_table.update().where(activity_table.c.id == row.id).values(content=next_content))
 
 
 def downgrade() -> None:
@@ -132,9 +127,7 @@ def downgrade() -> None:
 
 def _required_tables_exist(conn: sa.Connection) -> bool:
     existing_tables = set(sa.inspect(conn).get_table_names())
-    return {"activity", "assessment_policy", "assessment", "assessment_item"}.issubset(
-        existing_tables
-    )
+    return {"activity", "assessment_policy", "assessment", "assessment_item"}.issubset(existing_tables)
 
 
 def _as_dict(value: Any) -> dict[str, Any] | None:
@@ -158,9 +151,7 @@ def _replace_legacy_block_quizzes(
         changed = False
         next_items: list[Any] = []
         for item in value:
-            next_item, item_changed = _replace_legacy_block_quizzes(
-                conn, activity, item
-            )
+            next_item, item_changed = _replace_legacy_block_quizzes(conn, activity, item)
             next_items.append(next_item)
             changed = changed or item_changed
         return next_items, changed
@@ -369,9 +360,7 @@ def _legacy_answers_to_options(value: Any) -> list[dict[str, Any]]:
         answer_id = answer.get("answer_id")
         answer_text = answer.get("answer")
         options.append({
-            "id": answer_id
-            if isinstance(answer_id, str) and answer_id
-            else str(ULID()),
+            "id": answer_id if isinstance(answer_id, str) and answer_id else str(ULID()),
             "text": answer_text if isinstance(answer_text, str) else "",
             "is_correct": answer.get("correct") is True,
         })

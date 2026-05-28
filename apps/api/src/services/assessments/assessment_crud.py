@@ -99,9 +99,7 @@ def _is_assessment_locked(assessment: Assessment, db_session: Session) -> bool:
         select(Submission)
         .where(
             Submission.assessment_policy_id.in_(  # type: ignore[union-attr]
-                select(AssessmentPolicy.id).where(
-                    AssessmentPolicy.activity_id == assessment.activity_id
-                )
+                select(AssessmentPolicy.id).where(AssessmentPolicy.activity_id == assessment.activity_id)
             )
         )
         .where(Submission.status != SubmissionStatus.DRAFT)
@@ -291,10 +289,7 @@ async def transition_assessment_lifecycle(
         )
 
     readiness = build_readiness(assessment, db_session)
-    if (
-        target in {AssessmentLifecycle.PUBLISHED, AssessmentLifecycle.SCHEDULED}
-        and not readiness.ok
-    ):
+    if target in {AssessmentLifecycle.PUBLISHED, AssessmentLifecycle.SCHEDULED} and not readiness.ok:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"issues": [issue.model_dump() for issue in readiness.issues]},
@@ -308,9 +303,7 @@ async def transition_assessment_lifecycle(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Параметр scheduled_at обязателен при планировании",
             )
-        scheduled_at = (
-            scheduled_at if scheduled_at.tzinfo else scheduled_at.replace(tzinfo=UTC)
-        )
+        scheduled_at = scheduled_at if scheduled_at.tzinfo else scheduled_at.replace(tzinfo=UTC)
         if scheduled_at <= now:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -361,17 +354,14 @@ async def create_assessment_item(
     _require_author(current_user, course, db_session)
     _ensure_authorable(assessment, db_session)
 
-    item_count = db_session.exec(
-        select(func.count()).where(AssessmentItem.assessment_id == assessment.id)
-    ).one()
+    item_count = db_session.exec(select(func.count()).where(AssessmentItem.assessment_id == assessment.id)).one()
     if item_count >= MAX_ITEMS_PER_ASSESSMENT:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "code": "ITEM_LIMIT_EXCEEDED",
                 "message": (
-                    f"В оценивании уже есть {item_count} элементов. "
-                    f"Максимально допустимо: {MAX_ITEMS_PER_ASSESSMENT}."
+                    f"В оценивании уже есть {item_count} элементов. Максимально допустимо: {MAX_ITEMS_PER_ASSESSMENT}."
                 ),
                 "max": MAX_ITEMS_PER_ASSESSMENT,
                 "current": item_count,
@@ -381,9 +371,7 @@ async def create_assessment_item(
     _ensure_item_kind_supported(assessment, payload.kind)
 
     max_order = db_session.exec(
-        select(func.max(AssessmentItem.order)).where(
-            AssessmentItem.assessment_id == assessment.id
-        )
+        select(func.max(AssessmentItem.order)).where(AssessmentItem.assessment_id == assessment.id)
     ).one()
     now = datetime.now(UTC)
     item = AssessmentItem(
@@ -478,13 +466,9 @@ async def reorder_assessment_items(
     _require_author(current_user, course, db_session)
     _ensure_authorable(assessment, db_session)
 
-    items = db_session.exec(
-        select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)
-    ).all()
+    items = db_session.exec(select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)).all()
     by_uuid = {item.item_uuid: item for item in items}
-    missing = [
-        entry.item_uuid for entry in payload.items if entry.item_uuid not in by_uuid
-    ]
+    missing = [entry.item_uuid for entry in payload.items if entry.item_uuid not in by_uuid]
     if missing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -525,9 +509,7 @@ async def delete_assessment_item(
             status_code=status.HTTP_409_CONFLICT,
             detail={
                 "code": "ASSESSMENT_LOCKED",
-                "message": (
-                    "Нельзя удалять элементы из опубликованного оценивания с активными отправками."
-                ),
+                "message": ("Нельзя удалять элементы из опубликованного оценивания с активными отправками."),
             },
         )
 
@@ -622,9 +604,7 @@ async def duplicate_assessment(
     # ── Duplicate all AssessmentItems ────────────────────────────────────────
     source_items: list[AssessmentItem] = list(
         db_session.exec(
-            select(AssessmentItem)
-            .where(AssessmentItem.assessment_id == source.id)
-            .order_by(AssessmentItem.order)
+            select(AssessmentItem).where(AssessmentItem.assessment_id == source.id).order_by(AssessmentItem.order)
         ).all()
     )
     for src_item in source_items:

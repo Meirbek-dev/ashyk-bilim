@@ -19,9 +19,7 @@ def test_settings_parse_security_and_cors(monkeypatch) -> None:
     settings = get_settings()
 
     assert isinstance(settings.security_config.jwt_secret, SecretStr)
-    assert secret_value(settings.security_config.jwt_secret) == (
-        "test-secret-at-least-32-bytes"
-    )
+    assert secret_value(settings.security_config.jwt_secret) == ("test-secret-at-least-32-bytes")
     assert settings.hosting_config.allowed_origins == [
         "https://app.example.test",
         "https://admin.example.test",

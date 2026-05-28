@@ -40,19 +40,13 @@ def upgrade() -> None:
         )
 
     if "submission" in existing_tables:
-        conn.execute(
-            sa.text("DELETE FROM submission WHERE assessment_type = 'ASSIGNMENT'")
-        )
+        conn.execute(sa.text("DELETE FROM submission WHERE assessment_type = 'ASSIGNMENT'"))
 
     if "assessment" in existing_tables:
         conn.execute(sa.text("DELETE FROM assessment WHERE kind = 'ASSIGNMENT'"))
 
     if "assessment_policy" in existing_tables:
-        conn.execute(
-            sa.text(
-                "DELETE FROM assessment_policy WHERE assessment_type = 'ASSIGNMENT'"
-            )
-        )
+        conn.execute(sa.text("DELETE FROM assessment_policy WHERE assessment_type = 'ASSIGNMENT'"))
 
     _assert_no_legacy_assignment_assessment_rows(conn, existing_tables)
 
@@ -75,9 +69,7 @@ def _assert_no_legacy_assignment_assessment_rows(
         if table_name not in existing_tables:
             continue
         count = conn.execute(
-            sa.text(
-                f"SELECT COUNT(*) FROM {table_name} WHERE {column_name} = 'ASSIGNMENT'"
-            )
+            sa.text(f"SELECT COUNT(*) FROM {table_name} WHERE {column_name} = 'ASSIGNMENT'")
         ).scalar_one()
         if count:
             msg = f"Legacy ASSIGNMENT rows remain in {table_name}: {count}"

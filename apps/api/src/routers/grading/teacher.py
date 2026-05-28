@@ -68,9 +68,7 @@ async def api_get_course_gradebook(
     )
 
 
-@router.get(
-    "/courses/{course_uuid}/gradebook/cursor", response_model=GradebookCursorPage
-)
+@router.get("/courses/{course_uuid}/gradebook/cursor", response_model=GradebookCursorPage)
 async def api_get_course_gradebook_cursor(
     course_uuid: str,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -229,11 +227,7 @@ def api_export_submissions_csv(
             db_session=db_session,
         ),
         media_type="text/csv",
-        headers={
-            "Content-Disposition": get_content_disposition_header(
-                f"grades-activity-{activity_id}.csv"
-            )
-        },
+        headers={"Content-Disposition": get_content_disposition_header(f"grades-activity-{activity_id}.csv")},
     )
 
 

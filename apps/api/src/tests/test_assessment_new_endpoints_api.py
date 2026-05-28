@@ -324,9 +324,7 @@ class TestAttemptState:
 
 class TestPolicyPreset:
     @pytest.mark.parametrize("kind", ["EXAM", "QUIZ", "CODE_CHALLENGE"])
-    def test_returns_preset_for_kind(
-        self, db_session_factory, teacher_user, monkeypatch, kind
-    ):
+    def test_returns_preset_for_kind(self, db_session_factory, teacher_user, monkeypatch, kind):
         client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
         resp = client.get(f"/assessments/policy-preset/{kind}")
         assert resp.status_code == 200, resp.text
@@ -407,9 +405,7 @@ class TestStudentOverrides:
         list_resp = client.get(f"/assessments/{uuid}/overrides")
         assert list_resp.json() == []
 
-    def test_404_assessment_not_found(
-        self, db_session_factory, teacher_user, monkeypatch
-    ):
+    def test_404_assessment_not_found(self, db_session_factory, teacher_user, monkeypatch):
         _seed_assessment(db_session_factory)
         client = _make_api_client(db_session_factory, teacher_user, monkeypatch)
 

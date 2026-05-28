@@ -1,55 +1,60 @@
 [project]
-description = "Ashyk Bilim Backend"
 name = "ashyk-bilim-api"
 version = "0.1.0"
+description = "Ashyk Bilim Backend"
 requires-python = ">=3.14.5,<3.15.0"
 dependencies = [
-  "fastapi>=0.136.3",
-  "sqlalchemy>=2.0.49",
-  "psycopg[binary]>=3.3.4",
-  "pydantic[email]>=2.13.4",
-  "redis<8.0.0",
-  "httpx>=0.28.1",
-  "pyjwt>=2.13.0",
-  "openai>=2.38.0",
-  "resend>=2.30.1",
-  "sqlmodel>=0.0.38",
-  "typer>=0.25.1",
   "alembic>=1.18.4",
-  "logfire[fastapi,sqlalchemy]>=4.33.0",
-  "python-ulid>=3.1.0",
-  "pydantic-settings>=2.14.1",
-  "selectolax>=0.4.9",
-  "pydantic-ai-slim[logfire,openai]>=1.99.0",
-  "pgvector>=0.4.2",
-  "fastapi-users[sqlalchemy]>=15.0.5",
   "cachebox>=5.2.3",
-  "judge0>=0.0.8",
   "fastapi-pagination>=0.15.13",
-  "tiktoken>=0.13.0",
+  "fastapi-users[sqlalchemy]>=15.0.5",
+  "fastapi>=0.136.3",
   "granian[reload,uvloop]>=2.7.4",
+  "httpx>=0.28.1",
+  "judge0>=0.0.8",
+  "logfire[fastapi,sqlalchemy]>=4.33.0",
+  "openai>=2.38.0",
+  "pgvector>=0.4.2",
+  "pydantic-ai-slim[logfire,openai]>=1.99.0",
+  "pydantic-settings>=2.14.1",
+  "pydantic[email]>=2.13.4",
+  "pyjwt>=2.13.0",
   "python-multipart>=0.0.29",
-  "taskiq>=0.12.4",
-  "taskiq-redis>=1.2.2",
+  "python-ulid>=3.1.0",
+  "psycopg[binary]>=3.3.4",
+  "redis<8.0.0",
+  "resend>=2.30.1",
+  "selectolax>=0.4.9",
+  "sqlalchemy>=2.0.49",
+  "sqlmodel>=0.0.38",
   "taskiq-fastapi>=0.5.0",
+  "taskiq-redis>=1.2.2",
+  "taskiq>=0.12.4",
+  "tiktoken>=0.13.0",
+  "typer>=0.25.1",
 ]
 
 [dependency-groups]
-
 dev = [
   "basedpyright>=1.39.4",
   "faker>=40.15.0",
   "mypy>=1.20.2",
   "pyrefly>=0.64.1",
-  "pytest>=9.0.3",
   "pytest-asyncio>=1.3.0",
   "pytest-cov>=7.1.0",
+  "pytest>=9.0.3",
   "ruff>=0.15.12",
   "uvicorn[standard]>=0.47.0",
 ]
 
 [tool.ruff]
-lint.ignore = [
+target-version = "py315"
+preview = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+fixable = ["ALL"]
+ignore = [
   # --- General & Style ---
   "F401", # unused-import: Module imported but not used
   "COM812", # missing-trailing-comma: Missing a trailing comma (often conflicts with formatters)
@@ -95,16 +100,12 @@ lint.ignore = [
   "RUF001",
   "E501", # line-too-long: Line is too long
 ]
-lint.select = ["ALL"]
-lint.fixable = ["ALL"]
-target-version = "py315"
-preview = true
-
-[tool.ruff.format]
-quote-style = "double"
 
 [tool.ruff.lint.pylint]
 max-args = 8 # Slightly more relaxed than default for FastAPI dependencies
+
+[tool.ruff.format]
+quote-style = "double"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -132,8 +133,8 @@ plugins = ["pydantic.mypy"]
 
 # Robustness settings
 warn_unreachable = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 show_error_codes = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 
 # Lowering the "Nitpick" factor
 disallow_untyped_decorators = false # FastAPI routes often use untyped decorators
@@ -146,8 +147,8 @@ module = ["selectolax.*", "judge0.*", "python-ulid.*", "cachebox.*"]
 ignore_missing_imports = true
 
 [tool.basedpyright]
-typeCheckingMode = "strict"
 pythonVersion = "3.14"
+typeCheckingMode = "strict"
 # Robustness without the "Any" nitpicking
 reportAny = false
 reportMissingTypeStubs = false

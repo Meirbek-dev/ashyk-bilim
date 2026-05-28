@@ -87,9 +87,7 @@ async def get_certification(
 ) -> CertificationRead:
     """Get a single certification by certification_id"""
 
-    statement = select(Certifications).where(
-        Certifications.certification_uuid == certification_uuid
-    )
+    statement = select(Certifications).where(Certifications.certification_uuid == certification_uuid)
     certification = db_session.exec(statement).first()
 
     if not certification:
@@ -141,10 +139,7 @@ async def get_certifications_by_course(
     statement = select(Certifications).where(Certifications.course_id == course.id)
     certifications = db_session.exec(statement).all()
 
-    return [
-        CertificationRead(**certification.model_dump())
-        for certification in certifications
-    ]
+    return [CertificationRead(**certification.model_dump()) for certification in certifications]
 
 
 async def update_certification(
@@ -156,9 +151,7 @@ async def update_certification(
 ) -> CertificationRead:
     """Update a certification"""
 
-    statement = select(Certifications).where(
-        Certifications.certification_uuid == certification_uuid
-    )
+    statement = select(Certifications).where(Certifications.certification_uuid == certification_uuid)
     certification = db_session.exec(statement).first()
 
     if not certification:
@@ -213,9 +206,7 @@ async def delete_certification(
 ) -> dict:
     """Delete a certification"""
 
-    statement = select(Certifications).where(
-        Certifications.certification_uuid == certification_uuid
-    )
+    statement = select(Certifications).where(Certifications.certification_uuid == certification_uuid)
     certification = db_session.exec(statement).first()
 
     if not certification:
@@ -361,7 +352,9 @@ async def create_certificate_user(
         # Use timestamp for better uniqueness
         timestamp_suffix = f"{int(now.timestamp())}"[-6:]  # Last 6 digits of timestamp
 
-        user_certification_uuid = f"{prefix_hash}-{current_year}{current_month:02d}{current_day:02d}-{user_uuid_short}-{timestamp_suffix}"
+        user_certification_uuid = (
+            f"{prefix_hash}-{current_year}{current_month:02d}{current_day:02d}-{user_uuid_short}-{timestamp_suffix}"
+        )
 
         # Create certificate user with enhanced data
         certificate_data = {
@@ -506,17 +499,13 @@ async def get_user_certificates_for_course(
         return []
 
     found_cert_ids = [cu.certification_id for cu in cert_users]
-    certifications_list = db_session.exec(
-        select(Certifications).where(Certifications.id.in_(found_cert_ids))
-    ).all()
+    certifications_list = db_session.exec(select(Certifications).where(Certifications.id.in_(found_cert_ids))).all()
     certs_by_id = {c.id: c for c in certifications_list}
 
     result = [
         {
             "certificate_user": CertificateUserRead(**cert_user.model_dump()),
-            "certification": CertificationRead(
-                **certs_by_id[cert_user.certification_id].model_dump()
-            )
+            "certification": CertificationRead(**certs_by_id[cert_user.certification_id].model_dump())
             if cert_user.certification_id in certs_by_id
             else None,
             "course": {
@@ -630,9 +619,7 @@ async def check_course_completion_and_create_certificate(
             try:
                 # Generate idempotency key if not provided
                 if not idempotency_key:
-                    idempotency_key = (
-                        f"course_completion_{user_id}_{course_id}_{course.course_uuid}"
-                    )
+                    idempotency_key = f"course_completion_{user_id}_{course_id}_{course.course_uuid}"
 
                 await create_certificate_user(
                     request=request,
@@ -646,10 +633,7 @@ async def check_course_completion_and_create_certificate(
 
             except HTTPException as cert_error:
                 # Handle certificate creation errors gracefully
-                if (
-                    cert_error.status_code == 400
-                    or "already" in str(cert_error.detail).lower()
-                ):
+                if cert_error.status_code == 400 or "already" in str(cert_error.detail).lower():
                     # Certificate already exists, which is fine for idempotency
                     return True
                 # Re-raise unexpected errors
@@ -692,9 +676,7 @@ async def get_certificate_by_user_certification_uuid(
     """Get a certificate by user_certification_uuid with certification details"""
 
     # Get certificate user by user_certification_uuid
-    statement = select(CertificateUser).where(
-        CertificateUser.user_certification_uuid == user_certification_uuid
-    )
+    statement = select(CertificateUser).where(CertificateUser.user_certification_uuid == user_certification_uuid)
     certificate_user = db_session.exec(statement).first()
 
     if not certificate_user:
@@ -704,9 +686,7 @@ async def get_certificate_by_user_certification_uuid(
         )
 
     # Get the associated certification
-    statement = select(Certifications).where(
-        Certifications.id == certificate_user.certification_id
-    )
+    statement = select(Certifications).where(Certifications.id == certificate_user.certification_id)
     certification = db_session.exec(statement).first()
 
     if not certification:
@@ -748,9 +728,7 @@ async def get_all_user_certificates(
     """Get all certificates for the current user with complete linked information"""
 
     # Get all certificate users for this user
-    statement = select(CertificateUser).where(
-        CertificateUser.user_id == current_user.id
-    )
+    statement = select(CertificateUser).where(CertificateUser.user_id == current_user.id)
     certificate_users = db_session.exec(statement).all()
 
     if not certificate_users:
@@ -760,15 +738,11 @@ async def get_all_user_certificates(
 
     # Batch fetch certifications, courses, and users in 3 queries
     cert_ids = [cu.certification_id for cu in certificate_users if cu.certification_id]
-    certifications_list = db_session.exec(
-        select(Certifications).where(Certifications.id.in_(cert_ids))
-    ).all()
+    certifications_list = db_session.exec(select(Certifications).where(Certifications.id.in_(cert_ids))).all()
     certs_by_id = {c.id: c for c in certifications_list}
 
     course_ids = [c.course_id for c in certifications_list if c.course_id]
-    courses_list = db_session.exec(
-        select(Course).where(Course.id.in_(course_ids))
-    ).all()
+    courses_list = db_session.exec(select(Course).where(Course.id.in_(course_ids))).all()
     courses_by_id = {c.id: c for c in courses_list}
 
     user_ids = [cu.user_id for cu in certificate_users if cu.user_id]

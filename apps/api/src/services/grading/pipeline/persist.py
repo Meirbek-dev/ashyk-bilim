@@ -38,9 +38,7 @@ def persist_submission(
     Returns the refreshed submission after commit.
     """
     # Determine post-submission status
-    grade_release = (
-        policy.grade_release_mode if policy is not None else GradeReleaseMode.IMMEDIATE
-    )
+    grade_release = policy.grade_release_mode if policy is not None else GradeReleaseMode.IMMEDIATE
     new_status = _resolve_status(result, grade_release, assessment_type)
 
     raw_breakdown = result.breakdown.model_dump()
@@ -56,11 +54,7 @@ def persist_submission(
     draft.status = new_status
     draft.is_late = effective.due_at is not None and now > effective.due_at
     draft.submitted_at = now
-    draft.graded_at = (
-        now
-        if new_status in {SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED}
-        else None
-    )
+    draft.graded_at = now if new_status in {SubmissionStatus.GRADED, SubmissionStatus.PUBLISHED} else None
     draft.updated_at = now
 
     # Ensure policy is attached for progress calculation
@@ -80,15 +74,11 @@ def persist_submission(
                 raw_breakdown=raw_breakdown,
                 effective_breakdown=effective_breakdown,
                 overall_feedback=(
-                    effective_breakdown.get("feedback", "")
-                    if isinstance(effective_breakdown, dict)
-                    else ""
+                    effective_breakdown.get("feedback", "") if isinstance(effective_breakdown, dict) else ""
                 ),
                 grading_version=draft.grading_version,
                 created_at=now,
-                published_at=(
-                    now if new_status == SubmissionStatus.PUBLISHED else None
-                ),
+                published_at=(now if new_status == SubmissionStatus.PUBLISHED else None),
             )
         )
 

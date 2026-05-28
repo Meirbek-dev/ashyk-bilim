@@ -13,9 +13,7 @@ def coerce_date_to_end_of_day(value: Any) -> Any:
         if len(value) == 10:
             try:
                 d = date.fromisoformat(value)
-                return datetime.combine(
-                    d, datetime.max.time().replace(microsecond=0), tzinfo=UTC
-                )
+                return datetime.combine(d, datetime.max.time().replace(microsecond=0), tzinfo=UTC)
             except ValueError:
                 pass
         else:

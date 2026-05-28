@@ -48,48 +48,32 @@ async def get_student_activity_runtime(
 ) -> StudentActivityRuntime:
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
 
     activity = _get_activity_for_course(course.id, activity_uuid, db_session)
     if activity is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
 
     checker = PermissionChecker(db_session)
     is_authenticated = not isinstance(current_user, AnonymousUser)
     can_update = (
         is_authenticated
         and activity.creator_id is not None
-        and checker.check(
-            current_user.id, "activity:update", resource_owner_id=activity.creator_id
-        )
+        and checker.check(current_user.id, "activity:update", resource_owner_id=activity.creator_id)
     )
     can_view = bool(course.public and activity.published) or can_update
     if not can_view:
-        checker.require(
-            current_user.id, "activity:read", resource_owner_id=activity.creator_id
-        )
+        checker.require(current_user.id, "activity:read", resource_owner_id=activity.creator_id)
         can_view = True
 
     chapters = _get_course_chapters(course.id, db_session)
     activities_by_chapter = _get_course_activities(course.id, db_session)
-    progress_by_activity = _get_progress_by_activity(
-        course.id, current_user, db_session
-    )
+    progress_by_activity = _get_progress_by_activity(course.id, current_user, db_session)
     outline = _build_outline(chapters, activities_by_chapter, progress_by_activity)
     flat_items = [item for chapter in outline for item in chapter.activities]
-    current_index = next(
-        (idx for idx, item in enumerate(flat_items) if item.id == activity.id), -1
-    )
+    current_index = next((idx for idx, item in enumerate(flat_items) if item.id == activity.id), -1)
     previous_item = flat_items[current_index - 1] if current_index > 0 else None
-    next_item = (
-        flat_items[current_index + 1]
-        if 0 <= current_index < len(flat_items) - 1
-        else None
-    )
+    next_item = flat_items[current_index + 1] if 0 <= current_index < len(flat_items) - 1 else None
 
     progress = _build_progress(progress_by_activity.get(activity.id), db_session)
     policy = _get_visible_policy(activity, db_session)
@@ -116,11 +100,7 @@ async def get_student_activity_runtime(
             published=activity.published,
             chapter_id=activity.chapter_id,
             chapter_title=next(
-                (
-                    chapter.name
-                    for chapter in chapters
-                    if chapter.id == activity.chapter_id
-                ),
+                (chapter.name for chapter in chapters if chapter.id == activity.chapter_id),
                 None,
             ),
             order=activity.order,
@@ -152,50 +132,32 @@ async def run_student_activity_action(
 ) -> StudentActivityRuntime:
     course = _get_course_by_uuid(db_session, course_uuid)
     if course is None or course.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
     activity = _get_activity_for_course(course.id, activity_uuid, db_session)
     if activity is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
 
     if action.command == "mark_complete":
-        await add_activity_to_trail(
-            request, current_user, activity.activity_uuid, db_session
-        )
+        await add_activity_to_trail(request, current_user, activity.activity_uuid, db_session)
         if activity.id is not None:
-            mark_manual_activity_complete(
-                activity.id, current_user.id, db_session, commit=True
-            )
+            mark_manual_activity_complete(activity.id, current_user.id, db_session, commit=True)
     elif action.command == "unmark_complete":
-        await remove_activity_from_trail(
-            request, current_user, activity.activity_uuid, db_session
-        )
+        await remove_activity_from_trail(request, current_user, activity.activity_uuid, db_session)
         if activity.id is not None:
-            unmark_manual_activity_complete(
-                activity.id, current_user.id, db_session, commit=True
-            )
+            unmark_manual_activity_complete(activity.id, current_user.id, db_session, commit=True)
     else:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Command '{action.command}' is owned by the activity-specific runtime.",
         )
 
-    return await get_student_activity_runtime(
-        request, course_uuid, activity_uuid, current_user, db_session
-    )
+    return await get_student_activity_runtime(request, course_uuid, activity_uuid, current_user, db_session)
 
 
-def _get_activity_for_course(
-    course_id: int, activity_uuid: str, db_session: Session
-) -> Activity | None:
+def _get_activity_for_course(course_id: int, activity_uuid: str, db_session: Session) -> Activity | None:
     candidates = _activity_uuid_candidates(activity_uuid)
     return db_session.exec(
-        select(Activity).where(
-            Activity.course_id == course_id, Activity.activity_uuid.in_(candidates)
-        )
+        select(Activity).where(Activity.course_id == course_id, Activity.activity_uuid.in_(candidates))
     ).first()
 
 
@@ -209,17 +171,11 @@ def _activity_uuid_candidates(activity_uuid: str) -> tuple[str, ...]:
 
 def _get_course_chapters(course_id: int, db_session: Session) -> list[Chapter]:
     return list(
-        db_session.exec(
-            select(Chapter)
-            .where(Chapter.course_id == course_id)
-            .order_by(Chapter.order, Chapter.id)
-        ).all()
+        db_session.exec(select(Chapter).where(Chapter.course_id == course_id).order_by(Chapter.order, Chapter.id)).all()
     )
 
 
-def _get_course_activities(
-    course_id: int, db_session: Session
-) -> dict[int, list[Activity]]:
+def _get_course_activities(course_id: int, db_session: Session) -> dict[int, list[Activity]]:
     rows = list(
         db_session.exec(
             select(Activity)
@@ -270,9 +226,7 @@ def _build_outline(
     ]
 
 
-def _nav_item(
-    activity: Activity, progress: ActivityProgress | None
-) -> StudentActivityNavItem:
+def _nav_item(activity: Activity, progress: ActivityProgress | None) -> StudentActivityNavItem:
     runtime_progress = _build_progress(progress)
     return StudentActivityNavItem(
         id=activity.id or 0,
@@ -308,9 +262,7 @@ def _build_progress(
         teacher_action_required=progress.teacher_action_required,
         attempt_count=progress.attempt_count,
         latest_submission_uuid=getattr(latest_submission, "submission_uuid", None),
-        latest_submission_status=_enum_value(
-            getattr(latest_submission, "status", None)
-        ),
+        latest_submission_status=_enum_value(getattr(latest_submission, "status", None)),
         submitted_at=progress.submitted_at,
         graded_at=progress.graded_at,
         completed_at=progress.completed_at,
@@ -349,14 +301,10 @@ def _enum_value(value: object) -> str | None:
     return str(getattr(value, "value", value))
 
 
-def _get_visible_policy(
-    activity: Activity, db_session: Session
-) -> StudentVisiblePolicy | None:
+def _get_visible_policy(activity: Activity, db_session: Session) -> StudentVisiblePolicy | None:
     if activity.id is None:
         return None
-    policy = db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)
-    ).first()
+    policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)).first()
     if policy is not None:
         return StudentVisiblePolicy(
             due_at=policy.due_at,
@@ -368,9 +316,7 @@ def _get_visible_policy(
             time_limit_seconds=policy.time_limit_seconds,
         )
     file_submission = db_session.exec(
-        select(FileSubmissionActivity).where(
-            FileSubmissionActivity.activity_id == activity.id
-        )
+        select(FileSubmissionActivity).where(FileSubmissionActivity.activity_id == activity.id)
     ).first()
     if file_submission is None:
         return None
@@ -381,33 +327,22 @@ def _get_visible_policy(
     )
 
 
-def _build_content(
-    activity: Activity, db_session: Session
-) -> StudentActivityContentRuntime:
+def _build_content(activity: Activity, db_session: Session) -> StudentActivityContentRuntime:
     assessment_uuid = None
     if activity.id is not None and activity.activity_type in {
         ActivityTypeEnum.TYPE_EXAM,
         ActivityTypeEnum.TYPE_CODE_CHALLENGE,
         ActivityTypeEnum.TYPE_CUSTOM,
     }:
-        assessment = db_session.exec(
-            select(Assessment).where(Assessment.activity_id == activity.id)
-        ).first()
+        assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
         assessment_uuid = assessment.assessment_uuid if assessment else None
 
     file_submission_uuid = None
-    if (
-        activity.id is not None
-        and activity.activity_type == ActivityTypeEnum.TYPE_FILE_SUBMISSION
-    ):
+    if activity.id is not None and activity.activity_type == ActivityTypeEnum.TYPE_FILE_SUBMISSION:
         file_submission = db_session.exec(
-            select(FileSubmissionActivity).where(
-                FileSubmissionActivity.activity_id == activity.id
-            )
+            select(FileSubmissionActivity).where(FileSubmissionActivity.activity_id == activity.id)
         ).first()
-        file_submission_uuid = (
-            file_submission.file_submission_uuid if file_submission else None
-        )
+        file_submission_uuid = file_submission.file_submission_uuid if file_submission else None
 
     return StudentActivityContentRuntime(
         type=_enum_value(activity.activity_type) or "",
@@ -444,17 +379,9 @@ def _derive_primary_action(
         ActivityTypeEnum.TYPE_CUSTOM,
         ActivityTypeEnum.TYPE_FILE_SUBMISSION,
     }:
-        return StudentPrimaryAction(
-            id="continue" if progress.state == "in_progress" else "start", enabled=True
-        )
+        return StudentPrimaryAction(id="continue" if progress.state == "in_progress" else "start", enabled=True)
     if progress.complete and next_item is not None:
-        return StudentPrimaryAction(
-            id="next_activity", enabled=True, target_activity_uuid=next_item.uuid
-        )
+        return StudentPrimaryAction(id="next_activity", enabled=True, target_activity_uuid=next_item.uuid)
     if not is_authenticated:
-        return StudentPrimaryAction(
-            id="none", enabled=False, reason="authentication_required"
-        )
-    return StudentPrimaryAction(
-        id="unmark_complete" if progress.complete else "mark_complete", enabled=True
-    )
+        return StudentPrimaryAction(id="none", enabled=False, reason="authentication_required")
+    return StudentPrimaryAction(id="unmark_complete" if progress.complete else "mark_complete", enabled=True)

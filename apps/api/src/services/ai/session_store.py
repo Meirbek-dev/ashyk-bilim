@@ -22,9 +22,7 @@ _SUMMARY_CONTENT_LIMIT = 180
 
 def _session_id(aichat_uuid: str | None, user_id: int | None) -> str:
     if aichat_uuid and user_id is not None:
-        if aichat_uuid.startswith("user_") and not aichat_uuid.startswith(
-            f"user_{user_id}_"
-        ):
+        if aichat_uuid.startswith("user_") and not aichat_uuid.startswith(f"user_{user_id}_"):
             raise ChatSessionError(
                 "Session does not belong to this user",
                 details={"session": aichat_uuid},
@@ -79,10 +77,7 @@ def load_chat_session(
         try:
             total_messages = client.llen(key)
             raw_messages = client.lrange(key, -window_size, -1)
-            messages = [
-                ChatMessage.model_validate_json(_decode_redis_value(item))
-                for item in raw_messages
-            ]
+            messages = [ChatMessage.model_validate_json(_decode_redis_value(item)) for item in raw_messages]
 
             older_message_count = max(total_messages - len(messages), 0)
             if older_message_count > 0:
@@ -90,8 +85,7 @@ def load_chat_session(
                 older_start = max(0, older_end - _SUMMARY_SOURCE_MESSAGE_COUNT + 1)
                 raw_summary_messages = client.lrange(key, older_start, older_end)
                 summary_messages = [
-                    ChatMessage.model_validate_json(_decode_redis_value(item))
-                    for item in raw_summary_messages
+                    ChatMessage.model_validate_json(_decode_redis_value(item)) for item in raw_summary_messages
                 ]
                 conversation_summary = _summarize_messages(summary_messages)
         except Exception as exc:
@@ -121,9 +115,7 @@ def append_messages(
     settings = get_settings()
     client = get_redis_client()
     if client is None:
-        logger.warning(
-            "Redis unavailable, AI chat persistence disabled for session %s", session_id
-        )
+        logger.warning("Redis unavailable, AI chat persistence disabled for session %s", session_id)
         return
 
     key = _redis_key(session_id)
@@ -158,12 +150,8 @@ def build_chat_messages(
         request_id=request_id,
     )
     return [
-        ChatMessage(
-            id=str(ULID()), role=ChatRole.USER, content=question, metadata=metadata
-        ),
-        ChatMessage(
-            id=str(ULID()), role=ChatRole.ASSISTANT, content=answer, metadata=metadata
-        ),
+        ChatMessage(id=str(ULID()), role=ChatRole.USER, content=question, metadata=metadata),
+        ChatMessage(id=str(ULID()), role=ChatRole.ASSISTANT, content=answer, metadata=metadata),
     ]
 
 

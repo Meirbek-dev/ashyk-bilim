@@ -63,9 +63,7 @@ def _accessible_courses_filter(
     has_usergroup = (
         select(1)
         .select_from(UserGroupResource)
-        .join(
-            UserGroupUser, UserGroupUser.usergroup_id == UserGroupResource.usergroup_id
-        )
+        .join(UserGroupUser, UserGroupUser.usergroup_id == UserGroupResource.usergroup_id)
         .where(
             UserGroupResource.resource_uuid == Course.course_uuid,
             UserGroupUser.user_id == current_user.id,
@@ -152,9 +150,7 @@ def _apply_lms_sort(query, current_user: PublicUser | AnonymousUser):
         .exists()
     )
 
-    is_creator = case(
-        (Course.creator_id == current_user.id, 1), (is_creator_author, 1), else_=0
-    )
+    is_creator = case((Course.creator_id == current_user.id, 1), (is_creator_author, 1), else_=0)
 
     is_collaborator_author = (
         select(1)
@@ -309,11 +305,7 @@ def _build_editable_course_insights(
             and (bool(course.public) or linked_usergroups > 0)
             and certifications > 0
         )
-        attention = (
-            not bool(course.thumbnail_image)
-            or not has_description
-            or activity_count == 0
-        )
+        attention = not bool(course.thumbnail_image) or not has_description or activity_count == 0
         insights[course.course_uuid] = {
             "ready": ready,
             "attention": attention,
@@ -362,13 +354,9 @@ def _ready_sql_condition():
     )
     has_usergroup_or_public = or_(
         Course.public,
-        select(UserGroupResource.id)
-        .where(UserGroupResource.resource_uuid == Course.course_uuid)
-        .exists(),
+        select(UserGroupResource.id).where(UserGroupResource.resource_uuid == Course.course_uuid).exists(),
     )
-    has_certification = (
-        select(Certifications.id).where(Certifications.course_id == Course.id).exists()
-    )
+    has_certification = select(Certifications.id).where(Certifications.course_id == Course.id).exists()
     return and_(
         Course.name.isnot(None),
         Course.name != "",
@@ -437,17 +425,9 @@ async def list_editable_courses(
     insights = _build_editable_course_insights(all_courses_for_summary, db_session)
     summary = {
         "total": len(all_courses_for_summary),
-        "ready": sum(
-            1
-            for c in all_courses_for_summary
-            if insights.get(c.course_uuid, {}).get("ready")
-        ),
+        "ready": sum(1 for c in all_courses_for_summary if insights.get(c.course_uuid, {}).get("ready")),
         "private": sum(1 for c in all_courses_for_summary if not bool(c.public)),
-        "attention": sum(
-            1
-            for c in all_courses_for_summary
-            if insights.get(c.course_uuid, {}).get("attention")
-        ),
+        "attention": sum(1 for c in all_courses_for_summary if insights.get(c.course_uuid, {}).get("attention")),
     }
 
     # 2. Fetch only the preset-filtered, paginated page — directly in SQL.
@@ -479,9 +459,7 @@ async def list_editable_courses(
     return paginated_courses, filtered_total, summary
 
 
-def _ensure_course_is_current(
-    course: Course, last_known_update_date: datetime | None
-) -> None:
+def _ensure_course_is_current(course: Course, last_known_update_date: datetime | None) -> None:
     if last_known_update_date is None:
         return
 
@@ -635,9 +613,7 @@ async def get_course_meta(
 
     # Extract course and authors from results
     course = results[0][0]  # First result's Course
-    author_results = [
-        (ra, u) for _, ra, u in results if ra is not None and u is not None
-    ]
+    author_results = [(ra, u) for _, ra, u in results if ra is not None and u is not None]
 
     if checker is None:
         checker = PermissionChecker(db_session)
@@ -799,8 +775,7 @@ async def get_courses(
         can_update = can_delete = is_owner = False
         if not isinstance(current_user, AnonymousUser) and current_user.id:
             is_author = any(
-                a.user.id == current_user.id
-                and a.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
+                a.user.id == current_user.id and a.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
                 for a in authors
             )
             is_owner = course.creator_id == current_user.id
@@ -827,11 +802,7 @@ async def get_courses(
         })
         course_reads.append(course_read)
     try:
-        if (
-            isinstance(current_user, AnonymousUser)
-            and get_json is not None
-            and set_json is not None
-        ):
+        if isinstance(current_user, AnonymousUser) and get_json is not None and set_json is not None:
             try:
                 serialised = [cr.model_dump() for cr in course_reads]
                 set_json(cache_key, serialised, ttl=60)
@@ -916,9 +887,7 @@ async def search_courses(
             + func.coalesce(Course.tags, ""),
         )
         query = query.order_by(
-            func.ts_rank(
-                vector, func.plainto_tsquery("english", search_query.strip())
-            ).desc(),
+            func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
             Course.id.desc(),
         )
     else:
@@ -976,9 +945,7 @@ _STARTER_CHAPTERS = [
 ]
 
 
-def _seed_starter_chapters(
-    course: Course, creator_id: int, db_session: Session
-) -> None:
+def _seed_starter_chapters(course: Course, creator_id: int, db_session: Session) -> None:
     """Insert the two default chapters for the 'starter' template."""
     from ulid import ULID
 
@@ -1139,18 +1106,10 @@ async def update_course_thumbnail(
     if name_in_disk:
         if thumbnail_type == ThumbnailType.IMAGE:
             course.thumbnail_image = name_in_disk
-            course.thumbnail_type = (
-                ThumbnailType.IMAGE
-                if not course.thumbnail_video
-                else ThumbnailType.BOTH
-            )
+            course.thumbnail_type = ThumbnailType.IMAGE if not course.thumbnail_video else ThumbnailType.BOTH
         elif thumbnail_type == ThumbnailType.VIDEO:
             course.thumbnail_video = name_in_disk
-            course.thumbnail_type = (
-                ThumbnailType.VIDEO
-                if not course.thumbnail_image
-                else ThumbnailType.BOTH
-            )
+            course.thumbnail_type = ThumbnailType.VIDEO if not course.thumbnail_image else ThumbnailType.BOTH
     else:
         raise HTTPException(
             status_code=400,
@@ -1242,10 +1201,7 @@ async def update_course(
 
         is_course_owner = False
         if resource_author and (
-            (
-                resource_author.authorship
-                in {ResourceAuthorshipEnum.CREATOR, ResourceAuthorshipEnum.MAINTAINER}
-            )
+            (resource_author.authorship in {ResourceAuthorshipEnum.CREATOR, ResourceAuthorshipEnum.MAINTAINER})
             and resource_author.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
         ):
             is_course_owner = True
@@ -1500,9 +1456,9 @@ async def get_editable_courses(
     checker = PermissionChecker(db_session)
     granted = checker._get_or_load(current_user.id)
 
-    has_broad_update = PermissionChecker._has_perm(
-        granted, "course", "update", "all"
-    ) or PermissionChecker._has_perm(granted, "course", "update", "platform")
+    has_broad_update = PermissionChecker._has_perm(granted, "course", "update", "all") or PermissionChecker._has_perm(
+        granted, "course", "update", "platform"
+    )
     dialect_name = db_session.bind.dialect.name
     search_filter = _course_search_filter(search_query, dialect_name)
 
@@ -1549,9 +1505,7 @@ async def get_editable_courses(
             + func.coalesce(Course.tags, ""),
         )
         id_query = id_query.order_by(
-            func.ts_rank(
-                vector, func.plainto_tsquery("english", search_query.strip())
-            ).desc(),
+            func.ts_rank(vector, func.plainto_tsquery("english", search_query.strip())).desc(),
             Course.id.desc(),
         )
     else:
@@ -1597,16 +1551,14 @@ async def get_editable_courses(
 
     course_reads = []
 
-    has_broad_delete = PermissionChecker._has_perm(
-        granted, "course", "delete", "all"
-    ) or PermissionChecker._has_perm(granted, "course", "delete", "platform")
+    has_broad_delete = PermissionChecker._has_perm(granted, "course", "delete", "all") or PermissionChecker._has_perm(
+        granted, "course", "delete", "platform"
+    )
     has_own_delete = PermissionChecker._has_perm(granted, "course", "delete", "own")
 
     for course, authors in courses_map.values():
         is_author = any(
-            a.user.id == current_user.id
-            and a.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
-            for a in authors
+            a.user.id == current_user.id and a.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE for a in authors
         )
         is_owner = course.creator_id == current_user.id
         can_delete = has_broad_delete or (has_own_delete and is_author)
@@ -1647,9 +1599,9 @@ async def count_editable_courses(
     checker = PermissionChecker(db_session)
     granted = checker._get_or_load(current_user.id)
 
-    has_broad_update = PermissionChecker._has_perm(
-        granted, "course", "update", "all"
-    ) or PermissionChecker._has_perm(granted, "course", "update", "platform")
+    has_broad_update = PermissionChecker._has_perm(granted, "course", "update", "all") or PermissionChecker._has_perm(
+        granted, "course", "update", "platform"
+    )
     search_filter = _course_search_filter(search_query, db_session.bind.dialect.name)
 
     if has_broad_update:
@@ -1784,9 +1736,7 @@ async def get_course_user_rights(
         rights["roles"]["is_maintainer_role"] = True
 
     # Check instructor role (course-level update permission)
-    is_owner_for_course = is_course_owner(
-        db_session, current_user.id, course.course_uuid
-    )
+    is_owner_for_course = is_course_owner(db_session, current_user.id, course.course_uuid)
     user_has_instructor_role = checker.check(
         current_user.id,
         "course:update",
@@ -1823,9 +1773,7 @@ async def get_course_user_rights(
     else:
         # Check if the course is not protected by any UserGroupResource entry. If so,
         # authenticated users are allowed to access it.
-        ugr_stmt = select(UserGroupResource).where(
-            UserGroupResource.resource_uuid == course_uuid
-        )
+        ugr_stmt = select(UserGroupResource).where(UserGroupResource.resource_uuid == course_uuid)
         ugr = db_session.exec(ugr_stmt).all()
         if not ugr:
             has_user_permissions = True
@@ -1846,18 +1794,9 @@ async def get_course_user_rights(
                 has_user_permissions = True
 
     # READ permissions
-    if (
-        course.public
-        or is_course_owner_flag
-        or is_admin
-        or is_maintainer_role
-        or is_instructor
-        or has_user_permissions
-    ):
+    if course.public or is_course_owner_flag or is_admin or is_maintainer_role or is_instructor or has_user_permissions:
         rights["permissions"]["read"] = True
-    is_instructor_or_admin_or_maintainer_role: bool = (
-        is_instructor or is_admin or is_maintainer_role
-    )
+    is_instructor_or_admin_or_maintainer_role: bool = is_instructor or is_admin or is_maintainer_role
     # CREATE permissions (course creation)
     if is_instructor or is_admin or is_maintainer_role:
         rights["permissions"]["create"] = True
@@ -1887,12 +1826,7 @@ async def get_course_user_rights(
         rights["permissions"]["manage_contributors"] = True
 
     # ACCESS MANAGEMENT permissions (public, open_to_contributors)
-    if (
-        rights["ownership"]["is_creator"]
-        or rights["ownership"]["is_maintainer"]
-        or is_admin
-        or is_maintainer_role
-    ):
+    if rights["ownership"]["is_creator"] or rights["ownership"]["is_maintainer"] or is_admin or is_maintainer_role:
         rights["permissions"]["manage_access"] = True
 
     # GRADING permissions

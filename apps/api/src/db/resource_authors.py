@@ -23,9 +23,7 @@ class ResourceAuthorshipStatusEnum(StrEnum):
 class ResourceAuthor(SQLModelStrictBaseModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     resource_uuid: str
-    user_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
     authorship: ResourceAuthorshipEnum
     authorship_status: ResourceAuthorshipStatusEnum
     creation_date: str = ""

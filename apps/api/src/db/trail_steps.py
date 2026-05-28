@@ -38,21 +38,11 @@ class TrailStep(SQLModelStrictBaseModel, table=True):
     )
 
     # Foreign key relationships
-    trailrun_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("trailrun.id", ondelete="CASCADE"))
-    )
-    trail_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("trail.id", ondelete="CASCADE"))
-    )
-    activity_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("activity.id", ondelete="CASCADE"))
-    )
-    course_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE"))
-    )
-    user_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    trailrun_id: int = Field(sa_column=Column(Integer, ForeignKey("trailrun.id", ondelete="CASCADE")))
+    trail_id: int = Field(sa_column=Column(Integer, ForeignKey("trail.id", ondelete="CASCADE")))
+    activity_id: int = Field(sa_column=Column(Integer, ForeignKey("activity.id", ondelete="CASCADE")))
+    course_id: int = Field(sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE")))
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
 
     # Timestamps
     creation_date: str = Field()

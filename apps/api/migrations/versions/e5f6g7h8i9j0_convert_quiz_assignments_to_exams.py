@@ -66,8 +66,7 @@ def _fetch_one(conn, sql: str, **params: Any) -> dict[str, Any] | None:
 def _next_activity_order(conn, chapter_id: int) -> int:
     row = _fetch_one(
         conn,
-        'SELECT COALESCE(MAX("order"), -1) + 1 AS next_order '
-        "FROM activity WHERE chapter_id = :chapter_id",
+        'SELECT COALESCE(MAX("order"), -1) + 1 AS next_order FROM activity WHERE chapter_id = :chapter_id',
         chapter_id=chapter_id,
     )
     return int(row["next_order"] if row else 0)
@@ -107,9 +106,7 @@ def _map_quiz_settings(quiz_settings: dict[str, Any]) -> dict[str, Any]:
     # max_attempts → attempt_limit (1..5)
     max_attempts = quiz_settings.get("max_attempts")
     if isinstance(max_attempts, int) and max_attempts > 0:
-        attempt_limit: int | None = _clamp(
-            max_attempts, _ATTEMPT_LIMIT_MIN, _ATTEMPT_LIMIT_MAX
-        )
+        attempt_limit: int | None = _clamp(max_attempts, _ATTEMPT_LIMIT_MIN, _ATTEMPT_LIMIT_MAX)
     else:
         # Quiz default was None=unlimited; exam default is 1.
         attempt_limit = 1
@@ -119,12 +116,7 @@ def _map_quiz_settings(quiz_settings: dict[str, Any]) -> dict[str, Any]:
     max_violations = quiz_settings.get("max_violations")
     track_violations = bool(quiz_settings.get("track_violations", True))
     block_on_violations = bool(quiz_settings.get("block_on_violations", True))
-    if (
-        track_violations
-        and block_on_violations
-        and isinstance(max_violations, int)
-        and max_violations > 0
-    ):
+    if track_violations and block_on_violations and isinstance(max_violations, int) and max_violations > 0:
         violation_threshold: int | None = _clamp(
             max_violations,
             _VIOLATION_THRESHOLD_MIN,
@@ -515,11 +507,7 @@ def upgrade() -> None:
 
         # Drop the legacy QUIZ tasks now that their data lives in the new Exam.
         conn.execute(
-            sa.text(
-                "DELETE FROM assignmenttask "
-                "WHERE assignment_id = :assignment_id "
-                "  AND assignment_type = 'QUIZ'"
-            ),
+            sa.text("DELETE FROM assignmenttask WHERE assignment_id = :assignment_id   AND assignment_type = 'QUIZ'"),
             {"assignment_id": assignment["id"]},
         )
 
@@ -527,8 +515,7 @@ def upgrade() -> None:
         # together with its (now-redundant) source activity.
         remaining = _fetch_one(
             conn,
-            "SELECT COUNT(*) AS count FROM assignmenttask "
-            "WHERE assignment_id = :assignment_id",
+            "SELECT COUNT(*) AS count FROM assignmenttask WHERE assignment_id = :assignment_id",
             assignment_id=assignment["id"],
         )
         if int((remaining or {}).get("count", 0)) == 0:

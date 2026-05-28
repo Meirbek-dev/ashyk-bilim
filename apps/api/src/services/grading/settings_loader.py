@@ -78,9 +78,7 @@ def load_activity_settings(
             return AssessmentSettings(
                 items=assessment_items,
                 max_attempts=canonical.attempt_limit,
-                time_limit_seconds=(
-                    canonical.time_limit * 60 if canonical.time_limit else None
-                ),
+                time_limit_seconds=(canonical.time_limit * 60 if canonical.time_limit else None),
                 negative_marking_percent=canonical.negative_marking_percent,
                 track_violations=any([
                     canonical.copy_paste_protection,
@@ -112,9 +110,7 @@ def _load_canonical_items(
     activity_id: int,
     db_session: Session,
 ) -> list[CanonicalAssessmentItem]:
-    assessment = db_session.exec(
-        select(Assessment).where(Assessment.activity_id == activity_id)
-    ).first()
+    assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity_id)).first()
     if assessment is None or assessment.id is None:
         return []
 

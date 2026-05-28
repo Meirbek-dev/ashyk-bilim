@@ -46,9 +46,7 @@ def validate_video_file(video_file: UploadFile | None) -> str:
             detail="Video : Wrong video format",
         )
     video_format = (
-        video_file.filename.rsplit(".", 1)[-1]
-        if video_file.filename and "." in video_file.filename
-        else None
+        video_file.filename.rsplit(".", 1)[-1] if video_file.filename and "." in video_file.filename else None
     )
     if not video_format:
         raise HTTPException(
@@ -60,9 +58,7 @@ def validate_video_file(video_file: UploadFile | None) -> str:
 
 def _next_activity_order(chapter_id: int, db_session: Session) -> int:
     result = db_session.exec(
-        select(Activity)
-        .where(Activity.chapter_id == chapter_id)
-        .order_by(Activity.order.desc())
+        select(Activity).where(Activity.chapter_id == chapter_id).order_by(Activity.order.desc())
     ).first()
     return (result.order if result else 0) + 1
 
@@ -82,9 +78,7 @@ async def create_video_activity(
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
 
-    course = db_session.exec(
-        select(Course).where(Course.id == chapter.course_id)
-    ).first()
+    course = db_session.exec(select(Course).where(Course.id == chapter.course_id)).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
@@ -113,9 +107,7 @@ async def create_video_activity(
         chapter_id=chapter.id,
         course_id=chapter.course_id,  # keep legacy column in sync
         content={"filename": f"video.{video_format}", "activity_uuid": activity_uuid},
-        details=details_dict
-        if isinstance(details_dict, dict)
-        else json.loads(details_dict),
+        details=details_dict if isinstance(details_dict, dict) else json.loads(details_dict),
         creation_date=str(datetime.now()),
         update_date=str(datetime.now()),
         order=_next_activity_order(chapter_id, db_session),
@@ -168,9 +160,7 @@ async def create_video_activity(
                 )
                 for subtitle_file, language in valid_subtitles
             ])
-            for (_, language), upload_result in zip(
-                valid_subtitles, upload_results, strict=False
-            ):
+            for (_, language), upload_result in zip(valid_subtitles, upload_results, strict=False):
                 if upload_result.get("success"):
                     subtitle_info.append({
                         "language": language,
@@ -180,9 +170,7 @@ async def create_video_activity(
                     })
 
         if subtitle_info:
-            updated_details = (
-                details_dict.copy() if isinstance(details_dict, dict) else {}
-            )
+            updated_details = details_dict.copy() if isinstance(details_dict, dict) else {}
             updated_details["subtitles"] = subtitle_info
             activity.details = updated_details
             db_session.add(activity)
@@ -210,15 +198,11 @@ async def create_external_video_activity(
     data: ExternalVideo,
     db_session: Session,
 ):
-    chapter = db_session.exec(
-        select(Chapter).where(Chapter.id == data.chapter_id)
-    ).first()
+    chapter = db_session.exec(select(Chapter).where(Chapter.id == data.chapter_id)).first()
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
 
-    course = db_session.exec(
-        select(Course).where(Course.id == chapter.course_id)
-    ).first()
+    course = db_session.exec(select(Course).where(Course.id == chapter.course_id)).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 

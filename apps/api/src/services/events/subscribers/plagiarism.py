@@ -51,18 +51,14 @@ def set_plagiarism_provider(provider: PlagiarismProvider) -> None:
 class PlagiarismSubscriber:
     """Checks submissions with file uploads for plagiarism."""
 
-    async def handle(
-        self, event: SubmissionSubmittedEvent | FileSubmissionSubmittedEvent
-    ) -> None:
+    async def handle(self, event: SubmissionSubmittedEvent | FileSubmissionSubmittedEvent) -> None:
         """Only triggers when file_keys are present."""
         if not event.file_keys:
             return
 
         provider = get_plagiarism_provider()
         try:
-            submission_uuid = (
-                getattr(event, "submission_uuid", None) or event.attempt_uuid
-            )
+            submission_uuid = getattr(event, "submission_uuid", None) or event.attempt_uuid
             result = await provider.check(submission_uuid, event.file_keys)
             logger.info(
                 "plagiarism_check submission=%s score=%s flagged=%s",
@@ -73,7 +69,6 @@ class PlagiarismSubscriber:
         except Exception as exc:
             logger.warning(
                 "plagiarism_check_failed submission=%s error=%s",
-                getattr(event, "submission_uuid", None)
-                or getattr(event, "attempt_uuid", ""),
+                getattr(event, "submission_uuid", None) or getattr(event, "attempt_uuid", ""),
                 exc,
             )

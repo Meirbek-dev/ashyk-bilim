@@ -60,6 +60,4 @@ def test_submission_metadata_accepts_json_timestamps_in_strict_mode():
     )
 
     assert metadata.latest_run is not None
-    assert metadata.latest_run.created_at == datetime(
-        2026, 5, 22, 16, 57, 22, 370168, tzinfo=UTC
-    )
+    assert metadata.latest_run.created_at == datetime(2026, 5, 22, 16, 57, 22, 370168, tzinfo=UTC)

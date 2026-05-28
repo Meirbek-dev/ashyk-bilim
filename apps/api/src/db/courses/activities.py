@@ -87,9 +87,7 @@ class Activity(ActivityBase, table=True):
     name: str = Field(sa_column=Column(String(500), nullable=False))
     # Primary FK: activities belong to a chapter (cascades on chapter delete)
     chapter_id: int = Field(
-        sa_column=Column(
-            Integer, ForeignKey("chapter.id", ondelete="CASCADE"), nullable=False
-        ),
+        sa_column=Column(Integer, ForeignKey("chapter.id", ondelete="CASCADE"), nullable=False),
     )
     # Denormalised FK kept for query performance; synced on create/move.
     # The canonical source of truth is chapter_id → Chapter.course_id.
@@ -110,9 +108,7 @@ class Activity(ActivityBase, table=True):
     )
     update_date: datetime = Field(
         default_factory=lambda: datetime.now(tz=UTC),
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
 
 
@@ -131,9 +127,7 @@ _VALID_SUBTYPES: dict[ActivityTypeEnum, set[ActivitySubTypeEnum]] = {
         ActivitySubTypeEnum.SUBTYPE_CODE_GENERAL,
         ActivitySubTypeEnum.SUBTYPE_CODE_COMPETITIVE,
     },
-    ActivityTypeEnum.TYPE_FILE_SUBMISSION: {
-        ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD
-    },
+    ActivityTypeEnum.TYPE_FILE_SUBMISSION: {ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD},
     ActivityTypeEnum.TYPE_CUSTOM: {ActivitySubTypeEnum.SUBTYPE_CUSTOM},
 }
 

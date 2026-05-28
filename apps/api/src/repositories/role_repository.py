@@ -47,9 +47,7 @@ class RoleRepository:
         return self.db.exec(select(Role).order_by(Role.priority.desc())).all()
 
     def list_all_permissions(self) -> list[Permission]:
-        return self.db.exec(
-            select(Permission).order_by(Permission.resource_type, Permission.action)
-        ).all()
+        return self.db.exec(select(Permission).order_by(Permission.resource_type, Permission.action)).all()
 
     def get_role_permissions(self, role_id: int) -> list[Permission]:
         return self.db.exec(
@@ -76,27 +74,15 @@ class RoleRepository:
         """Return (permissions_count, users_count) for a single role."""
         perm_count = (
             self.db.exec(
-                select(func.count(RolePermission.permission_id)).where(
-                    RolePermission.role_id == role_id
-                )
+                select(func.count(RolePermission.permission_id)).where(RolePermission.role_id == role_id)
             ).one()
             or 0
         )
-        user_count = (
-            self.db.exec(
-                select(func.count(UserRole.user_id)).where(UserRole.role_id == role_id)
-            ).one()
-            or 0
-        )
+        user_count = self.db.exec(select(func.count(UserRole.user_id)).where(UserRole.role_id == role_id)).one() or 0
         return perm_count, user_count
 
     def get_user_count(self, role_id: int) -> int:
-        return (
-            self.db.exec(
-                select(func.count(UserRole.user_id)).where(UserRole.role_id == role_id)
-            ).one()
-            or 0
-        )
+        return self.db.exec(select(func.count(UserRole.user_id)).where(UserRole.role_id == role_id)).one() or 0
 
     # ── Mutations ─────────────────────────────────────────────────────────
 
@@ -138,9 +124,7 @@ class RoleRepository:
         self.db.add(RolePermission(role_id=role_id, permission_id=permission_id))
         self.db.commit()
 
-    def remove_permission_from_role(
-        self, role_id: int, permission_id: int
-    ) -> Permission | None:
+    def remove_permission_from_role(self, role_id: int, permission_id: int) -> Permission | None:
         """Remove permission from role. Returns the Permission row for audit logging."""
         rp = self.db.exec(
             select(RolePermission).where(
@@ -183,9 +167,7 @@ class RoleRepository:
                     continue
                 resource, action, scope = parts
 
-                perm = self.db.exec(
-                    select(Permission).where(Permission.name == perm_str)
-                ).first()
+                perm = self.db.exec(select(Permission).where(Permission.name == perm_str)).first()
                 if not perm:
                     perm = Permission(
                         name=perm_str,

@@ -241,9 +241,7 @@ def _audit_create_sync(session_data_dict: dict) -> None:
         engine = get_bg_engine()
         with Session(engine) as db:
             existing = db.exec(
-                select(AuthSession).where(
-                    AuthSession.session_id == session_data_dict["session_id"]
-                )
+                select(AuthSession).where(AuthSession.session_id == session_data_dict["session_id"])
             ).first()
             if existing is not None:
                 return
@@ -263,9 +261,7 @@ def _audit_create_sync(session_data_dict: dict) -> None:
             db.add(record)
             db.commit()
     except Exception:
-        logger.warning(
-            "Audit create failed for session %s", session_data_dict.get("session_id")
-        )
+        logger.warning("Audit create failed for session %s", session_data_dict.get("session_id"))
         raise
 
 
@@ -276,9 +272,7 @@ def _audit_revoke_sync(session_id: str) -> None:
 
         engine = get_bg_engine()
         with Session(engine) as db:
-            record = db.exec(
-                select(AuthSession).where(AuthSession.session_id == session_id)
-            ).first()
+            record = db.exec(select(AuthSession).where(AuthSession.session_id == session_id)).first()
             if record and record.revoked_at is None:
                 record.revoked_at = datetime.now(UTC)
                 db.add(record)
@@ -288,9 +282,7 @@ def _audit_revoke_sync(session_id: str) -> None:
         raise
 
 
-def _audit_rotate_sync(
-    old_session_id: str, new_session_id: str, new_session_dict: dict
-) -> None:
+def _audit_rotate_sync(old_session_id: str, new_session_id: str, new_session_dict: dict) -> None:
     """Mark old session as rotated and create new session record, in one DB session."""
     try:
         from src.infra.db.engine import get_bg_engine
@@ -299,18 +291,14 @@ def _audit_rotate_sync(
         with Session(engine) as db:
             now = datetime.now(UTC)
             # Mark old session as rotated
-            old_record = db.exec(
-                select(AuthSession).where(AuthSession.session_id == old_session_id)
-            ).first()
+            old_record = db.exec(select(AuthSession).where(AuthSession.session_id == old_session_id)).first()
             if old_record is not None:
                 old_record.revoked_at = now
                 old_record.rotated_at = now
                 old_record.replaced_by_session_id = new_session_id
                 db.add(old_record)
 
-            new_record = db.exec(
-                select(AuthSession).where(AuthSession.session_id == new_session_id)
-            ).first()
+            new_record = db.exec(select(AuthSession).where(AuthSession.session_id == new_session_id)).first()
             if new_record is None:
                 new_record = AuthSession(
                     session_id=new_session_dict["session_id"],
@@ -354,9 +342,7 @@ async def _fire_audit_revoke(session_id: str) -> None:
         logger.warning("Audit revoke enqueue failed for session %s", session_id)
 
 
-async def _fire_audit_rotate(
-    old_session_id: str, new_session_id: str, new_data: SessionData
-) -> None:
+async def _fire_audit_rotate(old_session_id: str, new_session_id: str, new_data: SessionData) -> None:
     """Enqueue a non-blocking audit write for a rotated session."""
     try:
         from src.worker.tasks.auth_sessions import audit_session_rotated_task
@@ -433,9 +419,7 @@ async def get_session_by_id(session_id: str) -> SessionData | None:
     return await _read_session_from_redis(session_id)
 
 
-async def get_session_owner_id(
-    db_session: Session | None, session_id: str
-) -> int | None:
+async def get_session_owner_id(db_session: Session | None, session_id: str) -> int | None:
     active = await _read_session_from_redis(session_id)
     if active is not None:
         return active.user_id
@@ -444,18 +428,14 @@ async def get_session_owner_id(
         return None
 
     try:
-        record = db_session.exec(
-            select(AuthSession).where(AuthSession.session_id == session_id)
-        ).first()
+        record = db_session.exec(select(AuthSession).where(AuthSession.session_id == session_id)).first()
         return record.user_id if record else None
     except Exception:
         logger.warning("Failed to resolve owner for session %s", session_id)
         return None
 
 
-async def inspect_refresh_session(
-    db_session: Session, refresh_token: str
-) -> RefreshSessionInspection:
+async def inspect_refresh_session(db_session: Session, refresh_token: str) -> RefreshSessionInspection:
     """Inspect a refresh token and return its status.
 
     Still accepts db_session for the PostgreSQL fallback read path (reuse/revoke
@@ -492,9 +472,7 @@ async def inspect_refresh_session(
 
     # Session not in Redis — check PostgreSQL for reuse / revocation diagnosis.
     # This is a READ-only path; any resulting audit writes are also fire-and-forget.
-    record = db_session.exec(
-        select(AuthSession).where(AuthSession.session_id == session_id)
-    ).first()
+    record = db_session.exec(select(AuthSession).where(AuthSession.session_id == session_id)).first()
     if record is None:
         return RefreshSessionInspection(status="invalid", session_id=session_id)
 

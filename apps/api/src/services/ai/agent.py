@@ -34,9 +34,7 @@ _AGENT = Agent(
     deps_type=AgentDependencies,
     output_type=str,
     retries={"tools": 1},  # Explicitly targets only tool execution retries
-    capabilities=[Instrumentation()]
-    if get_settings().general_config.logfire_enabled
-    else [],
+    capabilities=[Instrumentation()] if get_settings().general_config.logfire_enabled else [],
 )
 
 
@@ -57,9 +55,7 @@ def _build_instructions(ctx: RunContext[AgentDependencies]) -> str:
         context_blocks.append(f"Task details: {deps.task_instruction}")
 
     if deps.conversation_summary:
-        context_blocks.append(
-            "Earlier conversation summary:\n" + deps.conversation_summary
-        )
+        context_blocks.append("Earlier conversation summary:\n" + deps.conversation_summary)
 
     if deps.retrieved_chunks:
         rendered_chunks = []

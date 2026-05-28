@@ -70,10 +70,7 @@ def _validate_policy_override_ceilings(
             "ceiling": _MAX_ATTEMPTS_CEILING,
             "provided": max_attempts,
         })
-    if (
-        time_limit_override_seconds is not None
-        and time_limit_override_seconds > _MAX_TIME_LIMIT_SECONDS
-    ):
+    if time_limit_override_seconds is not None and time_limit_override_seconds > _MAX_TIME_LIMIT_SECONDS:
         errors.append({
             "field": "time_limit_override_seconds",
             "code": "EXCEEDS_CEILING",
@@ -108,19 +105,13 @@ async def get_assessment_submissions(
     activity, course = _get_activity_and_course(assessment, db_session)
     _require_grade(current_user, course, db_session)
 
-    query = (
-        select(Submission)
-        .join(User, User.id == Submission.user_id)
-        .where(Submission.activity_id == activity.id)
-    )
+    query = select(Submission).join(User, User.id == Submission.user_id).where(Submission.activity_id == activity.id)
     if status_filter:
         if status_filter == "NEEDS_GRADING":
             query = query.where(Submission.status == SubmissionStatus.PENDING)
         else:
             try:
-                query = query.where(
-                    Submission.status == SubmissionStatus(status_filter)
-                )
+                query = query.where(Submission.status == SubmissionStatus(status_filter))
             except ValueError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -146,10 +137,7 @@ async def get_assessment_submissions(
     order_fn = desc if sort_dir == "desc" else asc
     offset = max(page - 1, 0) * page_size
     rows = db_session.exec(
-        query
-        .order_by(order_fn(sort_col), desc(Submission.created_at))
-        .offset(offset)
-        .limit(page_size)
+        query.order_by(order_fn(sort_col), desc(Submission.created_at)).offset(offset).limit(page_size)
     ).all()
     users = _batch_fetch_users({row.user_id for row in rows}, db_session)
 
@@ -192,9 +180,7 @@ async def get_assessment_submission_stats(
     status_counts = dict(status_rows)
     total = sum(status_counts.values())
     pending_count = status_counts.get(SubmissionStatus.PENDING, 0)
-    graded_count = status_counts.get(SubmissionStatus.GRADED, 0) + status_counts.get(
-        SubmissionStatus.PUBLISHED, 0
-    )
+    graded_count = status_counts.get(SubmissionStatus.GRADED, 0) + status_counts.get(SubmissionStatus.PUBLISHED, 0)
 
     late_count = db_session.exec(
         select(func.count()).where(
@@ -215,13 +201,9 @@ async def get_assessment_submission_stats(
         )
     ).all()
 
-    avg_score = (
-        round(sum(graded_scores) / len(graded_scores), 2) if graded_scores else None
-    )
+    avg_score = round(sum(graded_scores) / len(graded_scores), 2) if graded_scores else None
     passing = [score for score in graded_scores if score >= 50.0]
-    pass_rate = (
-        round(len(passing) / len(graded_scores) * 100, 1) if graded_scores else None
-    )
+    pass_rate = round(len(passing) / len(graded_scores) * 100, 1) if graded_scores else None
 
     # Build 10-point score distribution buckets (0–10, 10–20, … 90–100)
     bucket_counts = [0] * 10
@@ -229,8 +211,7 @@ async def get_assessment_submission_stats(
         idx = min(int(score // 10), 9)
         bucket_counts[idx] += 1
     score_distribution = [
-        ScoreDistributionBucket(range=f"{i * 10}–{i * 10 + 10}", count=bucket_counts[i])
-        for i in range(10)
+        ScoreDistributionBucket(range=f"{i * 10}–{i * 10 + 10}", count=bucket_counts[i]) for i in range(10)
     ]
 
     return SubmissionStats(
@@ -301,9 +282,7 @@ async def save_assessment_grade(
         db_session=db_session,
         expected_version=expected_version,
     )
-    refreshed = db_session.exec(
-        select(Submission).where(Submission.submission_uuid == saved.submission_uuid)
-    ).first()
+    refreshed = db_session.exec(select(Submission).where(Submission.submission_uuid == saved.submission_uuid)).first()
     if refreshed is None:
         raise HTTPException(status_code=500, detail="Отправка не была сохранена")
     return _build_teacher_submission_read(refreshed, assessment, db_session)
@@ -378,11 +357,7 @@ async def list_student_policy_overrides(
     policy = _get_policy_for_assessment(assessment, db_session)
     if policy is None:
         return []
-    overrides = db_session.exec(
-        select(StudentPolicyOverride).where(
-            StudentPolicyOverride.policy_id == policy.id
-        )
-    ).all()
+    overrides = db_session.exec(select(StudentPolicyOverride).where(StudentPolicyOverride.policy_id == policy.id)).all()
     return [_build_override_read(o) for o in overrides]
 
 
@@ -399,9 +374,7 @@ async def create_student_policy_override(
     if policy is None or policy.id is None:
         raise HTTPException(status_code=404, detail="Политика оценивания не найдена")
 
-    _validate_policy_override_ceilings(
-        payload.max_attempts_override, payload.time_limit_override_seconds
-    )
+    _validate_policy_override_ceilings(payload.max_attempts_override, payload.time_limit_override_seconds)
 
     existing = db_session.exec(
         select(StudentPolicyOverride).where(
@@ -506,9 +479,7 @@ async def get_item_analytics(
 
     # Load all assessment items ordered by their position
     items = db_session.exec(
-        select(AssessmentItem)
-        .where(AssessmentItem.assessment_id == assessment.id)
-        .order_by(asc(AssessmentItem.order))
+        select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id).order_by(asc(AssessmentItem.order))
     ).all()
 
     if not items:
@@ -580,11 +551,7 @@ async def get_item_analytics(
         for submission in graded_submissions:
             uuid = submission.submission_uuid
             raw2 = submission.grading_json  # type: ignore[attr-defined]
-            grading2 = (
-                GradingBreakdown.model_validate(raw2)
-                if isinstance(raw2, dict)
-                else raw2
-            )
+            grading2 = GradingBreakdown.model_validate(raw2) if isinstance(raw2, dict) else raw2
             for graded_item in grading2.items:
                 iid = graded_item.item_id or ""
                 correct = graded_item.correct
@@ -618,9 +585,7 @@ async def get_item_analytics(
                 max_score=item.max_score,
                 response_count=len(scores),
                 avg_score_pct=round(sum(scores) / len(scores), 1) if scores else None,
-                correct_pct=round(sum(corrects) / len(corrects) * 100, 1)
-                if corrects
-                else None,
+                correct_pct=round(sum(corrects) / len(corrects) * 100, 1) if corrects else None,
                 discrimination_index=disc_by_item.get(iid),
             )
         )

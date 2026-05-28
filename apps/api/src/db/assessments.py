@@ -203,11 +203,7 @@ class MatchingItemAnswer(PydanticStrictBaseModel):
 
 
 type ItemAnswer = Annotated[
-    ChoiceItemAnswer
-    | OpenTextItemAnswer
-    | FormItemAnswer
-    | CodeItemAnswer
-    | MatchingItemAnswer,
+    ChoiceItemAnswer | OpenTextItemAnswer | FormItemAnswer | CodeItemAnswer | MatchingItemAnswer,
     Field(discriminator="kind"),
 ]
 
@@ -610,9 +606,7 @@ class AttemptStateRead(PydanticStrictBaseModel):
     is_result_visible: bool = False
     score: AssessmentScoreProjection = Field(default_factory=AssessmentScoreProjection)
     disabled_action_reasons: list[str] = Field(default_factory=list)
-    effective_policy: AssessmentEffectivePolicy = Field(
-        default_factory=AssessmentEffectivePolicy
-    )
+    effective_policy: AssessmentEffectivePolicy = Field(default_factory=AssessmentEffectivePolicy)
     # Authoritative server timestamps
     server_now: datetime | None = None
     started_at: datetime | None = None
@@ -646,14 +640,12 @@ class AssessmentReviewProjection(PydanticStrictBaseModel):
     ] = "NEEDS_GRADING"
     supports_search: bool = True
     supports_late_only: bool = True
-    supported_sorts: list[Literal["submitted_at", "final_score", "attempt_number"]] = (
-        Field(
-            default_factory=lambda: [
-                "submitted_at",
-                "final_score",
-                "attempt_number",
-            ]
-        )
+    supported_sorts: list[Literal["submitted_at", "final_score", "attempt_number"]] = Field(
+        default_factory=lambda: [
+            "submitted_at",
+            "final_score",
+            "attempt_number",
+        ]
     )
 
     @field_validator("kind", mode="before")
@@ -833,11 +825,7 @@ class AssessmentItemUpdate(PydanticStrictBaseModel):
 
     @model_validator(mode="after")
     def kind_matches_body(self) -> Self:
-        if (
-            self.kind is not None
-            and self.body is not None
-            and str(self.kind) != str(self.body.kind)
-        ):
+        if self.kind is not None and self.body is not None and str(self.kind) != str(self.body.kind):
             raise ValueError("Item kind must match body.kind")
         return self
 

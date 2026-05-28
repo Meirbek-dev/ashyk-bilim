@@ -53,9 +53,7 @@ class Histogram:
     """Simple histogram metric (stores observations for percentile calculation)."""
 
     name: str
-    _observations: dict[tuple, list[float]] = field(
-        default_factory=lambda: defaultdict(list)
-    )
+    _observations: dict[tuple, list[float]] = field(default_factory=lambda: defaultdict(list))
 
     def labels(self, **kwargs: str) -> _LabeledHistogram:
         return _LabeledHistogram(self, tuple(sorted(kwargs.items())))
@@ -103,9 +101,7 @@ class MetricsRegistry:
         self.auto_score = Histogram("grading_auto_score")
         self.code_execution_duration = Histogram("code_execution_duration_seconds")
         self.code_execution_degraded_total = Counter("code_execution_degraded_total")
-        self.lifecycle_transition_total = Counter(
-            "assessment_lifecycle_transition_total"
-        )
+        self.lifecycle_transition_total = Counter("assessment_lifecycle_transition_total")
         self.event_bus_dispatch_total = Counter("event_bus_dispatch_total")
 
     def collect_all(self) -> dict:

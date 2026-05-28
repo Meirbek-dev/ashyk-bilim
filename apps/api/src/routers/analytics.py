@@ -74,9 +74,7 @@ async def _scope_for(
     action: str,
 ):
     checker = PermissionChecker(db_session)
-    return resolve_teacher_scope(
-        db_session, checker, current_user, filters, action=action
-    )
+    return resolve_teacher_scope(db_session, checker, current_user, filters, action=action)
 
 
 async def _course_scope_for(
@@ -120,9 +118,7 @@ async def admin_analytics_overview_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
     if not scope.has_platform_scope:
-        raise HTTPException(
-            status_code=403, detail="Требуется область платформенной аналитики"
-        )
+        raise HTTPException(status_code=403, detail="Требуется область платформенной аналитики")
     return get_admin_analytics(db_session, scope, filters)
 
 
@@ -148,9 +144,7 @@ async def teacher_course_detail_by_uuid_platform(
 ):
     scope = await _scope_for(db_session, current_user, filters, action="read")
     course = db_session.exec(
-        sa_select(Course).where(
-            Course.course_uuid == course_uuid, Course.id.in_(scope.course_ids)
-        )
+        sa_select(Course).where(Course.course_uuid == course_uuid, Course.id.in_(scope.course_ids))
     ).first()
     if course is None:
         raise HTTPException(status_code=404, detail="Курс не найден в этой области")
@@ -299,9 +293,7 @@ async def delete_teacher_saved_view_platform(
     scope = await _scope_for(db_session, current_user, filters, action="read")
     deleted = delete_analytics_view(db_session, scope, view_id)
     if not deleted:
-        raise HTTPException(
-            status_code=404, detail="Сохраненное представление не найдено"
-        )
+        raise HTTPException(status_code=404, detail="Сохраненное представление не найдено")
     return Response(status_code=204)
 
 

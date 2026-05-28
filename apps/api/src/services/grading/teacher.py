@@ -132,9 +132,7 @@ async def get_submissions_for_activity(
 
     Использует SQL LIMIT/OFFSET — без загрузки в память.
     """
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
 
     if not activity:
         raise HTTPException(
@@ -150,11 +148,7 @@ async def get_submissions_for_activity(
     )
 
     # Base query — join User for search support
-    query = (
-        select(Submission)
-        .join(User, User.id == Submission.user_id)
-        .where(Submission.activity_id == activity_id)
-    )
+    query = select(Submission).join(User, User.id == Submission.user_id).where(Submission.activity_id == activity_id)
 
     if status_filter:
         # "NEEDS_GRADING" — виртуальный фильтр, соответствующий PENDING
@@ -162,9 +156,7 @@ async def get_submissions_for_activity(
             query = query.where(Submission.status == SubmissionStatus.PENDING)
         else:
             try:
-                query = query.where(
-                    Submission.status == SubmissionStatus(status_filter)
-                )
+                query = query.where(Submission.status == SubmissionStatus(status_filter))
             except ValueError:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -219,18 +211,12 @@ async def get_submission_stats(
       1. Status counts (GROUP BY status)
       2. Scores for graded submissions (for avg/pass-rate)
     """
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
     if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "assessment:read", resource_owner_id=activity.creator_id
-    )
+    checker.require(current_user.id, "assessment:read", resource_owner_id=activity.creator_id)
 
     # Query 1: status counts (excludes DRAFTs)
     status_rows = db_session.exec(
@@ -245,9 +231,7 @@ async def get_submission_stats(
     status_counts: dict[str, int] = {row.status: row.cnt for row in status_rows}
     total = sum(status_counts.values())
     pending_count = status_counts.get(SubmissionStatus.PENDING, 0)
-    graded_count = status_counts.get(SubmissionStatus.GRADED, 0) + status_counts.get(
-        SubmissionStatus.PUBLISHED, 0
-    )
+    graded_count = status_counts.get(SubmissionStatus.GRADED, 0) + status_counts.get(SubmissionStatus.PUBLISHED, 0)
 
     # Query 2: late count — all submitted (non-DRAFT) late submissions, regardless
     # of current status (graded/published late submissions still count as late).
@@ -271,13 +255,9 @@ async def get_submission_stats(
         )
     ).all()
 
-    avg_score = (
-        round(sum(graded_scores) / len(graded_scores), 2) if graded_scores else None
-    )
+    avg_score = round(sum(graded_scores) / len(graded_scores), 2) if graded_scores else None
     passing = [s for s in graded_scores if s >= 50.0]
-    pass_rate = (
-        round(len(passing) / len(graded_scores) * 100, 1) if graded_scores else None
-    )
+    pass_rate = round(len(passing) / len(graded_scores) * 100, 1) if graded_scores else None
 
     return SubmissionStats(
         total=total,
@@ -300,21 +280,13 @@ async def get_submission_for_teacher(
     Требует права assessment:read, ограниченного создателем активности,
     чтобы исключить утечку данных между активностями и курсами.
     """
-    submission = db_session.exec(
-        select(Submission).where(Submission.submission_uuid == submission_uuid)
-    ).first()
+    submission = db_session.exec(select(Submission).where(Submission.submission_uuid == submission_uuid)).first()
     if not submission:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена")
 
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == submission.activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == submission.activity_id)).first()
     if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
 
     checker = PermissionChecker(db_session)
     checker.require(
@@ -353,18 +325,12 @@ def export_grades_csv(
     - ``submitted_after``: включать только отправки после этой даты и времени.
     - ``submitted_before``: включать только отправки до этой даты и времени.
     """
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
     if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "assessment:read", resource_owner_id=activity.creator_id
-    )
+    checker.require(current_user.id, "assessment:read", resource_owner_id=activity.creator_id)
 
     buf = io.StringIO()
     writer = csv.writer(buf)
@@ -436,11 +402,7 @@ def export_grades_csv(
         item_scores: list[str] = []
         if item_headers and isinstance(s.grading_json, dict):
             items = s.grading_json.get("items", [])
-            scores_by_id = {
-                item.get("item_id", ""): item.get("score", "")
-                for item in items
-                if isinstance(item, dict)
-            }
+            scores_by_id = {item.get("item_id", ""): item.get("score", "") for item in items if isinstance(item, dict)}
             # Match order from header discovery
             if sample_submission and isinstance(sample_submission.grading_json, dict):
                 for item in sample_submission.grading_json.get("items", []):
@@ -532,10 +494,7 @@ async def batch_grade_submissions(
         .where(Submission.submission_uuid.in_(requested_uuids))
     ).all()
 
-    submissions_by_uuid = {
-        submission.submission_uuid: (submission, activity)
-        for submission, activity in rows
-    }
+    submissions_by_uuid = {submission.submission_uuid: (submission, activity) for submission, activity in rows}
     checker = PermissionChecker(db_session)
 
     # ── Phase 1: Pre-validate ALL items ──────────────────────────────────────
@@ -573,13 +532,7 @@ async def batch_grade_submissions(
         error_uuids = {e.submission_uuid for e in validation_errors}
         for grade in batch_request.grades:
             if grade.submission_uuid in error_uuids:
-                all_results.append(
-                    next(
-                        e
-                        for e in validation_errors
-                        if e.submission_uuid == grade.submission_uuid
-                    )
-                )
+                all_results.append(next(e for e in validation_errors if e.submission_uuid == grade.submission_uuid))
             else:
                 all_results.append(
                     BatchGradeResultItem(
@@ -625,11 +578,7 @@ async def batch_grade_submissions(
         except Exception as exc:
             # Unexpected error — roll back everything and return.
             db_session.rollback()
-            error_msg = (
-                _stringify_http_exception_detail(exc.detail)
-                if isinstance(exc, HTTPException)
-                else str(exc)
-            )
+            error_msg = _stringify_http_exception_detail(exc.detail) if isinstance(exc, HTTPException) else str(exc)
             logger.exception(
                 "Непредвиденный сбой пакетного оценивания для отправки %s",
                 grade.submission_uuid,
@@ -733,9 +682,7 @@ async def _save_teacher_grade(
                 feedback=fb.feedback,
             )
 
-    still_needs_review = any(
-        item.needs_manual_review and not item.feedback for item in item_map.values()
-    )
+    still_needs_review = any(item.needs_manual_review and not item.feedback for item in item_map.values())
     updated_grading = GradingBreakdown(
         items=list(item_map.values()),
         needs_manual_review=still_needs_review,
@@ -783,9 +730,7 @@ async def _save_teacher_grade(
                 overall_feedback=grade_input.feedback,
                 grading_version=submission.grading_version,
                 created_at=now,
-                published_at=(
-                    now if requested_status == SubmissionStatus.PUBLISHED else None
-                ),
+                published_at=(now if requested_status == SubmissionStatus.PUBLISHED else None),
             )
         )
 
@@ -858,18 +803,12 @@ async def bulk_publish_grades(
 
     Возвращает количество опубликованных оценок и уже видимых.
     """
-    activity = db_session.exec(
-        select(Activity).where(Activity.id == activity_id)
-    ).first()
+    activity = db_session.exec(select(Activity).where(Activity.id == activity_id)).first()
     if not activity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "assessment:grade", resource_owner_id=activity.creator_id
-    )
+    checker.require(current_user.id, "assessment:grade", resource_owner_id=activity.creator_id)
 
     # All graded submissions for this activity
     submissions = db_session.exec(
@@ -905,11 +844,7 @@ async def bulk_publish_grades(
 
     # Batch-fetch the latest GradingEntry per unpublished submission in one query
     # instead of issuing N separate queries (N+1 pattern).
-    unpublished_ids = [
-        s.id
-        for s in submissions
-        if s.id not in already_published_ids and s.id is not None
-    ]
+    unpublished_ids = [s.id for s in submissions if s.id not in already_published_ids and s.id is not None]
     latest_entries_by_submission: dict[int, GradingEntry] = {}
     if unpublished_ids:
         from sqlalchemy import func as sql_func
@@ -921,9 +856,7 @@ async def bulk_publish_grades(
             .group_by(GradingEntry.submission_id)
             .subquery()
         )
-        latest_rows = db_session.exec(
-            select(GradingEntry).where(GradingEntry.id.in_(select(subq.c.max_id)))
-        ).all()
+        latest_rows = db_session.exec(select(GradingEntry).where(GradingEntry.id.in_(select(subq.c.max_id)))).all()
         for row in latest_rows:
             if row.submission_id is not None:
                 latest_entries_by_submission[row.submission_id] = row
@@ -943,8 +876,7 @@ async def bulk_publish_grades(
         )
         effective_breakdown = (
             latest_entry.effective_breakdown
-            if latest_entry is not None
-            and isinstance(latest_entry.effective_breakdown, dict)
+            if latest_entry is not None and isinstance(latest_entry.effective_breakdown, dict)
             else submission.grading_json
             if isinstance(submission.grading_json, dict)
             else {}
@@ -960,9 +892,7 @@ async def bulk_publish_grades(
                 else submission.final_score or submission.auto_score or 0
             ),
             penalty_pct=float(
-                latest_entry.penalty_pct
-                if latest_entry is not None
-                else submission.late_penalty_pct or 0
+                latest_entry.penalty_pct if latest_entry is not None else submission.late_penalty_pct or 0
             ),
             final_score=float(
                 latest_entry.final_score
@@ -1088,8 +1018,6 @@ def _policy_passing_score_for_submission(
         policy = db_session.get(AssessmentPolicy, submission.assessment_policy_id)
     if policy is None:
         policy = db_session.exec(
-            select(AssessmentPolicy).where(
-                AssessmentPolicy.activity_id == submission.activity_id
-            )
+            select(AssessmentPolicy).where(AssessmentPolicy.activity_id == submission.activity_id)
         ).first()
     return float(policy.passing_score) if policy is not None else 60.0

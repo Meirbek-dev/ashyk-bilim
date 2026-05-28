@@ -119,9 +119,7 @@ async def get_unified_dashboard(
 
     except Exception:
         logger.exception("Dashboard error for user %s", user.id)
-        raise HTTPException(
-            status_code=500, detail="Не удалось получить панель управления"
-        )
+        raise HTTPException(status_code=500, detail="Не удалось получить панель управления")
 
 
 @router.post("/xp", response_model=XPAwardResponse)
@@ -144,9 +142,7 @@ async def award_xp(
 
         try:
             normalized_source = (
-                payload.source.value
-                if isinstance(payload.source, XPSource)
-                else XPSource(str(payload.source)).value
+                payload.source.value if isinstance(payload.source, XPSource) else XPSource(str(payload.source)).value
             )
         except Exception:
             raise HTTPException(status_code=400, detail="Некорректный источник XP")
@@ -234,9 +230,7 @@ async def get_leaderboard(
         return service.get_leaderboard_read(db, limit=limit, offset=offset)
     except Exception:
         logger.exception("Leaderboard error")
-        raise HTTPException(
-            status_code=500, detail="Не удалось получить таблицу лидеров"
-        )
+        raise HTTPException(status_code=500, detail="Не удалось получить таблицу лидеров")
 
 
 @router.get("/rank", response_model=UserRankRead)
@@ -253,6 +247,4 @@ async def get_user_rank(
         return UserRankRead(user_id=user.id, rank=rank)
     except Exception:
         logger.exception("User rank error for user %s", user.id)
-        raise HTTPException(
-            status_code=500, detail="Не удалось получить ранг пользователя"
-        )
+        raise HTTPException(status_code=500, detail="Не удалось получить ранг пользователя")

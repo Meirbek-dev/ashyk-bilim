@@ -40,9 +40,7 @@ def validate_and_parse(
 
     answers_by_item_uuid = _extract_canonical_answers(answers_payload)
     if not answers_by_item_uuid:
-        _raise_invalid(
-            "В отправке должны быть канонические ответы", code="empty_answers"
-        )
+        _raise_invalid("В отправке должны быть канонические ответы", code="empty_answers")
 
     item_by_uuid = {item.item_uuid: item for item in items}
     unknown_items = sorted(set(answers_by_item_uuid) - set(item_by_uuid))

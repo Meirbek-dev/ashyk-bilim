@@ -82,9 +82,7 @@ async def start_assessment(
         current_user=current_user,
         db_session=db_session,
     )
-    is_teacher_preview = _is_teacher_preview_user(
-        current_user, activity, course, db_session
-    )
+    is_teacher_preview = _is_teacher_preview_user(current_user, activity, course, db_session)
     try:
         result = start_submission_v2(
             activity_id=activity.id,
@@ -95,9 +93,7 @@ async def start_assessment(
             skip_attempt_limit=is_teacher_preview,
         )
         submission = db_session.exec(
-            select(Submission).where(
-                Submission.submission_uuid == result.submission_uuid
-            )
+            select(Submission).where(Submission.submission_uuid == result.submission_uuid)
         ).first()
         if submission is None:
             raise HTTPException(status_code=500, detail="Отправка не была создана")
@@ -130,10 +126,7 @@ async def get_my_assessment_submissions(
         )
         .order_by(desc(Submission.created_at))
     ).all()
-    return [
-        _build_student_submission_read(submission, db_session)
-        for submission in submissions
-    ]
+    return [_build_student_submission_read(submission, db_session) for submission in submissions]
 
 
 async def get_my_assessment_draft(
@@ -196,8 +189,7 @@ async def save_assessment_draft(
                 detail={
                     "code": "DRAFT_SAVE_THROTTLED",
                     "message": (
-                        "Черновик сохранен слишком недавно. "
-                        f"Подождите {DRAFT_THROTTLE_TTL} секунд между сохранениями."
+                        f"Черновик сохранен слишком недавно. Подождите {DRAFT_THROTTLE_TTL} секунд между сохранениями."
                     ),
                     "retry_after_seconds": DRAFT_THROTTLE_TTL,
                 },
@@ -207,9 +199,7 @@ async def save_assessment_draft(
         _enforce_draft_version(draft, if_match)
 
         answers = _normalize_answer_patch(assessment, payload, current_user, db_session)
-        current_payload = (
-            draft.answers_json if isinstance(draft.answers_json, dict) else {}
-        )
+        current_payload = draft.answers_json if isinstance(draft.answers_json, dict) else {}
         current_answers = current_payload.get("answers", {})
         if not isinstance(current_answers, dict):
             current_answers = {}
@@ -238,18 +228,14 @@ async def save_assessment_draft(
         result.answered_count = sum(1 for v in merged_answers.values() if v is not None)
 
         # total_items for the assessment
-        total_items = db_session.exec(
-            select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)
-        ).all()
+        total_items = db_session.exec(select(AssessmentItem).where(AssessmentItem.assessment_id == assessment.id)).all()
         result.total_items = len(total_items)
 
         # time_remaining_seconds: computed from policy time limit and started_at
         policy = _get_policy_for_assessment(assessment, db_session)
         if policy is not None and policy.time_limit_seconds and draft.started_at:
             now = datetime.now(UTC)
-            expires_at = draft.started_at.replace(tzinfo=UTC) + timedelta(
-                seconds=policy.time_limit_seconds
-            )
+            expires_at = draft.started_at.replace(tzinfo=UTC) + timedelta(seconds=policy.time_limit_seconds)
             remaining = int((expires_at - now).total_seconds())
             result.time_remaining_seconds = max(0, remaining)
 
@@ -278,9 +264,7 @@ async def submit_assessment(
 ) -> StudentSubmissionRead:
     assessment = _get_assessment_by_uuid_or_404(assessment_uuid, db_session)
     activity, course = _get_activity_and_course(assessment, db_session)
-    is_teacher_preview = _is_teacher_preview_user(
-        current_user, activity, course, db_session
-    )
+    is_teacher_preview = _is_teacher_preview_user(current_user, activity, course, db_session)
 
     if auto_submit:
         # Bypasses the action-allowed checks, ignores any post-expiry payload modifications,
@@ -340,9 +324,7 @@ async def submit_assessment(
         skip_constraints = is_teacher_preview
 
     try:
-        settings = load_activity_settings(
-            activity.id, AssessmentType(assessment.kind), db_session
-        )
+        settings = load_activity_settings(activity.id, AssessmentType(assessment.kind), db_session)
         result = await submit_assessment_pipeline(
             activity_id=activity.id,
             assessment_type=AssessmentType(assessment.kind),
@@ -356,9 +338,7 @@ async def submit_assessment(
             skip_policy_constraints=skip_constraints,
         )
         submission = db_session.exec(
-            select(Submission).where(
-                Submission.submission_uuid == result.submission_uuid
-            )
+            select(Submission).where(Submission.submission_uuid == result.submission_uuid)
         ).first()
         if submission is None:
             raise HTTPException(status_code=500, detail="Отправка не была сохранена")
@@ -395,16 +375,10 @@ async def get_attempt_state(
 
     state = _build_attempt_state(assessment, activity, current_user, db_session)
     active_submission = state["active_submission"]
-    submission_status = (
-        SubmissionStatus(active_submission.status)
-        if active_submission is not None
-        else None
-    )
+    submission_status = SubmissionStatus(active_submission.status) if active_submission is not None else None
     return AssessmentAttemptProjection(
         assessment_uuid=assessment.assessment_uuid,
-        submission_uuid=active_submission.submission_uuid
-        if active_submission
-        else None,
+        submission_uuid=active_submission.submission_uuid if active_submission else None,
         submission_status=submission_status.value if submission_status else None,
         release_state=_release_state_for_submission(active_submission, db_session),
         can_edit=bool(state["can_edit"]),
@@ -430,9 +404,7 @@ async def get_attempt_state(
         due_at=state["due_at"],
         time_remaining_seconds=state["time_remaining_seconds"],
         content_version=_content_version(assessment),
-        policy_version=_policy_version(
-            _get_policy_for_assessment(assessment, db_session)
-        ),
+        policy_version=_policy_version(_get_policy_for_assessment(assessment, db_session)),
     )
 
 
@@ -508,8 +480,7 @@ async def save_grading_draft(
         feedback=payload.overall_feedback,
         status=payload.status,
         item_feedback=[
-            ItemFeedback(item_id=g["item_id"], score=g["score"], feedback=g["feedback"])
-            for g in graded_items
+            ItemFeedback(item_id=g["item_id"], score=g["score"], feedback=g["feedback"]) for g in graded_items
         ],
     )
 
@@ -522,9 +493,7 @@ async def save_grading_draft(
         db_session=db_session,
         expected_version=expected_version,
     )
-    refreshed = db_session.exec(
-        select(Submission).where(Submission.submission_uuid == saved.submission_uuid)
-    ).first()
+    refreshed = db_session.exec(select(Submission).where(Submission.submission_uuid == saved.submission_uuid)).first()
     if refreshed is None:
         raise HTTPException(status_code=500, detail="Отправка не была сохранена")
     return _build_teacher_submission_read(refreshed, assessment, db_session)
@@ -559,9 +528,7 @@ async def run_code_item(
 
     body = ITEM_BODY_ADAPTER.validate_python(item.body_json)
     if body.kind != "CODE":
-        raise HTTPException(
-            status_code=400, detail="Тело элемента не является типом CODE"
-        )
+        raise HTTPException(status_code=400, detail="Тело элемента не является типом CODE")
 
     # Validate language
     if payload.language not in body.languages:
@@ -578,11 +545,7 @@ async def run_code_item(
     visible_tests = [t for t in body.tests if t.is_visible]
 
     service = get_code_execution_service()
-    purpose = (
-        CodeRunPurpose.CUSTOM
-        if payload.custom_input is not None
-        else CodeRunPurpose.VISIBLE
-    )
+    purpose = CodeRunPurpose.CUSTOM if payload.custom_input is not None else CodeRunPurpose.VISIBLE
     result = await service.run(
         db_session=db_session,
         assessment_uuid=assessment_uuid,
@@ -681,9 +644,7 @@ async def get_code_item_run(
         item_uuid=item_uuid,
     )
     if result is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Запуск кода не найден"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Запуск кода не найден")
     return CodeRunResponse(
         run_id=result.run_uuid,
         status=result.status.value,
@@ -725,9 +686,7 @@ async def validate_code_challenge_service(
 
     body = ITEM_BODY_ADAPTER.validate_python(item.body_json)
     if body.kind != "CODE":
-        raise HTTPException(
-            status_code=400, detail="Тело элемента не является типом CODE"
-        )
+        raise HTTPException(status_code=400, detail="Тело элемента не является типом CODE")
 
     all_tests = body.tests
     service = get_code_execution_service()

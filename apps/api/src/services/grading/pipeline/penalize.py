@@ -58,9 +58,7 @@ def apply_penalties(
     if waive_late:
         late_penalty_pct = 0.0
     else:
-        late_penalty_pct = _calculate_late_penalty(
-            submitted_at, effective.due_at, effective
-        )
+        late_penalty_pct = _calculate_late_penalty(submitted_at, effective.due_at, effective)
 
     # Apply late penalty to the (possibly attempt-penalized) score
     final_score = _apply_late_penalty(penalized_score, late_penalty_pct)

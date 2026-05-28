@@ -84,9 +84,7 @@ def validate_uploaded_pdf_path(pdf_uploaded_path: str) -> tuple[str, Path]:
 
 def _next_activity_order(chapter_id: int, db_session: Session) -> int:
     result = db_session.exec(
-        select(Activity)
-        .where(Activity.chapter_id == chapter_id)
-        .order_by(Activity.order.desc())
+        select(Activity).where(Activity.chapter_id == chapter_id).order_by(Activity.order.desc())
     ).first()
     return (result.order if result else 0) + 1
 
@@ -104,9 +102,7 @@ async def create_documentpdf_activity(
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
 
-    course = db_session.exec(
-        select(Course).where(Course.id == chapter.course_id)
-    ).first()
+    course = db_session.exec(select(Course).where(Course.id == chapter.course_id)).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
@@ -120,9 +116,7 @@ async def create_documentpdf_activity(
     elif pdf_uploaded_path:
         pdf_format, temp_path = validate_uploaded_pdf_path(pdf_uploaded_path)
     else:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Pdf : No pdf file provided"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Pdf : No pdf file provided")
 
     activity_uuid = f"activity_{ULID()}"
 

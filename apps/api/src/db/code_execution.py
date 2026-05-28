@@ -55,29 +55,19 @@ class CodeRun(SQLModelStrictBaseModel, table=True):
     purpose: CodeRunPurpose = SQLField(sa_column=Column(String, nullable=False))
     status: CodeRunStatus = SQLField(
         default=CodeRunStatus.QUEUED,
-        sa_column=Column(
-            String, nullable=False, server_default=CodeRunStatus.QUEUED.value
-        ),
+        sa_column=Column(String, nullable=False, server_default=CodeRunStatus.QUEUED.value),
     )
     language_id: int = SQLField(sa_column=Column(Integer, nullable=False))
     source_sha256: str = SQLField(sa_column=Column(String(64), nullable=False))
     stdin_sha256: str | None = SQLField(default=None, sa_column=Column(String(64)))
     idempotency_key: str | None = SQLField(default=None, sa_column=Column(String))
-    passed: int = SQLField(
-        default=0, sa_column=Column(Integer, nullable=False, server_default="0")
-    )
-    total: int = SQLField(
-        default=0, sa_column=Column(Integer, nullable=False, server_default="0")
-    )
+    passed: int = SQLField(default=0, sa_column=Column(Integer, nullable=False, server_default="0"))
+    total: int = SQLField(default=0, sa_column=Column(Integer, nullable=False, server_default="0"))
     score: float | None = SQLField(default=None, sa_column=Column(Float))
     error_code: str | None = SQLField(default=None, sa_column=Column(String))
     error_message: str | None = SQLField(default=None, sa_column=Column(Text))
-    started_at: datetime | None = SQLField(
-        default=None, sa_column=Column(DateTime(timezone=True))
-    )
-    finished_at: datetime | None = SQLField(
-        default=None, sa_column=Column(DateTime(timezone=True))
-    )
+    started_at: datetime | None = SQLField(default=None, sa_column=Column(DateTime(timezone=True)))
+    finished_at: datetime | None = SQLField(default=None, sa_column=Column(DateTime(timezone=True)))
     created_at: datetime = SQLField(
         default_factory=lambda: datetime.now(UTC),
         sa_column=Column(DateTime(timezone=True), nullable=False),
@@ -99,23 +89,15 @@ class CodeRunCase(SQLModelStrictBaseModel, table=True):
     judge0_token: str | None = SQLField(default=None, sa_column=Column(String))
     stdin: str | None = SQLField(default=None, sa_column=Column(Text))
     expected_output: str | None = SQLField(default=None, sa_column=Column(Text))
-    description: str = SQLField(
-        default="", sa_column=Column(Text, nullable=False, server_default="")
-    )
-    weight: float = SQLField(
-        default=1.0, sa_column=Column(Float, nullable=False, server_default="1")
-    )
+    description: str = SQLField(default="", sa_column=Column(Text, nullable=False, server_default=""))
+    weight: float = SQLField(default=1.0, sa_column=Column(Float, nullable=False, server_default="1"))
     is_visible: bool = SQLField(
         default=True,
         sa_column=Column(Boolean, nullable=False, server_default="true"),
     )
     status_id: int | None = SQLField(default=None, sa_column=Column(Integer))
-    status_description: str = SQLField(
-        default="", sa_column=Column(String, nullable=False, server_default="")
-    )
-    passed: bool = SQLField(
-        default=False, sa_column=Column(Boolean, nullable=False, server_default="false")
-    )
+    status_description: str = SQLField(default="", sa_column=Column(String, nullable=False, server_default=""))
+    passed: bool = SQLField(default=False, sa_column=Column(Boolean, nullable=False, server_default="false"))
     stdout: str | None = SQLField(default=None, sa_column=Column(Text))
     stderr: str | None = SQLField(default=None, sa_column=Column(Text))
     compile_output: str | None = SQLField(default=None, sa_column=Column(Text))

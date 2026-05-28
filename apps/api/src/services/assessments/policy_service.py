@@ -101,18 +101,12 @@ async def list_student_policy_overrides(
     _require_grade(current_user, course, db_session)
 
     policy = db_session.exec(
-        select(AssessmentPolicy).where(
-            AssessmentPolicy.activity_id == assessment.activity_id
-        )
+        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
     ).first()
     if policy is None:
         return []
 
-    overrides = db_session.exec(
-        select(StudentPolicyOverride).where(
-            StudentPolicyOverride.policy_id == policy.id
-        )
-    ).all()
+    overrides = db_session.exec(select(StudentPolicyOverride).where(StudentPolicyOverride.policy_id == policy.id)).all()
     return [_build_override_read(o) for o in overrides]
 
 
@@ -128,9 +122,7 @@ async def create_student_policy_override(
     _require_grade(current_user, course, db_session)
 
     policy = db_session.exec(
-        select(AssessmentPolicy).where(
-            AssessmentPolicy.activity_id == assessment.activity_id
-        )
+        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
     ).first()
     if policy is None:
         raise HTTPException(
@@ -175,9 +167,7 @@ async def create_student_policy_override(
         payload={
             "user_id": payload.user_id,
             "max_attempts_override": payload.max_attempts_override,
-            "due_at_override": payload.due_at_override.isoformat()
-            if payload.due_at_override
-            else None,
+            "due_at_override": payload.due_at_override.isoformat() if payload.due_at_override else None,
             "waive_late_penalty": payload.waive_late_penalty,
         },
     )
@@ -200,9 +190,7 @@ async def update_student_policy_override(
     _require_grade(current_user, course, db_session)
 
     policy = db_session.exec(
-        select(AssessmentPolicy).where(
-            AssessmentPolicy.activity_id == assessment.activity_id
-        )
+        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
     ).first()
     if policy is None:
         raise HTTPException(
@@ -254,9 +242,7 @@ async def delete_student_policy_override(
     _require_grade(current_user, course, db_session)
 
     policy = db_session.exec(
-        select(AssessmentPolicy).where(
-            AssessmentPolicy.activity_id == assessment.activity_id
-        )
+        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == assessment.activity_id)
     ).first()
     if policy is None:
         raise HTTPException(

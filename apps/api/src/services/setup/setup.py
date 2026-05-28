@@ -76,9 +76,7 @@ def install_create_platform_user(user_object: UserCreate, db_session: Session):
 
     from src.db.permissions import Role
 
-    admin_role = db_session.exec(
-        select(Role).where(Role.slug == RoleSlug.ADMIN)
-    ).first()
+    admin_role = db_session.exec(select(Role).where(Role.slug == RoleSlug.ADMIN)).first()
     if not admin_role:
         raise HTTPException(500, detail="Admin role not found")
 

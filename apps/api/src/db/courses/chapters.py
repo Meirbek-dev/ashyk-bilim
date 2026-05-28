@@ -12,11 +12,7 @@ class ChapterBase(SQLModelStrictBaseModel):
     name: str
     description: str | None = ""
     thumbnail_image: str | None = ""
-    course_id: int = Field(
-        sa_column=Column(
-            "course_id", Integer, ForeignKey("course.id", ondelete="CASCADE")
-        )
-    )
+    course_id: int = Field(sa_column=Column("course_id", Integer, ForeignKey("course.id", ondelete="CASCADE")))
 
 
 class Chapter(ChapterBase, table=True):
@@ -30,9 +26,7 @@ class Chapter(ChapterBase, table=True):
     )
     update_date: datetime = Field(
         default_factory=lambda: datetime.now(tz=UTC),
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
     )
     order: int = Field(default=0)
     creator_id: int | None = Field(

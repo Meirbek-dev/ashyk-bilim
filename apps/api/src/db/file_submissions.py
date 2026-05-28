@@ -52,9 +52,7 @@ class FileSubmissionActivity(SQLModelStrictBaseModel, table=True):
     __tablename__ = "file_submission_activity"
     __table_args__ = (
         UniqueConstraint("activity_id", name="uq_file_submission_activity_id"),
-        UniqueConstraint(
-            "file_submission_uuid", name="uq_file_submission_activity_uuid"
-        ),
+        UniqueConstraint("file_submission_uuid", name="uq_file_submission_activity_uuid"),
         Index("ix_file_submission_activity_uuid", "file_submission_uuid"),
         Index("ix_file_submission_activity_lifecycle", "lifecycle"),
     )
@@ -77,16 +75,10 @@ class FileSubmissionActivity(SQLModelStrictBaseModel, table=True):
         default_factory=list,
         sa_column=Column(JSON, nullable=False, server_default="[]"),
     )
-    max_files: int = SQLField(
-        default=1, sa_column=Column(Integer, nullable=False, server_default="1")
-    )
+    max_files: int = SQLField(default=1, sa_column=Column(Integer, nullable=False, server_default="1"))
     max_file_size_mb: int | None = None
-    due_at: datetime | None = SQLField(
-        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
-    )
-    allow_late: bool = SQLField(
-        default=True, sa_column=Column(Boolean, nullable=False, server_default="true")
-    )
+    due_at: datetime | None = SQLField(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
+    allow_late: bool = SQLField(default=True, sa_column=Column(Boolean, nullable=False, server_default="true"))
     late_policy_json: dict[str, Any] = SQLField(
         default_factory=lambda: {"kind": "NONE"},
         sa_column=Column(JSON, nullable=False, server_default='{"kind":"NONE"}'),
@@ -100,21 +92,15 @@ class FileSubmissionActivity(SQLModelStrictBaseModel, table=True):
         default=FileSubmissionLifecycle.DRAFT,
         sa_column=Column("lifecycle", String, nullable=False, server_default="DRAFT"),
     )
-    published_at: datetime | None = SQLField(
-        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
-    )
-    archived_at: datetime | None = SQLField(
-        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
-    )
+    published_at: datetime | None = SQLField(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
+    archived_at: datetime | None = SQLField(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
     settings_json: dict[str, Any] = SQLField(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
     created_at: datetime = SQLField(
         default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(
-            DateTime(timezone=True), nullable=False, server_default=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=func.now()),
     )
     updated_at: datetime = SQLField(
         default_factory=lambda: datetime.now(UTC),
@@ -158,44 +144,26 @@ class FileSubmissionAttempt(SQLModelStrictBaseModel, table=True):
             nullable=False,
         )
     )
-    user_id: int = SQLField(
-        sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    user_id: int = SQLField(sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE")))
     status: FileSubmissionAttemptStatus = SQLField(
         default=FileSubmissionAttemptStatus.DRAFT,
         sa_column=Column("status", String, nullable=False, server_default="DRAFT"),
     )
-    attempt_number: int = SQLField(
-        default=1, sa_column=Column(Integer, nullable=False, server_default="1")
-    )
-    started_at: datetime | None = SQLField(
-        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
-    )
-    submitted_at: datetime | None = SQLField(
-        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
-    )
-    graded_at: datetime | None = SQLField(
-        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
-    )
-    is_late: bool = SQLField(
-        default=False, sa_column=Column(Boolean, nullable=False, server_default="false")
-    )
-    late_penalty_pct: float = SQLField(
-        default=0.0, sa_column=Column(Float, nullable=False, server_default="0")
-    )
+    attempt_number: int = SQLField(default=1, sa_column=Column(Integer, nullable=False, server_default="1"))
+    started_at: datetime | None = SQLField(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
+    submitted_at: datetime | None = SQLField(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
+    graded_at: datetime | None = SQLField(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
+    is_late: bool = SQLField(default=False, sa_column=Column(Boolean, nullable=False, server_default="false"))
+    late_penalty_pct: float = SQLField(default=0.0, sa_column=Column(Float, nullable=False, server_default="0"))
     final_score: float | None = None
     feedback_json: dict[str, Any] = SQLField(
         default_factory=dict,
         sa_column=Column(JSON, nullable=False, server_default="{}"),
     )
-    version: int = SQLField(
-        default=1, sa_column=Column(Integer, nullable=False, server_default="1")
-    )
+    version: int = SQLField(default=1, sa_column=Column(Integer, nullable=False, server_default="1"))
     created_at: datetime = SQLField(
         default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(
-            DateTime(timezone=True), nullable=False, server_default=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=func.now()),
     )
     updated_at: datetime = SQLField(
         default_factory=lambda: datetime.now(UTC),
@@ -244,20 +212,14 @@ class FileSubmissionAttemptFile(SQLModelStrictBaseModel, table=True):
     size_bytes: int | None = None
     sha256: str | None = None
     storage_key: str | None = None
-    position: int = SQLField(
-        default=0, sa_column=Column(Integer, nullable=False, server_default="0")
-    )
+    position: int = SQLField(default=0, sa_column=Column(Integer, nullable=False, server_default="0"))
     scan_status: FileSubmissionScanStatus = SQLField(
         default=FileSubmissionScanStatus.PENDING,
-        sa_column=Column(
-            "scan_status", String, nullable=False, server_default="PENDING"
-        ),
+        sa_column=Column("scan_status", String, nullable=False, server_default="PENDING"),
     )
     created_at: datetime = SQLField(
         default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(
-            DateTime(timezone=True), nullable=False, server_default=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=func.now()),
     )
 
     @field_validator("scan_status", mode="before")

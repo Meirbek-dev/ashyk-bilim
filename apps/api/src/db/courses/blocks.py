@@ -32,16 +32,12 @@ class Block(BlockBase, table=True):
     """Database table model for Block."""
 
     id: int | None = Field(default=None, primary_key=True)
-    course_id: int = Field(
-        sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE"))
-    )
+    course_id: int = Field(sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE")))
     chapter_id: int | None = Field(
         default=None,
         sa_column=Column("chapter_id", ForeignKey("chapter.id", ondelete="CASCADE")),
     )
-    activity_id: int = Field(
-        sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE"))
-    )
+    activity_id: int = Field(sa_column=Column("activity_id", ForeignKey("activity.id", ondelete="CASCADE")))
     block_uuid: str
     creation_date: str
     update_date: str

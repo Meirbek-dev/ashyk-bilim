@@ -24,15 +24,9 @@ class TrailRun(SQLModelStrictBaseModel, table=True):
     data: dict = Field(default_factory=dict, sa_column=Column(JSON))
     status: StatusEnum = StatusEnum.STATUS_IN_PROGRESS
     # foreign keys
-    trail_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("trail.id", ondelete="CASCADE"))
-    )
-    course_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE"))
-    )
-    user_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    trail_id: int = Field(sa_column=Column(Integer, ForeignKey("trail.id", ondelete="CASCADE")))
+    course_id: int = Field(sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE")))
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
     # timestamps
     creation_date: str
 

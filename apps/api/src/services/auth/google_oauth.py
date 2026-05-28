@@ -57,9 +57,7 @@ def _build_google_client(timeout: httpx.Timeout) -> httpx.AsyncClient:
 
 
 def _validate_google_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
-    missing = [
-        key for key in _REQUIRED_METADATA_KEYS if not isinstance(metadata.get(key), str)
-    ]
+    missing = [key for key in _REQUIRED_METADATA_KEYS if not isinstance(metadata.get(key), str)]
     if missing:
         msg = f"В метаданных Google discovery отсутствуют обязательные ключи: {', '.join(missing)}"
         raise ValueError(msg)
@@ -167,9 +165,7 @@ def _decode_state(state: str) -> tuple[str, str]:
     except jwt.ExpiredSignatureError as exc:
         raise HTTPException(status_code=400, detail="Состояние OAuth истекло") from exc
     except jwt.PyJWTError as exc:
-        raise HTTPException(
-            status_code=400, detail="Некорректное состояние OAuth"
-        ) from exc
+        raise HTTPException(status_code=400, detail="Некорректное состояние OAuth") from exc
 
     if payload.get("type") != "google_state":
         raise HTTPException(status_code=400, detail="Некорректный тип состояния OAuth")

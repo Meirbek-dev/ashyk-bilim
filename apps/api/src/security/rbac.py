@@ -101,9 +101,7 @@ class PermissionDenied(HTTPException):
         *,
         reason: str | None = None,
     ) -> None:
-        message = (
-            f"Permission denied: {permission}" if permission else "Permission denied"
-        )
+        message = f"Permission denied: {permission}" if permission else "Permission denied"
         detail = {
             "error_code": "PERMISSION_DENIED",
             "message": message,
@@ -236,8 +234,7 @@ class PermissionChecker:
                 continue
             resource, action = parts
             results[p] = any(
-                self._has_perm(granted, resource, action, scope)
-                for scope in ("all", "platform", "assigned", "own")
+                self._has_perm(granted, resource, action, scope) for scope in ("all", "platform", "assigned", "own")
             )
         return results
 
@@ -294,8 +291,7 @@ class PermissionChecker:
             if len(parts) == 3:
                 res, act, scp = parts
                 hierarchy_expanded.update(
-                    f"{res}:{act}:{implied_scope}"
-                    for implied_scope in scope_implies.get(scp, [])
+                    f"{res}:{act}:{implied_scope}" for implied_scope in scope_implies.get(scp, [])
                 )
 
         return hierarchy_expanded
@@ -304,11 +300,7 @@ class PermissionChecker:
         """Return role dicts for user."""
         from src.db.permissions import Role, UserRole
 
-        query = (
-            select(Role, UserRole)
-            .join(UserRole, UserRole.role_id == Role.id)
-            .where(UserRole.user_id == user_id)
-        )
+        query = select(Role, UserRole).join(UserRole, UserRole.role_id == Role.id).where(UserRole.user_id == user_id)
         results = self.db.exec(query).all()
         return [
             {
@@ -354,9 +346,7 @@ class PermissionChecker:
         # priority than their own highest role.
         if assigned_by is not None:
             assigner_roles = self.get_user_roles(assigned_by)
-            assigner_max_priority = max(
-                (r["priority"] for r in assigner_roles), default=0
-            )
+            assigner_max_priority = max((r["priority"] for r in assigner_roles), default=0)
             if role.priority > assigner_max_priority:
                 raise PermissionDenied(
                     permission="role:create",
@@ -364,9 +354,7 @@ class PermissionChecker:
                 )
 
         existing = self.db.exec(
-            select(UserRole)
-            .where(UserRole.user_id == user_id)
-            .where(UserRole.role_id == role.id)
+            select(UserRole).where(UserRole.user_id == user_id).where(UserRole.role_id == role.id)
         ).first()
         if existing:
             return  # idempotent
@@ -402,9 +390,7 @@ class PermissionChecker:
             raise HTTPException(404, detail=f"Role not found: ID {role_id}")
 
         user_role = self.db.exec(
-            select(UserRole)
-            .where(UserRole.user_id == user_id)
-            .where(UserRole.role_id == role.id)
+            select(UserRole).where(UserRole.user_id == user_id).where(UserRole.role_id == role.id)
         ).first()
         if not user_role:
             raise HTTPException(404, detail=f"Role not assigned: ID {role_id}")
@@ -448,9 +434,7 @@ class PermissionChecker:
         from src.db.permission_enums import SYSTEM_ROLES, RoleSlug
         from src.db.permissions import Permission, Role, RolePermission
 
-        guest_role = self.db.exec(
-            select(Role).where(Role.slug == RoleSlug.GUEST.value)
-        ).first()
+        guest_role = self.db.exec(select(Role).where(Role.slug == RoleSlug.GUEST.value)).first()
         if guest_role is not None:
             perms = self.db.exec(
                 select(Permission.name)
@@ -528,16 +512,12 @@ class PermissionChecker:
         if PermissionChecker._has_perm(granted, resource, action, "platform"):
             return True
 
-        if is_assigned and PermissionChecker._has_perm(
-            granted, resource, action, "assigned"
-        ):
+        if is_assigned and PermissionChecker._has_perm(granted, resource, action, "assigned"):
             return True
 
         if user_id != 0:
             owns = (
-                is_owner
-                if is_owner is not None
-                else (resource_owner_id is not None and resource_owner_id == user_id)
+                is_owner if is_owner is not None else (resource_owner_id is not None and resource_owner_id == user_id)
             )
             if owns and PermissionChecker._has_perm(granted, resource, action, "own"):
                 return True

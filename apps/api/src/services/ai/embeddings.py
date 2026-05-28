@@ -47,10 +47,7 @@ async def embed_texts(texts: list[str], model_name: str) -> list[list[float]]:
     dimensions = settings.embedding_dimensions
     request_timeout = settings.request_timeout
 
-    cache_keys = [
-        _embedding_cache_key(text, model_name=model_name, dimensions=dimensions)
-        for text in texts
-    ]
+    cache_keys = [_embedding_cache_key(text, model_name=model_name, dimensions=dimensions) for text in texts]
     embeddings: list[list[float] | None] = await _get_cached_embeddings(
         cache_keys,
         ttl_seconds=settings.embedding_cache_ttl,
@@ -144,9 +141,7 @@ def _embedding_batches(
 
     for text in texts:
         token_count = count_tokens_for_model(text, model_name)
-        if current and (
-            len(current) >= max_items or current_tokens + token_count > max_tokens
-        ):
+        if current and (len(current) >= max_items or current_tokens + token_count > max_tokens):
             batches.append(current)
             current = []
             current_tokens = 0

@@ -42,9 +42,7 @@ class XPAwardSubscriber:
                 from src.db.grading.submissions import Submission
 
                 submission = db.exec(
-                    select(Submission).where(
-                        Submission.submission_uuid == event.submission_uuid
-                    )
+                    select(Submission).where(Submission.submission_uuid == event.submission_uuid)
                 ).first()
                 if submission is None:
                     return
@@ -54,14 +52,10 @@ class XPAwardSubscriber:
                     policy = db.get(AssessmentPolicy, submission.assessment_policy_id)
                 if policy is None:
                     policy = db.exec(
-                        select(AssessmentPolicy).where(
-                            AssessmentPolicy.activity_id == submission.activity_id
-                        )
+                        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == submission.activity_id)
                     ).first()
 
-                passing_score = (
-                    float(policy.passing_score) if policy is not None else 60.0
-                )
+                passing_score = float(policy.passing_score) if policy is not None else 60.0
                 if float(event.final_score) < passing_score:
                     return
 

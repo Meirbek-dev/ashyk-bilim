@@ -110,9 +110,7 @@ def student_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(
-    db_session_factory, student_user, monkeypatch: pytest.MonkeyPatch
-):
+def api_client_fixture(db_session_factory, student_user, monkeypatch: pytest.MonkeyPatch):
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
@@ -238,14 +236,8 @@ def _seed_base(db_session_factory, *, lifecycle: AssessmentLifecycle):
             description="",
             lifecycle=lifecycle,
             scheduled_at=None,
-            published_at=(
-                datetime.now(UTC)
-                if lifecycle == AssessmentLifecycle.PUBLISHED
-                else None
-            ),
-            archived_at=(
-                datetime.now(UTC) if lifecycle == AssessmentLifecycle.ARCHIVED else None
-            ),
+            published_at=(datetime.now(UTC) if lifecycle == AssessmentLifecycle.PUBLISHED else None),
+            archived_at=(datetime.now(UTC) if lifecycle == AssessmentLifecycle.ARCHIVED else None),
             weight=1.0,
             grading_type=AssessmentGradingType.PERCENTAGE,
             policy_id=policy.id,
@@ -272,13 +264,9 @@ def test_canonical_student_me_masks_unpublished_batch_grade(
     api_client: TestClient,
     db_session_factory,
 ) -> None:
-    assessment_uuid, _activity_uuid = _seed_base(
-        db_session_factory, lifecycle=AssessmentLifecycle.PUBLISHED
-    )
+    assessment_uuid, _activity_uuid = _seed_base(db_session_factory, lifecycle=AssessmentLifecycle.PUBLISHED)
     with db_session_factory() as session:
-        activity = session.exec(
-            select(Activity).where(Activity.activity_uuid == "activity_phase0")
-        ).one()
+        activity = session.exec(select(Activity).where(Activity.activity_uuid == "activity_phase0")).one()
         submission = Submission(
             submission_uuid="submission_hidden",
             assessment_type=AssessmentType.EXAM,
@@ -286,9 +274,7 @@ def test_canonical_student_me_masks_unpublished_batch_grade(
             user_id=2,
             status=SubmissionStatus.GRADED,
             attempt_number=1,
-            answers_json={
-                "answers": {"item_phase0": {"kind": "OPEN_TEXT", "text": "A"}}
-            },
+            answers_json={"answers": {"item_phase0": {"kind": "OPEN_TEXT", "text": "A"}}},
             grading_json=GradingBreakdown(feedback="Hidden feedback").model_dump(),
             auto_score=82,
             final_score=82,
@@ -336,9 +322,7 @@ def test_start_is_blocked_when_assessment_is_not_published(
     api_client: TestClient,
     db_session_factory,
 ) -> None:
-    assessment_uuid, _activity_uuid = _seed_base(
-        db_session_factory, lifecycle=AssessmentLifecycle.DRAFT
-    )
+    assessment_uuid, _activity_uuid = _seed_base(db_session_factory, lifecycle=AssessmentLifecycle.DRAFT)
 
     response = api_client.post(f"/assessments/{assessment_uuid}/start")
 
@@ -423,13 +407,9 @@ def test_published_assessment_with_submissions_rejects_item_edits(
     api_client: TestClient,
     db_session_factory,
 ) -> None:
-    assessment_uuid, _activity_uuid = _seed_base(
-        db_session_factory, lifecycle=AssessmentLifecycle.PUBLISHED
-    )
+    assessment_uuid, _activity_uuid = _seed_base(db_session_factory, lifecycle=AssessmentLifecycle.PUBLISHED)
     with db_session_factory() as session:
-        activity = session.exec(
-            select(Activity).where(Activity.activity_uuid == "activity_phase0")
-        ).one()
+        activity = session.exec(select(Activity).where(Activity.activity_uuid == "activity_phase0")).one()
         session.add(
             Submission(
                 submission_uuid="submission_existing",

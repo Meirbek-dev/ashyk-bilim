@@ -57,9 +57,7 @@ def upgrade() -> None:
         conn.execute(
             sa.text(
                 "UPDATE submission "
-                "SET metadata_json = (COALESCE(metadata_json, '{}'::json)::jsonb "
-                + removal_expr
-                + ")::json "
+                "SET metadata_json = (COALESCE(metadata_json, '{}'::json)::jsonb " + removal_expr + ")::json "
                 "WHERE metadata_json IS NOT NULL"
             )
         )

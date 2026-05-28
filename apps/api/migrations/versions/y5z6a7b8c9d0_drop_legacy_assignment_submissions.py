@@ -38,9 +38,7 @@ def downgrade() -> None:
         sa.Column("grade", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("assignment_id", sa.Integer(), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["assignment_id"], ["assignment.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["assignment_id"], ["assignment.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -60,9 +58,7 @@ def downgrade() -> None:
         sa.Column("creation_date", sa.String(), nullable=False),
         sa.Column("update_date", sa.String(), nullable=False),
         sa.ForeignKeyConstraint(["activity_id"], ["activity.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(
-            ["assignment_task_id"], ["assignmenttask.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["assignment_task_id"], ["assignmenttask.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["chapter_id"], ["chapter.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["course_id"], ["course.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),

@@ -82,11 +82,7 @@ async def _local_check(key: str, rule: RateLimitRule) -> int | None:
     window_start = now - rule.window_seconds
 
     async with _LOCAL_LIMIT_LOCK:
-        timestamps = [
-            timestamp
-            for timestamp in _LOCAL_LIMITS.get(key, [])
-            if timestamp >= window_start
-        ]
+        timestamps = [timestamp for timestamp in _LOCAL_LIMITS.get(key, []) if timestamp >= window_start]
         if len(timestamps) >= rule.max_requests:
             oldest = min(timestamps)
             retry_after = max(1, int(rule.window_seconds - (now - oldest)))

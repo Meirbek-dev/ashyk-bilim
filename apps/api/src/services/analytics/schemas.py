@@ -331,9 +331,7 @@ class AtRiskLearnerRow(PydanticStrictBaseModel):
     risk_level: Literal["low", "medium", "high"]
     risk_components: dict[str, float] = Field(default_factory=dict)
     reason_codes: list[str]
-    risk_trend: Literal[
-        "newly_at_risk", "worsening", "improving", "recovered", "stable"
-    ] = "stable"
+    risk_trend: Literal["newly_at_risk", "worsening", "improving", "recovered", "stable"] = "stable"
     previous_risk_score: float | None = None
     risk_score_delta: float | None = None
     top_contributing_factor: str | None = None

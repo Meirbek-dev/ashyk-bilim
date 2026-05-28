@@ -260,10 +260,7 @@ async def add_bulk_course_contributors(
     current_time = str(datetime.now())
 
     # Pre-fetch all users and existing authorships in 2 batch queries
-    user_map = {
-        u.username: u
-        for u in db_session.exec(select(User).where(User.username.in_(usernames))).all()
-    }
+    user_map = {u.username: u for u in db_session.exec(select(User).where(User.username.in_(usernames))).all()}
     existing_user_ids = [u.id for u in user_map.values() if u.id is not None]
     existing_authorship_map = {
         ea.user_id: ea
@@ -360,10 +357,7 @@ async def remove_bulk_course_contributors(
     results = {"successful": [], "failed": []}
 
     # Pre-fetch all users and existing authorships in 2 batch queries
-    user_map = {
-        u.username: u
-        for u in db_session.exec(select(User).where(User.username.in_(usernames))).all()
-    }
+    user_map = {u.username: u for u in db_session.exec(select(User).where(User.username.in_(usernames))).all()}
     existing_user_ids = [u.id for u in user_map.values() if u.id is not None]
     existing_authorship_map = {
         ea.user_id: ea

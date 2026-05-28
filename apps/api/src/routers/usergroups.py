@@ -76,9 +76,7 @@ async def api_get_users_linked_to_usergroup(
     """
     Get Users linked to UserGroup
     """
-    return await get_users_linked_to_usergroup(
-        request, db_session, current_user, usergroup_id
-    )
+    return await get_users_linked_to_usergroup(request, db_session, current_user, usergroup_id)
 
 
 @router.get("", tags=["usergroups"])
@@ -109,9 +107,7 @@ async def api_get_usergroupsby_resource(
     """
     Get platform user groups by resource
     """
-    return await get_usergroups_by_resource(
-        request, db_session, current_user, resource_uuid
-    )
+    return await get_usergroups_by_resource(request, db_session, current_user, resource_uuid)
 
 
 @router.put("/{usergroup_id}", tags=["usergroups"])
@@ -128,9 +124,7 @@ async def api_update_usergroup(
 
     **Required Permission**: `usergroup:update:platform` or `usergroup:update:own`
     """
-    return await update_usergroup_by_id(
-        request, db_session, current_user, usergroup_id, usergroup_object
-    )
+    return await update_usergroup_by_id(request, db_session, current_user, usergroup_id, usergroup_object)
 
 
 @router.delete("/{usergroup_id}", tags=["usergroups"])
@@ -163,9 +157,7 @@ async def api_add_users_to_usergroup(
 
     **Required Permission**: `usergroup:manage:platform` or `usergroup:manage:own`
     """
-    return await add_users_to_usergroup(
-        request, db_session, current_user, usergroup_id, user_ids
-    )
+    return await add_users_to_usergroup(request, db_session, current_user, usergroup_id, user_ids)
 
 
 @router.delete("/{usergroup_id}/remove_users", tags=["usergroups"])
@@ -180,9 +172,7 @@ async def api_delete_users_from_usergroup(
     """
     Delete Users from UserGroup
     """
-    return await remove_users_from_usergroup(
-        request, db_session, current_user, usergroup_id, user_ids
-    )
+    return await remove_users_from_usergroup(request, db_session, current_user, usergroup_id, user_ids)
 
 
 @router.post("/{usergroup_id}/add_resources", tags=["usergroups"])
@@ -197,9 +187,7 @@ async def api_add_resources_to_usergroup(
     """
     Add Resources to UserGroup
     """
-    return await add_resources_to_usergroup(
-        request, db_session, current_user, usergroup_id, resource_uuids
-    )
+    return await add_resources_to_usergroup(request, db_session, current_user, usergroup_id, resource_uuids)
 
 
 @router.delete("/{usergroup_id}/remove_resources", tags=["usergroups"])
@@ -214,6 +202,4 @@ async def api_delete_resources_from_usergroup(
     """
     Delete Resources from UserGroup
     """
-    return await remove_resources_from_usergroup(
-        request, db_session, current_user, usergroup_id, resource_uuids
-    )
+    return await remove_resources_from_usergroup(request, db_session, current_user, usergroup_id, resource_uuids)

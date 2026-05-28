@@ -46,9 +46,7 @@ def _get_streamable_submission(
     current_user: PublicUser,
     db_session: Session,
 ) -> Submission:
-    submission = db_session.exec(
-        select(Submission).where(Submission.submission_uuid == submission_uuid)
-    ).first()
+    submission = db_session.exec(select(Submission).where(Submission.submission_uuid == submission_uuid)).first()
     if submission is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -97,17 +95,13 @@ async def api_feedback_stream(
     if redis is not None:
         try:
             current_conn_count = await redis.get(conn_key)
-            if (
-                current_conn_count
-                and int(current_conn_count) >= _MAX_CONNECTIONS_PER_USER
-            ):
+            if current_conn_count and int(current_conn_count) >= _MAX_CONNECTIONS_PER_USER:
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail={
                         "code": "SSE_CONNECTION_LIMIT",
                         "message": (
-                            f"Слишком много одновременных SSE-соединений "
-                            f"(лимит: {_MAX_CONNECTIONS_PER_USER})."
+                            f"Слишком много одновременных SSE-соединений (лимит: {_MAX_CONNECTIONS_PER_USER})."
                         ),
                         "limit": _MAX_CONNECTIONS_PER_USER,
                     },
@@ -117,9 +111,7 @@ async def api_feedback_stream(
             raise
         except Exception:
             # Redis unavailable — fall through to in-process counter
-            logger.warning(
-                "Redis недоступен для проверки SSE-соединения", exc_info=True
-            )
+            logger.warning("Redis недоступен для проверки SSE-соединения", exc_info=True)
             redis = None
 
     if redis is None and _local_conn_counts[user_id] >= _MAX_CONNECTIONS_PER_USER:
@@ -128,10 +120,7 @@ async def api_feedback_stream(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail={
                 "code": "SSE_CONNECTION_LIMIT",
-                "message": (
-                    f"Слишком много одновременных SSE-соединений "
-                    f"(лимит: {_MAX_CONNECTIONS_PER_USER})."
-                ),
+                "message": (f"Слишком много одновременных SSE-соединений (лимит: {_MAX_CONNECTIONS_PER_USER})."),
                 "limit": _MAX_CONNECTIONS_PER_USER,
             },
             headers={"Retry-After": "60"},
@@ -146,9 +135,7 @@ async def api_feedback_stream(
                 await redis.incr(conn_key)
                 await redis.expire(conn_key, 3600)  # auto-clean stale counter
             except Exception:
-                logger.warning(
-                    "Не удалось увеличить счетчик SSE-соединений", exc_info=True
-                )
+                logger.warning("Не удалось увеличить счетчик SSE-соединений", exc_info=True)
         else:
             _local_conn_counts[user_id] += 1
 
@@ -161,9 +148,7 @@ async def api_feedback_stream(
                         event_type = str(event_data.get("event", "message"))
                         yield encode_sse(event_type, event_data)
                 except Exception:
-                    logger.warning(
-                        "Не удалось повторно воспроизвести SSE", exc_info=True
-                    )
+                    logger.warning("Не удалось повторно воспроизвести SSE", exc_info=True)
 
             # ── Send connected event ──────────────────────────────────────────
             yield encode_sse(
@@ -198,9 +183,7 @@ async def api_feedback_stream(
                     try:
                         payload = json.loads(raw)
                     except Exception:
-                        logger.warning(
-                            "Не удалось декодировать SSE-полезную нагрузку: %s", raw
-                        )
+                        logger.warning("Не удалось декодировать SSE-полезную нагрузку: %s", raw)
                         continue
                     event_type = str(payload.get("event", "message"))
                     yield encode_sse(event_type, payload)
@@ -215,9 +198,7 @@ async def api_feedback_stream(
                     if remaining <= 0:
                         await redis.delete(conn_key)
                 except Exception:
-                    logger.warning(
-                        "Не удалось уменьшить счетчик SSE-соединений", exc_info=True
-                    )
+                    logger.warning("Не удалось уменьшить счетчик SSE-соединений", exc_info=True)
             else:
                 _local_conn_counts[user_id] = max(0, _local_conn_counts[user_id] - 1)
                 if _local_conn_counts[user_id] == 0:

@@ -90,9 +90,7 @@ class GradingEntry(SQLModelStrictBaseModel, table=True):
     )
     effective_breakdown: dict = Field(
         default_factory=dict,
-        sa_column=Column(
-            "effective_breakdown", JSON, nullable=False, server_default="{}"
-        ),
+        sa_column=Column("effective_breakdown", JSON, nullable=False, server_default="{}"),
     )
 
     # Teacher's overall comment — stored separately from per-item breakdown
@@ -104,9 +102,7 @@ class GradingEntry(SQLModelStrictBaseModel, table=True):
     # Grading version — mirrors Submission.grading_version for schema evolution
     grading_version: int = Field(
         default=1,
-        sa_column=Column(
-            "grading_version", Integer, nullable=False, server_default="1"
-        ),
+        sa_column=Column("grading_version", Integer, nullable=False, server_default="1"),
     )
 
     # Immutable timestamps — created_at is never updated
@@ -144,9 +140,7 @@ class GradingEntryRead(SQLModelStrictBaseModel):
 
 
 @event.listens_for(GradingEntry, "before_update")
-def _prevent_grading_entry_update(
-    mapper: object, connection: object, target: GradingEntry
-) -> None:
+def _prevent_grading_entry_update(mapper: object, connection: object, target: GradingEntry) -> None:
     """Block any column change except ``published_at``.
 
     SQLAlchemy's ``get_history()`` returns (added, unchanged, deleted) tuples.
@@ -155,11 +149,7 @@ def _prevent_grading_entry_update(
     from sqlalchemy import inspect as sa_inspect
 
     state = sa_inspect(target)
-    changed_fields = {
-        attr.key
-        for attr in state.attrs
-        if attr.history.added and attr.key not in _MUTABLE_FIELDS
-    }
+    changed_fields = {attr.key for attr in state.attrs if attr.history.added and attr.key not in _MUTABLE_FIELDS}
     if changed_fields:
         raise IntegrityError(
             statement=None,
@@ -172,9 +162,7 @@ def _prevent_grading_entry_update(
 
 
 @event.listens_for(GradingEntry, "before_delete")
-def _prevent_grading_entry_delete(
-    mapper: object, connection: object, target: GradingEntry
-) -> None:
+def _prevent_grading_entry_delete(mapper: object, connection: object, target: GradingEntry) -> None:
     """Block all DELETE operations on GradingEntry rows."""
     raise IntegrityError(
         statement=None,

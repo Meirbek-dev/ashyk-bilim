@@ -39,9 +39,7 @@ def get_readiness_status(session_factory: sessionmaker[Session]) -> dict[str, ob
         else:
             settings = get_settings()
             if settings.redis_config.redis_connection_string:
-                client = redis.Redis.from_url(
-                    settings.redis_config.redis_connection_string, socket_timeout=2
-                )
+                client = redis.Redis.from_url(settings.redis_config.redis_connection_string, socket_timeout=2)
                 client.ping()
                 checks["redis"] = {"status": "ok"}
             else:

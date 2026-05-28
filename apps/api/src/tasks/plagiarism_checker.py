@@ -10,6 +10,7 @@ cosine similarity between tokenised text answers. Submissions that exceed
 Wire into app startup via ``lifespan.py``::
 
     from src.tasks.plagiarism_checker import plagiarism_checker_loop
+
     asyncio.create_task(plagiarism_checker_loop(settings), name="plagiarism_checker")
 
 Only OPEN_TEXT and ESSAY-type answers are compared. CODE answers are handled

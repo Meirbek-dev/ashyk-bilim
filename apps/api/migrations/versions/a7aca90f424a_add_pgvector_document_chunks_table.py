@@ -46,13 +46,8 @@ def upgrade() -> None:
         WITH (m = 16, ef_construction = 64)
     """)
 
-    op.execute(
-        "CREATE INDEX document_chunks_collection_name_idx "
-        "ON document_chunks (collection_name)"
-    )
-    op.execute(
-        "CREATE INDEX document_chunks_inserted_at_idx ON document_chunks (inserted_at)"
-    )
+    op.execute("CREATE INDEX document_chunks_collection_name_idx ON document_chunks (collection_name)")
+    op.execute("CREATE INDEX document_chunks_inserted_at_idx ON document_chunks (inserted_at)")
 
 
 def downgrade() -> None:

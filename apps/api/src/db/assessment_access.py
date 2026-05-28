@@ -27,9 +27,7 @@ class AssessmentAccessPolicy(SQLModelStrictBaseModel, table=True):
 
     __tablename__ = "assessment_access_policy"
     __table_args__ = (
-        UniqueConstraint(
-            "assessment_id", name="uq_assessment_access_policy_assessment"
-        ),
+        UniqueConstraint("assessment_id", name="uq_assessment_access_policy_assessment"),
         Index("ix_assessment_access_policy_assessment_id", "assessment_id"),
     )
 
@@ -52,9 +50,7 @@ class AssessmentAccessPolicy(SQLModelStrictBaseModel, table=True):
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(
-            DateTime(timezone=True), nullable=False, server_default=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=func.now()),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
@@ -72,9 +68,7 @@ class AssessmentAccessUser(SQLModelStrictBaseModel, table=True):
 
     __tablename__ = "assessment_access_user"
     __table_args__ = (
-        UniqueConstraint(
-            "policy_id", "user_id", name="uq_assessment_access_user_policy_user"
-        ),
+        UniqueConstraint("policy_id", "user_id", name="uq_assessment_access_user_policy_user"),
         Index("ix_assessment_access_user_policy_id", "policy_id"),
         Index("ix_assessment_access_user_user_id", "user_id"),
     )
@@ -96,9 +90,7 @@ class AssessmentAccessUser(SQLModelStrictBaseModel, table=True):
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(
-            DateTime(timezone=True), nullable=False, server_default=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=func.now()),
     )
 
 
@@ -133,7 +125,5 @@ class AssessmentAccessUserGroup(SQLModelStrictBaseModel, table=True):
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(
-            DateTime(timezone=True), nullable=False, server_default=func.now()
-        ),
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=func.now()),
     )

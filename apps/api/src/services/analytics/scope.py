@@ -43,24 +43,15 @@ def _coerce_course_id(value: Any) -> int | None:
     return int(value)
 
 
-def _has_analytics_scope(
-    checker: PermissionChecker, user_id: int, action: str, scope: str
-) -> bool:
+def _has_analytics_scope(checker: PermissionChecker, user_id: int, action: str, scope: str) -> bool:
     permissions = checker.get_expanded_permissions(user_id)
     return (
-        f"analytics:{action}:{scope}" in permissions
-        or f"analytics:*:{scope}" in permissions
-        or "*:*:*" in permissions
+        f"analytics:{action}:{scope}" in permissions or f"analytics:*:{scope}" in permissions or "*:*:*" in permissions
     )
 
 
-def ensure_analytics_access(
-    checker: PermissionChecker, user_id: int, action: str
-) -> None:
-    if any(
-        _has_analytics_scope(checker, user_id, action, scope)
-        for scope in ("assigned", "platform", "all")
-    ):
+def ensure_analytics_access(checker: PermissionChecker, user_id: int, action: str) -> None:
+    if any(_has_analytics_scope(checker, user_id, action, scope) for scope in ("assigned", "platform", "all")):
         return
     raise PermissionDenied(permission=f"analytics:{action}")
 
@@ -78,8 +69,7 @@ def resolve_teacher_scope(
 
     ensure_analytics_access(checker, current_user.id, action)
     has_platform_scope = any(
-        _has_analytics_scope(checker, current_user.id, action, scope)
-        for scope in ("platform", "all")
+        _has_analytics_scope(checker, current_user.id, action, scope) for scope in ("platform", "all")
     )
 
     teacher_user_id = filters.teacher_user_id or current_user.id
@@ -88,16 +78,13 @@ def resolve_teacher_scope(
     if has_platform_scope and filters.teacher_user_id:
         course_ids = db_session.exec(
             select(Course.id)
-            .outerjoin(
-                ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid
-            )
+            .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
             .where(
                 or_(
                     Course.creator_id == target_user_id,
                     and_(
                         ResourceAuthor.user_id == target_user_id,
-                        ResourceAuthor.authorship_status
-                        == ResourceAuthorshipStatusEnum.ACTIVE,
+                        ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
                     ),
                 )
             )
@@ -107,16 +94,13 @@ def resolve_teacher_scope(
     else:
         course_ids = db_session.exec(
             select(Course.id)
-            .outerjoin(
-                ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid
-            )
+            .outerjoin(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
             .where(
                 or_(
                     Course.creator_id == current_user.id,
                     and_(
                         ResourceAuthor.user_id == current_user.id,
-                        ResourceAuthor.authorship_status
-                        == ResourceAuthorshipStatusEnum.ACTIVE,
+                        ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
                     ),
                 )
             )
@@ -168,22 +152,15 @@ def resolve_course_id_for_assessment(
         if row is None:
             return None
         if hasattr(row, "_mapping"):
-            activity = next(
-                value for value in row._mapping.values() if isinstance(value, Activity)
-            )
+            activity = next(value for value in row._mapping.values() if isinstance(value, Activity))
         else:
             activity = row[1]
         return activity.course_id
     if assessment_type in {"quiz", "code_challenge"}:
-        activity = db_session.exec(
-            select(Activity).where(Activity.id == assessment_id)
-        ).first()
+        activity = db_session.exec(select(Activity).where(Activity.id == assessment_id)).first()
         if activity is None or activity.course_id is None:
             return None
-        if (
-            assessment_type == "code_challenge"
-            and activity.activity_type != ActivityTypeEnum.TYPE_CODE_CHALLENGE
-        ):
+        if assessment_type == "code_challenge" and activity.activity_type != ActivityTypeEnum.TYPE_CODE_CHALLENGE:
             return None
         return activity.course_id
     return None
@@ -195,9 +172,7 @@ def ensure_assessment_in_scope(
     assessment_type: str,
     assessment_id: int,
 ) -> None:
-    course_id = resolve_course_id_for_assessment(
-        db_session, assessment_type, assessment_id
-    )
+    course_id = resolve_course_id_for_assessment(db_session, assessment_type, assessment_id)
     if course_id is None:
         raise PermissionDenied(
             permission="analytics:read",

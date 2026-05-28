@@ -42,25 +42,13 @@ def upgrade() -> None:
             """
         )
     )
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions (user_id)"))
+    op.execute(sa.text("CREATE INDEX IF NOT EXISTS idx_auth_sessions_session_id ON auth_sessions (session_id)"))
     op.execute(
-        sa.text(
-            "CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions (user_id)"
-        )
+        sa.text("CREATE INDEX IF NOT EXISTS idx_auth_sessions_refresh_token_hash ON auth_sessions (refresh_token_hash)")
     )
     op.execute(
-        sa.text(
-            "CREATE INDEX IF NOT EXISTS idx_auth_sessions_session_id ON auth_sessions (session_id)"
-        )
-    )
-    op.execute(
-        sa.text(
-            "CREATE INDEX IF NOT EXISTS idx_auth_sessions_refresh_token_hash ON auth_sessions (refresh_token_hash)"
-        )
-    )
-    op.execute(
-        sa.text(
-            "CREATE INDEX IF NOT EXISTS idx_auth_sessions_token_family_id ON auth_sessions (token_family_id)"
-        )
+        sa.text("CREATE INDEX IF NOT EXISTS idx_auth_sessions_token_family_id ON auth_sessions (token_family_id)")
     )
 
 

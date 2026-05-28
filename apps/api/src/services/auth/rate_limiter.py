@@ -55,9 +55,7 @@ async def check_account_locked(email: str) -> bool:
     try:
         return bool(await r.exists(f"account_locked:{email.lower()}"))
     except Exception:
-        logger.warning(
-            "Redis error in check_account_locked; failing open", exc_info=True
-        )
+        logger.warning("Redis error in check_account_locked; failing open", exc_info=True)
         return False
 
 

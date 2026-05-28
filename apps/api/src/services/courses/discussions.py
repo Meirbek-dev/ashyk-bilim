@@ -42,9 +42,7 @@ async def create_discussion(
     course = db_session.exec(statement).first()
 
     if not course or course.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Курс не существует"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Курс не существует")
 
     # RBAC check - users need read access to participate in discussions
     checker = PermissionChecker(db_session)
@@ -84,9 +82,7 @@ async def create_discussion(
 
     # Update parent discussion reply count if this is a reply
     if discussion_object.parent_discussion_id:
-        parent_update = select(CourseDiscussion).where(
-            CourseDiscussion.id == discussion_object.parent_discussion_id
-        )
+        parent_update = select(CourseDiscussion).where(CourseDiscussion.id == discussion_object.parent_discussion_id)
         parent = db_session.exec(parent_update).first()
         if parent:
             parent.replies_count += 1
@@ -111,9 +107,7 @@ async def get_discussions_by_course_uuid(
     course = db_session.exec(statement).first()
 
     if not course or course.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Курс не существует"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Курс не существует")
 
     # RBAC check
     checker = PermissionChecker(db_session)
@@ -121,9 +115,7 @@ async def get_discussions_by_course_uuid(
         require_course_permission("course:read", current_user, course, checker)
 
     is_authenticated = not isinstance(current_user, AnonymousUser)
-    can_moderate = is_authenticated and checker.check(
-        current_user.id, "discussion:moderate"
-    )
+    can_moderate = is_authenticated and checker.check(current_user.id, "discussion:moderate")
 
     # Get main discussions (posts, not replies)
     query = (
@@ -143,10 +135,7 @@ async def get_discussions_by_course_uuid(
 
     # Gather all top-level discussion details in parallel
     all_discussion_data = list(
-        await asyncio.gather(*[
-            get_discussion_with_details(d.id, db_session, current_user)
-            for d in discussions
-        ])
+        await asyncio.gather(*[get_discussion_with_details(d.id, db_session, current_user) for d in discussions])
     )
 
     if include_replies and discussions:
@@ -165,32 +154,20 @@ async def get_discussions_by_course_uuid(
         # Group replies by parent discussion id
         replies_by_discussion_id: dict[int, list] = {}
         for reply in all_replies:
-            replies_by_discussion_id.setdefault(reply.parent_discussion_id, []).append(
-                reply
-            )
+            replies_by_discussion_id.setdefault(reply.parent_discussion_id, []).append(reply)
 
         # Gather all reply details in parallel
         all_reply_details = list(
-            await asyncio.gather(*[
-                get_discussion_with_details(r.id, db_session, current_user)
-                for r in all_replies
-            ])
+            await asyncio.gather(*[get_discussion_with_details(r.id, db_session, current_user) for r in all_replies])
         )
-        reply_details_by_id = {
-            r.id: detail
-            for r, detail in zip(all_replies, all_reply_details, strict=False)
-        }
+        reply_details_by_id = {r.id: detail for r, detail in zip(all_replies, all_reply_details, strict=False)}
 
-        for discussion, discussion_data in zip(
-            discussions, all_discussion_data, strict=False
-        ):
+        for discussion, discussion_data in zip(discussions, all_discussion_data, strict=False):
             replies = replies_by_discussion_id.get(discussion.id, [])
             discussion_data.replies = [reply_details_by_id[r.id] for r in replies]
 
     result = []
-    for discussion, discussion_data in zip(
-        discussions, all_discussion_data, strict=False
-    ):
+    for discussion, discussion_data in zip(discussions, all_discussion_data, strict=False):
         is_owner = is_authenticated and discussion.user_id == current_user.id
         can_edit = is_owner or can_moderate
         available_actions: list[str] = []
@@ -232,9 +209,7 @@ async def get_discussion_with_details(
     result = db_session.exec(discussion_query).first()
 
     if not result:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
 
     discussion, user = result
 
@@ -287,19 +262,13 @@ async def update_discussion(
 ) -> CourseDiscussionRead:
     """Update a discussion"""
     if isinstance(current_user, AnonymousUser):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
-    statement = select(CourseDiscussion).where(
-        CourseDiscussion.discussion_uuid == discussion_uuid
-    )
+    statement = select(CourseDiscussion).where(CourseDiscussion.discussion_uuid == discussion_uuid)
     discussion = db_session.exec(statement).first()
 
     if not discussion or discussion.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Discussion does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion does not exist")
 
     # Author can edit own discussion; moderators can edit any
     if discussion.user_id != current_user.id:
@@ -331,19 +300,13 @@ async def delete_discussion(
 ):
     """Delete a discussion."""
     if isinstance(current_user, AnonymousUser):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
-    statement = select(CourseDiscussion).where(
-        CourseDiscussion.discussion_uuid == discussion_uuid
-    )
+    statement = select(CourseDiscussion).where(CourseDiscussion.discussion_uuid == discussion_uuid)
     discussion = db_session.exec(statement).first()
 
     if not discussion or discussion.id is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Discussion does not exist"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion does not exist")
 
     # Author can delete own discussion; moderators can delete any
     if discussion.user_id != current_user.id:
@@ -381,9 +344,7 @@ async def like_discussion(
     discussion = db_session.exec(statement).first()
 
     if not discussion:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
 
     # Check if user already liked this discussion
     existing_like = select(DiscussionLike).where(
@@ -425,9 +386,7 @@ async def unlike_discussion(
 ):
     """Unlike a discussion"""
     if isinstance(current_user, AnonymousUser):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
     # Find the discussion
     statement = select(CourseDiscussion).where(
@@ -437,9 +396,7 @@ async def unlike_discussion(
     discussion = db_session.exec(statement).first()
 
     if not discussion:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
 
     # Find the like
     like_statement = select(DiscussionLike).where(
@@ -487,9 +444,7 @@ async def toggle_discussion_like(
     discussion = db_session.exec(statement).first()
 
     if not discussion:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
 
     # Check if user already liked this discussion
     existing_like_statement = select(DiscussionLike).where(
@@ -562,9 +517,7 @@ async def toggle_discussion_dislike(
     discussion = db_session.exec(statement).first()
 
     if not discussion:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
 
     # Check if user already disliked this discussion
     existing_dislike_statement = select(DiscussionDislike).where(
@@ -633,9 +586,7 @@ async def get_discussion_replies(
     discussion = db_session.exec(statement).first()
 
     if not discussion:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discussion not found")
 
     # RBAC check for course access
     course_statement = select(Course).where(Course.id == discussion.course_id)
@@ -661,8 +612,5 @@ async def get_discussion_replies(
     replies = db_session.exec(replies_query).all()
 
     return list(
-        await asyncio.gather(*[
-            get_discussion_with_details(reply.id, db_session, current_user)
-            for reply in replies
-        ])
+        await asyncio.gather(*[get_discussion_with_details(reply.id, db_session, current_user) for reply in replies])
     )

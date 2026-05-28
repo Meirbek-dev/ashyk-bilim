@@ -49,8 +49,4 @@ def downgrade() -> None:
                 )
             )
         if "email_verified_at" not in column_names:
-            batch_op.add_column(
-                sa.Column(
-                    "email_verified_at", sa.DateTime(timezone=True), nullable=True
-                )
-            )
+            batch_op.add_column(sa.Column("email_verified_at", sa.DateTime(timezone=True), nullable=True))

@@ -97,14 +97,8 @@ def _latest_or_create_grading_entry(
         return entry
 
     now = datetime.now(UTC)
-    grading_dict = (
-        submission.grading_json if isinstance(submission.grading_json, dict) else {}
-    )
-    raw_dict = (
-        submission.raw_grading_json
-        if isinstance(submission.raw_grading_json, dict)
-        else {}
-    )
+    grading_dict = submission.grading_json if isinstance(submission.grading_json, dict) else {}
+    raw_dict = submission.raw_grading_json if isinstance(submission.raw_grading_json, dict) else {}
     entry = GradingEntry(
         entry_uuid=f"entry_{ULID()}",
         submission_id=submission.id,
@@ -114,9 +108,7 @@ def _latest_or_create_grading_entry(
         final_score=float(submission.final_score or submission.auto_score or 0),
         raw_breakdown=raw_dict,
         effective_breakdown=grading_dict,
-        overall_feedback=(
-            grading_dict.get("feedback", "") if isinstance(grading_dict, dict) else ""
-        ),
+        overall_feedback=(grading_dict.get("feedback", "") if isinstance(grading_dict, dict) else ""),
         grading_version=submission.grading_version,
         created_at=now,
         published_at=None,
@@ -137,9 +129,7 @@ async def api_list_item_feedback(
 ) -> list[ItemFeedbackRead]:
     submission, activity = _submission_with_activity(submission_uuid, db_session)
     if not _can_read_feedback(submission, activity, current_user, db_session):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Доступ запрещен"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступ запрещен")
 
     query = (
         select(ItemFeedbackEntry)
@@ -149,9 +139,7 @@ async def api_list_item_feedback(
     )
     if submission.user_id == current_user.id:
         query = query.where(GradingEntry.published_at.is_not(None))
-    return [
-        ItemFeedbackRead.model_validate(row) for row in db_session.exec(query).all()
-    ]
+    return [ItemFeedbackRead.model_validate(row) for row in db_session.exec(query).all()]
 
 
 @router.post(
@@ -208,17 +196,11 @@ async def api_update_item_feedback(
 ) -> ItemFeedbackRead:
     row = db_session.get(ItemFeedbackEntry, feedback_id)
     if row is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Обратная связь не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обратная связь не найдена")
     existing_submission = db_session.get(Submission, row.submission_id)
     if existing_submission is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена"
-        )
-    submission, activity = _submission_with_activity(
-        existing_submission.submission_uuid, db_session
-    )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена")
+    submission, activity = _submission_with_activity(existing_submission.submission_uuid, db_session)
     _require_teacher(activity, current_user, db_session)
 
     update = feedback.model_dump(exclude_unset=True)
@@ -244,19 +226,13 @@ async def api_delete_item_feedback(
 ) -> None:
     row = db_session.get(ItemFeedbackEntry, feedback_id)
     if row is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Обратная связь не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Обратная связь не найдена")
     submission = db_session.get(Submission, row.submission_id)
     if submission is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Отправка не найдена")
     activity = db_session.get(Activity, submission.activity_id)
     if activity is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Активность не найдена")
     _require_teacher(activity, current_user, db_session)
 
     payload = ItemFeedbackRead.model_validate(row).model_dump(mode="json")

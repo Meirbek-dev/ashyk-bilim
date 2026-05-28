@@ -30,14 +30,10 @@ def db_session():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    SQLModel.metadata.create_all(
-        engine, tables=[CodeRun.__table__, CodeRunCase.__table__]
-    )
+    SQLModel.metadata.create_all(engine, tables=[CodeRun.__table__, CodeRunCase.__table__])
     with Session(engine) as session:
         yield session
-    SQLModel.metadata.drop_all(
-        engine, tables=[CodeRunCase.__table__, CodeRun.__table__]
-    )
+    SQLModel.metadata.drop_all(engine, tables=[CodeRunCase.__table__, CodeRun.__table__])
 
 
 class FakeFactory:
@@ -46,9 +42,7 @@ class FakeFactory:
 
 
 @pytest.mark.asyncio
-async def test_code_execution_persists_visible_and_masks_hidden_results(
-    monkeypatch, db_session
-):
+async def test_code_execution_persists_visible_and_masks_hidden_results(monkeypatch, db_session):
     def fake_run(**_kwargs):
         return [
             SimpleNamespace(
@@ -196,9 +190,7 @@ async def test_code_execution_retries_failed_idempotent_run(monkeypatch, db_sess
 
 
 @pytest.mark.asyncio
-async def test_code_execution_truncates_output_and_passes_sandbox_policy(
-    monkeypatch, db_session
-):
+async def test_code_execution_truncates_output_and_passes_sandbox_policy(monkeypatch, db_session):
     captured_kwargs = {}
     created_at = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
 
@@ -445,9 +437,7 @@ async def async_run_service(
             is_visible=True,
             weight=2,
         ),
-        CodeTestCase(
-            id="hidden", input="3", expected_output="9", is_visible=False, weight=3
-        ),
+        CodeTestCase(id="hidden", input="3", expected_output="9", is_visible=False, weight=3),
     ]
     return await service.run(
         db_session=db_session,
@@ -465,9 +455,7 @@ async def async_run_service(
 
 
 @pytest.mark.asyncio
-async def test_code_execution_with_different_source_code_and_hash_in_key(
-    monkeypatch, db_session
-):
+async def test_code_execution_with_different_source_code_and_hash_in_key(monkeypatch, db_session):
     calls = 0
 
     def fake_run(**_kwargs):
@@ -504,11 +492,7 @@ async def test_code_execution_with_different_source_code_and_hash_in_key(
         purpose=CodeRunPurpose.FINAL,
         language_id=71,
         source_code=source_1,
-        test_cases=[
-            CodeTestCase(
-                id="visible", input="2", expected_output="4", is_visible=True, weight=2
-            )
-        ],
+        test_cases=[CodeTestCase(id="visible", input="2", expected_output="4", is_visible=True, weight=2)],
         idempotency_key=key_1,
     )
 
@@ -525,11 +509,7 @@ async def test_code_execution_with_different_source_code_and_hash_in_key(
         purpose=CodeRunPurpose.FINAL,
         language_id=71,
         source_code=source_2,
-        test_cases=[
-            CodeTestCase(
-                id="visible", input="2", expected_output="4", is_visible=True, weight=2
-            )
-        ],
+        test_cases=[CodeTestCase(id="visible", input="2", expected_output="4", is_visible=True, weight=2)],
         idempotency_key=key_2,
     )
 
@@ -542,20 +522,14 @@ async def test_code_execution_with_different_source_code_and_hash_in_key(
         purpose=CodeRunPurpose.FINAL,
         language_id=71,
         source_code=source_2,
-        test_cases=[
-            CodeTestCase(
-                id="visible", input="2", expected_output="4", is_visible=True, weight=2
-            )
-        ],
+        test_cases=[CodeTestCase(id="visible", input="2", expected_output="4", is_visible=True, weight=2)],
         idempotency_key=key_2,
     )
 
     # Verify that different code versions did not conflict and run_2 was executed
     assert run_1.run_uuid != run_2.run_uuid
     assert run_2.run_uuid == run_3.run_uuid
-    assert (
-        calls == 2
-    )  # run_1 and run_2 were sent to Judge0, run_3 reused run_2 from cache
+    assert calls == 2  # run_1 and run_2 were sent to Judge0, run_3 reused run_2 from cache
 
 
 @pytest.mark.asyncio
@@ -591,15 +565,9 @@ async def test_code_execution_match_modes(monkeypatch, db_session):
         language_id=71,
         source_code="print('hello')",
         test_cases=[
-            CodeTestCase(
-                id="c1", input="x", expected_output="hello", match_mode="EXACT"
-            ),
-            CodeTestCase(
-                id="c2", input="x", expected_output="hello", match_mode="EXACT"
-            ),
-            CodeTestCase(
-                id="c3_fail", input="x", expected_output="hello", match_mode="EXACT"
-            ),
+            CodeTestCase(id="c1", input="x", expected_output="hello", match_mode="EXACT"),
+            CodeTestCase(id="c2", input="x", expected_output="hello", match_mode="EXACT"),
+            CodeTestCase(id="c3_fail", input="x", expected_output="hello", match_mode="EXACT"),
         ],
     )
     assert run.details[0].passed is True
@@ -617,12 +585,8 @@ async def test_code_execution_match_modes(monkeypatch, db_session):
         language_id=71,
         source_code="print('hello')",
         test_cases=[
-            CodeTestCase(
-                id="c3", input="x", expected_output="hello", match_mode="TRIMMED"
-            ),
-            CodeTestCase(
-                id="c4", input="x", expected_output="world  ", match_mode="TRIMMED"
-            ),
+            CodeTestCase(id="c3", input="x", expected_output="hello", match_mode="TRIMMED"),
+            CodeTestCase(id="c4", input="x", expected_output="world  ", match_mode="TRIMMED"),
         ],
     )
     assert run.details[0].passed is True

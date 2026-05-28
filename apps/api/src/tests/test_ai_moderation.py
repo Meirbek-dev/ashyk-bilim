@@ -58,9 +58,7 @@ async def test_moderate_text_input_blocks_flagged_text(monkeypatch: pytest.Monke
         moderation,
         "get_openai_client",
         lambda: SimpleNamespace(
-            moderations=SimpleNamespace(
-                create=AsyncMock(return_value=_moderation_response(flagged=True))
-            )
+            moderations=SimpleNamespace(create=AsyncMock(return_value=_moderation_response(flagged=True)))
         ),
     )
 

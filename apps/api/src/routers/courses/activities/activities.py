@@ -48,15 +48,11 @@ async def api_create_activity(
 async def api_get_activity(
     request: Request,
     activity_uuid: str,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> ActivityReadWithPermissions:
     assert db_session is not None
-    return await get_activity(
-        request, activity_uuid, current_user=current_user, db_session=db_session
-    )
+    return await get_activity(request, activity_uuid, current_user=current_user, db_session=db_session)
 
 
 @router.patch("/{activity_uuid}")
@@ -68,9 +64,7 @@ async def api_update_activity(
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> ActivityRead:
     assert db_session is not None
-    return await update_activity(
-        request, activity_object, activity_uuid, current_user, db_session
-    )
+    return await update_activity(request, activity_object, activity_uuid, current_user, db_session)
 
 
 @router.delete("/{activity_uuid}", response_model=ActivityDetailResponse)
@@ -120,9 +114,7 @@ async def api_create_external_video_activity(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)] = None,
 ) -> ActivityRead:
-    return await create_external_video_activity(
-        request, current_user, external_video, db_session
-    )
+    return await create_external_video_activity(request, current_user, external_video, db_session)
 
 
 @router.post("/documentpdf")

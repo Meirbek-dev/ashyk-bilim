@@ -95,9 +95,7 @@ def get_drillthrough_rows(
                 "total_steps": snapshot.total_steps,
                 "is_completed": snapshot.is_completed,
                 "last_activity_at": to_iso(snapshot.last_activity_at),
-                "cohorts": cohort_names_for_user(
-                    context, snapshot.user_id, filters.cohort_ids or None
-                ),
+                "cohorts": cohort_names_for_user(context, snapshot.user_id, filters.cohort_ids or None),
             }
             if metric == "active_learners":
                 if (snapshot.course_id, snapshot.user_id) not in active_pairs:

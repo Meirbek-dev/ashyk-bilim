@@ -140,8 +140,4 @@ def check_violations(
     """
     if settings.max_violations <= 0:
         return False
-    return (
-        settings.track_violations
-        and settings.block_on_violations
-        and violation_count >= settings.max_violations
-    )
+    return settings.track_violations and settings.block_on_violations and violation_count >= settings.max_violations

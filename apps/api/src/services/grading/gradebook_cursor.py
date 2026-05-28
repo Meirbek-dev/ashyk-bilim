@@ -35,9 +35,7 @@ class GradebookCursorPage(PydanticStrictBaseModel):
 
 
 def encode_cursor(user_id: int, activity_id: int) -> str:
-    return base64.urlsafe_b64encode(
-        json.dumps({"u": user_id, "a": activity_id}).encode()
-    ).decode()
+    return base64.urlsafe_b64encode(json.dumps({"u": user_id, "a": activity_id}).encode()).decode()
 
 
 def decode_cursor(cursor: str) -> tuple[int, int]:
@@ -73,10 +71,7 @@ async def get_gradebook_cursor(
         user_id, activity_id = decode_cursor(cursor)
         query = query.where(
             (ActivityProgress.user_id > user_id)
-            | (
-                (ActivityProgress.user_id == user_id)
-                & (ActivityProgress.activity_id > activity_id)
-            )
+            | ((ActivityProgress.user_id == user_id) & (ActivityProgress.activity_id > activity_id))
         )
 
     # Fetch one extra to determine has_more
@@ -85,23 +80,15 @@ async def get_gradebook_cursor(
     page_rows = rows[:limit]
 
     # Build cells
-    submission_ids = {
-        row.latest_submission_id for row in page_rows if row.latest_submission_id
-    }
+    submission_ids = {row.latest_submission_id for row in page_rows if row.latest_submission_id}
     submissions_by_id: dict[int, Submission] = {}
     if submission_ids:
-        subs = db_session.exec(
-            select(Submission).where(Submission.id.in_(submission_ids))
-        ).all()
+        subs = db_session.exec(select(Submission).where(Submission.id.in_(submission_ids))).all()
         submissions_by_id = {s.id: s for s in subs if s.id}
 
     cells: list[ActivityProgressCell] = []
     for progress in page_rows:
-        latest = (
-            submissions_by_id.get(progress.latest_submission_id)
-            if progress.latest_submission_id
-            else None
-        )
+        latest = submissions_by_id.get(progress.latest_submission_id) if progress.latest_submission_id else None
         cells.append(
             ActivityProgressCell(
                 user_id=progress.user_id,
@@ -130,9 +117,7 @@ async def get_gradebook_cursor(
     # Total count
     from sqlalchemy import func
 
-    total = db_session.exec(
-        select(func.count()).where(ActivityProgress.course_id == course.id)
-    ).one()
+    total = db_session.exec(select(func.count()).where(ActivityProgress.course_id == course.id)).one()
 
     return GradebookCursorPage(
         cells=cells,
@@ -143,22 +128,14 @@ async def get_gradebook_cursor(
 
 
 def _get_course_or_404(course_uuid: str, db_session: Session) -> Course:
-    normalized = (
-        course_uuid if course_uuid.startswith("course_") else f"course_{course_uuid}"
-    )
-    course = db_session.exec(
-        select(Course).where(Course.course_uuid == normalized)
-    ).first()
+    normalized = course_uuid if course_uuid.startswith("course_") else f"course_{course_uuid}"
+    course = db_session.exec(select(Course).where(Course.course_uuid == normalized)).first()
     if course is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
     return course
 
 
-def _require_gradebook_access(
-    course: Course, current_user: PublicUser, db_session: Session
-) -> None:
+def _require_gradebook_access(course: Course, current_user: PublicUser, db_session: Session) -> None:
     is_author = db_session.exec(
         select(ResourceAuthor.id).where(
             ResourceAuthor.resource_uuid == course.course_uuid,

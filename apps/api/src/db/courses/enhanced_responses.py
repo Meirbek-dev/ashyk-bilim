@@ -19,18 +19,12 @@ class CourseReadWithPermissions(CourseRead):
     the current user can perform on this course.
     """
 
-    can_update: bool = PydanticField(
-        default=False, description="Whether the user can update this course"
-    )
-    can_delete: bool = PydanticField(
-        default=False, description="Whether the user can delete this course"
-    )
+    can_update: bool = PydanticField(default=False, description="Whether the user can update this course")
+    can_delete: bool = PydanticField(default=False, description="Whether the user can delete this course")
     can_manage_contributors: bool = PydanticField(
         default=False, description="Whether the user can manage course contributors"
     )
-    is_owner: bool = PydanticField(
-        default=False, description="Whether the current user is the course owner/author"
-    )
+    is_owner: bool = PydanticField(default=False, description="Whether the current user is the course owner/author")
 
 
 class FullCourseReadWithPermissions(FullCourseRead):

@@ -59,11 +59,7 @@ async def get_course_gradebook(
     progress_by_pair = {(r.user_id, r.activity_id): r for r in progress_rows}
 
     submissions_by_id = _submissions_by_id(
-        {
-            progress.latest_submission_id
-            for progress in progress_rows
-            if progress.latest_submission_id
-        },
+        {progress.latest_submission_id for progress in progress_rows if progress.latest_submission_id},
         db_session,
     )
     activity_ids = {activity.id for activity in activities if activity.id is not None}
@@ -71,15 +67,12 @@ async def get_course_gradebook(
     file_activity_ids = {
         activity.id
         for activity in activities
-        if activity.id is not None
-        and str(activity.activity_type) == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
+        if activity.id is not None and str(activity.activity_type) == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
     }
     file_attempts_by_pair = file_submission_attempts_for_gradebook(
         file_activity_ids, db_session, student_ids=student_ids
     )
-    file_configs_by_activity = file_submission_configs_for_activities(
-        file_activity_ids, db_session
-    )
+    file_configs_by_activity = file_submission_configs_for_activities(file_activity_ids, db_session)
 
     cells: list[ActivityProgressCell] = []
     for student in students:
@@ -97,12 +90,8 @@ async def get_course_gradebook(
                     activity.id,
                     progress,
                     latest,
-                    file_attempt_uuid=file_attempt.attempt_uuid
-                    if file_attempt
-                    else None,
-                    file_attempt_status=str(file_attempt.status)
-                    if file_attempt
-                    else None,
+                    file_attempt_uuid=file_attempt.attempt_uuid if file_attempt else None,
+                    file_attempt_status=str(file_attempt.status) if file_attempt else None,
                 )
             )
 
@@ -133,12 +122,8 @@ async def get_course_gradebook(
 
 
 def _get_course_or_404(course_uuid: str, db_session: Session) -> Course:
-    normalized = (
-        course_uuid if course_uuid.startswith("course_") else f"course_{course_uuid}"
-    )
-    course = db_session.exec(
-        select(Course).where(Course.course_uuid == normalized)
-    ).first()
+    normalized = course_uuid if course_uuid.startswith("course_") else f"course_{course_uuid}"
+    course = db_session.exec(select(Course).where(Course.course_uuid == normalized)).first()
     if course is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -219,9 +204,7 @@ def _course_students(
 
     return list(
         db_session.exec(
-            select(User)
-            .where(or_(*conditions))
-            .order_by(User.last_name, User.first_name, User.username)
+            select(User).where(or_(*conditions)).order_by(User.last_name, User.first_name, User.username)
         ).all()
     )
 
@@ -230,9 +213,7 @@ def _progress_by_pair(
     course_id: int,
     db_session: Session,
 ) -> dict[tuple[int, int], ActivityProgress]:
-    rows = db_session.exec(
-        select(ActivityProgress).where(ActivityProgress.course_id == course_id)
-    ).all()
+    rows = db_session.exec(select(ActivityProgress).where(ActivityProgress.course_id == course_id)).all()
     return {(row.user_id, row.activity_id): row for row in rows}
 
 
@@ -243,20 +224,14 @@ def _submissions_by_id(
     ids = {submission_id for submission_id in submission_ids if submission_id}
     if not ids:
         return {}
-    submissions = db_session.exec(
-        select(Submission).where(Submission.id.in_(ids))
-    ).all()
+    submissions = db_session.exec(select(Submission).where(Submission.id.in_(ids))).all()
     return {submission.id: submission for submission in submissions if submission.id}
 
 
-def _policies_by_activity(
-    activity_ids: set[int], db_session: Session
-) -> dict[int, AssessmentPolicy]:
+def _policies_by_activity(activity_ids: set[int], db_session: Session) -> dict[int, AssessmentPolicy]:
     if not activity_ids:
         return {}
-    policies = db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id.in_(activity_ids))
-    ).all()
+    policies = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id.in_(activity_ids))).all()
     return {policy.activity_id: policy for policy in policies}
 
 
@@ -283,11 +258,7 @@ def _build_activity(
         activity_type=str(activity.activity_type),
         assessment_type=_gradebook_assessment_type(policy),
         order=activity.order,
-        due_at=getattr(file_config, "due_at", None)
-        if file_config
-        else policy.due_at
-        if policy
-        else None,
+        due_at=getattr(file_config, "due_at", None) if file_config else policy.due_at if policy else None,
     )
 
 
@@ -353,10 +324,7 @@ def _build_teacher_actions(
         activity = activities_by_id.get(cell.activity_id)
         if student is None or activity is None:
             continue
-        student_name = (
-            f"{student.first_name or ''} {student.last_name or ''}".strip()
-            or student.username
-        )
+        student_name = f"{student.first_name or ''} {student.last_name or ''}".strip() or student.username
         actions.append(
             TeacherAction(
                 action_type="GRADE_SUBMISSION",
@@ -379,22 +347,16 @@ def _build_summary(cells: list[ActivityProgressCell]) -> GradebookSummary:
         for cell in cells
         if (due_at := _coerce_datetime(cell.due_at)) is not None
         and due_at < now
-        and cell.state
-        not in {ActivityProgressState.COMPLETED, ActivityProgressState.PASSED}
+        and cell.state not in {ActivityProgressState.COMPLETED, ActivityProgressState.PASSED}
     )
     return GradebookSummary(
         student_count=len({cell.user_id for cell in cells}),
         activity_count=len({cell.activity_id for cell in cells}),
         needs_grading_count=sum(1 for cell in cells if cell.teacher_action_required),
         overdue_count=overdue_count,
-        not_started_count=sum(
-            1 for cell in cells if cell.state == ActivityProgressState.NOT_STARTED
-        ),
+        not_started_count=sum(1 for cell in cells if cell.state == ActivityProgressState.NOT_STARTED),
         completed_count=sum(
-            1
-            for cell in cells
-            if cell.state
-            in {ActivityProgressState.COMPLETED, ActivityProgressState.PASSED}
+            1 for cell in cells if cell.state in {ActivityProgressState.COMPLETED, ActivityProgressState.PASSED}
         ),
     )
 

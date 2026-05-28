@@ -78,9 +78,7 @@ class StudentPolicyOverride(SQLModelStrictBaseModel, table=True):
     )
     waive_late_penalty: bool = Field(
         default=False,
-        sa_column=Column(
-            "waive_late_penalty", Boolean, nullable=False, server_default="false"
-        ),
+        sa_column=Column("waive_late_penalty", Boolean, nullable=False, server_default="false"),
     )
 
     note: str = Field(

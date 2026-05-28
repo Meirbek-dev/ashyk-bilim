@@ -311,11 +311,7 @@ def _seed_assessment(
             description="",
             lifecycle=lifecycle,
             scheduled_at=None,
-            published_at=(
-                datetime.now(UTC)
-                if lifecycle == AssessmentLifecycle.PUBLISHED
-                else None
-            ),
+            published_at=(datetime.now(UTC) if lifecycle == AssessmentLifecycle.PUBLISHED else None),
             archived_at=None,
             weight=1.0,
             grading_type=AssessmentGradingType.PERCENTAGE,
@@ -344,9 +340,7 @@ def _seed_assessment(
 # ---------------------------------------------------------------------------
 
 
-def test_start_submission_creates_draft(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_start_submission_creates_draft(db_session_factory, student_user, monkeypatch) -> None:
     """POST /assessments/{uuid}/start creates a DRAFT submission."""
     assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory)
     app = _make_app(db_session_factory, student_user, monkeypatch)
@@ -363,9 +357,7 @@ def test_start_submission_creates_draft(
     assert payload["started_at"] is not None
 
 
-def test_start_submission_is_idempotent(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_start_submission_is_idempotent(db_session_factory, student_user, monkeypatch) -> None:
     """Calling start twice returns the same DRAFT (no duplicate row)."""
     assessment_uuid, _, _ = _seed_assessment(db_session_factory)
     app = _make_app(db_session_factory, student_user, monkeypatch)
@@ -390,13 +382,9 @@ def test_start_submission_is_idempotent(
     assert count == 1
 
 
-def test_start_blocked_when_assessment_not_published(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_start_blocked_when_assessment_not_published(db_session_factory, student_user, monkeypatch) -> None:
     """Students cannot start an assessment that is still in DRAFT lifecycle."""
-    assessment_uuid, _, _ = _seed_assessment(
-        db_session_factory, lifecycle=AssessmentLifecycle.DRAFT
-    )
+    assessment_uuid, _, _ = _seed_assessment(db_session_factory, lifecycle=AssessmentLifecycle.DRAFT)
     app = _make_app(db_session_factory, student_user, monkeypatch)
     client = TestClient(app)
 
@@ -406,13 +394,9 @@ def test_start_blocked_when_assessment_not_published(
     assert response.json()["detail"]["code"] == "NOT_PUBLISHED"
 
 
-def test_start_blocked_when_max_attempts_exhausted(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_start_blocked_when_max_attempts_exhausted(db_session_factory, student_user, monkeypatch) -> None:
     """Starting a submission is blocked once max_attempts is exhausted."""
-    assessment_uuid, activity_id, _ = _seed_assessment(
-        db_session_factory, max_attempts=1
-    )
+    assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory, max_attempts=1)
     # Pre-seed an already-submitted attempt for this student
     with db_session_factory() as session:
         now = datetime.now(UTC)
@@ -443,17 +427,13 @@ def test_start_blocked_when_max_attempts_exhausted(
     assert "attempt" in str(detail).lower() or "max" in str(detail).lower()
 
 
-def test_snapshot_submission_stores_items_as_dict(
-    db_session_factory, student_user
-) -> None:
+def test_snapshot_submission_stores_items_as_dict(db_session_factory, student_user) -> None:
     """Submitting snapshots must match the Submission.items_snapshot dict type."""
     assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory)
     now = datetime.now(UTC)
 
     with db_session_factory() as session:
-        assessment = session.exec(
-            select(Assessment).where(Assessment.assessment_uuid == assessment_uuid)
-        ).one()
+        assessment = session.exec(select(Assessment).where(Assessment.assessment_uuid == assessment_uuid)).one()
         submission = Submission(
             submission_uuid="submission_snapshot_shape",
             assessment_type=AssessmentType.EXAM,
@@ -483,9 +463,7 @@ def test_snapshot_submission_stores_items_as_dict(
 # ---------------------------------------------------------------------------
 
 
-def test_get_my_submissions_returns_own_submissions(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_get_my_submissions_returns_own_submissions(db_session_factory, student_user, monkeypatch) -> None:
     """GET /assessments/{uuid}/me returns only the calling student's submissions."""
     assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory)
 
@@ -603,9 +581,7 @@ def test_get_my_submissions_masks_score_when_batch_mode_unpublished(
     assert row["auto_score"] is None
 
 
-def test_get_my_submissions_shows_score_after_immediate_publish(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_get_my_submissions_shows_score_after_immediate_publish(db_session_factory, student_user, monkeypatch) -> None:
     """With IMMEDIATE release mode, published grades are visible to the student."""
     assessment_uuid, activity_id, _ = _seed_assessment(
         db_session_factory,
@@ -665,9 +641,7 @@ def test_get_my_submissions_shows_score_after_immediate_publish(
 # ---------------------------------------------------------------------------
 
 
-def test_get_assessment_returns_404_for_unknown_uuid(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_get_assessment_returns_404_for_unknown_uuid(db_session_factory, student_user, monkeypatch) -> None:
     """GET /assessments/{uuid} returns 404 for an unknown UUID."""
     _seed_assessment(db_session_factory)
     app = _make_app(db_session_factory, student_user, monkeypatch)
@@ -683,13 +657,9 @@ def test_get_assessment_returns_404_for_unknown_uuid(
 # ---------------------------------------------------------------------------
 
 
-def test_resubmission_draft_created_from_returned(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_resubmission_draft_created_from_returned(db_session_factory, student_user, monkeypatch) -> None:
     """A new DRAFT is created when the student resubmits after a RETURNED state."""
-    assessment_uuid, activity_id, _ = _seed_assessment(
-        db_session_factory, max_attempts=3
-    )
+    assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory, max_attempts=3)
 
     now = datetime.now(UTC)
     with db_session_factory() as session:
@@ -720,13 +690,9 @@ def test_resubmission_draft_created_from_returned(
     assert payload["submission_uuid"] != "submission_returned_1"
 
 
-def test_attempt_limit_prevents_resubmission(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_attempt_limit_prevents_resubmission(db_session_factory, student_user, monkeypatch) -> None:
     """Resubmit is blocked when max_attempts is already exhausted."""
-    assessment_uuid, activity_id, _ = _seed_assessment(
-        db_session_factory, max_attempts=1
-    )
+    assessment_uuid, activity_id, _ = _seed_assessment(db_session_factory, max_attempts=1)
 
     now = datetime.now(UTC)
     with db_session_factory() as session:

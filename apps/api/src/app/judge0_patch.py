@@ -24,9 +24,7 @@ def apply_judge0_patches(session_factory: sessionmaker[Session]) -> None:
         try:
             with session_factory() as session:
                 # Check if languages table exists and contains the core rows.
-                res = session.execute(
-                    text("SELECT COUNT(*) FROM languages WHERE id IN (22, 60, 62);")
-                ).scalar()
+                res = session.execute(text("SELECT COUNT(*) FROM languages WHERE id IN (22, 60, 62);")).scalar()
 
                 if res and res >= 3:
                     logger.info(
@@ -133,7 +131,5 @@ def start_judge0_patcher(session_factory: sessionmaker[Session]) -> None:
     Spawns a daemon thread to apply Judge0 patches asynchronously,
     preventing any blockage of the main application/startup lifespan.
     """
-    thread = threading.Thread(
-        target=apply_judge0_patches, args=(session_factory,), daemon=True
-    )
+    thread = threading.Thread(target=apply_judge0_patches, args=(session_factory,), daemon=True)
     thread.start()

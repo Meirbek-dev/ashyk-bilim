@@ -23,17 +23,13 @@ def grade_code_challenge(
         (auto_score 0–100, GradingBreakdown)
     """
     if not run_results:
-        return 0.0, GradingBreakdown(
-            items=[], needs_manual_review=False, auto_graded=True
-        )
+        return 0.0, GradingBreakdown(items=[], needs_manual_review=False, auto_graded=True)
 
     total_weight = sum(float(t.get("weight", 1)) for t in run_results)
     if total_weight == 0:
         total_weight = len(run_results)
 
-    earned_weight = sum(
-        float(t.get("weight", 1)) for t in run_results if t.get("passed", False)
-    )
+    earned_weight = sum(float(t.get("weight", 1)) for t in run_results if t.get("passed", False))
 
     raw_score = (earned_weight / total_weight) * 100
 
@@ -73,9 +69,7 @@ def grade_canonical_code_item(
 
     code_items = [item for item in items if item.body.kind == "CODE"]
     if not code_items:
-        return 0.0, GradingBreakdown(
-            items=[], needs_manual_review=False, auto_graded=True
-        )
+        return 0.0, GradingBreakdown(items=[], needs_manual_review=False, auto_graded=True)
 
     if len(code_items) > 1:
         return 0.0, GradingBreakdown(
@@ -123,9 +117,7 @@ def grade_canonical_code_item(
         return auto_score, breakdown
 
     item_score = latest_run.get("score")
-    normalized_score = (
-        float(item_score) if isinstance(item_score, (int, float)) else auto_score
-    )
+    normalized_score = float(item_score) if isinstance(item_score, (int, float)) else auto_score
     item_breakdown = GradingBreakdown(
         items=[
             GradedItem(
@@ -133,9 +125,7 @@ def grade_canonical_code_item(
                 item_text=item.title or item.body.prompt,
                 score=normalized_score,
                 max_score=100.0,
-                correct=(latest_run.get("passed") == latest_run.get("total"))
-                if latest_run.get("total")
-                else None,
+                correct=(latest_run.get("passed") == latest_run.get("total")) if latest_run.get("total") else None,
                 feedback="",
                 user_answer=_serialize_code_answer(raw_answer),
             )

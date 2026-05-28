@@ -9,9 +9,7 @@ from typing import Any
 from taskiq import InMemoryBroker, SimpleRetryMiddleware
 
 _ENV = os.getenv("ENVIRONMENT", "production")
-_IS_TEST = (
-    _ENV == "pytest" or "PYTEST_CURRENT_TEST" in os.environ or "pytest" in sys.modules
-)
+_IS_TEST = _ENV == "pytest" or "PYTEST_CURRENT_TEST" in os.environ or "pytest" in sys.modules
 
 
 def _with_common_middlewares(broker: Any) -> Any:
@@ -30,9 +28,7 @@ def _build_broker() -> Any:
     try:
         from taskiq_redis import ListQueueBroker, RedisAsyncResultBackend
     except ImportError as exc:
-        raise RuntimeError(
-            "taskiq-redis is not installed. Run `uv add taskiq-redis` to install it."
-        ) from exc
+        raise RuntimeError("taskiq-redis is not installed. Run `uv add taskiq-redis` to install it.") from exc
 
     from src.infra.settings import get_settings
 

@@ -29,11 +29,7 @@ def build_data_quality(
         if supports_teacher_rollup_reads(filters)
         else None
     )
-    mode = (
-        "rollup"
-        if supports_teacher_rollup_reads(filters) and teacher_rollup is not None
-        else "live"
-    )
+    mode = "rollup" if supports_teacher_rollup_reads(filters) and teacher_rollup is not None else "live"
     snapshots = progress_snapshots(context)
     missing_sources: list[str] = []
     if not context.trail_steps:
@@ -49,11 +45,7 @@ def build_data_quality(
 
     courses_without_enough_data: list[dict[str, object]] = []
     for course_id in scope.course_ids:
-        course_snapshots = [
-            snapshot
-            for snapshot in snapshots.values()
-            if snapshot.course_id == course_id
-        ]
+        course_snapshots = [snapshot for snapshot in snapshots.values() if snapshot.course_id == course_id]
         if len(course_snapshots) < 5:
             course = context.courses_by_id.get(course_id)
             courses_without_enough_data.append({
@@ -105,9 +97,7 @@ def build_data_quality(
 
     return AnalyticsDataQuality(
         mode=mode,
-        last_rollup_time=to_iso(teacher_rollup.generated_at)
-        if teacher_rollup is not None
-        else None,
+        last_rollup_time=to_iso(teacher_rollup.generated_at) if teacher_rollup is not None else None,
         freshness_seconds=freshness_seconds,
         confidence_level=confidence,
         missing_event_sources=missing_sources,

@@ -119,9 +119,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(
-    db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch
-):
+def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch):
     app = FastAPI()
     app.include_router(router, prefix="/analytics")
 
@@ -143,9 +141,7 @@ def api_client_fixture(
             has_platform_scope=False,
         )
 
-    monkeypatch.setattr(
-        analytics_router_module, "_assessment_scope_for", fake_scope_for
-    )
+    monkeypatch.setattr(analytics_router_module, "_assessment_scope_for", fake_scope_for)
     return TestClient(app)
 
 
@@ -301,15 +297,11 @@ def _seed_course_stack(
     return course, chapter, activity, policy
 
 
-def _make_context_for_manual_assessment(
-    session, assessment_id: int
-) -> AnalyticsContext:
+def _make_context_for_manual_assessment(session, assessment_id: int) -> AnalyticsContext:
     course = session.get(Course, 1)
     activity = session.get(Activity, 1)
     assessment = session.get(Assessment, assessment_id)
-    submissions = [
-        session.get(Submission, submission_id) for submission_id in [1, 2, 3, 4]
-    ]
+    submissions = [session.get(Submission, submission_id) for submission_id in [1, 2, 3, 4]]
     users = session.exec(select(User)).scalars().all()
     users_by_id = {user.id: user for user in users if user.id is not None}
     manual_assessment_row = AssessmentAnalyticsRow(
@@ -333,9 +325,7 @@ def _make_context_for_manual_assessment(
         certificates=[],
         manual_assessments=[manual_assessment_row],
         manual_assessment_submissions=[
-            (submission, manual_assessment_row)
-            for submission in submissions
-            if submission is not None
+            (submission, manual_assessment_row) for submission in submissions if submission is not None
         ],
         exams=[],
         exam_attempts=[],
@@ -625,9 +615,7 @@ def test_manual_assessment_detail_endpoint_returns_operational_fields(
 
     monkeypatch.setattr(
         "src.services.analytics.assessments.load_analytics_context",
-        lambda db_session, _course_ids: _make_context_for_manual_assessment(
-            db_session, 1
-        ),
+        lambda db_session, _course_ids: _make_context_for_manual_assessment(db_session, 1),
     )
     monkeypatch.setattr(
         "src.services.analytics.assessments.progress_snapshots",

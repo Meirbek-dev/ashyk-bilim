@@ -53,9 +53,7 @@ async def award_xp_for_submission(
             assessment_type=assessment_type,
         )
     except Exception:
-        logger.exception(
-            "xp_award_failed submission=%s user=%s", submission_uuid, user_id
-        )
+        logger.exception("xp_award_failed submission=%s user=%s", submission_uuid, user_id)
         raise  # Let taskiq retry
 
 
@@ -82,13 +80,9 @@ def _award_xp_sync(
 
     engine = get_bg_engine()
     with Session(engine) as db:
-        submission = db.exec(
-            select(Submission).where(Submission.submission_uuid == submission_uuid)
-        ).first()
+        submission = db.exec(select(Submission).where(Submission.submission_uuid == submission_uuid)).first()
         if submission is None:
-            logger.warning(
-                "xp_award_task submission_not_found submission=%s", submission_uuid
-            )
+            logger.warning("xp_award_task submission_not_found submission=%s", submission_uuid)
             return
 
         # Only award XP for published submissions that passed.
@@ -100,9 +94,7 @@ def _award_xp_sync(
             policy = db.get(AssessmentPolicy, submission.assessment_policy_id)
         if policy is None:
             policy = db.exec(
-                select(AssessmentPolicy).where(
-                    AssessmentPolicy.activity_id == submission.activity_id
-                )
+                select(AssessmentPolicy).where(AssessmentPolicy.activity_id == submission.activity_id)
             ).first()
 
         passing_score = float(policy.passing_score) if policy is not None else 60.0

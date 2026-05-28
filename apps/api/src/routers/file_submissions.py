@@ -66,28 +66,20 @@ async def api_create_file_submission(
 @router.get("/activity/{activity_uuid}", response_model=FileSubmissionRead)
 async def api_get_file_submission_by_activity(
     activity_uuid: str,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> FileSubmissionRead:
-    return await get_file_submission_by_activity_uuid(
-        activity_uuid, current_user, db_session
-    )
+    return await get_file_submission_by_activity_uuid(activity_uuid, current_user, db_session)
 
 
-@router.get(
-    "/files/{attempt_file_uuid}/url", response_model=FileSubmissionFileUrlResponse
-)
+@router.get("/files/{attempt_file_uuid}/url", response_model=FileSubmissionFileUrlResponse)
 async def api_get_file_submission_file_url(
     attempt_file_uuid: str,
     request: Request,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> FileSubmissionFileUrlResponse:
-    upload = await get_file_submission_attempt_file_upload(
-        attempt_file_uuid, current_user, db_session
-    )
+    upload = await get_file_submission_attempt_file_upload(attempt_file_uuid, current_user, db_session)
     expires_at = datetime.now(UTC) + timedelta(hours=1)
     return FileSubmissionFileUrlResponse(
         attempt_file_uuid=attempt_file_uuid,
@@ -108,25 +100,19 @@ async def api_download_file_submission_file(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> StreamingResponse:
-    upload = await get_file_submission_attempt_file_upload(
-        attempt_file_uuid, current_user, db_session
-    )
+    upload = await get_file_submission_attempt_file_upload(attempt_file_uuid, current_user, db_session)
     body = read_file_submission_upload_bytes(upload, db_session)
     return StreamingResponse(
         iter([body]),
         media_type=upload.content_type or "application/octet-stream",
-        headers={
-            "Content-Disposition": get_content_disposition_header(upload.filename)
-        },
+        headers={"Content-Disposition": get_content_disposition_header(upload.filename)},
     )
 
 
 @router.get("/{file_submission_uuid}", response_model=FileSubmissionRead)
 async def api_get_file_submission(
     file_submission_uuid: str,
-    current_user: Annotated[
-        PublicUser | AnonymousUser, Depends(get_optional_public_user)
-    ],
+    current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> FileSubmissionRead:
     return await get_file_submission(file_submission_uuid, current_user, db_session)
@@ -139,9 +125,7 @@ async def api_update_file_submission(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> FileSubmissionRead:
-    return await update_file_submission(
-        file_submission_uuid, payload, current_user, db_session
-    )
+    return await update_file_submission(file_submission_uuid, payload, current_user, db_session)
 
 
 @router.post("/{file_submission_uuid}/publish", response_model=FileSubmissionRead)
@@ -153,17 +137,13 @@ async def api_publish_file_submission(
     return await publish_file_submission(file_submission_uuid, current_user, db_session)
 
 
-@router.get(
-    "/{file_submission_uuid}/draft", response_model=FileSubmissionAttemptRead | None
-)
+@router.get("/{file_submission_uuid}/draft", response_model=FileSubmissionAttemptRead | None)
 async def api_get_file_submission_draft(
     file_submission_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> FileSubmissionAttemptRead | None:
-    return await get_my_file_submission_draft(
-        file_submission_uuid, current_user, db_session
-    )
+    return await get_my_file_submission_draft(file_submission_uuid, current_user, db_session)
 
 
 @router.post("/{file_submission_uuid}/draft", response_model=FileSubmissionAttemptRead)
@@ -172,9 +152,7 @@ async def api_start_file_submission_draft(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> FileSubmissionAttemptRead:
-    return await start_file_submission_draft(
-        file_submission_uuid, current_user, db_session
-    )
+    return await start_file_submission_draft(file_submission_uuid, current_user, db_session)
 
 
 @router.patch("/{file_submission_uuid}/draft", response_model=FileSubmissionAttemptRead)
@@ -211,22 +189,16 @@ async def api_submit_file_submission(
     )
 
 
-@router.get(
-    "/{file_submission_uuid}/me", response_model=list[FileSubmissionAttemptRead]
-)
+@router.get("/{file_submission_uuid}/me", response_model=list[FileSubmissionAttemptRead])
 async def api_list_my_file_submission_attempts(
     file_submission_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> list[FileSubmissionAttemptRead]:
-    return await list_my_file_submission_attempts(
-        file_submission_uuid, current_user, db_session
-    )
+    return await list_my_file_submission_attempts(file_submission_uuid, current_user, db_session)
 
 
-@router.get(
-    "/{file_submission_uuid}/submissions", response_model=FileSubmissionReviewQueue
-)
+@router.get("/{file_submission_uuid}/submissions", response_model=FileSubmissionReviewQueue)
 async def api_list_file_submission_submissions(
     file_submission_uuid: str,
     current_user: Annotated[PublicUser, Depends(get_public_user)],
@@ -253,17 +225,11 @@ async def api_export_file_submission_csv(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     db_session: Annotated[Session, Depends(get_db_session)],
 ) -> Response:
-    csv_body = await export_file_submission_csv(
-        file_submission_uuid, current_user, db_session
-    )
+    csv_body = await export_file_submission_csv(file_submission_uuid, current_user, db_session)
     return Response(
         content=csv_body,
         media_type="text/csv",
-        headers={
-            "Content-Disposition": get_content_disposition_header(
-                f"file-submissions-{file_submission_uuid}.csv"
-            )
-        },
+        headers={"Content-Disposition": get_content_disposition_header(f"file-submissions-{file_submission_uuid}.csv")},
     )
 
 
@@ -283,11 +249,7 @@ async def api_download_file_submission_zip(
     return StreamingResponse(
         iter([body]),
         media_type="application/zip",
-        headers={
-            "Content-Disposition": get_content_disposition_header(
-                f"file-submissions-{file_submission_uuid}.zip"
-            )
-        },
+        headers={"Content-Disposition": get_content_disposition_header(f"file-submissions-{file_submission_uuid}.zip")},
     )
 
 

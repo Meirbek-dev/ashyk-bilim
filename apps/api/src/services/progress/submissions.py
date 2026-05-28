@@ -170,10 +170,7 @@ def recalculate_activity_progress(
     if activity is None or activity.course_id is None:
         return None
 
-    if (
-        _enum_value(activity.activity_type)
-        == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
-    ):
+    if _enum_value(activity.activity_type) == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value:
         return _recalculate_file_submission_progress(
             activity,
             user_id,
@@ -262,13 +259,9 @@ def recalculate_course_progress(
     weight_by_activity: dict[int, float] = {}
     if scored_activity_ids:
         assessment_rows = db_session.exec(
-            select(Assessment.activity_id, Assessment.weight).where(
-                Assessment.activity_id.in_(scored_activity_ids)
-            )
+            select(Assessment.activity_id, Assessment.weight).where(Assessment.activity_id.in_(scored_activity_ids))
         ).all()
-        weight_by_activity = {
-            row.activity_id: float(row.weight) for row in assessment_rows
-        }
+        weight_by_activity = {row.activity_id: float(row.weight) for row in assessment_rows}
 
     weighted_numerator = 0.0
     weighted_denominator = 0.0
@@ -280,11 +273,7 @@ def recalculate_course_progress(
             continue  # zero-weight activities are excluded from the average
         weighted_numerator += row.score * w
         weighted_denominator += w
-    weighted_grade_average = (
-        round(weighted_numerator / weighted_denominator, 2)
-        if weighted_denominator
-        else None
-    )
+    weighted_grade_average = round(weighted_numerator / weighted_denominator, 2) if weighted_denominator else None
 
     progress = db_session.exec(
         select(CourseProgress).where(
@@ -349,16 +338,11 @@ def _ensure_course_activity_progress_rows(
             continue
         policy = _get_or_create_policy(activity, db_session)
         file_due_at = None
-        if (
-            _enum_value(activity.activity_type)
-            == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value
-        ):
+        if _enum_value(activity.activity_type) == ActivityTypeEnum.TYPE_FILE_SUBMISSION.value:
             from src.db.file_submissions import FileSubmissionActivity
 
             file_submission = db_session.exec(
-                select(FileSubmissionActivity).where(
-                    FileSubmissionActivity.activity_id == activity.id
-                )
+                select(FileSubmissionActivity).where(FileSubmissionActivity.activity_id == activity.id)
             ).first()
             file_due_at = file_submission.due_at if file_submission else None
         db_session.add(
@@ -367,8 +351,7 @@ def _ensure_course_activity_progress_rows(
                 activity_id=activity.id,
                 user_id=user_id,
                 required=True,
-                due_at=file_due_at
-                or (_coerce_datetime(policy.due_at) if policy else None),
+                due_at=file_due_at or (_coerce_datetime(policy.due_at) if policy else None),
                 updated_at=now,
             )
         )
@@ -385,11 +368,7 @@ def backfill_activity_progress(
     activity_query = select(Activity).where(Activity.published)
     if course_id is not None:
         activity_query = activity_query.where(Activity.course_id == course_id)
-    activities = [
-        activity
-        for activity in db_session.exec(activity_query).all()
-        if activity.course_id is not None
-    ]
+    activities = [activity for activity in db_session.exec(activity_query).all() if activity.course_id is not None]
 
     user_ids_by_course = _known_user_ids_by_course(db_session, activities)
 
@@ -462,16 +441,10 @@ def _apply_progress_from_submissions(
     now = datetime.now(UTC)
     latest = max(submissions, key=_submission_sort_key, default=None)
     submitted_attempts = [
-        submission
-        for submission in submissions
-        if _enum_value(submission.status) != SubmissionStatus.DRAFT.value
+        submission for submission in submissions if _enum_value(submission.status) != SubmissionStatus.DRAFT.value
     ]
     best = max(
-        (
-            submission
-            for submission in submitted_attempts
-            if _submission_score(submission) is not None
-        ),
+        (submission for submission in submitted_attempts if _submission_score(submission) is not None),
         key=lambda submission: _submission_score(submission) or 0,
         default=None,
     )
@@ -578,15 +551,11 @@ def _get_or_create_policy(
     db_session: Session,
     assessment_type: AssessmentType | None = None,
 ) -> AssessmentPolicy | None:
-    policy = db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)
-    ).first()
+    policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)).first()
     if policy is not None:
         return policy
 
-    assessment_type = assessment_type or _assessment_type_for_activity(
-        activity, db_session
-    )
+    assessment_type = assessment_type or _assessment_type_for_activity(activity, db_session)
     if assessment_type is None:
         return None
 
@@ -655,9 +624,7 @@ def _assessment_type_for_activity(
     activity: Activity,
     db_session: Session,
 ) -> AssessmentType | None:
-    assessment = db_session.exec(
-        select(Assessment).where(Assessment.activity_id == activity.id)
-    ).first()
+    assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
     if assessment is not None:
         try:
             return AssessmentType(assessment.kind)
@@ -692,9 +659,7 @@ def _get_or_create_progress_submission(
     assessment_type: AssessmentType,
     db_session: Session,
 ) -> Submission:
-    existing = db_session.exec(
-        select(Submission).where(Submission.submission_uuid == submission_uuid)
-    ).first()
+    existing = db_session.exec(select(Submission).where(Submission.submission_uuid == submission_uuid)).first()
     if existing is not None:
         return existing
     now = datetime.now(UTC)
@@ -727,9 +692,7 @@ def _known_user_ids_by_course(
 
     activity_course = {activity.id: activity.course_id for activity in activities}
     for row in db_session.exec(
-        select(Submission.activity_id, Submission.user_id).where(
-            Submission.activity_id.in_(activity_ids)
-        )
+        select(Submission.activity_id, Submission.user_id).where(Submission.activity_id.in_(activity_ids))
     ).all():
         course_id = activity_course.get(row.activity_id)
         if course_id in result:
@@ -748,9 +711,7 @@ def _known_user_ids_by_course(
 
     course_uuid_to_id = {
         course.course_uuid: course.id
-        for course in db_session.exec(
-            select(Course).where(Course.id.in_(course_ids))
-        ).all()
+        for course in db_session.exec(select(Course).where(Course.id.in_(course_ids))).all()
     }
     for row in db_session.exec(
         select(UserGroupResource.resource_uuid, UserGroupUser.user_id).join(
@@ -840,9 +801,7 @@ def _recalculate_file_submission_progress(
     )
 
     file_submission = db_session.exec(
-        select(FileSubmissionActivity).where(
-            FileSubmissionActivity.activity_id == activity.id
-        )
+        select(FileSubmissionActivity).where(FileSubmissionActivity.activity_id == activity.id)
     ).first()
     attempts = list(
         db_session.exec(
@@ -871,9 +830,7 @@ def _recalculate_file_submission_progress(
         default=None,
     )
     submitted_attempts = [
-        attempt
-        for attempt in attempts
-        if _enum_value(attempt.status) != FileSubmissionAttemptStatus.DRAFT.value
+        attempt for attempt in attempts if _enum_value(attempt.status) != FileSubmissionAttemptStatus.DRAFT.value
     ]
     state = ActivityProgressState.NOT_STARTED
     score = latest.final_score if latest else None
@@ -895,9 +852,7 @@ def _recalculate_file_submission_progress(
         elif latest_status == FileSubmissionAttemptStatus.GRADED.value:
             state = ActivityProgressState.GRADED
         elif latest_status == FileSubmissionAttemptStatus.PUBLISHED.value:
-            state = (
-                ActivityProgressState.PASSED if passed else ActivityProgressState.FAILED
-            )
+            state = ActivityProgressState.PASSED if passed else ActivityProgressState.FAILED
             completed_at = latest.graded_at or latest.submitted_at or latest.updated_at
 
     progress.required = True

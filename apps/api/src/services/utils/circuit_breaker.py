@@ -41,10 +41,7 @@ class CircuitBreaker:
     def _before_call(self) -> None:
         now = time.monotonic()
         if self.state == "OPEN":
-            if (
-                self.last_failure_time
-                and (now - self.last_failure_time) > self.recovery_timeout
-            ):
+            if self.last_failure_time and (now - self.last_failure_time) > self.recovery_timeout:
                 self.state = "HALF_OPEN"
                 logger.info("Circuit breaker %s entered HALF_OPEN state", self.name)
             else:
@@ -90,9 +87,7 @@ class CircuitBreaker:
                 self._on_failure(exc)
             raise
 
-    async def call_async(
-        self, func: Callable[P, Awaitable[T]], *args: P.args, **kwargs: P.kwargs
-    ) -> T:
+    async def call_async(self, func: Callable[P, Awaitable[T]], *args: P.args, **kwargs: P.kwargs) -> T:
         """Execute an asynchronous function wrapped by the circuit breaker."""
         async with self._lock:
             self._before_call()

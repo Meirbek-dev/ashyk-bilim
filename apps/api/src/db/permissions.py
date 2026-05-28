@@ -99,15 +99,9 @@ class RolePermission(SQLModelStrictBaseModel, table=True):
         Index("idx_role_permissions_permission", "permission_id"),
     )
 
-    role_id: int = Field(
-        sa_column=Column(
-            Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
-        )
-    )
+    role_id: int = Field(sa_column=Column(Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True))
     permission_id: int = Field(
-        sa_column=Column(
-            Integer, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True
-        )
+        sa_column=Column(Integer, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
     )
     granted_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -131,16 +125,8 @@ class UserRole(SQLModelStrictBaseModel, table=True):
         default=None,
         sa_column=Column(Integer, primary_key=True, autoincrement=True),
     )
-    user_id: int = Field(
-        sa_column=Column(
-            Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False
-        )
-    )
-    role_id: int = Field(
-        sa_column=Column(
-            Integer, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False
-        )
-    )
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False))
+    role_id: int = Field(sa_column=Column(Integer, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False))
     assigned_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     assigned_by: int | None = Field(
         default=None,

@@ -100,12 +100,8 @@ def _make_app(db_session_factory, current_user: PublicUser, monkeypatch) -> Fast
 
     from src.services import file_submissions
 
-    monkeypatch.setattr(
-        file_submissions, "_require_submit_access", lambda *_a, **_kw: None
-    )
-    monkeypatch.setattr(
-        file_submissions, "recalculate_course_progress", lambda *_a, **_kw: None
-    )
+    monkeypatch.setattr(file_submissions, "_require_submit_access", lambda *_a, **_kw: None)
+    monkeypatch.setattr(file_submissions, "recalculate_course_progress", lambda *_a, **_kw: None)
 
     return app
 
@@ -206,9 +202,7 @@ def _seed_file_submission(
         return file_submission.file_submission_uuid
 
 
-def test_start_draft_when_returned_and_max_attempts_reached(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_start_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
     """
     Reproduce 409 Conflict when a student tries to start a draft
     after an attempt has been RETURNED and max_attempts=1.
@@ -218,9 +212,7 @@ def test_start_draft_when_returned_and_max_attempts_reached(
     # Pre-seed a RETURNED attempt
     with db_session_factory() as session:
         file_sub = session.exec(
-            select(FileSubmissionActivity).where(
-                FileSubmissionActivity.file_submission_uuid == file_submission_uuid
-            )
+            select(FileSubmissionActivity).where(FileSubmissionActivity.file_submission_uuid == file_submission_uuid)
         ).one()
         activity = session.get(Activity, file_sub.activity_id)
 
@@ -251,9 +243,7 @@ def test_start_draft_when_returned_and_max_attempts_reached(
     assert response.json()["status"] == "RETURNED"
 
 
-def test_save_draft_when_returned_and_max_attempts_reached(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_save_draft_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
     """
     Ensure student can save a draft (patch files) on a RETURNED attempt
     even when max_attempts=1.
@@ -262,9 +252,7 @@ def test_save_draft_when_returned_and_max_attempts_reached(
 
     with db_session_factory() as session:
         file_sub = session.exec(
-            select(FileSubmissionActivity).where(
-                FileSubmissionActivity.file_submission_uuid == file_submission_uuid
-            )
+            select(FileSubmissionActivity).where(FileSubmissionActivity.file_submission_uuid == file_submission_uuid)
         ).one()
         activity = session.get(Activity, file_sub.activity_id)
 
@@ -288,17 +276,13 @@ def test_save_draft_when_returned_and_max_attempts_reached(
     client = TestClient(app)
 
     # Patch with no files (just to check if it proceeds)
-    response = client.patch(
-        f"/file-submissions/{file_submission_uuid}/draft", json={"files": []}
-    )
+    response = client.patch(f"/file-submissions/{file_submission_uuid}/draft", json={"files": []})
 
     assert response.status_code == 200
     assert response.json()["status"] == "RETURNED"
 
 
-def test_submit_when_returned_and_max_attempts_reached(
-    db_session_factory, student_user, monkeypatch
-) -> None:
+def test_submit_when_returned_and_max_attempts_reached(db_session_factory, student_user, monkeypatch) -> None:
     """
     Ensure student can re-submit a RETURNED attempt
     even when max_attempts=1.
@@ -307,9 +291,7 @@ def test_submit_when_returned_and_max_attempts_reached(
 
     with db_session_factory() as session:
         file_sub = session.exec(
-            select(FileSubmissionActivity).where(
-                FileSubmissionActivity.file_submission_uuid == file_submission_uuid
-            )
+            select(FileSubmissionActivity).where(FileSubmissionActivity.file_submission_uuid == file_submission_uuid)
         ).one()
         activity = session.get(Activity, file_sub.activity_id)
 

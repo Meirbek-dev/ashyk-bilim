@@ -141,9 +141,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(
-    db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch
-):
+def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch):
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
     app.include_router(file_submissions_router, prefix="/file-submissions")
@@ -162,12 +160,8 @@ def api_client_fixture(
     monkeypatch.setattr(core, "_require_author", lambda *_a, **_kw: None)
     monkeypatch.setattr(core, "_require_read", lambda *_a, **_kw: None)
     monkeypatch.setattr(core, "_require_grade", lambda *_a, **_kw: None)
-    monkeypatch.setattr(
-        file_submission_service, "_require_author", lambda *_a, **_kw: None
-    )
-    monkeypatch.setattr(
-        file_submission_service, "_require_read", lambda *_a, **_kw: None
-    )
+    monkeypatch.setattr(file_submission_service, "_require_author", lambda *_a, **_kw: None)
+    monkeypatch.setattr(file_submission_service, "_require_read", lambda *_a, **_kw: None)
     monkeypatch.setattr(PermissionChecker, "require", lambda *_a, **_kw: None)
     monkeypatch.setattr(PermissionChecker, "check", lambda *_a, **_kw: True)
     return TestClient(app)
@@ -347,9 +341,7 @@ def test_get_assessment_404_for_unknown(api_client, db_session_factory) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_create_assessment_seeds_draft_and_policy(
-    api_client, db_session_factory
-) -> None:
+def test_create_assessment_seeds_draft_and_policy(api_client, db_session_factory) -> None:
     """POST /assessments creates an assessment in DRAFT lifecycle with an AssessmentPolicy."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -372,9 +364,7 @@ def test_create_assessment_seeds_draft_and_policy(
     assert data["assessment_uuid"] is not None
 
 
-def test_create_assessment_unknown_course_returns_404(
-    api_client, db_session_factory
-) -> None:
+def test_create_assessment_unknown_course_returns_404(api_client, db_session_factory) -> None:
     """POST /assessments with a non-existent course_id returns 404."""
     _, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -396,9 +386,7 @@ def test_create_assessment_unknown_course_returns_404(
 # ---------------------------------------------------------------------------
 
 
-def test_create_file_submission_activity_is_first_class(
-    api_client, db_session_factory
-) -> None:
+def test_create_file_submission_activity_is_first_class(api_client, db_session_factory) -> None:
     """POST /file-submissions creates a TYPE_FILE_SUBMISSION activity, not an assessment."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -424,18 +412,11 @@ def test_create_file_submission_activity_is_first_class(
     assert data["max_files"] == 2
 
     with db_session_factory() as session:
-        activity = session.exec(
-            select(Activity).where(Activity.id == data["activity_id"])
-        ).one()
+        activity = session.exec(select(Activity).where(Activity.id == data["activity_id"])).one()
         assert activity.activity_type == ActivityTypeEnum.TYPE_FILE_SUBMISSION
-        assert (
-            activity.activity_sub_type
-            == ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD
-        )
+        assert activity.activity_sub_type == ActivitySubTypeEnum.SUBTYPE_FILE_SUBMISSION_STANDARD
 
-    read_response = api_client.get(
-        f"/file-submissions/activity/{data['activity_uuid']}"
-    )
+    read_response = api_client.get(f"/file-submissions/activity/{data['activity_uuid']}")
     assert read_response.status_code == 200
     assert read_response.json()["file_submission_uuid"] == data["file_submission_uuid"]
 
@@ -513,9 +494,7 @@ def test_add_item_to_assessment(api_client, db_session_factory) -> None:
     assert data["item_uuid"] is not None
 
 
-def test_unknown_item_kinds_are_rejected_for_assessments(
-    api_client, db_session_factory
-) -> None:
+def test_unknown_item_kinds_are_rejected_for_assessments(api_client, db_session_factory) -> None:
     """Unknown item kinds cannot be authored inside assessments."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -558,9 +537,7 @@ def test_delete_item_removes_from_assessment(api_client, db_session_factory) -> 
     """DELETE /assessments/{uuid}/items/{item_uuid} removes the item."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
-    response = api_client.delete(
-        f"/assessments/{assessment_uuid}/items/item_published_authoring_1"
-    )
+    response = api_client.delete(f"/assessments/{assessment_uuid}/items/item_published_authoring_1")
 
     # Endpoint returns a confirmation dict; verify via GET that item is gone
     assert response.status_code == 200
@@ -670,9 +647,7 @@ def test_reorder_items_changes_order(api_client, db_session_factory) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_lifecycle_transition_draft_to_published(
-    api_client, db_session_factory
-) -> None:
+def test_lifecycle_transition_draft_to_published(api_client, db_session_factory) -> None:
     """POST /assessments/{uuid}/lifecycle/transition moves DRAFT → PUBLISHED."""
     course_id, chapter_id = _seed_course_and_chapter(db_session_factory)
 
@@ -718,9 +693,7 @@ def test_lifecycle_transition_draft_to_published(
     assert response.json()["published_at"] is not None
 
 
-def test_lifecycle_transition_published_to_archived(
-    api_client, db_session_factory
-) -> None:
+def test_lifecycle_transition_published_to_archived(api_client, db_session_factory) -> None:
     """Transition PUBLISHED → ARCHIVED is allowed."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -734,9 +707,7 @@ def test_lifecycle_transition_published_to_archived(
     assert response.json()["archived_at"] is not None
 
 
-def test_lifecycle_transition_invalid_returns_422(
-    api_client, db_session_factory
-) -> None:
+def test_lifecycle_transition_invalid_returns_422(api_client, db_session_factory) -> None:
     """Transitioning to an invalid state (e.g. PUBLISHED → SCHEDULED) returns 422."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -754,9 +725,7 @@ def test_lifecycle_transition_invalid_returns_422(
 # ---------------------------------------------------------------------------
 
 
-def test_readiness_check_passes_for_complete_assessment(
-    api_client, db_session_factory
-) -> None:
+def test_readiness_check_passes_for_complete_assessment(api_client, db_session_factory) -> None:
     """An assessment with items and policy is considered READY."""
     assessment_uuid = _seed_published_assessment(db_session_factory)
 
@@ -798,9 +767,7 @@ def test_readiness_check_flags_missing_items(api_client, db_session_factory) -> 
 # ---------------------------------------------------------------------------
 
 
-def test_policy_preset_manual_assessment_has_defaults(
-    api_client, db_session_factory
-) -> None:
+def test_policy_preset_manual_assessment_has_defaults(api_client, db_session_factory) -> None:
     """GET /assessments/policy-preset/EXAM returns a sensible default policy."""
     _seed_course_and_chapter(db_session_factory)
 

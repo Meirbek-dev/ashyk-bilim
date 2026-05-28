@@ -25,9 +25,7 @@ def upgrade() -> None:
     conn = op.get_bind()
 
     # Re-add the column (nullable, no FK enforcement to avoid lock issues)
-    conn.execute(
-        sa.text("ALTER TABLE activity ADD COLUMN IF NOT EXISTS course_id INTEGER")
-    )
+    conn.execute(sa.text("ALTER TABLE activity ADD COLUMN IF NOT EXISTS course_id INTEGER"))
 
     # Backfill from chapter.course_id
     conn.execute(

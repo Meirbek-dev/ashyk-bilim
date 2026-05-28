@@ -8,16 +8,12 @@ from src.db.trail_runs import TrailRunRead
 
 
 class TrailBase(SQLModelStrictBaseModel):
-    user_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
 
 
 class Trail(TrailBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    )
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE")))
     trail_uuid: str = ""
     creation_date: str = ""
     update_date: str = ""

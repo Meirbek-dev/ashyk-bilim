@@ -51,15 +51,11 @@ async def create_activity(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-    chapter = db_session.exec(
-        select(Chapter).where(Chapter.id == activity_object.chapter_id)
-    ).first()
+    chapter = db_session.exec(select(Chapter).where(Chapter.id == activity_object.chapter_id)).first()
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
 
-    course = db_session.exec(
-        select(Course).where(Course.id == chapter.course_id)
-    ).first()
+    course = db_session.exec(select(Course).where(Course.id == chapter.course_id)).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
@@ -98,18 +94,12 @@ async def get_activity(
     # Otherwise, require explicit activity:read permission.
     is_public_and_published = course.public and activity.published
     if not is_public_and_published:
-        checker.require(
-            current_user.id, "activity:read", resource_owner_id=activity.creator_id
-        )
+        checker.require(current_user.id, "activity:read", resource_owner_id=activity.creator_id)
 
     activity_read = ActivityRead.model_validate(activity)
 
-    can_update = checker.check(
-        current_user.id, "activity:update", resource_owner_id=activity.creator_id
-    )
-    can_delete = checker.check(
-        current_user.id, "activity:delete", resource_owner_id=activity.creator_id
-    )
+    can_update = checker.check(current_user.id, "activity:update", resource_owner_id=activity.creator_id)
+    can_delete = checker.check(current_user.id, "activity:delete", resource_owner_id=activity.creator_id)
     is_owner = activity.creator_id == current_user.id
 
     return ActivityReadWithPermissions(
@@ -128,9 +118,7 @@ def _get_activity_policy_read(
 ) -> ActivityAssessmentPolicyRead | None:
     if activity.id is None:
         return None
-    policy = db_session.exec(
-        select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)
-    ).first()
+    policy = db_session.exec(select(AssessmentPolicy).where(AssessmentPolicy.activity_id == activity.id)).first()
     if policy is None:
         return None
     return ActivityAssessmentPolicyRead(
@@ -156,9 +144,7 @@ async def update_activity(
     activity = _get_activity_by_uuid(activity_uuid, db_session)
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "activity:update", resource_owner_id=activity.creator_id
-    )
+    checker.require(current_user.id, "activity:update", resource_owner_id=activity.creator_id)
 
     update_data = activity_object.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -184,9 +170,7 @@ async def update_activity(
 
         get_ai_cache_manager().invalidate_activity_cache(activity_uuid)
     except Exception as inv_err:
-        logger.warning(
-            "AI cache invalidation failed for %s: %s", activity_uuid, inv_err
-        )
+        logger.warning("AI cache invalidation failed for %s: %s", activity_uuid, inv_err)
 
     return ActivityRead.model_validate(activity)
 
@@ -241,14 +225,9 @@ def _sync_assessment_lifecycle(
 
     activity.details = details
 
-    if (
-        activity.activity_type == ActivityTypeEnum.TYPE_FILE_SUBMISSION
-        and activity.id is not None
-    ):
+    if activity.activity_type == ActivityTypeEnum.TYPE_FILE_SUBMISSION and activity.id is not None:
         file_submission = db_session.exec(
-            select(FileSubmissionActivity).where(
-                FileSubmissionActivity.activity_id == activity.id
-            )
+            select(FileSubmissionActivity).where(FileSubmissionActivity.activity_id == activity.id)
         ).first()
         if file_submission is not None:
             file_submission.lifecycle = (
@@ -259,23 +238,17 @@ def _sync_assessment_lifecycle(
                 else FileSubmissionLifecycle.DRAFT
             )
             file_submission.published_at = (
-                datetime.now(tz=UTC)
-                if lifecycle == AssessmentLifecycleStatus.PUBLISHED
-                else None
+                datetime.now(tz=UTC) if lifecycle == AssessmentLifecycleStatus.PUBLISHED else None
             )
             file_submission.archived_at = (
-                datetime.now(tz=UTC)
-                if lifecycle == AssessmentLifecycleStatus.ARCHIVED
-                else file_submission.archived_at
+                datetime.now(tz=UTC) if lifecycle == AssessmentLifecycleStatus.ARCHIVED else file_submission.archived_at
             )
             file_submission.updated_at = datetime.now(tz=UTC)
             db_session.add(file_submission)
         return
 
     if activity.id is not None:
-        assessment = db_session.exec(
-            select(Assessment).where(Assessment.activity_id == activity.id)
-        ).first()
+        assessment = db_session.exec(select(Assessment).where(Assessment.activity_id == activity.id)).first()
         if assessment is not None:
             if lifecycle == AssessmentLifecycleStatus.PUBLISHED:
                 from src.services.assessments.core import build_readiness
@@ -284,26 +257,18 @@ def _sync_assessment_lifecycle(
                 if not readiness.ok:
                     raise HTTPException(
                         status_code=422,
-                        detail={
-                            "issues": [issue.model_dump() for issue in readiness.issues]
-                        },
+                        detail={"issues": [issue.model_dump() for issue in readiness.issues]},
                     )
 
             assessment.lifecycle = AssessmentLifecycle(lifecycle.value)
-            assessment.published_at = (
-                datetime.now(tz=UTC)
-                if lifecycle == AssessmentLifecycleStatus.PUBLISHED
-                else None
-            )
+            assessment.published_at = datetime.now(tz=UTC) if lifecycle == AssessmentLifecycleStatus.PUBLISHED else None
             assessment.scheduled_at = (
                 _coerce_datetime(details.get("scheduled_at"))
                 if lifecycle == AssessmentLifecycleStatus.SCHEDULED
                 else None
             )
             assessment.archived_at = (
-                datetime.now(tz=UTC)
-                if lifecycle == AssessmentLifecycleStatus.ARCHIVED
-                else assessment.archived_at
+                datetime.now(tz=UTC) if lifecycle == AssessmentLifecycleStatus.ARCHIVED else assessment.archived_at
             )
             db_session.add(assessment)
 
@@ -324,9 +289,7 @@ async def delete_activity(
     activity = _get_activity_by_uuid(activity_uuid, db_session)
 
     checker = PermissionChecker(db_session)
-    checker.require(
-        current_user.id, "activity:delete", resource_owner_id=activity.creator_id
-    )
+    checker.require(current_user.id, "activity:delete", resource_owner_id=activity.creator_id)
 
     db_session.delete(activity)
     db_session.commit()
@@ -336,9 +299,7 @@ async def delete_activity(
 
         get_ai_cache_manager().invalidate_activity_cache(activity_uuid)
     except Exception as inv_err:
-        logger.warning(
-            "AI cache invalidation failed for %s: %s", activity_uuid, inv_err
-        )
+        logger.warning("AI cache invalidation failed for %s: %s", activity_uuid, inv_err)
 
     return {"detail": "Activity deleted"}
 
