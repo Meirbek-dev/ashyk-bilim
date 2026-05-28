@@ -37,7 +37,7 @@ interface AttemptResultCardProps {
  * Follow-up action CTAs (retry, start revision) are inside this card since
  * they are secondary actions. The BottomActionBar handles the primary
  * "Next Activity" CTA via runtime.primary_action.
-*/
+ */
 export default function AttemptResultCard({ vm, onRetry, onNext: _onNext, onStartRevision }: AttemptResultCardProps) {
   const t = useTranslations('Features.ActivityWorkspace')
   const [breakdownOpen, setBreakdownOpen] = useState(false)

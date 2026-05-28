@@ -134,10 +134,7 @@ export function getTopEntries(leaderboard: PlatformLeaderboard, limit = 10): Lea
   return leaderboard.entries.slice(0, limit)
 }
 
-export function enrichUserRank(
-  leaderboard: PlatformLeaderboard,
-  userId: number,
-): UserRank | null {
+export function enrichUserRank(leaderboard: PlatformLeaderboard, userId: number): UserRank | null {
   const userEntry = findUserInLeaderboard(leaderboard, userId)
   if (!userEntry) return null
 

@@ -3,11 +3,7 @@
   "compilerOptions": {
     /* ── Runtime ─────────────────────────────────────────────────── */
     "target": "ESNext",
-    "lib": [
-      "ESNext",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "moduleDetection": "force",
@@ -40,30 +36,14 @@
     "skipLibCheck": true,
     /* ── Paths ───────────────────────────────────────────────────── */
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@components/*": [
-        "./src/components/*"
-      ],
-      "@hooks/*": [
-        "./src/hooks/*"
-      ],
-      "@services/*": [
-        "./src/services/*"
-      ],
-      "@styles/*": [
-        "./src/styles/*"
-      ],
-      "@editor/*": [
-        "./src/components/Objects/Editor/*"
-      ],
-      "@public/*": [
-        "./public/*"
-      ],
-      "@images/*": [
-        "./public/img/*"
-      ]
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@services/*": ["./src/services/*"],
+      "@styles/*": ["./src/styles/*"],
+      "@editor/*": ["./src/components/Objects/Editor/*"],
+      "@public/*": ["./public/*"],
+      "@images/*": ["./public/img/*"]
     },
     "plugins": [
       {
@@ -81,10 +61,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    ".next",
-    "dist",
-    "out"
-  ]
+  "exclude": ["node_modules", ".next", "dist", "out"]
 }

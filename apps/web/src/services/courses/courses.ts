@@ -120,32 +120,24 @@ function normalizeTags(tags: string | null | undefined): string[] {
 }
 
 function normalizeAuthors(authors: AuthorWithRole[] | undefined): NormalizedCourseAuthor[] {
-  return (authors ?? []).map(author =>
-    Object.assign({}, author, {
-      user: {
-        ...author.user,
-        avatar_image: author.user.avatar_image ?? ``,
-        first_name: author.user.first_name ?? ``,
-        last_name: author.user.last_name ?? ``,
-        user_uuid: author.user.user_uuid ?? ``,
-        ...(author.user.middle_name == null ? {} : { middle_name: author.user.middle_name }),
-      },
-    }),
-  )
+  return (authors ?? []).map(author => {
+    const { user, ...restAuthor } = author
+
+    return Object.assign(restAuthor, { user: {
+	id: user.id,
+	user_uuid: user.user_uuid ?? '',
+	avatar_image: user.avatar_image ?? '',
+	first_name: user.first_name ?? '',
+	last_name: user.last_name ?? '',
+	username: user.username,
+	...user.middle_name == null ? {} : { middle_name: user.middle_name }
+} })
+  })
 }
 
 function normalizeCourse(course: CourseRead): NormalizedCourse {
-  const {
-    about,
-    authors,
-    description,
-    learnings,
-    tags,
-    thumbnail_image,
-    thumbnail_type,
-    thumbnail_video,
-    ...rest
-  } = course
+  const { about, authors, description, learnings, tags, thumbnail_image, thumbnail_type, thumbnail_video, ...rest } =
+    course
 
   return {
     ...rest,
@@ -162,17 +154,8 @@ function normalizeCourse(course: CourseRead): NormalizedCourse {
 }
 
 function normalizeCourseWithPermissions(course: CourseReadWithPermissions): NormalizedCourseWithPermissions {
-  const {
-    about,
-    authors,
-    description,
-    learnings,
-    tags,
-    thumbnail_image,
-    thumbnail_type,
-    thumbnail_video,
-    ...rest
-  } = course
+  const { about, authors, description, learnings, tags, thumbnail_image, thumbnail_type, thumbnail_video, ...rest } =
+    course
 
   return {
     ...rest,

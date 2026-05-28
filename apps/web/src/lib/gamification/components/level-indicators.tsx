@@ -28,7 +28,12 @@ interface LevelProgressProps {
   className?: string
 }
 
-export function LevelProgress({ profile, showMilestones: _showMilestones = false, animated = true, className }: LevelProgressProps) {
+export function LevelProgress({
+  profile,
+  showMilestones: _showMilestones = false,
+  animated = true,
+  className,
+}: LevelProgressProps) {
   const previousLevelRef = useRef(profile.level)
   const controls = useAnimationControls()
   const prefersReducedMotion = useReducedMotion()

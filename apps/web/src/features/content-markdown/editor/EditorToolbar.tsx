@@ -242,7 +242,12 @@ export function EditorToolbar({
               <LinkIcon className="size-3.5" />
             </ToolbarButton>
             {config.allowImages && (
-              <ToolbarButton title={t('toolbar.image')} active={editor?.isActive('image') ?? null} disabled={disabled} onClick={() => setImageDialogOpen(true)}>
+              <ToolbarButton
+                title={t('toolbar.image')}
+                active={editor?.isActive('image') ?? null}
+                disabled={disabled}
+                onClick={() => setImageDialogOpen(true)}
+              >
                 <ImageIcon className="size-3.5" />
               </ToolbarButton>
             )}

@@ -167,7 +167,7 @@ const isNumberArray = (value: unknown): value is number[] =>
 const isStringRecord = (value: unknown): value is Record<string, string> =>
   isRecord(value) && Object.values(value).every(entry => typeof entry === 'string')
 
-const isDifficulty = (value: unknown): value is CodeChallengeSettings['difficulty'] =>
+const isDifficulty = (value: unknown): value is NonNullable<CodeChallengeSettings['difficulty']> =>
   value === 'EASY' || value === 'MEDIUM' || value === 'HARD'
 
 const isGradingStrategy = (value: unknown): value is CodeChallengeSettings['grading_strategy'] =>
@@ -176,7 +176,7 @@ const isGradingStrategy = (value: unknown): value is CodeChallengeSettings['grad
   value === 'BEST_SUBMISSION' ||
   value === 'LATEST_SUBMISSION'
 
-const isExecutionMode = (value: unknown): value is CodeChallengeSettings['execution_mode'] =>
+const isExecutionMode = (value: unknown): value is NonNullable<CodeChallengeSettings['execution_mode']> =>
   value === 'FAST_FEEDBACK' || value === 'COMPLETE_FEEDBACK'
 
 const isTestCase = (value: unknown): value is TestCase => {
@@ -356,6 +356,9 @@ function toCodeChallengeSettings(
   const difficulty: NonNullable<CodeChallengeSettings['difficulty']> = isDifficulty(settings['difficulty'])
     ? settings['difficulty']
     : 'EASY'
+  const executionMode: NonNullable<CodeChallengeSettings['execution_mode']> = isExecutionMode(settings['execution_mode'])
+    ? settings['execution_mode']
+    : 'COMPLETE_FEEDBACK'
   const hints = isHintArray(settings['hints']) ? settings['hints'] : []
   const points =
     typeof codeItem?.max_score === 'number'
@@ -376,7 +379,7 @@ function toCodeChallengeSettings(
     time_limit_ms: timeLimit * 1000,
     memory_limit_kb: memoryLimit * 1024,
     grading_strategy: isGradingStrategy(settings['grading_strategy']) ? settings['grading_strategy'] : 'PARTIAL_CREDIT',
-    execution_mode: isExecutionMode(settings['execution_mode']) ? settings['execution_mode'] : 'COMPLETE_FEEDBACK',
+    execution_mode: executionMode,
     allow_custom_input: typeof settings['allow_custom_input'] === 'boolean' ? settings['allow_custom_input'] : true,
     points,
     allowed_languages: allowedLanguages,
@@ -386,10 +389,10 @@ function toCodeChallengeSettings(
     starter_code: starterCode,
     reference_solutions: referenceSolutions,
     hints,
-    lifecycle_status: assessment.lifecycle,
     scheduled_at: assessment.scheduled_at ?? null,
     published_at: assessment.published_at ?? null,
     archived_at: assessment.archived_at ?? null,
+    ...(assessment.lifecycle === undefined ? {} : { lifecycle_status: assessment.lifecycle }),
     ...(assessment.title === undefined ? {} : { title: assessment.title }),
     ...(maxSubmissions !== undefined ? { max_submissions: maxSubmissions } : {}),
     ...(solutionCode ? { solution_code: solutionCode } : {}),

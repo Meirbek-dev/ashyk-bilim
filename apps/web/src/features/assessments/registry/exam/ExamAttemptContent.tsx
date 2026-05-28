@@ -297,7 +297,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
       canSubmit={vm.canSubmit}
       timerExpiresAt={vm.timerExpiresAt}
       latestCompletedSubmission={latestCompletedSubmission}
-      historyItems={historyItems as any}
+      historyItems={historyItems}
     />
   )
 }
@@ -325,13 +325,7 @@ function ExamTakingContent({
   canSubmit: boolean
   timerExpiresAt: string | null
   latestCompletedSubmission: ReturnType<typeof useAssessmentSubmission>['submission']
-  historyItems: {
-    id: string
-    label: string
-    submittedAt: string | null | undefined
-    status: 'PENDING' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
-    scoreLabel: string | null
-  }[]
+  historyItems: AttemptHistoryItem[]
 }) {
   const t = useTranslations('Activities.ExamActivity')
   const [currentIndex, setCurrentIndex] = useState(0)

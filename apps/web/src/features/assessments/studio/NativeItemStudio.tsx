@@ -1355,7 +1355,6 @@ function toDateTimeLocal(value: string | null | undefined) {
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16)
 }
 
-
 async function responseError(response: Response, fallback: string) {
   const payload = await response.json().catch(() => null)
   const detail = payload && typeof payload === 'object' ? (payload as { detail?: unknown }).detail : null
