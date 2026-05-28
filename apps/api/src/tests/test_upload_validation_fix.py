@@ -15,12 +15,12 @@ UploadRead.model_config["strict"] = True
 UploadRead.model_rebuild(force=True)
 
 
-def test_pydantic_is_strict():
+def test_pydantic_is_strict() -> None:
     """Verify that strict mode is actually enabled for the test."""
     assert UploadRead.model_config.get("strict") is True
 
 
-def test_upload_read_status_coercion():
+def test_upload_read_status_coercion() -> None:
     """
     Verify that UploadRead allows 'status' to be a string even in strict mode.
     This simulates reading from a database column defined as String.
@@ -46,7 +46,7 @@ def test_upload_read_status_coercion():
     assert isinstance(upload_read.status, UploadStatus)
 
 
-def test_upload_read_other_fields_remain_strict():
+def test_upload_read_other_fields_remain_strict() -> None:
     """
     Verify that other fields (like size_bytes) still enforce strict types.
     """

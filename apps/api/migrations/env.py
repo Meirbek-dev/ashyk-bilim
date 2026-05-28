@@ -41,7 +41,7 @@ _AUTOGENERATE_EXCLUDED_TABLES = {
 }
 
 
-def include_object(object_, name: str | None, type_: str, reflected: bool, compare_to):
+def include_object(object_, name: str | None, type_: str, reflected: bool, compare_to) -> bool:
     if not name:
         return True
 
@@ -60,7 +60,7 @@ def compare_type(
     _metadata_column,
     inspected_type,
     metadata_type,
-):
+) -> bool | None:
     # Treat String / Text / AutoString as interchangeable to avoid spurious diffs.
     stringish_types = (sa.String, sa.Text, AutoString)
     if isinstance(inspected_type, stringish_types) and isinstance(metadata_type, stringish_types):

@@ -37,13 +37,13 @@ def db_session():
 
 
 class FakeFactory:
-    def get_client(self):
+    def get_client(self) -> SimpleNamespace:
         return SimpleNamespace(languages=[])
 
 
 @pytest.mark.asyncio
 async def test_code_execution_persists_visible_and_masks_hidden_results(monkeypatch, db_session):
-    def fake_run(**_kwargs):
+    def fake_run(**_kwargs) -> list[SimpleNamespace]:
         return [
             SimpleNamespace(
                 status=Status.ACCEPTED,
@@ -96,7 +96,7 @@ async def test_code_execution_persists_visible_and_masks_hidden_results(monkeypa
 async def test_code_execution_reuses_idempotent_run(monkeypatch, db_session):
     calls = 0
 
-    def fake_run(**_kwargs):
+    def fake_run(**_kwargs) -> list[SimpleNamespace]:
         nonlocal calls
         calls += 1
         return [
@@ -138,7 +138,7 @@ async def test_code_execution_reuses_idempotent_run(monkeypatch, db_session):
 async def test_code_execution_retries_failed_idempotent_run(monkeypatch, db_session):
     calls = 0
 
-    def fake_run(**_kwargs):
+    def fake_run(**_kwargs) -> list[SimpleNamespace]:
         nonlocal calls
         calls += 1
         if calls == 1:
@@ -194,7 +194,7 @@ async def test_code_execution_truncates_output_and_passes_sandbox_policy(monkeyp
     captured_kwargs = {}
     created_at = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
 
-    def fake_run(**kwargs):
+    def fake_run(**kwargs) -> list[SimpleNamespace]:
         captured_kwargs.update(kwargs)
         return [
             SimpleNamespace(
@@ -250,7 +250,7 @@ async def test_code_execution_truncates_output_and_passes_sandbox_policy(monkeyp
 async def test_code_execution_raises_jvm_sandbox_limits(monkeypatch, db_session):
     captured_kwargs = {}
 
-    def fake_run(**kwargs):
+    def fake_run(**kwargs) -> list[SimpleNamespace]:
         captured_kwargs.update(kwargs)
         return [
             SimpleNamespace(
@@ -287,7 +287,7 @@ async def test_code_execution_raises_jvm_sandbox_limits(monkeypatch, db_session)
 async def test_code_execution_raises_go_sandbox_limits(monkeypatch, db_session):
     captured_kwargs = {}
 
-    def fake_run(**kwargs):
+    def fake_run(**kwargs) -> list[SimpleNamespace]:
         captured_kwargs.update(kwargs)
         return [
             SimpleNamespace(
@@ -323,7 +323,7 @@ async def test_code_execution_raises_go_sandbox_limits(monkeypatch, db_session):
 async def test_code_execution_sets_kotlin_compiler_jvm_options(monkeypatch, db_session):
     captured_kwargs = {}
 
-    def fake_run(**kwargs):
+    def fake_run(**kwargs) -> list[SimpleNamespace]:
         captured_kwargs.update(kwargs)
         return [
             SimpleNamespace(
@@ -354,9 +354,9 @@ async def test_code_execution_sets_kotlin_compiler_jvm_options(monkeypatch, db_s
     assert "-J-Xmx512m" in captured_kwargs["compiler_options"]
 
 
-def test_code_execution_filters_allowed_languages():
+def test_code_execution_filters_allowed_languages() -> None:
     class Factory:
-        def get_client(self):
+        def get_client(self) -> SimpleNamespace:
             return SimpleNamespace(
                 languages=[
                     SimpleNamespace(id=71, name="Python (3.8.1)", is_archived=False),
@@ -384,7 +384,7 @@ async def test_code_execution_language_discovery_reports_service_unavailable():
     assert exc_info.value.status_code == 503
 
 
-def test_code_execution_rejects_disallowed_language():
+def test_code_execution_rejects_disallowed_language() -> None:
     service = CodeExecutionService(client_factory=FakeFactory())
 
     with pytest.raises(HTTPException) as exc_info:
@@ -393,7 +393,7 @@ def test_code_execution_rejects_disallowed_language():
     assert exc_info.value.status_code == 400
 
 
-def test_judge0_configured_client_returns_fresh_retry_strategy():
+def test_judge0_configured_client_returns_fresh_retry_strategy() -> None:
     client = _ConfiguredJudge0Client.__new__(_ConfiguredJudge0Client)
     client._poll_interval_seconds = 0.2
     client._poll_max_wait_seconds = 3.0
@@ -407,7 +407,7 @@ def test_judge0_configured_client_returns_fresh_retry_strategy():
     assert second.total_wait_time == 0.0
 
 
-def test_judge0_endpoint_candidates_bridge_local_and_compose_hosts():
+def test_judge0_endpoint_candidates_bridge_local_and_compose_hosts() -> None:
     assert _judge0_endpoint_candidates("http://localhost:2358") == (
         "http://localhost:2358",
         "http://judge0-server:2358",
@@ -458,7 +458,7 @@ async def async_run_service(
 async def test_code_execution_with_different_source_code_and_hash_in_key(monkeypatch, db_session):
     calls = 0
 
-    def fake_run(**_kwargs):
+    def fake_run(**_kwargs) -> list[SimpleNamespace]:
         nonlocal calls
         calls += 1
         return [
@@ -536,7 +536,7 @@ async def test_code_execution_with_different_source_code_and_hash_in_key(monkeyp
 async def test_code_execution_match_modes(monkeypatch, db_session):
     outputs = []
 
-    def fake_run(**_kwargs):
+    def fake_run(**_kwargs) -> list[SimpleNamespace]:
         return [
             SimpleNamespace(
                 status=Status.ACCEPTED,

@@ -1,3 +1,4 @@
+from sqlmodel.orm.session import Session
 from collections import defaultdict
 from datetime import UTC, datetime
 
@@ -28,7 +29,7 @@ from src.services.courses._utils import (
 )
 
 
-def _get_chapter_by_uuid(chapter_uuid: str, db_session) -> Chapter:
+def _get_chapter_by_uuid(chapter_uuid: str, db_session: Session) -> Chapter:
     statement = select(Chapter).where(Chapter.chapter_uuid == chapter_uuid)
     chapter = db_session.exec(statement).first()
     if not chapter:

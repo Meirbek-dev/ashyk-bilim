@@ -127,7 +127,7 @@ def check_permission(
     body: PermissionCheckRequest,
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     checker: PermissionCheckerDep,
-):
+) -> PermissionCheckResponse:
     # Anonymous users resolve through the ``guest`` role (user_id=0), so public
     # read actions return granted=True. Returning a hard False here would hide
     # public UI affordances (e.g. "view course" buttons) from signed-out users.
@@ -146,7 +146,7 @@ def check_permissions_batch(
     body: BatchPermissionCheckRequest,
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     checker: PermissionCheckerDep,
-):
+) -> BatchPermissionCheckResponse:
     perms = [f"{c.resource}:{c.action}" for c in body.checks]
     results = checker.check_many(current_user.id, perms)
     return BatchPermissionCheckResponse(results=results)
@@ -161,7 +161,7 @@ def check_permissions_batch(
 def get_my_permissions(
     current_user: Annotated[PublicUser | AnonymousUser, Depends(get_optional_public_user)],
     checker: PermissionCheckerDep,
-):
+) -> UserPermissionsResponse:
     # Anonymous users resolve to the guest role's permissions so the frontend
     # can gate public UI on the same Set.has() path used for signed-in users.
     if isinstance(current_user, AnonymousUser):
@@ -187,7 +187,7 @@ def list_user_roles(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[PublicUser, Depends(get_public_user)] = None,
     checker: PermissionCheckerDep = None,
-):
+) -> list[UserRoleAssignmentResponse]:
     """List user↔role assignments."""
     checker.require(current_user.id, "role:read")
 

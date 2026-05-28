@@ -1,3 +1,4 @@
+from typing import Self
 from datetime import UTC, datetime, timezone
 from enum import Enum, StrEnum
 
@@ -140,7 +141,7 @@ class ActivityCreate(ActivityBase):
     settings: dict[str, object] = Field(default_factory=dict, sa_column=Column(JSON))
 
     @model_validator(mode="after")
-    def subtype_matches_type(self):
+    def subtype_matches_type(self) -> Self:
         allowed = _VALID_SUBTYPES.get(self.activity_type, set())
         if allowed and self.activity_sub_type not in allowed:
             msg = (
@@ -162,7 +163,7 @@ class ActivityUpdate(ActivityBase):
     published: bool | None = None
 
     @model_validator(mode="after")
-    def subtype_matches_type(self):
+    def subtype_matches_type(self) -> Self:
         if self.activity_type is not None and self.activity_sub_type is not None:
             allowed = _VALID_SUBTYPES.get(self.activity_type, set())
             if allowed and self.activity_sub_type not in allowed:

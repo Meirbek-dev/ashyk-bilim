@@ -58,12 +58,12 @@ def configure(url: str) -> None:
     _logger.debug("Redis clients configured")
 
 
-def get_sync():
+def get_sync() -> None:
     """Return the synchronous Redis client, or None if not configured."""
     return _sync_client
 
 
-def get_async():
+def get_async() -> None:
     """Return the asynchronous Redis client, or None if not configured."""
     return _async_client
 

@@ -179,7 +179,7 @@ def delete_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> dict[str, bool]:
     """Delete a custom role."""
     checker.require(current_user.id, "role:delete")
     role = repo.get_or_404(role_id)
@@ -239,7 +239,7 @@ def add_permission_to_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> dict[str, bool]:
     """Add a permission to a role."""
     checker.require(current_user.id, "role:update")
     role = repo.get_or_404(role_id)
@@ -279,7 +279,7 @@ def remove_permission_from_role(
     current_user: Annotated[PublicUser, Depends(get_public_user)],
     checker: PermissionCheckerDep,
     repo: RoleRepositoryDep,
-):
+) -> dict[str, bool]:
     """Remove a permission from a role."""
     checker.require(current_user.id, "role:update")
     role = repo.get_or_404(role_id)

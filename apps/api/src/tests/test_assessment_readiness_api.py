@@ -1,5 +1,6 @@
 # pyright: reportMissingImports=false, reportUnusedImport=false
 
+from starlette.testclient import TestClient
 import pathlib
 import sys
 from datetime import UTC, datetime, timedelta
@@ -97,7 +98,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch):
+def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 

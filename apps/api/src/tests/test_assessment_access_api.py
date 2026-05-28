@@ -1,3 +1,4 @@
+from starlette.testclient import TestClient
 import pathlib
 import sys
 from datetime import UTC, datetime
@@ -92,7 +93,7 @@ def teacher_user_fixture() -> PublicUser:
 
 
 @pytest.fixture(name="api_client")
-def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch):
+def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix="/assessments")
 
@@ -111,7 +112,7 @@ def api_client_fixture(db_session_factory, teacher_user, monkeypatch: pytest.Mon
     return TestClient(app)
 
 
-def test_restricted_access_narrows_course_learners(db_session_factory, api_client, monkeypatch):
+def test_restricted_access_narrows_course_learners(db_session_factory, api_client, monkeypatch) -> None:
     assessment_uuid, activity_id = _seed_assessment(db_session_factory)
     response = api_client.get(f"/assessments/{assessment_uuid}/access")
     assert response.status_code == 200
@@ -141,7 +142,7 @@ def test_restricted_access_narrows_course_learners(db_session_factory, api_clien
 
 def test_course_author_can_test_after_previous_attempt_when_access_restricted(
     db_session_factory,
-):
+) -> None:
     _assessment_uuid, activity_id = _seed_assessment(db_session_factory)
     now = datetime.now(UTC)
 

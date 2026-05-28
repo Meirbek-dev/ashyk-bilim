@@ -7,6 +7,7 @@ Create Date: 2026-04-27 00:00:00.000000
 
 from __future__ import annotations
 
+from sqlalchemy.engine.base import Connection
 import json
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, time
@@ -276,7 +277,7 @@ def _create_assignment_activity(
     return int(row["id"])
 
 
-def _ensure_assignment_activities(conn) -> None:
+def _ensure_assignment_activities(conn: Connection) -> None:
     assignments = _fetch_all(conn, "SELECT * FROM assignment ORDER BY id")
     seen_activity_ids: set[int] = set()
 
@@ -341,7 +342,7 @@ def _ensure_assignment_activities(conn) -> None:
         seen_activity_ids.add(activity_id)
 
 
-def _backfill_due_at(conn) -> None:
+def _backfill_due_at(conn: Connection) -> None:
     assignments = _fetch_all(
         conn,
         "SELECT id, due_date, due_at FROM assignment WHERE due_at IS NULL",
@@ -356,7 +357,7 @@ def _backfill_due_at(conn) -> None:
         )
 
 
-def _backfill_task_order(conn) -> None:
+def _backfill_task_order(conn: Connection) -> None:
     rows = _fetch_all(
         conn,
         "SELECT id, assignment_id FROM assignmenttask ORDER BY assignment_id, id",
@@ -584,7 +585,7 @@ def _upsert_assignment_submission(
     )
 
 
-def _backfill_unified_assignment_submissions(conn) -> None:
+def _backfill_unified_assignment_submissions(conn: Connection) -> None:
     assignments = _fetch_all(conn, "SELECT * FROM assignment ORDER BY id")
     for assignment in assignments:
         tasks = _fetch_all(

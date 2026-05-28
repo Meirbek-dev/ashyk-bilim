@@ -79,7 +79,7 @@ def remove_platform_user(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     checker: PermissionChecker,
-):
+) -> dict[str, str]:
     checker.require(current_user.id, "platform:manage")
 
     statement = select(UserRole).where(UserRole.user_id == user_id)
@@ -122,7 +122,7 @@ def update_platform_user_role(
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
     checker: PermissionChecker,
-):
+) -> dict[str, str]:
     role = db_session.get(Role, role_id)
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")

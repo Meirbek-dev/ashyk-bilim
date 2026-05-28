@@ -20,6 +20,7 @@ Create Date: 2026-04-29
 
 from __future__ import annotations
 
+from sqlalchemy.engine.base import Connection
 import json
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -54,11 +55,11 @@ def _json_value(value: Any, default: Any) -> Any:
     return value
 
 
-def _fetch_all(conn, sql: str, **params: Any) -> list[dict[str, Any]]:
+def _fetch_all(conn: Connection, sql: str, **params: Any) -> list[dict[str, Any]]:
     return [dict(row) for row in conn.execute(sa.text(sql), params).mappings()]
 
 
-def _fetch_one(conn, sql: str, **params: Any) -> dict[str, Any] | None:
+def _fetch_one(conn: Connection, sql: str, **params: Any) -> dict[str, Any] | None:
     row = conn.execute(sa.text(sql), params).mappings().first()
     return dict(row) if row else None
 
@@ -384,7 +385,7 @@ def _create_question(conn, *, exam_id: int, payload: dict[str, Any]) -> None:
 
 
 def _convert_quiz_task_to_exam(
-    conn,
+    conn: Connection,
     *,
     assignment: dict[str, Any],
     task: dict[str, Any],
@@ -449,7 +450,7 @@ def _convert_quiz_task_to_exam(
             order_cursor += 1
 
 
-def _delete_empty_assignment(conn, assignment: dict[str, Any]) -> None:
+def _delete_empty_assignment(conn: Connection, assignment: dict[str, Any]) -> None:
     """Drop an Assignment with no remaining tasks plus its source activity.
 
     Cascade chain (per existing FK constraints):

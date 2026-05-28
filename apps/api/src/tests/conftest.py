@@ -22,7 +22,7 @@ from src.security.rbac import PermissionChecker
 
 
 @pytest.fixture(autouse=True)
-def mock_permission_checker(monkeypatch: pytest.MonkeyPatch):
+def mock_permission_checker(monkeypatch: pytest.MonkeyPatch) -> None:
     """Stub out permission checks globally for integration tests."""
     monkeypatch.setattr(PermissionChecker, "check", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(PermissionChecker, "require", lambda *_args, **_kwargs: None)

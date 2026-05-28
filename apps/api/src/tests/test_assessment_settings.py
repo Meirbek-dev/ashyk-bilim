@@ -15,7 +15,7 @@ from src.services.assessments.settings import (
 )
 
 
-def test_code_settings_round_trip_json_enum_values_in_strict_mode():
+def test_code_settings_round_trip_json_enum_values_in_strict_mode() -> None:
     settings = ASSESSMENT_SETTINGS_ADAPTER.validate_python(
         {
             "kind": "CODE_CHALLENGE",
@@ -36,7 +36,7 @@ def test_code_settings_round_trip_json_enum_values_in_strict_mode():
     assert reloaded.execution_mode is ExecutionMode.COMPLETE_FEEDBACK
 
 
-def test_exam_settings_accept_json_access_mode_in_strict_mode():
+def test_exam_settings_accept_json_access_mode_in_strict_mode() -> None:
     settings = ASSESSMENT_SETTINGS_ADAPTER.validate_python(
         {
             "kind": "EXAM",

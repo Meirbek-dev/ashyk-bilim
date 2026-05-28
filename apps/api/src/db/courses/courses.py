@@ -56,7 +56,7 @@ class CourseBase(SQLModelStrictBaseModel):
 
     @field_validator("learnings", mode="before")
     @classmethod
-    def validate_learnings(cls, value):
+    def validate_learnings(cls, value) -> str | None:
         if value is None:
             return None
         if isinstance(value, list):
@@ -107,7 +107,7 @@ class CourseBase(SQLModelStrictBaseModel):
 
     @field_validator("tags", mode="before")
     @classmethod
-    def validate_tags(cls, value):
+    def validate_tags(cls, value) -> str | None:
         if value is None:
             return None
 
@@ -211,12 +211,12 @@ class CourseMetadataUpdate(PydanticStrictBaseModel):
 
     @field_validator("learnings", mode="before")
     @classmethod
-    def validate_metadata_learnings(cls, value):
+    def validate_metadata_learnings(cls, value) -> str | None:
         return CourseBase.validate_learnings(value)
 
     @field_validator("tags", mode="before")
     @classmethod
-    def validate_metadata_tags(cls, value):
+    def validate_metadata_tags(cls, value) -> str | None:
         return CourseBase.validate_tags(value)
 
     @field_validator("last_known_update_date", mode="before")

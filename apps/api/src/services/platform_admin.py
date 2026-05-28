@@ -133,7 +133,7 @@ def update_platform_landing(
     landing_object: dict,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-):
+) -> dict[str, str]:
     platform_record = get_platform(db_session)
 
     platform_record.landing = landing_object

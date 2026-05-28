@@ -1,3 +1,4 @@
+from sqlalchemy.sql.elements import ColumnElement
 import logging
 from datetime import UTC, datetime, timezone
 
@@ -314,7 +315,7 @@ def _build_editable_course_insights(
     return insights
 
 
-def _attention_sql_condition():
+def _attention_sql_condition() -> ColumnElement[bool]:
     """SQL expression: course needs attention (missing thumbnail, description, or activities)."""
     from sqlalchemy import and_, case, exists, literal_column
 
@@ -333,7 +334,7 @@ def _attention_sql_condition():
     )
 
 
-def _ready_sql_condition():
+def _ready_sql_condition() -> ColumnElement[bool]:
     """SQL expression: course is fully ready to publish."""
     from datetime import timedelta
 

@@ -12,7 +12,7 @@ from src.db.grading.submissions import (
 )
 
 
-def test_merge_submission_metadata_accepts_json_code_run_timestamp():
+def test_merge_submission_metadata_accepts_json_code_run_timestamp() -> None:
     record = CodeRunRecord(
         run_id="code_run_1",
         language_id=71,
@@ -30,7 +30,7 @@ def test_merge_submission_metadata_accepts_json_code_run_timestamp():
     assert metadata["latest_run"]["created_at"] == "2026-05-22T16:57:22Z"
 
 
-def test_submission_metadata_accepts_json_timestamps_in_strict_mode():
+def test_submission_metadata_accepts_json_timestamps_in_strict_mode() -> None:
     metadata = SubmissionMetadata.model_validate(
         {
             "latest_run": {

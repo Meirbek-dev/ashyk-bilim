@@ -19,7 +19,7 @@ def _get_public_web_origin() -> str:
 def send_account_creation_email(
     user: UserRead,
     email: EmailStr,
-):
+) -> None:
     return send_account_creation_email_by_fields(
         username=user.username,
         email=str(email),
@@ -46,7 +46,7 @@ def send_password_reset_email(
     generated_reset_code: str,
     user: UserRead,
     email: EmailStr,
-):
+) -> None:
     return send_password_reset_email_by_fields(
         generated_reset_code=generated_reset_code,
         username=user.username,
