@@ -22,8 +22,7 @@ from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac import PermissionChecker
 from src.services.courses._auth import require_course_permission
 from src.services.courses.courses import _ensure_course_is_current
-from src.services.gamification import StreakType, XPSource
-from src.services.gamification import service as gamification_service
+from src.services.gamification import StreakType, XPSource, service as gamification_service
 from src.services.progress.submissions import recalculate_course_progress
 
 logger = logging.getLogger(__name__)

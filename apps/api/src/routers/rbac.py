@@ -17,8 +17,7 @@ from sqlmodel import Session, select
 
 from src.auth.users import get_optional_public_user, get_public_user
 from src.db.permissions import Role, UserRole
-from src.db.users import AnonymousUser, PublicUser
-from src.db.users import User as UserModel
+from src.db.users import AnonymousUser, PublicUser, User as UserModel
 from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionCheckerDep, mark_user_roles_updated
 from src.services.rate_limit import auth_or_ip_key, rate_limit_dependency

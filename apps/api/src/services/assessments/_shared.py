@@ -8,8 +8,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
-from sqlalchemy import asc, desc, func, or_
-from sqlalchemy import inspect as sqlalchemy_inspect
+from sqlalchemy import asc, desc, func, inspect as sqlalchemy_inspect, or_
 from sqlmodel import Session, select
 from ulid import ULID
 

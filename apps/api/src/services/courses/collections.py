@@ -55,10 +55,7 @@ async def get_collection(
         .where(CollectionCourse.collection_id == collection.id, Course.public)
         .distinct()
     )
-    if current_user.user_uuid == "user_anonymous":
-        statement = statement_public
-    else:
-        statement = statement_all
+    statement = statement_public if current_user.user_uuid == "user_anonymous" else statement_all
 
     courses = list(db_session.exec(statement).all())
 

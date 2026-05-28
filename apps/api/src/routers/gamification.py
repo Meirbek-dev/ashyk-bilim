@@ -21,15 +21,13 @@ from src.db.gamification import (
     GamificationProfile,
     LeaderboardRead,
     ProfileRead,
+    StreakType as DBStreakType,
     StreakUpdateRead,
     TransactionRead,
     XPAwardRequest,
     XPAwardResponse,
     XPSource,
     XPTransaction,
-)
-from src.db.gamification import (
-    StreakType as DBStreakType,
 )
 from src.db.strict_base_model import PydanticStrictBaseModel
 from src.db.users import PublicUser

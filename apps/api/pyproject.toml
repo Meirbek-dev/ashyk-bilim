@@ -3,53 +3,85 @@ name = "ashyk-bilim-api"
 version = "0.1.0"
 description = "Ashyk Bilim Backend"
 requires-python = ">=3.14.5,<3.15.0"
+
 dependencies = [
-  "alembic>=1.18.4",
-  "cachebox>=5.2.3",
-  "fastapi-pagination>=0.15.13",
-  "fastapi-users[sqlalchemy]>=15.0.5",
+  # Framework
   "fastapi>=0.136.3",
   "granian[reload,uvloop]>=2.7.4",
-  "httpx>=0.28.1",
-  "judge0>=0.0.8",
-  "logfire[fastapi,sqlalchemy]>=4.33.0",
-  "openai>=2.38.0",
-  "pgvector>=0.4.2",
-  "pydantic-ai-slim[logfire,openai]>=1.99.0",
-  "pydantic-settings>=2.14.1",
-  "pydantic[email]>=2.13.4",
-  "pyjwt>=2.13.0",
-  "python-multipart>=0.0.29",
-  "python-ulid>=3.1.0",
-  "psycopg[binary]>=3.3.4",
-  "redis<8.0.0",
-  "resend>=2.30.1",
-  "selectolax>=0.4.9",
+
+  # Database
   "sqlalchemy>=2.0.49",
   "sqlmodel>=0.0.38",
+  "alembic>=1.18.4",
+  "psycopg[binary]>=3.3.4",
+  "pgvector>=0.4.2",
+  "redis<8",
+
+  # Validation / Config
+  "pydantic[email]>=2.13.4",
+  "pydantic-settings>=2.14.1",
+
+  # Auth
+  "fastapi-users[sqlalchemy]>=15.0.5",
+  "pyjwt>=2.13.0",
+
+  # AI
+  "openai>=2.38.0",
+  "pydantic-ai-slim[logfire,openai]>=1.99.0",
+  "tiktoken>=0.13.0",
+
+  # Async / Jobs
+  "taskiq>=0.12.4",
   "taskiq-fastapi>=0.5.0",
   "taskiq-redis>=1.2.2",
-  "taskiq>=0.12.4",
-  "tiktoken>=0.13.0",
+
+  # API
+  "fastapi-pagination>=0.15.13",
+  "python-multipart>=0.0.29",
+
+  # Infra / Observability
+  "logfire[fastapi,sqlalchemy]>=4.33.0",
+
+  # Utilities
+  "cachebox>=5.2.3",
+  "httpx>=0.28.1",
+  "python-ulid>=3.1.0",
+  "resend>=2.30.1",
+  "selectolax>=0.4.9",
   "typer>=0.25.1",
+
+  # Sandbox / Execution
+  "judge0>=0.0.8",
 ]
 
 [dependency-groups]
 dev = [
+  # Lint / Format
+  "ruff>=0.15.12",
+
+  # Type Checking
   "basedpyright>=1.39.4",
-  "faker>=40.15.0",
   "mypy>=1.20.2",
   "pyrefly>=0.64.1",
+
+  # Testing
+  "pytest>=9.0.3",
   "pytest-asyncio>=1.3.0",
   "pytest-cov>=7.1.0",
-  "pytest>=9.0.3",
-  "ruff>=0.15.12",
+
+  # Dev Server
   "uvicorn[standard]>=0.47.0",
+
+  # Fixtures
+  "faker>=40.15.0",
 ]
 
 [tool.ruff]
-target-version = "py315"
+target-version = "py314"
 preview = true
+line-length = 120
+
+exclude = [".git", ".ruff_cache", ".venv", "__pycache__", "node_modules", "dist", "build", "alembic"]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -101,15 +133,21 @@ ignore = [
   "E501", # line-too-long: Line is too long
 ]
 
+[tool.ruff.lint.isort]
+combine-as-imports = true
+split-on-trailing-comma = true
+
 [tool.ruff.lint.pylint]
 max-args = 8 # Slightly more relaxed than default for FastAPI dependencies
 
 [tool.ruff.format]
 quote-style = "double"
+docstring-code-format = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+
 markers = ["asyncio: mark test as async"]
 
 [tool.logfire]
@@ -141,27 +179,37 @@ disallow_untyped_decorators = false # FastAPI routes often use untyped decorator
 warn_return_any = false # Too noisy with FastAPI's dynamic responses
 implicit_reexport = true # Useful for __init__.py patterns
 
+# Better agentic determinism
+check_untyped_defs = true
+strict_equality = true
+
 [[tool.mypy.overrides]]
 # Libraries that traditionally have poor or no typing
-module = ["selectolax.*", "judge0.*", "python-ulid.*", "cachebox.*"]
+module = ["cachebox.*", "judge0.*", "python_ulid.*", "selectolax.*"]
+
 ignore_missing_imports = true
 
 [tool.basedpyright]
 pythonVersion = "3.14"
 typeCheckingMode = "strict"
+
+exclude = ["**/__pycache__", "**/alembic", "**/node_modules", "**/tests", "**/venv", ".venv"]
+
 # Robustness without the "Any" nitpicking
 reportAny = false
 reportMissingTypeStubs = false
-reportUnknownMemberType = false
-reportUnknownVariableType = false
 reportUnknownArgumentType = false
 reportUnknownLambdaType = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnusedCallResult = false
 
-# Strictness on logic
-reportUnreachable = true
+# Strong correctness guarantees
 reportImplicitOverride = true
-reportUnusedCallResult = false # Avoids nitpicking on things like .append() or FastAPI tasks
 reportPropertyTypeMismatch = true
+reportUnreachable = true
 
-# Ignore patterns
-exclude = ["**/node_modules", "**/__pycache__", "**/tests", "**/alembic", "**/venv", ".venv"]
+# Better large-codebase maintainability
+reportDuplicateImport = true
+reportIncompatibleMethodOverride = true
+reportShadowedImports = true

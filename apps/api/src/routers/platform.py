@@ -15,9 +15,9 @@ from src.infra.db.session import get_db_session
 from src.security.rbac import PermissionCheckerDep
 from src.services.platform import get_platform
 from src.services.platform_admin import (
+    update_app_logo,
     update_platform,
     update_platform_landing,
-    update_app_logo,
     update_platform_preview,
     update_platform_thumbnail,
     upload_platform_landing_content_service,

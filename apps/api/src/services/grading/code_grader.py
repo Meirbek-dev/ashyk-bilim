@@ -34,10 +34,7 @@ def grade_code_challenge(
     raw_score = (earned_weight / total_weight) * 100
 
     strategy_upper = strategy.upper()
-    if strategy_upper == "ALL_OR_NOTHING":
-        auto_score = 100.0 if raw_score >= 100.0 else 0.0
-    else:
-        auto_score = raw_score
+    auto_score = (100.0 if raw_score >= 100.0 else 0.0) if strategy_upper == "ALL_OR_NOTHING" else raw_score
 
     items = [
         GradedItem(

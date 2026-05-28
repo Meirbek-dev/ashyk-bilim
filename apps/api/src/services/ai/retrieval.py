@@ -7,8 +7,7 @@ import sqlalchemy.exc
 from cachebox import TTLCache
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column, MetaData, Table, Text, delete, select, text
-from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
-from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, insert as pg_insert
 from sqlmodel import Session
 
 from config.config import get_settings

@@ -3,8 +3,7 @@ from datetime import UTC, datetime, timezone
 from enum import Enum, StrEnum
 from uuid import uuid4
 
-from pydantic import ConfigDict, field_validator
-from pydantic import Field as PydanticField
+from pydantic import ConfigDict, Field as PydanticField, field_validator
 from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, func
 from sqlmodel import Field
 
@@ -123,10 +122,7 @@ class CourseBase(SQLModelStrictBaseModel):
                 parsed = json.loads(stripped)
             except json.JSONDecodeError:
                 parsed = [segment.strip() for segment in stripped.split(",")]
-            if isinstance(parsed, list):
-                raw_tags = [str(tag).strip() for tag in parsed]
-            else:
-                raw_tags = [str(parsed).strip()]
+            raw_tags = [str(tag).strip() for tag in parsed] if isinstance(parsed, list) else [str(parsed).strip()]
         else:
             raw_tags = [str(value).strip()]
 

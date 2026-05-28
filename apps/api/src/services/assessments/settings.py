@@ -4,8 +4,7 @@ from enum import StrEnum
 from typing import Annotated, Literal
 
 from fastapi import HTTPException, status
-from pydantic import Field as PydanticField
-from pydantic import TypeAdapter, field_validator
+from pydantic import Field as PydanticField, TypeAdapter, field_validator
 from sqlmodel import Session, select
 
 from src.db.assessments import Assessment, AssessmentItem

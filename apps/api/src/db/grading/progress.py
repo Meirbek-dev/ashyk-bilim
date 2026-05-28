@@ -4,8 +4,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import ConfigDict, TypeAdapter, field_validator
-from pydantic import Field as PydanticField
+from pydantic import ConfigDict, Field as PydanticField, TypeAdapter, field_validator
 from sqlalchemy import (
     JSON,
     Boolean,

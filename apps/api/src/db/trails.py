@@ -1,5 +1,4 @@
-from pydantic import ConfigDict
-from pydantic import Field as PydanticField
+from pydantic import ConfigDict, Field as PydanticField
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field
 

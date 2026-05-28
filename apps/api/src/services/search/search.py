@@ -1,8 +1,7 @@
 from typing import TypeVar
 
 from fastapi import Request
-from sqlalchemy import func
-from sqlalchemy import true as sa_true
+from sqlalchemy import func, true as sa_true
 from sqlmodel import Session, and_, or_, select
 
 from src.db.collections import Collection, CollectionRead
