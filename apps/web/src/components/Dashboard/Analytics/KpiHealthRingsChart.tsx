@@ -63,10 +63,7 @@ export default function KpiHealthRingsChart({ data }: KpiHealthRingsChartProps) 
         <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
           {data.map(d => (
             <div key={d.name} className="text-muted-foreground flex items-center gap-1.5 text-xs">
-              <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: d.fill }}
-              />
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.fill }} />
               <span className="truncate">{d.label}</span>
             </div>
           ))}

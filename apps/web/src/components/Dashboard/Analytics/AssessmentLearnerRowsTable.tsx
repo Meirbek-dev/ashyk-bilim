@@ -12,10 +12,7 @@ interface AssessmentLearnerRowsTableProps {
   storageKey?: string
 }
 
-export default function AssessmentLearnerRowsTable({
-  rows,
-  storageKey,
-}: AssessmentLearnerRowsTableProps) {
+export default function AssessmentLearnerRowsTable({ rows, storageKey }: AssessmentLearnerRowsTableProps) {
   const t = useTranslations('TeacherAnalytics')
   const locale = useLocale()
 
@@ -42,9 +39,7 @@ export default function AssessmentLearnerRowsTable({
       accessorKey: 'submitted_at',
       header: t('pages.assessmentColSubmitted'),
       cell: ({ row }) =>
-        row.original.submitted_at
-          ? new Date(row.original.submitted_at).toLocaleString(locale)
-          : t('atRisk.na'),
+        row.original.submitted_at ? new Date(row.original.submitted_at).toLocaleString(locale) : t('atRisk.na'),
     },
     {
       accessorFn: row => row.status || '',

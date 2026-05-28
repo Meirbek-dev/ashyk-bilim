@@ -205,12 +205,7 @@ const inputText = (
   options: Parameters<typeof text>[4],
 ) => text(name, position, width, height, { ...options, readOnly: false })
 
-const image = (
-  name: string,
-  position: Schema['position'],
-  width: number,
-  height: number,
-): Schema => ({
+const image = (name: string, position: Schema['position'], width: number, height: number): Schema => ({
   name,
   type: 'image',
   position,
@@ -232,13 +227,7 @@ const cornerSchemas = (theme: PatternTheme): Schema[] => {
     rectangle('cornerTopLeftHorizontal', { x: inset, y: inset }, size, thickness, theme.secondary),
     rectangle('cornerTopLeftVertical', { x: inset, y: inset }, thickness, size, theme.secondary),
     rectangle('cornerTopRightHorizontal', { x: right, y: inset }, size, thickness, theme.secondary),
-    rectangle(
-      'cornerTopRightVertical',
-      { x: right + size - thickness, y: inset },
-      thickness,
-      size,
-      theme.secondary,
-    ),
+    rectangle('cornerTopRightVertical', { x: right + size - thickness, y: inset }, thickness, size, theme.secondary),
     rectangle(
       'cornerBottomLeftHorizontal',
       { x: inset, y: bottom + size - thickness },
@@ -246,13 +235,7 @@ const cornerSchemas = (theme: PatternTheme): Schema[] => {
       thickness,
       theme.secondary,
     ),
-    rectangle(
-      'cornerBottomLeftVertical',
-      { x: inset, y: bottom },
-      thickness,
-      size,
-      theme.secondary,
-    ),
+    rectangle('cornerBottomLeftVertical', { x: inset, y: bottom }, thickness, size, theme.secondary),
     rectangle(
       'cornerBottomRightHorizontal',
       { x: right, y: bottom + size - thickness },
@@ -438,11 +421,7 @@ const buildTemplate = (data: CertificatePdfData): Template => {
 const getPdfmePlugins = async (): Promise<Plugins> => {
   if (pdfmePlugins) return pdfmePlugins
 
-  const {
-    image: imagePlugin,
-    rectangle: rectanglePlugin,
-    text: textPlugin,
-  } = await import('@pdfme/schemas')
+  const { image: imagePlugin, rectangle: rectanglePlugin, text: textPlugin } = await import('@pdfme/schemas')
 
   pdfmePlugins = {
     Image: imagePlugin,

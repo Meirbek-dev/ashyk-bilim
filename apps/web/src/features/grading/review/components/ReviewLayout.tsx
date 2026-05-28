@@ -77,12 +77,7 @@ function StatsGrid({ stats }: { stats?: SubmissionStats | null }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <StatTile label={t('layout.stats.total')} value={stats.total} icon={Users} />
-      <StatTile
-        label={t('layout.stats.needsGrading')}
-        value={stats.needs_grading_count}
-        icon={Clock4}
-        accent="amber"
-      />
+      <StatTile label={t('layout.stats.needsGrading')} value={stats.needs_grading_count} icon={Clock4} accent="amber" />
       <StatTile
         label={t('layout.stats.avgScore')}
         value={stats.avg_score !== null ? `${stats.avg_score.toFixed(1)}%` : '--'}

@@ -53,17 +53,12 @@ test.describe('Admin – User Roles Panel', () => {
    * filter by email or the role assignment POST fails, the failure is intentional.
    * Do NOT add skip/workaround. Fix the root cause in the codebase instead.
    */
-  test('admin can assign the Teacher role to the teacher user via UI', async ({
-    page,
-    adminUsersPage,
-  }) => {
+  test('admin can assign the Teacher role to the teacher user via UI', async ({ page, adminUsersPage }) => {
     await adminUsersPage.goto()
     await adminUsersPage.assignRole(USERS.teacher.email, 'Teacher')
 
     // After assignment, the table should show the teacher with the Teacher role
-    await expect(
-      page.getByRole('cell', { name: new RegExp(USERS.teacher.email, 'i') }).first(),
-    ).toBeVisible({
+    await expect(page.getByRole('cell', { name: new RegExp(USERS.teacher.email, 'i') }).first()).toBeVisible({
       timeout: 10_000,
     })
   })
@@ -77,12 +72,9 @@ test.describe('Admin – User Roles Panel', () => {
     await page.goto('/en/dash/admin/users')
 
     // Should be redirected or show an unauthorized/access-denied page
-    await page.waitForURL(
-      url => url.pathname.includes('/unauthorized') || url.pathname.includes('/login'),
-      {
-        timeout: 10_000,
-      },
-    )
+    await page.waitForURL(url => url.pathname.includes('/unauthorized') || url.pathname.includes('/login'), {
+      timeout: 10_000,
+    })
     await context.close()
   })
 })

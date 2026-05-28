@@ -10,11 +10,7 @@ export interface SearchContentQueryInput {
   limit?: number
 }
 
-export function searchContentQueryOptions({
-  query,
-  page = 1,
-  limit = 20,
-}: SearchContentQueryInput) {
+export function searchContentQueryOptions({ query, page = 1, limit = 20 }: SearchContentQueryInput) {
   return queryOptions({
     queryKey: queryKeys.search.content(query, page, limit),
     queryFn: () => searchContent({ query, page, limit }),

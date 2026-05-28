@@ -39,10 +39,7 @@ export async function getCoursesByUser(userId: number): Promise<ResponseMetadata
   return getResponseMetadata(response)
 }
 
-export async function updateUserAvatar(
-  userId: number,
-  avatarFile: File,
-): Promise<ResponseMetadata<UserRead>> {
+export async function updateUserAvatar(userId: number, avatarFile: File): Promise<ResponseMetadata<UserRead>> {
   const formData = new FormData()
   formData.append('avatar_file', avatarFile)
 
@@ -71,23 +68,17 @@ export async function updateUserAvatar(
 }
 
 export async function updateUserTheme(userId: number, theme: string): Promise<void> {
-  const response = await apiFetch(
-    `users/preferences/theme/${userId}?theme=${encodeURIComponent(theme)}`,
-    {
-      method: 'PUT',
-    },
-  )
+  const response = await apiFetch(`users/preferences/theme/${userId}?theme=${encodeURIComponent(theme)}`, {
+    method: 'PUT',
+  })
   await errorHandling(response)
   await getQueryClient().invalidateQueries({ queryKey: userKeys.byId(userId) })
 }
 
 export async function updateUserLocale(userId: number, locale: string): Promise<UserRead> {
-  const response = await apiFetch(
-    `users/preferences/locale/${userId}?locale=${encodeURIComponent(locale)}`,
-    {
-      method: 'PUT',
-    },
-  )
+  const response = await apiFetch(`users/preferences/locale/${userId}?locale=${encodeURIComponent(locale)}`, {
+    method: 'PUT',
+  })
   const data = await errorHandling<UserRead>(response)
 
   await getQueryClient().invalidateQueries({ queryKey: userKeys.byId(userId) })
@@ -95,10 +86,7 @@ export async function updateUserLocale(userId: number, locale: string): Promise<
   return data
 }
 
-export async function updateProfile(
-  data: unknown,
-  userId: number,
-): Promise<ResponseMetadata<UserRead>> {
+export async function updateProfile(data: unknown, userId: number): Promise<ResponseMetadata<UserRead>> {
   const response = await apiFetch(`users/${userId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -119,10 +107,7 @@ export async function updateProfile(
   }
 }
 
-export async function updatePassword(
-  userId: number,
-  data: unknown,
-): Promise<ResponseMetadata<unknown>> {
+export async function updatePassword(userId: number, data: unknown): Promise<ResponseMetadata<unknown>> {
   const response = await apiFetch(`users/change_password/${userId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },

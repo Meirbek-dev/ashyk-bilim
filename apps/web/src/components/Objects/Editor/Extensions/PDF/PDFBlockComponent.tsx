@@ -59,9 +59,7 @@ const PDFBlockComponent = (props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
   const [size, setSize] = useState(() => normalizeSize(props.node.attrs.size))
   const [availableWidth, setAvailableWidth] = useState<number | null>(null)
   const nodeSize = props.node.attrs.size
-  const fileId = blockObject
-    ? `${blockObject.content.file_id}.${blockObject.content.file_format}`
-    : null
+  const fileId = blockObject ? `${blockObject.content.file_id}.${blockObject.content.file_format}` : null
   const editorState = useEditorProvider()
   const { isEditable } = editorState
   const sizeRef = useRef(size)
@@ -222,12 +220,7 @@ const PDFBlockComponent = (props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
   return (
     <>
       <NodeViewWrapper className="block-pdf w-full py-2">
-        <FileUploadBlock
-          isEditable={isEditable}
-          isLoading={isLoading}
-          isEmpty={!blockObject}
-          Icon={FileText}
-        >
+        <FileUploadBlock isEditable={isEditable} isLoading={isLoading} isEmpty={!blockObject} Icon={FileText}>
           <FileUploadBlockInput onChange={handlePDFChange} accept={SUPPORTED_FILES} />
           <FileUploadBlockButton onClick={handleSubmit} disabled={!pdf} />
         </FileUploadBlock>
@@ -273,9 +266,7 @@ const PDFBlockComponent = (props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
                         title={t('pdfViewer')}
                       />
                     </ResizablePanel>
-                    {isEditable && (
-                      <ResizableHandle withHandle className="bg-white/70 hover:bg-white/90" />
-                    )}
+                    {isEditable && <ResizableHandle withHandle className="bg-white/70 hover:bg-white/90" />}
                     <ResizablePanel minSize={0} />
                   </ResizablePanelGroup>
                 </ResizablePanel>
@@ -322,11 +313,7 @@ const PDFBlockComponent = (props: TypedNodeViewProps<PdfNodeAttrs, PdfExtensionO
           minHeight="xl"
           dialogContent={
             <div className="h-[80vh] w-full">
-              <iframe
-                className="h-full w-full rounded-lg border shadow-lg"
-                src={pdfUrl}
-                title={t('pdfDocument')}
-              />
+              <iframe className="h-full w-full rounded-lg border shadow-lg" src={pdfUrl} title={t('pdfDocument')} />
             </div>
           }
         />

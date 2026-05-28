@@ -1,9 +1,4 @@
-import type {
-  ActivityProgressCell,
-  ActivityProgressState,
-  ReleaseState,
-  SubmissionStatus,
-} from './types'
+import type { ActivityProgressCell, ActivityProgressState, ReleaseState, SubmissionStatus } from './types'
 
 export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
   DRAFT: 'Draft',

@@ -12,11 +12,7 @@ interface KpiCompletionGaugeProps {
   direction: 'up' | 'down' | 'flat'
 }
 
-export default function KpiCompletionGauge({
-  completionPct,
-  deltaPct,
-  direction,
-}: KpiCompletionGaugeProps) {
+export default function KpiCompletionGauge({ completionPct, deltaPct, direction }: KpiCompletionGaugeProps) {
   const t = useTranslations('TeacherAnalytics')
   const locale = useLocale()
   const numberFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale])
@@ -30,11 +26,7 @@ export default function KpiCompletionGauge({
   ]
 
   const deltaColor =
-    direction === 'up'
-      ? 'text-emerald-600'
-      : direction === 'down'
-        ? 'text-amber-600'
-        : 'text-muted-foreground'
+    direction === 'up' ? 'text-emerald-600' : direction === 'down' ? 'text-amber-600' : 'text-muted-foreground'
 
   return (
     <Card className="shadow-sm">
@@ -60,9 +52,7 @@ export default function KpiCompletionGauge({
             }}
           >
             <PieChart>
-              <ChartTooltip
-                content={<ChartTooltipContent nameKey="name" formatter={v => [`${v}%`, '']} />}
-              />
+              <ChartTooltip content={<ChartTooltipContent nameKey="name" formatter={v => [`${v}%`, '']} />} />
               <Pie
                 data={gaugeData}
                 cx="50%"
@@ -82,9 +72,7 @@ export default function KpiCompletionGauge({
           </ChartContainer>
           <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-6">
             <div className="text-center">
-              <div className="text-foreground text-4xl font-bold">
-                {numberFormatter.format(completionPct)}%
-              </div>
+              <div className="text-foreground text-4xl font-bold">{numberFormatter.format(completionPct)}%</div>
               {deltaPct !== null && (
                 <div className={`mt-0.5 text-sm font-medium ${deltaColor}`}>
                   {deltaPct > 0 ? '+' : ''}

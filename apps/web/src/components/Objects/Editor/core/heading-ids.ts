@@ -37,8 +37,7 @@ export function extractHeadingOutline(doc: ProseMirrorNode): HeadingOutlineItem[
     const level = typeof node.attrs.level === 'number' ? node.attrs.level : 1
     const text = node.textContent || ''
     const slugKey = slugifyHeadingText(text) || 'section'
-    const rawId =
-      isRecord(node.attrs) && typeof node.attrs.id === 'string' ? node.attrs.id.trim() : ''
+    const rawId = isRecord(node.attrs) && typeof node.attrs.id === 'string' ? node.attrs.id.trim() : ''
     let id = rawId
 
     if (!id || seenIds.has(id)) {
@@ -77,8 +76,7 @@ export function collectHeadingIdUpdates(doc: ProseMirrorNode): { pos: number; id
 
     const text = node.textContent || ''
     const slugKey = slugifyHeadingText(text) || 'section'
-    const rawId =
-      isRecord(node.attrs) && typeof node.attrs.id === 'string' ? node.attrs.id.trim() : ''
+    const rawId = isRecord(node.attrs) && typeof node.attrs.id === 'string' ? node.attrs.id.trim() : ''
     let nextId = rawId
 
     if (!nextId || seenIds.has(nextId)) {

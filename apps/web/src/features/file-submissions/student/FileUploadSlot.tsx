@@ -64,10 +64,7 @@ export default function FileUploadSlot({ slot, onRemove, readonly = false }: Fil
 
         {/* File name + size */}
         <div className="min-w-0 flex-1">
-          <p
-            className={cn('truncate text-sm font-medium', isFailed && 'text-destructive')}
-            title={slot.file.name}
-          >
+          <p className={cn('truncate text-sm font-medium', isFailed && 'text-destructive')} title={slot.file.name}>
             {slot.file.name}
           </p>
           <p className="text-muted-foreground text-xs">{formatBytes(slot.file.size)}</p>

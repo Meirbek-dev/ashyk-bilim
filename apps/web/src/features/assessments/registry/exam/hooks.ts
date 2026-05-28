@@ -15,10 +15,6 @@ export function useCreateExamWithActivity(
   const queryClient = useQueryClient()
 
   return useMutation(
-    createExamWithActivityMutationOptions(
-      queryClient,
-      courseUuid,
-      options?.withUnpublishedActivities ?? false,
-    ),
+    createExamWithActivityMutationOptions(queryClient, courseUuid, options?.withUnpublishedActivities ?? false),
   )
 }

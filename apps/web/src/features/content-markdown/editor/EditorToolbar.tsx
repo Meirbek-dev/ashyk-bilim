@@ -242,11 +242,7 @@ export function EditorToolbar({
               <LinkIcon className="size-3.5" />
             </ToolbarButton>
             {config.allowImages && (
-              <ToolbarButton
-                title={t('toolbar.image')}
-                disabled={disabled}
-                onClick={() => setImageDialogOpen(true)}
-              >
+              <ToolbarButton title={t('toolbar.image')} disabled={disabled} onClick={() => setImageDialogOpen(true)}>
                 <ImageIcon className="size-3.5" />
               </ToolbarButton>
             )}
@@ -260,9 +256,7 @@ export function EditorToolbar({
               title={t('toolbar.table')}
               disabled={disabled}
               onClick={() =>
-                (editor?.chain().focus() as any)
-                  .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-                  .run()
+                (editor?.chain().focus() as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
               }
             >
               <Rows3 className="size-3.5" />
@@ -278,8 +272,7 @@ export function EditorToolbar({
               disabled={disabled}
               onClick={() => {
                 const pos = editor?.state.selection.to
-                if (pos !== undefined)
-                  editor?.chain().focus().insertContentAt(pos, ' $math$ ').run()
+                if (pos !== undefined) editor?.chain().focus().insertContentAt(pos, ' $math$ ').run()
               }}
             >
               <Sigma className="size-3.5" />
@@ -379,10 +372,7 @@ export function EditorToolbar({
         />
       )}
       {imageDialogOpen && (
-        <EditorImageDialog
-          onConfirm={handleImageConfirm}
-          onClose={() => setImageDialogOpen(false)}
-        />
+        <EditorImageDialog onConfirm={handleImageConfirm} onClose={() => setImageDialogOpen(false)} />
       )}
     </>
   )
@@ -461,9 +451,7 @@ function ViewModeButton({
       onClick={() => onClick(mode)}
       className={cn(
         'flex size-7 items-center justify-center rounded transition-colors',
-        isActive
-          ? 'bg-primary text-primary-foreground'
-          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+        isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
     >
       {icon}

@@ -68,13 +68,7 @@ export type ChoiceAttemptItem =
       pairs: MatchingPair[]
     }
 
-export type ChoiceAnswer =
-  | string
-  | number
-  | (string | number)[]
-  | Record<string, string>
-  | null
-  | undefined
+export type ChoiceAnswer = string | number | (string | number)[] | Record<string, string> | null | undefined
 
 function optionId(option: ChoiceOption, index: number) {
   return option.id ?? index
@@ -136,18 +130,12 @@ export function ChoiceItemAttempt({
                 checked={selected.includes(id)}
                 disabled={disabled}
                 onCheckedChange={checked => {
-                  const next = checked
-                    ? [...selected, id]
-                    : selected.filter(itemId => itemId !== id)
+                  const next = checked ? [...selected, id] : selected.filter(itemId => itemId !== id)
                   onAnswerChange(next)
                 }}
               />
               <div className="min-w-0 flex-1 text-sm leading-relaxed">
-                <MarkdownContent
-                  mode="compactRichText"
-                  compact
-                  content={option.text || `Option ${index + 1}`}
-                />
+                <MarkdownContent mode="compactRichText" compact content={option.text || `Option ${index + 1}`} />
               </div>
             </label>
           )
@@ -173,11 +161,7 @@ export function ChoiceItemAttempt({
           >
             <RadioGroupItem value={String(id)} />
             <div className="min-w-0 flex-1 text-sm leading-relaxed">
-              <MarkdownContent
-                mode="compactRichText"
-                compact
-                content={option.text || `Option ${index + 1}`}
-              />
+              <MarkdownContent mode="compactRichText" compact content={option.text || `Option ${index + 1}`} />
             </div>
           </label>
         )
@@ -186,11 +170,7 @@ export function ChoiceItemAttempt({
   )
 }
 
-export function ChoiceItemAuthor({
-  value,
-  disabled,
-  onChange,
-}: ItemAuthorProps<ChoiceAuthorValue>) {
+export function ChoiceItemAuthor({ value, disabled, onChange }: ItemAuthorProps<ChoiceAuthorValue>) {
   const t = useTranslations('Features.Assessments.Items.Choice')
 
   const setKind = (kind: ChoiceItemKind) => {
@@ -455,9 +435,7 @@ function MatchingAuthor({
               onChange({
                 ...value,
                 pairs: value.pairs.map((candidate, candidateIndex) =>
-                  candidateIndex === index
-                    ? { ...candidate, right: event.target.value }
-                    : candidate,
+                  candidateIndex === index ? { ...candidate, right: event.target.value } : candidate,
                 ),
               })
             }
@@ -497,10 +475,7 @@ function MatchingAuthor({
   )
 }
 
-export function ChoiceItemReviewDetail({
-  item,
-  answer,
-}: ItemReviewDetailProps<ChoiceAttemptItem, ChoiceAnswer>) {
+export function ChoiceItemReviewDetail({ item, answer }: ItemReviewDetailProps<ChoiceAttemptItem, ChoiceAnswer>) {
   const t = useTranslations('Features.Assessments.Items.Choice')
 
   if (!item) {
@@ -517,8 +492,8 @@ export function ChoiceItemReviewDetail({
         .join(', ')
     }
     return (
-      item.options.find((option, index) => String(optionId(option, index)) === String(answer))
-        ?.text ?? String(answer ?? '-')
+      item.options.find((option, index) => String(optionId(option, index)) === String(answer))?.text ??
+      String(answer ?? '-')
     )
   })()
 
@@ -531,22 +506,14 @@ export function ChoiceItemReviewDetail({
         ) : null}
       </div>
       <MarkdownContent mode="compactRichText" content={item.prompt} compact />
-      <pre
-        className={cn('mt-2 whitespace-pre-wrap text-sm', item.kind !== 'MATCHING' && 'font-sans')}
-      >
+      <pre className={cn('mt-2 whitespace-pre-wrap text-sm', item.kind !== 'MATCHING' && 'font-sans')}>
         {answerLabel}
       </pre>
     </div>
   )
 }
 
-for (const kind of [
-  'CHOICE',
-  'CHOICE_SINGLE',
-  'CHOICE_MULTIPLE',
-  'TRUE_FALSE',
-  'MATCHING',
-] as const) {
+for (const kind of ['CHOICE', 'CHOICE_SINGLE', 'CHOICE_MULTIPLE', 'TRUE_FALSE', 'MATCHING'] as const) {
   registerItemKind({
     kind,
     label: kind.replaceAll('_', ' ').toLowerCase(),

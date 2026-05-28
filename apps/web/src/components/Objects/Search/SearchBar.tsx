@@ -10,10 +10,7 @@ import {
   TextSearch,
   Users,
 } from 'lucide-react'
-import {
-  getCourseThumbnailMediaDirectory,
-  getUserAvatarMediaDirectory,
-} from '@services/media/media'
+import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media'
 import { useSearchContent } from '@/features/search/hooks/useSearch'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { removeCoursePrefix } from '../Thumbnails/CourseThumbnail'
@@ -106,11 +103,7 @@ const CourseResultsSkeleton = () => (
   </div>
 )
 
-export const SearchBar: FC<SearchBarProps> = ({
-  className = '',
-  isMobile = false,
-  showSearchSuggestions = false,
-}) => {
+export const SearchBar: FC<SearchBarProps> = ({ className = '', isMobile = false, showSearchSuggestions = false }) => {
   const t = useTranslations('Components.SearchBar')
   const [searchQuery, setSearchQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
@@ -192,10 +185,7 @@ export const SearchBar: FC<SearchBarProps> = ({
               {icon}
               <span className="text-foreground text-sm">{term}</span>
             </div>
-            <ArrowUpRight
-              size={14}
-              className="text-muted-foreground group-hover:text-foreground transition-colors"
-            />
+            <ArrowUpRight size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
           </Link>
         ))}
       </div>
@@ -204,9 +194,7 @@ export const SearchBar: FC<SearchBarProps> = ({
 
   const MemoizedQuickResults = (() => {
     const hasResults =
-      searchResults.courses.length > 0 ||
-      searchResults.collections.length > 0 ||
-      searchResults.users.length > 0
+      searchResults.courses.length > 0 || searchResults.collections.length > 0 || searchResults.users.length > 0
 
     if (!hasResults) return null
 
@@ -232,10 +220,7 @@ export const SearchBar: FC<SearchBarProps> = ({
                 <div className="relative h-10 w-10">
                   {course.thumbnail_image ? (
                     <NextImage
-                      src={getCourseThumbnailMediaDirectory(
-                        course.course_uuid,
-                        course.thumbnail_image,
-                      )}
+                      src={getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)}
                       alt={course.name}
                       fill
                       className="rounded-lg object-cover"
@@ -283,9 +268,7 @@ export const SearchBar: FC<SearchBarProps> = ({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-foreground truncate text-sm font-medium">
-                      {collection.name}
-                    </h3>
+                    <h3 className="text-foreground truncate text-sm font-medium">{collection.name}</h3>
                     <span className="text-muted-foreground text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
                       {t('collectionType')}
                     </span>
@@ -311,11 +294,7 @@ export const SearchBar: FC<SearchBarProps> = ({
               >
                 <UserAvatar
                   size="md"
-                  avatar_url={
-                    user.avatar_image
-                      ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image)
-                      : ''
-                  }
+                  avatar_url={user.avatar_image ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image) : ''}
                   userId={user.id}
                   showProfilePopup
                   {...(!user.avatar_image ? { predefined_avatar: 'empty' } : {})}
@@ -323,9 +302,7 @@ export const SearchBar: FC<SearchBarProps> = ({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="text-foreground truncate text-sm font-medium">
-                      {[user.first_name, user.middle_name, user.last_name]
-                        .filter(Boolean)
-                        .join(' ')}
+                      {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
                     </h3>
                     <span className="text-muted-foreground text-[10px] font-medium tracking-wide whitespace-nowrap uppercase">
                       {t('userType')}
@@ -368,10 +345,7 @@ export const SearchBar: FC<SearchBarProps> = ({
           placeholder={t('placeholder')}
         />
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-          <Search
-            className="text-muted-foreground group-focus-within:text-foreground transition-colors"
-            size={16}
-          />
+          <Search className="text-muted-foreground group-focus-within:text-foreground transition-colors" size={16} />
         </div>
       </div>
 

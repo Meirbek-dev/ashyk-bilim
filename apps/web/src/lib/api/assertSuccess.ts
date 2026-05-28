@@ -35,16 +35,11 @@ function formatIssueDetail(detail: unknown): string | null {
   const { issues } = detail as { issues?: unknown }
   if (!Array.isArray(issues) || issues.length === 0) return null
   const firstMessages = issues
-    .map(issue =>
-      issue && typeof issue === 'object' ? (issue as { message?: unknown }).message : null,
-    )
-    .filter(
-      (message): message is string => typeof message === 'string' && message.trim().length > 0,
-    )
+    .map(issue => (issue && typeof issue === 'object' ? (issue as { message?: unknown }).message : null))
+    .filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
     .slice(0, 3)
   if (firstMessages.length === 0) return null
-  const suffix =
-    issues.length > firstMessages.length ? ` (+${issues.length - firstMessages.length})` : ''
+  const suffix = issues.length > firstMessages.length ? ` (+${issues.length - firstMessages.length})` : ''
   return `${firstMessages.join(' ')}${suffix}`
 }
 

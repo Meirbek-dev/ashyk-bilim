@@ -28,11 +28,7 @@ export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge
                 variant={
-                  item.severity === 'critical'
-                    ? 'destructive'
-                    : item.severity === 'warning'
-                      ? 'warning'
-                      : 'outline'
+                  item.severity === 'critical' ? 'destructive' : item.severity === 'warning' ? 'warning' : 'outline'
                 }
               >
                 {t(`severity.${item.severity}`)}
@@ -45,9 +41,7 @@ export default function AnomalyPanel({ anomalies }: AnomalyPanelProps) {
             <div className="text-muted-foreground mt-1 text-sm leading-6">{item.detail}</div>
           </div>
         ))}
-        {!anomalies.length ? (
-          <div className="text-muted-foreground text-sm">{t('noAnomalies')}</div>
-        ) : null}
+        {!anomalies.length ? <div className="text-muted-foreground text-sm">{t('noAnomalies')}</div> : null}
       </CardContent>
     </Card>
   )

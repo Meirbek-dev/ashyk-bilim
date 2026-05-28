@@ -1,14 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -58,10 +51,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
     return themes.filter(theme => tThemes(`${theme.name}.name`).toLowerCase().includes(lower))
   }, [themes, search, tThemes])
 
-  const currentIndex = useMemo(
-    () => themes.findIndex(th => th.name === currentTheme.name),
-    [themes, currentTheme.name],
-  )
+  const currentIndex = useMemo(() => themes.findIndex(th => th.name === currentTheme.name), [themes, currentTheme.name])
 
   const cycleTheme = useCallback(
     (direction: 'prev' | 'next') => {
@@ -115,11 +105,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
               sideOffset={4}
             >
               <Command>
-                <CommandInput
-                  placeholder={t('searchPlaceholder')}
-                  value={search}
-                  onValueChange={setSearch}
-                />
+                <CommandInput placeholder={t('searchPlaceholder')} value={search} onValueChange={setSearch} />
 
                 {/* Controls row */}
                 <div className="flex items-center justify-between px-3 py-2">
@@ -166,16 +152,12 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
                       >
                         <ThemeColors colors={theme.colors} />
                         <div className="flex min-w-0 flex-1 flex-col">
-                          <span className="text-sm font-medium">
-                            {tThemes(`${theme.name}.name`)}
-                          </span>
+                          <span className="text-sm font-medium">{tThemes(`${theme.name}.name`)}</span>
                           <span className="text-muted-foreground text-xs leading-snug whitespace-normal">
                             {tThemes(`${theme.name}.description`)}
                           </span>
                         </div>
-                        {theme.name === currentTheme.name && (
-                          <Check className="text-primary size-4 shrink-0" />
-                        )}
+                        {theme.name === currentTheme.name && <Check className="text-primary size-4 shrink-0" />}
                       </CommandItem>
                     ))}
                   </CommandGroup>
@@ -221,9 +203,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
           </Tooltip>
         </div>
 
-        <p className="text-muted-foreground text-xs">
-          {tThemes(`${currentTheme.name}.description`)}
-        </p>
+        <p className="text-muted-foreground text-xs">{tThemes(`${currentTheme.name}.description`)}</p>
       </div>
     </TooltipProvider>
   )

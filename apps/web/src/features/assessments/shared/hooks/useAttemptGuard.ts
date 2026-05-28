@@ -164,11 +164,9 @@ export function useAttemptGuard(policy: PolicyView, options: AttemptGuardOptions
 
     const fullscreenDocument = document as FullscreenDocument
     const target = document.documentElement as FullscreenElement
-    const canUseStandardFullscreen =
-      document.fullscreenEnabled && typeof target.requestFullscreen === 'function'
+    const canUseStandardFullscreen = document.fullscreenEnabled && typeof target.requestFullscreen === 'function'
     const canUseWebkitFullscreen = Boolean(
-      fullscreenDocument.webkitFullscreenEnabled &&
-      typeof target.webkitRequestFullscreen === 'function',
+      fullscreenDocument.webkitFullscreenEnabled && typeof target.webkitRequestFullscreen === 'function',
     )
 
     if (!canUseStandardFullscreen && !canUseWebkitFullscreen) {

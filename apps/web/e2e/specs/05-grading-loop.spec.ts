@@ -40,10 +40,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
     })
   })
 
-  test('gradebook shows the student submission that needs grading', async ({
-    page,
-    gradebookPage,
-  }) => {
+  test('gradebook shows the student submission that needs grading', async ({ page, gradebookPage }) => {
     await gradebookPage.goto(courseUuid)
     const studentEmailLocalPart = USERS.student.email.split('@')[0] ?? USERS.student.email
 
@@ -74,10 +71,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
     ).toBeVisible({ timeout: 15_000 })
   })
 
-  test('teacher can select the student submission and see the uploaded file', async ({
-    page,
-    gradingReviewPage,
-  }) => {
+  test('teacher can select the student submission and see the uploaded file', async ({ page, gradingReviewPage }) => {
     if (!fileSubmissionActivityId) {
       test.skip(true, 'File submission activity ID not captured — run student journey first')
     }
@@ -91,9 +85,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
     })
   })
 
-  test('teacher can assign a score and feedback to the file submission', async ({
-    gradingReviewPage,
-  }) => {
+  test('teacher can assign a score and feedback to the file submission', async ({ gradingReviewPage }) => {
     if (!fileSubmissionActivityId) {
       test.skip(true, 'File submission activity ID not captured — run student journey first')
     }
@@ -106,9 +98,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
     })
   })
 
-  test('file submission status updates to Graded after teacher review', async ({
-    gradingReviewPage,
-  }) => {
+  test('file submission status updates to Graded after teacher review', async ({ gradingReviewPage }) => {
     if (!fileSubmissionActivityId) {
       test.skip(true, 'File submission activity ID not captured — run student journey first')
       return
@@ -120,10 +110,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
 
   // ── 3. Grade the exam submission ──────────────────────────────────────────
 
-  test('teacher can navigate to the exam review page via gradebook', async ({
-    page,
-    gradebookPage,
-  }) => {
+  test('teacher can navigate to the exam review page via gradebook', async ({ page, gradebookPage }) => {
     if (!examActivityId) {
       test.skip(true, 'Exam activity ID not set — run course creation spec first')
       return
@@ -172,9 +159,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
 import { testAsStudent as studentTest } from '../fixtures'
 
 studentTest.describe.serial('Student – Certificate After Grading', () => {
-  test('certificate download button appears after teacher grades all work', async ({
-    coursePlayerPage,
-  }) => {
+  test('certificate download button appears after teacher grades all work', async ({ coursePlayerPage }) => {
     const courseUuid = getEnv('E2E_COURSE_UUID') ?? ''
     if (!courseUuid) {
       test.skip(true, 'Course UUID not set')

@@ -174,21 +174,14 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
     globalThis.requestAnimationFrame(() => {
       if (inputRef.current) {
         inputRef.current.focus()
-        inputRef.current.setSelectionRange(
-          cursorPosition + symbol.length,
-          cursorPosition + symbol.length,
-        )
+        inputRef.current.setSelectionRange(cursorPosition + symbol.length, cursorPosition + symbol.length)
       }
     })
   }
 
   return (
     <NodeViewWrapper className="block-math-equation">
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="bg-muted border-border flex flex-col space-y-3 rounded-lg border px-5 py-6 [transition:all_0.2s_ease]">
           <div className="mb-1 flex items-center space-x-2 text-sm text-zinc-500">
             <Sigma size={16} />
@@ -229,17 +222,12 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
                   >
                     <BookOpen size={14} />
                     <span>{t('templates')}</span>
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform ${showTemplates ? 'rotate-180' : ''}`}
-                    />
+                    <ChevronDown size={14} className={`transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showTemplates ? (
                     <div className="border-border absolute left-0 z-10 mt-1 max-h-80 w-64 overflow-y-auto rounded-[8px] border bg-white shadow-lg">
-                      <div className="border-b p-2 text-xs text-zinc-500">
-                        {t('selectTemplate')}
-                      </div>
+                      <div className="border-b p-2 text-xs text-zinc-500">{t('selectTemplate')}</div>
                       {mathTemplates.map((template, index) => (
                         <button
                           key={index}
@@ -268,10 +256,7 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
                   >
                     <Sigma size={14} />
                     <span>{t('symbols')}</span>
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform ${showSymbols ? 'rotate-180' : ''}`}
-                    />
+                    <ChevronDown size={14} className={`transition-transform ${showSymbols ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showSymbols ? (
@@ -304,17 +289,12 @@ const MathEquationBlockComponent = (props: TypedNodeViewProps<MathEquationNodeAt
                   >
                     <Lightbulb size={14} />
                     <span>{t('help')}</span>
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform ${showHelp ? 'rotate-180' : ''}`}
-                    />
+                    <ChevronDown size={14} className={`transition-transform ${showHelp ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showHelp ? (
                     <div className="border-border absolute left-0 z-10 mt-1 w-72 overflow-hidden rounded-[8px] border bg-white shadow-lg">
-                      <div className="border-b p-2 text-xs font-medium text-zinc-700">
-                        {t('quickReference')}
-                      </div>
+                      <div className="border-b p-2 text-xs font-medium text-zinc-700">{t('quickReference')}</div>
                       <div className="space-y-2 p-3 text-xs">
                         <div>
                           <span className="font-medium">{t('fractions')}</span> {'\\frac{'}

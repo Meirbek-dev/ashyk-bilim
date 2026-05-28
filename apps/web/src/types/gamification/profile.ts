@@ -138,8 +138,7 @@ export function calculateLevelProgress(profile: UserGamificationProfile): {
   const currentLevelXP = profile.xp_in_current_level ?? 0
   const xpToNext = profile.xp_to_next_level ?? 100
   const nextLevelXP = currentLevelXP + xpToNext
-  const progressPercent =
-    profile.level_progress_percent ?? (nextLevelXP > 0 ? (currentLevelXP / nextLevelXP) * 100 : 0)
+  const progressPercent = profile.level_progress_percent ?? (nextLevelXP > 0 ? (currentLevelXP / nextLevelXP) * 100 : 0)
 
   return {
     currentLevelXP,

@@ -26,9 +26,7 @@ export function useReducedData(): boolean {
 
     // 2. Check Network Information API (saveData)
     const connection =
-      (navigator as any).connection ||
-      (navigator as any).mozConnection ||
-      (navigator as any).webkitConnection
+      (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection
     if (connection) {
       // Check saveData
       if (connection.saveData) {
@@ -48,17 +46,13 @@ export function useReducedData(): boolean {
 
     const mediaQuery = globalThis.matchMedia('(prefers-reduced-data: reduce)')
     const connection =
-      (navigator as any).connection ||
-      (navigator as any).mozConnection ||
-      (navigator as any).webkitConnection
+      (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection
 
     // Compute initial state synchronously (already computed in useState initializer)
     const initialReduced = Boolean(
       mediaQuery.matches ||
       (connection &&
-        (connection.saveData === true ||
-          connection.effectiveType === 'slow-2g' ||
-          connection.effectiveType === '2g')),
+        (connection.saveData === true || connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g')),
     )
 
     // Handlers
@@ -77,8 +71,7 @@ export function useReducedData(): boolean {
     let prevOnChange: any = null
     const handleNetworkChange = () => {
       const saveData = connection?.saveData === true
-      const slowConnection =
-        connection?.effectiveType === 'slow-2g' || connection?.effectiveType === '2g'
+      const slowConnection = connection?.effectiveType === 'slow-2g' || connection?.effectiveType === '2g'
       setPrefersReducedData(saveData || slowConnection || mediaQuery.matches)
     }
 

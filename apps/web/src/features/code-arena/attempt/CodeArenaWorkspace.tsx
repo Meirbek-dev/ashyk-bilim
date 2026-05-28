@@ -84,10 +84,7 @@ export function CodeArenaWorkspace({
   const runCustom = useRunCustomTest(problem.activityUuid)
   const runTests = useRunCodeChallengeTests(problem.activityUuid)
   const submissions = Array.isArray(submissionsData) ? submissionsData : []
-  const allowedLanguages = useMemo(
-    () => settings.allowed_languages ?? [],
-    [settings.allowed_languages],
-  )
+  const allowedLanguages = useMemo(() => settings.allowed_languages ?? [], [settings.allowed_languages])
   const languages = useMemo(
     () =>
       allowedLanguages.length
@@ -138,8 +135,7 @@ export function CodeArenaWorkspace({
 
   const updateLanguage = useCallback(
     (nextLanguageId: number) => {
-      const nextCode =
-        codeByLanguage[nextLanguageId] ?? normalizeStarterCode(settings, nextLanguageId)
+      const nextCode = codeByLanguage[nextLanguageId] ?? normalizeStarterCode(settings, nextLanguageId)
       setLanguageId(nextLanguageId)
       setCode(nextCode)
       updateAnswer(nextLanguageId, nextCode)
@@ -160,8 +156,7 @@ export function CodeArenaWorkspace({
         languageId,
         stdin: customInput,
       })
-      const output =
-        result.compile_output || result.stderr || result.stdout || t('programFinishedNoOutput')
+      const output = result.compile_output || result.stderr || result.stdout || t('programFinishedNoOutput')
       setConsoleOutput(output)
       setVerdict(verdictFromRun(result.status_description, result.status === 3 ? 1 : 0, 1))
     } catch (error) {
@@ -254,11 +249,7 @@ export function CodeArenaWorkspace({
         disabled={disabled}
       />
 
-      <ResizablePanelGroup
-        id="code-arena-main-layout"
-        orientation="horizontal"
-        className="min-h-0 flex-1"
-      >
+      <ResizablePanelGroup id="code-arena-main-layout" orientation="horizontal" className="min-h-0 flex-1">
         <ResizablePanel defaultSize={34} minSize={24} className={cn('min-w-0')}>
           <ProblemPane
             problem={problem}
@@ -280,11 +271,7 @@ export function CodeArenaWorkspace({
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={66} minSize={42}>
-          <ResizablePanelGroup
-            id="code-arena-editor-results-layout"
-            orientation="vertical"
-            className="h-full"
-          >
+          <ResizablePanelGroup id="code-arena-editor-results-layout" orientation="vertical" className="h-full">
             <ResizablePanel defaultSize={65} minSize={35}>
               <EditorPane
                 code={code}
@@ -316,11 +303,7 @@ export function CodeArenaWorkspace({
         </ResizablePanel>
       </ResizablePanelGroup>
 
-      <CommandDialog
-        open={commandOpen}
-        onOpenChange={setCommandOpen}
-        title={t('commandPaletteTitle')}
-      >
+      <CommandDialog open={commandOpen} onOpenChange={setCommandOpen} title={t('commandPaletteTitle')}>
         <CommandInput placeholder={t('commandPalettePlaceholder')} />
         <CommandList>
           <CommandEmpty>{t('noCommandFound')}</CommandEmpty>

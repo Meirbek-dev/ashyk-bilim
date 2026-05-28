@@ -32,11 +32,7 @@ export default function ForecastingPanel({ forecasts }: ForecastingPanelProps) {
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge
                 variant={
-                  item.severity === 'critical'
-                    ? 'destructive'
-                    : item.severity === 'warning'
-                      ? 'warning'
-                      : 'outline'
+                  item.severity === 'critical' ? 'destructive' : item.severity === 'warning' ? 'warning' : 'outline'
                 }
               >
                 {t(`forecastingPanel.severity.${item.severity}`)}
@@ -48,9 +44,7 @@ export default function ForecastingPanel({ forecasts }: ForecastingPanelProps) {
           </div>
         ))}
         {!forecasts.length ? (
-          <div className="text-muted-foreground text-sm">
-            {t('forecastingPanel.noForecastRisks')}
-          </div>
+          <div className="text-muted-foreground text-sm">{t('forecastingPanel.noForecastRisks')}</div>
         ) : null}
       </CardContent>
     </Card>

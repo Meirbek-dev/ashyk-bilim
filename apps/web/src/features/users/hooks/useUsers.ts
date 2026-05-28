@@ -115,16 +115,10 @@ export function useUserCourses(userId: number | null | undefined, options?: { en
   return useQuery(userCoursesHookOptions(userId, options?.enabled ?? true))
 }
 
-export function useUserByIdQuery(
-  userId: number | null | undefined,
-  options?: { enabled?: boolean },
-) {
+export function useUserByIdQuery(userId: number | null | undefined, options?: { enabled?: boolean }) {
   return useQuery(userByIdHookOptions(userId, options?.enabled ?? true))
 }
 
-export function useUserByUsernameQuery(
-  username: string | null | undefined,
-  options?: { enabled?: boolean },
-) {
+export function useUserByUsernameQuery(username: string | null | undefined, options?: { enabled?: boolean }) {
   return useQuery(userByUsernameHookOptions(username, options?.enabled ?? true))
 }

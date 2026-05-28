@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
 import { AlertTriangle, Image as ImageIcon, Loader2, Tag, Video } from 'lucide-react'
 import { SectionHeader } from '@components/Dashboard/Courses/SectionHeader'
 import { useCoursesMutations } from '@/hooks/mutations/useCoursesMutations'
@@ -287,9 +280,7 @@ function EditCourseGeneral() {
                 name="learnings"
                 render={({ field, fieldState }) => (
                   <Field>
-                    <FieldLabel className="text-base font-semibold">
-                      {t('learnings.label')}
-                    </FieldLabel>
+                    <FieldLabel className="text-base font-semibold">{t('learnings.label')}</FieldLabel>
                     <div role="group" aria-labelledby="learnings-label">
                       <LearningItemsList value={field.value} onChange={field.onChange} />
                     </div>
@@ -323,9 +314,7 @@ function EditCourseGeneral() {
         <Card>
           <CardHeader>
             <div className="space-y-1">
-              <h2 className="text-foreground text-2xl font-bold tracking-tight">
-                {t('thumbnail.label')}
-              </h2>
+              <h2 className="text-foreground text-2xl font-bold tracking-tight">{t('thumbnail.label')}</h2>
               <p className="text-muted-foreground text-sm">{t('thumbnail.mediaUpdatesIsolated')}</p>
             </div>
           </CardHeader>
@@ -342,11 +331,7 @@ function EditCourseGeneral() {
               render={({ field, fieldState }) => (
                 <Field>
                   <FieldLabel className="text-base font-semibold">{t('thumbnailType')}</FieldLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    items={thumbnailTypeItems}
-                  >
+                  <Select value={field.value} onValueChange={field.onChange} items={thumbnailTypeItems}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

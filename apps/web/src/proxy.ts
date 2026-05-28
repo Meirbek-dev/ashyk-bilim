@@ -46,9 +46,7 @@ const localePathPrefixes = [
 ].toSorted(([, a], [, b]) => b.length - a.length)
 
 function getPathInfo(pathname: string) {
-  const match = localePathPrefixes.find(
-    ([, prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  )
+  const match = localePathPrefixes.find(([, prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 
   if (!match) {
     return {
@@ -68,14 +66,8 @@ function getPathInfo(pathname: string) {
 function buildRequestHeaders(req: NextRequest, requestId: string, locale?: string) {
   const headers = new Headers(req.headers)
 
-  headers.set(
-    'x-forwarded-host',
-    req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? req.nextUrl.host,
-  )
-  headers.set(
-    'x-forwarded-proto',
-    req.headers.get('x-forwarded-proto') ?? req.nextUrl.protocol.replace(':', ''),
-  )
+  headers.set('x-forwarded-host', req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? req.nextUrl.host)
+  headers.set('x-forwarded-proto', req.headers.get('x-forwarded-proto') ?? req.nextUrl.protocol.replace(':', ''))
   headers.set('x-request-id', requestId)
   headers.set('x-pathname', req.nextUrl.pathname)
   headers.set('x-search', req.nextUrl.search)
@@ -96,12 +88,7 @@ function withRequestId(response: NextResponse, requestId: string) {
   return response
 }
 
-function applyRequestHeaders(
-  response: NextResponse,
-  req: NextRequest,
-  requestId: string,
-  locale?: string,
-) {
+function applyRequestHeaders(response: NextResponse, req: NextRequest, requestId: string, locale?: string) {
   const headerResponse = NextResponse.next({
     request: { headers: buildRequestHeaders(req, requestId, locale) },
   })
@@ -204,13 +191,7 @@ export default async function proxy(req: NextRequest) {
 
   const authRewrite = AUTH_REWRITE[pathnameWithoutLocale]
   if (authRewrite) {
-    return rewriteWithHeaders(
-      req,
-      requestId,
-      `/${locale}${authRewrite}${search}`,
-      locale,
-      i18nResponse.headers,
-    )
+    return rewriteWithHeaders(req, requestId, `/${locale}${authRewrite}${search}`, locale, i18nResponse.headers)
   }
 
   const isProtected =

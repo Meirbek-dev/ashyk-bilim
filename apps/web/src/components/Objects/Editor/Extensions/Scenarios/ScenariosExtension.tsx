@@ -33,13 +33,10 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
   // Initialize node-local state with localized fallbacks when node attrs are empty
   const initialNodeTitle: string = props.node?.attrs?.title || ''
   const initialNodeScenarios: Scenario[] = props.node?.attrs?.scenarios || []
-  const initialNodeCurrentId: string =
-    props.node?.attrs?.currentScenarioId || (initialNodeScenarios[0]?.id ?? '1')
+  const initialNodeCurrentId: string = props.node?.attrs?.currentScenarioId || (initialNodeScenarios[0]?.id ?? '1')
 
   const [title, setTitle] = useState(initialNodeTitle || t('interactiveScenario'))
-  const [scenarios, setScenarios] = useState(
-    initialNodeScenarios.length > 0 ? initialNodeScenarios : [],
-  )
+  const [scenarios, setScenarios] = useState(initialNodeScenarios.length > 0 ? initialNodeScenarios : [])
   const [currentScenarioId, setCurrentScenarioId] = useState(initialNodeCurrentId)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [scenarioComplete, setScenarioComplete] = useState(false)
@@ -148,9 +145,7 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
                 <p className="text-center text-sm text-slate-600">
                   {t('scenariosConfigured', { count: scenarios.length, max: 40 })}
                 </p>
-                <p className="mt-1 text-center text-xs text-slate-500">
-                  {t('clickEditToConfigure')}
-                </p>
+                <p className="mt-1 text-center text-xs text-slate-500">{t('clickEditToConfigure')}</p>
               </div>
             </div>
           </div>
@@ -161,9 +156,7 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
                 <CheckCircle size={24} className="text-emerald-600" />
               </div>
               <h4 className="mb-2 text-xl font-bold text-slate-900">{t('scenarioComplete')}</h4>
-              <p className="mb-6 leading-relaxed text-slate-600">
-                {t('scenarioCompleteDescription')}
-              </p>
+              <p className="mb-6 leading-relaxed text-slate-600">{t('scenarioCompleteDescription')}</p>
               <button
                 onClick={resetScenario}
                 className="mx-auto flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-slate-800 hover:shadow-md"
@@ -183,9 +176,7 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
                       <GitBranch size={20} className="text-slate-400" />
                     </div>
-                    <h3 className="mb-2 text-base font-medium text-slate-900">
-                      {t('scenarioNotFound')}
-                    </h3>
+                    <h3 className="mb-2 text-base font-medium text-slate-900">{t('scenarioNotFound')}</h3>
                     <p className="text-sm text-slate-500">{t('scenarioNotFoundDescription')}</p>
                   </div>
                 )
@@ -207,9 +198,7 @@ const ScenariosExtension: React.FC<TypedNodeViewProps<ScenarioNodeAttrs>> = prop
                         />
                       </div>
                     )}
-                    <p className="text-base leading-relaxed font-medium text-slate-800">
-                      {currentScenario.text}
-                    </p>
+                    <p className="text-base leading-relaxed font-medium text-slate-800">{currentScenario.text}</p>
                   </div>
 
                   {/* Response Options */}

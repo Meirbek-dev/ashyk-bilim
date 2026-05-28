@@ -20,9 +20,7 @@ const InfoCalloutComponent = (props: TypedNodeViewProps<InfoCalloutAttrs>) => {
 
   // Extract options from props or use defaults
   const options: CalloutOptions = {
-    ...(props.node?.attrs?.dismissible === undefined
-      ? {}
-      : { dismissible: props.node.attrs.dismissible }),
+    ...(props.node?.attrs?.dismissible === undefined ? {} : { dismissible: props.node.attrs.dismissible }),
     variant: props.node?.attrs?.variant || 'default',
     size: props.node?.attrs?.size || 'md',
   }
@@ -65,9 +63,7 @@ const InfoCalloutComponent = (props: TypedNodeViewProps<InfoCalloutAttrs>) => {
           'flex items-center rounded-xl shadow-inner',
           getVariantClasses(),
           getSizeClasses(),
-          options.size === 'sm'
-            ? 'max-sm:flex-row max-sm:items-center'
-            : 'max-sm:flex-col max-sm:items-start',
+          options.size === 'sm' ? 'max-sm:flex-row max-sm:items-center' : 'max-sm:flex-col max-sm:items-start',
         )}
       >
         <div

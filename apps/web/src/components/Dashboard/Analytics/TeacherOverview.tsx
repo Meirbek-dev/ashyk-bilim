@@ -2,11 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAnalyticsAlertTypeLabel, getAnalyticsSeverityLabel } from '@/lib/analytics/labels'
-import type {
-  AdminAnalyticsResponse,
-  AnalyticsQuery,
-  TeacherOverviewResponse,
-} from '@/types/analytics'
+import type { AdminAnalyticsResponse, AnalyticsQuery, TeacherOverviewResponse } from '@/types/analytics'
 import { getAnalyticsExportUrl } from '@services/analytics/teacher'
 import type { AnalyticsFilterOption } from '@/types/analytics'
 import AnalyticsExportButton from './AnalyticsExportButton'
@@ -78,8 +74,7 @@ export default function TeacherOverview({
     if (scopedQuery.bucket) params.set('bucket', scopedQuery.bucket)
     if (scopedQuery.course_ids) params.set('course_ids', scopedQuery.course_ids)
     if (scopedQuery.cohort_ids) params.set('cohort_ids', scopedQuery.cohort_ids)
-    if (scopedQuery.teacher_user_id)
-      params.set('teacher_user_id', String(scopedQuery.teacher_user_id))
+    if (scopedQuery.teacher_user_id) params.set('teacher_user_id', String(scopedQuery.teacher_user_id))
     if (scopedQuery.timezone) params.set('timezone', scopedQuery.timezone)
     if (scopedQuery.bucket_start) params.set('bucket_start', scopedQuery.bucket_start)
     if (scopedQuery.sort_by) params.set('sort_by', scopedQuery.sort_by)
@@ -189,8 +184,7 @@ export default function TeacherOverview({
     if (query.timezone) params.set('timezone', query.timezone)
     params.set('bucket_start', bucketStart)
 
-    const isSubmissionDominant =
-      row && row.submissions + row.grading_completed >= row.active_learners
+    const isSubmissionDominant = row && row.submissions + row.grading_completed >= row.active_learners
     if (isSubmissionDominant) {
       params.set('sort_by', 'signals')
       router.push(`/dash/analytics/assessments?${params.toString()}`)
@@ -215,10 +209,7 @@ export default function TeacherOverview({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <AnalyticsExportButton
-              href={getAnalyticsExportUrl('at-risk', query)}
-              label={t('overview.exportAtRisk')}
-            />
+            <AnalyticsExportButton href={getAnalyticsExportUrl('at-risk', query)} label={t('overview.exportAtRisk')} />
             <AnalyticsExportButton
               href={getAnalyticsExportUrl('grading-backlog', query)}
               label={t('overview.exportGradingBacklog')}
@@ -256,10 +247,7 @@ export default function TeacherOverview({
           />
         </Suspense>
         <Suspense fallback={<SectionFallback height="h-[220px]" />}>
-          <GradingBacklogPanel
-            backlogCount={data.summary.ungraded_submissions.value}
-            alerts={data.alerts}
-          />
+          <GradingBacklogPanel backlogCount={data.summary.ungraded_submissions.value} alerts={data.alerts} />
         </Suspense>
       </div>
 
@@ -330,14 +318,10 @@ export default function TeacherOverview({
               <div className="text-muted-foreground text-xs tracking-wider uppercase">
                 {t('overview.labelScopedCourses')}
               </div>
-              <div className="text-foreground mt-2 text-lg font-semibold">
-                {data.scope.course_ids.length}
-              </div>
+              <div className="text-foreground mt-2 text-lg font-semibold">{data.scope.course_ids.length}</div>
             </div>
             <div className="bg-muted rounded-lg border p-4">
-              <div className="text-muted-foreground text-xs tracking-wider uppercase">
-                {t('overview.labelCohorts')}
-              </div>
+              <div className="text-muted-foreground text-xs tracking-wider uppercase">{t('overview.labelCohorts')}</div>
               <div className="text-foreground mt-2 text-lg font-semibold">
                 {data.scope.cohort_ids.length || t('overview.cohortsAll')}
               </div>
@@ -360,9 +344,7 @@ export default function TeacherOverview({
               [t('overview.interventionSummary.recovered'), interventionSummary.recovered_learners],
             ].map(([label, value]) => (
               <div key={label} className="bg-muted rounded-lg border p-4">
-                <div className="text-muted-foreground text-xs tracking-wider uppercase">
-                  {label}
-                </div>
+                <div className="text-muted-foreground text-xs tracking-wider uppercase">{label}</div>
                 <div className="text-foreground mt-2 text-2xl font-semibold">{value}</div>
               </div>
             ))}
@@ -441,10 +423,7 @@ export default function TeacherOverview({
             <CourseHealthTable rows={data.course_preview} storageKey="overview-courses" />
           </Suspense>
           <p className="text-muted-foreground mt-2 text-sm">
-            <Link
-              href={buildScopedHref('/dash/analytics/courses')}
-              className="text-blue-600 hover:underline"
-            >
+            <Link href={buildScopedHref('/dash/analytics/courses')} className="text-blue-600 hover:underline">
               {t('overview.viewAllCourses')}
             </Link>
           </p>
@@ -459,16 +438,10 @@ export default function TeacherOverview({
             </span>
           </div>
           <Suspense fallback={<SectionFallback height="h-[320px]" />}>
-            <AssessmentOutliersTable
-              rows={data.assessment_preview}
-              storageKey="overview-assessments"
-            />
+            <AssessmentOutliersTable rows={data.assessment_preview} storageKey="overview-assessments" />
           </Suspense>
           <p className="text-muted-foreground mt-2 text-sm">
-            <Link
-              href={buildScopedHref('/dash/analytics/assessments')}
-              className="text-blue-600 hover:underline"
-            >
+            <Link href={buildScopedHref('/dash/analytics/assessments')} className="text-blue-600 hover:underline">
               {t('overview.viewAllAssessments')}
             </Link>
           </p>
@@ -499,10 +472,7 @@ export default function TeacherOverview({
         </Suspense>
         {data.at_risk_total > 0 && (
           <p className="text-muted-foreground mt-2 text-sm">
-            <Link
-              href={buildScopedHref('/dash/analytics/learners/at-risk')}
-              className="text-blue-600 hover:underline"
-            >
+            <Link href={buildScopedHref('/dash/analytics/learners/at-risk')} className="text-blue-600 hover:underline">
               {t('overview.viewAllAtRisk')}
             </Link>
           </p>

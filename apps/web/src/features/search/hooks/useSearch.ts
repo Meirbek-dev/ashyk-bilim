@@ -16,16 +16,6 @@ function searchContentHookOptions(query: string, page = 1, limit = 20, enabled =
   })
 }
 
-export function useSearchContent(
-  query: string,
-  options?: { page?: number; limit?: number; enabled?: boolean },
-) {
-  return useQuery(
-    searchContentHookOptions(
-      query,
-      options?.page ?? 1,
-      options?.limit ?? 20,
-      options?.enabled ?? true,
-    ),
-  )
+export function useSearchContent(query: string, options?: { page?: number; limit?: number; enabled?: boolean }) {
+  return useQuery(searchContentHookOptions(query, options?.page ?? 1, options?.limit ?? 20, options?.enabled ?? true))
 }

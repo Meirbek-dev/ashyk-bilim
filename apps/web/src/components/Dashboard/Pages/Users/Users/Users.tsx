@@ -183,13 +183,7 @@ const Users = () => {
   const columns: ColumnDef<UserRow>[] = [
     {
       accessorFn: row =>
-        [
-          row.user.first_name,
-          row.user.middle_name,
-          row.user.last_name,
-          row.user.username,
-          row.user.email,
-        ]
+        [row.user.first_name, row.user.middle_name, row.user.last_name, row.user.username, row.user.email]
           .filter(Boolean)
           .join(' '),
       id: 'user',
@@ -197,11 +191,7 @@ const Users = () => {
       cell: ({ row }) => (
         <div className="flex items-center space-x-2">
           <span>
-            {[
-              row.original.user.first_name,
-              row.original.user.middle_name,
-              row.original.user.last_name,
-            ]
+            {[row.original.user.first_name, row.original.user.middle_name, row.original.user.last_name]
               .filter(Boolean)
               .join(' ')}
           </span>
@@ -223,8 +213,7 @@ const Users = () => {
       enableSorting: false,
       cell: ({ row }) => {
         const user = row.original
-        const isSelf =
-          currentUser?.user_uuid === user.user.user_uuid || currentUser?.id === user.user.id
+        const isSelf = currentUser?.user_uuid === user.user.user_uuid || currentUser?.id === user.user.id
         const targetPriority = getRolePriority(user.role)
         const canManage = !isSelf && currentUserPriority > targetPriority
 
@@ -232,8 +221,7 @@ const Users = () => {
         if (currentUserPriority <= targetPriority) {
           return <div className="text-neutral-500">{t('cannotManageHigherRole')}</div>
         }
-        if (!canManage)
-          return <div className="text-neutral-500">{t('noActionsForAdministrators')}</div>
+        if (!canManage) return <div className="text-neutral-500">{t('noActionsForAdministrators')}</div>
 
         const showEditRole = canUpdateRole
         const showRemoveUser = canDeleteUser
@@ -246,9 +234,7 @@ const Users = () => {
           <div className="flex items-end space-x-2">
             {showEditRole && (
               <Modal
-                isDialogOpen={
-                  rolesModal ? selectedUser?.user?.user_uuid === user.user.user_uuid : false
-                }
+                isDialogOpen={rolesModal ? selectedUser?.user?.user_uuid === user.user.user_uuid : false}
                 onOpenChange={isOpen => {
                   if (!isOpen) handleCloseRolesModal()
                 }}
@@ -283,12 +269,7 @@ const Users = () => {
             )}
 
             {showRemoveUser && (
-              <RemoveUserButton
-                userId={user.user.id}
-                username={user.user.username}
-                onRemove={handleRemoveUser}
-                t={t}
-              />
+              <RemoveUserButton userId={user.user.id} username={user.user.username} onRemove={handleRemoveUser} t={t} />
             )}
           </div>
         )
@@ -336,9 +317,7 @@ const Users = () => {
                       <PaginationPrevious
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         aria-disabled={currentPage === 1}
-                        className={
-                          currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
-                        }
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                       />
                     </PaginationItem>
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -350,8 +329,7 @@ const Users = () => {
                       })
                       .map((page, idx, arr) => {
                         const prev = arr[idx - 1]
-                        const showEllipsisBefore =
-                          idx > 0 && typeof prev !== 'undefined' && page - prev > 1
+                        const showEllipsisBefore = idx > 0 && typeof prev !== 'undefined' && page - prev > 1
                         return (
                           <React.Fragment key={`fragment-${page}`}>
                             {showEllipsisBefore && (
@@ -375,11 +353,7 @@ const Users = () => {
                       <PaginationNext
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         aria-disabled={currentPage === totalPages}
-                        className={
-                          currentPage === totalPages
-                            ? 'pointer-events-none opacity-50'
-                            : 'cursor-pointer'
-                        }
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                       />
                     </PaginationItem>
                   </PaginationContent>

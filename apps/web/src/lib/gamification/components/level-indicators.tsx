@@ -28,12 +28,7 @@ interface LevelProgressProps {
   className?: string
 }
 
-export function LevelProgress({
-  profile,
-  showMilestones = false,
-  animated = true,
-  className,
-}: LevelProgressProps) {
+export function LevelProgress({ profile, showMilestones = false, animated = true, className }: LevelProgressProps) {
   const previousLevelRef = useRef(profile.level)
   const controls = useAnimationControls()
   const prefersReducedMotion = useReducedMotion()
@@ -212,12 +207,7 @@ interface GlowingLevelBadgeProps {
   className?: string
 }
 
-export function GlowingLevelBadge({
-  level,
-  size = 'md',
-  animated = true,
-  className,
-}: GlowingLevelBadgeProps) {
+export function GlowingLevelBadge({ level, size = 'md', animated = true, className }: GlowingLevelBadgeProps) {
   const levelInfo = getLevelInfo(level, (key: string) => key)
   const prefersReducedMotion = useReducedMotion()
 
@@ -238,10 +228,7 @@ export function GlowingLevelBadge({
     >
       {/* Subtle background glow */}
       <div
-        className={cn(
-          'absolute inset-0 rounded-full opacity-20 blur-sm',
-          levelInfo.color.replace('text-', 'bg-'),
-        )}
+        className={cn('absolute inset-0 rounded-full opacity-20 blur-sm', levelInfo.color.replace('text-', 'bg-'))}
       />
 
       {/* Clean badge */}
@@ -339,11 +326,7 @@ interface MilestoneProgressProps {
   className?: string
 }
 
-export function MilestoneProgress({
-  currentLevel,
-  milestones = [5, 10, 25, 50],
-  className,
-}: MilestoneProgressProps) {
+export function MilestoneProgress({ currentLevel, milestones = [5, 10, 25, 50], className }: MilestoneProgressProps) {
   return (
     <div className={cn('flex items-center gap-1.5', className)}>
       {milestones.map((milestone, index) => {
@@ -368,12 +351,7 @@ export function MilestoneProgress({
               {isReached ? <Star className="h-3.5 w-3.5 fill-current" /> : milestone}
             </motion.div>
             {index < milestones.length - 1 && (
-              <div
-                className={cn(
-                  'h-px w-3 transition-colors',
-                  isReached ? 'bg-primary/40' : 'bg-border/30',
-                )}
-              />
+              <div className={cn('h-px w-3 transition-colors', isReached ? 'bg-primary/40' : 'bg-border/30')} />
             )}
           </>
         )

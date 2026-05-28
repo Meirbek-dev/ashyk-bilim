@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  ChartContainer,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart'
+import { ChartContainer, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Bar, BarChart, CartesianGrid, Legend, XAxis, YAxis } from 'recharts'
 import { useTranslations } from 'next-intl'

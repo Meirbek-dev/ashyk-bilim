@@ -72,17 +72,12 @@ const getOptionalInteger = (value: string | undefined): number | undefined => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined
 }
 
-async function analyticsRequest<T>(
-  path: string,
-  query?: AnalyticsQuery,
-  init?: RequestInit,
-): Promise<T> {
+async function analyticsRequest<T>(path: string, query?: AnalyticsQuery, init?: RequestInit): Promise<T> {
   const response = await apiFetch(`analytics/${path}${buildQueryString(query)}`, init)
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}))
-    const message =
-      payload?.detail?.message || payload?.detail || `Analytics request failed (${response.status})`
+    const message = payload?.detail?.message || payload?.detail || `Analytics request failed (${response.status})`
     throw new Error(message)
   }
 
@@ -93,38 +88,29 @@ async function analyticsRequest<T>(
   return response.json()
 }
 
-export function normalizeAnalyticsQuery(
-  searchParams: Record<string, string | string[] | undefined>,
-): AnalyticsQuery {
+export function normalizeAnalyticsQuery(searchParams: Record<string, string | string[] | undefined>): AnalyticsQuery {
   const teacherUserId = getFirstQueryValue(searchParams['teacher_user_id'])
   const page = getFirstQueryValue(searchParams['page'])
   const pageSize = getFirstQueryValue(searchParams['page_size'])
 
   return {
     window: (getFirstQueryValue(searchParams['window']) as AnalyticsQuery['window']) || '28d',
-    compare:
-      (getFirstQueryValue(searchParams['compare']) as AnalyticsQuery['compare']) ||
-      'previous_period',
+    compare: (getFirstQueryValue(searchParams['compare']) as AnalyticsQuery['compare']) || 'previous_period',
     bucket: (getFirstQueryValue(searchParams['bucket']) as AnalyticsQuery['bucket']) || 'day',
     page: getPositiveInteger(page, 1),
     page_size: getPositiveInteger(pageSize, 25),
-    sort_order:
-      (getFirstQueryValue(searchParams['sort_order']) as AnalyticsQuery['sort_order']) || 'desc',
+    sort_order: (getFirstQueryValue(searchParams['sort_order']) as AnalyticsQuery['sort_order']) || 'desc',
     ...(getFirstQueryValue(searchParams['course_ids'])
       ? { course_ids: getFirstQueryValue(searchParams['course_ids']) }
       : {}),
     ...(getFirstQueryValue(searchParams['cohort_ids'])
       ? { cohort_ids: getFirstQueryValue(searchParams['cohort_ids']) }
       : {}),
-    ...(getOptionalInteger(teacherUserId) !== undefined
-      ? { teacher_user_id: getOptionalInteger(teacherUserId) }
-      : {}),
+    ...(getOptionalInteger(teacherUserId) !== undefined ? { teacher_user_id: getOptionalInteger(teacherUserId) } : {}),
     ...(getFirstQueryValue(searchParams['timezone'])
       ? { timezone: getFirstQueryValue(searchParams['timezone']) }
       : { timezone: 'UTC' }),
-    ...(getFirstQueryValue(searchParams['sort_by'])
-      ? { sort_by: getFirstQueryValue(searchParams['sort_by']) }
-      : {}),
+    ...(getFirstQueryValue(searchParams['sort_by']) ? { sort_by: getFirstQueryValue(searchParams['sort_by']) } : {}),
     ...(getFirstQueryValue(searchParams['bucket_start'])
       ? { bucket_start: getFirstQueryValue(searchParams['bucket_start']) }
       : {}),
@@ -144,10 +130,7 @@ export function getTeacherCourseList(query?: AnalyticsQuery) {
 }
 
 export function getTeacherCourseDetailByUuid(courseUuid: string, query?: AnalyticsQuery) {
-  return analyticsRequest<TeacherCourseDetailResponse>(
-    `teacher/courses/by-uuid/${courseUuid}`,
-    query,
-  )
+  return analyticsRequest<TeacherCourseDetailResponse>(`teacher/courses/by-uuid/${courseUuid}`, query)
 }
 
 export function getTeacherAssessmentList(query?: AnalyticsQuery) {
@@ -160,11 +143,7 @@ export interface GetTeacherAssessmentDetailParams {
   query?: AnalyticsQuery
 }
 
-export function getTeacherAssessmentDetail({
-  assessmentType,
-  assessmentId,
-  query,
-}: GetTeacherAssessmentDetailParams) {
+export function getTeacherAssessmentDetail({ assessmentType, assessmentId, query }: GetTeacherAssessmentDetailParams) {
   return analyticsRequest<TeacherAssessmentDetailResponse>(
     `teacher/assessments/${assessmentType}/${assessmentId}`,
     query,
@@ -175,10 +154,7 @@ export function getAtRiskLearners(query?: AnalyticsQuery) {
   return analyticsRequest<AtRiskLearnersResponse>('teacher/learners/at-risk', query)
 }
 
-export function createTeacherIntervention(
-  payload: TeacherInterventionCreate,
-  query?: AnalyticsQuery,
-) {
+export function createTeacherIntervention(payload: TeacherInterventionCreate, query?: AnalyticsQuery) {
   return analyticsRequest<TeacherInterventionRow>(`teacher/interventions`, query, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -216,9 +192,7 @@ export function getAnalyticsExportUrl(
   return `${getAPIUrl()}analytics/teacher/exports/${exportName}.csv${buildQueryString(query)}`
 }
 
-export async function downloadAnalyticsExport(
-  exportUrl: string,
-): Promise<{ blob: Blob; filename: string }> {
+export async function downloadAnalyticsExport(exportUrl: string): Promise<{ blob: Blob; filename: string }> {
   const response = await apiFetch(exportUrl)
 
   if (!response.ok) {

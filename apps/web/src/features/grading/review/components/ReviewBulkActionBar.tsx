@@ -21,12 +21,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-type PendingAction =
-  | 'publish-selected'
-  | 'return-selected'
-  | 'extend-deadline'
-  | 'release-hidden'
-  | null
+type PendingAction = 'publish-selected' | 'return-selected' | 'extend-deadline' | 'release-hidden' | null
 
 interface BulkActionSummary {
   label: string
@@ -56,9 +51,7 @@ export default function ReviewBulkActionBar({
   const [failedSubmissions, setFailedSubmissions] = useState<{ name: string; error: string }[]>([])
 
   const gradeable = submissions.filter(submission => submission.final_score !== null)
-  const userIds = submissions
-    .map(submission => submission.user?.id)
-    .filter((id): id is number => Number.isFinite(id))
+  const userIds = submissions.map(submission => submission.user?.id).filter((id): id is number => Number.isFinite(id))
   const releaseSummary = useMemo(() => {
     let visible = 0
     let hidden = 0
@@ -95,8 +88,7 @@ export default function ReviewBulkActionBar({
           toast.success(status === 'PUBLISHED' ? t('toasts.published') : t('toasts.returned'))
         }
         setLastSummary({
-          label:
-            status === 'PUBLISHED' ? t('summaries.publishFinished') : t('summaries.returnFinished'),
+          label: status === 'PUBLISHED' ? t('summaries.publishFinished') : t('summaries.returnFinished'),
           detail: t('summaries.resultDetail', {
             succeeded: result.succeeded,
             failed: result.failed,
@@ -198,13 +190,7 @@ export default function ReviewBulkActionBar({
       ) : null}
       {lastSummary ? (
         <Badge
-          variant={
-            lastSummary.tone === 'warning'
-              ? 'warning'
-              : lastSummary.tone === 'success'
-                ? 'success'
-                : 'outline'
-          }
+          variant={lastSummary.tone === 'warning' ? 'warning' : lastSummary.tone === 'success' ? 'success' : 'outline'}
         >
           {lastSummary.label}
         </Badge>
@@ -227,12 +213,7 @@ export default function ReviewBulkActionBar({
         <RotateCcw className="size-4" />
         {t('returnSelected')}
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={isPending}
-        onClick={() => setPendingAction('release-hidden')}
-      >
+      <Button variant="outline" size="sm" disabled={isPending} onClick={() => setPendingAction('release-hidden')}>
         <Send className="size-4" />
         {t('releaseHidden')}
       </Button>
@@ -253,9 +234,7 @@ export default function ReviewBulkActionBar({
       <Button
         variant="outline"
         size="sm"
-        disabled={
-          disabled || isPending || !deadlineLocal || userIds.length === 0 || !assessmentUuid
-        }
+        disabled={disabled || isPending || !deadlineLocal || userIds.length === 0 || !assessmentUuid}
         onClick={() => setPendingAction('extend-deadline')}
       >
         <CalendarClock className="size-4" />
@@ -280,50 +259,28 @@ export default function ReviewBulkActionBar({
           <div className="space-y-3 text-sm">
             {pendingAction === 'publish-selected' || pendingAction === 'return-selected' ? (
               <>
-                <PreviewRow
-                  label={t('preview.selectedSubmissions')}
-                  value={String(submissions.length)}
-                />
+                <PreviewRow label={t('preview.selectedSubmissions')} value={String(submissions.length)} />
                 <PreviewRow label={t('preview.gradeReady')} value={String(gradeable.length)} />
-                <PreviewRow
-                  label={t('preview.hiddenFromStudent')}
-                  value={String(releaseSummary.hidden)}
-                />
-                <PreviewRow
-                  label={t('preview.alreadyVisible')}
-                  value={String(releaseSummary.visible)}
-                />
+                <PreviewRow label={t('preview.hiddenFromStudent')} value={String(releaseSummary.hidden)} />
+                <PreviewRow label={t('preview.alreadyVisible')} value={String(releaseSummary.visible)} />
               </>
             ) : null}
             {pendingAction === 'extend-deadline' ? (
               <>
                 <PreviewRow label={t('preview.learners')} value={String(userIds.length)} />
-                <PreviewRow
-                  label={t('preview.newDueDate')}
-                  value={deadlineLocal || t('preview.notSet')}
-                />
+                <PreviewRow label={t('preview.newDueDate')} value={deadlineLocal || t('preview.notSet')} />
                 <PreviewRow label={t('preview.reason')} value={reason || t('preview.noReason')} />
               </>
             ) : null}
             {pendingAction === 'release-hidden' ? (
               <>
-                <PreviewRow
-                  label={t('preview.selectedHiddenSubmissions')}
-                  value={String(releaseSummary.hidden)}
-                />
-                <PreviewRow
-                  label={t('preview.alreadyVisible')}
-                  value={String(releaseSummary.visible)}
-                />
-                <p className="text-muted-foreground text-xs">
-                  {t('preview.releaseHiddenDescription')}
-                </p>
+                <PreviewRow label={t('preview.selectedHiddenSubmissions')} value={String(releaseSummary.hidden)} />
+                <PreviewRow label={t('preview.alreadyVisible')} value={String(releaseSummary.visible)} />
+                <p className="text-muted-foreground text-xs">{t('preview.releaseHiddenDescription')}</p>
               </>
             ) : null}
             {lastSummary ? (
-              <p className="text-muted-foreground text-xs">
-                {t('lastResult', { detail: lastSummary.detail })}
-              </p>
+              <p className="text-muted-foreground text-xs">{t('lastResult', { detail: lastSummary.detail })}</p>
             ) : null}
             {failedSubmissions.length > 0 ? (
               <div className="space-y-1 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950">

@@ -6,12 +6,7 @@ import {
   updatePreferencesOnServer,
   updateStreakOnServer,
 } from '@/services/gamification/server'
-import type {
-  DashboardData,
-  PlatformLeaderboard,
-  XPAwardRequest,
-  XPAwardResponse,
-} from '@/types/gamification'
+import type { DashboardData, PlatformLeaderboard, XPAwardRequest, XPAwardResponse } from '@/types/gamification'
 
 export async function getDashboardDataAction(): Promise<DashboardData | null> {
   const data = await getServerGamificationDashboard()

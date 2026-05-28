@@ -4759,11 +4759,7 @@ export interface components {
        * Type
        * @enum {string}
        */
-      type:
-        | 'engagement_drop'
-        | 'submission_spike'
-        | 'fast_quiz_completion'
-        | 'score_distribution_shift'
+      type: 'engagement_drop' | 'submission_spike' | 'fast_quiz_completion' | 'score_distribution_shift'
     }
     /**
      * AssessmentAccessMode
@@ -6033,12 +6029,7 @@ export interface components {
      * BulkActionType
      * @enum {string}
      */
-    BulkActionType:
-      | 'EXTEND_DEADLINE'
-      | 'RELEASE_GRADES'
-      | 'RETURN_ALL'
-      | 'OVERRIDE_SCORE'
-      | 'BATCH_GRADE'
+    BulkActionType: 'EXTEND_DEADLINE' | 'RELEASE_GRADES' | 'RETURN_ALL' | 'OVERRIDE_SCORE' | 'BATCH_GRADE'
     /**
      * BulkPublishGradesResponse
      * @description Response for publishing held grades.
@@ -6374,11 +6365,7 @@ export interface components {
        * @default PARTIAL_CREDIT
        * @enum {string}
        */
-      scoring_strategy:
-        | 'PARTIAL_CREDIT'
-        | 'ALL_OR_NOTHING'
-        | 'BEST_SUBMISSION'
-        | 'LATEST_SUBMISSION'
+      scoring_strategy: 'PARTIAL_CREDIT' | 'ALL_OR_NOTHING' | 'BEST_SUBMISSION' | 'LATEST_SUBMISSION'
       /** Starter Code */
       starter_code?: {
         [key: string]: string
@@ -6661,11 +6648,7 @@ export interface components {
        * Signal
        * @enum {string}
        */
-      signal:
-        | 'high_time_low_completion'
-        | 'exit_after_open'
-        | 'repeated_assessment_failures'
-        | 'stale_low_performance'
+      signal: 'high_time_low_completion' | 'exit_after_open' | 'repeated_assessment_failures' | 'stale_low_performance'
       /** Stale Days */
       stale_days?: number | null
       /**
@@ -7550,11 +7533,7 @@ export interface components {
        * Type
        * @enum {string}
        */
-      type:
-        | 'completion_target_miss'
-        | 'grading_backlog_7d'
-        | 'course_completion_deadline'
-        | 'assessment_failure_risk'
+      type: 'completion_target_miss' | 'grading_backlog_7d' | 'course_completion_deadline' | 'assessment_failure_risk'
     }
     /** FormField */
     FormField: {

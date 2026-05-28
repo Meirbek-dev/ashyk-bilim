@@ -8,15 +8,9 @@ import { Button } from '@/components/ui/button'
 import { useEmbedPanelStore } from './EmbedPanelStore'
 import { EmbedTypeSelector } from './EmbedTypeSelector'
 import { EmbedUrlForm } from './EmbedUrlForm'
-import {
-  DEFAULT_EMBED_TYPE,
-  getEmbedProvider,
-} from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
+import { DEFAULT_EMBED_TYPE, getEmbedProvider } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
 import type { EmbedType } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
-import {
-  normalizeEmbedUrl,
-  validateEmbedUrl,
-} from '@components/Objects/Editor/Extensions/EmbedBlock/embed-validators'
+import { normalizeEmbedUrl, validateEmbedUrl } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-validators'
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -170,10 +164,7 @@ export function EmbedPanel() {
   if (!isOpen) return null
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={handleClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={handleClose}>
       <div
         ref={dialogRef}
         role="dialog"
@@ -193,23 +184,13 @@ export function EmbedPanel() {
               {t('description')}
             </p>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={handleClose}
-            aria-label={t('cancelButton')}
-          >
+          <Button type="button" variant="ghost" size="icon-sm" onClick={handleClose} aria-label={t('cancelButton')}>
             <X className="size-4" />
           </Button>
         </div>
 
         <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <EmbedTypeSelector
-            selectedType={selectedType}
-            onSelect={handleTypeSelect}
-            error={typeError}
-          />
+          <EmbedTypeSelector selectedType={selectedType} onSelect={handleTypeSelect} error={typeError} />
 
           <div className="border-border bg-muted/20 h-fit rounded-lg border p-4">
             {selectedType ? (

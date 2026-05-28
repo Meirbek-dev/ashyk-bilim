@@ -63,12 +63,7 @@ export function MarkdownEditor({
   const isInternalUpdateRef = useRef(false)
 
   const issues = useMemo(
-    () =>
-      validateMarkdownContent(
-        normalizedValue,
-        preset,
-        required ? { required } : {},
-      ),
+    () => validateMarkdownContent(normalizedValue, preset, required ? { required } : {}),
     [normalizedValue, preset, required],
   )
 
@@ -123,9 +118,7 @@ export function MarkdownEditor({
       isInternalUpdateRef.current = false
       return
     }
-    const current = normalizeMarkdown(
-      (editor.storage as MarkdownStorage).markdown?.getMarkdown?.() ?? '',
-    )
+    const current = normalizeMarkdown((editor.storage as MarkdownStorage).markdown?.getMarkdown?.() ?? '')
     if (current !== normalizedValue) {
       // emitUpdate: false prevents triggering onUpdate, which would re-normalize and loop
       editor.commands.setContent(normalizedValue, { emitUpdate: false })
@@ -207,11 +200,7 @@ export function MarkdownEditor({
           (viewMode === 'preview' || viewMode === 'source') && 'grid-cols-1',
           isFullscreen && 'flex-1 overflow-hidden',
         )}
-        style={
-          !isFullscreen
-            ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight }
-            : undefined
-        }
+        style={!isFullscreen ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight } : undefined}
       >
         {viewMode === 'source' && (
           <textarea
@@ -226,11 +215,7 @@ export function MarkdownEditor({
               'focus:outline-none disabled:pointer-events-none disabled:opacity-70',
               isFullscreen && 'h-full',
             )}
-            style={
-              !isFullscreen
-                ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight }
-                : undefined
-            }
+            style={!isFullscreen ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight } : undefined}
           />
         )}
         {viewMode !== 'preview' && viewMode !== 'source' && (
@@ -247,11 +232,7 @@ export function MarkdownEditor({
               disabled && 'pointer-events-none',
               isFullscreen && 'h-full',
             )}
-            style={
-              !isFullscreen
-                ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight }
-                : undefined
-            }
+            style={!isFullscreen ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight } : undefined}
           />
         )}
         {viewMode !== 'write' && (
@@ -261,11 +242,7 @@ export function MarkdownEditor({
               viewMode === 'split' && 'border-t md:border-t-0 md:border-l',
               isFullscreen && 'h-full',
             )}
-            style={
-              !isFullscreen
-                ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight }
-                : undefined
-            }
+            style={!isFullscreen ? { minHeight: effectiveMinHeight, maxHeight: effectiveMaxHeight } : undefined}
           >
             <MarkdownContent
               content={normalizedValue}

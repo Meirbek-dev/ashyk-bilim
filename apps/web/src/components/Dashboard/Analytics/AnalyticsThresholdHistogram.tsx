@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  ChartContainer,
-  ChartEmptyState,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart'
+import { ChartContainer, ChartEmptyState, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts'
 import type { HistogramBucket } from '@/types/analytics'
@@ -58,10 +53,7 @@ export default function AnalyticsThresholdHistogram({
               <YAxis tickLine={false} axisLine={false} allowDecimals={false} />
               <ChartTooltip
                 content={
-                  <ChartTooltipContent
-                    nameKey="label"
-                    formatter={v => [`${v} ${t('histogram.learners')}`, '']}
-                  />
+                  <ChartTooltipContent nameKey="label" formatter={v => [`${v} ${t('histogram.learners')}`, '']} />
                 }
               />
               <Bar dataKey="count" radius={10} fill="var(--color-count)" />

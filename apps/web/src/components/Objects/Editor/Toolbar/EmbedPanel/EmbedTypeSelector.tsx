@@ -5,10 +5,7 @@ import { Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import * as Si from '@icons-pack/react-simple-icons'
 import { cn } from '@/lib/utils'
-import {
-  EMBED_CATEGORIES,
-  EMBED_PROVIDERS,
-} from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
+import { EMBED_CATEGORIES, EMBED_PROVIDERS } from '@components/Objects/Editor/Extensions/EmbedBlock/embed-options'
 import type {
   EmbedCategoryId,
   EmbedProvider,
@@ -29,8 +26,7 @@ export function EmbedTypeSelector({ selectedType, onSelect, error }: EmbedTypeSe
   const filteredProviders = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     return EMBED_PROVIDERS.filter(provider => {
-      if (!(provider.categories as readonly EmbedCategoryId[]).includes(activeCategory))
-        return false
+      if (!(provider.categories as readonly EmbedCategoryId[]).includes(activeCategory)) return false
       if (!normalizedQuery) return true
 
       const translatedLabel = t(`providers.${provider.type}.label`)
@@ -106,8 +102,7 @@ export function EmbedTypeSelector({ selectedType, onSelect, error }: EmbedTypeSe
                   className={cn(
                     'border-border bg-background hover:bg-accent/60 hover:text-foreground group flex items-start gap-3 rounded-lg border p-3 text-left transition-colors',
                     'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none',
-                    isSelected &&
-                      'border-primary bg-primary/5 text-foreground ring-primary/25 ring-2',
+                    isSelected && 'border-primary bg-primary/5 text-foreground ring-primary/25 ring-2',
                     !isSelected && error && 'border-destructive/60',
                   )}
                 >
@@ -120,9 +115,7 @@ export function EmbedTypeSelector({ selectedType, onSelect, error }: EmbedTypeSe
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <span className="text-sm font-semibold">
-                      {t(`providers.${provider.type}.label`)}
-                    </span>
+                    <span className="text-sm font-semibold">{t(`providers.${provider.type}.label`)}</span>
                     <span className="text-muted-foreground mt-0.5 line-clamp-2 block text-xs leading-4">
                       {t(`providers.${provider.type}.description`)}
                     </span>

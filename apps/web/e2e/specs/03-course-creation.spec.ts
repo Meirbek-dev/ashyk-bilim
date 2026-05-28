@@ -283,17 +283,11 @@ test.describe.serial('Teacher – Course Creation', () => {
 
   // ── 8. Course details page ──────────────────────────────────────────────
 
-  test('teacher can update course details (title) on the details page', async ({
-    page,
-    courseDetailsPage,
-  }) => {
+  test('teacher can update course details (title) on the details page', async ({ page, courseDetailsPage }) => {
     await courseDetailsPage.goto(courseUuid)
     // Verify the course title is pre-filled
-    await expect(page.getByRole('textbox', { name: /title|name/i }).first()).toHaveValue(
-      COURSE.title,
-      {
-        timeout: 10_000,
-      },
-    )
+    await expect(page.getByRole('textbox', { name: /title|name/i }).first()).toHaveValue(COURSE.title, {
+      timeout: 10_000,
+    })
   })
 })

@@ -61,11 +61,7 @@ export default function BottomActionBar({
           {bottomBarAction ? (
             <OverrideCTA action={bottomBarAction} />
           ) : (
-            <RuntimeCTA
-              contentReadComplete={contentReadComplete}
-              courseUuid={courseUuid}
-              runtime={runtime}
-            />
+            <RuntimeCTA contentReadComplete={contentReadComplete} courseUuid={courseUuid} runtime={runtime} />
           )}
         </div>
 
@@ -77,11 +73,7 @@ export default function BottomActionBar({
 
 // ── Override CTA (registered by nested components, e.g. InlineAssessmentWorkspace) ──
 
-function OverrideCTA({
-  action,
-}: {
-  action: NonNullable<ReturnType<typeof useActivityLayout>['bottomBarAction']>
-}) {
+function OverrideCTA({ action }: { action: NonNullable<ReturnType<typeof useActivityLayout>['bottomBarAction']> }) {
   return (
     <Button
       className={PRIMARY_BUTTON_CLASSNAME}
@@ -147,17 +139,11 @@ function RuntimeCTA({
     return (
       <Button
         className={PRIMARY_BUTTON_CLASSNAME}
-        onClick={() =>
-          completion.mutate(action.id === 'mark_complete' ? 'mark_complete' : 'unmark_complete')
-        }
+        onClick={() => completion.mutate(action.id === 'mark_complete' ? 'mark_complete' : 'unmark_complete')}
         disabled={!action.enabled || completion.isPending || waitingForReadCompletion}
         title={disabledReason}
       >
-        {completion.isPending ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <CheckCircle2 className="size-4" />
-        )}
+        {completion.isPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
         <span className="min-w-0 truncate">{getPrimaryActionText(action.id, t)}</span>
       </Button>
     )
@@ -168,9 +154,7 @@ function RuntimeCTA({
       <Button
         className={PRIMARY_BUTTON_CLASSNAME}
         onClick={() =>
-          document
-            .getElementById('activity-main-content')
-            ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          document.getElementById('activity-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
         }
       >
         <span className="min-w-0 truncate">{getPrimaryActionText(action.id, t)}</span>
@@ -189,9 +173,7 @@ function RuntimeCTA({
       disabled
       title={action.reason ? getDisabledReason(action.reason, t) : undefined}
     >
-      <span className="min-w-0 truncate">
-        {action.reason ? getDisabledReason(action.reason, t) : t('noAction')}
-      </span>
+      <span className="min-w-0 truncate">{action.reason ? getDisabledReason(action.reason, t) : t('noAction')}</span>
     </Button>
   )
 }
@@ -217,10 +199,7 @@ function NavChevron({
       <Button
         variant="ghost"
         disabled
-        className={cn(
-          'h-9 min-w-0 px-0 sm:h-10 sm:w-full sm:px-2',
-          side === 'prev' ? 'justify-start' : 'justify-end',
-        )}
+        className={cn('h-9 min-w-0 px-0 sm:h-10 sm:w-full sm:px-2', side === 'prev' ? 'justify-start' : 'justify-end')}
         aria-label={unavailableLabel}
         title={unavailableLabel}
       >
@@ -232,9 +211,7 @@ function NavChevron({
           )}
         >
           <span className="text-[10px] leading-none font-medium">{label}</span>
-          <span className="text-muted-foreground mt-0.5 max-w-36 truncate text-[11px]">
-            {unavailableLabel}
-          </span>
+          <span className="text-muted-foreground mt-0.5 max-w-36 truncate text-[11px]">{unavailableLabel}</span>
         </span>
         {side === 'next' ? <Icon className="size-4" /> : null}
       </Button>
@@ -267,9 +244,7 @@ function NavChevron({
         )}
       >
         <span className="text-[10px] leading-none font-medium">{label}</span>
-        <span className="text-foreground mt-0.5 max-w-36 truncate text-[11px] font-semibold">
-          {item.title}
-        </span>
+        <span className="text-foreground mt-0.5 max-w-36 truncate text-[11px] font-semibold">{item.title}</span>
       </span>
       {side === 'next' ? <Icon className="size-4" /> : null}
     </Button>
@@ -285,14 +260,10 @@ function useRuntimeAction(courseUuid: string, runtime: StudentActivityRuntime) {
   const activityUuid = runtime.activity?.uuid ?? ''
   return useMutation({
     mutationFn: (command: 'mark_complete' | 'unmark_complete') =>
-      runStudentActivityAction(
-        cleanUuid(courseUuid, 'course_'),
-        cleanUuid(activityUuid, 'activity_'),
-        {
-          command,
-          payload: {},
-        },
-      ),
+      runStudentActivityAction(cleanUuid(courseUuid, 'course_'), cleanUuid(activityUuid, 'activity_'), {
+        command,
+        payload: {},
+      }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.studentActivity.runtime(
@@ -315,10 +286,7 @@ function ProgressFill({ percent }: { percent: number }) {
 
   return (
     <div className="bg-border/40 absolute inset-x-0 top-0 h-[2px]" aria-hidden>
-      <div
-        className="bg-primary h-full transition-[width] duration-500"
-        style={{ width: `${percent}%` }}
-      />
+      <div className="bg-primary h-full transition-[width] duration-500" style={{ width: `${percent}%` }} />
     </div>
   )
 }
@@ -327,9 +295,7 @@ function getOutlineProgress(runtime: StudentActivityRuntime) {
   const items = (runtime.outline ?? []).flatMap(chapter => chapter.activities ?? [])
   if (items.length === 0) return 0
 
-  const complete = items.filter(
-    item => item.complete || item.state === 'complete' || item.state === 'passed',
-  ).length
+  const complete = items.filter(item => item.complete || item.state === 'complete' || item.state === 'passed').length
   return Math.round((complete / items.length) * 100)
 }
 

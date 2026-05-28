@@ -7,12 +7,7 @@ import type { ReactNode } from 'react'
 import type { NormalizedScore } from '@/features/assessments/domain/score'
 import { isAntiCheatEnabled } from '@/features/assessments/domain/policy'
 import type { PolicyView } from '@/features/assessments/domain/policy'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import ScoreSummary from './ScoreSummary'
 
@@ -137,9 +132,7 @@ export default function PolicyInspector({
           })}
         </Accordion>
       ) : (
-        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">
-          {t('noPolicySections')}
-        </div>
+        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">{t('noPolicySections')}</div>
       )}
     </div>
   )

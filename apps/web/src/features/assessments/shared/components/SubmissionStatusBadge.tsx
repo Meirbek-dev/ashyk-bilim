@@ -19,10 +19,7 @@ export interface SubmissionStatusBadgeProps {
   className?: string
 }
 
-const STATUS_VARIANTS: Record<
-  SubmissionStatus,
-  'secondary' | 'warning' | 'success' | 'default' | 'destructive'
-> = {
+const STATUS_VARIANTS: Record<SubmissionStatus, 'secondary' | 'warning' | 'success' | 'default' | 'destructive'> = {
   DRAFT: 'secondary',
   PENDING: 'warning',
   GRADED: 'success',

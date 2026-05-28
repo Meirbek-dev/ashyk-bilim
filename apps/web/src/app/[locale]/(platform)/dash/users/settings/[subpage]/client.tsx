@@ -61,10 +61,7 @@ export default function PlatformUsersSettingsClient({ subpage }: { subpage: stri
       allTabs.filter(tab => {
         switch (tab.id) {
           case 'users': {
-            return (
-              can(Resources.USER, Actions.READ, Scopes.APP) ||
-              can(Resources.USER, Actions.UPDATE, Scopes.APP)
-            )
+            return can(Resources.USER, Actions.READ, Scopes.APP) || can(Resources.USER, Actions.UPDATE, Scopes.APP)
           }
           case 'usergroups': {
             return can(Resources.USERGROUP, Actions.MANAGE, Scopes.APP)

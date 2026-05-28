@@ -3,10 +3,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { Platform } from '@/types/platform'
 import { platformCoursesQueryOptions } from '@/features/courses/queries/course.query'
-import {
-  platformConfigQueryOptions,
-  platformPermissionsQueryOptions,
-} from '../queries/platform.query'
+import { platformConfigQueryOptions, platformPermissionsQueryOptions } from '../queries/platform.query'
 
 interface UsePlatformConfigOptions {
   enabled?: boolean

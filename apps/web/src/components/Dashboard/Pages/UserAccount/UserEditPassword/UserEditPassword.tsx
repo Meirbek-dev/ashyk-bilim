@@ -102,10 +102,7 @@ const UserEditPassword = () => {
         </div>
 
         <div className="px-8 py-6">
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="mx-auto w-full max-w-2xl space-y-6"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto w-full max-w-2xl space-y-6">
             <Field>
               <FieldLabel htmlFor="old_password">{tPassword('currentPasswordLabel')}</FieldLabel>
               <FieldContent>
@@ -130,9 +127,7 @@ const UserEditPassword = () => {
 
             <div className="flex justify-end pt-2">
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting
-                  ? tPassword('updatingButton')
-                  : tPassword('updateButton')}
+                {form.formState.isSubmitting ? tPassword('updatingButton') : tPassword('updateButton')}
               </Button>
             </div>
           </form>

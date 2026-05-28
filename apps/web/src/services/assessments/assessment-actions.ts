@@ -196,9 +196,7 @@ export async function getPolicyPreset(kind: string): Promise<PolicyPreset | null
 
 // ── Student policy overrides ───────────────────────────────────────────────────
 
-export async function listStudentPolicyOverrides(
-  assessmentUuid: string,
-): Promise<StudentPolicyOverride[]> {
+export async function listStudentPolicyOverrides(assessmentUuid: string): Promise<StudentPolicyOverride[]> {
   const res = await apiFetch(`assessments/${assessmentUuid}/overrides`, {
     method: 'GET',
     next: { tags: ['overrides', `assessment-${assessmentUuid}`] },
@@ -239,10 +237,7 @@ export async function updateStudentPolicyOverride(
   return meta.data as StudentPolicyOverride
 }
 
-export async function deleteStudentPolicyOverride(
-  assessmentUuid: string,
-  userId: number,
-): Promise<void> {
+export async function deleteStudentPolicyOverride(assessmentUuid: string, userId: number): Promise<void> {
   const res = await apiFetch(`assessments/${assessmentUuid}/overrides/${userId}`, {
     method: 'DELETE',
   })

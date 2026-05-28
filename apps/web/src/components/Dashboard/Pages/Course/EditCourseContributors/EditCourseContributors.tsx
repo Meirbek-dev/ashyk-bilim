@@ -15,27 +15,9 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SectionHeader } from '@components/Dashboard/Courses/SectionHeader'
@@ -121,9 +103,7 @@ const RoleDropdown = ({
         <Button
           variant="outline"
           className="w-[200px] justify-between"
-          disabled={
-            contributor.authorship === 'CREATOR' || contributor.authorship_status !== 'ACTIVE'
-          }
+          disabled={contributor.authorship === 'CREATOR' || contributor.authorship_status !== 'ACTIVE'}
         />
       }
     >
@@ -221,26 +201,19 @@ const EditCourseContributors = () => {
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
   const [selectedContributors, setSelectedContributors] = useState<number[]>([])
   const hasSearchQuery = debouncedSearch.trim().length > 0
-  const { data: contributorSearchResponse, isFetching: isSearching } = useSearchContent(
-    debouncedSearch,
-    {
-      limit: 5,
-      enabled: hasSearchQuery,
-    },
-  )
+  const { data: contributorSearchResponse, isFetching: isSearching } = useSearchContent(debouncedSearch, {
+    limit: 5,
+    enabled: hasSearchQuery,
+  })
   const fetchedSearchResults: SearchUser[] =
     contributorSearchResponse?.success && contributorSearchResponse.data?.users
       ? contributorSearchResponse.data.users.map((user: SearchUser) =>
           Object.assign(user, {
-            avatar_url: user.avatar_image
-              ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image)
-              : ``,
+            avatar_url: user.avatar_image ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image) : ``,
           }),
         )
       : []
-  const searchResults: SearchUser[] = hasSearchQuery
-    ? (searchResultsOverride ?? fetchedSearchResults)
-    : []
+  const searchResults: SearchUser[] = hasSearchQuery ? (searchResultsOverride ?? fetchedSearchResults) : []
 
   const buildContributorUpdatePayload = (
     contributor: Contributor,
@@ -252,8 +225,7 @@ const EditCourseContributors = () => {
 
   const isDirtyRef = useRef(false)
   isDirtyRef.current =
-    isOpenToContributors !== undefined &&
-    isOpenToContributors !== courseStructure?.['open_to_contributors']
+    isOpenToContributors !== undefined && isOpenToContributors !== courseStructure?.['open_to_contributors']
   const isDirty = isDirtyRef.current
 
   const handleDiscard = () => setIsOpenToContributors(courseStructure?.['open_to_contributors'])
@@ -273,22 +245,14 @@ const EditCourseContributors = () => {
 
   const masterCheckboxChecked = (() => {
     const nonCreatorContributors = contributors.filter(c => c.authorship !== 'CREATOR')
-    return (
-      nonCreatorContributors.length > 0 &&
-      selectedContributors.length === nonCreatorContributors.length
-    )
+    return nonCreatorContributors.length > 0 && selectedContributors.length === nonCreatorContributors.length
   })()
 
   const handleUserSelect = (username: string) => {
-    setSelectedUsers(prev =>
-      prev.includes(username) ? prev.filter(u => u !== username) : [...prev, username],
-    )
+    setSelectedUsers(prev => (prev.includes(username) ? prev.filter(u => u !== username) : [...prev, username]))
   }
 
-  const raiseContributorConflict = (
-    message: string | undefined,
-    pendingSave: () => Promise<unknown>,
-  ) => {
+  const raiseContributorConflict = (message: string | undefined, pendingSave: () => Promise<unknown>) => {
     setConflict({
       message: message || t('failedToUpdateContributor'),
       pendingSave,
@@ -364,18 +328,12 @@ const EditCourseContributors = () => {
     } catch (error: any) {
       if (error?.status === 409) {
         raiseContributorConflict(error?.detail || error?.message, async () => {
-          const retryContributor = contributors.find(
-            contributor => contributor.user_id === contributorId,
-          )
+          const retryContributor = contributors.find(contributor => contributor.user_id === contributorId)
           if (!retryContributor) return
 
-          await updateContributorMutation(
-            contributorId,
-            buildContributorUpdatePayload(retryContributor, data),
-            {
-              lastKnownUpdateDate: courseStructure['update_date'],
-            },
-          )
+          await updateContributorMutation(contributorId, buildContributorUpdatePayload(retryContributor, data), {
+            lastKnownUpdateDate: courseStructure['update_date'],
+          })
         })
         return
       }
@@ -401,18 +359,14 @@ const EditCourseContributors = () => {
   }
 
   const handleContributorSelect = (userId: number) => {
-    setSelectedContributors(prev =>
-      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId],
-    )
+    setSelectedContributors(prev => (prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]))
   }
 
   const handleBulkRemove = async () => {
     if (selectedContributors.length === 0) return
 
     try {
-      const selectedContributorRows = contributors.filter(c =>
-        selectedContributors.includes(c.user_id),
-      )
+      const selectedContributorRows = contributors.filter(c => selectedContributors.includes(c.user_id))
       const selectedUsernames = selectedContributorRows.map(c => c.user.username)
       const selectedUserIds = selectedContributorRows
         .filter(c => selectedContributors.includes(c.user_id))
@@ -448,9 +402,7 @@ const EditCourseContributors = () => {
     } catch (error: any) {
       if (error?.status === 409) {
         raiseContributorConflict(error?.detail || error?.message, async () => {
-          const retryRows = contributors.filter(contributor =>
-            selectedContributors.includes(contributor.user_id),
-          )
+          const retryRows = contributors.filter(contributor => selectedContributors.includes(contributor.user_id))
           await removeContributors(
             retryRows.map(contributor => contributor.user.username),
             retryRows.map(contributor => contributor.user_id),
@@ -507,13 +459,7 @@ const EditCourseContributors = () => {
         </CardHeader>
         <CardContent>
           <RadioGroup
-            value={
-              isOpenToContributors === true
-                ? 'open'
-                : isOpenToContributors === false
-                  ? 'closed'
-                  : undefined
-            }
+            value={isOpenToContributors === true ? 'open' : isOpenToContributors === false ? 'closed' : undefined}
             onValueChange={val => setIsOpenToContributors(val === 'open')}
             disabled={isSaving}
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"
@@ -581,18 +527,14 @@ const EditCourseContributors = () => {
                 <Command>
                   <CommandList>
                     {isSearching ? (
-                      <div className="text-muted-foreground p-4 text-center text-sm">
-                        {t('searchingMessage')}
-                      </div>
+                      <div className="text-muted-foreground p-4 text-center text-sm">{t('searchingMessage')}</div>
                     ) : (
                       <>
                         <CommandEmpty>{t('noUsersFoundMessage')}</CommandEmpty>
                         <CommandGroup>
                           {searchResults.map(user => {
                             const isSelected = selectedUsers.includes(user.username)
-                            const isExisting = contributors.some(
-                              c => c.user.username === user.username,
-                            )
+                            const isExisting = contributors.some(c => c.user.username === user.username)
                             return (
                               <CommandItem
                                 key={user.username}
@@ -601,11 +543,7 @@ const EditCourseContributors = () => {
                                 onSelect={() => !isExisting && handleUserSelect(user.username)}
                                 className="flex items-center gap-3 py-3"
                               >
-                                <Checkbox
-                                  checked={isSelected}
-                                  disabled={isExisting}
-                                  className="shrink-0"
-                                />
+                                <Checkbox checked={isSelected} disabled={isExisting} className="shrink-0" />
                                 <UserAvatar
                                   size="sm"
                                   {...(user.avatar_url ? { avatar_url: user.avatar_url } : {})}
@@ -615,13 +553,9 @@ const EditCourseContributors = () => {
                                 />
                                 <div className="min-w-0 flex-1">
                                   <div className="text-foreground truncate font-medium">
-                                    {[user.first_name, user.middle_name, user.last_name]
-                                      .filter(Boolean)
-                                      .join(' ')}
+                                    {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
                                   </div>
-                                  <div className="text-muted-foreground text-xs">
-                                    @{user.username}
-                                  </div>
+                                  <div className="text-muted-foreground text-xs">@{user.username}</div>
                                 </div>
                                 {isExisting && (
                                   <span className="bg-muted text-muted-foreground shrink-0 rounded border px-2 py-0.5 text-xs">
@@ -668,11 +602,7 @@ const EditCourseContributors = () => {
                   <Button onClick={() => setSelectedContributors([])} variant="outline" size="sm">
                     {t('clearButton')}
                   </Button>
-                  <Button
-                    onClick={() => setIsRemoveConfirmOpen(true)}
-                    variant="destructive"
-                    size="sm"
-                  >
+                  <Button onClick={() => setIsRemoveConfirmOpen(true)} variant="destructive" size="sm">
                     {t('removeSelectedButton')}
                   </Button>
                 </div>
@@ -706,9 +636,7 @@ const EditCourseContributors = () => {
             </AlertDialog>
 
             {isContributorsLoading ? (
-              <div className="text-muted-foreground px-4 py-6 text-center text-sm">
-                {t('loadingContributors')}
-              </div>
+              <div className="text-muted-foreground px-4 py-6 text-center text-sm">{t('loadingContributors')}</div>
             ) : (
               <ScrollArea className="max-h-[520px]">
                 <Table>
@@ -720,9 +648,7 @@ const EditCourseContributors = () => {
                           onCheckedChange={checked => {
                             if (checked) {
                               setSelectedContributors(
-                                contributors
-                                  .filter(c => c.authorship !== 'CREATOR')
-                                  .map(c => c.user_id),
+                                contributors.filter(c => c.authorship !== 'CREATOR').map(c => c.user_id),
                               )
                             } else {
                               setSelectedContributors([])
@@ -744,15 +670,12 @@ const EditCourseContributors = () => {
                       <TableRow
                         key={`${contributor.user_id}-${contributor.id}`}
                         className={`${selectedContributors.includes(contributor.user_id) ? 'bg-muted/60' : ''} ${
-                          contributor.authorship !== 'CREATOR'
-                            ? 'hover:bg-muted/50 cursor-pointer'
-                            : ''
+                          contributor.authorship !== 'CREATOR' ? 'hover:bg-muted/50 cursor-pointer' : ''
                         }`}
                         onClick={e => {
                           if (
                             e.target instanceof HTMLElement &&
-                            (e.target.closest('button') ||
-                              e.target.closest('input[type="checkbox"]'))
+                            (e.target.closest('button') || e.target.closest('input[type="checkbox"]'))
                           ) {
                             return
                           }
@@ -774,38 +697,21 @@ const EditCourseContributors = () => {
                             variant="outline"
                             avatar_url={
                               contributor.user.avatar_image
-                                ? getUserAvatarMediaDirectory(
-                                    contributor.user.user_uuid,
-                                    contributor.user.avatar_image,
-                                  )
+                                ? getUserAvatarMediaDirectory(contributor.user.user_uuid, contributor.user.avatar_image)
                                 : ''
                             }
-                            {...(contributor.user.avatar_image === ''
-                              ? { predefined_avatar: 'empty' }
-                              : {})}
+                            {...(contributor.user.avatar_image === '' ? { predefined_avatar: 'empty' } : {})}
                           />
                         </TableCell>
                         <TableCell className="font-medium">
-                          {[
-                            contributor.user.first_name,
-                            contributor.user.middle_name,
-                            contributor.user.last_name,
-                          ]
+                          {[contributor.user.first_name, contributor.user.middle_name, contributor.user.last_name]
                             .filter(Boolean)
                             .join(' ')}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          @{contributor.user.username}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {contributor.user.email}
-                        </TableCell>
+                        <TableCell className="text-muted-foreground">@{contributor.user.username}</TableCell>
+                        <TableCell className="text-muted-foreground">{contributor.user.email}</TableCell>
                         <TableCell>
-                          <RoleDropdown
-                            contributor={contributor}
-                            updateContributor={updateContributor}
-                            t={t}
-                          />
+                          <RoleDropdown contributor={contributor} updateContributor={updateContributor} t={t} />
                         </TableCell>
                         <TableCell>
                           <StatusDropdown

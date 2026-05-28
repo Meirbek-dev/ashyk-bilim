@@ -33,9 +33,7 @@ export default function ProgressCell({
   onOpen,
 }: ProgressCellProps) {
   const canOpen = Boolean(cell.latest_submission_uuid)
-  const submissionStatus = isSubmissionStatus(cell.latest_submission_status)
-    ? cell.latest_submission_status
-    : null
+  const submissionStatus = isSubmissionStatus(cell.latest_submission_status) ? cell.latest_submission_status : null
 
   return (
     <div
@@ -61,18 +59,14 @@ export default function ProgressCell({
           onClick={event => event.stopPropagation()}
           aria-label={selectLabel}
         />
-        {cell.teacher_action_required ? (
-          <Badge variant="warning">{actionRequiredLabel}</Badge>
-        ) : null}
+        {cell.teacher_action_required ? <Badge variant="warning">{actionRequiredLabel}</Badge> : null}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {submissionStatus ? <SubmissionStatusBadge status={submissionStatus} /> : null}
         <span className="truncate text-xs font-semibold">{stateLabel}</span>
       </div>
       <div className="mt-1 flex items-center gap-2 text-xs">
-        <span>
-          {cell.score === null || cell.score === undefined ? '--' : `${Math.round(cell.score)}%`}
-        </span>
+        <span>{cell.score === null || cell.score === undefined ? '--' : `${Math.round(cell.score)}%`}</span>
         {cell.is_late ? <span className="font-medium text-rose-700">{lateLabel}</span> : null}
       </div>
       <div className="mt-1 text-[11px] opacity-80">{attemptsLabel}</div>

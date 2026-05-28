@@ -1,16 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import {
-  AlertTriangle,
-  BookOpen,
-  Clock,
-  FileEdit,
-  Layers,
-  Lock,
-  RotateCcw,
-  Timer,
-} from 'lucide-react'
+import { AlertTriangle, BookOpen, Clock, FileEdit, Layers, Lock, RotateCcw, Timer } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -98,9 +89,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
               </div>
               <h2 className="text-2xl font-semibold tracking-tight">{vm.title}</h2>
               {vm.description ? (
-                <p className="text-muted-foreground mt-2 max-w-4xl text-sm leading-6">
-                  {vm.description}
-                </p>
+                <p className="text-muted-foreground mt-2 max-w-4xl text-sm leading-6">{vm.description}</p>
               ) : null}
             </div>
           </div>
@@ -124,10 +113,7 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
           </div>
 
           {questionCount === 0 ? (
-            <Alert
-              variant="destructive"
-              className="border-destructive/30 bg-destructive/5 text-destructive"
-            >
+            <Alert variant="destructive" className="border-destructive/30 bg-destructive/5 text-destructive">
               <AlertTriangle className="size-4" />
               <AlertTitle>{t('testNotReadyTitle')}</AlertTitle>
               <AlertDescription>
@@ -146,18 +132,14 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
           <div className="rounded-lg border p-4">
             {questionCount === 0 ? (
               <>
-                <div className="text-destructive text-sm font-semibold">
-                  {t('testNotReadyTitle')}
-                </div>
+                <div className="text-destructive text-sm font-semibold">{t('testNotReadyTitle')}</div>
                 <p className="text-muted-foreground mt-1 text-sm">
                   {isTeacher ? t('teacherNoQuestionsSidebar') : t('noQuestionsSidebar')}
                 </p>
               </>
             ) : (
               <>
-                <div className="text-sm font-semibold">
-                  {isRevision ? t('revision') : t('readyToStart')}
-                </div>
+                <div className="text-sm font-semibold">{isRevision ? t('revision') : t('readyToStart')}</div>
                 <p className="text-muted-foreground mt-1 text-sm">{t('readyToStartSubtitle')}</p>
               </>
             )}
@@ -165,14 +147,9 @@ export default function AttemptEntryCard({ vm, isTeacher = false }: AttemptEntry
 
           {policy.dueAt ? (
             <div className="rounded-lg border p-4">
-              <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                {t('dueDate')}
-              </div>
+              <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{t('dueDate')}</div>
               <div
-                className={cn(
-                  'mt-1 text-sm font-medium',
-                  new Date(policy.dueAt) < new Date() && 'text-destructive',
-                )}
+                className={cn('mt-1 text-sm font-medium', new Date(policy.dueAt) < new Date() && 'text-destructive')}
               >
                 {formatDate(policy.dueAt)}
               </div>

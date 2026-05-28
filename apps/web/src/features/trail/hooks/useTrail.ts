@@ -1,10 +1,7 @@
 'use client'
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import {
-  trailCurrentQueryOptions,
-  trailLeaderboardQueryOptions,
-} from '@/features/courses/queries/course.query'
+import { trailCurrentQueryOptions, trailLeaderboardQueryOptions } from '@/features/courses/queries/course.query'
 
 function trailCurrentHookOptions(enabled = true) {
   return queryOptions({

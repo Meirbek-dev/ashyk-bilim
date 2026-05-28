@@ -232,9 +232,7 @@ export function getNextUnlock(level: number): AvatarUnlock | null {
     })),
   ]
 
-  const nextItem = allItems
-    .filter(item => item.level > level)
-    .toSorted((a, b) => a.level - b.level)[0]
+  const nextItem = allItems.filter(item => item.level > level).toSorted((a, b) => a.level - b.level)[0]
 
   if (!nextItem) return null
 

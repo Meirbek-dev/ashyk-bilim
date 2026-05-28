@@ -76,11 +76,7 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
   const router = useRouter()
   const { isAuthenticated } = useSession()
   const [open, setOpen] = useState(false)
-  const {
-    data: userData,
-    error,
-    isLoading,
-  } = useUserById(userId, { enabled: open && isAuthenticated })
+  const { data: userData, error, isLoading } = useUserById(userId, { enabled: open && isAuthenticated })
   const details = userData?.details ? (Object.values(userData.details) as UserDetail[]) : []
 
   return (
@@ -113,15 +109,10 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex min-w-0 items-center gap-2">
                         <h4 className="text-foreground truncate font-semibold">
-                          {[userData.first_name, userData.middle_name, userData.last_name]
-                            .filter(Boolean)
-                            .join(' ')}
+                          {[userData.first_name, userData.middle_name, userData.last_name].filter(Boolean).join(' ')}
                         </h4>
                         {userData.username ? (
-                          <Badge
-                            variant="outline"
-                            className="text-muted-foreground truncate px-2 text-xs font-normal"
-                          >
+                          <Badge variant="outline" className="text-muted-foreground truncate px-2 text-xs font-normal">
                             @{userData.username}
                           </Badge>
                         ) : null}
@@ -130,17 +121,13 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
                         variant="ghost"
                         size="icon"
                         className="text-muted-foreground hover:text-foreground h-6 w-6 shrink-0"
-                        onClick={() =>
-                          userData.username && router.push(`/user/${userData.username}`)
-                        }
+                        onClick={() => userData.username && router.push(`/user/${userData.username}`)}
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Button>
                     </div>
                     {userData.bio ? (
-                      <p className="text-muted-foreground mt-1.5 line-clamp-4 text-sm leading-normal">
-                        {userData.bio}
-                      </p>
+                      <p className="text-muted-foreground mt-1.5 line-clamp-4 text-sm leading-normal">{userData.bio}</p>
                     ) : null}
                   </div>
                 </div>

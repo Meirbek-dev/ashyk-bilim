@@ -22,10 +22,7 @@ export interface OpenTextAnswer {
 }
 
 export function normalizeOpenText(raw: Record<string, unknown> | null | undefined): OpenTextValue {
-  const body =
-    raw?.['body'] && typeof raw['body'] === 'object'
-      ? (raw['body'] as Record<string, unknown>)
-      : {}
+  const body = raw?.['body'] && typeof raw['body'] === 'object' ? (raw['body'] as Record<string, unknown>) : {}
   return {
     kind: 'OPEN_TEXT',
     body: {
@@ -82,15 +79,11 @@ export function OpenTextAttempt({
   )
 }
 
-export function OpenTextReviewDetail({
-  answer,
-}: ItemReviewDetailProps<OpenTextValue, OpenTextAnswer | null>) {
+export function OpenTextReviewDetail({ answer }: ItemReviewDetailProps<OpenTextValue, OpenTextAnswer | null>) {
   const t = useTranslations('Features.Assessments.Items.OpenText')
 
   return (
-    <p className="bg-card rounded-md border p-3 text-sm whitespace-pre-wrap">
-      {answer?.text ?? t('noTextRecorded')}
-    </p>
+    <p className="bg-card rounded-md border p-3 text-sm whitespace-pre-wrap">{answer?.text ?? t('noTextRecorded')}</p>
   )
 }
 

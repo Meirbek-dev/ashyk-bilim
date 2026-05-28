@@ -159,8 +159,7 @@ interface CodeAssessmentRead {
   items?: AssessmentItem[]
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
 const isNumberArray = (value: unknown): value is number[] =>
   Array.isArray(value) && value.every(entry => typeof entry === 'number')
@@ -191,8 +190,7 @@ const isTestCase = (value: unknown): value is TestCase => {
   )
 }
 
-const isTestCaseArray = (value: unknown): value is TestCase[] =>
-  Array.isArray(value) && value.every(isTestCase)
+const isTestCaseArray = (value: unknown): value is TestCase[] => Array.isArray(value) && value.every(isTestCase)
 
 type CodeChallengeHint = NonNullable<CodeChallengeSettings['hints']>[number]
 
@@ -207,8 +205,7 @@ const isHint = (value: unknown): value is CodeChallengeHint => {
   )
 }
 
-const isHintArray = (value: unknown): value is CodeChallengeHint[] =>
-  Array.isArray(value) && value.every(isHint)
+const isHintArray = (value: unknown): value is CodeChallengeHint[] => Array.isArray(value) && value.every(isHint)
 
 const readCanonicalMetadata = (value: CanonicalSubmissionRead['metadata_json']): CanonicalMetadata => {
   if (!isRecord(value)) return {}
@@ -216,12 +213,8 @@ const readCanonicalMetadata = (value: CanonicalSubmissionRead['metadata_json']):
   const latestRunValue = value['latest_run']
   const latestRun = isRecord(latestRunValue)
     ? {
-        ...(typeof latestRunValue['language_id'] === 'number'
-          ? { language_id: latestRunValue['language_id'] }
-          : {}),
-        ...(Array.isArray(latestRunValue['details'])
-          ? { details: latestRunValue['details'] as TestCaseResult[] }
-          : {}),
+        ...(typeof latestRunValue['language_id'] === 'number' ? { language_id: latestRunValue['language_id'] } : {}),
+        ...(Array.isArray(latestRunValue['details']) ? { details: latestRunValue['details'] as TestCaseResult[] } : {}),
       }
     : null
 
@@ -237,9 +230,7 @@ const readCodeAnswers = (value: CanonicalSubmissionRead['answers_json']) => {
   const answersValue = value.answers
   if (!isRecord(answersValue)) return {}
 
-  const entries = Object.entries(answersValue).filter(([, answer]) =>
-    isRecord(answer) && answer['kind'] === 'CODE',
-  )
+  const entries = Object.entries(answersValue).filter(([, answer]) => isRecord(answer) && answer['kind'] === 'CODE')
 
   return Object.fromEntries(entries) as Record<string, CanonicalCodeAnswer>
 }
@@ -306,7 +297,7 @@ function toReadableTestCase(test: TestCase): TestCase {
 }
 
 function toStoredTestCase(test: TestCase, isVisible: boolean): TestCase {
-  const {points} = test
+  const { points } = test
 
   return {
     id: test.id,
@@ -327,12 +318,8 @@ function toCodeChallengeSettings(
   const settings = assessment.assessment_policy?.settings_json ?? {}
   const body = codeItem?.body
   const bodyTests = Array.isArray(body?.tests) ? body.tests : []
-  const settingsVisibleTests = isTestCaseArray(settings['visible_tests'])
-    ? settings['visible_tests']
-    : []
-  const settingsHiddenTests = isTestCaseArray(settings['hidden_tests'])
-    ? settings['hidden_tests']
-    : []
+  const settingsVisibleTests = isTestCaseArray(settings['visible_tests']) ? settings['visible_tests'] : []
+  const settingsHiddenTests = isTestCaseArray(settings['hidden_tests']) ? settings['hidden_tests'] : []
   const visibleTests = bodyTests.length
     ? bodyTests.filter(test => test.is_visible).map(toReadableTestCase)
     : settingsVisibleTests
@@ -351,15 +338,13 @@ function toCodeChallengeSettings(
       : typeof settings['memory_limit'] === 'number'
         ? settings['memory_limit']
         : 256
-  const maxSubmissions =
-    typeof settings['max_submissions'] === 'number' ? settings['max_submissions'] : undefined
+  const maxSubmissions = typeof settings['max_submissions'] === 'number' ? settings['max_submissions'] : undefined
   const allowedLanguages = Array.isArray(body?.languages)
     ? body.languages
     : isNumberArray(settings['allowed_languages'])
       ? settings['allowed_languages']
       : []
-  const starterCode =
-    body?.starter_code ?? (isStringRecord(settings['starter_code']) ? settings['starter_code'] : {})
+  const starterCode = body?.starter_code ?? (isStringRecord(settings['starter_code']) ? settings['starter_code'] : {})
   const referenceSolutions =
     body?.reference_solutions ??
     (isStringRecord(settings['reference_solutions']) ? settings['reference_solutions'] : {})
@@ -388,16 +373,9 @@ function toCodeChallengeSettings(
     memory_limit: memoryLimit,
     time_limit_ms: timeLimit * 1000,
     memory_limit_kb: memoryLimit * 1024,
-    grading_strategy:
-      isGradingStrategy(settings['grading_strategy'])
-        ? settings['grading_strategy']
-        : 'PARTIAL_CREDIT',
-    execution_mode:
-      isExecutionMode(settings['execution_mode'])
-        ? settings['execution_mode']
-        : 'COMPLETE_FEEDBACK',
-    allow_custom_input:
-      typeof settings['allow_custom_input'] === 'boolean' ? settings['allow_custom_input'] : true,
+    grading_strategy: isGradingStrategy(settings['grading_strategy']) ? settings['grading_strategy'] : 'PARTIAL_CREDIT',
+    execution_mode: isExecutionMode(settings['execution_mode']) ? settings['execution_mode'] : 'COMPLETE_FEEDBACK',
+    allow_custom_input: typeof settings['allow_custom_input'] === 'boolean' ? settings['allow_custom_input'] : true,
     points,
     allowed_languages: allowedLanguages,
     visible_tests: visibleTests,
@@ -433,17 +411,9 @@ function toCodeItemBody(
   return {
     kind: 'CODE',
     prompt,
-    input_spec:
-      typeof settings.input_spec === 'string'
-        ? settings.input_spec
-        : (existingBody?.input_spec ?? ''),
-    output_spec:
-      typeof settings.output_spec === 'string'
-        ? settings.output_spec
-        : (existingBody?.output_spec ?? ''),
-    constraints: Array.isArray(settings.constraints)
-      ? settings.constraints
-      : (existingBody?.constraints ?? []),
+    input_spec: typeof settings.input_spec === 'string' ? settings.input_spec : (existingBody?.input_spec ?? ''),
+    output_spec: typeof settings.output_spec === 'string' ? settings.output_spec : (existingBody?.output_spec ?? ''),
+    constraints: Array.isArray(settings.constraints) ? settings.constraints : (existingBody?.constraints ?? []),
     languages: settings.allowed_languages ?? existingBody?.languages ?? [],
     starter_code: settings.starter_code ?? existingBody?.starter_code ?? {},
     reference_solutions: settings.reference_solutions ?? existingBody?.reference_solutions ?? {},
@@ -452,20 +422,13 @@ function toCodeItemBody(
       ...hiddenTests.map(test => toStoredTestCase(test, false)),
     ],
     time_limit_seconds:
-      typeof settings.time_limit === 'number'
-        ? settings.time_limit
-        : (existingBody?.time_limit_seconds ?? null),
+      typeof settings.time_limit === 'number' ? settings.time_limit : (existingBody?.time_limit_seconds ?? null),
     memory_limit_mb:
-      typeof settings.memory_limit === 'number'
-        ? settings.memory_limit
-        : (existingBody?.memory_limit_mb ?? null),
+      typeof settings.memory_limit === 'number' ? settings.memory_limit : (existingBody?.memory_limit_mb ?? null),
   }
 }
 
-async function upsertCodeItem(
-  assessment: CodeAssessmentRead,
-  settings: Partial<CodeChallengeSettings>,
-) {
+async function upsertCodeItem(assessment: CodeAssessmentRead, settings: Partial<CodeChallengeSettings>) {
   const codeItem = getCodeAssessmentItem(assessment)
   const body = toCodeItemBody(assessment, codeItem, settings)
   const payload = {
@@ -476,14 +439,11 @@ async function upsertCodeItem(
   }
 
   if (codeItem) {
-    const response = await apiFetch(
-      `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      },
-    )
+    const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
       throw new Error(error.detail || 'Failed to update code challenge item')
@@ -517,9 +477,7 @@ function mapCanonicalCodeSubmission(raw: GradingSubmission): CodeSubmission {
   const metadata = readCanonicalMetadata(raw.metadata_json)
   const answerMap = readCodeAnswers(raw.answers_json)
   const firstCodeAnswer = Object.values(answerMap).find(answer => answer?.kind === 'CODE')
-  const results = Array.isArray(metadata.latest_run?.details)
-    ? metadata.latest_run.details
-    : undefined
+  const results = Array.isArray(metadata.latest_run?.details) ? metadata.latest_run.details : undefined
 
   return {
     uuid: raw.submission_uuid,
@@ -543,9 +501,7 @@ function mapCanonicalCodeSubmission(raw: GradingSubmission): CodeSubmission {
   }
 }
 
-export async function getCodeChallengeSettings(
-  activityUuid: string,
-): Promise<CodeChallengeSettings | null> {
+export async function getCodeChallengeSettings(activityUuid: string): Promise<CodeChallengeSettings | null> {
   const assessment = await loadCodeAssessment(activityUuid)
   if (!assessment) {
     return null
@@ -644,23 +600,15 @@ export async function runTests(
     throw new Error('Code challenge item is not configured')
   }
 
-  const response = await apiFetch(
-    `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        language: languageId,
-        source: sourceCode,
-        idempotency_key: codeRunIdempotencyKey(
-          assessment.assessment_uuid,
-          codeItem.item_uuid,
-          languageId,
-          sourceCode,
-        ),
-      }),
-    },
-  )
+  const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      language: languageId,
+      source: sourceCode,
+      idempotency_key: codeRunIdempotencyKey(assessment.assessment_uuid, codeItem.item_uuid, languageId, sourceCode),
+    }),
+  })
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
@@ -701,25 +649,22 @@ export async function runCustomTest(
     throw new Error('Code challenge item is not configured')
   }
 
-  const response = await apiFetch(
-    `assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        language: languageId,
-        source: sourceCode,
-        custom_input: stdin,
-        idempotency_key: codeRunIdempotencyKey(
-          assessment.assessment_uuid,
-          codeItem.item_uuid,
-          languageId,
-          sourceCode,
-          stdin,
-        ),
-      }),
-    },
-  )
+  const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${codeItem.item_uuid}/runs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      language: languageId,
+      source: sourceCode,
+      custom_input: stdin,
+      idempotency_key: codeRunIdempotencyKey(
+        assessment.assessment_uuid,
+        codeItem.item_uuid,
+        languageId,
+        sourceCode,
+        stdin,
+      ),
+    }),
+  })
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
@@ -736,22 +681,15 @@ export async function runCustomTest(
     status_description: run.status,
     ...(run.stdout !== null && run.stdout !== undefined ? { stdout: run.stdout } : {}),
     ...(run.stderr !== null && run.stderr !== undefined ? { stderr: run.stderr } : {}),
-    ...(run.compile_output !== null && run.compile_output !== undefined
-      ? { compile_output: run.compile_output }
-      : {}),
+    ...(run.compile_output !== null && run.compile_output !== undefined ? { compile_output: run.compile_output } : {}),
     ...(typeof run.time === 'number' ? { time_ms: Math.round(run.time * 1000) } : {}),
     ...(typeof run.memory === 'number' ? { memory_kb: run.memory } : {}),
   }
 }
 
-export async function getSubmission(
-  activityUuid: string,
-  submissionUuid: string,
-): Promise<CodeSubmission> {
+export async function getSubmission(activityUuid: string, submissionUuid: string): Promise<CodeSubmission> {
   const submissions = await getSubmissions(activityUuid)
-  const submission = submissions.find(
-    item => item.submission_uuid === submissionUuid || item.uuid === submissionUuid,
-  )
+  const submission = submissions.find(item => item.submission_uuid === submissionUuid || item.uuid === submissionUuid)
   if (!submission) {
     throw new Error('Failed to fetch submission')
   }
@@ -770,9 +708,9 @@ export async function getSubmissions(activityUuid: string): Promise<CodeSubmissi
     throw new Error('Failed to fetch submissions')
   }
 
-  return (
-    (await response.json()) as CanonicalSubmissionRead[] as unknown as GradingSubmission[]
-  ).map(mapCanonicalCodeSubmission)
+  return ((await response.json()) as CanonicalSubmissionRead[] as unknown as GradingSubmission[]).map(
+    mapCanonicalCodeSubmission,
+  )
 }
 
 interface CanonicalCodeRunTestResult {

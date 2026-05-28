@@ -108,9 +108,7 @@ const Modal = (params: ModalParams) => {
           ) : (
             <DialogTitle>{t('dialog')}</DialogTitle>
           )}
-          {params.dialogDescription ? (
-            <DialogDescription>{params.dialogDescription}</DialogDescription>
-          ) : null}
+          {params.dialogDescription ? <DialogDescription>{params.dialogDescription}</DialogDescription> : null}
         </DialogHeader>
         <div>{params.dialogContent}</div>
         {params.dialogClose || params.addDefCloseButton ? (

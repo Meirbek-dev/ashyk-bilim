@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  validateMarkdownContent,
-  getHighestMarkdownIssueSeverity,
-} from '@/features/content-markdown'
+import { validateMarkdownContent, getHighestMarkdownIssueSeverity } from '@/features/content-markdown'
 import {
   isSafeMarkdownUrl,
   hasRawHtml,
@@ -20,8 +17,7 @@ describe('isSafeMarkdownUrl', () => {
   it('accepts relative paths', () => expect(isSafeMarkdownUrl('/foo/bar')).toBe(true))
   it('accepts anchor links', () => expect(isSafeMarkdownUrl('#section')).toBe(true))
   it('rejects javascript: URLs', () => expect(isSafeMarkdownUrl('javascript:alert(1)')).toBe(false))
-  it('rejects data: URLs', () =>
-    expect(isSafeMarkdownUrl('data:text/html,<h1>hi</h1>')).toBe(false))
+  it('rejects data: URLs', () => expect(isSafeMarkdownUrl('data:text/html,<h1>hi</h1>')).toBe(false))
   it('rejects empty strings', () => expect(isSafeMarkdownUrl('')).toBe(false))
   it('rejects null', () => expect(isSafeMarkdownUrl(null)).toBe(false))
   it('rejects undefined', () => expect(isSafeMarkdownUrl(undefined)).toBe(false))
@@ -35,13 +31,10 @@ describe('hasRawHtml', () => {
 
 describe('isMarkdownStructurallyEmpty', () => {
   it('identifies empty string', () => expect(isMarkdownStructurallyEmpty('')).toBe(true))
-  it('identifies whitespace-only', () =>
-    expect(isMarkdownStructurallyEmpty('   \n\n  ')).toBe(true))
-  it('identifies syntax-only (headers + bullets)', () =>
-    expect(isMarkdownStructurallyEmpty('## \n- \n')).toBe(true))
+  it('identifies whitespace-only', () => expect(isMarkdownStructurallyEmpty('   \n\n  ')).toBe(true))
+  it('identifies syntax-only (headers + bullets)', () => expect(isMarkdownStructurallyEmpty('## \n- \n')).toBe(true))
   it('identifies content with text', () => expect(isMarkdownStructurallyEmpty('Hello')).toBe(false))
-  it('identifies code fences with content', () =>
-    expect(isMarkdownStructurallyEmpty('```\ncode\n```')).toBe(false))
+  it('identifies code fences with content', () => expect(isMarkdownStructurallyEmpty('```\ncode\n```')).toBe(false))
 })
 
 describe('findUnsafeMarkdownLinks', () => {

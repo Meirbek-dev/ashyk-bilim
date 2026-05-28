@@ -77,8 +77,7 @@ const ACTIVITY_CONFIG = {
   TYPE_VIDEO: {
     Icon: Video,
     translationKey: 'video',
-    colorClass:
-      'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300',
+    colorClass: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300',
   },
   TYPE_DOCUMENT: {
     Icon: File,
@@ -101,14 +100,12 @@ const ACTIVITY_CONFIG = {
   TYPE_EXAM: {
     Icon: ClipboardList,
     translationKey: 'exam',
-    colorClass:
-      'border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300',
+    colorClass: 'border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300',
   },
   TYPE_CODE_CHALLENGE: {
     Icon: Code2,
     translationKey: 'codeChallenge',
-    colorClass:
-      'border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-950/30 text-cyan-700 dark:text-cyan-300',
+    colorClass: 'border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-950/30 text-cyan-700 dark:text-cyan-300',
   },
 } as const
 
@@ -248,11 +245,7 @@ const ActivityElement = ({
                 onClick={() => void handleSaveEdit()}
                 disabled={isSavingEdit}
               >
-                {isSavingEdit ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Check className="h-4 w-4" />
-                )}
+                {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               </Button>
             </ToolTip>
             <ToolTip content={t('cancel')} side="top">
@@ -286,12 +279,7 @@ const ActivityElement = ({
             )}
             {canUpdate && (
               <ToolTip content={t('editButton')} side="top">
-                <Button
-                  size="icon-sm"
-                  variant="outline"
-                  className="shrink-0"
-                  onClick={handleStartEdit}
-                >
+                <Button size="icon-sm" variant="outline" className="shrink-0" onClick={handleStartEdit}>
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
               </ToolTip>
@@ -374,11 +362,7 @@ const ActivityElement = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeletingActivity} />
-            <AlertDialogAction
-              variant="destructive"
-              onClick={handleDeleteActivity}
-              disabled={isDeletingActivity}
-            >
+            <AlertDialogAction variant="destructive" onClick={handleDeleteActivity} disabled={isDeletingActivity}>
               {isDeletingActivity ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -401,22 +385,14 @@ const ActivityTypeBadge = ({ activityType }: { activityType: ActivityType }) => 
   if (!config) return null
   const { Icon, translationKey, colorClass } = config
   return (
-    <div
-      className={cn('flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1', colorClass)}
-    >
+    <div className={cn('flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1', colorClass)}>
       <Icon className="h-3.5 w-3.5" />
       <span className="text-xs font-medium">{t(`ActivityTypes.${translationKey}`)}</span>
     </div>
   )
 }
 
-const ActivityEditButton = ({
-  activity,
-  course_uuid,
-}: {
-  activity: Activity
-  course_uuid: string
-}) => {
+const ActivityEditButton = ({ activity, course_uuid }: { activity: Activity; course_uuid: string }) => {
   const t = useTranslations('CourseEdit.ActivityElement')
   const course = useCourse() as any
 

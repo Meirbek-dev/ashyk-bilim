@@ -14,9 +14,7 @@ import {
   judge0LanguagesQueryOptions,
 } from './queries'
 
-function codeChallengeSettingsHookOptions<TSettings = unknown>(
-  activityUuid: string | null | undefined,
-) {
+function codeChallengeSettingsHookOptions<TSettings = unknown>(activityUuid: string | null | undefined) {
   const normalizedActivityUuid = activityUuid ?? ''
 
   return queryOptions({
@@ -45,15 +43,11 @@ function codeChallengeSubmissionHookOptions(
   return queryOptions({
     ...codeChallengeSubmissionQueryOptions(normalizedActivityUuid, normalizedSubmissionUuid),
     enabled: Boolean(activityUuid && submissionUuid),
-    ...(options?.refetchInterval !== undefined
-      ? { refetchInterval: options.refetchInterval }
-      : {}),
+    ...(options?.refetchInterval !== undefined ? { refetchInterval: options.refetchInterval } : {}),
   })
 }
 
-export function useCodeChallengeSettings(
-  activityUuid: string | null | undefined,
-) {
+export function useCodeChallengeSettings(activityUuid: string | null | undefined) {
   return useQuery(codeChallengeSettingsHookOptions<unknown>(activityUuid))
 }
 

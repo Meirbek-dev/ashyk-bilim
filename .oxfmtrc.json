@@ -1,58 +1,76 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "arrowParens": "always",
-  "bracketSameLine": false,
+
+  "printWidth": 120,
+  "tabWidth": 2,
+  "useTabs": false,
+
+  // Reduce syntax noise and token count.
+  "semi": false,
+  "singleQuote": true,
+  "jsxSingleQuote": false,
+  "quoteProps": "as-needed",
+  "trailingComma": "all",
+
+  // Keep JSX/TSX more compact and easier for agents to rewrite.
+  "arrowParens": "avoid",
   "bracketSpacing": true,
-  "embeddedLanguageFormatting": "auto",
+  "bracketSameLine": false,
+  "singleAttributePerLine": false,
+
+  // Better for diff stability and generated code consistency.
   "endOfLine": "lf",
-  "htmlWhitespaceSensitivity": "strict",
+  "embeddedLanguageFormatting": "auto",
+  "htmlWhitespaceSensitivity": "css",
+  "proseWrap": "preserve",
+
+  // Avoid pragma noise.
+  "insertPragma": false,
+  "requirePragma": false,
+
+  // Sorting improves deterministic generation and merge quality.
+  "sortPackageJson": true,
+  "sortTailwindcss": true,
+
+  // Remove obsolete / unnecessary defaults.
   "ignorePatterns": [
+    // Dependencies
     "node_modules",
     ".pnp",
     ".pnp.js",
-    ".venv",
-    "coverage",
-    ".next/",
-    "out/",
+
+    // Build output
+    ".next",
+    "out",
     "build",
-    ".DS_Store",
-    "*.pem",
-    "npm-debug.log*",
-    ".env",
-    ".env.local",
-    ".env.development.local",
-    ".env.test.local",
-    ".env.production.local",
+    "coverage",
     ".turbo",
     ".vercel",
-    "__pycache__/",
-    "*.py[cod]",
-    "*$py.class",
-    ".vscode/",
-    ".flyio/",
-    "fly.toml",
-    ".logfire",
-    ".ruff_cache",
+
+    // Python
     ".venv",
+    "__pycache__",
+    "*.py[cod]",
+    ".ruff_cache",
+
+    // Logs & env
+    ".env*",
+    "*.log",
+    "npm-debug.log*",
+
+    // OS / editor
+    ".DS_Store",
+    ".vscode",
+
+    // Infra
+    ".flyio",
+    "fly.toml",
+
+    // Generated files
     "next-env.d.ts",
-    "lib/api/generated/schema.ts",
-    "apps/web/src/lib/schema.ts",
-    "openapi.json"
-  ],
-  "insertPragma": false,
-  "jsxSingleQuote": false,
-  "printWidth": 120,
-  "proseWrap": "preserve",
-  "quoteProps": "consistent",
-  "rangeStart": 0,
-  "requirePragma": false,
-  "semi": true,
-  "singleAttributePerLine": true,
-  "singleQuote": true,
-  "sortPackageJson": false,
-  "sortTailwindcss": {},
-  "tabWidth": 2,
-  "trailingComma": "all",
-  "useTabs": false,
-  "vueIndentScriptAndStyle": true
+    "lib/api/generated/**",
+
+    // Secrets
+    "*.pem"
+  ]
 }

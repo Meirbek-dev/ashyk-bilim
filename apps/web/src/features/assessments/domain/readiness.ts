@@ -127,10 +127,7 @@ export function localItemValidationIssues(
         itemUuid: item.item_uuid,
       })
     }
-    if (
-      new Set(normalizedOptions.map(option => option.toLowerCase())).size !==
-      normalizedOptions.length
-    ) {
+    if (new Set(normalizedOptions.map(option => option.toLowerCase())).size !== normalizedOptions.length) {
       issues.push({
         code: 'choice.option_duplicate',
         message: 'Choice options should be unique.',
@@ -202,11 +199,7 @@ export function localItemValidationIssues(
         itemUuid: item.item_uuid,
       })
     }
-    if (
-      item.body.min_words !== null &&
-      item.body.min_words !== undefined &&
-      item.body.min_words < 0
-    ) {
+    if (item.body.min_words !== null && item.body.min_words !== undefined && item.body.min_words < 0) {
       issues.push({
         code: 'open_text.min_words_invalid',
         message: 'Minimum words cannot be negative.',

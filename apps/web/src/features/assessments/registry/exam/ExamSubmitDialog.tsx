@@ -120,9 +120,7 @@ export default function ExamSubmitDialog({
           <AlertDialogAction
             onClick={onSubmit}
             disabled={isSubmitting}
-            className={cn(
-              hasWarning ? 'bg-amber-600 hover:bg-amber-700 focus-visible:ring-amber-500' : '',
-            )}
+            className={cn(hasWarning ? 'bg-amber-600 hover:bg-amber-700 focus-visible:ring-amber-500' : '')}
           >
             {isSubmitting ? labels.submitting : labels.confirmAndSubmit}
           </AlertDialogAction>
@@ -134,15 +132,7 @@ export default function ExamSubmitDialog({
 
 type Variant = 'success' | 'warning' | 'amber' | 'neutral'
 
-function SummaryRow({
-  label,
-  value,
-  variant = 'neutral',
-}: {
-  label: string
-  value: number
-  variant?: Variant
-}) {
+function SummaryRow({ label, value, variant = 'neutral' }: { label: string; value: number; variant?: Variant }) {
   return (
     <div className="flex justify-between py-0.5">
       <span className="text-muted-foreground">{label}:</span>

@@ -35,11 +35,7 @@ const LoginClient = () => {
   const [isPendingGoogle, startGoogleTransition] = useTransition()
 
   const schema = v.object({
-    email: v.pipe(
-      v.string(),
-      v.minLength(1, validationT('required')),
-      v.email(validationT('invalidEmail')),
-    ),
+    email: v.pipe(v.string(), v.minLength(1, validationT('required')), v.email(validationT('invalidEmail'))),
     password: v.pipe(
       v.string(),
       v.minLength(1, validationT('required')),
@@ -74,10 +70,7 @@ const LoginClient = () => {
       })
 
       if (!response.ok) {
-        const message =
-          response.reason === 'service_unavailable'
-            ? t('serviceUnavailable')
-            : t('wrongCredentials')
+        const message = response.reason === 'service_unavailable' ? t('serviceUnavailable') : t('wrongCredentials')
         return { error: message, fieldErrors: {} }
       }
 
@@ -89,9 +82,7 @@ const LoginClient = () => {
   const handleGoogleSignIn = () => {
     startGoogleTransition(() => {
       const postLoginPath = getSafeReturnTo(searchParams.get('returnTo'))
-      const frontendCallback = getAbsoluteUrl(
-        postLoginPath.startsWith('/') ? postLoginPath : '/redirect_from_auth',
-      )
+      const frontendCallback = getAbsoluteUrl(postLoginPath.startsWith('/') ? postLoginPath : '/redirect_from_auth')
       const authorizeUrl = new URL(`${getPublicAPIUrl()}auth/google/authorize`)
       authorizeUrl.searchParams.set('callback', frontendCallback)
       globalThis.location.href = authorizeUrl.toString()
@@ -153,10 +144,7 @@ const LoginClient = () => {
         </Field>
 
         <div className="flex justify-end">
-          <Link
-            href={getAbsoluteUrl('/forgot')}
-            className="text-muted-foreground text-xs underline"
-          >
+          <Link href={getAbsoluteUrl('/forgot')} className="text-muted-foreground text-xs underline">
             {t('forgotPassword')}
           </Link>
         </div>

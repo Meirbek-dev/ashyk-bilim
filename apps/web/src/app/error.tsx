@@ -6,13 +6,7 @@ import { reportClientError } from '@/services/telemetry/client'
 import { ERROR_MESSAGES, detectLocale } from '@/lib/error-i18n'
 import type { SupportedLocale } from '@/lib/error-i18n'
 
-export default function AppError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
+export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const [locale, setLocale] = useState<SupportedLocale>('ru-RU')
 
   useEffect(() => {

@@ -1,13 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import {
-  BookOpen,
-  ClipboardCheck,
-  Code2,
-  FileText,
-  GraduationCap,
-  Lightbulb,
-  MessageSquareText,
-} from 'lucide-react'
+import { BookOpen, ClipboardCheck, Code2, FileText, GraduationCap, Lightbulb, MessageSquareText } from 'lucide-react'
 
 export type MarkdownEditorPreset =
   | 'assessmentDescription'
@@ -86,8 +78,7 @@ const taskSnippets: MarkdownSnippet[] = [
   {
     id: 'checklist',
     label: 'Checklist',
-    markdown:
-      '- [ ] Read all requirements\n- [ ] Check formatting\n- [ ] Submit before the deadline\n',
+    markdown: '- [ ] Read all requirements\n- [ ] Check formatting\n- [ ] Submit before the deadline\n',
   },
 ]
 
@@ -119,14 +110,12 @@ const courseSnippets: MarkdownSnippet[] = [
   {
     id: 'prerequisites',
     label: 'Prerequisites',
-    markdown:
-      '## Prerequisites\n\n- Basic familiarity with the topic\n- Required tools or accounts\n',
+    markdown: '## Prerequisites\n\n- Basic familiarity with the topic\n- Required tools or accounts\n',
   },
   {
     id: 'outcomes',
     label: 'Learning outcomes',
-    markdown:
-      '## By the end, learners can\n\n- Explain the core concepts\n- Apply the skill in practice\n',
+    markdown: '## By the end, learners can\n\n- Explain the core concepts\n- Apply the skill in practice\n',
   },
 ]
 

@@ -6,12 +6,7 @@ export function isSafeMarkdownUrl(value: string | undefined | null): boolean {
   const trimmed = value.trim()
   if (!trimmed) return false
   if (trimmed.startsWith('//')) return false
-  if (
-    trimmed.startsWith('#') ||
-    trimmed.startsWith('/') ||
-    trimmed.startsWith('./') ||
-    trimmed.startsWith('../')
-  ) {
+  if (trimmed.startsWith('#') || trimmed.startsWith('/') || trimmed.startsWith('./') || trimmed.startsWith('../')) {
     return true
   }
   try {

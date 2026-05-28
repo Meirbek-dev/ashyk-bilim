@@ -98,10 +98,7 @@ export function assignBadges(entries: LeaderboardEntry[]): LeaderboardEntry[] {
   })
 }
 
-export function markCurrentUser(
-  entries: LeaderboardEntry[],
-  currentUserId: number,
-): LeaderboardEntry[] {
+export function markCurrentUser(entries: LeaderboardEntry[], currentUserId: number): LeaderboardEntry[] {
   return entries.map(entry => ({
     ...entry,
     is_current_user: entry.user_id === currentUserId,
@@ -119,18 +116,11 @@ export function calculatePercentile(rank: number, totalParticipants: number): nu
   return Math.round(((totalParticipants - rank + 1) / totalParticipants) * 100)
 }
 
-export function findUserInLeaderboard(
-  leaderboard: PlatformLeaderboard,
-  userId: number,
-): LeaderboardEntry | null {
+export function findUserInLeaderboard(leaderboard: PlatformLeaderboard, userId: number): LeaderboardEntry | null {
   return leaderboard.entries.find(entry => entry.user_id === userId) ?? null
 }
 
-export function getNearbyEntries(
-  leaderboard: PlatformLeaderboard,
-  userId: number,
-  range = 2,
-): LeaderboardEntry[] {
+export function getNearbyEntries(leaderboard: PlatformLeaderboard, userId: number, range = 2): LeaderboardEntry[] {
   const userIndex = leaderboard.entries.findIndex(entry => entry.user_id === userId)
   if (userIndex === -1) return []
 

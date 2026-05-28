@@ -12,10 +12,7 @@ const corsHeaders = {
 async function requireAuthenticatedSession() {
   const session = await getSession()
   if (!session?.user) {
-    return NextResponse.json(
-      { error: 'Authentication required' },
-      { status: 401, headers: corsHeaders },
-    )
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders })
   }
 
   return null
@@ -30,18 +27,12 @@ export async function GET(request: NextRequest) {
   const tag = request.nextUrl.searchParams.get('tag')
 
   if (!tag) {
-    return NextResponse.json(
-      { error: 'Tag parameter is required' },
-      { status: 400, headers: corsHeaders },
-    )
+    return NextResponse.json({ error: 'Tag parameter is required' }, { status: 400, headers: corsHeaders })
   }
 
   revalidateTag(tag, 'max')
 
-  return NextResponse.json(
-    { revalidated: true, now: Date.now(), tag },
-    { status: 200, headers: corsHeaders },
-  )
+  return NextResponse.json({ revalidated: true, now: Date.now(), tag }, { status: 200, headers: corsHeaders })
 }
 
 export async function POST(request: NextRequest) {
@@ -54,10 +45,7 @@ export async function POST(request: NextRequest) {
     const { tags } = await request.json()
 
     if (!Array.isArray(tags) || tags.length === 0) {
-      return NextResponse.json(
-        { error: 'Tags array is required' },
-        { status: 400, headers: corsHeaders },
-      )
+      return NextResponse.json({ error: 'Tags array is required' }, { status: 400, headers: corsHeaders })
     }
 
     const uniqueTags = [...new Set(tags)]
@@ -65,10 +53,7 @@ export async function POST(request: NextRequest) {
       .map(tag => tag.trim())
 
     if (uniqueTags.length === 0) {
-      return NextResponse.json(
-        { error: 'No valid tags provided' },
-        { status: 400, headers: corsHeaders },
-      )
+      return NextResponse.json({ error: 'No valid tags provided' }, { status: 400, headers: corsHeaders })
     }
 
     for (const tag of uniqueTags) {

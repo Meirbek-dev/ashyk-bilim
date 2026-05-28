@@ -58,9 +58,7 @@ export function InsertButtons({ editor }: InsertButtonsProps) {
                 </Tooltip>
               ))}
             </div>
-            {index < groups.length - 1 ? (
-              <Separator orientation="vertical" className="mx-1 h-6" />
-            ) : null}
+            {index < groups.length - 1 ? <Separator orientation="vertical" className="mx-1 h-6" /> : null}
           </div>
         ))}
       </div>

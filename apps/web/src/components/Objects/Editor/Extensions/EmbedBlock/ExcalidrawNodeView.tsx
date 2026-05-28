@@ -51,9 +51,7 @@ const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
 
   // ── Height state ───────────────────────────────────────────────────────────
   const [height, setHeight] = useState<number>(() =>
-    clampExcalidrawHeight(
-      typeof attrHeight === 'number' && attrHeight > 0 ? attrHeight : DEFAULT_HEIGHT,
-    ),
+    clampExcalidrawHeight(typeof attrHeight === 'number' && attrHeight > 0 ? attrHeight : DEFAULT_HEIGHT),
   )
 
   // Keep local height in sync when node attrs change externally
@@ -103,9 +101,7 @@ const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
   )
 
   // ── Embed Panel store ──────────────────────────────────────────────────────
-  const openForEdit = useEmbedPanelStore(
-    (s: ReturnType<typeof useEmbedPanelStore.getState>) => s.openForEdit,
-  )
+  const openForEdit = useEmbedPanelStore((s: ReturnType<typeof useEmbedPanelStore.getState>) => s.openForEdit)
   const editTriggerRef = useRef<HTMLButtonElement>(null)
 
   const handleEdit = useCallback(() => {
@@ -144,9 +140,7 @@ const ExcalidrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
           <div className="flex h-full w-full flex-col items-center justify-center gap-3">
             <Si.SiExcalidraw className="size-10 text-gray-300" />
             <p className="text-sm text-gray-400">
-              {url
-                ? `${tCommon('loading')} ${t('providers.excalidraw.label')}…`
-                : t('noUrlConfigured')}
+              {url ? `${tCommon('loading')} ${t('providers.excalidraw.label')}…` : t('noUrlConfigured')}
             </p>
           </div>
         )}

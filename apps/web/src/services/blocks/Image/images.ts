@@ -8,10 +8,7 @@ export interface UploadedImageBlockObject {
   }
 }
 
-export async function uploadNewImageFile(
-  file: File,
-  activity_uuid: string,
-): Promise<UploadedImageBlockObject> {
+export async function uploadNewImageFile(file: File, activity_uuid: string): Promise<UploadedImageBlockObject> {
   const formData = new FormData()
   formData.append('file_object', file)
   formData.append('activity_uuid', activity_uuid)

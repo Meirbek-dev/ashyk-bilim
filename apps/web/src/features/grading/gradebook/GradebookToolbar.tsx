@@ -39,16 +39,8 @@ export default function GradebookToolbar({
         <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
           <SummaryTile label={t('summary.learners')} value={data.summary.student_count} />
           <SummaryTile label={t('summary.activities')} value={data.summary.activity_count} />
-          <SummaryTile
-            label={t('summary.needsGrading')}
-            value={data.summary.needs_grading_count}
-            tone="amber"
-          />
-          <SummaryTile
-            label={t('summary.overdue')}
-            value={data.summary.overdue_count}
-            tone="rose"
-          />
+          <SummaryTile label={t('summary.needsGrading')} value={data.summary.needs_grading_count} tone="amber" />
+          <SummaryTile label={t('summary.overdue')} value={data.summary.overdue_count} tone="rose" />
           <SummaryTile label={t('summary.selected')} value={selectedCount} />
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -132,8 +124,7 @@ function SummaryTile({
 export function labelActivityType(t: (key: string) => string, type: string) {
   const key = type.toLowerCase()
   if (key === 'type_exam' || key === 'exam') return t('activityTypes.exam')
-  if (key === 'type_code_challenge' || key === 'code_challenge')
-    return t('activityTypes.codeChallenge')
+  if (key === 'type_code_challenge' || key === 'code_challenge') return t('activityTypes.codeChallenge')
   if (key === 'type_dynamic' || key === 'quiz') return t('activityTypes.quiz')
   if (key === 'type_form' || key === 'form') return t('activityTypes.form')
   if (key === 'type_file' || key === 'file') return t('activityTypes.file')

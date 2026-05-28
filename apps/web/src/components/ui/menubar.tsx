@@ -178,10 +178,7 @@ function MenubarLabel({
   )
 }
 
-function MenubarSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuSeparator>) {
+function MenubarSeparator({ className, ...props }: React.ComponentProps<typeof DropdownMenuSeparator>) {
   return (
     <DropdownMenuSeparator
       data-slot="menubar-separator"
@@ -191,10 +188,7 @@ function MenubarSeparator({
   )
 }
 
-function MenubarShortcut({
-  className,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuShortcut>) {
+function MenubarShortcut({ className, ...props }: React.ComponentProps<typeof DropdownMenuShortcut>) {
   return (
     <DropdownMenuShortcut
       data-slot="menubar-shortcut"
@@ -231,10 +225,7 @@ function MenubarSubTrigger({
   )
 }
 
-function MenubarSubContent({
-  className,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuSubContent>) {
+function MenubarSubContent({ className, ...props }: React.ComponentProps<typeof DropdownMenuSubContent>) {
   return (
     <DropdownMenuSubContent
       data-slot="menubar-sub-content"

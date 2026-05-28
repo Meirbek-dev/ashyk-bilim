@@ -65,13 +65,7 @@ const FETCH_COOLDOWN_MS = 60_000
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 // Transient state that should never be persisted (UI queues, loading flags)
-type TransientKeys =
-  | 'isLoading'
-  | 'error'
-  | 'levelUpQueue'
-  | 'pendingXPToasts'
-  | 'fetchAttempts'
-  | 'lastFetchTime'
+type TransientKeys = 'isLoading' | 'error' | 'levelUpQueue' | 'pendingXPToasts' | 'fetchAttempts' | 'lastFetchTime'
 
 export const useGamificationStore = create<GamificationState & GamificationActions>()(
   devtools(
@@ -93,8 +87,7 @@ export const useGamificationStore = create<GamificationState & GamificationActio
           set(s => ({
             profile: data.profile !== undefined ? (data.profile ?? null) : s.profile,
             dashboard: data.dashboard !== undefined ? (data.dashboard ?? null) : s.dashboard,
-            leaderboard:
-              data.leaderboard !== undefined ? (data.leaderboard ?? null) : s.leaderboard,
+            leaderboard: data.leaderboard !== undefined ? (data.leaderboard ?? null) : s.leaderboard,
           })),
 
         fetchIfNeeded: async () => {
@@ -171,9 +164,7 @@ export const useGamificationStore = create<GamificationState & GamificationActio
 
                 return {
                   profile: result.profile,
-                  dashboard: s.dashboard
-                    ? { ...s.dashboard, profile: result.profile }
-                    : s.dashboard,
+                  dashboard: s.dashboard ? { ...s.dashboard, profile: result.profile } : s.dashboard,
                   pendingXPToasts: newPendingXPToasts,
                   levelUpQueue: newLevelUpQueue,
                 }
@@ -260,8 +251,7 @@ export const useGamificationStore = create<GamificationState & GamificationActio
             pendingXPToasts: [...s.pendingXPToasts, { amount, source }],
           })),
 
-        showLevelUpCelebration: newLevel =>
-          set(s => ({ levelUpQueue: [...s.levelUpQueue, { newLevel }] })),
+        showLevelUpCelebration: newLevel => set(s => ({ levelUpQueue: [...s.levelUpQueue, { newLevel }] })),
 
         dismissLevelUpCelebration: () => set(s => ({ levelUpQueue: s.levelUpQueue.slice(1) })),
 

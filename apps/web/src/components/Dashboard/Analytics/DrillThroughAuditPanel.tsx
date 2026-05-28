@@ -3,14 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { AnalyticsQuery, AssessmentOutlierRow, DrillThroughResponse } from '@/types/analytics'
 import { getTeacherDrillThrough } from '@services/analytics/teacher'
 import { ListFilter, Search } from 'lucide-react'
@@ -23,18 +16,14 @@ interface DrillThroughAuditPanelProps {
   assessmentPreview: AssessmentOutlierRow[]
 }
 
-export default function DrillThroughAuditPanel({
-  query,
-  assessmentPreview,
-}: DrillThroughAuditPanelProps) {
+export default function DrillThroughAuditPanel({ query, assessmentPreview }: DrillThroughAuditPanelProps) {
   const t = useTranslations('Components.DashboardAnalytics')
   const [result, setResult] = useState<DrillThroughResponse | null>(null)
   const [loadingMetric, setLoadingMetric] = useState<DrillThroughResponse['metric'] | null>(null)
   const assessment = assessmentPreview.find(item => item.pass_rate !== null) ?? assessmentPreview[0]
 
   const displayValue = (value: unknown) => {
-    if (typeof value === 'boolean')
-      return value ? t('drillThroughAuditPanel.yes') : t('drillThroughAuditPanel.no')
+    if (typeof value === 'boolean') return value ? t('drillThroughAuditPanel.yes') : t('drillThroughAuditPanel.no')
     if (value === null || value === undefined || value === '') return t('drillThroughAuditPanel.na')
     if (Array.isArray(value)) return value.join(', ')
     return String(value)
@@ -66,9 +55,7 @@ export default function DrillThroughAuditPanel({
       )
       setResult(response)
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t('drillThroughAuditPanel.couldNotLoadRows'),
-      )
+      toast.error(error instanceof Error ? error.message : t('drillThroughAuditPanel.couldNotLoadRows'))
     } finally {
       setLoadingMetric(null)
     }
@@ -116,8 +103,7 @@ export default function DrillThroughAuditPanel({
         {result ? (
           <div className="space-y-2">
             <Badge variant="outline">
-              {metricLabel(result.metric)}:{' '}
-              {t('drillThroughAuditPanel.rows', { count: result.total })}
+              {metricLabel(result.metric)}: {t('drillThroughAuditPanel.rows', { count: result.total })}
             </Badge>
             <Table>
               <TableHeader>
@@ -139,10 +125,7 @@ export default function DrillThroughAuditPanel({
                 ))}
                 {!resultItems.length ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={Math.max(columns.length, 1)}
-                      className="text-muted-foreground"
-                    >
+                    <TableCell colSpan={Math.max(columns.length, 1)} className="text-muted-foreground">
                       {t('drillThroughAuditPanel.noSourceRows')}
                     </TableCell>
                   </TableRow>
@@ -151,9 +134,7 @@ export default function DrillThroughAuditPanel({
             </Table>
           </div>
         ) : (
-          <div className="text-muted-foreground text-sm">
-            {t('drillThroughAuditPanel.chooseMetric')}
-          </div>
+          <div className="text-muted-foreground text-sm">{t('drillThroughAuditPanel.chooseMetric')}</div>
         )}
       </CardContent>
     </Card>

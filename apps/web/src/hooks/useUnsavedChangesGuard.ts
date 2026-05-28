@@ -161,10 +161,7 @@ export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChange
     }
 
     const handleDocumentClick = (event: MouseEvent) => {
-      if (
-        globalPromptState.ownerId !== null &&
-        globalPromptState.ownerId !== guardInstanceIdRef.current
-      ) {
+      if (globalPromptState.ownerId !== null && globalPromptState.ownerId !== guardInstanceIdRef.current) {
         return
       }
 
@@ -224,10 +221,7 @@ export function useUnsavedChangesGuard(isDirty: boolean, options?: UnsavedChange
         return
       }
 
-      if (
-        globalPromptState.ownerId !== null &&
-        globalPromptState.ownerId !== guardInstanceIdRef.current
-      ) {
+      if (globalPromptState.ownerId !== null && globalPromptState.ownerId !== guardInstanceIdRef.current) {
         return
       }
 

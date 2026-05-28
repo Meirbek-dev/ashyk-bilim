@@ -165,11 +165,7 @@ export function AuthoringEditor(props: AuthoringEditorProps) {
   }
 
   return (
-    <DesktopOnlyGuard
-      title={t('mobileTitle')}
-      description={t('mobileMessage1')}
-      supportingText={t('mobileMessage2')}
-    >
+    <DesktopOnlyGuard title={t('mobileTitle')} description={t('mobileMessage1')} supportingText={t('mobileMessage2')}>
       <CourseProvider courseuuid={props.course.course_uuid}>
         <ActivityAIChatProvider activityUuid={props.activity.activity_uuid}>
           <EditorOptionsProvider options={{ isEditable: true, mode: 'authoring' }}>

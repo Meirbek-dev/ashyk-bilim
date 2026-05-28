@@ -4,22 +4,12 @@ import { cn } from '@/lib/utils'
 import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 
 function Accordion({ className, ...props }: AccordionPrimitive.Root.Props) {
-  return (
-    <AccordionPrimitive.Root
-      data-slot="accordion"
-      className={cn('flex w-full flex-col', className)}
-      {...props}
-    />
-  )
+  return <AccordionPrimitive.Root data-slot="accordion" className={cn('flex w-full flex-col', className)} {...props} />
 }
 
 function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
   return (
-    <AccordionPrimitive.Item
-      data-slot="accordion-item"
-      className={cn('not-last:border-b', className)}
-      {...props}
-    />
+    <AccordionPrimitive.Item data-slot="accordion-item" className={cn('not-last:border-b', className)} {...props} />
   )
 }
 

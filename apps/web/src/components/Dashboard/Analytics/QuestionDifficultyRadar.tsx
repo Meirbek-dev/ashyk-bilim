@@ -12,19 +12,13 @@ interface QuestionDifficultyRadarProps {
   data: QuestionDifficultyRow[]
 }
 
-export default function QuestionDifficultyRadar({
-  title,
-  description,
-  data,
-}: QuestionDifficultyRadarProps) {
+export default function QuestionDifficultyRadar({ title, description, data }: QuestionDifficultyRadarProps) {
   const t = useTranslations('TeacherAnalytics')
   const MAX = 8
   const radarData = data.slice(0, MAX).map(row => ({
     label: row.question_label,
     accuracy: row.accuracy_pct ?? 0,
-    discrimination:
-      (row as QuestionDifficultyRow & { discrimination_index?: number | null })
-        .discrimination_index ?? 0,
+    discrimination: (row as QuestionDifficultyRow & { discrimination_index?: number | null }).discrimination_index ?? 0,
   }))
 
   return (
@@ -35,9 +29,7 @@ export default function QuestionDifficultyRadar({
       </CardHeader>
       <CardContent>
         {data.length > MAX && (
-          <p className="text-muted-foreground mb-2 text-xs">
-            {t('radar.showing', { shown: MAX, total: data.length })}
-          </p>
+          <p className="text-muted-foreground mb-2 text-xs">{t('radar.showing', { shown: MAX, total: data.length })}</p>
         )}
         <ChartContainer
           className="h-[320px] w-full"

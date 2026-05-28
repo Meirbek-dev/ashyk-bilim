@@ -56,10 +56,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge
-            variant={accepted ? 'success' : 'destructive'}
-            className="text-[10px] font-bold uppercase"
-          >
+          <Badge variant={accepted ? 'success' : 'destructive'} className="text-[10px] font-bold uppercase">
             {t('testCasesPassed', { passed, total })}
           </Badge>
           {typeof latestRun?.score === 'number' ? (
@@ -135,17 +132,14 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
                     ? String(detail['test_id'])
                     : null
                 const message = typeof detail['message'] === 'string' ? detail['message'] : null
-                const compileOutput =
-                  typeof detail['compile_output'] === 'string' ? detail['compile_output'] : null
+                const compileOutput = typeof detail['compile_output'] === 'string' ? detail['compile_output'] : null
 
                 return (
                   <div
                     key={testId ?? index}
                     className={cn(
                       'rounded-md border p-3.5 transition-all duration-150',
-                      passedCase
-                        ? 'border-lime-500/10 bg-lime-500/[0.01]'
-                        : 'border-rose-500/20 bg-rose-500/[0.01]',
+                      passedCase ? 'border-lime-500/10 bg-lime-500/[0.01]' : 'border-rose-500/20 bg-rose-500/[0.01]',
                     )}
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -157,9 +151,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
                         )}
                         {t('caseNumber', { number: index + 1 })}
                         {testId ? (
-                          <span className="text-muted-foreground font-mono text-[10px] font-normal">
-                            ({testId})
-                          </span>
+                          <span className="text-muted-foreground font-mono text-[10px] font-normal">({testId})</span>
                         ) : null}
                       </div>
                       <Badge
@@ -170,11 +162,7 @@ export function CodeSubmissionReview({ answer, starterTemplate = '' }: CodeSubmi
                       </Badge>
                     </div>
 
-                    {message ? (
-                      <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
-                        {message}
-                      </p>
-                    ) : null}
+                    {message ? <p className="text-muted-foreground mt-2 text-xs leading-relaxed">{message}</p> : null}
 
                     {compileOutput ? (
                       <pre className="mt-2.5 overflow-x-auto rounded border border-rose-500/20 bg-rose-500/10 p-2.5 font-mono text-xs text-rose-700 dark:text-rose-300">

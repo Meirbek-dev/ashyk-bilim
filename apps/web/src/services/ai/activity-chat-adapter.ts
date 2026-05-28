@@ -59,20 +59,13 @@ interface ActivityErrorSseEvent extends ActivitySseEventBase {
   error_code?: string
 }
 
-type ActivitySseEvent =
-  | ActivityStatusSseEvent
-  | ActivityDeltaSseEvent
-  | ActivityFinalSseEvent
-  | ActivityErrorSseEvent
+type ActivitySseEvent = ActivityStatusSseEvent | ActivityDeltaSseEvent | ActivityFinalSseEvent | ActivityErrorSseEvent
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
-const readOptionalString = (value: unknown): string | undefined =>
-  typeof value === 'string' ? value : undefined
+const readOptionalString = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined)
 
-const readOptionalNumber = (value: unknown): number | undefined =>
-  typeof value === 'number' ? value : undefined
+const readOptionalNumber = (value: unknown): number | undefined => (typeof value === 'number' ? value : undefined)
 
 const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
   if (!isRecord(value)) return null
@@ -85,13 +78,9 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
       return {
         type,
         ...(version !== undefined ? { version } : {}),
-        ...(readOptionalString(value['aichat_uuid'])
-          ? { aichat_uuid: readOptionalString(value['aichat_uuid']) }
-          : {}),
+        ...(readOptionalString(value['aichat_uuid']) ? { aichat_uuid: readOptionalString(value['aichat_uuid']) } : {}),
         ...(readOptionalString(value['status']) ? { status: readOptionalString(value['status']) } : {}),
-        ...(readOptionalString(value['message'])
-          ? { message: readOptionalString(value['message']) }
-          : {}),
+        ...(readOptionalString(value['message']) ? { message: readOptionalString(value['message']) } : {}),
       }
     }
     case 'delta':
@@ -106,9 +95,7 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
       return {
         type,
         ...(version !== undefined ? { version } : {}),
-        ...(readOptionalString(value['aichat_uuid'])
-          ? { aichat_uuid: readOptionalString(value['aichat_uuid']) }
-          : {}),
+        ...(readOptionalString(value['aichat_uuid']) ? { aichat_uuid: readOptionalString(value['aichat_uuid']) } : {}),
         ...(readOptionalString(value['content']) ? { content: readOptionalString(value['content']) } : {}),
       }
     }
@@ -117,9 +104,7 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
         type,
         ...(version !== undefined ? { version } : {}),
         ...(readOptionalString(value['error']) ? { error: readOptionalString(value['error']) } : {}),
-        ...(readOptionalString(value['error_code'])
-          ? { error_code: readOptionalString(value['error_code']) }
-          : {}),
+        ...(readOptionalString(value['error_code']) ? { error_code: readOptionalString(value['error_code']) } : {}),
       }
     }
     default: {
@@ -230,9 +215,7 @@ export function createActivityChatAdapter({
   const connection = stream(async function* connection(messages, _data) {
     // Extract the last user message text from the UIMessage parts array.
     const lastUser = [...messages].toReversed().find(m => m.role === 'user')
-    const normalizedLastUser = lastUser
-      ? normalizeToUIMessage(lastUser, () => generateUUID())
-      : null
+    const normalizedLastUser = lastUser ? normalizeToUIMessage(lastUser, () => generateUUID()) : null
     const text =
       normalizedLastUser?.parts
         .filter((p): p is TextPart => p.type === 'text')

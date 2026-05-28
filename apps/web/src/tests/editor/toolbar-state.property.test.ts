@@ -9,10 +9,7 @@
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 
-import {
-  selectToolbarState,
-  type ToolbarStateSnap,
-} from '../../components/Objects/Editor/Toolbar/EditorToolbar'
+import { selectToolbarState, type ToolbarStateSnap } from '../../components/Objects/Editor/Toolbar/EditorToolbar'
 
 // ---------------------------------------------------------------------------
 // Arbitrary generator for editor state snapshots
@@ -88,11 +85,7 @@ describe('EditorToolbar state selector (Property 9)', () => {
 
         for (const [key, value] of Object.entries(result)) {
           const t = typeof value
-          const isPrimitive =
-            t === 'boolean' ||
-            t === 'number' ||
-            t === 'string' ||
-            (t === 'object' && value === null)
+          const isPrimitive = t === 'boolean' || t === 'number' || t === 'string' || (t === 'object' && value === null)
 
           expect(
             isPrimitive,
@@ -145,8 +138,7 @@ describe('EditorToolbar state selector (Property 9)', () => {
       fc.property(arbEditorStateSnapshot, snap => {
         const result = selectToolbarState(snap)
         const t = typeof result.codeBlockLanguage
-        const isStringOrNull =
-          t === 'string' || (t === 'object' && result.codeBlockLanguage === null)
+        const isStringOrNull = t === 'string' || (t === 'object' && result.codeBlockLanguage === null)
         expect(isStringOrNull).toBe(true)
       }),
       { numRuns: 200 },

@@ -10,20 +10,9 @@ export type CourseWorkspaceStage =
   | 'certificate'
   | 'review'
 
-export type CourseReadinessItemId =
-  | 'details'
-  | 'media'
-  | 'curriculum'
-  | 'collaboration'
-  | 'access'
-  | 'certificate'
+export type CourseReadinessItemId = 'details' | 'media' | 'curriculum' | 'collaboration' | 'access' | 'certificate'
 
-export type CourseManagementBadgeId =
-  | 'public'
-  | 'private'
-  | 'readyToPublish'
-  | 'needsAttention'
-  | 'noActivitiesYet'
+export type CourseManagementBadgeId = 'public' | 'private' | 'readyToPublish' | 'needsAttention' | 'noActivitiesYet'
 
 export interface CourseChecklistItem {
   id: CourseReadinessItemId
@@ -43,14 +32,9 @@ export function prefixedCourseUuid(courseUuid: string): string {
   return courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`
 }
 
-export function buildCourseWorkspacePath(
-  courseUuid: string,
-  stage: CourseWorkspaceStage = 'curriculum',
-): string {
+export function buildCourseWorkspacePath(courseUuid: string, stage: CourseWorkspaceStage = 'curriculum'): string {
   const cleanUuid = cleanCourseUuid(courseUuid)
-  return stage === 'overview'
-    ? `/dash/courses/${cleanUuid}/curriculum`
-    : `/dash/courses/${cleanUuid}/${stage}`
+  return stage === 'overview' ? `/dash/courses/${cleanUuid}/curriculum` : `/dash/courses/${cleanUuid}/${stage}`
 }
 
 export function buildCourseCreationPath(sourceCourseUuid?: string): string {
@@ -65,8 +49,7 @@ export function getCourseContentStats(course: any): {
   const chapters = Array.isArray(course?.chapters) ? course.chapters.length : 0
   const activities = Array.isArray(course?.chapters)
     ? course.chapters.reduce(
-        (total: number, chapter: any) =>
-          total + (Array.isArray(chapter.activities) ? chapter.activities.length : 0),
+        (total: number, chapter: any) => total + (Array.isArray(chapter.activities) ? chapter.activities.length : 0),
         0,
       )
     : 0
@@ -74,8 +57,7 @@ export function getCourseContentStats(course: any): {
   return { chapters, activities }
 }
 
-const isCourseDetailsComplete = (course: any): boolean =>
-  Boolean(course?.name?.trim() && course?.description?.trim())
+const isCourseDetailsComplete = (course: any): boolean => Boolean(course?.name?.trim() && course?.description?.trim())
 
 const isCourseMediaComplete = (course: any): boolean => Boolean(course?.thumbnail_image)
 

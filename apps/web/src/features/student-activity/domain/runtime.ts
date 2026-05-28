@@ -59,9 +59,7 @@ export interface StudentVisiblePolicy {
   completionRule?: string | null
 }
 
-export function normalizeActivityProgress(
-  cell?: ActivityProgressCell | null,
-): StudentActivityProgressRuntime {
+export function normalizeActivityProgress(cell?: ActivityProgressCell | null): StudentActivityProgressRuntime {
   if (!cell) {
     return {
       state: 'not_started',
@@ -82,9 +80,7 @@ export function normalizeActivityProgress(
     ...(cell.score !== undefined ? { score: cell.score } : {}),
     ...(cell.passed !== undefined ? { passed: cell.passed } : {}),
     ...(cell.due_at !== undefined ? { dueAt: cell.due_at } : {}),
-    ...(cell.latest_submission_uuid !== undefined
-      ? { latestSubmissionUuid: cell.latest_submission_uuid }
-      : {}),
+    ...(cell.latest_submission_uuid !== undefined ? { latestSubmissionUuid: cell.latest_submission_uuid } : {}),
   }
 }
 
@@ -92,10 +88,7 @@ export function normalizeProgressState(
   state: ActivityProgressCell['state'] | undefined,
   cell?: Pick<ActivityProgressCell, 'latest_submission_status' | 'passed' | 'completed_at'> | null,
 ): StudentActivityState {
-  if (
-    cell?.completed_at &&
-    (!state || state === 'NOT_STARTED' || state === 'IN_PROGRESS' || state === 'COMPLETED')
-  ) {
+  if (cell?.completed_at && (!state || state === 'NOT_STARTED' || state === 'IN_PROGRESS' || state === 'COMPLETED')) {
     return 'complete'
   }
   switch (state) {
@@ -124,8 +117,7 @@ export function normalizeProgressState(
       return 'complete'
     }
     default: {
-      if (cell?.latest_submission_status === 'PUBLISHED')
-        return cell.passed === false ? 'failed' : 'published'
+      if (cell?.latest_submission_status === 'PUBLISHED') return cell.passed === false ? 'failed' : 'published'
       return 'not_started'
     }
   }
@@ -162,9 +154,7 @@ export function derivePrimaryAction(options: {
     return {
       id: 'next_activity',
       enabled: true,
-      ...(options.nextActivityUuid !== undefined
-        ? { targetActivityUuid: options.nextActivityUuid }
-        : {}),
+      ...(options.nextActivityUuid !== undefined ? { targetActivityUuid: options.nextActivityUuid } : {}),
     }
   }
   if (options.canMarkComplete) {

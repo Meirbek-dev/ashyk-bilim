@@ -22,15 +22,9 @@ export class CoursePlayerPage {
 
   public constructor(page: Page) {
     this.page = page
-    this.activityList = page
-      .locator('nav[aria-label*="activities"], aside ul, .activity-list')
-      .first()
-    this.markCompleteButton = page
-      .getByRole('button', { name: /mark.*complete|complete|done|continue/i })
-      .first()
-    this.enrollButton = page
-      .getByRole('button', { name: /enroll|start course|get started/i })
-      .first()
+    this.activityList = page.locator('nav[aria-label*="activities"], aside ul, .activity-list').first()
+    this.markCompleteButton = page.getByRole('button', { name: /mark.*complete|complete|done|continue/i }).first()
+    this.enrollButton = page.getByRole('button', { name: /enroll|start course|get started/i }).first()
     this.downloadCertButton = page
       .getByRole('link', { name: /download certificate|certificate/i })
       .or(page.getByRole('button', { name: /download certificate|certificate/i }))
@@ -51,22 +45,16 @@ export class CoursePlayerPage {
   public async enroll(): Promise<void> {
     await this.enrollButton.click()
     // Wait for the page to update — enroll may redirect or update in-place
-    await this.page.waitForResponse(
-      r => r.url().includes('/trail') && r.request().method() === 'POST',
-      {
-        timeout: 10_000,
-      },
-    )
+    await this.page.waitForResponse(r => r.url().includes('/trail') && r.request().method() === 'POST', {
+      timeout: 10_000,
+    })
   }
 
   public async markComplete(): Promise<void> {
     await this.markCompleteButton.click()
-    await this.page.waitForResponse(
-      r => r.url().includes('/trail') && r.request().method() !== 'GET',
-      {
-        timeout: 10_000,
-      },
-    )
+    await this.page.waitForResponse(r => r.url().includes('/trail') && r.request().method() !== 'GET', {
+      timeout: 10_000,
+    })
   }
 
   /** Click on a specific activity in the sidebar by name */

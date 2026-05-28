@@ -110,13 +110,7 @@ export function CanonicalAttemptItem({
             ) : (
               <Input
                 id={`${item.item_uuid}-${field.id}`}
-                type={
-                  field.field_type === 'number'
-                    ? 'number'
-                    : field.field_type === 'date'
-                      ? 'date'
-                      : 'text'
-                }
+                type={field.field_type === 'number' ? 'number' : field.field_type === 'date' ? 'date' : 'text'}
                 value={currentValues[field.id] ?? ''}
                 disabled={disabled}
                 onChange={event =>
@@ -239,11 +233,7 @@ export function CanonicalAttemptItem({
     )
   }
 
-  return (
-    <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
-      {t('unsupportedItem')}
-    </div>
-  )
+  return <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">{t('unsupportedItem')}</div>
 }
 
 export function CanonicalReviewAnswer({

@@ -59,26 +59,18 @@ export function normalizeFormItem(raw: Record<string, unknown> | null | undefine
   return {
     kind: 'FORM',
     questions: rawQuestions.map((rawQuestion, questionIndex): FormQuestion => {
-      const question =
-        rawQuestion && typeof rawQuestion === 'object'
-          ? (rawQuestion as Record<string, unknown>)
-          : {}
+      const question = rawQuestion && typeof rawQuestion === 'object' ? (rawQuestion as Record<string, unknown>) : {}
       const rawBlanks = Array.isArray(question['blanks']) ? question['blanks'] : [createBlank()]
       return {
         questionUUID:
-          typeof question['questionUUID'] === 'string'
-            ? question['questionUUID']
-            : `question_${questionIndex}`,
+          typeof question['questionUUID'] === 'string' ? question['questionUUID'] : `question_${questionIndex}`,
         questionText: typeof question['questionText'] === 'string' ? question['questionText'] : '',
         blanks: rawBlanks.map((rawBlank, blankIndex): FormBlank => {
-          const blank =
-            rawBlank && typeof rawBlank === 'object' ? (rawBlank as Record<string, unknown>) : {}
+          const blank = rawBlank && typeof rawBlank === 'object' ? (rawBlank as Record<string, unknown>) : {}
           return {
-            blankUUID:
-              typeof blank['blankUUID'] === 'string' ? blank['blankUUID'] : `blank_${blankIndex}`,
+            blankUUID: typeof blank['blankUUID'] === 'string' ? blank['blankUUID'] : `blank_${blankIndex}`,
             placeholder: typeof blank['placeholder'] === 'string' ? blank['placeholder'] : '',
-            correctAnswer:
-              typeof blank['correctAnswer'] === 'string' ? blank['correctAnswer'] : '',
+            correctAnswer: typeof blank['correctAnswer'] === 'string' ? blank['correctAnswer'] : '',
             hint: typeof blank['hint'] === 'string' ? blank['hint'] : '',
           }
         }),
@@ -148,13 +140,7 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
                   placeholder={t('fieldLabelPlaceholder')}
                   disabled={disabled}
                   onChange={event =>
-                    updateBlank(
-                      value,
-                      questionIndex,
-                      blankIndex,
-                      { placeholder: event.target.value },
-                      onChange,
-                    )
+                    updateBlank(value, questionIndex, blankIndex, { placeholder: event.target.value }, onChange)
                   }
                 />
                 <Input
@@ -162,13 +148,7 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
                   placeholder={t('correctAnswerPlaceholder')}
                   disabled={disabled}
                   onChange={event =>
-                    updateBlank(
-                      value,
-                      questionIndex,
-                      blankIndex,
-                      { correctAnswer: event.target.value },
-                      onChange,
-                    )
+                    updateBlank(value, questionIndex, blankIndex, { correctAnswer: event.target.value }, onChange)
                   }
                 />
                 <Input
@@ -176,13 +156,7 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
                   placeholder={t('hintPlaceholder')}
                   disabled={disabled}
                   onChange={event =>
-                    updateBlank(
-                      value,
-                      questionIndex,
-                      blankIndex,
-                      { hint: event.target.value },
-                      onChange,
-                    )
+                    updateBlank(value, questionIndex, blankIndex, { hint: event.target.value }, onChange)
                   }
                 />
                 <Button
@@ -197,9 +171,7 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
                         index === questionIndex
                           ? {
                               ...item,
-                              blanks: item.blanks.filter(
-                                (_, candidateIndex) => candidateIndex !== blankIndex,
-                              ),
+                              blanks: item.blanks.filter((_, candidateIndex) => candidateIndex !== blankIndex),
                             }
                           : item,
                       ),
@@ -219,9 +191,7 @@ export function FormItemAuthor({ value, disabled, onChange }: ItemAuthorProps<Fo
                 onChange({
                   ...value,
                   questions: value.questions.map((item, index) =>
-                    index === questionIndex
-                      ? { ...item, blanks: [...item.blanks, createBlank()] }
-                      : item,
+                    index === questionIndex ? { ...item, blanks: [...item.blanks, createBlank()] } : item,
                   ),
                 })
               }
@@ -295,11 +265,7 @@ export function FormItemAttempt({
   }
 
   if (item.questions.length === 0) {
-    return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
-        {t('noFields')}
-      </div>
-    )
+    return <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">{t('noFields')}</div>
   }
 
   return (
@@ -309,11 +275,7 @@ export function FormItemAttempt({
           <div className="mb-3 flex items-start gap-2">
             <Badge variant="secondary">{t('questionBadge', { number: questionIndex + 1 })}</Badge>
             <div className="min-w-0 flex-1 font-medium">
-              <MarkdownContent
-                content={question.questionText || t('promptFallback')}
-                mode="prompt"
-                compact
-              />
+              <MarkdownContent content={question.questionText || t('promptFallback')} mode="prompt" compact />
             </div>
           </div>
           <div className="grid gap-3">
@@ -330,9 +292,7 @@ export function FormItemAttempt({
                     disabled={disabled}
                     onChange={event => updateBlankAnswer(blankId, event.target.value)}
                   />
-                  {blank.hint ? (
-                    <p className="text-muted-foreground text-xs">{blank.hint}</p>
-                  ) : null}
+                  {blank.hint ? <p className="text-muted-foreground text-xs">{blank.hint}</p> : null}
                 </div>
               )
             })}
@@ -343,9 +303,7 @@ export function FormItemAttempt({
   )
 }
 
-export function FormItemReviewDetail({
-  answer,
-}: ItemReviewDetailProps<FormItemValue, FormAnswer | null>) {
+export function FormItemReviewDetail({ answer }: ItemReviewDetailProps<FormItemValue, FormAnswer | null>) {
   return (
     <pre className="bg-muted max-h-80 overflow-auto rounded-md p-3 text-xs">
       {JSON.stringify(answer?.form_data?.answers ?? {}, null, 2)}

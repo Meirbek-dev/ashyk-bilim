@@ -47,10 +47,8 @@ export default function UserGamificationSettings() {
     if (profile?.preferences) {
       const prefs = profile.preferences as any
       setPreferences({
-        showOnLeaderboard:
-          prefs?.privacy?.showOnLeaderboard ?? DEFAULT_PREFERENCES.showOnLeaderboard,
-        xpGainNotifications:
-          prefs?.notifications?.xpGain ?? DEFAULT_PREFERENCES.xpGainNotifications,
+        showOnLeaderboard: prefs?.privacy?.showOnLeaderboard ?? DEFAULT_PREFERENCES.showOnLeaderboard,
+        xpGainNotifications: prefs?.notifications?.xpGain ?? DEFAULT_PREFERENCES.xpGainNotifications,
         animatedEffects: prefs?.display?.animatedEffects ?? DEFAULT_PREFERENCES.animatedEffects,
       })
     }
@@ -119,9 +117,7 @@ export default function UserGamificationSettings() {
           <div className="flex items-center justify-between space-x-2">
             <div className="space-y-0.5">
               <Label htmlFor="show-leaderboard">{t('settings.showOnLeaderboard')}</Label>
-              <p className="text-muted-foreground text-sm">
-                {t('settings.showOnLeaderboardDescription')}
-              </p>
+              <p className="text-muted-foreground text-sm">{t('settings.showOnLeaderboardDescription')}</p>
             </div>
             <Switch
               id="show-leaderboard"
@@ -134,9 +130,7 @@ export default function UserGamificationSettings() {
           <div className="flex items-center justify-between space-x-2">
             <div className="space-y-0.5">
               <Label htmlFor="xp-notifications">{t('settings.xpGainNotifications')}</Label>
-              <p className="text-muted-foreground text-sm">
-                {t('settings.xpGainNotificationsDescription')}
-              </p>
+              <p className="text-muted-foreground text-sm">{t('settings.xpGainNotificationsDescription')}</p>
             </div>
             <Switch
               id="xp-notifications"
@@ -149,9 +143,7 @@ export default function UserGamificationSettings() {
           <div className="flex items-center justify-between space-x-2">
             <div className="space-y-0.5">
               <Label htmlFor="animated-effects">{t('settings.animatedEffects')}</Label>
-              <p className="text-muted-foreground text-sm">
-                {t('settings.animatedEffectsDescription')}
-              </p>
+              <p className="text-muted-foreground text-sm">{t('settings.animatedEffectsDescription')}</p>
             </div>
             <Switch
               id="animated-effects"
@@ -168,11 +160,7 @@ export default function UserGamificationSettings() {
                 {t('settings.saved')}
               </span>
             )}
-            <Button
-              onClick={handleSave}
-              disabled={!hasChanges || isSaving}
-              className="min-w-[120px]"
-            >
+            <Button onClick={handleSave} disabled={!hasChanges || isSaving} className="min-w-[120px]">
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -36,9 +36,7 @@ export default function InlineQuizAttempt({ assessmentUuid }: InlineQuizAttemptP
 
   return (
     <div className="rounded-lg border p-4">
-      <p className="text-muted-foreground mb-3 text-sm">
-        {t('quizInfo', { id: assessmentUuid.slice(0, 16) })}
-      </p>
+      <p className="text-muted-foreground mb-3 text-sm">{t('quizInfo', { id: assessmentUuid.slice(0, 16) })}</p>
       {/* TODO: Render actual quiz items from useAssessment(assessmentUuid) */}
       <Button
         size="sm"

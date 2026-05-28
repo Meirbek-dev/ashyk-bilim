@@ -2,18 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Download,
-  ExternalLink,
-  Eye,
-  FileText,
-  Loader2,
-  RefreshCw,
-  RotateCcw,
-  Search,
-  Send,
-  X,
-} from 'lucide-react'
+import { Download, ExternalLink, Eye, FileText, Loader2, RefreshCw, RotateCcw, Search, Send, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
@@ -63,10 +52,8 @@ interface FileSubmissionReviewWorkspaceProps {
   initialAttemptUuid?: string | null
 }
 
-const activityQueryKey = (activityUuid: string) =>
-  ['file-submission', 'review-activity', activityUuid] as const
-const queueQueryKey = (fileSubmissionUuid: string) =>
-  ['file-submission', 'review-queue', fileSubmissionUuid] as const
+const activityQueryKey = (activityUuid: string) => ['file-submission', 'review-activity', activityUuid] as const
+const queueQueryKey = (fileSubmissionUuid: string) => ['file-submission', 'review-queue', fileSubmissionUuid] as const
 
 export default function FileSubmissionReviewWorkspace({
   activityUuid,
@@ -93,9 +80,7 @@ export default function FileSubmissionReviewWorkspace({
 
   const { data: queue, isLoading: isQueueLoading } = useQuery(
     queryOptions({
-      queryKey: config
-        ? queueQueryKey(config.file_submission_uuid)
-        : ['file-submission', 'review-queue', 'pending'],
+      queryKey: config ? queueQueryKey(config.file_submission_uuid) : ['file-submission', 'review-queue', 'pending'],
       queryFn: () => getFileSubmissionReviewQueue(config!.file_submission_uuid),
       enabled: Boolean(config?.file_submission_uuid),
     }),
@@ -112,8 +97,7 @@ export default function FileSubmissionReviewWorkspace({
     })
   }, [queue?.items, search])
 
-  const selected =
-    filteredItems.find(attempt => attempt.attempt_uuid === selectedUuid) ?? filteredItems[0] ?? null
+  const selected = filteredItems.find(attempt => attempt.attempt_uuid === selectedUuid) ?? filteredItems[0] ?? null
 
   const gradeMutation = useMutation({
     mutationFn: async ({ status }: { status: 'GRADED' | 'PUBLISHED' | 'RETURNED' }) => {
@@ -153,10 +137,7 @@ export default function FileSubmissionReviewWorkspace({
     },
   })
 
-  const parsedCriteria = useMemo(
-    () => (config?.rubric ? parseRubricCriteria(config.rubric) : []),
-    [config?.rubric],
-  )
+  const parsedCriteria = useMemo(() => (config?.rubric ? parseRubricCriteria(config.rubric) : []), [config?.rubric])
 
   // Auto-fill score from rubric criterion scores
   const rubricTotalScore = useMemo(() => {
@@ -172,8 +153,7 @@ export default function FileSubmissionReviewWorkspace({
     const savedRubric = attempt.feedback?.rubric
     if (savedRubric && typeof savedRubric === 'object' && 'criteria' in savedRubric) {
       const criteriaScores: Record<string, number> = {}
-      for (const c of (savedRubric as { criteria: { criterion_id: string; score: number }[] })
-        .criteria) {
+      for (const c of (savedRubric as { criteria: { criterion_id: string; score: number }[] }).criteria) {
         criteriaScores[c.criterion_id] = c.score
       }
       setRubricScores(criteriaScores)
@@ -217,9 +197,7 @@ export default function FileSubmissionReviewWorkspace({
 
   if (!config || !queue) {
     return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-        {t('reviewUnavailable')}
-      </div>
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('reviewUnavailable')}</div>
     )
   }
 
@@ -314,9 +292,7 @@ export default function FileSubmissionReviewWorkspace({
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {selected.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
-                  {selected.final_score !== null ? (
-                    <Badge variant="outline">{selected.final_score}%</Badge>
-                  ) : null}
+                  {selected.final_score !== null ? <Badge variant="outline">{selected.final_score}%</Badge> : null}
                   <AttemptStatusBadge status={selected.status} />
                 </div>
               </div>
@@ -344,11 +320,7 @@ export default function FileSubmissionReviewWorkspace({
                           {previewable && (
                             <Button
                               size="sm"
-                              variant={
-                                previewUrl !== null && previewFilename === file.filename
-                                  ? 'default'
-                                  : 'outline'
-                              }
+                              variant={previewUrl !== null && previewFilename === file.filename ? 'default' : 'outline'}
                               disabled={isFetchingPreview === file.attempt_file_uuid}
                               onClick={() => {
                                 if (previewUrl !== null && previewFilename === file.filename) {
@@ -367,16 +339,8 @@ export default function FileSubmissionReviewWorkspace({
                               {t('preview')}
                             </Button>
                           )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openFile(file.attempt_file_uuid)}
-                          >
-                            {previewable ? (
-                              <ExternalLink className="size-4" />
-                            ) : (
-                              <Download className="size-4" />
-                            )}
+                          <Button size="sm" variant="outline" onClick={() => openFile(file.attempt_file_uuid)}>
+                            {previewable ? <ExternalLink className="size-4" /> : <Download className="size-4" />}
                             {previewable ? t('openButton') : t('downloadButton')}
                           </Button>
                         </div>
@@ -427,10 +391,7 @@ export default function FileSubmissionReviewWorkspace({
                           ...rubricScores,
                           [criterionId]: criterionScore,
                         }
-                        const total = parsedCriteria.reduce(
-                          (acc, c) => acc + (newScores[c.criterion_id] ?? 0),
-                          0,
-                        )
+                        const total = parsedCriteria.reduce((acc, c) => acc + (newScores[c.criterion_id] ?? 0), 0)
                         const maxTotal = parsedCriteria.reduce((acc, c) => acc + c.max_score, 0)
                         if (maxTotal > 0) {
                           setScore(String(Math.round((total / maxTotal) * 100)))
@@ -594,11 +555,7 @@ function FilePreviewPane({ url, filename }: { url: string; filename: string }) {
   if (isImage) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={url}
-        alt={filename}
-        className="max-h-[600px] w-full rounded-b-md object-contain p-2"
-      />
+      <img src={url} alt={filename} className="max-h-[600px] w-full rounded-b-md object-contain p-2" />
     )
   }
   // PDF / fallback iframe
@@ -613,8 +570,7 @@ function FilePreviewPane({ url, filename }: { url: string; filename: string }) {
 }
 
 function AttemptStatusBadge({ status }: { status: string }) {
-  const variant =
-    status === 'SUBMITTED' ? 'default' : status === 'RETURNED' ? 'destructive' : 'secondary'
+  const variant = status === 'SUBMITTED' ? 'default' : status === 'RETURNED' ? 'destructive' : 'secondary'
   return <Badge variant={variant}>{status.toLowerCase()}</Badge>
 }
 

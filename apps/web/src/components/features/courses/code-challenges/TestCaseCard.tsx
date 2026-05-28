@@ -1,14 +1,6 @@
 'use client'
 
-import {
-  AlertCircle,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Clock,
-  MemoryStick,
-  XCircle,
-} from 'lucide-react'
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Clock, MemoryStick, XCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -145,11 +137,7 @@ export function TestCaseCard({
   if (!isVisible) {
     return (
       <div
-        className={cn(
-          'flex items-center justify-between rounded-lg border p-3',
-          config.borderColor,
-          config.bgColor,
-        )}
+        className={cn('flex items-center justify-between rounded-lg border p-3', config.borderColor, config.bgColor)}
       >
         <div className="flex items-center gap-2">
           <StatusIcon className={cn('h-5 w-5', config.color)} />
@@ -157,9 +145,7 @@ export function TestCaseCard({
             {t('hiddenTest')} #{index + 1}
           </span>
         </div>
-        <Badge variant={result.passed ? 'success' : 'destructive'}>
-          {result.passed ? t('passed') : t('failed')}
-        </Badge>
+        <Badge variant={result.passed ? 'success' : 'destructive'}>{result.passed ? t('passed') : t('failed')}</Badge>
       </div>
     )
   }
@@ -222,9 +208,7 @@ export function TestCaseCard({
             {/* Expected Output */}
             {expectedOutput && (
               <div>
-                <div className="text-muted-foreground mb-1 text-sm font-medium">
-                  {t('expectedOutput')}:
-                </div>
+                <div className="text-muted-foreground mb-1 text-sm font-medium">{t('expectedOutput')}:</div>
                 <pre className="bg-muted overflow-x-auto rounded p-2 text-sm">{expectedOutput}</pre>
               </div>
             )}
@@ -232,9 +216,7 @@ export function TestCaseCard({
             {/* Actual Output */}
             {result.stdout && (
               <div>
-                <div className="text-muted-foreground mb-1 text-sm font-medium">
-                  {t('actualOutput')}:
-                </div>
+                <div className="text-muted-foreground mb-1 text-sm font-medium">{t('actualOutput')}:</div>
                 <pre
                   className={cn(
                     'overflow-x-auto rounded p-2 text-sm',
@@ -249,9 +231,7 @@ export function TestCaseCard({
             {/* Compilation Error */}
             {result.compile_output && (
               <div>
-                <div className="mb-1 text-sm font-medium text-red-600">
-                  {t('compilationOutput')}:
-                </div>
+                <div className="mb-1 text-sm font-medium text-red-600">{t('compilationOutput')}:</div>
                 <pre className="overflow-x-auto rounded bg-red-50 p-2 text-sm text-red-800">
                   {result.compile_output}
                 </pre>
@@ -262,16 +242,12 @@ export function TestCaseCard({
             {result.stderr && (
               <div>
                 <div className="mb-1 text-sm font-medium text-red-600">{t('stderr')}:</div>
-                <pre className="overflow-x-auto rounded bg-red-50 p-2 text-sm text-red-800">
-                  {result.stderr}
-                </pre>
+                <pre className="overflow-x-auto rounded bg-red-50 p-2 text-sm text-red-800">{result.stderr}</pre>
               </div>
             )}
 
             {/* Message */}
-            {result.message && (
-              <div className="text-muted-foreground text-sm">{result.message}</div>
-            )}
+            {result.message && <div className="text-muted-foreground text-sm">{result.message}</div>}
           </div>
         </CollapsibleContent>
       </div>

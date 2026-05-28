@@ -1,18 +1,13 @@
 import type { CodeVerdict, TestCaseResult } from './codeChallenge.types'
 
-export function verdictFromRun(
-  status: string | undefined,
-  passed: number,
-  total: number,
-): CodeVerdict {
+export function verdictFromRun(status: string | undefined, passed: number, total: number): CodeVerdict {
   const normalized = (status ?? '').toUpperCase()
   if (!normalized) return 'IDLE'
   if (normalized === 'DEGRADED') return 'DEGRADED'
   if (normalized.includes('COMPILE')) return 'COMPILE_ERROR'
   if (normalized.includes('TIME')) return 'TIME_LIMIT'
   if (normalized.includes('RUNTIME')) return 'RUNTIME_ERROR'
-  if (normalized.includes('RUN') || normalized.includes('QUEUE') || normalized.includes('PROCESS'))
-    return 'RUNNING'
+  if (normalized.includes('RUN') || normalized.includes('QUEUE') || normalized.includes('PROCESS')) return 'RUNNING'
   if (total > 0 && passed >= total) return 'ACCEPTED'
   if (normalized.includes('ACCEPTED') && passed >= total) return 'ACCEPTED'
   return 'WRONG_ANSWER'
@@ -60,9 +55,7 @@ export function verdictLabel(verdict: CodeVerdict | null): string {
   }
 }
 
-export function verdictTone(
-  verdict: CodeVerdict | null,
-): 'success' | 'destructive' | 'warning' | 'secondary' {
+export function verdictTone(verdict: CodeVerdict | null): 'success' | 'destructive' | 'warning' | 'secondary' {
   switch (verdict) {
     case 'ACCEPTED': {
       return 'success'

@@ -27,9 +27,7 @@ export default function SettingsHeader({
         <div className="pt-6 pb-4">
           <div className="max-w-7xl space-y-1.5">
             <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">{title}</h1>
-            {description && (
-              <p className="text-muted-foreground text-sm lg:text-base">{description}</p>
-            )}
+            {description && <p className="text-muted-foreground text-sm lg:text-base">{description}</p>}
           </div>
         </div>
 

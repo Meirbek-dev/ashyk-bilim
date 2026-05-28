@@ -22,13 +22,7 @@ interface ActivityClientProps {
   runtime: StudentActivityRuntime | null
 }
 
-export default function ActivityClient({
-  activityid,
-  courseuuid,
-  activity,
-  course,
-  runtime,
-}: ActivityClientProps) {
+export default function ActivityClient({ activityid, courseuuid, activity, course, runtime }: ActivityClientProps) {
   const resolvedRuntime = runtime ?? buildCourseEndRuntime(course)
 
   return (

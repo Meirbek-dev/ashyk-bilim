@@ -15,21 +15,11 @@ export function useActivityMutations(courseUuid: string, withUnpublishedActiviti
   const queryClient = useQueryClient()
   const structureKey = courseKeys.structure(courseUuid, withUnpublishedActivities)
 
-  const updateActivityMutation = useMutation(
-    updateActivityMutationOptions(queryClient, structureKey),
-  )
-  const deleteActivityMutation = useMutation(
-    deleteActivityMutationOptions(queryClient, structureKey),
-  )
-  const createActivityMutation = useMutation(
-    createActivityMutationOptions(queryClient, structureKey),
-  )
-  const createFileActivityMutation = useMutation(
-    createFileActivityMutationOptions(queryClient, structureKey),
-  )
-  const createExternalVideoMutation = useMutation(
-    createExternalVideoMutationOptions(queryClient, structureKey),
-  )
+  const updateActivityMutation = useMutation(updateActivityMutationOptions(queryClient, structureKey))
+  const deleteActivityMutation = useMutation(deleteActivityMutationOptions(queryClient, structureKey))
+  const createActivityMutation = useMutation(createActivityMutationOptions(queryClient, structureKey))
+  const createFileActivityMutation = useMutation(createFileActivityMutationOptions(queryClient, structureKey))
+  const createExternalVideoMutation = useMutation(createExternalVideoMutationOptions(queryClient, structureKey))
 
   return {
     createActivity: async (payload: ActivityCreateValues, chapterId: number) =>
@@ -61,8 +51,7 @@ export function useActivityMutations(courseUuid: string, withUnpublishedActiviti
 
       return createFileActivityMutation.mutateAsync(mutationInput)
     },
-    deleteActivity: async (activityUuid: string) =>
-      deleteActivityMutation.mutateAsync(activityUuid),
+    deleteActivity: async (activityUuid: string) => deleteActivityMutation.mutateAsync(activityUuid),
     updateActivity: async (activityUuid: string, payload: Partial<ActivityUpdateValues>) =>
       updateActivityMutation.mutateAsync({ activityUuid, payload }),
   }

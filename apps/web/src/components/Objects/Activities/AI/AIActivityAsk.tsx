@@ -187,9 +187,7 @@ const ActivityChatPanel = () => {
               </div>
 
               {/* Status hint */}
-              {statusMessage && (
-                <p className="mb-2 flex-shrink-0 text-xs text-zinc-500">{statusMessage}</p>
-              )}
+              {statusMessage && <p className="mb-2 flex-shrink-0 text-xs text-zinc-500">{statusMessage}</p>}
 
               {/* Messages area */}
               <div className="mb-3 min-h-0 flex-1 overflow-hidden">

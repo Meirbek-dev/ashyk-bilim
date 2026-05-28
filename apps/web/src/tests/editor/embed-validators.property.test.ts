@@ -30,11 +30,7 @@ const arbValidTldrawUrl = arbRoomId.map(roomId => `https://tldraw.com/r/${roomId
  * Generates a valid tldraw share URL that already has a query string.
  */
 const arbValidTldrawUrlWithQuery = fc
-  .tuple(
-    arbRoomId,
-    fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9]{0,9}$/),
-    fc.stringMatching(/^[a-zA-Z0-9]{1,10}$/),
-  )
+  .tuple(arbRoomId, fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9]{0,9}$/), fc.stringMatching(/^[a-zA-Z0-9]{1,10}$/))
   .map(([roomId, key, value]) => `https://tldraw.com/r/${roomId}?${key}=${value}`)
 
 // ---------------------------------------------------------------------------

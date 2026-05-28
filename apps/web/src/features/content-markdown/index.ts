@@ -35,10 +35,7 @@ export {
 export { extractMarkdownPlainText, extractMarkdownSummary } from './utils/markdown-extract'
 
 // ── Validation ───────────────────────────────────────────────────────────────
-export {
-  getHighestMarkdownIssueSeverity,
-  validateMarkdownContent,
-} from './hooks/useMarkdownValidation'
+export { getHighestMarkdownIssueSeverity, validateMarkdownContent } from './hooks/useMarkdownValidation'
 export type { MarkdownValidationIssue } from './hooks/useMarkdownValidation'
 
 // ── Shiki (shared singleton) ──────────────────────────────────────────────────

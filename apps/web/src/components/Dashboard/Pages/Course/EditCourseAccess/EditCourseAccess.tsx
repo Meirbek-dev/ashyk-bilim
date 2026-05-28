@@ -45,8 +45,7 @@ const EditCourseAccess = () => {
   const { updateAccess } = useCoursesMutations(courseStructure?.course_uuid ?? '')
   const [draftPublic, setDraftPublic] = useState<boolean | undefined>(() => courseStructure?.public)
   const usergroups = editorData.linkedUserGroups.data ?? []
-  const isUserGroupsLoading =
-    course.isEditorDataLoading && editorData.linkedUserGroups.data === null
+  const isUserGroupsLoading = course.isEditorDataLoading && editorData.linkedUserGroups.data === null
 
   const isDirtyRef = useRef(false)
   isDirtyRef.current = draftPublic !== undefined && draftPublic !== courseStructure?.public
@@ -134,20 +133,12 @@ const EditCourseAccess = () => {
       </Card>
 
       {/* User groups — only shown for private courses */}
-      {draftPublic === false && (
-        <UserGroupsSection usergroups={usergroups} isLoading={isUserGroupsLoading} />
-      )}
+      {draftPublic === false && <UserGroupsSection usergroups={usergroups} isLoading={isUserGroupsLoading} />}
     </div>
   )
 }
 
-const UserGroupsSection = ({
-  usergroups,
-  isLoading,
-}: {
-  usergroups: any[]
-  isLoading: boolean
-}) => {
+const UserGroupsSection = ({ usergroups, isLoading }: { usergroups: any[]; isLoading: boolean }) => {
   const course = useCourse()
   const [userGroupModal, setUserGroupModal] = useState(false)
   const t = useTranslations('DashPage.Courses.Access')
@@ -255,11 +246,7 @@ const UnlinkUserGroupRow = ({ usergroup, courseUuid }: { usergroup: any; courseU
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel />
-              <AlertDialogAction
-                variant="destructive"
-                onClick={removeUserGroupLink}
-                disabled={isPending}
-              >
+              <AlertDialogAction variant="destructive" onClick={removeUserGroupLink} disabled={isPending}>
                 {isPending ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="size-4 animate-spin" />

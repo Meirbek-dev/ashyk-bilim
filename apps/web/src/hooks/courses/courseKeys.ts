@@ -29,13 +29,7 @@ const buildQueryString = (params: Record<string, string | number | undefined>) =
   return query ? `?${query}` : ''
 }
 
-const normalizeCourseListOptions = ({
-  page = 1,
-  limit = 20,
-  query,
-  sortBy,
-  preset,
-}: CourseListKeyOptions = {}) => ({
+const normalizeCourseListOptions = ({ page = 1, limit = 20, query, sortBy, preset }: CourseListKeyOptions = {}) => ({
   limit,
   page,
   ...(preset ? { preset } : {}),
@@ -47,13 +41,7 @@ export const courseEndpoints = {
   list: ({ page = 1, limit = 20, query, sortBy, preset }: CourseListKeyOptions = {}) =>
     `courses/page/${page}/limit/${limit}${buildQueryString({ query, sort_by: sortBy, preset })}`,
 
-  editable: ({
-    page = 1,
-    limit = 20,
-    query,
-    sortBy = 'updated',
-    preset,
-  }: CourseListKeyOptions = {}) =>
+  editable: ({ page = 1, limit = 20, query, sortBy = 'updated', preset }: CourseListKeyOptions = {}) =>
     `courses/editable/page/${page}/limit/${limit}${buildQueryString({ query, sort_by: sortBy, preset })}`,
 
   detail: (courseUuid: string) => `courses/${normalizeCourseUuid(courseUuid)}`,
@@ -73,8 +61,7 @@ export const courseEndpoints = {
 export const courseKeys = {
   all: ['courses'] as const,
 
-  list: (options: CourseListKeyOptions = {}) =>
-    ['courses', 'list', normalizeCourseListOptions(options)] as const,
+  list: (options: CourseListKeyOptions = {}) => ['courses', 'list', normalizeCourseListOptions(options)] as const,
 
   editable: (options: CourseListKeyOptions = {}) =>
     [
@@ -93,8 +80,7 @@ export const courseKeys = {
 
   rights: (courseUuid: string) => ['courses', 'rights', normalizeCourseUuid(courseUuid)] as const,
 
-  contributors: (courseUuid: string) =>
-    ['courses', 'contributors', normalizeCourseUuid(courseUuid)] as const,
+  contributors: (courseUuid: string) => ['courses', 'contributors', normalizeCourseUuid(courseUuid)] as const,
 
   editorBundle: (courseUuid?: string | null) =>
     courseUuid ? (['courses', 'editor-bundle', normalizeCourseUuid(courseUuid)] as const) : null,

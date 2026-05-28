@@ -57,10 +57,8 @@ function parseSetCookieHeader(setCookieHeader: string): ParsedSetCookie | null {
 
   for (const attribute of attributes) {
     const attributeSeparatorIndex = attribute.indexOf('=')
-    const rawKey =
-      attributeSeparatorIndex !== -1 ? attribute.slice(0, attributeSeparatorIndex) : attribute
-    const rawValue =
-      attributeSeparatorIndex !== -1 ? attribute.slice(attributeSeparatorIndex + 1) : ''
+    const rawKey = attributeSeparatorIndex !== -1 ? attribute.slice(0, attributeSeparatorIndex) : attribute
+    const rawValue = attributeSeparatorIndex !== -1 ? attribute.slice(attributeSeparatorIndex + 1) : ''
     const key = rawKey.trim().toLowerCase()
     const optionValue = rawValue.trim()
 
@@ -104,10 +102,7 @@ export async function applyResponseCookies(responseHeaders: Headers): Promise<vo
   }
 }
 
-export function applyResponseCookiesToNextResponse(
-  responseHeaders: Headers,
-  response: NextResponse,
-): void {
+export function applyResponseCookiesToNextResponse(responseHeaders: Headers, response: NextResponse): void {
   for (const setCookieHeader of getSetCookieHeaders(responseHeaders)) {
     response.headers.append('set-cookie', setCookieHeader)
   }
@@ -122,9 +117,7 @@ export function buildRequestCookieHeader(request: NextRequest): string {
     .join('; ')
 }
 
-export function buildCookieHeaderFromPairs(
-  cookiePairs: Iterable<[string, string | undefined]>,
-): string {
+export function buildCookieHeaderFromPairs(cookiePairs: Iterable<[string, string | undefined]>): string {
   const values: string[] = []
   for (const [cookieName, cookieValue] of cookiePairs) {
     if (cookieValue) {

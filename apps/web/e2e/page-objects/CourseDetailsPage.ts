@@ -18,9 +18,7 @@ export class CourseDetailsPage {
     // EditCourseGeneral form uses react-hook-form — fields have no `id` by
     // default, so we target them by their label associations.
     this.titleInput = page.getByRole('textbox', { name: /course\s*title|name/i }).first()
-    this.descriptionTextarea = page
-      .getByRole('textbox', { name: /short\s*description|description/i })
-      .first()
+    this.descriptionTextarea = page.getByRole('textbox', { name: /short\s*description|description/i }).first()
     this.saveButton = page.getByRole('button', { name: /save/i }).first()
     this.savedBadge = page.locator('text=Saved').first()
   }

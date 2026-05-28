@@ -3,8 +3,8 @@ import { getPlatformThumbnailImage } from '@services/media/media'
 import { getCourses } from '@services/courses/courses'
 import { getCurrentTrail } from '@services/courses/activity'
 import { getSession } from '@/lib/auth/session'
-import { getSearchParam } from '@/lib/search-params';
-import type { PageSearchParams } from '@/lib/search-params';
+import { getSearchParam } from '@/lib/search-params'
+import type { PageSearchParams } from '@/lib/search-params'
 import { getTranslations } from 'next-intl/server'
 import { Actions, Resources, Scopes, perm } from '@/types/permissions'
 import { AUTH_PERMISSION_WILDCARD } from '@/lib/auth/types'
@@ -62,21 +62,14 @@ function sortCoursesByProgress(courses: any[], trailData: any) {
     const aCleanUuid = a.course_uuid?.replace('course_', '')
     const bCleanUuid = b.course_uuid?.replace('course_', '')
 
-    const aRun = trailData.runs.find(
-      (r: any) => r.course?.course_uuid?.replace('course_', '') === aCleanUuid,
-    )
-    const bRun = trailData.runs.find(
-      (r: any) => r.course?.course_uuid?.replace('course_', '') === bCleanUuid,
-    )
+    const aRun = trailData.runs.find((r: any) => r.course?.course_uuid?.replace('course_', '') === aCleanUuid)
+    const bRun = trailData.runs.find((r: any) => r.course?.course_uuid?.replace('course_', '') === bCleanUuid)
 
     const getProgress = (run: any, course: any) => {
       if (!run) return 0
       const total =
         run.course_total_steps ||
-        course.chapters?.reduce(
-          (acc: number, chap: any) => acc + (chap.activities?.length || 0),
-          0,
-        ) ||
+        course.chapters?.reduce((acc: number, chap: any) => acc + (chap.activities?.length || 0), 0) ||
         0
       const completed = run.steps?.filter((s: any) => s.complete === true)?.length || 0
       return total > 0 ? Math.round((completed / total) * 100) : 0
@@ -118,8 +111,7 @@ async function CoursesContent({ searchParams }: CoursesContentProps) {
   // Calculate permissions server-side
   const permissionsSet = new Set<string>(session?.permissions)
   const canManagePlatform =
-    permissionsSet.has(AUTH_PERMISSION_WILDCARD) ||
-    permissionsSet.has(perm(Resources.APP, Actions.MANAGE, Scopes.OWN))
+    permissionsSet.has(AUTH_PERMISSION_WILDCARD) || permissionsSet.has(perm(Resources.APP, Actions.MANAGE, Scopes.OWN))
 
   return (
     <Courses
@@ -133,9 +125,7 @@ async function CoursesContent({ searchParams }: CoursesContentProps) {
   )
 }
 
-export default async function PlatformCoursesPage(props: {
-  searchParams: Promise<PageSearchParams>
-}) {
+export default async function PlatformCoursesPage(props: { searchParams: Promise<PageSearchParams> }) {
   return (
     <Suspense fallback={<CoursesLoading />}>
       <CoursesContent searchParams={props.searchParams} />

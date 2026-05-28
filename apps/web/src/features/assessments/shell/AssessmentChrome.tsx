@@ -79,9 +79,7 @@ export function AssessmentChrome({
           <div className="min-w-0">
             <div className="text-muted-foreground text-xs font-medium uppercase">{kindLabel}</div>
             <h1 className="mt-1 text-xl font-semibold tracking-tight">{title}</h1>
-            {description ? (
-              <p className="text-muted-foreground mt-1 max-w-4xl text-sm">{description}</p>
-            ) : null}
+            {description ? <p className="text-muted-foreground mt-1 max-w-4xl text-sm">{description}</p> : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -130,10 +128,7 @@ export function AssessmentChrome({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function describeAntiCheat(
-  policy: PolicyView | null | undefined,
-  t: (key: string, values?: any) => string,
-): string {
+function describeAntiCheat(policy: PolicyView | null | undefined, t: (key: string, values?: any) => string): string {
   if (!policy) return t('antiCheatDefaultNotice')
   const enabled = [
     policy.antiCheat.copyPasteProtection ? t('antiCheatCopyPaste') : null,
@@ -142,9 +137,7 @@ function describeAntiCheat(
     policy.antiCheat.rightClickDisabled ? t('antiCheatRightClick') : null,
     policy.antiCheat.fullscreenEnforced ? t('antiCheatFullscreen') : null,
   ].filter(Boolean)
-  return enabled.length
-    ? t('antiCheatActiveChecks', { checks: enabled.join(', ') })
-    : t('antiCheatActiveNotice')
+  return enabled.length ? t('antiCheatActiveChecks', { checks: enabled.join(', ') }) : t('antiCheatActiveNotice')
 }
 
 function getReleaseNotice({

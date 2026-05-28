@@ -37,9 +37,7 @@ export default function AccessDenied({ session }: AccessDeniedProps) {
           {tErrors('accessDenied')}
         </h1>
 
-        <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
-          {tErrors('accessDeniedMessage')}
-        </p>
+        <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">{tErrors('accessDeniedMessage')}</p>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Button

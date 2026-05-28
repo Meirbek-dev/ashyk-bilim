@@ -46,10 +46,7 @@ const GoogleCallbackPage = () => {
               <AlertTriangle size={18} />
               <span className="text-sm font-semibold">{error}</span>
             </div>
-            <Link
-              href={getAbsoluteUrl('/login')}
-              className="text-muted-foreground text-sm underline"
-            >
+            <Link href={getAbsoluteUrl('/login')} className="text-muted-foreground text-sm underline">
               {t('login')}
             </Link>
           </>

@@ -58,12 +58,7 @@ export default async function PlatformCollectionsPage() {
       <div className="mb-8 flex flex-col space-y-4">
         <div className="flex items-center justify-between">
           <TypeOfContentTitle title={t('title')} type="col" />
-          <PermissionGuard
-            action={Actions.CREATE}
-            resource={Resources.COLLECTION}
-            scope={Scopes.APP}
-            fallback={null}
-          >
+          <PermissionGuard action={Actions.CREATE} resource={Resources.COLLECTION} scope={Scopes.APP} fallback={null}>
             <Link href={getAbsoluteUrl('/collections/new')}>
               <NewCollectionButton />
             </Link>

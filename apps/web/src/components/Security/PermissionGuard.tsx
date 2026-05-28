@@ -28,13 +28,7 @@ interface PermissionGuardProps {
  * </PermissionGuard>
  * ```
  */
-export function PermissionGuard({
-  action,
-  resource,
-  scope,
-  children,
-  fallback = null,
-}: PermissionGuardProps) {
+export function PermissionGuard({ action, resource, scope, children, fallback = null }: PermissionGuardProps) {
   const { can } = useSession()
 
   if (!can(resource, action, scope)) return <>{fallback}</>
@@ -55,10 +49,7 @@ interface PermissionErrorBoundaryState {
   hasError: boolean
 }
 
-export class PermissionErrorBoundary extends Component<
-  PermissionErrorBoundaryProps,
-  PermissionErrorBoundaryState
-> {
+export class PermissionErrorBoundary extends Component<PermissionErrorBoundaryProps, PermissionErrorBoundaryState> {
   public constructor(props: PermissionErrorBoundaryProps) {
     super(props)
     this.state = { hasError: false }

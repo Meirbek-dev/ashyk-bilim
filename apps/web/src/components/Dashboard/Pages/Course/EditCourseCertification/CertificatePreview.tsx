@@ -117,14 +117,10 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
         {layout === 'double' ? (
           <div className="border-border pointer-events-none absolute inset-3 rounded-md border" />
         ) : null}
-        {layout === 'classic' ? (
-          <div className="bg-border pointer-events-none absolute inset-x-10 top-6 h-px" />
-        ) : null}
+        {layout === 'classic' ? <div className="bg-border pointer-events-none absolute inset-x-10 top-6 h-px" /> : null}
 
         <div className={getCertificateBodyClass(layout)}>
-          <div
-            className={cn('relative flex flex-col', layout === 'split' ? 'p-6 md:p-8' : 'h-full')}
-          >
+          <div className={cn('relative flex flex-col', layout === 'split' ? 'p-6 md:p-8' : 'h-full')}>
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <div className="text-muted-foreground flex items-center gap-1 text-xs font-medium tracking-[0.18em] uppercase">
@@ -135,9 +131,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                     })}
                   </span>
                 </div>
-                <div className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
-                  {t('certificate')}
-                </div>
+                <div className="text-muted-foreground text-xs tracking-[0.18em] uppercase">{t('certificate')}</div>
               </div>
 
               {layout !== 'split' ? (
@@ -218,9 +212,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                   <Calendar className="size-3.5" />
                   <span>{t('awardedLabel')}</span>
                 </div>
-                <div className="text-foreground text-sm font-medium">
-                  {awardedDate || t('completedOn')}
-                </div>
+                <div className="text-foreground text-sm font-medium">{awardedDate || t('completedOn')}</div>
               </div>
             </div>
           </div>

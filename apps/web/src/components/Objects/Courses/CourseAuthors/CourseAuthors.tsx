@@ -67,18 +67,12 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
 
   return (
     <div className="flex flex-col items-center space-y-4 px-2 pb-2">
-      <div className="self-start text-[12px] font-semibold text-neutral-400">
-        {t('authorsAndUpdates')}
-      </div>
+      <div className="self-start text-[12px] font-semibold text-neutral-400">{t('authorsAndUpdates')}</div>
 
       {/* Avatars row */}
       <div className="relative flex justify-center -space-x-6">
         {displayedAvatars.map((author, index) => (
-          <div
-            key={author.user.user_uuid}
-            className="relative"
-            style={{ zIndex: displayedAvatars.length - index }}
-          >
+          <div key={author.user.user_uuid} className="relative" style={{ zIndex: displayedAvatars.length - index }}>
             <div className="ring-white">
               <UserAvatar
                 size={isMobile ? 'xl' : '2xl'}
@@ -117,11 +111,7 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
           {authors.length === 1 ? (
             <span>
               {authors[0]?.user?.first_name && authors[0]?.user?.last_name
-                ? [
-                    authors[0].user.first_name,
-                    authors[0].user.middle_name,
-                    authors[0].user.last_name,
-                  ]
+                ? [authors[0].user.first_name, authors[0].user.middle_name, authors[0].user.last_name]
                     .filter(Boolean)
                     .join(' ')
                 : `@${authors[0]?.user?.username || 'Unknown'}`}
@@ -131,20 +121,13 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[]; isMobile: b
               {displayedNames.map((author, index) => (
                 <span key={author.user.user_uuid}>
                   {author.user.first_name && author.user.last_name
-                    ? [author.user.first_name, author.user.middle_name, author.user.last_name]
-                        .filter(Boolean)
-                        .join(' ')
+                    ? [author.user.first_name, author.user.middle_name, author.user.last_name].filter(Boolean).join(' ')
                     : `@${author.user.username}`}
-                  {index === 0 &&
-                    authors.length > 1 &&
-                    index < displayedNames.length - 1 &&
-                    t('and')}
+                  {index === 0 && authors.length > 1 && index < displayedNames.length - 1 && t('and')}
                 </span>
               ))}
               {authors.length > 2 && (
-                <span className="ml-1 text-neutral-500">
-                  {t('andMoreAuthors', { count: authors.length - 2 })}
-                </span>
+                <span className="ml-1 text-neutral-500">{t('andMoreAuthors', { count: authors.length - 2 })}</span>
               )}
             </>
           )}
@@ -170,8 +153,7 @@ const UpdatesSection = ({ courseUuid }: { courseUuid: string }) => {
   const [selectedView, setSelectedView] = useState('list')
   const { can, isAuthenticated } = useSession()
   const canManageCourse =
-    can(Resources.COURSE, Actions.MANAGE, Scopes.OWN) ||
-    can(Resources.COURSE, Actions.MANAGE, Scopes.APP)
+    can(Resources.COURSE, Actions.MANAGE, Scopes.OWN) || can(Resources.COURSE, Actions.MANAGE, Scopes.APP)
   const { data: updates } = useCourseUpdates(courseUuid, {
     enabled: isAuthenticated,
   })
@@ -332,8 +314,7 @@ const NewUpdateForm = ({
 const UpdatesListView = ({ courseUuid }: { courseUuid: string }) => {
   const { can, isAuthenticated } = useSession()
   const canManageCourse =
-    can(Resources.COURSE, Actions.MANAGE, Scopes.OWN) ||
-    can(Resources.COURSE, Actions.MANAGE, Scopes.APP)
+    can(Resources.COURSE, Actions.MANAGE, Scopes.OWN) || can(Resources.COURSE, Actions.MANAGE, Scopes.APP)
   const { data: updates } = useCourseUpdates(courseUuid, {
     enabled: isAuthenticated,
   })

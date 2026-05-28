@@ -1,14 +1,4 @@
-import {
-  ArrowRight,
-  BookOpen,
-  CheckCircle2,
-  Clock,
-  Loader2,
-  PlayCircle,
-  Sparkles,
-  Trophy,
-  UserPen,
-} from 'lucide-react'
+import { ArrowRight, BookOpen, CheckCircle2, Clock, Loader2, PlayCircle, Sparkles, Trophy, UserPen } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/react-query/queryKeys'
 import { useSession } from '@/hooks/useSession'
@@ -99,9 +89,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
       if (course.chapters) {
         for (const chapter of course.chapters) {
           for (const activity of chapter.activities) {
-            const isCompleted = run?.steps?.some(
-              (step: any) => step.activity_id === activity.id && step.complete,
-            )
+            const isCompleted = run?.steps?.some((step: any) => step.activity_id === activity.id && step.complete)
             if (!isCompleted) {
               firstUnfinishedActivity = activity
               break
@@ -183,8 +171,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
 
   const renderActionButton = (action: 'start' | 'continue') => {
     const isAuthenticated = Boolean(currentUser)
-    const icon =
-      action === 'start' ? <PlayCircle className="size-5" /> : <ArrowRight className="size-5" />
+    const icon = action === 'start' ? <PlayCircle className="size-5" /> : <ArrowRight className="size-5" />
     const label = action === 'start' ? t('startCourse') : t('continueLearning')
 
     return (
@@ -259,8 +246,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
 
   const renderProgressSection = () => {
     const totalActivities =
-      course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) ||
-      0
+      course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0
 
     const run = trailData?.runs?.find((run: any) => {
       const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
@@ -268,8 +254,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
     })
 
     const completedActivities = run?.steps?.filter((step: any) => step.complete)?.length || 0
-    const progressPercentage =
-      totalActivities === 0 ? 0 : Math.round((completedActivities / totalActivities) * 100)
+    const progressPercentage = totalActivities === 0 ? 0 : Math.round((completedActivities / totalActivities) * 100)
     const isCompleted = progressPercentage === 100
 
     if (!isStarted) {
@@ -286,9 +271,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-neutral-900">{t('readyToBegin')}</p>
             {totalActivities > 0 && (
-              <p className="mt-0.5 text-sm text-neutral-500">
-                {t('startLearningJourney', { totalActivities })}
-              </p>
+              <p className="mt-0.5 text-sm text-neutral-500">{t('startLearningJourney', { totalActivities })}</p>
             )}
           </div>
           <Sparkles className="text-primary size-5" />
@@ -330,14 +313,9 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
               strokeLinecap="round"
               strokeDasharray={2 * Math.PI * 26}
               strokeDashoffset={
-                totalActivities === 0
-                  ? 0
-                  : 2 * Math.PI * 26 * (1 - completedActivities / totalActivities)
+                totalActivities === 0 ? 0 : 2 * Math.PI * 26 * (1 - completedActivities / totalActivities)
               }
-              className={cn(
-                'transition-all duration-700 ease-out',
-                isCompleted ? 'text-green-500' : 'text-primary',
-              )}
+              className={cn('transition-all duration-700 ease-out', isCompleted ? 'text-green-500' : 'text-primary')}
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
@@ -351,12 +329,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p
-              className={cn(
-                'text-sm font-medium',
-                isCompleted ? 'text-green-800' : 'text-neutral-900',
-              )}
-            >
+            <p className={cn('text-sm font-medium', isCompleted ? 'text-green-800' : 'text-neutral-900')}>
               {isCompleted ? t('courseCompleted') : t('courseProgress')}
             </p>
             {isCompleted && (
@@ -388,11 +361,7 @@ const CoursesActions = ({ courseuuid, course, trailData }: CourseActionsProps) =
         {renderProgressSection()}
 
         {/* Start/Continue Course Button */}
-        <Button
-          onClick={handleCourseAction}
-          disabled={isActionLoading}
-          className="h-12 w-full gap-2 text-base"
-        >
+        <Button onClick={handleCourseAction} disabled={isActionLoading} className="h-12 w-full gap-2 text-base">
           {isActionLoading ? (
             <Loader2 className="size-5 animate-spin" />
           ) : (

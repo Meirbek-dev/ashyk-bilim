@@ -22,29 +22,20 @@ const VideoActivity = dynamic(() => import('@components/Objects/Activities/Video
   ssr: false,
 })
 
-const DocumentPdfActivity = dynamic(
-  () => import('@components/Objects/Activities/DocumentPdf/DocumentPdf'),
-  {
-    loading: () => <LoadingFallback />,
-    ssr: false,
-  },
-)
+const DocumentPdfActivity = dynamic(() => import('@components/Objects/Activities/DocumentPdf/DocumentPdf'), {
+  loading: () => <LoadingFallback />,
+  ssr: false,
+})
 
-const FileSubmissionWorkspace = dynamic(
-  () => import('@/features/file-submissions/student/FileSubmissionWorkspace'),
-  {
-    loading: () => <LoadingFallback />,
-    ssr: false,
-  },
-)
+const FileSubmissionWorkspace = dynamic(() => import('@/features/file-submissions/student/FileSubmissionWorkspace'), {
+  loading: () => <LoadingFallback />,
+  ssr: false,
+})
 
-const InlineAssessmentWorkspace = dynamic(
-  () => import('@/features/assessments/shell/InlineAssessmentWorkspace'),
-  {
-    loading: () => <LoadingFallback />,
-    ssr: false,
-  },
-)
+const InlineAssessmentWorkspace = dynamic(() => import('@/features/assessments/shell/InlineAssessmentWorkspace'), {
+  loading: () => <LoadingFallback />,
+  ssr: false,
+})
 
 export function ActivityContentRenderer({
   activity,

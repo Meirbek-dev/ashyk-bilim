@@ -17,33 +17,14 @@ import {
   Trash2,
   Trophy,
 } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover'
 import { updateProfile } from '@/lib/users/client'
 import { createElement, useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { useSession } from '@/hooks/useSession'
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable'
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 import NextImage from '@components/ui/NextImage'
@@ -96,9 +77,7 @@ function SortableProfileSection({
           </div>
           <div
             className={`rounded-md p-1.5 ${
-              selectedSection === index
-                ? 'bg-primary/10 text-primary'
-                : 'bg-muted text-muted-foreground'
+              selectedSection === index ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
             }`}
           >
             {createElement(getSectionTypesConfig(t)[section.type].icon, {
@@ -119,9 +98,7 @@ function SortableProfileSection({
               setSelectedSection(index)
             }}
             className={`rounded-md p-1.5 transition-colors duration-200 ${
-              selectedSection === index
-                ? 'text-primary hover:bg-primary/10'
-                : 'text-muted-foreground hover:bg-accent'
+              selectedSection === index ? 'text-primary hover:bg-primary/10' : 'text-muted-foreground hover:bg-accent'
             }`}
           >
             <Edit size={14} />
@@ -405,10 +382,7 @@ const UserProfileBuilder = () => {
     fetchUserDataEvent()
   }, [me])
 
-  const createEmptySection = (
-    t: Function,
-    type: keyof typeof SECTION_TYPE_KEYS,
-  ): ProfileSection => {
+  const createEmptySection = (t: Function, type: keyof typeof SECTION_TYPE_KEYS): ProfileSection => {
     const sectionTypesConfig = getSectionTypesConfig(t)
     const baseSection = {
       id: `section-${Date.now()}`,
@@ -655,21 +629,19 @@ const UserProfileBuilder = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {Object.entries(getSectionTypesConfig(t)).map(
-                      ([type, { icon: Icon, label, description }]) => (
-                        <SelectItem key={type} value={type}>
-                          <div className="flex items-center space-x-3 py-1">
-                            <div className="bg-muted rounded-md p-1.5">
-                              <Icon size={16} className="text-muted-foreground" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-foreground text-sm font-medium">{label}</div>
-                              <div className="text-muted-foreground text-xs">{description}</div>
-                            </div>
+                    {Object.entries(getSectionTypesConfig(t)).map(([type, { icon: Icon, label, description }]) => (
+                      <SelectItem key={type} value={type}>
+                        <div className="flex items-center space-x-3 py-1">
+                          <div className="bg-muted rounded-md p-1.5">
+                            <Icon size={16} className="text-muted-foreground" />
                           </div>
-                        </SelectItem>
-                      ),
-                    )}
+                          <div className="flex-1">
+                            <div className="text-foreground text-sm font-medium">{label}</div>
+                            <div className="text-muted-foreground text-xs">{description}</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -722,7 +694,11 @@ const DatePicker: FC<{
       >
         <CalendarIcon className="mr-2 h-4 w-4" />
         {value && selectedDate ? (
-          locale ? format(selectedDate, 'PPP', { locale }) : format(selectedDate, 'PPP')
+          locale ? (
+            format(selectedDate, 'PPP', { locale })
+          ) : (
+            format(selectedDate, 'PPP')
+          )
         ) : (
           <span>{placeholder}</span>
         )}
@@ -814,10 +790,7 @@ const ImageGalleryEditor: FC<{
           <Label>{t('ImageGalleryEditor.imagesLabel')}</Label>
           <div className="mt-2 space-y-3">
             {section.images.map((image, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-[2fr_1fr_auto] gap-4 rounded-lg border p-4"
-              >
+              <div key={index} className="grid grid-cols-[2fr_1fr_auto] gap-4 rounded-lg border p-4">
                 <div>
                   <Label>{t('ImageGalleryEditor.imageUrlLabel')}</Label>
                   <Input
@@ -968,10 +941,7 @@ const LinksEditor: FC<{
           <Label>{t('LinksEditor.linksLabel')}</Label>
           <div className="mt-2 space-y-3">
             {section.links.map((link, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-[1fr_1fr_auto] gap-2 rounded-lg border p-4"
-              >
+              <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 rounded-lg border p-4">
                 <Input
                   value={link.title}
                   onChange={e => {
@@ -1058,10 +1028,7 @@ const SkillsEditor: FC<{
           <Label>{t('SkillsEditor.skillsLabel')}</Label>
           <div className="mt-2 space-y-3">
             {section.skills.map((skill, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 rounded-lg border p-4"
-              >
+              <div key={index} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 rounded-lg border p-4">
                 <Input
                   value={skill.name}
                   onChange={e => {
@@ -1233,9 +1200,7 @@ const ExperienceEditor: FC<{
                         }
                         onChange({ ...section, experiences: newExperiences })
                       }}
-                      placeholder={
-                        t('ExperienceEditor.startDatePlaceholder') || 'Select start date'
-                      }
+                      placeholder={t('ExperienceEditor.startDatePlaceholder') || 'Select start date'}
                       locale={dateFnsLocale}
                     />
                   </div>
@@ -1276,9 +1241,7 @@ const ExperienceEditor: FC<{
                           onChange({ ...section, experiences: newExperiences })
                         }}
                       />
-                      <Label htmlFor={`current-${index}`}>
-                        {t('ExperienceEditor.currentLabel')}
-                      </Label>
+                      <Label htmlFor={`current-${index}`}>{t('ExperienceEditor.currentLabel')}</Label>
                     </div>
                   </div>
                 </div>
@@ -1489,9 +1452,7 @@ const EducationEditor: FC<{
                           onChange({ ...section, education: newEducation })
                         }}
                       />
-                      <Label htmlFor={`current-edu-${index}`}>
-                        {t('EducationEditor.currentLabel')}
-                      </Label>
+                      <Label htmlFor={`current-edu-${index}`}>{t('EducationEditor.currentLabel')}</Label>
                     </div>
                   </div>
                 </div>
@@ -1705,9 +1666,7 @@ const CoursesEditor: FC<{
           />
         </div>
 
-        <div className="text-muted-foreground text-sm italic">
-          {t('CoursesEditor.autoDisplayMessage')}
-        </div>
+        <div className="text-muted-foreground text-sm italic">{t('CoursesEditor.autoDisplayMessage')}</div>
       </div>
     </div>
   )

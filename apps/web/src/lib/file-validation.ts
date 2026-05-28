@@ -12,14 +12,7 @@ export const FILE_TYPES = {
   },
   video: {
     extensions: ['.mp4', '.webm', '.mkv', '.mov', '.avi', '.flv'],
-    mimeTypes: [
-      'video/mp4',
-      'video/webm',
-      'video/x-matroska',
-      'video/quicktime',
-      'video/x-msvideo',
-      'video/x-flv',
-    ],
+    mimeTypes: ['video/mp4', 'video/webm', 'video/x-matroska', 'video/quicktime', 'video/x-msvideo', 'video/x-flv'],
     maxSize: 2000 * 1024 * 1024, // 2GB
   },
   audio: {
@@ -159,9 +152,7 @@ export function validateFile(
   }
 
   if (!matchedType) {
-    const allowedMimes = allowedTypes
-      .flatMap(type => FILE_TYPES[type].mimeTypes)
-      .map(getFriendlyMimeName)
+    const allowedMimes = allowedTypes.flatMap(type => FILE_TYPES[type].mimeTypes).map(getFriendlyMimeName)
     return {
       valid: false,
       error: `Invalid file type: ${file.type || file.name}. Allowed types: ${allowedMimes.join(', ')}`,
@@ -203,9 +194,7 @@ export function getFileTypeDescription(allowedTypes: FileType[]): string {
   const [onlyMaxSize] = maxSizes
   // Guard against undefined - TypeScript can't infer that maxSizes[0] exists even when length === 1
   const maxSizeStr =
-    maxSizes.length === 1 && typeof onlyMaxSize !== 'undefined'
-      ? `${onlyMaxSize / 1024 / 1024}MB`
-      : 'varies'
+    maxSizes.length === 1 && typeof onlyMaxSize !== 'undefined' ? `${onlyMaxSize / 1024 / 1024}MB` : 'varies'
 
   return `${extensions} (max ${maxSizeStr})`
 }

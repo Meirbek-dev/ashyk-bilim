@@ -86,13 +86,7 @@ const NavigationButtons = ({
 )
 
 // Course info component
-const CourseInfo = ({
-  course,
-  t,
-}: {
-  course: any
-  t: (key: string, values?: Record<string, any>) => string
-}) => (
+const CourseInfo = ({ course, t }: { course: any; t: (key: string, values?: Record<string, any>) => string }) => (
   <div className="flex min-w-0 shrink items-center gap-3">
     <div className="relative h-8 w-[52px] shrink-0 overflow-hidden rounded">
       <NextImage
@@ -114,25 +108,19 @@ const CourseInfo = ({
   </div>
 )
 
-export default function FixedActivitySecondaryBar(
-  props: FixedActivitySecondaryBarProps,
-): ReactNode {
+export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryBarProps): ReactNode {
   const router = useRouter()
   const t = useTranslations('FixedActivitySecondaryBar')
   const [isScrolled, setIsScrolled] = useState(false)
   const [shouldShow, setShouldShow] = useState(false)
   const mainActivityInfoRef = useRef<HTMLDivElement | null>(null)
-  const activityIndex = useMemo(
-    () => buildCourseActivityIndex(props.course.chapters),
-    [props.course.chapters],
-  )
+  const activityIndex = useMemo(() => buildCourseActivityIndex(props.course.chapters), [props.course.chapters])
   const cleanCurrentActivityId = normalizeActivityUuid(props.currentActivityId)
   const { allActivities } = activityIndex
   const currentIndex = activityIndex.indexByCleanUuid.get(cleanCurrentActivityId) ?? -1
 
   const prevActivity = currentIndex > 0 ? allActivities[currentIndex - 1] : null
-  const nextActivity =
-    currentIndex < allActivities.length - 1 ? allActivities[currentIndex + 1] : null
+  const nextActivity = currentIndex < allActivities.length - 1 ? allActivities[currentIndex + 1] : null
 
   const navigateToActivity = (activity: any) => {
     if (!activity) return

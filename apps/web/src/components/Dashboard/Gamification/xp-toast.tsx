@@ -23,11 +23,7 @@ interface LevelUpCelebrationProps {
   compact?: boolean
 }
 
-export function LevelUpCelebration({
-  newLevel,
-  onDismiss,
-  compact = false,
-}: LevelUpCelebrationProps) {
+export function LevelUpCelebration({ newLevel, onDismiss, compact = false }: LevelUpCelebrationProps) {
   const t = useTranslations('DashPage.UserAccountSettings.Gamification')
   const isMobile = useIsMobile()
   const prefersReducedMotion = useReducedMotion()
@@ -74,9 +70,7 @@ export function LevelUpCelebration({
         initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 100, y: 100 }}
         animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, x: 0, y: 0 }}
         exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 100 }}
-        transition={
-          prefersReducedMotion ? { duration: 0.2 } : { type: 'spring', stiffness: 300, damping: 30 }
-        }
+        transition={prefersReducedMotion ? { duration: 0.2 } : { type: 'spring', stiffness: 300, damping: 30 }}
         className="bg-background/95 fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] z-100 w-[min(calc(100vw-2rem),24rem)] rounded-2xl border border-amber-300 p-4 shadow-xl backdrop-blur-md md:right-6 md:bottom-6 md:max-w-sm md:p-6"
         onClick={onDismiss}
       >
@@ -108,11 +102,7 @@ export function LevelUpCelebration({
           <motion.div
             initial={prefersReducedMotion ? { opacity: 0 } : { scale: 0, rotate: -90 }}
             animate={prefersReducedMotion ? { opacity: 1 } : { scale: 1, rotate: 0 }}
-            transition={
-              prefersReducedMotion
-                ? { duration: 0.2 }
-                : { type: 'spring', stiffness: 400, damping: 15 }
-            }
+            transition={prefersReducedMotion ? { duration: 0.2 } : { type: 'spring', stiffness: 400, damping: 15 }}
             className="shrink-0"
           >
             <div className="rounded-2xl border border-amber-300 bg-amber-50 p-2.5 md:p-3">
@@ -222,9 +212,7 @@ export function LevelUpCelebration({
           transition={{ delay: 0.5, type: 'spring' }}
           className="mb-6 inline-block rounded-2xl border border-amber-300 bg-amber-50 px-8 py-3"
         >
-          <p className="text-4xl font-black text-amber-700">
-            {t('reachedLevel', { level: newLevel })}
-          </p>
+          <p className="text-4xl font-black text-amber-700">{t('reachedLevel', { level: newLevel })}</p>
         </motion.div>
 
         <motion.button

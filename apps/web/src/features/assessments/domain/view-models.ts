@@ -17,11 +17,7 @@ import type { AssessmentItem } from './items'
 export type AssessmentSurface = 'STUDIO' | 'REVIEW' | 'ATTEMPT'
 
 /** Assessment kind identifiers — mirrors ActivityType from the backend. */
-export type AssessmentKind =
-  | 'TYPE_FILE_SUBMISSION'
-  | 'TYPE_EXAM'
-  | 'TYPE_CODE_CHALLENGE'
-  | 'TYPE_CUSTOM'
+export type AssessmentKind = 'TYPE_FILE_SUBMISSION' | 'TYPE_EXAM' | 'TYPE_CODE_CHALLENGE' | 'TYPE_CUSTOM'
 
 // ── Studio surface ─────────────────────────────────────────────────────────────
 
@@ -146,12 +142,7 @@ export interface ValidationIssue {
   /** UUID of the task/question that has the issue, if applicable. */
   itemUuid?: string
   severity?: 'blocker' | 'advisory'
-  area?:
-    | 'assessment-metadata'
-    | 'assessment-policy'
-    | 'item-metadata'
-    | 'item-content'
-    | 'item-kind'
+  area?: 'assessment-metadata' | 'assessment-policy' | 'item-metadata' | 'item-content' | 'item-kind'
   field?: string
 }
 

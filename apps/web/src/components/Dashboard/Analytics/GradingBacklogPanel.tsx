@@ -13,9 +13,7 @@ interface GradingBacklogPanelProps {
 
 export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBacklogPanelProps) {
   const t = useTranslations('TeacherAnalytics')
-  const gradingAlerts = alerts.filter(
-    alert => alert.type === 'grading_backlog' || alert.type === 'grading_slo',
-  )
+  const gradingAlerts = alerts.filter(alert => alert.type === 'grading_backlog' || alert.type === 'grading_slo')
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -30,10 +28,7 @@ export default function GradingBacklogPanel({ backlogCount, alerts }: GradingBac
         <div className="mt-4 flex flex-wrap gap-2">
           {gradingAlerts.length ? (
             gradingAlerts.map(alert => (
-              <Badge
-                key={alert.id}
-                variant={alert.severity === 'critical' ? 'destructive' : 'warning'}
-              >
+              <Badge key={alert.id} variant={alert.severity === 'critical' ? 'destructive' : 'warning'}>
                 {alert.title}
               </Badge>
             ))

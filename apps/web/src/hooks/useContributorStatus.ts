@@ -12,9 +12,7 @@ interface Contributor {
 export function useContributorStatus(courseUuid: string) {
   const { user: viewer } = useSession()
   const userId = viewer?.id
-  const normalizedCourseUuid = courseUuid.startsWith('course_')
-    ? courseUuid
-    : `course_${courseUuid}`
+  const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`
 
   const query = useQuery(
     queryOptions({

@@ -36,8 +36,7 @@ export default function GradingReviewWorkspace({
   const router = useRouter()
 
   // ── URL-persisted filters ─────────────────────────────────────────────────
-  const filterFromUrl =
-    (searchParams.get('filter') as StatusFilter | null) ?? initialFilter ?? 'NEEDS_GRADING'
+  const filterFromUrl = (searchParams.get('filter') as StatusFilter | null) ?? initialFilter ?? 'NEEDS_GRADING'
   const sortFromUrl = searchParams.get('sort') ?? 'submitted_at'
   const searchFromUrl = searchParams.get('q') ?? ''
 
@@ -83,8 +82,7 @@ export default function GradingReviewWorkspace({
     ...(search ? { search } : {}),
   }
 
-  const { submissions, total, pages, page, setPage, isLoading, mutate } =
-    useSubmissions(submissionOptions)
+  const { submissions, total, pages, page, setPage, isLoading, mutate } = useSubmissions(submissionOptions)
   const { stats, mutate: mutateStats } = useSubmissionStats(activityId, assessmentUuid ?? null)
 
   useEffect(() => {
@@ -103,8 +101,7 @@ export default function GradingReviewWorkspace({
     }
   }, [initialSubmissionUuid, selectedUuid, submissions])
 
-  const selectedSubmission =
-    submissions.find(submission => submission.submission_uuid === selectedUuid) ?? null
+  const selectedSubmission = submissions.find(submission => submission.submission_uuid === selectedUuid) ?? null
   const selectedSubmissions = useMemo(
     () => submissions.filter(submission => selectedUuids.has(submission.submission_uuid)),
     [selectedUuids, submissions],
@@ -119,8 +116,7 @@ export default function GradingReviewWorkspace({
 
   const selectByOffset = useCallback(
     (offset: number) => {
-      const next =
-        submissions[Math.min(submissions.length - 1, Math.max(0, selectedIndex + offset))]
+      const next = submissions[Math.min(submissions.length - 1, Math.max(0, selectedIndex + offset))]
       if (next) setSelectedUuid(next.submission_uuid)
     },
     [selectedIndex, submissions],
@@ -128,8 +124,7 @@ export default function GradingReviewWorkspace({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
-        return
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return
       if (event.key === 'j' || event.key === 'ArrowDown') {
         event.preventDefault()
         selectByOffset(1)

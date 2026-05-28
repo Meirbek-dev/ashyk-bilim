@@ -67,10 +67,7 @@ export function DashBreadcrumbs({ type, last_breadcrumb }: DashBreadcrumbsProps)
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink
-              render={<AppLink href={config.href} />}
-              className="flex items-center space-x-2"
-            >
+            <BreadcrumbLink render={<AppLink href={config.href} />} className="flex items-center space-x-2">
               <Icon className="text-muted-foreground" size={14} />
               <span>{t(config.titleKey as any)}</span>
             </BreadcrumbLink>
@@ -79,9 +76,7 @@ export function DashBreadcrumbs({ type, last_breadcrumb }: DashBreadcrumbsProps)
             <>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage className="first-letter:uppercase">
-                  {last_breadcrumb}
-                </BreadcrumbPage>
+                <BreadcrumbPage className="first-letter:uppercase">{last_breadcrumb}</BreadcrumbPage>
               </BreadcrumbItem>
             </>
           ) : null}
@@ -118,9 +113,7 @@ export function CourseBreadcrumbs({ course, activity }: CourseBreadcrumbsProps) 
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink
-              render={<AppLink href={`${getAbsoluteUrl('')}/course/${cleanCourseUuid}`} />}
-            >
+            <BreadcrumbLink render={<AppLink href={`${getAbsoluteUrl('')}/course/${cleanCourseUuid}`} />}>
               {course.name}
             </BreadcrumbLink>
           </BreadcrumbItem>

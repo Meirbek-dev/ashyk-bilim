@@ -27,8 +27,7 @@ const YOUTUBE_VIDEO_ID_LENGTH = 11
 export const getYouTubeVideoId = (url: string): string | null => {
   if (!url) return null
 
-  const youtubeRegex =
-    /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/i
+  const youtubeRegex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/i
   const match = youtubeRegex.exec(url)
 
   return match?.[1]?.length === YOUTUBE_VIDEO_ID_LENGTH ? match[1] : null

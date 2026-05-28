@@ -1,15 +1,6 @@
 'use client'
 
-import {
-  BarChart3,
-  BookOpenCheck,
-  ChevronDown,
-  ChevronUp,
-  Clock4,
-  ExternalLink,
-  TrendingUp,
-  Users,
-} from 'lucide-react'
+import { BarChart3, BookOpenCheck, ChevronDown, ChevronUp, Clock4, ExternalLink, TrendingUp, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -18,14 +9,7 @@ import { cn } from '@/lib/utils'
 import { apiFetcher } from '@/lib/api-client'
 import Link from '@components/ui/AppLink'
 import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 interface ScoreDistributionBucket {
   range: string
@@ -57,11 +41,7 @@ interface ResultsReviewTabProps {
   activityUuid: string
 }
 
-export default function ResultsReviewTab({
-  assessmentUuid,
-  courseUuid,
-  activityUuid,
-}: ResultsReviewTabProps) {
+export default function ResultsReviewTab({ assessmentUuid, courseUuid, activityUuid }: ResultsReviewTabProps) {
   const t = useTranslations('Features.Assessments.Studio.ResultsReview')
   const [stats, setStats] = useState<SubmissionStats | null>(null)
   const [itemAnalytics, setItemAnalytics] = useState<ItemAnalytics[] | null>(null)
@@ -121,30 +101,17 @@ export default function ResultsReviewTab({
 
       <div className="grid gap-3 md:grid-cols-4">
         <ResultMetric icon={Users} label={t('submissions')} value={stats?.total ?? 0} />
-        <ResultMetric
-          icon={Clock4}
-          label={t('needsReview')}
-          value={stats?.needs_grading_count ?? 0}
-          accent="amber"
-        />
+        <ResultMetric icon={Clock4} label={t('needsReview')} value={stats?.needs_grading_count ?? 0} accent="amber" />
         <ResultMetric
           icon={TrendingUp}
           label={t('averageScore')}
-          value={
-            stats?.avg_score !== null && stats?.avg_score !== undefined
-              ? `${stats.avg_score.toFixed(1)}%`
-              : '--'
-          }
+          value={stats?.avg_score !== null && stats?.avg_score !== undefined ? `${stats.avg_score.toFixed(1)}%` : '--'}
           accent="blue"
         />
         <ResultMetric
           icon={BookOpenCheck}
           label={t('passRate')}
-          value={
-            stats?.pass_rate !== null && stats?.pass_rate !== undefined
-              ? `${stats.pass_rate.toFixed(0)}%`
-              : '--'
-          }
+          value={stats?.pass_rate !== null && stats?.pass_rate !== undefined ? `${stats.pass_rate.toFixed(0)}%` : '--'}
           accent="lime"
         />
       </div>
@@ -153,17 +120,10 @@ export default function ResultsReviewTab({
         <div className="bg-card rounded-lg border p-5">
           <h3 className="mb-4 text-sm font-semibold">{t('scoreDistributionTitle')}</h3>
           <ResponsiveContainer width="100%" height={180}>
-            <BarChart
-              data={stats.score_distribution}
-              margin={{ top: 0, right: 8, left: -20, bottom: 0 }}
-            >
+            <BarChart data={stats.score_distribution} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
               <XAxis dataKey="range" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-              <YAxis
-                allowDecimals={false}
-                tick={{ fontSize: 11 }}
-                className="fill-muted-foreground"
-              />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
               <Tooltip
                 contentStyle={{ fontSize: 12 }}
                 labelFormatter={label => `Score: ${label}`}
@@ -204,55 +164,29 @@ export default function ResultsReviewTab({
                         <TableHead className="px-4 py-2.5">{t('colQuestion')}</TableHead>
                         <TableHead className="px-4 py-2.5">{t('colKind')}</TableHead>
                         <TableHead className="px-4 py-2.5 text-right">{t('colMaxScore')}</TableHead>
-                        <TableHead className="px-4 py-2.5 text-right">
-                          {t('colResponses')}
-                        </TableHead>
+                        <TableHead className="px-4 py-2.5 text-right">{t('colResponses')}</TableHead>
                         <TableHead className="px-4 py-2.5 text-right">{t('colAvgScore')}</TableHead>
-                        <TableHead className="px-4 py-2.5 text-right">
-                          {t('colCorrectPct')}
-                        </TableHead>
-                        <TableHead className="px-4 py-2.5 text-right">
-                          {t('colDiscrimination')}
-                        </TableHead>
+                        <TableHead className="px-4 py-2.5 text-right">{t('colCorrectPct')}</TableHead>
+                        <TableHead className="px-4 py-2.5 text-right">{t('colDiscrimination')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y">
                       {itemAnalytics.map((item, idx) => (
-                        <TableRow
-                          key={item.item_uuid}
-                          className="hover:bg-muted/20 transition-colors"
-                        >
-                          <TableCell className="text-muted-foreground px-4 py-2.5">
-                            {idx + 1}
-                          </TableCell>
-                          <TableCell
-                            className="max-w-[280px] truncate px-4 py-2.5 font-medium"
-                            title={item.title}
-                          >
+                        <TableRow key={item.item_uuid} className="hover:bg-muted/20 transition-colors">
+                          <TableCell className="text-muted-foreground px-4 py-2.5">{idx + 1}</TableCell>
+                          <TableCell className="max-w-[280px] truncate px-4 py-2.5 font-medium" title={item.title}>
                             {item.title || `—`}
                           </TableCell>
                           <TableCell className="text-muted-foreground px-4 py-2.5 text-xs tracking-wide uppercase">
                             {item.kind.replace(/_/g, ' ')}
                           </TableCell>
+                          <TableCell className="px-4 py-2.5 text-right tabular-nums">{item.max_score}</TableCell>
+                          <TableCell className="px-4 py-2.5 text-right tabular-nums">{item.response_count}</TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {item.max_score}
+                            {item.avg_score_pct !== null ? <PercentBadge value={item.avg_score_pct} /> : '—'}
                           </TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {item.response_count}
-                          </TableCell>
-                          <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {item.avg_score_pct !== null ? (
-                              <PercentBadge value={item.avg_score_pct} />
-                            ) : (
-                              '—'
-                            )}
-                          </TableCell>
-                          <TableCell className="px-4 py-2.5 text-right tabular-nums">
-                            {item.correct_pct !== null ? (
-                              <PercentBadge value={item.correct_pct} />
-                            ) : (
-                              '—'
-                            )}
+                            {item.correct_pct !== null ? <PercentBadge value={item.correct_pct} /> : '—'}
                           </TableCell>
                           <TableCell className="px-4 py-2.5 text-right tabular-nums">
                             {item.discrimination_index !== null ? (

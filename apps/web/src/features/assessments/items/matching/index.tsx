@@ -88,14 +88,7 @@ export function MatchingItemAuthor({ value, disabled, onChange }: ItemAuthorProp
             </Button>
           </div>
         ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={disabled}
-          onClick={addPair}
-          className="mt-1 gap-1"
-        >
+        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={addPair} className="mt-1 gap-1">
           <Plus className="size-3.5" />
           {t('addPair')}
         </Button>
@@ -169,10 +162,7 @@ export function MatchingItemAttempt({
 
 // ── Review ────────────────────────────────────────────────────────────────────
 
-export function MatchingItemReview({
-  item,
-  answer,
-}: ItemReviewDetailProps<MatchingBody, MatchingAnswer | null>) {
+export function MatchingItemReview({ item, answer }: ItemReviewDetailProps<MatchingBody, MatchingAnswer | null>) {
   const t = useTranslations('Features.Assessments.Items.Matching')
   const matchMap: Record<string, string> = {}
   if (answer?.matches) {
@@ -194,10 +184,7 @@ export function MatchingItemReview({
         const studentAnswer = matchMap[pair.left]
         const isCorrect = studentAnswer === pair.right
         return (
-          <div
-            key={index}
-            className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm"
-          >
+          <div key={index} className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm">
             <span className="font-medium">{pair.left}</span>
             <div className="flex items-center gap-2">
               <span

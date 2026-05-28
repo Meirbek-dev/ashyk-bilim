@@ -10,10 +10,7 @@
 
 'use client'
 
-import {
-  XPNotificationContainer,
-  useXPNotificationQueue,
-} from '@/lib/gamification/components/notification-queue'
+import { XPNotificationContainer, useXPNotificationQueue } from '@/lib/gamification/components/notification-queue'
 import type { XPNotification } from '@/lib/gamification/components/notification-queue'
 import { ParticleEffect } from '@/lib/gamification/components/level-indicators'
 import { AnimatedValue } from '@/lib/gamification/components/animated-value'
@@ -84,9 +81,7 @@ function XPToast({ notification, onDismiss }: XPToastProps) {
           </div>
           <div className="mt-0.5 flex items-center gap-2">
             <p className="text-muted-foreground truncate text-xs">
-              {isBatched
-                ? t('toast.fromActivities', { count: notification.batchCount })
-                : sourceLabel}
+              {isBatched ? t('toast.fromActivities', { count: notification.batchCount }) : sourceLabel}
             </p>
           </div>
         </div>
@@ -109,9 +104,7 @@ function XPToast({ notification, onDismiss }: XPToastProps) {
       )}
 
       {/* Particle effect for level ups (skip if reduced data) */}
-      {notification.triggeredLevelUp && !prefersReducedData && (
-        <ParticleEffect trigger particleCount={15} />
-      )}
+      {notification.triggeredLevelUp && !prefersReducedData && <ParticleEffect trigger particleCount={15} />}
     </motion.div>
   )
 }
@@ -135,11 +128,7 @@ export function useXPToast() {
     position: 'bottom-right',
   })
 
-  const showXPToast = ({
-    amount,
-    source = 'default',
-    triggeredLevelUp = false,
-  }: ShowXPToastOptions) => {
+  const showXPToast = ({ amount, source = 'default', triggeredLevelUp = false }: ShowXPToastOptions) => {
     addNotification({
       amount,
       source,

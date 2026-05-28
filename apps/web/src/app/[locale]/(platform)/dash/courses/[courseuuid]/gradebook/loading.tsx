@@ -5,10 +5,7 @@ export default function GradebookLoading() {
       <div className="rounded-2xl border p-4">
         <div className="grid gap-3 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-24 animate-pulse rounded-xl bg-slate-200/80 dark:bg-slate-800/80"
-            />
+            <div key={index} className="h-24 animate-pulse rounded-xl bg-slate-200/80 dark:bg-slate-800/80" />
           ))}
         </div>
       </div>

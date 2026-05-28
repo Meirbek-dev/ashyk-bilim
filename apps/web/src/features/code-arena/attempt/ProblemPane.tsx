@@ -8,18 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  MarkdownCodeBlock,
-  MarkdownContent,
-  extractMarkdownSummary,
-} from '@/features/content-markdown'
+import { MarkdownCodeBlock, MarkdownContent, extractMarkdownSummary } from '@/features/content-markdown'
 import { cn } from '@/lib/utils'
-import type {
-  CodeArenaTab,
-  CodeChallengeProblem,
-  CodeChallengeSettings,
-  CodeSubmission,
-} from '../domain'
+import type { CodeArenaTab, CodeChallengeProblem, CodeChallengeSettings, CodeSubmission } from '../domain'
 import { SubmissionTimeline } from './SubmissionTimeline'
 
 interface ProblemPaneProps {
@@ -98,14 +89,10 @@ export function ProblemPane({
                     </Badge>
                   ) : null}
                   {problem.timeLimitSeconds ? (
-                    <Badge variant="secondary">
-                      {t('timeSecondsValue', { value: problem.timeLimitSeconds })}
-                    </Badge>
+                    <Badge variant="secondary">{t('timeSecondsValue', { value: problem.timeLimitSeconds })}</Badge>
                   ) : null}
                   {problem.memoryLimitMb ? (
-                    <Badge variant="secondary">
-                      {t('memoryLimitValue', { value: problem.memoryLimitMb })}
-                    </Badge>
+                    <Badge variant="secondary">{t('memoryLimitValue', { value: problem.memoryLimitMb })}</Badge>
                   ) : null}
                   {hiddenCount > 0 ? (
                     <Badge variant="outline">{t('hiddenTestsCount', { count: hiddenCount })}</Badge>
@@ -118,12 +105,8 @@ export function ProblemPane({
 
               {problem.inputSpec || problem.outputSpec ? (
                 <section className="grid gap-3">
-                  {problem.inputSpec ? (
-                    <SpecBlock title={t('input')} content={problem.inputSpec} />
-                  ) : null}
-                  {problem.outputSpec ? (
-                    <SpecBlock title={t('output')} content={problem.outputSpec} />
-                  ) : null}
+                  {problem.inputSpec ? <SpecBlock title={t('input')} content={problem.inputSpec} /> : null}
+                  {problem.outputSpec ? <SpecBlock title={t('output')} content={problem.outputSpec} /> : null}
                 </section>
               ) : null}
 
@@ -145,12 +128,7 @@ export function ProblemPane({
                             </span>
                           ) : null}
                         </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => onUseInput(test.input)}
-                        >
+                        <Button type="button" size="sm" variant="ghost" onClick={() => onUseInput(test.input)}>
                           {t('useInput')}
                         </Button>
                       </div>
@@ -190,18 +168,10 @@ export function ProblemPane({
                     const hintId = hint.id ?? String(index)
                     const revealed = revealedHints.has(hintId)
                     return (
-                      <div
-                        key={hintId}
-                        className={cn(
-                          'rounded-md border p-3',
-                          revealed ? 'bg-card' : 'bg-muted/30',
-                        )}
-                      >
+                      <div key={hintId} className={cn('rounded-md border p-3', revealed ? 'bg-card' : 'bg-muted/30')}>
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <div className="text-sm font-semibold">
-                              {t('hintNumber', { number: index + 1 })}
-                            </div>
+                            <div className="text-sm font-semibold">{t('hintNumber', { number: index + 1 })}</div>
                             <div className="text-muted-foreground text-xs">
                               {t('xpPenaltyValue', { penalty: hint.xp_penalty })}
                             </div>
@@ -211,20 +181,14 @@ export function ProblemPane({
                               type="button"
                               size="sm"
                               variant="outline"
-                              onClick={() =>
-                                setRevealedHints(current => new Set(current).add(hintId))
-                              }
+                              onClick={() => setRevealedHints(current => new Set(current).add(hintId))}
                             >
                               {t('reveal')}
                             </Button>
                           ) : null}
                         </div>
                         {revealed ? (
-                          <MarkdownContent
-                            content={hint.content}
-                            className="mt-3"
-                            mode="compactRichText"
-                          />
+                          <MarkdownContent content={hint.content} className="mt-3" mode="compactRichText" />
                         ) : null}
                       </div>
                     )
@@ -239,10 +203,7 @@ export function ProblemPane({
         </TabsContent>
 
         <TabsContent value="submissions" className="min-h-0 flex-1 overflow-hidden">
-          <SubmissionTimeline
-            submissions={submissions}
-            {...(onRestoreSubmission ? { onRestoreSubmission } : {})}
-          />
+          <SubmissionTimeline submissions={submissions} {...(onRestoreSubmission ? { onRestoreSubmission } : {})} />
         </TabsContent>
       </Tabs>
     </div>

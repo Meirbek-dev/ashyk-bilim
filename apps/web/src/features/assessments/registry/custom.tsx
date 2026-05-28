@@ -21,22 +21,14 @@ registerKind('TYPE_CUSTOM', async () => {
   ])
 
   const OutlineSlot: ComponentType<KindAuthorProps> = _props => (
-    <NativeItemOutline
-      allowedKinds={['CHOICE', 'MATCHING']}
-      itemNoun="Question"
-      itemNounKey="question"
-    />
+    <NativeItemOutline allowedKinds={['CHOICE', 'MATCHING']} itemNoun="Question" itemNounKey="question" />
   )
 
   const AuthorSlot: ComponentType<KindAuthorProps> = _props => (
     <NativeItemAuthor mode="exam" itemNoun="Question" itemNounKey="question" />
   )
 
-  const ReviewPassthrough: ComponentType<KindReviewProps> = ({
-    activityId,
-    submissionUuid,
-    title,
-  }) => {
+  const ReviewPassthrough: ComponentType<KindReviewProps> = ({ activityId, submissionUuid, title }) => {
     return (
       <GradingReviewWorkspace
         activityId={activityId}

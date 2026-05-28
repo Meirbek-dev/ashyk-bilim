@@ -33,9 +33,7 @@ export interface AssessmentMutationPayload {
  * Server-side: fetch an assessment by its UUID.
  * Returns null on 404 rather than throwing.
  */
-export async function getAssessmentByUuid(
-  assessmentUuid: string,
-): Promise<AssessmentSummary | null> {
+export async function getAssessmentByUuid(assessmentUuid: string): Promise<AssessmentSummary | null> {
   try {
     const result = await apiFetch(`assessments/${assessmentUuid}`, {
       method: 'GET',
@@ -53,9 +51,7 @@ export async function getAssessmentByUuid(
  * Server-side: fetch an assessment by its activity UUID.
  * Returns null on 404 rather than throwing.
  */
-export async function getAssessmentByActivityUuid(
-  activityUuid: string,
-): Promise<AssessmentSummary | null> {
+export async function getAssessmentByActivityUuid(activityUuid: string): Promise<AssessmentSummary | null> {
   try {
     const result = await apiFetch(`assessments/activity/${activityUuid}`, {
       method: 'GET',

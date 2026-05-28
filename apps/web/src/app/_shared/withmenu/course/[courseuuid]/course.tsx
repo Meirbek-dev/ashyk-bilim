@@ -72,8 +72,7 @@ const CourseClient = (props: any) => {
             if (item && typeof item === 'object') {
               // Keep shape but ensure text field exists if possible
               const text = item.text ?? item.name ?? item.title
-              const t =
-                typeof text === 'string' ? text.trim() : text !== null ? String(text).trim() : ''
+              const t = typeof text === 'string' ? text.trim() : text !== null ? String(text).trim() : ''
               if (!t || t.toLowerCase() === 'null' || t.toLowerCase() === 'undefined') return null
               return { ...item, text: t }
             }
@@ -111,9 +110,7 @@ const CourseClient = (props: any) => {
         const parts = raw
           .split(/\r?\n|\u2022|\u2023|\u25E6|;|\||·|–|—/)
           .map(s => s.replace(/^[-*\s]+/, '').trim())
-          .filter(
-            s => s.length > 0 && s.toLowerCase() !== 'null' && s.toLowerCase() !== 'undefined',
-          )
+          .filter(s => s.length > 0 && s.toLowerCase() !== 'null' && s.toLowerCase() !== 'undefined')
         // If nothing split out meaningfully, keep as single item
         if (parts.length === 0) return [raw]
         return parts
@@ -176,9 +173,7 @@ const CourseClient = (props: any) => {
       return cleanRunCourseUuid === cleanCourseUuid
     })
     if (run) {
-      return run.steps.find(
-        (step: any) => step.activity_id === activity.id && step.complete === true,
-      )
+      return run.steps.find((step: any) => step.activity_id === activity.id && step.complete === true)
     }
     return false
   }
@@ -206,13 +201,7 @@ const CourseClient = (props: any) => {
             <div className="flex flex-col gap-10 md:flex-row md:items-start">
               {/* Main content */}
               <div className="w-full min-w-0 space-y-10 md:w-3/4">
-                {isMobile && (
-                  <CourseActionsMobile
-                    courseuuid={courseuuid}
-                    course={course}
-                    trailData={trailData}
-                  />
-                )}
+                {isMobile && <CourseActionsMobile courseuuid={courseuuid} course={course} trailData={trailData} />}
 
                 {/* Thumbnail */}
                 {(() => {
@@ -263,10 +252,7 @@ const CourseClient = (props: any) => {
                       <div className="border-border relative w-full overflow-hidden rounded-xl border">
                         {course.thumbnail_type === 'both' && mediaSwitcher}
                         <video
-                          src={getCourseThumbnailMediaDirectory(
-                            course?.course_uuid,
-                            course?.thumbnail_video,
-                          )}
+                          src={getCourseThumbnailMediaDirectory(course?.course_uuid, course?.thumbnail_video)}
                           className="h-auto w-full bg-black object-contain"
                           controls
                           autoPlay
@@ -282,10 +268,7 @@ const CourseClient = (props: any) => {
                     return (
                       <div className="border-border bg-muted relative aspect-video w-full overflow-hidden rounded-xl border">
                         <NextImage
-                          src={getCourseThumbnailMediaDirectory(
-                            course?.course_uuid,
-                            course?.thumbnail_image,
-                          )}
+                          src={getCourseThumbnailMediaDirectory(course?.course_uuid, course?.thumbnail_image)}
                           alt={t('courseThumbnailAlt')}
                           fill
                           className="object-cover"
@@ -319,11 +302,7 @@ const CourseClient = (props: any) => {
                     return cleanRunCourseUuid === cleanCourseUuid
                   })
                 })() && (
-                  <ActivityIndicators
-                    course_uuid={props.course.course_uuid}
-                    course={course}
-                    trailData={trailData}
-                  />
+                  <ActivityIndicators course_uuid={props.course.course_uuid} course={course} trailData={trailData} />
                 )}
 
                 {/* Course description */}
@@ -338,28 +317,18 @@ const CourseClient = (props: any) => {
                 {/* What you will learn */}
                 {learnings.length > 0 && learnings[0]?.text !== 'null' && (
                   <div>
-                    <h2 className="mb-4 text-lg font-semibold tracking-tight">
-                      {t('whatYouWillLearn')}
-                    </h2>
+                    <h2 className="mb-4 text-lg font-semibold tracking-tight">{t('whatYouWillLearn')}</h2>
                     <div className="border-border rounded-xl border p-5">
                       <ul
-                        className={cn(
-                          'grid gap-x-8 gap-y-3',
-                          learnings.length > 4 ? 'sm:grid-cols-2' : 'grid-cols-1',
-                        )}
+                        className={cn('grid gap-x-8 gap-y-3', learnings.length > 4 ? 'sm:grid-cols-2' : 'grid-cols-1')}
                       >
                         {learnings.map((learning: any) => {
-                          const learningText =
-                            typeof learning === 'string' ? learning : learning.text
+                          const learningText = typeof learning === 'string' ? learning : learning.text
                           const learningEmoji = typeof learning === 'string' ? null : learning.emoji
-                          const learningId =
-                            typeof learning === 'string' ? learning : learning.id || learning.text
-                          const rawHref =
-                            typeof learning === 'object' && learning ? learning.link : undefined
+                          const learningId = typeof learning === 'string' ? learning : learning.id || learning.text
+                          const rawHref = typeof learning === 'object' && learning ? learning.link : undefined
                           const href = typeof rawHref === 'string' ? rawHref.trim() : ''
-                          const hasValidHref = Boolean(
-                            href && /^(?:[a-z][a-z0-9+.-]*:|\/|\.\/|\.\.\/|#)/i.test(href),
-                          )
+                          const hasValidHref = Boolean(href && /^(?:[a-z][a-z0-9+.-]*:|\/|\.\/|\.\.\/|#)/i.test(href))
                           if (!learningText) return null
                           return (
                             <li key={learningId} className="flex items-start gap-3">
@@ -392,9 +361,7 @@ const CourseClient = (props: any) => {
 
                 {/* Course chapters */}
                 <div>
-                  <h2 className="mb-4 text-lg font-semibold tracking-tight">
-                    {t('courseLessons')}
-                  </h2>
+                  <h2 className="mb-4 text-lg font-semibold tracking-tight">{t('courseLessons')}</h2>
                   <div className="border-border overflow-hidden rounded-xl border">
                     {course.chapters.map((chapter: any, idx: number) => {
                       const isExpanded = expandedChapters[chapter.chapter_uuid] ?? idx === 0
@@ -486,24 +453,12 @@ const CourseClient = (props: any) => {
                                         )}
                                       </div>
                                       <div className="text-muted-foreground mt-0.5 flex items-center gap-1">
-                                        {activity.activity_type === 'TYPE_DYNAMIC' && (
-                                          <StickyNote size={11} />
-                                        )}
-                                        {activity.activity_type === 'TYPE_VIDEO' && (
-                                          <Video size={11} />
-                                        )}
-                                        {activity.activity_type === 'TYPE_DOCUMENT' && (
-                                          <File size={11} />
-                                        )}
-                                        {activity.activity_type === 'TYPE_FILE_SUBMISSION' && (
-                                          <FileArchive size={11} />
-                                        )}
-                                        {activity.activity_type === 'TYPE_EXAM' && (
-                                          <ClipboardList size={11} />
-                                        )}
-                                        <span className="text-xs">
-                                          {getActivityTypeLabel(activity.activity_type)}
-                                        </span>
+                                        {activity.activity_type === 'TYPE_DYNAMIC' && <StickyNote size={11} />}
+                                        {activity.activity_type === 'TYPE_VIDEO' && <Video size={11} />}
+                                        {activity.activity_type === 'TYPE_DOCUMENT' && <File size={11} />}
+                                        {activity.activity_type === 'TYPE_FILE_SUBMISSION' && <FileArchive size={11} />}
+                                        {activity.activity_type === 'TYPE_EXAM' && <ClipboardList size={11} />}
+                                        <span className="text-xs">{getActivityTypeLabel(activity.activity_type)}</span>
                                       </div>
                                     </div>
                                     {/* Arrow */}

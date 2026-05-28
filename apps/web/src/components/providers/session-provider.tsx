@@ -121,18 +121,12 @@ export function SessionProvider({ children, initialSession = null }: SessionProv
 
   // Lazily build a permission Set so lookup is O(1).  Recomputed only when
   // session.permissions reference changes.
-  const permissionsSet = useMemo(
-    () => new Set<string>(session?.permissions),
-    [session?.permissions],
-  )
+  const permissionsSet = useMemo(() => new Set<string>(session?.permissions), [session?.permissions])
 
   const can = useCallback(
     (resource: Resource, action: Action, scope: Scope): boolean => {
       if (!session) return false
-      return (
-        permissionsSet.has(AUTH_PERMISSION_WILDCARD) ||
-        permissionsSet.has(perm(resource, action, scope))
-      )
+      return permissionsSet.has(AUTH_PERMISSION_WILDCARD) || permissionsSet.has(perm(resource, action, scope))
     },
     [session, permissionsSet],
   )

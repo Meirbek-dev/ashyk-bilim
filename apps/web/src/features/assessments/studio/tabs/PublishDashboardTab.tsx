@@ -82,16 +82,13 @@ export default function PublishDashboardTab({
   // Metrics
   const kindCounts = items.reduce(
     (acc, item) => {
-      acc[item.kind as SupportedStudioItemKind] =
-        (acc[item.kind as SupportedStudioItemKind] ?? 0) + 1
+      acc[item.kind as SupportedStudioItemKind] = (acc[item.kind as SupportedStudioItemKind] ?? 0) + 1
       return acc
     },
     {} as Record<SupportedStudioItemKind, number>,
   )
 
-  const timeLimitMinutes = assessmentState.timeLimitMinutes
-    ? Number(assessmentState.timeLimitMinutes)
-    : null
+  const timeLimitMinutes = assessmentState.timeLimitMinutes ? Number(assessmentState.timeLimitMinutes) : null
   const isPublished = lifecycle === 'PUBLISHED'
   const isScheduled = lifecycle === 'SCHEDULED'
   const isDraft = lifecycle === 'DRAFT'
@@ -174,11 +171,7 @@ export default function PublishDashboardTab({
             </Button>
           ) : (
             <>
-              <Button
-                size="sm"
-                disabled={isPending || hasIssues || !canPublish}
-                onClick={handlePublish}
-              >
+              <Button size="sm" disabled={isPending || hasIssues || !canPublish} onClick={handlePublish}>
                 <Send className="size-4" />
                 {tPublish('publishNow')}
               </Button>
@@ -222,16 +215,8 @@ export default function PublishDashboardTab({
           <h3 className="text-sm font-semibold">{tPublish('metricsTitle')}</h3>
 
           <div className="grid grid-cols-2 gap-3">
-            <MetricCard
-              icon={BookOpen}
-              label={tPublish('totalQuestions')}
-              value={String(items.length)}
-            />
-            <MetricCard
-              icon={Sparkles}
-              label={tPublish('totalPoints')}
-              value={String(totalPoints)}
-            />
+            <MetricCard icon={BookOpen} label={tPublish('totalQuestions')} value={String(items.length)} />
+            <MetricCard icon={Sparkles} label={tPublish('totalPoints')} value={String(totalPoints)} />
             {timeLimitMinutes ? (
               <MetricCard
                 icon={Clock}
@@ -253,29 +238,25 @@ export default function PublishDashboardTab({
                 {tPublish('questionTypes')}
               </p>
               <div className="space-y-2">
-                {(Object.entries(kindCounts) as [SupportedStudioItemKind, number][]).map(
-                  ([kind, count]) => {
-                    const Icon = KIND_ICONS[kind] ?? BookOpen
-                    const percent = items.length > 0 ? Math.round((count / items.length) * 100) : 0
-                    return (
-                      <div key={kind} className="flex items-center gap-2">
-                        <Icon className="text-muted-foreground size-3.5 shrink-0" />
-                        <span className="min-w-0 flex-1 truncate text-xs">
-                          {kind.replaceAll('_', ' ')}
-                        </span>
-                        <Badge variant="secondary" className="text-xs">
-                          {count}
-                        </Badge>
-                        <div className="bg-muted h-1.5 w-16 overflow-hidden rounded-full">
-                          <div
-                            className="bg-primary h-full rounded-full transition-all duration-500"
-                            style={{ width: `${percent}%` }}
-                          />
-                        </div>
+                {(Object.entries(kindCounts) as [SupportedStudioItemKind, number][]).map(([kind, count]) => {
+                  const Icon = KIND_ICONS[kind] ?? BookOpen
+                  const percent = items.length > 0 ? Math.round((count / items.length) * 100) : 0
+                  return (
+                    <div key={kind} className="flex items-center gap-2">
+                      <Icon className="text-muted-foreground size-3.5 shrink-0" />
+                      <span className="min-w-0 flex-1 truncate text-xs">{kind.replaceAll('_', ' ')}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {count}
+                      </Badge>
+                      <div className="bg-muted h-1.5 w-16 overflow-hidden rounded-full">
+                        <div
+                          className="bg-primary h-full rounded-full transition-all duration-500"
+                          style={{ width: `${percent}%` }}
+                        />
                       </div>
-                    )
-                  },
-                )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           ) : null}
@@ -288,9 +269,7 @@ export default function PublishDashboardTab({
           {!hasIssues ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-lime-300 bg-lime-50 p-8 text-center dark:border-lime-800 dark:bg-lime-950/30">
               <CheckCircle2 className="size-10 text-lime-600 dark:text-lime-400" />
-              <p className="mt-3 font-semibold text-lime-900 dark:text-lime-100">
-                {tPublish('noIssues')}
-              </p>
+              <p className="mt-3 font-semibold text-lime-900 dark:text-lime-100">{tPublish('noIssues')}</p>
               <p className="text-muted-foreground mt-1 text-sm">{tPublish('noIssuesDesc')}</p>
             </div>
           ) : (
@@ -320,21 +299,14 @@ export default function PublishDashboardTab({
                   </p>
                   <div className="space-y-2">
                     {itemLevelIssues.map((issue, i) => {
-                      const itemIndex = issue.itemUuid
-                        ? items.findIndex(item => item.item_uuid === issue.itemUuid)
-                        : -1
-                      const itemTitle =
-                        itemIndex >= 0
-                          ? `Q${itemIndex + 1}: ${items[itemIndex]?.title || '—'}`
-                          : null
+                      const itemIndex = issue.itemUuid ? items.findIndex(item => item.item_uuid === issue.itemUuid) : -1
+                      const itemTitle = itemIndex >= 0 ? `Q${itemIndex + 1}: ${items[itemIndex]?.title || '—'}` : null
                       return (
                         <ChecklistItem
                           key={i}
                           message={issue.message}
                           context={itemTitle ?? undefined}
-                          onNavigate={
-                            issue.itemUuid ? () => onSwitchToBuilder(issue.itemUuid) : undefined
-                          }
+                          onNavigate={issue.itemUuid ? () => onSwitchToBuilder(issue.itemUuid) : undefined}
                           navigateLabel={tPublish('goToQuestion')}
                         />
                       )
@@ -350,15 +322,7 @@ export default function PublishDashboardTab({
   )
 }
 
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof BookOpen
-  label: string
-  value: string
-}) {
+function MetricCard({ icon: Icon, label, value }: { icon: typeof BookOpen; label: string; value: string }) {
   return (
     <div className="bg-card rounded-xl border p-3">
       <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
@@ -385,9 +349,7 @@ function ChecklistItem({
     <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/20">
       <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
       <div className="min-w-0 flex-1">
-        {context ? (
-          <p className="text-[10px] font-medium text-amber-700 dark:text-amber-300">{context}</p>
-        ) : null}
+        {context ? <p className="text-[10px] font-medium text-amber-700 dark:text-amber-300">{context}</p> : null}
         <p className="text-xs text-amber-900 dark:text-amber-200">{message}</p>
       </div>
       {onNavigate ? (

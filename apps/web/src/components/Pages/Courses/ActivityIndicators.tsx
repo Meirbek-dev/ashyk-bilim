@@ -152,9 +152,7 @@ const ActivityTooltipContent = ({
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-popover-foreground truncate text-sm font-medium">{activity.name}</p>
-          <p className="text-muted-foreground text-xs">
-            {getActivityTypeLabel(activity.activity_type, t)}
-          </p>
+          <p className="text-muted-foreground text-xs">{getActivityTypeLabel(activity.activity_type, t)}</p>
         </div>
       </div>
       <div className="border-border mt-2.5 border-t pt-2.5">
@@ -183,8 +181,7 @@ const ChapterTooltipContent = ({
   completedActivities: number
 }) => {
   const t = useTranslations('ActivityIndicators')
-  const progress =
-    totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0
+  const progress = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0
   const isComplete = totalActivities > 0 && completedActivities === totalActivities
 
   return (
@@ -222,13 +219,7 @@ const ChapterTooltipContent = ({
   )
 }
 
-const CertificationBadge = ({
-  courseid,
-  isCompleted,
-}: {
-  courseid: string
-  isCompleted: boolean
-}) => {
+const CertificationBadge = ({ courseid, isCompleted }: { courseid: string; isCompleted: boolean }) => {
   const t = useTranslations('Certificates.ActivityIndicators')
   return (
     <ToolTip
@@ -239,9 +230,7 @@ const CertificationBadge = ({
           <div className="flex items-center gap-2.5">
             <div
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
-                isCompleted
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
+                isCompleted ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
               }`}
             >
               <Trophy size={14} />
@@ -302,9 +291,7 @@ const ActivityIndicators = (props: Props) => {
       return cleanRunCourseUuid === cleanCourseUuid
     })
     return new Set(
-      (run?.steps ?? [])
-        .filter((step: any) => step.complete === true)
-        .map((step: any) => Number(step.activity_id)),
+      (run?.steps ?? []).filter((step: any) => step.complete === true).map((step: any) => Number(step.activity_id)),
     )
   }, [props.trailData, course.course_uuid])
 
@@ -341,9 +328,7 @@ const ActivityIndicators = (props: Props) => {
 
   // Check if all activities are completed
   const totalActivitiesCount = allActivities.length
-  const completedActivities = allActivities.filter((activity: any) =>
-    isActivityDone(activity),
-  ).length
+  const completedActivities = allActivities.filter((activity: any) => isActivityDone(activity)).length
   const isCourseCompleted = totalActivitiesCount > 0 && completedActivities === totalActivitiesCount
 
   return (
@@ -367,8 +352,7 @@ const ActivityIndicators = (props: Props) => {
             (acc, activity) => acc + (isActivityDone(activity) ? 1 : 0),
             0,
           )
-          const isChapterComplete =
-            chapterActivities.length > 0 && completedCount === chapterActivities.length
+          const isChapterComplete = chapterActivities.length > 0 && completedCount === chapterActivities.length
           const firstActivity = chapterActivities[0]
           const chapterLinkHref = firstActivity
             ? `${getAbsoluteUrl('')}/course/${courseid}/activity/${firstActivity.cleanUuid}`
@@ -401,11 +385,7 @@ const ActivityIndicators = (props: Props) => {
                           : 'border-border bg-background text-muted-foreground group-hover:border-muted-foreground/50 border'
                       }`}
                     >
-                      {isChapterComplete ? (
-                        <Check size={11} className="stroke-3" />
-                      ) : (
-                        chapterIndex + 1
-                      )}
+                      {isChapterComplete ? <Check size={11} className="stroke-3" /> : chapterIndex + 1}
                     </div>
                   </Link>
                 ) : (
@@ -431,13 +411,7 @@ const ActivityIndicators = (props: Props) => {
                     <ToolTip
                       sideOffset={10}
                       unstyled
-                      content={
-                        <ActivityTooltipContent
-                          activity={activity}
-                          isDone={isDone}
-                          isCurrent={isCurrent}
-                        />
-                      }
+                      content={<ActivityTooltipContent activity={activity} isDone={isDone} isCurrent={isCurrent} />}
                       key={activity.activity_uuid}
                     >
                       <Link

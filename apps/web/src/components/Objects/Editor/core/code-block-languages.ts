@@ -11,9 +11,7 @@ export const CODE_BLOCK_LANGUAGE_VALUES = [
 ] as const
 
 export type SupportedCodeBlockLanguage = (typeof CODE_BLOCK_LANGUAGE_VALUES)[number]
-export type CodeBlockLanguageValue =
-  | SupportedCodeBlockLanguage
-  | typeof PLAIN_TEXT_CODE_BLOCK_LANGUAGE
+export type CodeBlockLanguageValue = SupportedCodeBlockLanguage | typeof PLAIN_TEXT_CODE_BLOCK_LANGUAGE
 
 const CODE_BLOCK_LANGUAGE_ALIASES: Record<string, SupportedCodeBlockLanguage> = {
   css: 'css',
@@ -35,9 +33,7 @@ const CODE_BLOCK_LANGUAGE_ALIASES: Record<string, SupportedCodeBlockLanguage> = 
   xml: 'html',
 }
 
-export function normalizeCodeBlockLanguage(
-  language: string | null | undefined,
-): CodeBlockLanguageValue {
+export function normalizeCodeBlockLanguage(language: string | null | undefined): CodeBlockLanguageValue {
   const normalized = language?.trim().toLowerCase()
 
   if (!normalized) {
@@ -47,9 +43,7 @@ export function normalizeCodeBlockLanguage(
   return CODE_BLOCK_LANGUAGE_ALIASES[normalized] ?? PLAIN_TEXT_CODE_BLOCK_LANGUAGE
 }
 
-export function toCodeBlockLanguageAttribute(
-  language: string | null | undefined,
-): SupportedCodeBlockLanguage | null {
+export function toCodeBlockLanguageAttribute(language: string | null | undefined): SupportedCodeBlockLanguage | null {
   const normalized = normalizeCodeBlockLanguage(language)
 
   return normalized === PLAIN_TEXT_CODE_BLOCK_LANGUAGE ? null : normalized

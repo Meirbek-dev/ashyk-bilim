@@ -4,12 +4,7 @@ import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-
 import { Eye, EyeOff, Plus, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,11 +20,7 @@ interface TestCaseListEditorProps {
   visible?: boolean
 }
 
-export default function TestCaseListEditor({
-  name,
-  title,
-  visible = false,
-}: TestCaseListEditorProps) {
+export default function TestCaseListEditor({ name, title, visible = false }: TestCaseListEditorProps) {
   const t = useTranslations('Activities.CodeChallenges')
   const form = useFormContext<CodeChallengeSettingsForm>()
   const tests = useWatch({ control: form.control, name }) ?? []
@@ -77,9 +68,7 @@ export default function TestCaseListEditor({
                 <AccordionTrigger className="hover:no-underline">
                   <span className="truncate text-sm">
                     {visible ? t('testCase') : t('hiddenTest')} #{index + 1}
-                    {tests[index]?.description
-                      ? ` - ${extractMarkdownSummary(tests[index]?.description, 80)}`
-                      : ''}
+                    {tests[index]?.description ? ` - ${extractMarkdownSummary(tests[index]?.description, 80)}` : ''}
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 px-1 pt-4">

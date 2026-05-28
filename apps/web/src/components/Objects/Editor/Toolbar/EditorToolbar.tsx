@@ -96,16 +96,8 @@ export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
   if (!editor || !toolbarState) return null
 
   return (
-    <div
-      className="flex flex-wrap items-center gap-0.5 py-1.5"
-      role="toolbar"
-      aria-label={t('editorToolbar')}
-    >
-      <UndoRedoGroup
-        editor={editor}
-        canUndo={toolbarState.canUndo}
-        canRedo={toolbarState.canRedo}
-      />
+    <div className="flex flex-wrap items-center gap-0.5 py-1.5" role="toolbar" aria-label={t('editorToolbar')}>
+      <UndoRedoGroup editor={editor} canUndo={toolbarState.canUndo} canRedo={toolbarState.canRedo} />
       <ToolbarSeparator />
       <TextFormatGroup
         editor={editor}
@@ -168,13 +160,7 @@ export function EditorToolbar({ onAIToggle }: EditorToolbarProps) {
           title={t('aiEditor')}
           aria-label={t('aiEditor')}
         >
-          <Image
-            width={18}
-            height={18}
-            src={logoSrc}
-            alt={tCommon('appLogoAlt')}
-            style={{ height: 'auto' }}
-          />
+          <Image width={18} height={18} src={logoSrc} alt={tCommon('appLogoAlt')} style={{ height: 'auto' }} />
           <span>{t('aiEditor')}</span>
         </button>
       </div>

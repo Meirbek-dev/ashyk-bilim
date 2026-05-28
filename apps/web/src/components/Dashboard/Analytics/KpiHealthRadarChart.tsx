@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  ChartContainer,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart'
+import { ChartContainer, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Legend, PolarAngleAxis, PolarGrid, Radar, RadarChart } from 'recharts'
 import { useTranslations } from 'next-intl'
@@ -39,11 +34,7 @@ export default function KpiHealthRadarChart({ data }: KpiHealthRadarChartProps) 
           }}
         >
           <RadarChart data={data} cx="50%" cy="50%">
-            <ChartTooltip
-              content={
-                <ChartTooltipContent formatter={v => [`${Math.round(Number(v))} / 100`, '']} />
-              }
-            />
+            <ChartTooltip content={<ChartTooltipContent formatter={v => [`${Math.round(Number(v))} / 100`, '']} />} />
             <PolarGrid gridType="polygon" />
             <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
             <Legend content={<ChartLegendContent />} />

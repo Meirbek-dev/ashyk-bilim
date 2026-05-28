@@ -28,9 +28,7 @@ test.describe.serial('Student – Learning Journey', () => {
   test.beforeAll(async () => {
     courseUuid = getEnv('E2E_COURSE_UUID') ?? ''
     if (!courseUuid) {
-      throw new Error(
-        'E2E_COURSE_UUID not set. Run the course-creation spec first, or set it manually.',
-      )
+      throw new Error('E2E_COURSE_UUID not set. Run the course-creation spec first, or set it manually.')
     }
     ensureFixtureFiles()
   })
@@ -127,10 +125,7 @@ test.describe.serial('Student – Learning Journey', () => {
    * BUG PROTOCOL: If the file upload input is not rendered or the submission
    * POST fails, this test MUST remain failing. The feature is broken.
    */
-  test('student can upload a PDF and submit the file submission activity', async ({
-    page,
-    fileSubmissionPage,
-  }) => {
+  test('student can upload a PDF and submit the file submission activity', async ({ page, fileSubmissionPage }) => {
     const activityId = getEnv('E2E_FILE_SUBMISSION_ACTIVITY_ID')
     if (!activityId) {
       test.skip(true, 'File submission activity ID not captured in prior test')
@@ -160,8 +155,8 @@ test.describe.serial('Student – Learning Journey', () => {
     await page.waitForURL(/\/activity\//, { timeout: 10_000 })
 
     const match = /\/activity\/([^/]+)/.exec(page.url())
-  const activityId = match?.[1]
-  if (activityId) setEnv('E2E_EXAM_STUDENT_ACTIVITY_ID', activityId)
+    const activityId = match?.[1]
+    if (activityId) setEnv('E2E_EXAM_STUDENT_ACTIVITY_ID', activityId)
   })
 
   /**
@@ -222,10 +217,7 @@ test.describe.serial('Student – Learning Journey', () => {
 
   // ── 5. Code challenge ───────────────────────────────────────────────────
 
-  test('student can navigate to and submit the coding challenge', async ({
-    page,
-    assessmentPage,
-  }) => {
+  test('student can navigate to and submit the coding challenge', async ({ page, assessmentPage }) => {
     await page.goto(`/en/course/${courseUuid}`)
     await page.waitForLoadState('networkidle')
 
@@ -245,8 +237,8 @@ test.describe.serial('Student – Learning Journey', () => {
     await page.waitForURL(/\/activity\//, { timeout: 10_000 })
 
     const match = /\/activity\/([^/]+)/.exec(page.url())
-  const activityId = match?.[1]
-  if (activityId) setEnv('E2E_CODE_ACTIVITY_ID', activityId)
+    const activityId = match?.[1]
+    if (activityId) setEnv('E2E_CODE_ACTIVITY_ID', activityId)
 
     // Fill and submit the code solution
     if (await assessmentPage.codeEditor.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -269,9 +261,7 @@ test.describe.serial('Student – Learning Journey', () => {
    * Certificate should NOT be available before the teacher grades the submission.
    * This test documents the expected (correct) state.
    */
-  test('certificate is not yet available before teacher grades work', async ({
-    coursePlayerPage,
-  }) => {
+  test('certificate is not yet available before teacher grades work', async ({ coursePlayerPage }) => {
     await coursePlayerPage.gotoCourseLanding(courseUuid)
 
     // The download certificate button should NOT be present yet

@@ -40,9 +40,7 @@ const EditorWrapper = (props: EditorWrapperProps): JSX.Element => {
       error: err => {
         const errorMessage = err?.data?.detail || err?.data?.message || t('saveError')
         const status = err?.status
-        return (
-          <b>{status ? t('detailedSaveError', { status, message: errorMessage }) : errorMessage}</b>
-        )
+        return <b>{status ? t('detailedSaveError', { status, message: errorMessage }) : errorMessage}</b>
       },
     })
   }

@@ -85,8 +85,7 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
             {
               '-top-1 -right-1': levelIndicatorPosition === 'top-right',
               '-right-1 -bottom-1': levelIndicatorPosition === 'bottom-right',
-              'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2':
-                levelIndicatorPosition === 'bottom-center',
+              'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2': levelIndicatorPosition === 'bottom-center',
             },
           )}
         >
@@ -103,8 +102,7 @@ const GamifiedUserAvatar = (props: GamifiedUserAvatarProps) => {
             {
               '-top-1 -right-1': levelIndicatorPosition === 'top-right',
               '-right-2 -bottom-2': levelIndicatorPosition === 'bottom-right',
-              'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2':
-                levelIndicatorPosition === 'bottom-center',
+              'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2': levelIndicatorPosition === 'bottom-center',
             },
           )}
         />

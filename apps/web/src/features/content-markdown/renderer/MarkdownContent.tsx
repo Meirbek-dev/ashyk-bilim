@@ -13,11 +13,7 @@ import { extractMarkdownSummary } from '../utils/markdown-extract'
 import { sanitizeMarkdownImageUrl, sanitizeMarkdownUrl } from '../utils/markdown-sanitize'
 import { MarkdownCodeBlock } from './MarkdownCodeBlock'
 import { MarkdownImage } from './MarkdownImage'
-import {
-  extractMarkdownHeadingText,
-  MarkdownHeading,
-  slugifyMarkdownHeading,
-} from './MarkdownHeading'
+import { extractMarkdownHeadingText, MarkdownHeading, slugifyMarkdownHeading } from './MarkdownHeading'
 import { AiStreamingCursor } from './MarkdownStreaming'
 
 interface MarkdownContentProps {
@@ -180,11 +176,7 @@ export function MarkdownContent({
           a: ({ href, children, ...props }) => {
             const safeHref = sanitizeMarkdownUrl(href)
             if (!safeHref) {
-              return (
-                <span className="text-muted-foreground underline decoration-dotted">
-                  {children}
-                </span>
-              )
+              return <span className="text-muted-foreground underline decoration-dotted">{children}</span>
             }
             const external = /^https?:\/\//i.test(safeHref)
             return (
@@ -206,11 +198,7 @@ export function MarkdownContent({
 
             // Inline code: no language class AND no newlines
             if (!match && !code.includes('\n')) {
-              return (
-                <code className={cn('rounded bg-muted px-1 py-0.5 text-[0.92em]', codeClassName)}>
-                  {children}
-                </code>
-              )
+              return <code className={cn('rounded bg-muted px-1 py-0.5 text-[0.92em]', codeClassName)}>{children}</code>
             }
 
             return (

@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { useTranslations } from 'next-intl'
 import { useEditorState, useTiptap } from '@tiptap/react'
 import { useEffect, useMemo, useRef } from 'react'
@@ -26,9 +19,7 @@ export function SlashCommandMenu() {
   const slashState = useEditorState({
     editor,
     selector: ctx =>
-      (ctx.editor?.storage as unknown as Record<string, unknown>)?.slashCommand as
-        | SlashCommandState
-        | undefined,
+      (ctx.editor?.storage as unknown as Record<string, unknown>)?.slashCommand as SlashCommandState | undefined,
   })
 
   const slashItems = useMemo(() => createInsertItems(t), [t])
@@ -62,9 +53,7 @@ export function SlashCommandMenu() {
   const query = slashState.query.toLowerCase()
   const filteredItems = query
     ? slashItems.filter(
-        item =>
-          item.label.toLowerCase().includes(query) ||
-          item.description.toLowerCase().includes(query),
+        item => item.label.toLowerCase().includes(query) || item.description.toLowerCase().includes(query),
       )
     : slashItems
 
@@ -86,8 +75,7 @@ export function SlashCommandMenu() {
   // Clamp position to viewport
   const viewportHeight = typeof globalThis.window !== 'undefined' ? window.innerHeight : 800
   const menuHeight = 360
-  const top =
-    coords.bottom + menuHeight > viewportHeight ? coords.top - menuHeight - 4 : coords.bottom + 4
+  const top = coords.bottom + menuHeight > viewportHeight ? coords.top - menuHeight - 4 : coords.bottom + 4
 
   return (
     <div
@@ -116,9 +104,7 @@ export function SlashCommandMenu() {
                   </span>
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <span className="text-sm font-medium">{item.label}</span>
-                    <span className="text-muted-foreground truncate text-xs">
-                      {item.description}
-                    </span>
+                    <span className="text-muted-foreground truncate text-xs">{item.description}</span>
                   </div>
                 </CommandItem>
               ))}

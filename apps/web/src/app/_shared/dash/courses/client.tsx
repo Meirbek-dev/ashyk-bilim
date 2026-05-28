@@ -18,27 +18,9 @@ import {
   getCourseContentStats,
   getCourseReadinessSummary,
 } from '@/lib/course-management'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  AlertTriangle,
-  LayoutGrid,
-  List,
-  MoreHorizontal,
-  Search,
-  Sparkles,
-  Trash2,
-  Workflow,
-  X,
-} from 'lucide-react'
-import {
-  CourseStatusBadge,
-  courseWorkflowSummaryCardClass,
-} from '@components/Dashboard/Courses/courseWorkflowUi'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { AlertTriangle, LayoutGrid, List, MoreHorizontal, Search, Sparkles, Trash2, Workflow, X } from 'lucide-react'
+import { CourseStatusBadge, courseWorkflowSummaryCardClass } from '@components/Dashboard/Courses/courseWorkflowUi'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import CourseThumbnail, { removeCoursePrefix } from '@components/Objects/Thumbnails/CourseThumbnail'
 import { deleteCourseFromBackend, updateCourseAccess } from '@services/courses/courses'
@@ -106,8 +88,7 @@ const CoursesHome = ({
   const [pendingBulkAction, setPendingBulkAction] = useState<BulkActionKind | null>(null)
   const [optimisticCourses, removeOptimisticCourses] = useOptimistic(
     courses,
-    (state: ManageableCourse[], deletedUuids: string[]) =>
-      state.filter(c => !deletedUuids.includes(c.course_uuid)),
+    (state: ManageableCourse[], deletedUuids: string[]) => state.filter(c => !deletedUuids.includes(c.course_uuid)),
   )
   const { data: trailData, isLoading: trailQueryLoading } = useTrailCurrent({
     enabled: isAuthenticated,
@@ -182,17 +163,12 @@ const CoursesHome = ({
     [can],
   )
 
-  const visibleCourseUuids = useMemo(
-    () => optimisticCourses.map(course => course.course_uuid),
-    [optimisticCourses],
-  )
+  const visibleCourseUuids = useMemo(() => optimisticCourses.map(course => course.course_uuid), [optimisticCourses])
   const visibleCourseUuidSet = useMemo(() => new Set(visibleCourseUuids), [visibleCourseUuids])
   const selectedCourseUuidSet = useMemo(() => new Set(selectedCourseUuids), [selectedCourseUuids])
 
   useEffect(() => {
-    setSelectedCourseUuids(current =>
-      current.filter(courseUuid => visibleCourseUuidSet.has(courseUuid)),
-    )
+    setSelectedCourseUuids(current => current.filter(courseUuid => visibleCourseUuidSet.has(courseUuid)))
   }, [visibleCourseUuidSet])
 
   const selectedCourses = useMemo(
@@ -210,14 +186,9 @@ const CoursesHome = ({
     selectableVisibleCourses.every(course => selectedCourseUuidSet.has(course.course_uuid))
 
   const someVisibleSelected =
-    !allVisibleSelected &&
-    selectableVisibleCourses.some(course => selectedCourseUuidSet.has(course.course_uuid))
+    !allVisibleSelected && selectableVisibleCourses.some(course => selectedCourseUuidSet.has(course.course_uuid))
 
-  const headerCheckboxState = allVisibleSelected
-    ? true
-    : someVisibleSelected
-      ? ('indeterminate' as const)
-      : false
+  const headerCheckboxState = allVisibleSelected ? true : someVisibleSelected ? ('indeterminate' as const) : false
 
   const toggleCourseSelection = (courseUuid: string, checked: boolean) => {
     setSelectedCourseUuids(current => {
@@ -234,9 +205,7 @@ const CoursesHome = ({
   const toggleAllVisibleCourses = useCallback(
     (checked: boolean) => {
       if (!checked) {
-        setSelectedCourseUuids(current =>
-          current.filter(courseUuid => !visibleCourseUuidSet.has(courseUuid)),
-        )
+        setSelectedCourseUuids(current => current.filter(courseUuid => !visibleCourseUuidSet.has(courseUuid)))
         return
       }
 
@@ -275,8 +244,7 @@ const CoursesHome = ({
         )
 
         const successCount = results.filter(
-          (result): result is PromiseFulfilledResult<any> =>
-            result.status === 'fulfilled' && result.value?.success,
+          (result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled' && result.value?.success,
         ).length
         const failedCount = targetCourses.length - successCount
 
@@ -310,9 +278,7 @@ const CoursesHome = ({
 
     startBulkTransition(async () => {
       removeOptimisticCourses(targetCourses.map(c => c.course_uuid))
-      const results = await Promise.allSettled(
-        targetCourses.map(course => deleteCourseFromBackend(course.course_uuid)),
-      )
+      const results = await Promise.allSettled(targetCourses.map(course => deleteCourseFromBackend(course.course_uuid)))
 
       const successCount = results.filter(result => result.status === 'fulfilled').length
       const failedCount = targetCourses.length - successCount
@@ -384,9 +350,7 @@ const CoursesHome = ({
   const bulkToolbar =
     selectedCourses.length > 0 ? (
       <div className="bg-muted flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2">
-        <Badge variant="outline">
-          {t('bulk.selectedCount', { count: selectedCourses.length })}
-        </Badge>
+        <Badge variant="outline">{t('bulk.selectedCount', { count: selectedCourses.length })}</Badge>
         <Button
           type="button"
           size="sm"
@@ -522,9 +486,7 @@ const CoursesHome = ({
         header: '',
         enableSorting: false,
         meta: { label: t('table.actions'), exportable: false },
-        cell: ({ row }) => (
-          <CourseRowActions course={row.original} onOptimisticDelete={removeOptimisticCourses} />
-        ),
+        cell: ({ row }) => <CourseRowActions course={row.original} onOptimisticDelete={removeOptimisticCourses} />,
       },
     ],
     [
@@ -556,24 +518,13 @@ const CoursesHome = ({
         <div className="bg-card mt-4 rounded-xl border p-6 shadow-sm">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-3xl">
-              <h1 className="text-foreground mt-2 text-4xl font-semibold tracking-tight">
-                {t('header.title')}
-              </h1>
-              <p className="text-muted-foreground mt-3 text-sm leading-6">
-                {t('header.description')}
-              </p>
+              <h1 className="text-foreground mt-2 text-4xl font-semibold tracking-tight">{t('header.title')}</h1>
+              <p className="text-muted-foreground mt-3 text-sm leading-6">{t('header.description')}</p>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                onClick={() => updateRoute({ view: viewMode === 'table' ? null : 'table' })}
-              >
-                {viewMode === 'table' ? (
-                  <LayoutGrid className="size-4" />
-                ) : (
-                  <List className="size-4" />
-                )}
+              <Button variant="outline" onClick={() => updateRoute({ view: viewMode === 'table' ? null : 'table' })}>
+                {viewMode === 'table' ? <LayoutGrid className="size-4" /> : <List className="size-4" />}
                 {viewMode === 'table' ? t('viewMode.cards') : t('viewMode.table')}
               </Button>
               {canCreateCourse ? (
@@ -682,10 +633,7 @@ const CoursesHome = ({
               </p>
               {canCreateCourse ? (
                 <div className="mt-6 flex justify-center">
-                  <Button
-                    nativeButton={false}
-                    render={<AppLink href={buildCourseCreationPath()} />}
-                  >
+                  <Button nativeButton={false} render={<AppLink href={buildCourseCreationPath()} />}>
                     <Sparkles className="size-4" />
                     {t('empty.createAction')}
                   </Button>
@@ -834,11 +782,7 @@ function CourseRowActions({
               lastKnownUpdateDate: course.update_date,
             },
           )
-          toast.success(
-            course.public
-              ? t('rowActions.visibilityMovedPrivate')
-              : t('rowActions.visibilityPublished'),
-          )
+          toast.success(course.public ? t('rowActions.visibilityMovedPrivate') : t('rowActions.visibilityPublished'))
           router.refresh()
         } catch {
           toast.error(t('rowActions.visibilityError'))
@@ -857,28 +801,18 @@ function CourseRowActions({
         }
       />
       <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          onClick={() =>
-            router.push(buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid)))
-          }
-        >
+        <DropdownMenuItem onClick={() => router.push(buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid)))}>
           <List className="size-4" />
           {t('rowActions.openWorkspace')}
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() =>
-            router.push(
-              buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid), 'curriculum'),
-            )
-          }
+          onClick={() => router.push(buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid), 'curriculum'))}
         >
           <Workflow className="size-4" />
           {t('rowActions.openCurriculum')}
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() =>
-            router.push(buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid), 'review'))
-          }
+          onClick={() => router.push(buildCourseWorkspacePath(removeCoursePrefix(course.course_uuid), 'review'))}
         >
           <Sparkles className="size-4" />
           {t('rowActions.reviewPublish')}

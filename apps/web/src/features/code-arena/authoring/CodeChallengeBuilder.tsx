@@ -1,15 +1,6 @@
 'use client'
 
-import {
-  CheckCircle2,
-  Code2,
-  FileText,
-  FlaskConical,
-  Loader2,
-  Save,
-  Sparkles,
-  ClipboardCheck,
-} from 'lucide-react'
+import { CheckCircle2, Code2, FileText, FlaskConical, Loader2, Save, Sparkles, ClipboardCheck } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
@@ -68,25 +59,18 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
   const t = useTranslations('Activities.CodeChallenges')
   const [tab, setTab] = useState<BuilderTab>('problem')
   const [draft, setDraft] = useState<CodeChallengeSettings>(DEFAULT_SETTINGS)
-  const { data: settings, isLoading } =
-    useCodeChallengeSettings<CodeChallengeSettings>(activityUuid)
+  const { data: settings, isLoading } = useCodeChallengeSettings<CodeChallengeSettings>(activityUuid)
   const { data: languages = [] } = useJudge0Languages()
   const saveSettings = useSaveCodeChallengeSettings(activityUuid)
 
   const selectedLanguages = useMemo(
-    () =>
-      draft.allowed_languages
-        .map(id => languages.find(language => language.id === id))
-        .filter(Boolean),
+    () => draft.allowed_languages.map(id => languages.find(language => language.id === id)).filter(Boolean),
     [draft.allowed_languages, languages],
   )
 
   const readiness = useMemo(() => buildReadiness(draft, t), [draft, t])
   const blockersCount = readiness.items.filter(item => !item.ok).length
-  const firstMarkdownIssue = useMemo(
-    () => getFirstBlockingCodeChallengeMarkdownIssue(draft),
-    [draft],
-  )
+  const firstMarkdownIssue = useMemo(() => getFirstBlockingCodeChallengeMarkdownIssue(draft), [draft])
 
   useEffect(() => {
     if (!settings) return
@@ -118,12 +102,8 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
     try {
       await saveSettings.mutateAsync({
         ...draft,
-        visible_tests: (draft.visible_tests ?? []).map(test =>
-          Object.assign(test, { is_visible: true }),
-        ),
-        hidden_tests: (draft.hidden_tests ?? []).map(test =>
-          Object.assign(test, { is_visible: false }),
-        ),
+        visible_tests: (draft.visible_tests ?? []).map(test => Object.assign(test, { is_visible: true })),
+        hidden_tests: (draft.hidden_tests ?? []).map(test => Object.assign(test, { is_visible: false })),
       })
       toast.success(t('configSaved'))
     } catch (error) {
@@ -144,20 +124,13 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
       {/* Header bar */}
       <div className="bg-muted/10 flex h-14 shrink-0 items-center justify-between border-b px-4 select-none">
         <div className="min-w-0">
-          <div className="text-foreground truncate text-sm font-semibold">
-            {draft.title || t('configureChallenge')}
-          </div>
+          <div className="text-foreground truncate text-sm font-semibold">{draft.title || t('configureChallenge')}</div>
           <div className="text-muted-foreground mt-0.5 text-xs font-medium">
-            {blockersCount > 0
-              ? t('requirementsPending', { count: blockersCount })
-              : t('allChecksPassed')}
+            {blockersCount > 0 ? t('requirementsPending', { count: blockersCount }) : t('allChecksPassed')}
           </div>
         </div>
         <div className="flex items-center gap-2.5">
-          <Badge
-            variant={blockersCount > 0 ? 'warning' : 'success'}
-            className="text-[10px] font-bold uppercase"
-          >
+          <Badge variant={blockersCount > 0 ? 'warning' : 'success'} className="text-[10px] font-bold uppercase">
             {blockersCount > 0 ? t('draftNeedsWork') : t('readyToPublish')}
           </Badge>
           <Button
@@ -166,21 +139,13 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
             disabled={saveSettings.isPending || Boolean(firstMarkdownIssue)}
             className="h-8 gap-1.5 text-xs font-semibold"
           >
-            {saveSettings.isPending ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Save className="size-3.5" />
-            )}
+            {saveSettings.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
             {t('saveSettings')}
           </Button>
         </div>
       </div>
 
-      <Tabs
-        value={tab}
-        onValueChange={value => setTab(value as BuilderTab)}
-        className="flex min-h-0 flex-1 flex-col"
-      >
+      <Tabs value={tab} onValueChange={value => setTab(value as BuilderTab)} className="flex min-h-0 flex-1 flex-col">
         {/* Tab triggers */}
         <div className="bg-muted/5 border-b px-3">
           <TabsList className="h-11 gap-1 bg-transparent p-0">
@@ -272,10 +237,7 @@ export function CodeChallengeBuilder({ activityUuid }: CodeChallengeBuilderProps
                   </div>
                 ) : (
                   selectedLanguages.map(language => (
-                    <section
-                      key={language!.id}
-                      className="bg-card grid gap-4 rounded-lg border p-5 shadow-xs"
-                    >
+                    <section key={language!.id} className="bg-card grid gap-4 rounded-lg border p-5 shadow-xs">
                       <div className="flex items-center justify-between border-b pb-2">
                         <div className="text-foreground text-sm font-bold">{language!.name}</div>
                         <Badge
@@ -376,15 +338,11 @@ function buildReadiness(settings: CodeChallengeSettings, t: any) {
       label: t('readiness.languages.label'),
       ok:
         settings.allowed_languages.length > 0 &&
-        settings.allowed_languages.every(
-          id => starterCode[id]?.trim() && referenceSolutions[id]?.trim(),
-        ),
+        settings.allowed_languages.every(id => starterCode[id]?.trim() && referenceSolutions[id]?.trim()),
     },
     {
       label: t('readiness.visible.label'),
-      ok:
-        visible.length > 0 &&
-        visible.some(test => test.input.trim() || test.expected_output.trim()),
+      ok: visible.length > 0 && visible.some(test => test.input.trim() || test.expected_output.trim()),
     },
     {
       label: t('readiness.hidden.label'),

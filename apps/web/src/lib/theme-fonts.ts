@@ -216,9 +216,7 @@ export function loadGoogleFontFamilies(families: readonly GoogleThemeFontFamily[
 
   hydrateLoadedGoogleFontsFromDocument(document)
 
-  const missingFamilies = [...new Set(families)]
-    .filter(family => !loadedGoogleFontFamilies.has(family))
-    .toSorted()
+  const missingFamilies = [...new Set(families)].filter(family => !loadedGoogleFontFamilies.has(family)).toSorted()
 
   if (missingFamilies.length === 0) return
 

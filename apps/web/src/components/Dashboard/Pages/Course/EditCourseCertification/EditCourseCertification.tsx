@@ -1,11 +1,7 @@
 'use client'
 
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import {
-  createCertification,
-  deleteCertification,
-  updateCertification,
-} from '@services/courses/certifications'
+import { createCertification, deleteCertification, updateCertification } from '@services/courses/certifications'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { SectionHeader } from '@components/Dashboard/Courses/SectionHeader'
@@ -152,9 +148,7 @@ const EditCourseCertification = () => {
         }),
         v.check(data => {
           if (data.enable_certification) {
-            return Boolean(
-              data.certification_name?.trim() && data.certification_description?.trim(),
-            )
+            return Boolean(data.certification_name?.trim() && data.certification_description?.trim())
           }
           return true
         }, t('validationRequiredFields')),
@@ -194,12 +188,9 @@ const EditCourseCertification = () => {
     return {
       enable_certification: hasExistingCertification,
       certification_name: config.certification_name || courseStructure?.name || '',
-      certification_description:
-        config.certification_description || courseStructure?.description || '',
-      certification_type:
-        (config.certification_type as FormValues['certification_type']) || 'completion',
-      certificate_pattern:
-        (config.certificate_pattern as FormValues['certificate_pattern']) || 'professional',
+      certification_description: config.certification_description || courseStructure?.description || '',
+      certification_type: (config.certification_type as FormValues['certification_type']) || 'completion',
+      certificate_pattern: (config.certificate_pattern as FormValues['certificate_pattern']) || 'professional',
       certificate_instructor: config.certificate_instructor || getInstructorName(),
     }
   }, [courseStructure, existingCertification, hasExistingCertification])
@@ -429,11 +420,7 @@ const EditCourseCertification = () => {
                             <Field className="sm:col-span-2">
                               <FieldLabel htmlFor={field.name}>{t('certificationName')}</FieldLabel>
                               <FieldContent>
-                                <Input
-                                  id={field.name}
-                                  {...field}
-                                  placeholder={t('certificationNamePlaceholder')}
-                                />
+                                <Input id={field.name} {...field} placeholder={t('certificationNamePlaceholder')} />
                               </FieldContent>
                               <FieldError errors={[fieldState.error]} />
                             </Field>
@@ -468,9 +455,7 @@ const EditCourseCertification = () => {
                           name="certification_description"
                           render={({ field, fieldState }) => (
                             <Field className="sm:col-span-2">
-                              <FieldLabel htmlFor={field.name}>
-                                {t('certificationDescription')}
-                              </FieldLabel>
+                              <FieldLabel htmlFor={field.name}>{t('certificationDescription')}</FieldLabel>
                               <FieldContent>
                                 <Textarea
                                   id={field.name}
@@ -511,9 +496,7 @@ const EditCourseCertification = () => {
                                   key={pattern.value}
                                   htmlFor={`pattern-${pattern.value}`}
                                   className={`hover:border-primary/50 relative flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                                    field.value === pattern.value
-                                      ? 'border-primary bg-primary/5'
-                                      : 'border-border'
+                                    field.value === pattern.value ? 'border-primary bg-primary/5' : 'border-border'
                                   }`}
                                 >
                                   <RadioGroupItem
@@ -543,15 +526,9 @@ const EditCourseCertification = () => {
                         name="certificate_instructor"
                         render={({ field, fieldState }) => (
                           <Field>
-                            <FieldLabel htmlFor={field.name}>
-                              {t('certificateInstructor')}
-                            </FieldLabel>
+                            <FieldLabel htmlFor={field.name}>{t('certificateInstructor')}</FieldLabel>
                             <FieldContent>
-                              <Input
-                                id={field.name}
-                                {...field}
-                                placeholder={t('certificateInstructorPlaceholder')}
-                              />
+                              <Input id={field.name} {...field} placeholder={t('certificateInstructorPlaceholder')} />
                             </FieldContent>
                             <FieldError errors={[fieldState.error]} />
                           </Field>
@@ -577,9 +554,7 @@ const EditCourseCertification = () => {
                             certificationDescription={certificationDescription}
                             certificationType={certificationType}
                             certificatePattern={certificatePattern}
-                            {...(certificateInstructor === undefined
-                              ? {}
-                              : { certificateInstructor })}
+                            {...(certificateInstructor === undefined ? {} : { certificateInstructor })}
                           />
                         </CardContent>
                       </Card>
@@ -595,9 +570,7 @@ const EditCourseCertification = () => {
                   <Award className="text-muted-foreground h-12 w-12" />
                 </div>
                 <h3 className="mb-2 text-lg font-semibold">{t('noCertificationConfigured')}</h3>
-                <p className="text-muted-foreground mb-6 max-w-sm text-sm">
-                  {t('noCertificationDescription')}
-                </p>
+                <p className="text-muted-foreground mb-6 max-w-sm text-sm">{t('noCertificationDescription')}</p>
                 <Button
                   type="button"
                   onClick={() => {

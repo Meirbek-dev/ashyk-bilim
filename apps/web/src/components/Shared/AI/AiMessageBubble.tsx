@@ -45,18 +45,9 @@ export function AiMessageBubble({ role, content, isStreaming = false }: AiMessag
 
   return (
     <div className={cn('group flex items-start gap-2', role === 'user' && 'flex-row-reverse')}>
-      <UserAvatar
-        size="sm"
-        variant="outline"
-        {...(role === 'assistant' ? { predefined_avatar: 'ai' } : {})}
-      />
+      <UserAvatar size="sm" variant="outline" {...(role === 'assistant' ? { predefined_avatar: 'ai' } : {})} />
 
-      <div
-        className={cn(
-          'relative min-w-0 max-w-[85%]',
-          role === 'assistant' ? 'flex-1' : 'max-w-[78%]',
-        )}
-      >
+      <div className={cn('relative min-w-0 max-w-[85%]', role === 'assistant' ? 'flex-1' : 'max-w-[78%]')}>
         {role === 'assistant' ? (
           <>
             <div className="bg-muted rounded-lg px-3 py-2">

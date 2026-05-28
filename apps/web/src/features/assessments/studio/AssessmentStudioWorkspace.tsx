@@ -28,20 +28,14 @@ interface AssessmentStudioWorkspaceProps {
   activityUuid: string
 }
 
-const LIFECYCLE_BADGE_VARIANT: Record<
-  AssessmentLifecycle,
-  'default' | 'secondary' | 'outline' | 'destructive'
-> = {
+const LIFECYCLE_BADGE_VARIANT: Record<AssessmentLifecycle, 'default' | 'secondary' | 'outline' | 'destructive'> = {
   DRAFT: 'secondary',
   SCHEDULED: 'outline',
   PUBLISHED: 'default',
   ARCHIVED: 'destructive',
 }
 
-export default function AssessmentStudioWorkspace({
-  courseUuid,
-  activityUuid,
-}: AssessmentStudioWorkspaceProps) {
+export default function AssessmentStudioWorkspace({ courseUuid, activityUuid }: AssessmentStudioWorkspaceProps) {
   const t = useTranslations('Features.Assessments.Studio')
   const { vm, isLoading, error } = useAssessmentStudio(activityUuid)
   const [kindModule, setKindModule] = useState<KindModule | null>(null)
@@ -82,11 +76,7 @@ export default function AssessmentStudioWorkspace({
   }
 
   if (error || vm?.surface !== 'STUDIO') {
-    return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-        {t('unavailable')}
-      </div>
-    )
+    return <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('unavailable')}</div>
   }
 
   const { vm: studio } = vm
@@ -113,18 +103,14 @@ export default function AssessmentStudioWorkspace({
 
   // Resolve slots
   const Author = kindModule?.Author
-  const Provider =
-    kindModule?.Provider ?? (({ children }: { children: React.ReactNode }) => <>{children}</>)
+  const Provider = kindModule?.Provider ?? (({ children }: { children: React.ReactNode }) => <>{children}</>)
 
   const slotProps = { activityUuid, courseUuid }
 
   return (
     <div className="bg-background min-h-screen">
       {/* ── Topbar ──────────────────────────────────────────────────────── */}
-      <header
-        className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur"
-        style={{ height: '61px' }}
-      >
+      <header className="bg-card/95 sticky top-0 z-30 border-b backdrop-blur" style={{ height: '61px' }}>
         <div className="flex h-full items-center justify-between gap-4 px-4 md:px-6">
           {/* Left: breadcrumb + title + lifecycle badge */}
           <div className="min-w-0">
@@ -150,12 +136,7 @@ export default function AssessmentStudioWorkspace({
 
           {/* Right: preview + overflow */}
           <div className="flex shrink-0 items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              nativeButton={false}
-              render={<Link href={previewHref} target="_blank" />}
-            >
+            <Button variant="ghost" size="sm" nativeButton={false} render={<Link href={previewHref} target="_blank" />}>
               <Eye className="size-4" />
               {t('preview')}
             </Button>

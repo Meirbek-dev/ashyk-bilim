@@ -80,9 +80,7 @@ const DEFAULT_VALUES: CodeChallengeSettingsForm = {
 
 export default function CodeChallengeStudio({ activityUuid }: CodeChallengeStudioProps) {
   const t = useTranslations('Activities.CodeChallenges')
-  const { data: settings, isLoading } = useCodeChallengeSettings<Partial<CodeChallengeSettingsForm>>(
-    activityUuid,
-  )
+  const { data: settings, isLoading } = useCodeChallengeSettings<Partial<CodeChallengeSettingsForm>>(activityUuid)
   const saveSettings = useSaveCodeChallengeSettings(activityUuid)
   const form = useForm<CodeChallengeSettingsForm>({
     defaultValues: DEFAULT_VALUES,
@@ -152,11 +150,7 @@ export default function CodeChallengeStudio({ activityUuid }: CodeChallengeStudi
         <HintsPanel />
         <div className="flex justify-end">
           <Button type="submit" disabled={saveSettings.isPending}>
-            {saveSettings.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Save className="size-4" />
-            )}
+            {saveSettings.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             {t('saveConfig')}
           </Button>
         </div>

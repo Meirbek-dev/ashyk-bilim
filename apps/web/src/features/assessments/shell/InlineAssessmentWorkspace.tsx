@@ -38,10 +38,7 @@ interface InlineAssessmentWorkspaceProps {
  * Layout mode and the BottomActionBar primary CTA are both registered via
  * ActivityLayoutContext so the parent shell can react without prop-drilling.
  */
-export default function InlineAssessmentWorkspace({
-  activityUuid,
-  courseUuid,
-}: InlineAssessmentWorkspaceProps) {
+export default function InlineAssessmentWorkspace({ activityUuid, courseUuid }: InlineAssessmentWorkspaceProps) {
   const { vm: assessmentData, isLoading } = useAssessmentAttempt(activityUuid)
   const { contributorStatus } = useContributorStatus(courseUuid)
   const isTeacher = contributorStatus === 'ACTIVE'
@@ -62,16 +59,13 @@ export default function InlineAssessmentWorkspace({
     recommendedAction === 'noAction'
 
   const canAct =
-    (recommendedAction === 'start' || recommendedAction === 'startRevision') &&
-    (vm?.items?.length ?? 0) > 0
+    (recommendedAction === 'start' || recommendedAction === 'startRevision') && (vm?.items?.length ?? 0) > 0
 
   // ── Derive layout mode ──────────────────────────────────────────────────────
 
   useEffect(() => {
     const isActive = recommendedAction === 'continueDraft' || recommendedAction === 'submit'
-    setMode(
-      isActive ? 'ACTIVE_ATTEMPT' : recommendedAction === 'viewResult' ? 'RESULT' : 'PREFLIGHT',
-    )
+    setMode(isActive ? 'ACTIVE_ATTEMPT' : recommendedAction === 'viewResult' ? 'RESULT' : 'PREFLIGHT')
 
     return () => {
       setMode('CONTENT')

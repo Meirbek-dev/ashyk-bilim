@@ -7,13 +7,7 @@ import { useTranslations } from 'next-intl'
 import * as v from 'valibot'
 
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from '@/components/ui/field'
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { apiFetch } from '@/lib/api-client'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -41,11 +35,7 @@ interface CodeChallengeActivityModalProps {
   closeModal?: () => void
 }
 
-export default function CodeChallengeActivityModal({
-  chapterId,
-  course,
-  closeModal,
-}: CodeChallengeActivityModalProps) {
+export default function CodeChallengeActivityModal({ chapterId, course, closeModal }: CodeChallengeActivityModalProps) {
   const t = useTranslations('Components.NewActivity.CodeChallenge')
 
   const validationSchema = createValidationSchema(t)
@@ -132,12 +122,7 @@ export default function CodeChallengeActivityModal({
             <Field>
               <FieldLabel htmlFor={field.name}>{t('description')}</FieldLabel>
               <FieldContent>
-                <Textarea
-                  id={field.name}
-                  placeholder={t('descriptionPlaceholder')}
-                  className="min-h-24"
-                  {...field}
-                />
+                <Textarea id={field.name} placeholder={t('descriptionPlaceholder')} className="min-h-24" {...field} />
               </FieldContent>
               <FieldDescription>{t('descriptionHint')}</FieldDescription>
               <FieldError errors={[fieldState.error]} />
@@ -202,9 +187,7 @@ export default function CodeChallengeActivityModal({
                     ))}
                   </NativeSelect>
                   <FieldDescription>
-                    {field.value === 'competitive'
-                      ? t('typeCompetitiveHint')
-                      : t('typeGeneralHint')}
+                    {field.value === 'competitive' ? t('typeCompetitiveHint') : t('typeGeneralHint')}
                   </FieldDescription>
                   <FieldError errors={[fieldState.error]} />
                 </Field>

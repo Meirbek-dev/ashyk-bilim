@@ -23,8 +23,7 @@ const iconForDirection = (direction: MetricCard['direction']) => {
  * an increase shows as a warning badge and a decrease as a success badge.
  */
 const badgeVariant = (direction: MetricCard['direction'], isHigherBetter: boolean) => {
-  const isPositiveChange =
-    direction === 'up' ? isHigherBetter : direction === 'down' ? !isHigherBetter : null
+  const isPositiveChange = direction === 'up' ? isHigherBetter : direction === 'down' ? !isHigherBetter : null
   if (isPositiveChange === true) return 'success'
   if (isPositiveChange === false) return 'warning'
   return 'outline'
@@ -67,9 +66,7 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {cards.map(({ metric, sparkline, definition }) => {
         const displayValue =
-          metric.unit === '%'
-            ? `${numberFormatter.format(metric.value)}%`
-            : numberFormatter.format(metric.value)
+          metric.unit === '%' ? `${numberFormatter.format(metric.value)}%` : numberFormatter.format(metric.value)
 
         let deltaLabel: string
         if (metric.delta_pct === null && metric.delta_value === null) {
@@ -98,9 +95,7 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
                 <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   {metric.label}
                 </div>
-                <CardTitle className="text-foreground mt-3 text-3xl font-semibold">
-                  {displayValue}
-                </CardTitle>
+                <CardTitle className="text-foreground mt-3 text-3xl font-semibold">{displayValue}</CardTitle>
                 {metric.benchmark !== null && metric.benchmark !== undefined && (
                   <div className="text-muted-foreground mt-1 text-xs">
                     {metric.benchmark_label}:{' '}
@@ -126,9 +121,7 @@ export default function TeacherKpiCards({ cards }: TeacherKpiCardsProps) {
                       delta: `${metric.delta_value > 0 ? '+' : ''}${numberFormatter.format(metric.delta_value)}${metric.unit ?? ''}`,
                     })}
               </div>
-              {definition && (
-                <div className="text-muted-foreground text-xs leading-4">{definition}</div>
-              )}
+              {definition && <div className="text-muted-foreground text-xs leading-4">{definition}</div>}
             </CardContent>
           </Card>
         )

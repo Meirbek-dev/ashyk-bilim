@@ -35,8 +35,7 @@ function buildSubmissionsSearchParams(params: SubmissionListQueryParams) {
 export function gradingDetailQueryOptions(submissionUuid: string, assessmentUuid: string) {
   return queryOptions({
     queryKey: queryKeys.grading.detail(submissionUuid, assessmentUuid),
-    queryFn: () =>
-      apiFetcher<Submission>(`assessments/${assessmentUuid}/submissions/${submissionUuid}`),
+    queryFn: () => apiFetcher<Submission>(`assessments/${assessmentUuid}/submissions/${submissionUuid}`),
     staleTime: 2000,
   })
 }

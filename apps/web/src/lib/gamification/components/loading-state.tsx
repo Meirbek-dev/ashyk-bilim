@@ -16,12 +16,7 @@ interface LoadingStateProps {
   className?: string
 }
 
-export function LoadingState({
-  title,
-  variant = 'list',
-  itemCount = 5,
-  className = '',
-}: LoadingStateProps) {
+export function LoadingState({ title, variant = 'list', itemCount = 5, className = '' }: LoadingStateProps) {
   return (
     <Card className={className}>
       {title && (

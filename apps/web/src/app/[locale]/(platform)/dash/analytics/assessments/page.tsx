@@ -59,16 +59,9 @@ async function PlatformAnalyticsAssessmentsPageInner(props: {
                 })}
               </span>
             </div>
-            <AssessmentOutliersTable
-              rows={assessments.items}
-              storageKey="assessments-page"
-              serverPaginated
-            />
+            <AssessmentOutliersTable rows={assessments.items} storageKey="assessments-page" serverPaginated />
             {totalPages > 1 ? (
-              <nav
-                aria-label={t('table.pagination')}
-                className="flex items-center justify-end gap-2"
-              >
+              <nav aria-label={t('table.pagination')} className="flex items-center justify-end gap-2">
                 <Button
                   variant="outline"
                   size="sm"

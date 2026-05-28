@@ -62,9 +62,7 @@ export function EmbedUrlForm({ type, url, onChange, error, onErrorChange }: Embe
           {t(error as 'errorEmpty' | 'errorInvalid')}
         </p>
       ) : null}
-      {provider?.requiresEmbedUrl ? (
-        <p className="text-muted-foreground text-xs">{t('embedUrlHint')}</p>
-      ) : null}
+      {provider?.requiresEmbedUrl ? <p className="text-muted-foreground text-xs">{t('embedUrlHint')}</p> : null}
     </div>
   )
 }

@@ -9,23 +9,16 @@ const FIVE_MINUTES = 5 * 60 * 1000
 
 function handle401(error: unknown): void {
   const status =
-    typeof error === 'object' && error !== null && 'status' in error
-      ? Number((error as any).status)
-      : undefined
+    typeof error === 'object' && error !== null && 'status' in error ? Number((error as any).status) : undefined
   if (status !== 401 || environmentManager.isServer()) return
   const { pathname, search } = globalThis.location
   if (!isAuthRoute(pathname)) {
-    globalThis.location.assign(
-      `/api/auth/refresh?returnTo=${encodeURIComponent(pathname + search)}`,
-    )
+    globalThis.location.assign(`/api/auth/refresh?returnTo=${encodeURIComponent(pathname + search)}`)
   }
 }
 
 function shouldRetry(failureCount: number, error: unknown) {
-  const status =
-    typeof error === 'object' && error !== null && 'status' in error
-      ? Number(error.status)
-      : undefined
+  const status = typeof error === 'object' && error !== null && 'status' in error ? Number(error.status) : undefined
 
   if (status !== undefined && status >= 400 && status < 500 && status !== 429) {
     return false

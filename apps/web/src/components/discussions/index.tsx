@@ -9,12 +9,7 @@ interface CourseDiscussionsProps {
   onMutate?: () => void
 }
 
-export default function CourseDiscussions({
-  initialPosts,
-  currentUser,
-  courseUuid,
-  onMutate,
-}: CourseDiscussionsProps) {
+export default function CourseDiscussions({ initialPosts, currentUser, courseUuid, onMutate }: CourseDiscussionsProps) {
   return (
     <div className="my-8">
       <DiscussionList

@@ -288,8 +288,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
     blurTimeoutRef.current = setTimeout(() => {
       const activeEl = document.activeElement
       const isStillInComponent =
-        activeEl?.classList.contains('learning-item-input') ||
-        activeEl?.closest('[data-emoji-picker="true"]')
+        activeEl?.classList.contains('learning-item-input') || activeEl?.closest('[data-emoji-picker="true"]')
 
       if (!isStillInComponent) {
         setShowLinkInput(null)
@@ -402,11 +401,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
             </div>
 
             {showEmojiPicker === item.id && (
-              <div
-                ref={pickerRef}
-                className="absolute left-0 z-10 mt-1 shadow-lg"
-                data-emoji-picker="true"
-              >
+              <div ref={pickerRef} className="absolute left-0 z-10 mt-1 shadow-lg" data-emoji-picker="true">
                 <EmojiPicker
                   height="25rem"
                   width="25rem"
@@ -423,10 +418,7 @@ const LearningItemsList = ({ value, onChange }: LearningItemsListProps) => {
             )}
 
             {showLinkInput === item.id && (
-              <div
-                ref={linkInputRef}
-                className="border-border bg-background mt-1 rounded-lg border p-2 shadow-sm"
-              >
+              <div ref={linkInputRef} className="border-border bg-background mt-1 rounded-lg border p-2 shadow-sm">
                 <Input
                   ref={setLinkInputRef(item.id)}
                   type="url"

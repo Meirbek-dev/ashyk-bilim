@@ -207,10 +207,7 @@ const BadgesExtension: FC<TypedNodeViewProps<BadgeNodeAttrs>> = props => {
                 <Palette size={14} />
               </button>
               {showColorPicker ? (
-                <div
-                  ref={colorPickerRef}
-                  className="soft-shadow absolute left-full ml-2 rounded-full bg-white p-2"
-                >
+                <div ref={colorPickerRef} className="soft-shadow absolute left-full ml-2 rounded-full bg-white p-2">
                   <div className="flex space-x-2">
                     {colors.map(c => (
                       <button

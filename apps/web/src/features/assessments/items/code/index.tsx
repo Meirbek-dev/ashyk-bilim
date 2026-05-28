@@ -103,12 +103,7 @@ export function useCodeSubmitControl() {
               submit,
             }
           : null
-        if (
-          prev &&
-          next &&
-          prev.canSubmit === next.canSubmit &&
-          prev.isSubmitting === next.isSubmitting
-        ) {
+        if (prev && next && prev.canSubmit === next.canSubmit && prev.isSubmitting === next.isSubmitting) {
           return prev
         }
         return next

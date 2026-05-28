@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  getCourseThumbnailMediaDirectory,
-  getUserAvatarMediaDirectory,
-} from '@services/media/media'
+import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media'
 import { removeCoursePrefix } from '@components/Objects/Thumbnails/CourseThumbnail'
 import { Book, GraduationCap, Search, Users } from 'lucide-react'
 import { useSearchContent } from '@/features/search/hooks/useSearch'
@@ -98,9 +95,7 @@ const FilterButton = ({
       onTypeChange(type)
     }}
     className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-colors ${
-      selectedType === type
-        ? 'bg-black/10 font-medium text-black/80'
-        : 'text-black/60 hover:bg-black/5'
+      selectedType === type ? 'bg-black/10 font-medium text-black/80' : 'text-black/60 hover:bg-black/5'
     }`}
   >
     <Icon size={16} />
@@ -183,16 +178,10 @@ const SearchPage = () => {
   const searchResults: SearchResults = query.trim()
     ? {
         courses: Array.isArray(rawSearchResults?.courses) ? rawSearchResults.courses : [],
-        collections: Array.isArray(rawSearchResults?.collections)
-          ? rawSearchResults.collections
-          : [],
+        collections: Array.isArray(rawSearchResults?.collections) ? rawSearchResults.collections : [],
         users: Array.isArray(rawSearchResults?.users) ? rawSearchResults.users : [],
-        total_courses: Array.isArray(rawSearchResults?.courses)
-          ? rawSearchResults.courses.length
-          : 0,
-        total_collections: Array.isArray(rawSearchResults?.collections)
-          ? rawSearchResults.collections.length
-          : 0,
+        total_courses: Array.isArray(rawSearchResults?.courses) ? rawSearchResults.courses.length : 0,
+        total_collections: Array.isArray(rawSearchResults?.collections) ? rawSearchResults.collections.length : 0,
         total_users: Array.isArray(rawSearchResults?.users) ? rawSearchResults.users.length : 0,
       }
     : {
@@ -229,8 +218,7 @@ const SearchPage = () => {
     setSearchQuery(query)
   }, [query])
 
-  const totalResults =
-    searchResults.total_courses + searchResults.total_collections + searchResults.total_users
+  const totalResults = searchResults.total_courses + searchResults.total_collections + searchResults.total_users
   const totalPages = Math.ceil(totalResults / perPage)
 
   return (
@@ -342,164 +330,142 @@ const SearchPage = () => {
           ) : (
             <div className="space-y-12">
               {/* Courses Grid */}
-              {(selectedType === 'all' || selectedType === 'courses') &&
-                searchResults.courses.length > 0 && (
-                  <div>
-                    <h2 className="text-foreground mb-4 flex items-center gap-2 text-lg font-medium">
-                      <GraduationCap size={20} className="text-muted-foreground" />
-                      {t('courses')} ({searchResults.courses.length})
-                    </h2>
-                    <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
-                      {searchResults.courses.map(course => (
-                        <Link
-                          key={course.course_uuid}
-                          href={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
-                          className="soft-shadow group border-border bg-card text-card-foreground overflow-hidden rounded-xl border transition-all hover:shadow-md"
-                        >
-                          <div className="relative aspect-video w-full overflow-hidden">
-                            <NextImage
-                              src={
-                                course.thumbnail_image
-                                  ? getCourseThumbnailMediaDirectory(
-                                      course.course_uuid,
-                                      course.thumbnail_image,
-                                    )
-                                  : '/empty_thumbnail.avif'
-                              }
-                              alt={course.name}
-                              fill
-                              className="object-cover transition-transform duration-300 group-hover:scale-105"
-                              sizes="100vw"
-                            />
-                          </div>
-                          <div className="p-4">
-                            <h3 className="text-foreground mb-1 text-sm font-medium">
-                              {course.name}
-                            </h3>
-                            <p className="text-muted-foreground line-clamp-2 text-xs">
-                              {extractMarkdownSummary(course.description, 140)}
-                            </p>
-                            {course.authors &&
-                            course.authors.length > 0 &&
-                            course.authors[0]?.user ? (
-                              <div className="mt-3 flex items-center gap-2">
-                                <UserAvatar
-                                  size="xs"
-                                  avatar_url={
-                                    course.authors[0].user.avatar_image
-                                      ? getUserAvatarMediaDirectory(
-                                          course.authors[0].user.user_uuid,
-                                          course.authors[0].user.avatar_image,
-                                        )
-                                      : ''
-                                  }
-                                  {...(!course.authors[0].user.avatar_image
-                                    ? { predefined_avatar: 'empty' }
-                                    : {})}
-                                  userId={course.authors[0].user.id}
-                                  showProfilePopup={false}
-                                />
-                                <span className="text-muted-foreground text-xs">
-                                  {[
-                                    course.authors[0].user.first_name,
-                                    course.authors[0].user.middle_name,
-                                    course.authors[0].user.last_name,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(' ')}
-                                </span>
-                              </div>
-                            ) : null}
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
+              {(selectedType === 'all' || selectedType === 'courses') && searchResults.courses.length > 0 && (
+                <div>
+                  <h2 className="text-foreground mb-4 flex items-center gap-2 text-lg font-medium">
+                    <GraduationCap size={20} className="text-muted-foreground" />
+                    {t('courses')} ({searchResults.courses.length})
+                  </h2>
+                  <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
+                    {searchResults.courses.map(course => (
+                      <Link
+                        key={course.course_uuid}
+                        href={getAbsoluteUrl(`/course/${removeCoursePrefix(course.course_uuid)}`)}
+                        className="soft-shadow group border-border bg-card text-card-foreground overflow-hidden rounded-xl border transition-all hover:shadow-md"
+                      >
+                        <div className="relative aspect-video w-full overflow-hidden">
+                          <NextImage
+                            src={
+                              course.thumbnail_image
+                                ? getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)
+                                : '/empty_thumbnail.avif'
+                            }
+                            alt={course.name}
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            sizes="100vw"
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="text-foreground mb-1 text-sm font-medium">{course.name}</h3>
+                          <p className="text-muted-foreground line-clamp-2 text-xs">
+                            {extractMarkdownSummary(course.description, 140)}
+                          </p>
+                          {course.authors && course.authors.length > 0 && course.authors[0]?.user ? (
+                            <div className="mt-3 flex items-center gap-2">
+                              <UserAvatar
+                                size="xs"
+                                avatar_url={
+                                  course.authors[0].user.avatar_image
+                                    ? getUserAvatarMediaDirectory(
+                                        course.authors[0].user.user_uuid,
+                                        course.authors[0].user.avatar_image,
+                                      )
+                                    : ''
+                                }
+                                {...(!course.authors[0].user.avatar_image ? { predefined_avatar: 'empty' } : {})}
+                                userId={course.authors[0].user.id}
+                                showProfilePopup={false}
+                              />
+                              <span className="text-muted-foreground text-xs">
+                                {[
+                                  course.authors[0].user.first_name,
+                                  course.authors[0].user.middle_name,
+                                  course.authors[0].user.last_name,
+                                ]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                              </span>
+                            </div>
+                          ) : null}
+                        </div>
+                      </Link>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
               {/* Collections Grid */}
-              {(selectedType === 'all' || selectedType === 'collections') &&
-                searchResults.collections.length > 0 && (
-                  <div>
-                    <h2 className="text-foreground mb-4 flex items-center gap-2 text-lg font-medium">
-                      <Book size={20} className="text-muted-foreground" />
-                      {t('collections')} ({searchResults.collections.length})
-                    </h2>
-                    <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
-                      {searchResults.collections.map(collection => (
-                        <Link
-                          key={collection.collection_uuid}
-                          href={getAbsoluteUrl(
-                            `/collection/${collection.collection_uuid.replace('collection_', '')}`,
-                          )}
-                          className="soft-shadow border-border bg-card text-card-foreground flex items-start gap-4 rounded-xl border p-4 transition-all hover:shadow-md"
-                        >
-                          <div className="bg-muted/20 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
-                            <Book size={24} className="text-muted-foreground" />
-                          </div>
-                          <div>
-                            <h3 className="text-foreground mb-1 text-sm font-medium">
-                              {collection.name}
-                            </h3>
-                            <p className="text-muted-foreground line-clamp-2 text-xs">
-                              {extractMarkdownSummary(collection.description, 140)}
-                            </p>
-                            <p className="text-muted-foreground text-xs">
-                              {t('coursesCount', {
-                                count: collection.courses.length,
-                              })}
-                            </p>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
+              {(selectedType === 'all' || selectedType === 'collections') && searchResults.collections.length > 0 && (
+                <div>
+                  <h2 className="text-foreground mb-4 flex items-center gap-2 text-lg font-medium">
+                    <Book size={20} className="text-muted-foreground" />
+                    {t('collections')} ({searchResults.collections.length})
+                  </h2>
+                  <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+                    {searchResults.collections.map(collection => (
+                      <Link
+                        key={collection.collection_uuid}
+                        href={getAbsoluteUrl(`/collection/${collection.collection_uuid.replace('collection_', '')}`)}
+                        className="soft-shadow border-border bg-card text-card-foreground flex items-start gap-4 rounded-xl border p-4 transition-all hover:shadow-md"
+                      >
+                        <div className="bg-muted/20 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
+                          <Book size={24} className="text-muted-foreground" />
+                        </div>
+                        <div>
+                          <h3 className="text-foreground mb-1 text-sm font-medium">{collection.name}</h3>
+                          <p className="text-muted-foreground line-clamp-2 text-xs">
+                            {extractMarkdownSummary(collection.description, 140)}
+                          </p>
+                          <p className="text-muted-foreground text-xs">
+                            {t('coursesCount', {
+                              count: collection.courses.length,
+                            })}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
               {/* Users Grid */}
-              {(selectedType === 'all' || selectedType === 'users') &&
-                searchResults.users.length > 0 && (
-                  <div>
-                    <h2 className="text-foreground mb-4 flex items-center gap-2 text-lg font-medium">
-                      <Users size={20} className="text-muted-foreground" />
-                      {t('users')} ({searchResults.users.length})
-                    </h2>
-                    <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
-                      {searchResults.users.map(user => (
-                        <Link
-                          key={user.user_uuid}
-                          href={getAbsoluteUrl(`/user/${user.username}`)}
-                          className="soft-shadow border-border bg-card text-card-foreground flex items-center gap-4 rounded-xl border p-4 transition-all hover:shadow-md"
-                        >
-                          <UserAvatar
-                            size="lg"
-                            avatar_url={
-                              user.avatar_image
-                                ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image)
-                                : ''
-                            }
-                            {...(!user.avatar_image ? { predefined_avatar: 'empty' } : {})}
-                            userId={user.id}
-                            showProfilePopup
-                          />
-                          <div>
-                            <h3 className="text-foreground text-sm font-medium">
-                              {[user.first_name, user.middle_name, user.last_name]
-                                .filter(Boolean)
-                                .join(' ')}
-                            </h3>
-                            <p className="text-muted-foreground text-xs">@{user.username}</p>
-                            {user.details?.['title']?.['text'] ? (
-                              <p className="text-muted-foreground mt-1 text-xs">
-                                {user.details['title']['text']}
-                              </p>
-                            ) : null}
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
+              {(selectedType === 'all' || selectedType === 'users') && searchResults.users.length > 0 && (
+                <div>
+                  <h2 className="text-foreground mb-4 flex items-center gap-2 text-lg font-medium">
+                    <Users size={20} className="text-muted-foreground" />
+                    {t('users')} ({searchResults.users.length})
+                  </h2>
+                  <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+                    {searchResults.users.map(user => (
+                      <Link
+                        key={user.user_uuid}
+                        href={getAbsoluteUrl(`/user/${user.username}`)}
+                        className="soft-shadow border-border bg-card text-card-foreground flex items-center gap-4 rounded-xl border p-4 transition-all hover:shadow-md"
+                      >
+                        <UserAvatar
+                          size="lg"
+                          avatar_url={
+                            user.avatar_image ? getUserAvatarMediaDirectory(user.user_uuid, user.avatar_image) : ''
+                          }
+                          {...(!user.avatar_image ? { predefined_avatar: 'empty' } : {})}
+                          userId={user.id}
+                          showProfilePopup
+                        />
+                        <div>
+                          <h3 className="text-foreground text-sm font-medium">
+                            {[user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ')}
+                          </h3>
+                          <p className="text-muted-foreground text-xs">@{user.username}</p>
+                          {user.details?.['title']?.['text'] ? (
+                            <p className="text-muted-foreground mt-1 text-xs">{user.details['title']['text']}</p>
+                          ) : null}
+                        </div>
+                      </Link>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
             </div>
           )}
 

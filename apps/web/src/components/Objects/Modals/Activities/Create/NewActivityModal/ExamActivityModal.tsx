@@ -21,11 +21,7 @@ const createValidationSchema = (t: (key: string) => string, limits?: any) =>
     activity_name: v.pipe(v.string(), v.minLength(1, t('activityNameRequired'))),
     exam_description: v.pipe(v.string(), v.minLength(1, t('examDescriptionRequired'))),
     time_limit: v.optional(
-      v.pipe(
-        v.number(),
-        v.minValue(limits?.time_limit?.min ?? 1),
-        v.maxValue(limits?.time_limit?.max ?? 180),
-      ),
+      v.pipe(v.number(), v.minValue(limits?.time_limit?.min ?? 1), v.maxValue(limits?.time_limit?.max ?? 180)),
     ),
     has_time_limit: v.boolean(),
     shuffle_questions: v.boolean(),
@@ -99,10 +95,7 @@ const NewExam = ({ chapterId, course, closeModal }: any) => {
     const nextValue =
       currentValue === undefined
         ? getDefaultTimeLimit(limits)
-        : Math.min(
-            Math.max(currentValue, limits?.time_limit?.min ?? 1),
-            limits?.time_limit?.max ?? 180,
-          )
+        : Math.min(Math.max(currentValue, limits?.time_limit?.min ?? 1), limits?.time_limit?.max ?? 180)
 
     form.setValue('time_limit', nextValue, {
       shouldDirty: false,
@@ -187,22 +180,14 @@ const NewExam = ({ chapterId, course, closeModal }: any) => {
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <Field>
         <FieldLabel htmlFor="activity_name">{t('activityName')}</FieldLabel>
-        <Input
-          id="activity_name"
-          placeholder={t('activityNamePlaceholder')}
-          {...form.register('activity_name')}
-        />
+        <Input id="activity_name" placeholder={t('activityNamePlaceholder')} {...form.register('activity_name')} />
         <FieldDescription>{t('activityNameDescription')}</FieldDescription>
         <FieldError errors={[form.formState.errors.activity_name]} />
       </Field>
 
       <Field>
         <FieldLabel htmlFor="exam_title">{t('examTitle')}</FieldLabel>
-        <Input
-          id="exam_title"
-          placeholder={t('examTitlePlaceholder')}
-          {...form.register('exam_title')}
-        />
+        <Input id="exam_title" placeholder={t('examTitlePlaceholder')} {...form.register('exam_title')} />
         <FieldError errors={[form.formState.errors.exam_title]} />
       </Field>
 
@@ -246,9 +231,7 @@ const NewExam = ({ chapterId, course, closeModal }: any) => {
                 {...field}
                 value={field.value ?? ''}
                 onChange={e => {
-                  field.onChange(
-                    e.target.value === '' ? undefined : Number.parseInt(e.target.value, 10),
-                  )
+                  field.onChange(e.target.value === '' ? undefined : Number.parseInt(e.target.value, 10))
                 }}
               />
               <FieldDescription>{t('timeLimitMinutesDescription')}</FieldDescription>
@@ -287,12 +270,7 @@ const NewExam = ({ chapterId, course, closeModal }: any) => {
       />
 
       <div className="mt-6 flex justify-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={closeModal}
-          disabled={form.formState.isSubmitting}
-        >
+        <Button type="button" variant="outline" onClick={closeModal} disabled={form.formState.isSubmitting}>
           {t('cancel')}
         </Button>
         <Button type="submit" disabled={form.formState.isSubmitting}>

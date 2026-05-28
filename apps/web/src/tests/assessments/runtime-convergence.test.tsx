@@ -198,11 +198,7 @@ describe('assessment runtime convergence', () => {
 
   it('shows the shared draft conflict dialog and allows both resolution paths', async () => {
     renderWithClient(
-      <AssessmentLayout
-        activityUuid="activity_runtime"
-        courseUuid="course_runtime"
-        vm={createAttemptVm()}
-      />,
+      <AssessmentLayout activityUuid="activity_runtime" courseUuid="course_runtime" vm={createAttemptVm()} />,
     )
 
     expect(await screen.findByText('resolveDraftConflict')).toBeInTheDocument()

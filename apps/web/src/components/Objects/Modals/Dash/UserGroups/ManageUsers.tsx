@@ -72,19 +72,13 @@ const ManageUsers = (props: ManageUsersProps) => {
   const columns: ColumnDef<UserRow>[] = [
     {
       accessorFn: row =>
-        [row.user.first_name, row.user.middle_name, row.user.last_name, row.user.username]
-          .filter(Boolean)
-          .join(' '),
+        [row.user.first_name, row.user.middle_name, row.user.last_name, row.user.username].filter(Boolean).join(' '),
       id: 'user',
       header: t('userHeader'),
       cell: ({ row }) => (
         <div className="flex items-center space-x-2">
           <span>
-            {[
-              row.original.user.first_name,
-              row.original.user.middle_name,
-              row.original.user.last_name,
-            ]
+            {[row.original.user.first_name, row.original.user.middle_name, row.original.user.last_name]
               .filter(Boolean)
               .join(' ')}
           </span>
@@ -95,8 +89,7 @@ const ManageUsers = (props: ManageUsersProps) => {
       ),
     },
     {
-      accessorFn: row =>
-        isUserPartOfGroup(row.user.id) ? t('linkedStatus') : t('notLinkedStatus'),
+      accessorFn: row => (isUserPartOfGroup(row.user.id) ? t('linkedStatus') : t('notLinkedStatus')),
       id: 'linked',
       header: t('linkedHeader'),
       cell: ({ row }) =>
@@ -143,12 +136,7 @@ const ManageUsers = (props: ManageUsersProps) => {
 
   return (
     <div className="py-3">
-      <DataTable
-        columns={columns}
-        data={rows}
-        pageSize={8}
-        storageKey={`usergroup-${props.usergroup_id}-users`}
-      />
+      <DataTable columns={columns} data={rows} pageSize={8} storageKey={`usergroup-${props.usergroup_id}-users`} />
     </div>
   )
 }

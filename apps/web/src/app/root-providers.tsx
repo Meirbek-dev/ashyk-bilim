@@ -40,11 +40,7 @@ function TopLoaderWithTheme({ children }: { children: ReactNode }) {
   )
 }
 
-export default function RootProviders({
-  children,
-  initialSession,
-  initialThemeMode,
-}: RootProvidersProps) {
+export default function RootProviders({ children, initialSession, initialThemeMode }: RootProvidersProps) {
   return (
     <ReactQueryProvider>
       <SessionProvider {...(initialSession === undefined ? {} : { initialSession })}>

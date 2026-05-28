@@ -29,11 +29,7 @@ export function RecentActivityFeed({ transactions, isLoading }: RecentActivityFe
 
   if (!transactions || transactions.length === 0) {
     return (
-      <EmptyState
-        title={t('dashboard.recentActivity')}
-        message={t('dashboard.noActivityDescription')}
-        variant="info"
-      />
+      <EmptyState title={t('dashboard.recentActivity')} message={t('dashboard.noActivityDescription')} variant="info" />
     )
   }
 
@@ -59,9 +55,7 @@ export function RecentActivityFeed({ transactions, isLoading }: RecentActivityFe
                   <theme.icon className={cn('h-3.5 w-3.5', theme.color)} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {t(`xpSources.${transaction.source}`)}
-                  </p>
+                  <p className="truncate text-sm font-medium">{t(`xpSources.${transaction.source}`)}</p>
                   <p className="text-muted-foreground text-xs">{timeAgo}</p>
                 </div>
                 <div className="shrink-0 text-right">

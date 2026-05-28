@@ -268,12 +268,8 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
       const available = Math.max(maxFiles - totalSelected, 0)
       const accepted = [...fileList].slice(0, available)
       const rejected = [...fileList].slice(available)
-      const valid = accepted.filter(f =>
-        isAllowedFile(f, data.allowed_mime_types, data.max_file_size_mb),
-      )
-      const invalid = accepted.filter(
-        f => !isAllowedFile(f, data.allowed_mime_types, data.max_file_size_mb),
-      )
+      const valid = accepted.filter(f => isAllowedFile(f, data.allowed_mime_types, data.max_file_size_mb))
+      const invalid = accepted.filter(f => !isAllowedFile(f, data.allowed_mime_types, data.max_file_size_mb))
       if (rejected.length) toast.error(t('maxFilesAllowed', { count: maxFiles }))
       if (invalid.length) toast.error(t('invalidFiles'))
       setSlots(prev => [
@@ -308,9 +304,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
           uploaded.push(slot)
           continue
         }
-        setSlots(prev =>
-          prev.map(s => (s.id === slot.id ? { ...s, status: 'uploading', progress: 0 } : s)),
-        )
+        setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, status: 'uploading', progress: 0 } : s)))
         try {
           const result = await uploadSubmissionFileWithProgress(slot.file, (loaded, total) => {
             const pct = total > 0 ? Math.round((loaded / total) * 100) : 0
@@ -326,9 +320,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
           uploaded.push(done)
         } catch (error) {
           const msg = error instanceof Error ? error.message : t('uploadFailed')
-          setSlots(prev =>
-            prev.map(s => (s.id === slot.id ? { ...s, status: 'failed', error: msg } : s)),
-          )
+          setSlots(prev => prev.map(s => (s.id === slot.id ? { ...s, status: 'failed', error: msg } : s)))
           throw error
         }
       }
@@ -409,8 +401,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
   // ── State: published → result ─────────────────────────────────────────────
 
   if ((status === 'PUBLISHED' || status === 'RETURNED') && activeAttempt) {
-    const showResult =
-      status === 'PUBLISHED' || (status === 'RETURNED' && activeAttempt.final_score !== null)
+    const showResult = status === 'PUBLISHED' || (status === 'RETURNED' && activeAttempt.final_score !== null)
     const canRevise = status === 'RETURNED'
     const handleRevise = canRevise
       ? async () => {
@@ -423,10 +414,7 @@ export default function FileSubmissionWorkspace({ activity }: FileSubmissionWork
     return (
       <div className="space-y-6">
         {showResult ? (
-          <FileSubmissionResult
-            attempt={activeAttempt}
-            {...(handleRevise ? { onRevise: handleRevise } : {})}
-          />
+          <FileSubmissionResult attempt={activeAttempt} {...(handleRevise ? { onRevise: handleRevise } : {})} />
         ) : null}
         {canRevise ? (
           <DraftEditor
@@ -520,11 +508,7 @@ function Header({
 
       {/* ── Instructions ─────────────────────────────────────── */}
       {instructions ? (
-        <MarkdownContent
-          content={instructions}
-          mode="taskDescription"
-          className="text-foreground/90"
-        />
+        <MarkdownContent content={instructions} mode="taskDescription" className="text-foreground/90" />
       ) : null}
 
       {/* ── Metadata bar ─────────────────────────────────────── */}
@@ -543,9 +527,7 @@ function Header({
         {/* Max files */}
         <div className="flex items-center gap-1.5 text-sm">
           <CheckCircle2 className="text-primary size-3.5 shrink-0" />
-          <span className="text-muted-foreground">
-            {t('requirementMaxFiles', { count: maxFiles })}
-          </span>
+          <span className="text-muted-foreground">{t('requirementMaxFiles', { count: maxFiles })}</span>
         </div>
 
         {/* Max size */}
@@ -554,9 +536,7 @@ function Header({
             <div className="bg-border hidden h-4 w-px sm:block" />
             <div className="flex items-center gap-1.5 text-sm">
               <CheckCircle2 className="text-primary size-3.5 shrink-0" />
-              <span className="text-muted-foreground">
-                {t('requirementMaxSize', { size: maxFileSizeMb })}
-              </span>
+              <span className="text-muted-foreground">{t('requirementMaxSize', { size: maxFileSizeMb })}</span>
             </div>
           </>
         ) : null}
@@ -566,9 +546,7 @@ function Header({
           <>
             <div className="bg-border hidden h-4 w-px sm:block" />
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-muted-foreground text-xs font-medium">
-                {t('allowedTypes')}:
-              </span>
+              <span className="text-muted-foreground text-xs font-medium">{t('allowedTypes')}:</span>
               {categories.map(({ label, icon: Icon }) => (
                 <span
                   key={label}
@@ -650,9 +628,7 @@ function DraftEditor({
           <p className="text-muted-foreground mt-1 text-xs">
             {[
               t('requirementMaxFiles', { count: maxFiles }),
-              data.max_file_size_mb
-                ? t('requirementMaxSize', { size: data.max_file_size_mb })
-                : null,
+              data.max_file_size_mb ? t('requirementMaxSize', { size: data.max_file_size_mb }) : null,
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -675,19 +651,14 @@ function DraftEditor({
           </Button>
         </div>
       ) : (
-        <div className="border-border bg-muted/30 rounded-md border p-4 text-sm">
-          {t('submittedLocked')}
-        </div>
+        <div className="border-border bg-muted/30 rounded-md border p-4 text-sm">{t('submittedLocked')}</div>
       )}
 
       {/* Persisted files */}
       {attachedFiles.length > 0 ? (
         <div className="border-border rounded-md border">
           {attachedFiles.map(file => (
-            <div
-              key={file.attempt_file_uuid}
-              className="flex items-center gap-3 border-b p-3 text-sm last:border-b-0"
-            >
+            <div key={file.attempt_file_uuid} className="flex items-center gap-3 border-b p-3 text-sm last:border-b-0">
               <CheckCircle2 className="text-primary size-4 shrink-0" />
               <span className="min-w-0 truncate">{file.filename}</span>
             </div>
@@ -744,14 +715,9 @@ function SubmissionHistory({ attempts }: { attempts: FileSubmissionAttempt[] }) 
       <h3 className="text-sm font-semibold">{t('submissionHistory')}</h3>
       <div className="divide-border border-border rounded-md border">
         {attempts.map(attempt => (
-          <div
-            key={attempt.attempt_uuid}
-            className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm"
-          >
+          <div key={attempt.attempt_uuid} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
             <div>
-              <p className="font-medium">
-                {t('attemptNumber', { number: attempt.attempt_number })}
-              </p>
+              <p className="font-medium">{t('attemptNumber', { number: attempt.attempt_number })}</p>
               <p className="text-muted-foreground text-xs">
                 {attempt.submitted_at
                   ? new Intl.DateTimeFormat(undefined, {

@@ -40,19 +40,12 @@ interface LocalThumbnail {
   type: 'image' | 'video'
 }
 
-const ThumbnailUpdate = ({
-  thumbnailType,
-  disabled = false,
-  disabledReason,
-}: ThumbnailUpdateProps) => {
+const ThumbnailUpdate = ({ thumbnailType, disabled = false, disabledReason }: ThumbnailUpdateProps) => {
   const imageInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
 
   const course = useCourse()
-  const { updateThumbnail: updateThumbnailMutation } = useCoursesMutations(
-    course.courseStructure.course_uuid,
-    true,
-  )
+  const { updateThumbnail: updateThumbnailMutation } = useCoursesMutations(course.courseStructure.course_uuid, true)
   const lastKnownUpdateDate = useCourseEditorStore(state => state.lastKnownUpdateDate)
   const t = useTranslations('CourseEdit.General.Thumbnail')
 
@@ -118,27 +111,23 @@ const ThumbnailUpdate = ({
   const validateImageAspectRatio = useCallback(
     async (blobUrl: string): Promise<boolean> => {
       try {
-        const dimensions = await new Promise<{ width: number; height: number }>(
-          (resolve, reject) => {
-            const image = new globalThis.Image()
+        const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+          const image = new globalThis.Image()
 
-            image.onload = () => {
-              resolve({ width: image.naturalWidth, height: image.naturalHeight })
-            }
+          image.onload = () => {
+            resolve({ width: image.naturalWidth, height: image.naturalHeight })
+          }
 
-            image.onerror = () => {
-              reject(new Error('Failed to read image dimensions'))
-            }
+          image.onerror = () => {
+            reject(new Error('Failed to read image dimensions'))
+          }
 
-            image.src = blobUrl
-          },
-        )
+          image.src = blobUrl
+        })
 
         const actualAspectRatio = dimensions.width / dimensions.height
 
-        if (
-          Math.abs(actualAspectRatio - REQUIRED_IMAGE_ASPECT_RATIO) > IMAGE_ASPECT_RATIO_TOLERANCE
-        ) {
+        if (Math.abs(actualAspectRatio - REQUIRED_IMAGE_ASPECT_RATIO) > IMAGE_ASPECT_RATIO_TOLERANCE) {
           showError(
             t('errors.invalidAspectRatio', {
               height: dimensions.height,
@@ -166,8 +155,7 @@ const ThumbnailUpdate = ({
       await saveWithoutRefresh(
         async () =>
           updateThumbnailMutation(formData, {
-            lastKnownUpdateDate:
-              lastKnownUpdateDate ?? course.courseStructure['update_date'] ?? null,
+            lastKnownUpdateDate: lastKnownUpdateDate ?? course.courseStructure['update_date'] ?? null,
           }),
         {
           onSuccess: () => setLocalThumbnail(null),
@@ -176,13 +164,13 @@ const ThumbnailUpdate = ({
       )
     },
     [
-	course.courseStructure['update_date'],
-	lastKnownUpdateDate,
-	saveWithoutRefresh,
-	t,
-	updateThumbnailMutation,
-	course.courseStructure
-],
+      course.courseStructure['update_date'],
+      lastKnownUpdateDate,
+      saveWithoutRefresh,
+      t,
+      updateThumbnailMutation,
+      course.courseStructure,
+    ],
   )
 
   const handleFileChange = useCallback(
@@ -235,10 +223,7 @@ const ThumbnailUpdate = ({
     (type: 'image' | 'video') => {
       if (type === 'image') {
         return course.courseStructure.thumbnail_image
-          ? getCourseThumbnailMediaDirectory(
-              course.courseStructure.course_uuid,
-              course.courseStructure.thumbnail_image,
-            )
+          ? getCourseThumbnailMediaDirectory(course.courseStructure.course_uuid, course.courseStructure.thumbnail_image)
           : '/empty_thumbnail.avif'
       }
       return course.courseStructure['thumbnail_video']
@@ -405,9 +390,7 @@ const ThumbnailUpdate = ({
                 <div className="flex gap-2">{renderVideoControls()}</div>
               )}
 
-              <p className="text-muted-foreground text-center text-xs">
-                {t('supportedVideoFormats')}
-              </p>
+              <p className="text-muted-foreground text-center text-xs">{t('supportedVideoFormats')}</p>
               {disabledReason ? (
                 <Alert className="border-border bg-muted/60">
                   <AlertTitle>{t('uploadVideo')}</AlertTitle>
@@ -435,9 +418,7 @@ const ThumbnailUpdate = ({
             </div>
           </div>
         ) : (
-          <div className="flex gap-2">
-            {thumbnailType === 'image' ? renderImageControls() : renderVideoControls()}
-          </div>
+          <div className="flex gap-2">{thumbnailType === 'image' ? renderImageControls() : renderVideoControls()}</div>
         )}
 
         <p className="text-muted-foreground text-center text-xs">
@@ -445,9 +426,7 @@ const ThumbnailUpdate = ({
         </p>
         {disabledReason ? (
           <Alert className="border-border bg-muted/60">
-            <AlertTitle>
-              {thumbnailType === 'image' ? t('uploadImageButton') : t('uploadVideo')}
-            </AlertTitle>
+            <AlertTitle>{thumbnailType === 'image' ? t('uploadImageButton') : t('uploadVideo')}</AlertTitle>
             <AlertDescription>{disabledReason}</AlertDescription>
           </Alert>
         ) : null}

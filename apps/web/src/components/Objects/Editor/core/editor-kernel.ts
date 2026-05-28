@@ -74,10 +74,7 @@ function createBaseEditorExtensions(): EditorExtension[] {
   ]
 }
 
-function createActivityBlockExtensions(
-  activity: ActivityRef,
-  editable: boolean,
-): EditorExtension[] {
+function createActivityBlockExtensions(activity: ActivityRef, editable: boolean): EditorExtension[] {
   return [
     InfoCallout.configure({ editable }),
     WarningCallout.configure({ editable }),

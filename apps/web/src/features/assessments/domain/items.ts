@@ -57,11 +57,7 @@ export type ItemBody =
       time_limit_seconds?: number | null
       memory_limit_mb?: number | null
       max_output_kb?: number | null
-      scoring_strategy?:
-        | 'PARTIAL_CREDIT'
-        | 'ALL_OR_NOTHING'
-        | 'BEST_SUBMISSION'
-        | 'LATEST_SUBMISSION'
+      scoring_strategy?: 'PARTIAL_CREDIT' | 'ALL_OR_NOTHING' | 'BEST_SUBMISSION' | 'LATEST_SUBMISSION'
     }
   | {
       kind: 'MATCHING'

@@ -27,10 +27,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   const t = useTranslations('Activities.CodeChallenges')
   const normalizedActivityUuid = activityUuid.replace(/^activity_/, '')
   const assessmentUuid = vm?.assessmentUuid ?? null
-  const codeItem = useMemo(
-    () => vm?.items.find(item => item.body.kind === 'CODE') ?? null,
-    [vm?.items],
-  )
+  const codeItem = useMemo(() => vm?.items.find(item => item.body.kind === 'CODE') ?? null, [vm?.items])
   const settings = useMemo(
     () => (codeItem ? codeItemToSettings(codeItem, vm?.title, vm?.description ?? undefined) : null),
     [codeItem, vm?.description, vm?.title],
@@ -45,10 +42,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
   const primaryLanguageId = settings?.allowed_languages?.[0]
   const savedAnswer = codeItem ? submissionState.answers[codeItem.item_uuid] : undefined
   const codeAnswer = savedAnswer?.kind === 'CODE' ? savedAnswer : undefined
-  const initialCode =
-    primaryLanguageId !== undefined
-      ? (settings?.starter_code?.[String(primaryLanguageId)] ?? '')
-      : ''
+  const initialCode = primaryLanguageId !== undefined ? (settings?.starter_code?.[String(primaryLanguageId)] ?? '') : ''
   const isConfigured = Boolean(settings?.allowed_languages?.length)
   const problem = useMemo(
     () =>
@@ -66,9 +60,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
 
   const shellControls = useMemo(() => {
     const onSave =
-      Boolean(vm?.canSaveDraft) && submissionState.saveState === 'dirty'
-        ? () => submissionState.save()
-        : undefined
+      Boolean(vm?.canSaveDraft) && submissionState.saveState === 'dirty' ? () => submissionState.save() : undefined
     const onSubmit = vm?.canSubmit && submitControl?.canSubmit ? submitControl.submit : undefined
 
     return {
@@ -124,9 +116,7 @@ export default function CodeChallengeAttemptContent({ activityUuid, vm }: KindAt
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
         <h3 className="text-lg font-semibold">{t('notConfigured')}</h3>
-        <p className="text-muted-foreground mt-2 max-w-md text-sm">
-          {t('notConfiguredDescription')}
-        </p>
+        <p className="text-muted-foreground mt-2 max-w-md text-sm">{t('notConfiguredDescription')}</p>
       </div>
     )
   }

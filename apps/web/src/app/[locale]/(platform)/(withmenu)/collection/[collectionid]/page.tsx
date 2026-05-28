@@ -39,9 +39,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
-export default async function PlatformCollectionPage(props: {
-  params: Promise<{ collectionid: string }>
-}) {
+export default async function PlatformCollectionPage(props: { params: Promise<{ collectionid: string }> }) {
   const t = await getTranslations('General')
   const tCol = await getTranslations('Components.CollectionThumbnail')
   const { collectionid } = await props.params
@@ -56,10 +54,7 @@ export default async function PlatformCollectionPage(props: {
             <Layers className="mr-1.5 h-3.5 w-3.5" />
             {t('collection')}
           </Badge>
-          <Badge
-            variant="outline"
-            className="text-muted-foreground rounded-md px-2 py-1 font-medium"
-          >
+          <Badge variant="outline" className="text-muted-foreground rounded-md px-2 py-1 font-medium">
             {tCol('courseCount', { count: col.courses.length })}
           </Badge>
         </div>
@@ -67,9 +62,7 @@ export default async function PlatformCollectionPage(props: {
         <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">{col.name}</h1>
 
         {col.description && (
-          <p className="text-muted-foreground mt-2 max-w-[800px] leading-relaxed md:text-lg">
-            {col.description}
-          </p>
+          <p className="text-muted-foreground mt-2 max-w-[800px] leading-relaxed md:text-lg">{col.description}</p>
         )}
       </div>
 

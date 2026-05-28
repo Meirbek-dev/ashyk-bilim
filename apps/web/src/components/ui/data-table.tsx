@@ -11,23 +11,8 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Search,
-  Settings2,
-} from 'lucide-react'
-import type {
-  ColumnDef,
-  PaginationState,
-  RowData,
-  SortingState,
-  VisibilityState,
-} from '@tanstack/react-table'
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Download, Search, Settings2 } from 'lucide-react'
+import type { ColumnDef, PaginationState, RowData, SortingState, VisibilityState } from '@tanstack/react-table'
 
 import {
   DropdownMenu,
@@ -38,14 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -350,9 +328,7 @@ export default function DataTable<TData>({
                   .map(column => {
                     const label =
                       column.columnDef.meta?.label ??
-                      (typeof column.columnDef.header === 'string'
-                        ? column.columnDef.header
-                        : column.id)
+                      (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id)
 
                     return (
                       <DropdownMenuCheckboxItem
@@ -435,10 +411,7 @@ export default function DataTable<TData>({
             ))
           ) : (
             <TableRow>
-              <TableCell
-                colSpan={columns.length}
-                className="text-muted-foreground h-28 text-center text-sm"
-              >
+              <TableCell colSpan={columns.length} className="text-muted-foreground h-28 text-center text-sm">
                 {resolvedLabels.emptyMessage}
               </TableCell>
             </TableRow>
@@ -479,12 +452,7 @@ export default function DataTable<TData>({
                   total: resolvedPageCount,
                 })}
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
+              <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
                 {resolvedLabels.next}
                 <ChevronRight className="h-4 w-4" />
               </Button>

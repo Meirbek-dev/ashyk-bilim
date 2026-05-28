@@ -19,9 +19,7 @@ export async function renderCourseWorkspacePage({
 }: RenderCourseWorkspacePageOptions) {
   const [initialCourse, resolvedCapabilities] = await Promise.all([
     getCourseMetadata(courseuuid, undefined, true),
-    capabilities
-      ? Promise.resolve(capabilities)
-      : requireCourseWorkspaceStageAccess(courseuuid, activeStage),
+    capabilities ? Promise.resolve(capabilities) : requireCourseWorkspaceStageAccess(courseuuid, activeStage),
   ])
 
   return (

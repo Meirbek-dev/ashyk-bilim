@@ -78,9 +78,7 @@ export function isAntiCheatEnabled(policy: AntiCheatPolicy): boolean {
   )
 }
 
-export function policyFromAssessmentPolicy(
-  policy: AssessmentPolicyDTO | null | undefined,
-): PolicyView {
+export function policyFromAssessmentPolicy(policy: AssessmentPolicyDTO | null | undefined): PolicyView {
   if (!policy) return DEFAULT_POLICY_VIEW
   const antiCheat = policy.anti_cheat_json ?? {}
   const latePolicy = policy.late_policy_json ?? policy.late_policy ?? {}
@@ -88,11 +86,9 @@ export function policyFromAssessmentPolicy(
   return {
     dueAt: policy.due_at ?? null,
     maxAttempts: typeof policy.max_attempts === 'number' ? policy.max_attempts : null,
-    timeLimitSeconds:
-      typeof policy.time_limit_seconds === 'number' ? policy.time_limit_seconds : null,
+    timeLimitSeconds: typeof policy.time_limit_seconds === 'number' ? policy.time_limit_seconds : null,
     latePolicy: {
-      penaltyPercent:
-        typeof latePolicy['penalty_percent'] === 'number' ? latePolicy['penalty_percent'] : 0,
+      penaltyPercent: typeof latePolicy['penalty_percent'] === 'number' ? latePolicy['penalty_percent'] : 0,
     },
     antiCheat: {
       copyPasteProtection: Boolean(antiCheat['copy_paste_protection']),
@@ -101,9 +97,7 @@ export function policyFromAssessmentPolicy(
       rightClickDisabled: Boolean(antiCheat['right_click_disable']),
       fullscreenEnforced: Boolean(antiCheat['fullscreen_enforcement']),
       violationThreshold:
-        typeof antiCheat['violation_threshold'] === 'number'
-          ? antiCheat['violation_threshold']
-          : null,
+        typeof antiCheat['violation_threshold'] === 'number' ? antiCheat['violation_threshold'] : null,
     },
   }
 }

@@ -1,8 +1,4 @@
-import {
-  activityProgressNeedsTeacherAction,
-  isActivityProgressOverdue,
-  isActivityProgressComplete,
-} from './status'
+import { activityProgressNeedsTeacherAction, isActivityProgressOverdue, isActivityProgressComplete } from './status'
 import type {
   ActivityProgressCell,
   ActivityProgressState,
@@ -11,13 +7,7 @@ import type {
   GradebookStudent,
 } from './types'
 
-export type GradebookSavedFilterId =
-  | 'all'
-  | 'needs_grading'
-  | 'overdue'
-  | 'returned'
-  | 'failed'
-  | 'not_started'
+export type GradebookSavedFilterId = 'all' | 'needs_grading' | 'overdue' | 'returned' | 'failed' | 'not_started'
 export type GradebookRollupKind = 'activity_category' | 'cohort' | 'learner' | 'activity'
 
 export interface GradebookFilters {
@@ -57,9 +47,7 @@ export function gradebookLearnerName(student: GradebookStudent) {
 }
 
 export function gradebookActivityKind(activity: GradebookActivity) {
-  return (
-    activity.assessment_type ?? activity.activity_type.replace('TYPE_', '').replaceAll('_', ' ')
-  )
+  return activity.assessment_type ?? activity.activity_type.replace('TYPE_', '').replaceAll('_', ' ')
 }
 
 export function emptyGradebookCell(userId: number, activityId: number): ActivityProgressCell {
@@ -95,22 +83,16 @@ export function filterGradebookStudents(
 ) {
   const normalizedSearch = filters.search.trim().toLowerCase()
   return data.students.filter(student => {
-    const searchable =
-      `${gradebookLearnerName(student)} ${student.username} ${student.email}`.toLowerCase()
+    const searchable = `${gradebookLearnerName(student)} ${student.username} ${student.email}`.toLowerCase()
     if (normalizedSearch && !searchable.includes(normalizedSearch)) return false
     return visibleActivities.some(activity => {
-      const cell =
-        cellMap.get(gradebookCellKey(student.id, activity.id)) ??
-        emptyGradebookCell(student.id, activity.id)
+      const cell = cellMap.get(gradebookCellKey(student.id, activity.id)) ?? emptyGradebookCell(student.id, activity.id)
       return matchesGradebookSavedFilter(cell, filters.savedFilter)
     })
   })
 }
 
-export function buildGradebookRollups(
-  data: CourseGradebookResponse,
-  kind: GradebookRollupKind,
-): GradebookRollupRow[] {
+export function buildGradebookRollups(data: CourseGradebookResponse, kind: GradebookRollupKind): GradebookRollupRow[] {
   const cellsByActivity = new Map<number, ActivityProgressCell[]>()
   const cellsByStudent = new Map<number, ActivityProgressCell[]>()
 
@@ -127,11 +109,7 @@ export function buildGradebookRollups(
 
   if (kind === 'learner') {
     return data.students.map(student =>
-      buildRollupRow(
-        String(student.id),
-        gradebookLearnerName(student),
-        cellsByStudent.get(student.id) ?? [],
-      ),
+      buildRollupRow(String(student.id), gradebookLearnerName(student), cellsByStudent.get(student.id) ?? []),
     )
   }
 
@@ -165,16 +143,10 @@ export function buildGradebookRollups(
   return [...cohorts.entries()].map(([cohort, cells]) => buildRollupRow(cohort, cohort, cells))
 }
 
-function buildRollupRow(
-  id: string,
-  label: string,
-  cells: ActivityProgressCell[],
-): GradebookRollupRow {
+function buildRollupRow(id: string, label: string, cells: ActivityProgressCell[]): GradebookRollupRow {
   const scoredCells = cells.filter(cell => typeof cell.score === 'number')
   const averageScore =
-    scoredCells.length === 0
-      ? null
-      : scoredCells.reduce((sum, cell) => sum + (cell.score ?? 0), 0) / scoredCells.length
+    scoredCells.length === 0 ? null : scoredCells.reduce((sum, cell) => sum + (cell.score ?? 0), 0) / scoredCells.length
 
   return {
     id,

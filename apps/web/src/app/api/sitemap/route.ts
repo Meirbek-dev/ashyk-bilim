@@ -21,9 +21,7 @@ export async function GET(_request: NextRequest) {
   } catch {
     // Backend unavailable — return an empty but valid sitemap
     return new NextResponse(
-      generateSitemap(getAbsoluteUrl('/'), [
-        { loc: getAbsoluteUrl('/'), priority: 1, changefreq: 'daily' },
-      ]),
+      generateSitemap(getAbsoluteUrl('/'), [{ loc: getAbsoluteUrl('/'), priority: 1, changefreq: 'daily' }]),
       {
         headers: { 'Content-Type': 'application/xml' },
       },

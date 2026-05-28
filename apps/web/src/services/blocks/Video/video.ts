@@ -6,11 +6,7 @@ export async function uploadNewVideoFile(
   activity_uuid: string,
   course_uuid?: string,
   block_uuid?: string,
-  onProgress?: (progress: {
-    percentage: number
-    currentChunk: number
-    totalChunks: number
-  }) => void,
+  onProgress?: (progress: { percentage: number; currentChunk: number; totalChunks: number }) => void,
 ) {
   // For large files, use chunked upload
   if (shouldUseChunkedUpload(file.size)) {
@@ -26,11 +22,7 @@ export async function uploadNewVideoFile(
 
     try {
       const uploadProgress = onProgress
-        ? (progress: {
-            percentage: number
-            currentChunk: number
-            totalChunks: number
-          }) =>
+        ? (progress: { percentage: number; currentChunk: number; totalChunks: number }) =>
             onProgress({
               percentage: progress.percentage,
               currentChunk: progress.currentChunk,

@@ -19,18 +19,11 @@ interface ExamQuestionNavigationMobileProps extends ExamQuestionNavigationProps 
   canGoPrevious?: boolean
 }
 
-function getButtonStyle(
-  i: number,
-  currentIndex: number,
-  answered: Set<number>,
-  flagged: Set<number>,
-): string {
-  if (i === currentIndex)
-    return 'bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/30'
+function getButtonStyle(i: number, currentIndex: number, answered: Set<number>, flagged: Set<number>): string {
+  if (i === currentIndex) return 'bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/30'
   if (flagged.has(i) && answered.has(i))
     return 'bg-amber-100 text-amber-800 ring-1 ring-amber-400 dark:bg-amber-900/40 dark:text-amber-200'
-  if (flagged.has(i))
-    return 'bg-amber-50 text-amber-700 ring-1 ring-amber-300 dark:bg-amber-900/20 dark:text-amber-300'
+  if (flagged.has(i)) return 'bg-amber-50 text-amber-700 ring-1 ring-amber-300 dark:bg-amber-900/20 dark:text-amber-300'
   if (answered.has(i)) return 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300'
   return 'bg-muted text-muted-foreground hover:bg-muted/80'
 }
@@ -70,10 +63,7 @@ export default function ExamQuestionNavigation({
       {/* Legend */}
       <div className="mt-3 space-y-1">
         <LegendItem color="bg-lime-100 dark:bg-lime-900/30" label={t('legendAnswered')} />
-        <LegendItem
-          color="bg-amber-50 ring-1 ring-amber-300 dark:bg-amber-900/20"
-          label={t('legendFlagged')}
-        />
+        <LegendItem color="bg-amber-50 ring-1 ring-amber-300 dark:bg-amber-900/20" label={t('legendFlagged')} />
         <LegendItem color="bg-muted" label={t('legendNotAnswered')} />
       </div>
     </div>

@@ -5,13 +5,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { MarkdownContent } from '@/features/content-markdown'
 import { cn } from '@/lib/utils'
 
@@ -78,9 +72,7 @@ export function HintDrawer({ open, onOpenChange, hints }: HintDrawerProps) {
                   key={hintId}
                   className={cn(
                     'rounded-lg border transition-all duration-200',
-                    isRevealed
-                      ? 'border-border bg-card/60 shadow-xs'
-                      : 'border-muted bg-muted/20 hover:bg-muted/40',
+                    isRevealed ? 'border-border bg-card/60 shadow-xs' : 'border-muted bg-muted/20 hover:bg-muted/40',
                   )}
                 >
                   <div className="flex items-center justify-between gap-4 p-4">

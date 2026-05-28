@@ -74,8 +74,7 @@ export const useCourseEditorStore = create<CourseEditorState & CourseEditorActio
           }
         }),
 
-      syncLastKnownUpdateDate: lastKnownUpdateDate =>
-        set({ lastKnownUpdateDate: lastKnownUpdateDate ?? null }),
+      syncLastKnownUpdateDate: lastKnownUpdateDate => set({ lastKnownUpdateDate: lastKnownUpdateDate ?? null }),
 
       setSectionDirty: (section, dirty) =>
         set(state => ({

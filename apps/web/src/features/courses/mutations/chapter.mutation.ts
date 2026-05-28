@@ -2,22 +2,10 @@
 
 import { mutationOptions } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
-import {
-  createChapter,
-  deleteChapter,
-  updateChapter,
-  updateCourseOrderStructure,
-} from '@services/courses/chapters'
-import type {
-  ChapterCreateValues,
-  ChapterUpdateValues,
-  CourseOrderPayload,
-} from '@/schemas/chapterSchemas'
+import { createChapter, deleteChapter, updateChapter, updateCourseOrderStructure } from '@services/courses/chapters'
+import type { ChapterCreateValues, ChapterUpdateValues, CourseOrderPayload } from '@/schemas/chapterSchemas'
 
-export function createChapterMutationOptions(
-  queryClient: QueryClient,
-  structureKey: readonly unknown[],
-) {
+export function createChapterMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
     mutationFn: async ({ payload }: { payload: ChapterCreateValues }) => createChapter(payload),
     onMutate: async ({ payload }) => {
@@ -64,18 +52,10 @@ export function createChapterMutationOptions(
   })
 }
 
-export function updateChapterMutationOptions(
-  queryClient: QueryClient,
-  structureKey: readonly unknown[],
-) {
+export function updateChapterMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
-    mutationFn: async ({
-      chapterUuid,
-      payload,
-    }: {
-      chapterUuid: string
-      payload: ChapterUpdateValues
-    }) => updateChapter(chapterUuid, payload),
+    mutationFn: async ({ chapterUuid, payload }: { chapterUuid: string; payload: ChapterUpdateValues }) =>
+      updateChapter(chapterUuid, payload),
     onMutate: async ({ chapterUuid, payload }) => {
       await queryClient.cancelQueries({ queryKey: structureKey })
       const previousStructure = queryClient.getQueryData(structureKey)
@@ -102,10 +82,7 @@ export function updateChapterMutationOptions(
   })
 }
 
-export function deleteChapterMutationOptions(
-  queryClient: QueryClient,
-  structureKey: readonly unknown[],
-) {
+export function deleteChapterMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
     mutationFn: async (chapterUuid: string) => deleteChapter(chapterUuid),
     onMutate: async (chapterUuid: string) => {
@@ -116,9 +93,7 @@ export function deleteChapterMutationOptions(
         current
           ? {
               ...current,
-              chapters: (current.chapters ?? []).filter(
-                (chapter: any) => chapter.chapter_uuid !== chapterUuid,
-              ),
+              chapters: (current.chapters ?? []).filter((chapter: any) => chapter.chapter_uuid !== chapterUuid),
             }
           : current,
       )

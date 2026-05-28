@@ -21,10 +21,7 @@ interface BuildOptions {
  * Builds the TipTap extension array for a preset. Extension registration must
  * match toolbar capabilities so the editor never advertises unavailable actions.
  */
-export function buildEditorExtensions({
-  config,
-  placeholder,
-}: BuildOptions): EditorExtensionItem[] {
+export function buildEditorExtensions({ config, placeholder }: BuildOptions): EditorExtensionItem[] {
   const extensions: EditorExtensionItem[] = [
     StarterKit.configure({
       codeBlock: config.allowCodeBlock ? {} : false,

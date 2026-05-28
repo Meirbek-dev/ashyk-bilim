@@ -44,10 +44,7 @@ const ActivityAIChatContext = createContext<ActivityAIChatContextValue | null>(n
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
-export function ActivityAIChatProvider({
-  activityUuid,
-  children,
-}: PropsWithChildren<{ activityUuid: string }>) {
+export function ActivityAIChatProvider({ activityUuid, children }: PropsWithChildren<{ activityUuid: string }>) {
   const tStatus = useTranslations('Activities.AIStatus')
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -209,16 +206,7 @@ export function ActivityAIChatProvider({
       resetConversation,
       sendMessageAndGetResponse,
     }),
-    [
-      chat,
-      statusMessage,
-      isModalOpen,
-      openModal,
-      inputValue,
-      abort,
-      resetConversation,
-      sendMessageAndGetResponse,
-    ],
+    [chat, statusMessage, isModalOpen, openModal, inputValue, abort, resetConversation, sendMessageAndGetResponse],
   )
 
   return <ActivityAIChatContext.Provider value={value}>{children}</ActivityAIChatContext.Provider>

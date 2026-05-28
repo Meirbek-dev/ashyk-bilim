@@ -76,9 +76,7 @@ describe('MarkdownContent', () => {
 
   it('renders math in prompt mode', async () => {
     // KaTeX transforms $..$ into .katex elements
-    const { container } = render(
-      <MarkdownContent content="The formula $E=mc^2$ is famous." mode="prompt" />,
-    )
+    const { container } = render(<MarkdownContent content="The formula $E=mc^2$ is famous." mode="prompt" />)
     // We don't fully assert KaTeX output (not loaded), but check content is there
     expect(container).toBeInTheDocument()
   })
@@ -86,9 +84,7 @@ describe('MarkdownContent', () => {
   // ── Heading anchors ──────────────────────────────────────────────────────────
 
   it('renders heading anchors in courseDescription mode', () => {
-    const { container } = render(
-      <MarkdownContent content="## My section" mode="courseDescription" />,
-    )
+    const { container } = render(<MarkdownContent content="## My section" mode="courseDescription" />)
     const heading = container.querySelector('h2')
     expect(heading).toBeInTheDocument()
     expect(heading?.getAttribute('id')).toBe('my-section')
@@ -106,11 +102,7 @@ describe('MarkdownContent', () => {
     const user = userEvent.setup()
     const onAnchorClick = vi.fn()
     const { container } = render(
-      <MarkdownContent
-        content="## My section"
-        mode="courseDescription"
-        onHeadingAnchorClick={onAnchorClick}
-      />,
+      <MarkdownContent content="## My section" mode="courseDescription" onHeadingAnchorClick={onAnchorClick} />,
     )
     const anchor = container.querySelector('a[href="#my-section"]')
     expect(anchor).toBeInTheDocument()

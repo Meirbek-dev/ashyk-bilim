@@ -80,12 +80,7 @@ interface ResourceActionsMenuProps {
  * />
  * ```
  */
-export function ResourceActionsMenu({
-  availableActions,
-  actions,
-  trigger,
-  align = 'end',
-}: ResourceActionsMenuProps) {
+export function ResourceActionsMenu({ availableActions, actions, trigger, align = 'end' }: ResourceActionsMenuProps) {
   const t = useTranslations('Components.ResourceActionsMenu')
 
   // Filter actions based on available_actions from backend
@@ -122,9 +117,7 @@ export function ResourceActionsMenu({
             <Fragment key={action.id}>
               <DropdownMenuItem
                 onClick={action.onClick}
-                className={
-                  action.variant === 'destructive' ? 'text-destructive focus:text-destructive' : ''
-                }
+                className={action.variant === 'destructive' ? 'text-destructive focus:text-destructive' : ''}
               >
                 {Icon && <Icon className="mr-2 h-4 w-4" />}
                 {action.labelKey ? t(action.labelKey) : action.label}

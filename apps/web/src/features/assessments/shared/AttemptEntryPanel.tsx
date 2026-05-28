@@ -74,23 +74,12 @@ export default function AttemptEntryPanel({
           </CardHeader>
           <CardContent className="space-y-3">
             {onAction && actionLabel ? (
-              <Button
-                className="w-full"
-                size="lg"
-                disabled={actionDisabled || actionPending}
-                onClick={onAction}
-              >
-                {actionPending ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="size-4" />
-                )}
+              <Button className="w-full" size="lg" disabled={actionDisabled || actionPending} onClick={onAction}>
+                {actionPending ? <LoaderCircle className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
                 {actionLabel}
               </Button>
             ) : null}
-            {blockedMessage ? (
-              <p className="text-muted-foreground text-sm">{blockedMessage}</p>
-            ) : null}
+            {blockedMessage ? <p className="text-muted-foreground text-sm">{blockedMessage}</p> : null}
           </CardContent>
         </Card>
 

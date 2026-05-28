@@ -38,12 +38,7 @@ interface AttemptResultCardProps {
  * they are secondary actions. The BottomActionBar handles the primary
  * "Next Activity" CTA via runtime.primary_action.
  */
-export default function AttemptResultCard({
-  vm,
-  onRetry,
-  onNext,
-  onStartRevision,
-}: AttemptResultCardProps) {
+export default function AttemptResultCard({ vm, onRetry, onNext, onStartRevision }: AttemptResultCardProps) {
   const t = useTranslations('Features.ActivityWorkspace')
   const [breakdownOpen, setBreakdownOpen] = useState(false)
 
@@ -74,10 +69,7 @@ export default function AttemptResultCard({
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2">
             {isReturnedForRevision ? (
-              <Badge
-                variant="outline"
-                className="gap-1.5 border-amber-500 text-amber-600 dark:text-amber-400"
-              >
+              <Badge variant="outline" className="gap-1.5 border-amber-500 text-amber-600 dark:text-amber-400">
                 <RotateCcw className="size-3" />
                 {t('returnedForRevision')}
               </Badge>
@@ -102,15 +94,11 @@ export default function AttemptResultCard({
           </div>
 
           <p className="text-xl font-semibold">
-            {showScore
-              ? `${t('assessmentSubmitted')} · ${formatPercent(pct)}`
-              : t('assessmentSubmitted')}
+            {showScore ? `${t('assessmentSubmitted')} · ${formatPercent(pct)}` : t('assessmentSubmitted')}
           </p>
 
           {vm.startedAt ? (
-            <p className="text-muted-foreground text-xs">
-              {t('submittedOn', { date: formatDate(vm.startedAt) })}
-            </p>
+            <p className="text-muted-foreground text-xs">{t('submittedOn', { date: formatDate(vm.startedAt) })}</p>
           ) : null}
         </div>
       </div>
@@ -131,10 +119,7 @@ export default function AttemptResultCard({
           >
             <span>{t('breakdown')}</span>
             <ChevronDown
-              className={cn(
-                'text-muted-foreground size-4 transition-transform',
-                breakdownOpen && 'rotate-180',
-              )}
+              className={cn('text-muted-foreground size-4 transition-transform', breakdownOpen && 'rotate-180')}
             />
           </button>
           {breakdownOpen ? (

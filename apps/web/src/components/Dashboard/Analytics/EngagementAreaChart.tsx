@@ -12,11 +12,7 @@ interface EngagementAreaChartProps {
   data: TimeSeriesPoint[]
 }
 
-export default function EngagementAreaChart({
-  title,
-  description,
-  data,
-}: EngagementAreaChartProps) {
+export default function EngagementAreaChart({ title, description, data }: EngagementAreaChartProps) {
   const locale = useLocale()
   const chartData = data.map(point => ({
     bucket: new Date(point.bucket_start).toLocaleDateString(locale, {
@@ -47,9 +43,7 @@ export default function EngagementAreaChart({
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis dataKey="bucket" tickLine={false} axisLine={false} />
             <YAxis tickLine={false} axisLine={false} />
-            <ChartTooltip
-              content={<ChartTooltipContent nameKey="value" formatter={v => [String(v), title]} />}
-            />
+            <ChartTooltip content={<ChartTooltipContent nameKey="value" formatter={v => [String(v), title]} />} />
             <Area
               dataKey="value"
               type="monotone"

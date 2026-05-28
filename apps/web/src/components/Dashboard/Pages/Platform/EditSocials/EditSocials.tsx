@@ -158,16 +158,10 @@ export default function EditSocials() {
                         render={({ field: socialField }) => (
                           <Field>
                             <div className="flex items-center gap-3">
-                              <div
-                                className={`flex h-8 w-8 items-center justify-center rounded-md ${field.bgColor}`}
-                              >
+                              <div className={`flex h-8 w-8 items-center justify-center rounded-md ${field.bgColor}`}>
                                 {field.icon}
                               </div>
-                              <Input
-                                placeholder={field.placeholder}
-                                className="bg-background h-9"
-                                {...socialField}
-                              />
+                              <Input placeholder={field.placeholder} className="bg-background h-9" {...socialField} />
                             </div>
                           </Field>
                         )}
@@ -219,21 +213,13 @@ export default function EditSocials() {
                   ))}
 
                   {linksEntries.length < 3 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={addNewLink}
-                    >
+                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={addNewLink}>
                       <Plus className="mr-2 h-4 w-4" />
                       {t('Form.addCustomLinkButton')}
                     </Button>
                   )}
 
-                  <p className="text-muted-foreground mt-2 text-xs">
-                    {t('Form.customLinkInfo', { count: 3 })}
-                  </p>
+                  <p className="text-muted-foreground mt-2 text-xs">{t('Form.customLinkInfo', { count: 3 })}</p>
                 </div>
               </div>
             </div>
@@ -241,9 +227,7 @@ export default function EditSocials() {
 
           <div className="mx-5 mt-3 mb-5 flex flex-row-reverse">
             <Button type="submit" disabled={form.formState.isSubmitting || isPending}>
-              {form.formState.isSubmitting || isPending
-                ? t('Form.savingButton')
-                : t('Form.saveButton')}
+              {form.formState.isSubmitting || isPending ? t('Form.savingButton') : t('Form.saveButton')}
             </Button>
           </div>
         </div>

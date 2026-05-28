@@ -59,27 +59,13 @@ export default function SubmissionList({
             aria-label={t('statusFilter')}
           >
             <NativeSelectOption value="ALL">{t('filters.all')}</NativeSelectOption>
-            <NativeSelectOption value="NEEDS_GRADING">
-              {t('filters.needsGrading')}
-            </NativeSelectOption>
-            <NativeSelectOption value="PENDING">
-              {SUBMISSION_STATUS_LABELS.PENDING}
-            </NativeSelectOption>
-            <NativeSelectOption value="GRADED">
-              {SUBMISSION_STATUS_LABELS.GRADED}
-            </NativeSelectOption>
-            <NativeSelectOption value="PUBLISHED">
-              {SUBMISSION_STATUS_LABELS.PUBLISHED}
-            </NativeSelectOption>
-            <NativeSelectOption value="RETURNED">
-              {SUBMISSION_STATUS_LABELS.RETURNED}
-            </NativeSelectOption>
+            <NativeSelectOption value="NEEDS_GRADING">{t('filters.needsGrading')}</NativeSelectOption>
+            <NativeSelectOption value="PENDING">{SUBMISSION_STATUS_LABELS.PENDING}</NativeSelectOption>
+            <NativeSelectOption value="GRADED">{SUBMISSION_STATUS_LABELS.GRADED}</NativeSelectOption>
+            <NativeSelectOption value="PUBLISHED">{SUBMISSION_STATUS_LABELS.PUBLISHED}</NativeSelectOption>
+            <NativeSelectOption value="RETURNED">{SUBMISSION_STATUS_LABELS.RETURNED}</NativeSelectOption>
           </NativeSelect>
-          <NativeSelect
-            value={sortBy}
-            onChange={event => onSortChange(event.target.value)}
-            aria-label={t('sort')}
-          >
+          <NativeSelect value={sortBy} onChange={event => onSortChange(event.target.value)} aria-label={t('sort')}>
             <NativeSelectOption value="submitted_at">{t('sorting.submitted')}</NativeSelectOption>
             <NativeSelectOption value="final_score">{t('sorting.score')}</NativeSelectOption>
             <NativeSelectOption value="attempt_number">{t('sorting.attempt')}</NativeSelectOption>
@@ -99,9 +85,7 @@ export default function SubmissionList({
             {t('loading')}
           </div>
         ) : submissions.length === 0 ? (
-          <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
-            {t('empty')}
-          </div>
+          <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">{t('empty')}</div>
         ) : (
           submissions.map(submission => {
             const selected = submission.submission_uuid === selectedUuid
@@ -118,9 +102,7 @@ export default function SubmissionList({
                 <div className="flex items-start gap-2">
                   <Checkbox
                     checked={selectedUuids.has(submission.submission_uuid)}
-                    onCheckedChange={checked =>
-                      onToggleSelected(submission.submission_uuid, checked)
-                    }
+                    onCheckedChange={checked => onToggleSelected(submission.submission_uuid, checked)}
                     aria-label={t('selectSubmission', { name: displayName })}
                   />
                   <button
@@ -138,9 +120,7 @@ export default function SubmissionList({
                           number: submission.attempt_number,
                         })}
                       </span>
-                      <span>
-                        {formatDate(submission.submitted_at ?? submission.updated_at, locale, t)}
-                      </span>
+                      <span>{formatDate(submission.submitted_at ?? submission.updated_at, locale, t)}</span>
                       {typeof submission.final_score === 'number' ? (
                         <span>{Math.round(submission.final_score)}%</span>
                       ) : null}
@@ -157,9 +137,7 @@ export default function SubmissionList({
                               : tReview('releaseStateReturned')}
                       </Badge>
                       {submission.is_late ? <Badge variant="destructive">{t('late')}</Badge> : null}
-                      {needsTeacherAction(submission.status) ? (
-                        <Badge variant="warning">{t('action')}</Badge>
-                      ) : null}
+                      {needsTeacherAction(submission.status) ? <Badge variant="warning">{t('action')}</Badge> : null}
                     </div>
                   </button>
                 </div>
@@ -171,12 +149,7 @@ export default function SubmissionList({
 
       {pages > 1 ? (
         <div className="mt-4 flex items-center justify-between gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => onPageChange(current => current - 1)}
-          >
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(current => current - 1)}>
             <ChevronLeft className="size-4" />
           </Button>
           <span className="text-muted-foreground text-sm">

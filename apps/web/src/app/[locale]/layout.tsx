@@ -32,11 +32,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   setRequestLocale(locale)
 
-  const [cookieStore, initialSession, messages] = await Promise.all([
-    cookies(),
-    getSession(),
-    getMessages(),
-  ])
+  const [cookieStore, initialSession, messages] = await Promise.all([cookies(), getSession(), getMessages()])
   const initialThemeMode = getInitialThemeMode(cookieStore.get(THEME_MODE_STORAGE_KEY)?.value)
 
   return (

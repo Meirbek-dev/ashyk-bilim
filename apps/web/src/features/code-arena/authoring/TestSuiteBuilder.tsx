@@ -10,14 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { MarkdownEditor, extractMarkdownSummary } from '@/features/content-markdown'
 import type { CodeChallengeSettings, TestCase } from '@/services/courses/code-challenges'
@@ -67,12 +60,8 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
       match_mode: 'EXACT',
     }
     onChange({
-      visible_tests: visible
-        ? [...(draft.visible_tests ?? []), newCase]
-        : (draft.visible_tests ?? []),
-      hidden_tests: !visible
-        ? [...(draft.hidden_tests ?? []), newCase]
-        : (draft.hidden_tests ?? []),
+      visible_tests: visible ? [...(draft.visible_tests ?? []), newCase] : (draft.visible_tests ?? []),
+      hidden_tests: !visible ? [...(draft.hidden_tests ?? []), newCase] : (draft.hidden_tests ?? []),
     })
     setSelectedCaseId(newCase.id)
   }
@@ -105,15 +94,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
         filename += '.json'
       } else {
         // Simple CSV serialize
-        const headers = [
-          'id',
-          'is_visible',
-          'description',
-          'input',
-          'expected_output',
-          'weight',
-          'match_mode',
-        ]
+        const headers = ['id', 'is_visible', 'description', 'input', 'expected_output', 'weight', 'match_mode']
         const csvRows = [headers.join(',')]
 
         for (const t of tests) {
@@ -254,23 +235,11 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
           </div>
 
           <div className="flex gap-1.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={handleImportClick}
-              className="h-7 gap-1 text-xs"
-            >
+            <Button type="button" variant="ghost" size="xs" onClick={handleImportClick} className="h-7 gap-1 text-xs">
               <Upload className="size-3.5" />
               {t('import')}
             </Button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept=".csv,.json"
-              className="hidden"
-            />
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv,.json" className="hidden" />
 
             <Button
               type="button"
@@ -314,10 +283,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                   return (
                     <TableRow
                       key={test.id}
-                      className={cn(
-                        'cursor-pointer hover:bg-muted/10',
-                        isSelected ? 'bg-primary/5' : '',
-                      )}
+                      className={cn('cursor-pointer hover:bg-muted/10', isSelected ? 'bg-primary/5' : '')}
                       onClick={() => setSelectedCaseId(test.id)}
                     >
                       <TableCell className="py-2.5">
@@ -368,15 +334,9 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
                             className="select-xs h-8 py-0"
                           >
                             <NativeSelectOption value="EXACT">{t('exactMatch')}</NativeSelectOption>
-                            <NativeSelectOption value="TRIMMED">
-                              {t('trimmedMatch')}
-                            </NativeSelectOption>
-                            <NativeSelectOption value="IGNORE_WHITESPACE">
-                              {t('ignoreWhitespace')}
-                            </NativeSelectOption>
-                            <NativeSelectOption value="NUMERIC_TOLERANCE">
-                              {t('floatTolerance')}
-                            </NativeSelectOption>
+                            <NativeSelectOption value="TRIMMED">{t('trimmedMatch')}</NativeSelectOption>
+                            <NativeSelectOption value="IGNORE_WHITESPACE">{t('ignoreWhitespace')}</NativeSelectOption>
+                            <NativeSelectOption value="NUMERIC_TOLERANCE">{t('floatTolerance')}</NativeSelectOption>
                           </NativeSelect>
                         </div>
                       </TableCell>
@@ -455,10 +415,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
             {t('assertionDetails')}
           </span>
           {selectedTestCase && (
-            <Badge
-              variant={selectedTestCase.is_visible ? 'success' : 'secondary'}
-              className="text-[10px]"
-            >
+            <Badge variant={selectedTestCase.is_visible ? 'success' : 'secondary'} className="text-[10px]">
               {selectedTestCase.is_visible ? t('sampleCase') : t('hiddenCase')}
             </Badge>
           )}
@@ -468,9 +425,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
           {selectedTestCase ? (
             <div className="space-y-4 p-4">
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">
-                  {t('descriptionLabel')}
-                </span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('descriptionLabel')}</span>
                 <MarkdownEditor
                   value={selectedTestCase.description ?? ''}
                   onChange={description => updateTest(selectedTestCase.id, { description })}
@@ -480,9 +435,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">
-                  {t('stdinInput')}
-                </span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('stdinInput')}</span>
                 <Textarea
                   value={selectedTestCase.input}
                   onChange={e => updateTest(selectedTestCase.id, { input: e.target.value })}
@@ -492,9 +445,7 @@ export function TestSuiteBuilder({ draft, onChange }: TestSuiteBuilderProps) {
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">
-                  {t('expectedStdout')}
-                </span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('expectedStdout')}</span>
                 <Textarea
                   value={selectedTestCase.expected_output}
                   onChange={e =>

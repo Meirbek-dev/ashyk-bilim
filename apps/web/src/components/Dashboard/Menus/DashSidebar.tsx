@@ -14,18 +14,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  BarChart3,
-  BookCopy,
-  Home,
-  LogOut,
-  Moon,
-  School,
-  Settings,
-  ShieldCheck,
-  Sun,
-  Users,
-} from 'lucide-react'
+import { BarChart3, BookCopy, Home, LogOut, Moon, School, Settings, ShieldCheck, Sun, Users } from 'lucide-react'
 import { useNavigationPermissions } from '@/hooks/useNavigationPermissions'
 import { useSession } from '@/hooks/useSession'
 import appLogo from '@public/app_logo.svg'
@@ -92,8 +81,7 @@ const SidebarSkeleton = () => (
 const useNavigationItems = () => {
   const pathname = usePathname()
   const t = useTranslations('SidebarMenu')
-  const { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } =
-    useNavigationPermissions()
+  const { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } = useNavigationPermissions()
 
   return [
     {
@@ -165,13 +153,7 @@ const useNavigationItems = () => {
 const NavItem = ({ item, isCollapsed }: { item: NavigationItem; isCollapsed: boolean }) => (
   <SidebarMenuItem className={isCollapsed ? 'flex w-full justify-center' : ''}>
     <SidebarMenuButton
-      render={
-        <AppLink
-          href={item.href}
-          aria-label={item.tooltip}
-          aria-current={item.isActive ? 'page' : undefined}
-        />
-      }
+      render={<AppLink href={item.href} aria-label={item.tooltip} aria-current={item.isActive ? 'page' : undefined} />}
       {...(isCollapsed ? { tooltip: item.tooltip } : {})}
       {...(item.isActive === undefined ? {} : { isActive: item.isActive })}
       size="default"
@@ -189,9 +171,7 @@ const NavItem = ({ item, isCollapsed }: { item: NavigationItem; isCollapsed: boo
               {item.badge}
             </Badge>
           ) : null}
-          {item.isActive ? (
-            <div className="bg-primary ml-auto h-2 w-2 animate-pulse rounded-full" />
-          ) : null}
+          {item.isActive ? <div className="bg-primary ml-auto h-2 w-2 animate-pulse rounded-full" /> : null}
         </>
       )}
     </SidebarMenuButton>
@@ -204,9 +184,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
   const { resolvedTheme, isDark, toggleMode } = useTheme()
   const logoSrc = resolvedTheme === 'dark' ? appLogo : appLogoLight
   const t = useTranslations('SidebarMenu')
-  const tThemeSelector = useTranslations(
-    'DashPage.UserAccountSettings.generalSection.themeSelector',
-  )
+  const tThemeSelector = useTranslations('DashPage.UserAccountSettings.generalSection.themeSelector')
   const navigationItems = useNavigationItems()
 
   const isCollapsed = state === 'collapsed'
@@ -262,9 +240,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
       } ${className}`}
     >
       <SidebarHeader className="border-sidebar-border border-b p-4">
-        <div
-          className={`flex items-center ${isCollapsed ? 'flex-col justify-center gap-2' : 'justify-between'}`}
-        >
+        <div className={`flex items-center ${isCollapsed ? 'flex-col justify-center gap-2' : 'justify-between'}`}>
           <AppLink
             href="/"
             className={`focus:ring-primary -m-1 flex items-center rounded-lg p-1 transition-all duration-200 hover:opacity-80 focus:opacity-80 focus:ring-2 focus:outline-none ${
@@ -289,9 +265,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
                 isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
               }`}
             >
-              <h2 className="text-sidebar-foreground text-lg leading-tight font-semibold">
-                {t('platformName')}
-              </h2>
+              <h2 className="text-sidebar-foreground text-lg leading-tight font-semibold">{t('platformName')}</h2>
             </div>
           </AppLink>
 
@@ -314,9 +288,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
               className={`hover:bg-sidebar-accent h-8 w-8 rounded-md transition-all duration-200 ${
                 isCollapsed ? 'order-1' : 'order-2'
               }`}
-              aria-label={
-                isExpanded ? t('ariaLabels.collapseSidebar') : t('ariaLabels.expandSidebar')
-              }
+              aria-label={isExpanded ? t('ariaLabels.collapseSidebar') : t('ariaLabels.expandSidebar')}
             />
           </div>
         </div>
@@ -348,9 +320,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
                 isCollapsed ? 'hidden w-0 opacity-0' : 'w-auto opacity-100'
               }`}
             >
-              <p className="text-sidebar-foreground truncate text-sm font-medium">
-                @{user.username}
-              </p>
+              <p className="text-sidebar-foreground truncate text-sm font-medium">@{user.username}</p>
               <p className="text-sidebar-foreground/60 truncate text-xs">{user.email}</p>
             </div>
           </div>
@@ -358,15 +328,8 @@ const DashSidebar = ({ className }: SidebarProps) => {
           {/* Action Buttons */}
           <div className={`flex gap-2 ${isCollapsed ? 'w-full flex-col' : ''}`}>
             <SidebarMenuButton
-              render={
-                <AppLink
-                  href="/dash/user-account/settings/general"
-                  aria-label={t('ariaLabels.userSettings')}
-                />
-              }
-              {...(isCollapsed
-                ? { tooltip: t('tooltips.userSettings', { username: user.username }) }
-                : {})}
+              render={<AppLink href="/dash/user-account/settings/general" aria-label={t('ariaLabels.userSettings')} />}
+              {...(isCollapsed ? { tooltip: t('tooltips.userSettings', { username: user.username }) } : {})}
               size="sm"
               className={`hover:bg-sidebar-accent/50 flex-1 transition-all duration-200 ${
                 isCollapsed ? 'w-full justify-center' : ''
@@ -402,8 +365,7 @@ const DashSidebar = ({ className }: SidebarProps) => {
             <div className="text-sidebar-foreground/50 flex items-center gap-1 text-xs">
               <kbd className="bg-muted text-muted-foreground pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium shadow-sm select-none">
                 <span className="font-mono">
-                  {typeof navigator !== 'undefined' &&
-                  /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
+                  {typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
                     ? '⌘B'
                     : 'Ctrl+B'}
                 </span>

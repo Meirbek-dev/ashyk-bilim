@@ -23,11 +23,9 @@ export interface AvatarUser {
 
 export type PredefinedAvatar = 'ai' | 'empty'
 
-export const isExternalUrl = (url: string) =>
-  url.startsWith('http://') || url.startsWith('https://')
+export const isExternalUrl = (url: string) => url.startsWith('http://') || url.startsWith('https://')
 
-const isBrowserPreviewUrl = (url: string) =>
-  url.startsWith('blob:') || url.startsWith('data:image/')
+const isBrowserPreviewUrl = (url: string) => url.startsWith('blob:') || url.startsWith('data:image/')
 
 const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, '')
 
@@ -56,16 +54,13 @@ export const extractExternalAvatarUrl = (url: string): string | null => {
 export const isGoogleAvatarUrl = (url: string): boolean => {
   try {
     const parsedUrl = new URL(url)
-    return (
-      parsedUrl.protocol === 'https:' && GOOGLE_AVATAR_HOSTS.has(parsedUrl.hostname.toLowerCase())
-    )
+    return parsedUrl.protocol === 'https:' && GOOGLE_AVATAR_HOSTS.has(parsedUrl.hostname.toLowerCase())
   } catch {
     return false
   }
 }
 
-export const getProxiedAvatarUrl = (url: string): string =>
-  `/api/avatar?url=${encodeURIComponent(url)}`
+export const getProxiedAvatarUrl = (url: string): string => `/api/avatar?url=${encodeURIComponent(url)}`
 
 export const normalizeAvatarUrl = (url: string): string => {
   const externalUrl = extractExternalAvatarUrl(url) ?? (isExternalUrl(url) ? url : null)
@@ -104,11 +99,7 @@ export function resolveAvatarUrl({
   if (isBrowserPreviewUrl(rawUrl)) return rawUrl
 
   const normalizedUrl = normalizeAvatarUrl(rawUrl)
-  if (
-    normalizedUrl !== rawUrl ||
-    normalizedUrl.startsWith('/api/avatar') ||
-    isExternalUrl(normalizedUrl)
-  ) {
+  if (normalizedUrl !== rawUrl || normalizedUrl.startsWith('/api/avatar') || isExternalUrl(normalizedUrl)) {
     return normalizedUrl
   }
 

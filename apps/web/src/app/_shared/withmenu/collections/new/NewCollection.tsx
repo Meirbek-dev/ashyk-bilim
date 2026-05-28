@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle2, Globe, Image as ImageIcon, Loader2, Lock, Search } from 'lucide-react'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
@@ -55,8 +48,7 @@ const NewCollection = () => {
     const query = searchQuery.toLowerCase()
     return courses.filter(
       (course: CourseListItem) =>
-        course.name.toLowerCase().includes(query) ||
-        course.description?.toLowerCase().includes(query),
+        course.name.toLowerCase().includes(query) || course.description?.toLowerCase().includes(query),
     )
   }, [courses, searchQuery])
 
@@ -110,9 +102,7 @@ const NewCollection = () => {
   }
 
   const toggleCourse = (courseId: number) => {
-    setSelectedCourses(prev =>
-      prev.includes(courseId) ? prev.filter(id => id !== courseId) : [...prev, courseId],
-    )
+    setSelectedCourses(prev => (prev.includes(courseId) ? prev.filter(id => id !== courseId) : [...prev, courseId]))
   }
 
   const selectAll = () => {
@@ -178,9 +168,7 @@ const NewCollection = () => {
                   maxLength={100}
                   className="h-10"
                 />
-                <p className="text-muted-foreground text-xs">
-                  {t('nameChars', { current: name.length, max: 100 })}
-                </p>
+                <p className="text-muted-foreground text-xs">{t('nameChars', { current: name.length, max: 100 })}</p>
               </div>
 
               <div className="space-y-2">
@@ -201,11 +189,7 @@ const NewCollection = () => {
                       {visibilityItems.map(item => (
                         <SelectItem key={item.value} value={item.value}>
                           <div className="flex items-center gap-2">
-                            {item.value === 'true' ? (
-                              <Globe className="h-4 w-4" />
-                            ) : (
-                              <Lock className="h-4 w-4" />
-                            )}
+                            {item.value === 'true' ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                             <span>{item.label}</span>
                           </div>
                         </SelectItem>
@@ -328,10 +312,7 @@ const NewCollection = () => {
                               {course.thumbnail_image ? (
                                 <div className="relative h-full w-full">
                                   <NextImage
-                                    src={getCourseThumbnailMediaDirectory(
-                                      course.course_uuid,
-                                      course.thumbnail_image,
-                                    )}
+                                    src={getCourseThumbnailMediaDirectory(course.course_uuid, course.thumbnail_image)}
                                     alt={course.name}
                                     fill
                                     className="object-cover"
@@ -350,9 +331,7 @@ const NewCollection = () => {
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h3 className="text-foreground leading-tight font-medium">
-                                {course.name}
-                              </h3>
+                              <h3 className="text-foreground leading-tight font-medium">{course.name}</h3>
                               {course.description && (
                                 <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
                                   {extractMarkdownSummary(course.description, 140)}
@@ -372,9 +351,7 @@ const NewCollection = () => {
 
         {/* Form Actions */}
         <div className="bg-muted/50 flex items-center justify-between rounded-lg border p-4">
-          <p className="text-muted-foreground text-sm">
-            {t('selectedCount', { count: selectedCourses.length })}
-          </p>
+          <p className="text-muted-foreground text-sm">{t('selectedCount', { count: selectedCourses.length })}</p>
           <div className="flex gap-3">
             <Button type="button" onClick={() => router.back()} variant="outline">
               {t('cancelButton')}

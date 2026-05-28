@@ -4,13 +4,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 import { reportClientError } from '@/services/telemetry/client'
 
-export default function AssessmentsError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
+export default function AssessmentsError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const t = useTranslations('Errors')
 
   useEffect(() => {
@@ -32,12 +26,8 @@ export default function AssessmentsError({
         name: error.name,
         stack: error.stack,
       },
-      page:
-        typeof globalThis.window !== 'undefined'
-          ? globalThis.location.pathname
-          : 'assessments-route',
-      url:
-        typeof globalThis.window !== 'undefined' ? globalThis.location.href : 'assessments-route',
+      page: typeof globalThis.window !== 'undefined' ? globalThis.location.pathname : 'assessments-route',
+      url: typeof globalThis.window !== 'undefined' ? globalThis.location.href : 'assessments-route',
     }).catch((loggingError: unknown) => {
       console.error('Failed to report assessments route error boundary event:', loggingError)
     })
@@ -45,17 +35,11 @@ export default function AssessmentsError({
 
   return (
     <div className="my-6 flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <h3 className="mb-2 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-        {t('somethingWentWrong')}
-      </h3>
-      <p className="mb-6 max-w-md text-sm text-zinc-500 dark:text-zinc-400">
-        {t('assessmentsLoadError')}
-      </p>
+      <h3 className="mb-2 text-xl font-semibold text-zinc-900 dark:text-zinc-50">{t('somethingWentWrong')}</h3>
+      <p className="mb-6 max-w-md text-sm text-zinc-500 dark:text-zinc-400">{t('assessmentsLoadError')}</p>
 
       {error.digest && (
-        <p className="mb-4 font-mono text-xs text-zinc-400 dark:text-zinc-500">
-          {t('ref', { digest: error.digest })}
-        </p>
+        <p className="mb-4 font-mono text-xs text-zinc-400 dark:text-zinc-500">{t('ref', { digest: error.digest })}</p>
       )}
 
       <button

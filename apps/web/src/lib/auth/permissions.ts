@@ -17,12 +17,7 @@ export function sessionCan(
   return perms.has(AUTH_PERMISSION_WILDCARD) || perms.has(perm(resource, action, scope))
 }
 
-export async function requirePermission(
-  action: Action,
-  resource: Resource,
-  scope: Scope,
-  redirectTo?: string,
-) {
+export async function requirePermission(action: Action, resource: Resource, scope: Scope, redirectTo?: string) {
   const session = await requireSession()
   const perms = new Set<string>(session.permissions)
   if (!sessionCan(session, resource, action, scope, perms)) {

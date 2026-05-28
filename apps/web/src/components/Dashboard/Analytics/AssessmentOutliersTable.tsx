@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  getAnalyticsAssessmentTypeLabel,
-  getAnalyticsReasonCodeLabel,
-} from '@/lib/analytics/labels'
+import { getAnalyticsAssessmentTypeLabel, getAnalyticsReasonCodeLabel } from '@/lib/analytics/labels'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { AssessmentOutlierRow } from '@/types/analytics'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -25,11 +22,7 @@ type EnhancedAssessmentOutlierRow = AssessmentOutlierRow & {
   suspicious_flag?: string | null
 }
 
-export default function AssessmentOutliersTable({
-  rows,
-  storageKey,
-  serverPaginated,
-}: AssessmentOutliersTableProps) {
+export default function AssessmentOutliersTable({ rows, storageKey, serverPaginated }: AssessmentOutliersTableProps) {
   const t = useTranslations('TeacherAnalytics')
   const columns: ColumnDef<AssessmentOutlierRow>[] = [
     {
@@ -56,20 +49,17 @@ export default function AssessmentOutliersTable({
     {
       accessorKey: 'submission_rate',
       header: t('assessmentOutliers.colSubmission'),
-      cell: ({ row }) =>
-        row.original.submission_rate === null ? t('atRisk.na') : `${row.original.submission_rate}%`,
+      cell: ({ row }) => (row.original.submission_rate === null ? t('atRisk.na') : `${row.original.submission_rate}%`),
     },
     {
       accessorKey: 'pass_rate',
       header: t('assessmentOutliers.colPass'),
-      cell: ({ row }) =>
-        row.original.pass_rate === null ? t('atRisk.na') : `${row.original.pass_rate}%`,
+      cell: ({ row }) => (row.original.pass_rate === null ? t('atRisk.na') : `${row.original.pass_rate}%`),
     },
     {
       accessorKey: 'median_score',
       header: t('assessmentOutliers.colMedian'),
-      cell: ({ row }) =>
-        row.original.median_score === null ? t('atRisk.na') : `${row.original.median_score}%`,
+      cell: ({ row }) => (row.original.median_score === null ? t('atRisk.na') : `${row.original.median_score}%`),
     },
     {
       accessorKey: 'difficulty_score',
@@ -82,12 +72,9 @@ export default function AssessmentOutliersTable({
         return (
           <div>
             <div>{Math.round(v ?? 0)}%</div>
-            {assessment.discrimination_index !== null &&
-              assessment.discrimination_index !== undefined && (
-                <div className="text-muted-foreground text-[11px]">
-                  D {assessment.discrimination_index}
-                </div>
-              )}
+            {assessment.discrimination_index !== null && assessment.discrimination_index !== undefined && (
+              <div className="text-muted-foreground text-[11px]">D {assessment.discrimination_index}</div>
+            )}
             {assessment.suspicious_flag && (
               <Badge variant="warning" className="mt-1">
                 {assessment.suspicious_flag.replaceAll('_', ' ')}

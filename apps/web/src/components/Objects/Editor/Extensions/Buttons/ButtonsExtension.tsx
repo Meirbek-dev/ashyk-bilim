@@ -1,12 +1,4 @@
-import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  ArrowRight,
-  ChevronDown,
-  Link,
-  Palette,
-} from 'lucide-react'
+import { AlignCenter, AlignLeft, AlignRight, ArrowRight, ChevronDown, Link, Palette } from 'lucide-react'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { NodeViewContent, NodeViewWrapper } from '@tiptap/react'
@@ -144,18 +136,7 @@ const ButtonsExtension: FC<TypedNodeViewProps<ButtonNodeAttrs>> = props => {
     }
   }
 
-  const colors = [
-    'sky',
-    'green',
-    'yellow',
-    'red',
-    'purple',
-    'teal',
-    'amber',
-    'indigo',
-    'neutral',
-    'blue',
-  ]
+  const colors = ['sky', 'green', 'yellow', 'red', 'purple', 'teal', 'amber', 'indigo', 'neutral', 'blue']
 
   return (
     <NodeViewWrapper className={`block-button ${getAlignmentClass()}`}>

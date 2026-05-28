@@ -36,21 +36,15 @@ interface CourseRightsResponse {
   }
 }
 
-function mapCourseRightsToCapabilities(
-  session: any,
-  rights: CourseRightsResponse,
-): CourseWorkspaceCapabilities {
+function mapCourseRightsToCapabilities(session: any, rights: CourseRightsResponse): CourseWorkspaceCapabilities {
   const canEditDetails = Boolean(rights.permissions?.update)
-  const canEditCurriculum = Boolean(
-    rights.permissions?.update_content ?? rights.permissions?.update,
-  )
+  const canEditCurriculum = Boolean(rights.permissions?.update_content ?? rights.permissions?.update)
   const canManageAccess = Boolean(rights.permissions?.manage_access)
   const canManageCollaboration = Boolean(rights.permissions?.manage_contributors)
   const canManageSettings = canManageAccess || canManageCollaboration
   const canManageCertificate = Boolean(rights.permissions?.create_certifications)
   const canDeleteCourse = Boolean(rights.permissions?.delete)
-  const canReviewCourse =
-    canEditDetails || canEditCurriculum || canManageAccess || canManageCertificate
+  const canReviewCourse = canEditDetails || canEditCurriculum || canManageAccess || canManageCertificate
 
   return {
     canViewWorkspace: canReviewCourse || canManageSettings,
@@ -71,9 +65,7 @@ export async function getCourseWorkspaceCapabilitiesForCourse(
 ): Promise<CourseWorkspaceCapabilities> {
   const session = await requireSession()
 
-  const rights = (await getCourseUserRights(
-    `course_${cleanCourseUuid(courseuuid)}`,
-  )) as CourseRightsResponse
+  const rights = (await getCourseUserRights(`course_${cleanCourseUuid(courseuuid)}`)) as CourseRightsResponse
   const capabilities = mapCourseRightsToCapabilities(session, rights)
 
   if (!capabilities.canViewWorkspace) {

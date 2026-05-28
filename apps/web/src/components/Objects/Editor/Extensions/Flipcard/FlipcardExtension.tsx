@@ -22,17 +22,7 @@ import { twMerge } from 'tailwind-merge'
 
 type Alignment = 'left' | 'center' | 'right'
 type Size = 'small' | 'medium' | 'large'
-type CardColor =
-  | 'sky'
-  | 'green'
-  | 'yellow'
-  | 'red'
-  | 'purple'
-  | 'teal'
-  | 'amber'
-  | 'indigo'
-  | 'neutral'
-  | 'blue'
+type CardColor = 'sky' | 'green' | 'yellow' | 'red' | 'purple' | 'teal' | 'amber' | 'indigo' | 'neutral' | 'blue'
 
 interface FlipcardAttrs {
   question: string
@@ -128,11 +118,7 @@ const ALIGNMENT_CONFIG = {
 // Hooks
 // ============================================================================
 
-function useClickOutside<T extends HTMLElement>(
-  ref: React.RefObject<T | null>,
-  handler: () => void,
-  enabled = true,
-) {
+function useClickOutside<T extends HTMLElement>(ref: React.RefObject<T | null>, handler: () => void, enabled = true) {
   const handlerRef = useRef(handler)
   handlerRef.current = handler
 
@@ -164,13 +150,7 @@ interface ToolbarButtonProps {
   variant?: 'default' | 'primary' | 'success'
 }
 
-const ToolbarButton: React.FC<ToolbarButtonProps> = ({
-  active,
-  onClick,
-  title,
-  children,
-  variant = 'default',
-}) => {
+const ToolbarButton: React.FC<ToolbarButtonProps> = ({ active, onClick, title, children, variant = 'default' }) => {
   const baseClasses =
     'rounded-md p-1.5 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400'
 
@@ -204,9 +184,7 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({
   )
 }
 
-const ToolbarDivider: React.FC = () => (
-  <div className="mx-1 h-5 w-px self-center bg-gray-300 dark:bg-gray-600" />
-)
+const ToolbarDivider: React.FC = () => <div className="mx-1 h-5 w-px self-center bg-gray-300 dark:bg-gray-600" />
 
 interface ColorPickerProps {
   currentColor: CardColor
@@ -444,16 +422,7 @@ const FlipcardExtension: React.FC<ReactNodeViewProps> = ({ node, updateAttribute
       }
 
       // Prevent navigation keys from moving the editor caret into the node
-      const navKeys = [
-        'ArrowLeft',
-        'ArrowRight',
-        'ArrowUp',
-        'ArrowDown',
-        'Home',
-        'End',
-        'PageUp',
-        'PageDown',
-      ]
+      const navKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']
       if (navKeys.includes(e.key)) {
         e.preventDefault()
         e.stopPropagation()
@@ -463,8 +432,7 @@ const FlipcardExtension: React.FC<ReactNodeViewProps> = ({ node, updateAttribute
       // Prevent printable characters from being inserted into the editor while the card is focused.
       // This stops users from typing when `isEditable` is false (read-only), which previously
       // produced transient input that wasn't saved in the flipcard attributes.
-      const isPrintable =
-        e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== ' '
+      const isPrintable = e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== ' '
       if (isPrintable) {
         e.preventDefault()
         e.stopPropagation()
@@ -535,9 +503,7 @@ const FlipcardExtension: React.FC<ReactNodeViewProps> = ({ node, updateAttribute
                 onBlur={handleStopEdit}
                 inputRef={questionInputRef}
                 fontClass={sizeConfig.font}
-                hint={
-                  isEditable ? `${t('clickToFlip')} • ${t('doubleClickToEdit')}` : t('clickToFlip')
-                }
+                hint={isEditable ? `${t('clickToFlip')} • ${t('doubleClickToEdit')}` : t('clickToFlip')}
                 iconSize={sizeConfig.icon}
               />
             </div>
@@ -559,11 +525,7 @@ const FlipcardExtension: React.FC<ReactNodeViewProps> = ({ node, updateAttribute
                 onBlur={handleStopEdit}
                 inputRef={answerInputRef}
                 fontClass={sizeConfig.font}
-                hint={
-                  isEditable
-                    ? `${t('clickToFlipBack')} • ${t('doubleClickToEdit')}`
-                    : t('clickToFlipBack')
-                }
+                hint={isEditable ? `${t('clickToFlipBack')} • ${t('doubleClickToEdit')}` : t('clickToFlipBack')}
                 iconSize={sizeConfig.icon}
                 isBack
               />

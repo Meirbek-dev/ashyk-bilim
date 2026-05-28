@@ -35,11 +35,7 @@ interface ThemeProviderProps {
   initialMode?: ThemeMode
 }
 
-export function ThemeProvider({
-  children,
-  defaultThemeName = DEFAULT_THEME_NAME,
-  initialMode,
-}: ThemeProviderProps) {
+export function ThemeProvider({ children, defaultThemeName = DEFAULT_THEME_NAME, initialMode }: ThemeProviderProps) {
   const { user } = useSession()
   const userTheme = user?.theme ?? null
   const [theme, setThemeState] = useState(() =>
@@ -49,8 +45,7 @@ export function ThemeProvider({
   const mode = theme.resolvedTheme
 
   useEffect(() => {
-    const effectiveThemeName =
-      getStoredTheme() || userTheme || defaultThemeName || DEFAULT_THEME_NAME
+    const effectiveThemeName = getStoredTheme() || userTheme || defaultThemeName || DEFAULT_THEME_NAME
     const effectiveThemeMode = getStoredThemeMode() || initialMode || getSystemThemeMode()
     const effectiveTheme = getTheme(effectiveThemeName, effectiveThemeMode)
 

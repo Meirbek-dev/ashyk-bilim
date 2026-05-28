@@ -16,32 +16,13 @@ import {
   Upload,
   Users,
 } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
 import { updateLanding, uploadLandingContent } from '@/services/platform/platform'
 import { compressImage } from '@/lib/image-compression'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs'
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable'
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 
@@ -100,9 +81,7 @@ function SortableLandingSection({
           </div>
           <div
             className={`rounded-md p-1.5 ${
-              selectedSection === index
-                ? 'bg-primary/20/50 text-primary'
-                : 'bg-muted/50 text-muted-foreground'
+              selectedSection === index ? 'bg-primary/20/50 text-primary' : 'bg-muted/50 text-muted-foreground'
             }`}
           >
             {createElement(SECTION_TYPES[section.type].icon, {
@@ -315,13 +294,10 @@ const GRADIENT_DIRECTION_KEYS: Record<string, string> = {
 
 // Function to get translated gradient directions
 const getGradientDirections = (t: Function) => {
-  return Object.entries(GRADIENT_DIRECTION_KEYS).reduce<Record<string, string>>(
-    (acc, [key, tKey]) => {
-      acc[key] = t(`GradientDirections.${tKey}`)
-      return acc
-    },
-    {},
-  )
+  return Object.entries(GRADIENT_DIRECTION_KEYS).reduce<Record<string, string>>((acc, [key, tKey]) => {
+    acc[key] = t(`GradientDirections.${tKey}`)
+    return acc
+  }, {})
 }
 
 // Function to get translated gradient preset names
@@ -553,12 +529,8 @@ const EditLanding = () => {
     }
 
     const items = [...landingData.sections]
-    const oldIndex = items.findIndex(
-      (item: any, index: number) => (item._id || `section-${index}`) === active.id,
-    )
-    const newIndex = items.findIndex(
-      (item: any, index: number) => (item._id || `section-${index}`) === over.id,
-    )
+    const oldIndex = items.findIndex((item: any, index: number) => (item._id || `section-${index}`) === active.id)
+    const newIndex = items.findIndex((item: any, index: number) => (item._id || `section-${index}`) === over.id)
 
     const reorderedItems = arrayMove(items, oldIndex, newIndex)
 
@@ -661,10 +633,7 @@ const EditLanding = () => {
                     }}
                     items={sectionTypeItems}
                   >
-                    <SelectTrigger
-                      className="bg-primary hover:bg-primary/90 w-full border-0 p-0"
-                      withChevron={false}
-                    >
+                    <SelectTrigger className="bg-primary hover:bg-primary/90 w-full border-0 p-0" withChevron={false}>
                       <div className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap text-white transition-all outline-none">
                         <Plus size={14} color="white" />
                         {t('SectionsPanel.addSectionButton')}
@@ -875,9 +844,7 @@ const HeroSectionEditor: FC<{
                 />
               </div>
               <div>
-                <Label htmlFor="subheadingColor">
-                  {t('HeroEditor.Content.subheadingColorLabel')}
-                </Label>
+                <Label htmlFor="subheadingColor">{t('HeroEditor.Content.subheadingColorLabel')}</Label>
                 <div className="flex items-center space-x-1">
                   <Input
                     id="subheadingColor"
@@ -925,9 +892,7 @@ const HeroSectionEditor: FC<{
                     background: {
                       type: safeBgType,
                       ...(bgType === 'solid' ? { color: '#ffffff' } : {}),
-                      ...(bgType === 'gradient'
-                        ? { colors: PREDEFINED_GRADIENTS.sunrise.colors }
-                        : {}),
+                      ...(bgType === 'gradient' ? { colors: PREDEFINED_GRADIENTS.sunrise.colors } : {}),
                       ...(bgType === 'image' ? { image: '' } : {}),
                     },
                   })
@@ -1025,9 +990,7 @@ const HeroSectionEditor: FC<{
                     items={makeGradientTypeItems(t)}
                   >
                     <SelectTrigger>
-                      <SelectValue
-                        placeholder={t('HeroEditor.Background.gradientTypePlaceholder')}
-                      />
+                      <SelectValue placeholder={t('HeroEditor.Background.gradientTypePlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -1057,10 +1020,7 @@ const HeroSectionEditor: FC<{
                               ...section,
                               background: {
                                 ...section.background,
-                                colors: [
-                                  e.target.value,
-                                  section.background.colors?.[1] || '#f0f0f0',
-                                ],
+                                colors: [e.target.value, section.background.colors?.[1] || '#f0f0f0'],
                               },
                             })
                           }}
@@ -1073,10 +1033,7 @@ const HeroSectionEditor: FC<{
                               ...section,
                               background: {
                                 ...section.background,
-                                colors: [
-                                  e.target.value,
-                                  section.background.colors?.[1] || '#f0f0f0',
-                                ],
+                                colors: [e.target.value, section.background.colors?.[1] || '#f0f0f0'],
                               },
                             })
                           }}
@@ -1097,10 +1054,7 @@ const HeroSectionEditor: FC<{
                               ...section,
                               background: {
                                 ...section.background,
-                                colors: [
-                                  section.background.colors?.[0] || '#ffffff',
-                                  e.target.value,
-                                ],
+                                colors: [section.background.colors?.[0] || '#ffffff', e.target.value],
                               },
                             })
                           }}
@@ -1113,10 +1067,7 @@ const HeroSectionEditor: FC<{
                               ...section,
                               background: {
                                 ...section.background,
-                                colors: [
-                                  section.background.colors?.[0] || '#ffffff',
-                                  e.target.value,
-                                ],
+                                colors: [section.background.colors?.[0] || '#ffffff', e.target.value],
                               },
                             })
                           }}
@@ -1142,21 +1093,15 @@ const HeroSectionEditor: FC<{
                           ...section,
                           background: {
                             ...section.background,
-                            colors:
-                              PREDEFINED_GRADIENTS[value as keyof typeof PREDEFINED_GRADIENTS]
-                                .colors,
-                            direction:
-                              PREDEFINED_GRADIENTS[value as keyof typeof PREDEFINED_GRADIENTS]
-                                .direction,
+                            colors: PREDEFINED_GRADIENTS[value as keyof typeof PREDEFINED_GRADIENTS].colors,
+                            direction: PREDEFINED_GRADIENTS[value as keyof typeof PREDEFINED_GRADIENTS].direction,
                           },
                         })
                       }}
                       items={makeGradientPresetItems(t)}
                     >
                       <SelectTrigger>
-                        <SelectValue
-                          placeholder={t('HeroEditor.Background.gradientPresetPlaceholder')}
-                        />
+                        <SelectValue placeholder={t('HeroEditor.Background.gradientPresetPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
@@ -1186,9 +1131,7 @@ const HeroSectionEditor: FC<{
                     items={makeGradientDirectionItems(t)}
                   >
                     <SelectTrigger>
-                      <SelectValue
-                        placeholder={t('HeroEditor.Background.gradientDirectionPlaceholder')}
-                      />
+                      <SelectValue placeholder={t('HeroEditor.Background.gradientDirectionPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -1255,10 +1198,7 @@ const HeroSectionEditor: FC<{
           <TabsContent value="buttons" className="mt-4 space-y-4">
             <div className="space-y-3">
               {section.buttons.map((button: LandingButton, index: number) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-[1fr_1fr_auto] gap-2 rounded-lg border p-4"
-                >
+                <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 rounded-lg border p-4">
                   <div className="space-y-2">
                     <Label>{t('HeroEditor.Buttons.textAndColorsLabel')}</Label>
                     <Input
@@ -1328,9 +1268,7 @@ const HeroSectionEditor: FC<{
                     size="icon"
                     onClick={e => {
                       e.stopPropagation()
-                      const newButtons = section.buttons.filter(
-                        (_: LandingButton, i: number) => i !== index,
-                      )
+                      const newButtons = section.buttons.filter((_: LandingButton, i: number) => i !== index)
                       onChange({ ...section, buttons: newButtons })
                     }}
                     className="mt-8 self-start text-red-500 hover:bg-red-50 hover:text-red-600"
@@ -1543,13 +1481,7 @@ interface ImageUploaderProps {
   id: string
 }
 
-const ImageUploader: FC<ImageUploaderProps> = ({
-  t,
-  onImageUploaded,
-  className,
-  buttonText,
-  id,
-}) => {
+const ImageUploader: FC<ImageUploaderProps> = ({ t, onImageUploaded, className, buttonText, id }) => {
   const [isUploading, setIsUploading] = useState(false)
   const tNotify = useTranslations('DashPage.Notifications')
   const inputId = `imageUpload-${id}`
@@ -1725,13 +1657,7 @@ const TextAndImageSectionEditor: FC<{
           </div>
           {section.image.url ? (
             <div className="relative mt-4 h-40 w-full overflow-hidden rounded-lg">
-              <NextImage
-                src={section.image.url}
-                alt={section.image.alt}
-                fill
-                className="object-cover"
-                sizes="100vw"
-              />
+              <NextImage src={section.image.url} alt={section.image.alt} fill className="object-cover" sizes="100vw" />
             </div>
           ) : null}
         </div>
@@ -1810,13 +1736,7 @@ const LogosSectionEditor: FC<{
                 />
                 {logo.url ? (
                   <div className="relative h-10 w-24 overflow-hidden">
-                    <NextImage
-                      src={logo.url}
-                      alt={logo.alt}
-                      fill
-                      className="object-contain"
-                      sizes="100vw"
-                    />
+                    <NextImage src={logo.url} alt={logo.alt} fill className="object-contain" sizes="100vw" />
                   </div>
                 ) : null}
               </div>
@@ -1890,10 +1810,7 @@ const PeopleSectionEditor: FC<{
           <Label>{t('PeopleEditor.peopleLabel')}</Label>
           <div className="mt-2 space-y-4">
             {section.people.map((person: any, index: number) => (
-              <div
-                key={index}
-                className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 rounded-lg border p-4"
-              >
+              <div key={index} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 rounded-lg border p-4">
                 <div className="space-y-2">
                   <Label>{t('PeopleEditor.nameLabel')}</Label>
                   <Input
@@ -2067,10 +1984,7 @@ const FeaturedCoursesEditor: FC<{
             {courses ? (
               <div className="grid gap-4">
                 {courses.map((course: any) => (
-                  <div
-                    key={course.course_uuid}
-                    className="flex items-center justify-between rounded-lg border p-4"
-                  >
+                  <div key={course.course_uuid} className="flex items-center justify-between rounded-lg border p-4">
                     <div className="flex items-center space-x-3">
                       <div className="bg-muted relative h-12 w-12 overflow-hidden rounded-md">
                         {course.course_thumbnail ? (
@@ -2105,9 +2019,7 @@ const FeaturedCoursesEditor: FC<{
                 ))}
               </div>
             ) : (
-              <div className="text-muted-foreground py-8 text-center">
-                {t('FeaturedCoursesEditor.loadingCourses')}
-              </div>
+              <div className="text-muted-foreground py-8 text-center">{t('FeaturedCoursesEditor.loadingCourses')}</div>
             )}
           </div>
         </div>

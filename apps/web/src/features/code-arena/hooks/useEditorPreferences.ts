@@ -25,10 +25,8 @@ export function useEditorPreferences() {
     try {
       const parsed = JSON.parse(raw) as Partial<CodeEditorPreferences>
       setPreferences({
-        fontSize:
-          typeof parsed.fontSize === 'number' ? parsed.fontSize : DEFAULT_PREFERENCES.fontSize,
-        wordWrap:
-          typeof parsed.wordWrap === 'boolean' ? parsed.wordWrap : DEFAULT_PREFERENCES.wordWrap,
+        fontSize: typeof parsed.fontSize === 'number' ? parsed.fontSize : DEFAULT_PREFERENCES.fontSize,
+        wordWrap: typeof parsed.wordWrap === 'boolean' ? parsed.wordWrap : DEFAULT_PREFERENCES.wordWrap,
         minimap: typeof parsed.minimap === 'boolean' ? parsed.minimap : DEFAULT_PREFERENCES.minimap,
       })
     } catch {

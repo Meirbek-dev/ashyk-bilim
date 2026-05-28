@@ -23,9 +23,7 @@ Object.defineProperty(globalThis, 'URL', {
   writable: true,
 })
 
-function createDetail(
-  overrides: Partial<TeacherAssessmentDetailResponse> = {},
-): TeacherAssessmentDetailResponse {
+function createDetail(overrides: Partial<TeacherAssessmentDetailResponse> = {}): TeacherAssessmentDetailResponse {
   return {
     course_id: overrides.course_id ?? 1,
     generated_at: '2026-05-05T12:00:00Z',
@@ -156,24 +154,14 @@ describe('AssessmentOperationsPanel', () => {
 
     expect(screen.getByText('pages.assessmentOpsTitle')).toBeInTheDocument()
     expect(
-      screen.getByText(
-        'ManualAssessments use canonical submission states and grading ledger history.',
-      ),
+      screen.getByText('ManualAssessments use canonical submission states and grading ledger history.'),
     ).toBeInTheDocument()
+    expect(screen.getByText('Backlog is approaching the release target for manual grading.')).toBeInTheDocument()
     expect(
-      screen.getByText('Backlog is approaching the release target for manual grading.'),
+      screen.getByText('Assessment analytics detail is backed by canonical submission and grading records.'),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'Assessment analytics detail is backed by canonical submission and grading records.',
-      ),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('Support follow-up is recommended for the active alerts.'),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('Grading latency is outside the current service target.'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Support follow-up is recommended for the active alerts.')).toBeInTheDocument()
+    expect(screen.getByText('Grading latency is outside the current service target.')).toBeInTheDocument()
     expect(screen.getByText('Alpha Cohort')).toBeInTheDocument()
     expect(screen.getByText('Awaiting teacher grading')).toBeInTheDocument()
     expect(screen.getByText('Question 1')).toBeInTheDocument()
@@ -222,13 +210,9 @@ describe('AssessmentOperationsPanel', () => {
     )
 
     expect(screen.getByText('pages.assessmentOpsAuditEmpty')).toBeInTheDocument()
-    expect(
-      screen.getByText('ManualAssessments are reading only canonical submission rows.'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('ManualAssessments are reading only canonical submission rows.')).toBeInTheDocument()
     expect(screen.getByText('Current grading latency is within target.')).toBeInTheDocument()
-    expect(
-      screen.getByText('Support diagnostics are within the current operational envelope.'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Support diagnostics are within the current operational envelope.')).toBeInTheDocument()
     expect(screen.getByText('pages.assessmentSupportAlertsEmpty')).toBeInTheDocument()
     expect(screen.getByText('pages.assessmentSupportBlockersEmpty')).toBeInTheDocument()
     expect(screen.getByText('pages.assessmentItemEmpty')).toBeInTheDocument()

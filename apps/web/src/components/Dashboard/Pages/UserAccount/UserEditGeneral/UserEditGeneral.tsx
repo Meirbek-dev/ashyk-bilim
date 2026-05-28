@@ -21,14 +21,7 @@ import {
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
 import { updateProfile, updateUserAvatar } from '@/lib/users/client'
 import { useSession } from '@/hooks/useSession'
 import { logout } from '@services/auth/auth'
@@ -56,13 +49,7 @@ import { toast } from 'sonner'
 import * as v from 'valibot'
 
 const SUPPORTED_FILES = constructAcceptValue(['jpg', 'png', 'webp', 'gif', 'avif'])
-const SUPPORTED_AVATAR_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'image/avif',
-])
+const SUPPORTED_AVATAR_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'])
 const MAX_AVATAR_UPLOAD_BYTES = 2 * 1024 * 1024
 const MAX_AVATAR_SOURCE_BYTES = 10 * 1024 * 1024
 const AVATAR_EXPORT_SIZE = 512
@@ -103,21 +90,10 @@ const createValidationSchema = (t: (key: string, values?: any) => string) =>
       v.minLength(1, t('Form.requiredField', { fieldName: 'Email' })),
       v.email(t('Form.invalidEmail')),
     ),
-    username: v.pipe(
-      v.string(),
-      v.minLength(1, t('Form.requiredField', { fieldName: 'Username' })),
-    ),
-    first_name: v.pipe(
-      v.string(),
-      v.minLength(1, t('Form.requiredField', { fieldName: 'First name' })),
-    ),
-    middle_name: v.optional(
-      v.pipe(v.string(), v.maxLength(100, t('Form.maxChars', { count: 100 }))),
-    ),
-    last_name: v.pipe(
-      v.string(),
-      v.minLength(1, t('Form.requiredField', { fieldName: 'Last name' })),
-    ),
+    username: v.pipe(v.string(), v.minLength(1, t('Form.requiredField', { fieldName: 'Username' }))),
+    first_name: v.pipe(v.string(), v.minLength(1, t('Form.requiredField', { fieldName: 'First name' }))),
+    middle_name: v.optional(v.pipe(v.string(), v.maxLength(100, t('Form.maxChars', { count: 100 })))),
+    last_name: v.pipe(v.string(), v.minLength(1, t('Form.requiredField', { fieldName: 'Last name' }))),
     bio: v.optional(v.pipe(v.string(), v.maxLength(400, t('Form.maxChars', { count: 400 })))),
     details: v.record(
       v.string(),
@@ -266,11 +242,7 @@ const DetailCard = ({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label>{t('detailIconLabel')}</Label>
-          <Select
-            value={detail.icon}
-            onValueChange={value => value && handleIconChange(value)}
-            items={iconItems}
-          >
+          <Select value={detail.icon} onValueChange={value => value && handleIconChange(value)} items={iconItems}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder={t('detailSelectIconPlaceholder')}>
                 {detail.icon ? (
@@ -294,11 +266,7 @@ const DetailCard = ({
         </div>
         <div className="space-y-1.5">
           <Label>{t('detailTextLabel')}</Label>
-          <Input
-            value={detail.text}
-            onChange={handleTextChange}
-            placeholder={t('detailTextPlaceholder')}
-          />
+          <Input value={detail.text} onChange={handleTextChange} placeholder={t('detailTextPlaceholder')} />
         </div>
       </div>
     </div>
@@ -321,9 +289,7 @@ interface UserEditFormProps {
 const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const tIcons = useTranslations('Components.UserProfilePopup.Icons')
-  const tTemplates = useTranslations(
-    'DashPage.UserAccountSettings.generalSection.detailTemplateLabels',
-  )
+  const tTemplates = useTranslations('DashPage.UserAccountSettings.generalSection.detailTemplateLabels')
   const t = useTranslations('DashPage.UserAccountSettings.generalSection')
 
   const AVAILABLE_ICONS = [
@@ -441,12 +407,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                 <Field>
                   <FieldLabel htmlFor={field.name}>{t('email')}</FieldLabel>
                   <FieldContent>
-                    <Input
-                      id={field.name}
-                      type="email"
-                      placeholder={t('emailPlaceholder')}
-                      {...field}
-                    />
+                    <Input id={field.name} type="email" placeholder={t('emailPlaceholder')} {...field} />
                   </FieldContent>
                   <FieldError errors={[fieldState.error]} />
                   <Alert className="mt-2 border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
@@ -547,9 +508,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
             <div className="flex flex-wrap items-center justify-start gap-4">
               <div className="space-y-1">
                 <Label className="text-base font-medium">{t('themeSelector.modeTitle')}</Label>
-                <p className="text-muted-foreground text-xs">
-                  {t('themeSelector.modeDescription')}
-                </p>
+                <p className="text-muted-foreground text-xs">{t('themeSelector.modeDescription')}</p>
               </div>
               <ThemeModeToggle className="ml-4" />
             </div>
@@ -690,9 +649,7 @@ const UserEditForm = ({ form, profilePicture }: UserEditFormProps) => {
                 <UserAvatar
                   size="3xl"
                   variant="outline"
-                  {...(profilePicture.previewUrl
-                    ? { avatar_url: profilePicture.previewUrl }
-                    : {})}
+                  {...(profilePicture.previewUrl ? { avatar_url: profilePicture.previewUrl } : {})}
                   className="ring-background shadow-xl ring-4"
                   imageProps={{ loading: 'eager' }}
                 />
@@ -785,10 +742,7 @@ const UserEditGeneral = () => {
     const fetchData = async () => {
       if (me?.id) {
         try {
-          const [userDataResponse, localeResponse] = await Promise.all([
-            Promise.resolve(me),
-            getUserLocale(),
-          ])
+          const [userDataResponse, localeResponse] = await Promise.all([Promise.resolve(me), getUserLocale()])
           const details = (userDataResponse.details as FormValues['details'] | undefined) ?? {}
           setUserData(userDataResponse)
           setCurrentLocale(localeResponse)

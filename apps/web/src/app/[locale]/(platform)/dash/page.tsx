@@ -1,25 +1,11 @@
-import {
-  BarChart2,
-  BookCopy,
-  School,
-  Settings,
-  ShieldCheck,
-  Users,
-  ChevronRight,
-} from 'lucide-react'
+import { BarChart2, BookCopy, School, Settings, ShieldCheck, Users, ChevronRight } from 'lucide-react'
 import touEmblemLight from '@/app/_shared/dash/images/tou_emblem_light.webp'
 import ServerLink from '@/components/ui/ServerLink'
 import { getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 
-import {
-  canSeeAdmin,
-  canSeeAnalytics,
-  canSeeCourses,
-  canSeePlatform,
-  canSeeUsers,
-} from '@/lib/rbac/navigation-policy'
+import { canSeeAdmin, canSeeAnalytics, canSeeCourses, canSeePlatform, canSeeUsers } from '@/lib/rbac/navigation-policy'
 import { requireSession } from '@/lib/auth/session'
 import { sessionCan } from '@/lib/auth/permissions'
 

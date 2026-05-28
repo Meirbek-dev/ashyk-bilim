@@ -25,29 +25,27 @@ describe('apiFetch timeout', () => {
 
   it('should abort the request when it exceeds DEFAULT_TIMEOUT_MS', async () => {
     // Mock fetch to reject when the signal is aborted
-    ;(global.fetch as any).mockImplementation(
-      (url: string | Request | URL, options: RequestInit | undefined) => {
-        return new Promise((_, reject) => {
-          if (options?.signal) {
-            if (options.signal.aborted) {
+    ;(global.fetch as any).mockImplementation((url: string | Request | URL, options: RequestInit | undefined) => {
+      return new Promise((_, reject) => {
+        if (options?.signal) {
+          if (options.signal.aborted) {
+            const error = new Error('The operation was aborted')
+            error.name = 'AbortError'
+            reject(error)
+            return
+          }
+          options.signal.addEventListener(
+            'abort',
+            () => {
               const error = new Error('The operation was aborted')
               error.name = 'AbortError'
               reject(error)
-              return
-            }
-            options.signal.addEventListener(
-              'abort',
-              () => {
-                const error = new Error('The operation was aborted')
-                error.name = 'AbortError'
-                reject(error)
-              },
-              { once: true },
-            )
-          }
-        })
-      },
-    )
+            },
+            { once: true },
+          )
+        }
+      })
+    })
 
     const promise = apiFetch('test-endpoint')
 
@@ -62,9 +60,7 @@ describe('apiFetch timeout', () => {
   })
 
   it('should resolve normally if within timeout', async () => {
-    ;(global.fetch as any).mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), { status: 200 }),
-    )
+    ;(global.fetch as any).mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
 
     const response = await apiFetch('test-endpoint')
     const data = await response.json()

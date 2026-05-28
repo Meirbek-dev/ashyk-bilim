@@ -33,9 +33,6 @@ export interface AssessmentEditorState {
   negativeMarkingPercent: string
 }
 
-export type EditableItem = Pick<
-  AssessmentItem,
-  'item_uuid' | 'kind' | 'title' | 'max_score' | 'body'
-> & {
+export type EditableItem = Pick<AssessmentItem, 'item_uuid' | 'kind' | 'title' | 'max_score' | 'body'> & {
   metadata: AssessmentItemMetadata
 }

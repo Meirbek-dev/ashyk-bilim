@@ -17,44 +17,25 @@ export function Toolbar({ className, ...props }: ToolbarPrimitive.Root.Props): R
   )
 }
 
-export function ToolbarButton({
-  className,
-  ...props
-}: ToolbarPrimitive.Button.Props): React.ReactElement {
+export function ToolbarButton({ className, ...props }: ToolbarPrimitive.Button.Props): React.ReactElement {
   return <ToolbarPrimitive.Button className={cn(className)} data-slot="toolbar-button" {...props} />
 }
 
-export function ToolbarLink({
-  className,
-  ...props
-}: ToolbarPrimitive.Link.Props): React.ReactElement {
+export function ToolbarLink({ className, ...props }: ToolbarPrimitive.Link.Props): React.ReactElement {
   return <ToolbarPrimitive.Link className={cn(className)} data-slot="toolbar-link" {...props} />
 }
 
-export function ToolbarInput({
-  className,
-  ...props
-}: ToolbarPrimitive.Input.Props): React.ReactElement {
+export function ToolbarInput({ className, ...props }: ToolbarPrimitive.Input.Props): React.ReactElement {
   return <ToolbarPrimitive.Input className={cn(className)} data-slot="toolbar-input" {...props} />
 }
 
-export function ToolbarGroup({
-  className,
-  ...props
-}: ToolbarPrimitive.Group.Props): React.ReactElement {
+export function ToolbarGroup({ className, ...props }: ToolbarPrimitive.Group.Props): React.ReactElement {
   return (
-    <ToolbarPrimitive.Group
-      className={cn('flex items-center gap-1', className)}
-      data-slot="toolbar-group"
-      {...props}
-    />
+    <ToolbarPrimitive.Group className={cn('flex items-center gap-1', className)} data-slot="toolbar-group" {...props} />
   )
 }
 
-export function ToolbarSeparator({
-  className,
-  ...props
-}: ToolbarPrimitive.Separator.Props): React.ReactElement {
+export function ToolbarSeparator({ className, ...props }: ToolbarPrimitive.Separator.Props): React.ReactElement {
   return (
     <ToolbarPrimitive.Separator
       className={cn(

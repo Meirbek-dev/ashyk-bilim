@@ -18,10 +18,7 @@ export interface ClipboardImageSource {
   items?: ArrayLike<ClipboardImageItem> | Iterable<ClipboardImageItem>
 }
 
-export type ImageUploadHandler = (
-  file: File,
-  activityUuid: string,
-) => Promise<UploadedImageBlockObject>
+export type ImageUploadHandler = (file: File, activityUuid: string) => Promise<UploadedImageBlockObject>
 
 interface HandlePastedImagesOptions {
   editor: Pick<Editor, 'chain'>
@@ -52,9 +49,7 @@ export function getPastedImageFiles(source: ClipboardImageSource | null | undefi
     })
     .filter((file): file is File => Boolean(file))
 
-  const filesFromClipboard = Array.from(source?.files ?? []).filter(file =>
-    file.type.startsWith('image/'),
-  )
+  const filesFromClipboard = Array.from(source?.files ?? []).filter(file => file.type.startsWith('image/'))
   const seen = new Set<string>()
 
   return [...filesFromItems, ...filesFromClipboard].filter(file => {

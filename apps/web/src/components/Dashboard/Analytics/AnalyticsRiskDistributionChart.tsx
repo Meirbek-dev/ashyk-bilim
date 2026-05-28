@@ -5,12 +5,7 @@ import { getAnalyticsRiskLevelLabel } from '@/lib/analytics/labels'
 import type { RiskDistributionCounts } from '@/types/analytics'
 import { useTranslations } from 'next-intl'
 
-import {
-  ChartContainer,
-  ChartEmptyState,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart'
+import { ChartContainer, ChartEmptyState, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface AnalyticsRiskDistributionChartProps {
@@ -27,10 +22,7 @@ const RISK_COLOR_FALLBACKS: Record<RiskLevel, string> = {
   low: 'hsl(215 16% 47%)', // slate-500
 }
 
-export default function AnalyticsRiskDistributionChart({
-  counts,
-  totalAtRisk,
-}: AnalyticsRiskDistributionChartProps) {
+export default function AnalyticsRiskDistributionChart({ counts, totalAtRisk }: AnalyticsRiskDistributionChartProps) {
   const t = useTranslations('TeacherAnalytics')
   const createEntry = (level: RiskLevel, count: number) => ({
     level,

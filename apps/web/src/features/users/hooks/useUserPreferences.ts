@@ -15,8 +15,6 @@ export function useSyncUserTheme(userId: number | null | undefined) {
   const queryClient = useQueryClient()
 
   return useMutation(
-    userId
-      ? syncUserThemeMutationOptions(queryClient, userId)
-      : disabledSyncUserThemeMutationOptions(),
+    userId ? syncUserThemeMutationOptions(queryClient, userId) : disabledSyncUserThemeMutationOptions(),
   )
 }

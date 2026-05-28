@@ -54,9 +54,7 @@ export async function saveGrade(
   return meta.data as Submission
 }
 
-export async function publishAssessmentGrades(
-  assessmentUuid: string,
-): Promise<BulkPublishGradesResponse> {
+export async function publishAssessmentGrades(assessmentUuid: string): Promise<BulkPublishGradesResponse> {
   const res = await apiFetch(`assessments/${assessmentUuid}/publish-grades`, {
     method: 'POST',
   })

@@ -19,10 +19,7 @@ export default function StarterCodeTabs() {
     name: 'allowed_languages',
   })
   const languages = useMemo(
-    () =>
-      (watchedLanguages ?? [])
-        .map(id => judge0Languages.find(language => language.id === id))
-        .filter(Boolean),
+    () => (watchedLanguages ?? []).map(id => judge0Languages.find(language => language.id === id)).filter(Boolean),
     [judge0Languages, watchedLanguages],
   )
 

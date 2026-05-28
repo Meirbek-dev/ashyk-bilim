@@ -21,14 +21,7 @@ import type {
   GradebookRollupKind,
 } from '@/features/grading/domain'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import GradebookToolbar, { labelActivityType } from './GradebookToolbar'
 import GradebookActivityCell, { progressStateLabelKey } from './GradebookActivityCell'
 
@@ -38,16 +31,12 @@ interface CourseGradebookCommandCenterProps {
 
 const ROLLUP_KINDS: GradebookRollupKind[] = ['activity_category', 'cohort', 'learner', 'activity']
 
-export default function CourseGradebookCommandCenter({
-  courseUuid,
-}: CourseGradebookCommandCenterProps) {
+export default function CourseGradebookCommandCenter({ courseUuid }: CourseGradebookCommandCenterProps) {
   const t = useTranslations('Features.Grading.Gradebook')
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { data, error, isError, isLoading, refetch } = useQuery(
-    courseGradebookQueryOptions(courseUuid),
-  )
+  const { data, error, isError, isLoading, refetch } = useQuery(courseGradebookQueryOptions(courseUuid))
   const [filters, setFilters] = useState<GradebookFilters>({
     savedFilter: normalizeSavedFilter(searchParams.get('filter')),
     search: searchParams.get('search') ?? '',
@@ -81,17 +70,9 @@ export default function CourseGradebookCommandCenter({
     (newFilters: GradebookFilters) => {
       setFilters(newFilters)
       const params = new URLSearchParams(searchParams.toString())
-      setParam(
-        params,
-        'filter',
-        newFilters.savedFilter === 'needs_grading' ? '' : newFilters.savedFilter,
-      )
+      setParam(params, 'filter', newFilters.savedFilter === 'needs_grading' ? '' : newFilters.savedFilter)
       setParam(params, 'search', newFilters.search)
-      setParam(
-        params,
-        'activityType',
-        newFilters.activityType === 'all' ? '' : newFilters.activityType,
-      )
+      setParam(params, 'activityType', newFilters.activityType === 'all' ? '' : newFilters.activityType)
       const next = params.toString()
       const current = searchParams.toString()
       if (next !== current) {
@@ -102,10 +83,7 @@ export default function CourseGradebookCommandCenter({
   )
 
   const cellMap = useMemo(
-    () =>
-      new Map(
-        (data?.cells ?? []).map(cell => [gradebookCellKey(cell.user_id, cell.activity_id), cell]),
-      ),
+    () => new Map((data?.cells ?? []).map(cell => [gradebookCellKey(cell.user_id, cell.activity_id), cell])),
     [data?.cells],
   )
   const activityTypes = useMemo(
@@ -115,8 +93,7 @@ export default function CourseGradebookCommandCenter({
   const visibleActivities = useMemo(
     () =>
       (data?.activities ?? []).filter(
-        activity =>
-          filters.activityType === 'all' || activity.activity_type === filters.activityType,
+        activity => filters.activityType === 'all' || activity.activity_type === filters.activityType,
       ),
     [data?.activities, filters.activityType],
   )
@@ -126,10 +103,7 @@ export default function CourseGradebookCommandCenter({
   }, [cellMap, data, filters, visibleActivities])
 
   const selectedCells = useMemo(
-    () =>
-      [...selectedKeys]
-        .map(key => cellMap.get(key))
-        .filter((cell): cell is ActivityProgressCell => Boolean(cell)),
+    () => [...selectedKeys].map(key => cellMap.get(key)).filter((cell): cell is ActivityProgressCell => Boolean(cell)),
     [cellMap, selectedKeys],
   )
 
@@ -174,9 +148,7 @@ export default function CourseGradebookCommandCenter({
         <Table className="min-w-[980px] table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="bg-background sticky left-0 z-10 w-64">
-                {t('learner')}
-              </TableHead>
+              <TableHead className="bg-background sticky left-0 z-10 w-64">{t('learner')}</TableHead>
               {visibleActivities.map(activity => (
                 <TableHead key={activity.id} className="w-44 align-bottom">
                   <span className="line-clamp-2 text-xs font-semibold">{activity.name}</span>
@@ -191,12 +163,8 @@ export default function CourseGradebookCommandCenter({
             {visibleStudents.map(student => (
               <TableRow key={student.id}>
                 <TableCell className="bg-background sticky left-0 z-10 w-64">
-                  <span className="block truncate text-sm font-medium">
-                    {gradebookLearnerName(student)}
-                  </span>
-                  <span className="text-muted-foreground block truncate text-xs">
-                    {student.email}
-                  </span>
+                  <span className="block truncate text-sm font-medium">{gradebookLearnerName(student)}</span>
+                  <span className="text-muted-foreground block truncate text-xs">{student.email}</span>
                 </TableCell>
                 {visibleActivities.map(activity => {
                   const key = gradebookCellKey(student.id, activity.id)
@@ -241,11 +209,7 @@ function RollupPanel({ data }: { data: CourseGradebookResponse }) {
   const rows = useMemo(() => buildGradebookRollups(data, kind), [data, kind])
 
   return (
-    <Tabs
-      value={kind}
-      onValueChange={value => setKind(value as GradebookRollupKind)}
-      className="rounded-lg border p-3"
-    >
+    <Tabs value={kind} onValueChange={value => setKind(value as GradebookRollupKind)} className="rounded-lg border p-3">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-sm font-semibold">{t('rollups.title')}</h2>
@@ -264,9 +228,7 @@ function RollupPanel({ data }: { data: CourseGradebookResponse }) {
           <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
             {rows.map(row => (
               <div key={row.id} className="rounded-md border p-3">
-                <div className="truncate text-sm font-semibold">
-                  {labelRollupRow(t, kind, row.label)}
-                </div>
+                <div className="truncate text-sm font-semibold">{labelRollupRow(t, kind, row.label)}</div>
                 <div className="text-muted-foreground mt-1 text-xs">
                   {row.averageScore === null
                     ? t('noScore')
@@ -299,9 +261,7 @@ function exportGradebookCsv(
   data: CourseGradebookResponse,
   t: (key: string, values?: Record<string, string | number>) => string,
 ) {
-  const cellMap = new Map(
-    data.cells.map(cell => [gradebookCellKey(cell.user_id, cell.activity_id), cell]),
-  )
+  const cellMap = new Map(data.cells.map(cell => [gradebookCellKey(cell.user_id, cell.activity_id), cell]))
   const header = [t('learner'), t('email'), ...data.activities.map(activity => activity.name)]
   const rows = data.students.map(student => [
     gradebookLearnerName(student),
@@ -313,9 +273,7 @@ function exportGradebookCsv(
       return `${t(`states.${formatGradebookStateKey(cell.state)}`)}${score}`
     }),
   ])
-  const csv = [header, ...rows]
-    .map(row => row.map(value => `"${value.replaceAll('"', '""')}"`).join(','))
-    .join('\n')
+  const csv = [header, ...rows].map(row => row.map(value => `"${value.replaceAll('"', '""')}"`).join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')

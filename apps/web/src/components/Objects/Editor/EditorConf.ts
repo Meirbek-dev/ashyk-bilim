@@ -30,9 +30,7 @@ export const getLinkExtension = (options: Partial<LinkOptions> = {}) => {
     isAllowedUri: (url: string, ctx: LinkValidationContext) => {
       try {
         // construct URL
-        const parsedUrl = url.includes(':')
-          ? new URL(url)
-          : new URL(`${ctx.defaultProtocol}://${url}`)
+        const parsedUrl = url.includes(':') ? new URL(url) : new URL(`${ctx.defaultProtocol}://${url}`)
 
         // use default validation
         if (!ctx.defaultValidate(parsedUrl.href)) {

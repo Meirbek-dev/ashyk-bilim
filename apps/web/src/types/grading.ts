@@ -23,9 +23,7 @@ export type AssessmentType = components['schemas']['AssessmentType']
 
 export type GradedItem = components['schemas']['GradedItem']
 export type GradingBreakdown = components['schemas']['GradingBreakdown']
-export type Submission =
-  | components['schemas']['SubmissionRead']
-  | components['schemas']['TeacherSubmissionRead']
+export type Submission = components['schemas']['SubmissionRead'] | components['schemas']['TeacherSubmissionRead']
 export type SubmissionUser = components['schemas']['SubmissionUser']
 
 /** Typed paginated response for the teacher submissions list. */
@@ -78,12 +76,7 @@ export interface BulkAction {
   id: number
   action_uuid: string
   performed_by: number
-  action_type:
-    | 'EXTEND_DEADLINE'
-    | 'RELEASE_GRADES'
-    | 'RETURN_ALL'
-    | 'OVERRIDE_SCORE'
-    | 'BATCH_GRADE'
+  action_type: 'EXTEND_DEADLINE' | 'RELEASE_GRADES' | 'RETURN_ALL' | 'OVERRIDE_SCORE' | 'BATCH_GRADE'
   params: Record<string, unknown>
   target_user_ids: number[]
   activity_id: number

@@ -22,8 +22,7 @@ export const ERROR_MESSAGES = {
   },
   'en-US': {
     title: 'Something went wrong',
-    description:
-      'The page failed to render. You can retry, or reload if the error keeps returning.',
+    description: 'The page failed to render. You can retry, or reload if the error keeps returning.',
     globalDescription: 'An unexpected error occurred while loading the page',
     error: 'Error',
     errorId: 'Error ID:',

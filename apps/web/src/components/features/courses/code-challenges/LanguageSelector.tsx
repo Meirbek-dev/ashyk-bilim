@@ -4,13 +4,7 @@ import { Check, ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 
-import {
-  Command,
-  CommandEmpty,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -94,12 +88,7 @@ export function LanguageSelector({
                   setOpen(false)
                 }}
               >
-                <Check
-                  className={cn(
-                    'mr-2 h-4 w-4',
-                    selectedId === lang.id ? 'opacity-100' : 'opacity-0',
-                  )}
-                />
+                <Check className={cn('mr-2 h-4 w-4', selectedId === lang.id ? 'opacity-100' : 'opacity-0')} />
                 <span className="truncate">{lang.name}</span>
               </CommandItem>
             ))}

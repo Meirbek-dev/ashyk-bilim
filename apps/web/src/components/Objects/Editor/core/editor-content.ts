@@ -91,9 +91,7 @@ function normalizeCodeBlockNode(node: JSONContent): JSONContent {
   }
 }
 
-function inferCodeBlockLanguage(
-  node: JSONContent,
-): ReturnType<typeof toCodeBlockLanguageAttribute> {
+function inferCodeBlockLanguage(node: JSONContent): ReturnType<typeof toCodeBlockLanguageAttribute> {
   const text = collectTextContent(node)
 
   if (looksLikeKotlin(text)) {
@@ -139,10 +137,7 @@ export function removeLegacyBlockQuizNodes(content: TiptapJsonDoc): TiptapJsonDo
   }
 }
 
-export function normalizeTiptapJsonContent(
-  content: unknown,
-  fallback: Content = EMPTY_TIPTAP_DOC,
-): Content {
+export function normalizeTiptapJsonContent(content: unknown, fallback: Content = EMPTY_TIPTAP_DOC): Content {
   const parsedContent = parseMaybeJsonString(content)
 
   if (isTiptapJsonDoc(parsedContent)) {

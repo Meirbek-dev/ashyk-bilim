@@ -82,16 +82,8 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
 
             {/* Streak indicators */}
             <div className="flex gap-2">
-              <StreakBadge
-                type="fire"
-                value={streakStatus.login}
-                label={t('streaks.loginStreak')}
-              />
-              <StreakBadge
-                type="zap"
-                value={streakStatus.learning}
-                label={t('streaks.learningStreak')}
-              />
+              <StreakBadge type="fire" value={streakStatus.login} label={t('streaks.loginStreak')} />
+              <StreakBadge type="zap" value={streakStatus.learning} label={t('streaks.learningStreak')} />
             </div>
           </div>
 
@@ -128,9 +120,7 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
                 </span>
               </div>
 
-              <p className="text-muted-foreground text-sm">
-                {t(`levels.${getLevelKey(profile.level)}`)}
-              </p>
+              <p className="text-muted-foreground text-sm">{t(`levels.${getLevelKey(profile.level)}`)}</p>
             </div>
 
             {/* Level Progress */}
@@ -177,9 +167,7 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
                     cap: dailyCap,
                   })}
                   {dailyXpProgress >= 100 && (
-                    <span className="text-foreground ml-1.5 font-medium">
-                      {t('dailyCapReached')}
-                    </span>
+                    <span className="text-foreground ml-1.5 font-medium">{t('dailyCapReached')}</span>
                   )}
                 </span>
               </div>
@@ -212,11 +200,7 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
               <StatCard
                 icon={Calendar}
                 label={t('stats.nextMilestone')}
-                value={
-                  nextMilestone
-                    ? `${t('progress.levelShort')} ${nextMilestone}`
-                    : t('stats.maxLevel')
-                }
+                value={nextMilestone ? `${t('progress.levelShort')} ${nextMilestone}` : t('stats.maxLevel')}
                 iconColor="text-stone-500"
               />
             </div>
@@ -230,15 +214,7 @@ export function HeroSection({ profile, userRank, className }: HeroSectionProps) 
 /**
  * Streak Badge
  */
-function StreakBadge({
-  type,
-  value,
-  label,
-}: {
-  type: 'fire' | 'zap'
-  value: number
-  label: string
-}) {
+function StreakBadge({ type, value, label }: { type: 'fire' | 'zap'; value: number; label: string }) {
   const Icon = type === 'fire' ? Flame : Zap
   const activeIconColor = type === 'fire' ? 'text-orange-500' : 'text-amber-500'
   const activeBadgeClass =
@@ -247,15 +223,9 @@ function StreakBadge({
       : 'border-amber-300/40 bg-amber-50 dark:bg-amber-950/30'
 
   return (
-    <Badge
-      variant="secondary"
-      className={cn('gap-1.5 px-2.5 py-1', value > 0 && activeBadgeClass)}
-      title={label}
-    >
+    <Badge variant="secondary" className={cn('gap-1.5 px-2.5 py-1', value > 0 && activeBadgeClass)} title={label}>
       <Icon className={cn('h-3.5 w-3.5', value > 0 ? activeIconColor : 'text-muted-foreground')} />
-      <span className={cn('text-xs font-semibold', value === 0 && 'text-muted-foreground')}>
-        {value}
-      </span>
+      <span className={cn('text-xs font-semibold', value === 0 && 'text-muted-foreground')}>{value}</span>
     </Badge>
   )
 }

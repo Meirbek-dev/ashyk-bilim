@@ -75,9 +75,7 @@ export async function uploadLandingContent(
   return await getTypedResponseMetadata<PlatformLandingUploadResponse>(result)
 }
 
-export async function removeUser(
-  user_id: number,
-): Promise<ResponseMetadata<PlatformDetailResponse>> {
+export async function removeUser(user_id: number): Promise<ResponseMetadata<PlatformDetailResponse>> {
   await requireSession()
   const result = await apiFetch(`members/${user_id}`, { method: 'DELETE' })
   const metadata = await getTypedResponseMetadata<PlatformDetailResponse>(result)

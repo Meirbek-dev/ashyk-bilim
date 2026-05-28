@@ -73,9 +73,7 @@ export function useXPNotificationQueue(options: XPNotificationQueueOptions = {})
       // Try to batch with recent similar notifications
       const recentSimilar = prev.find(
         n =>
-          n.source === newNotification.source &&
-          Date.now() - n.timestamp < opts.batchWindowMs &&
-          !n.triggeredLevelUp,
+          n.source === newNotification.source && Date.now() - n.timestamp < opts.batchWindowMs && !n.triggeredLevelUp,
       )
 
       if (recentSimilar) {
@@ -322,9 +320,7 @@ export interface ContextualPosition {
 export function useContextualPosition(
   contextElement?: HTMLElement | null,
 ): 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' {
-  const [position, setPosition] = useState<
-    'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
-  >('bottom-right')
+  const [position, setPosition] = useState<'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'>('bottom-right')
 
   // Use refs for mutable values so we can reference them from stable callbacks
   const rafRef = useRef<number | null>(null)

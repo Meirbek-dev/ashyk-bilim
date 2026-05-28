@@ -39,11 +39,7 @@ interface GeneralSettingsTabProps {
 const ANTI_CHEAT_FEATURES: {
   key: keyof Pick<
     AssessmentEditorState,
-    | 'copyPasteProtection'
-    | 'tabSwitchDetection'
-    | 'devtoolsDetection'
-    | 'rightClickDisable'
-    | 'fullscreenEnforcement'
+    'copyPasteProtection' | 'tabSwitchDetection' | 'devtoolsDetection' | 'rightClickDisable' | 'fullscreenEnforcement'
   >
   icon: typeof Shield
   labelKey: string
@@ -81,13 +77,7 @@ const ANTI_CHEAT_FEATURES: {
   },
 ]
 
-export default function GeneralSettingsTab({
-  state,
-  saveState,
-  disabled,
-  issues,
-  onChange,
-}: GeneralSettingsTabProps) {
+export default function GeneralSettingsTab({ state, saveState, disabled, issues, onChange }: GeneralSettingsTabProps) {
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const tSetup = useTranslations('Features.Assessments.Studio.GeneralSettingsTab')
 
@@ -101,11 +91,7 @@ export default function GeneralSettingsTab({
       </div>
 
       {/* Details Card */}
-      <SettingsCard
-        icon={GraduationCap}
-        title={tSetup('detailsTitle')}
-        description={tSetup('detailsDescription')}
-      >
+      <SettingsCard icon={GraduationCap} title={tSetup('detailsTitle')} description={tSetup('detailsDescription')}>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="assessment-title">{t('titleLabel')}</Label>
@@ -114,9 +100,7 @@ export default function GeneralSettingsTab({
               value={state.title}
               disabled={disabled}
               aria-invalid={hasIssue('title')}
-              className={cn(
-                hasIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40',
-              )}
+              className={cn(hasIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
               onChange={e => onChange({ ...state, title: e.target.value })}
             />
           </div>
@@ -134,11 +118,7 @@ export default function GeneralSettingsTab({
       </SettingsCard>
 
       {/* Access & Timing Card */}
-      <SettingsCard
-        icon={CalendarClock}
-        title={tSetup('timingTitle')}
-        description={tSetup('timingDescription')}
-      >
+      <SettingsCard icon={CalendarClock} title={tSetup('timingTitle')} description={tSetup('timingDescription')}>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
             <Label htmlFor="assessment-available-from">{tSetup('availableFromLabel')}</Label>
@@ -158,9 +138,7 @@ export default function GeneralSettingsTab({
               value={state.dueAt}
               disabled={disabled}
               aria-invalid={hasIssue('dueAt')}
-              className={cn(
-                hasIssue('dueAt') && 'border-amber-500 focus-visible:ring-amber-500/40',
-              )}
+              className={cn(hasIssue('dueAt') && 'border-amber-500 focus-visible:ring-amber-500/40')}
               onChange={e => onChange({ ...state, dueAt: e.target.value })}
             />
           </div>
@@ -173,9 +151,7 @@ export default function GeneralSettingsTab({
               value={state.maxAttempts}
               disabled={disabled}
               aria-invalid={hasIssue('maxAttempts')}
-              className={cn(
-                hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40',
-              )}
+              className={cn(hasIssue('maxAttempts') && 'border-amber-500 focus-visible:ring-amber-500/40')}
               onChange={e => onChange({ ...state, maxAttempts: e.target.value })}
             />
           </div>
@@ -201,9 +177,7 @@ export default function GeneralSettingsTab({
           <div className="flex items-center gap-2">
             <Label htmlFor="exam-grace-period">{tSetup('gracePeriodLabel')}</Label>
             <Tooltip>
-              <TooltipTrigger
-                render={<Info className="text-muted-foreground size-3.5 cursor-help" />}
-              />
+              <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
               <TooltipContent side="right" className="max-w-xs">
                 <p className="text-xs">{tSetup('gracePeriodDesc')}</p>
               </TooltipContent>
@@ -221,19 +195,13 @@ export default function GeneralSettingsTab({
       </SettingsCard>
 
       {/* Grading Card */}
-      <SettingsCard
-        icon={Target}
-        title={tSetup('gradingTitle')}
-        description={tSetup('gradingDescription')}
-      >
+      <SettingsCard icon={Target} title={tSetup('gradingTitle')} description={tSetup('gradingDescription')}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Label htmlFor="exam-pass-threshold">{tSetup('passThresholdLabel')}</Label>
               <Tooltip>
-                <TooltipTrigger
-                  render={<Info className="text-muted-foreground size-3.5 cursor-help" />}
-                />
+                <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
                 <TooltipContent side="right" className="max-w-xs">
                   <p className="text-xs">{tSetup('passThresholdDesc')}</p>
                 </TooltipContent>
@@ -251,18 +219,14 @@ export default function GeneralSettingsTab({
                 className="pr-8"
                 onChange={e => onChange({ ...state, passThreshold: e.target.value })}
               />
-              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">
-                %
-              </span>
+              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">%</span>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Label htmlFor="exam-negative-marking">{tSetup('negativeMarkingLabel')}</Label>
               <Tooltip>
-                <TooltipTrigger
-                  render={<Info className="text-muted-foreground size-3.5 cursor-help" />}
-                />
+                <TooltipTrigger render={<Info className="text-muted-foreground size-3.5 cursor-help" />} />
                 <TooltipContent side="right" className="max-w-xs">
                   <p className="text-xs">{tSetup('negativeMarkingDesc')}</p>
                 </TooltipContent>
@@ -280,9 +244,7 @@ export default function GeneralSettingsTab({
                 className="pr-8"
                 onChange={e => onChange({ ...state, negativeMarkingPercent: e.target.value })}
               />
-              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">
-                %
-              </span>
+              <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">%</span>
             </div>
           </div>
         </div>
@@ -409,9 +371,7 @@ export default function GeneralSettingsTab({
               onChange={e => onChange({ ...state, violationThreshold: e.target.value })}
             />
             <Tooltip>
-              <TooltipTrigger
-                render={<Info className="text-muted-foreground size-4 shrink-0 cursor-help" />}
-              />
+              <TooltipTrigger render={<Info className="text-muted-foreground size-4 shrink-0 cursor-help" />} />
               <TooltipContent side="right" className="max-w-xs">
                 <p className="text-xs">{tSetup('violationThresholdDesc')}</p>
               </TooltipContent>
@@ -474,12 +434,7 @@ function ToggleFeatureRow({
         <p className="text-sm font-medium">{label}</p>
         <p className="text-muted-foreground text-xs">{description}</p>
       </div>
-      <Switch
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={onChange}
-        className="shrink-0"
-      />
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} className="shrink-0" />
     </div>
   )
 }

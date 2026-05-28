@@ -69,18 +69,14 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!dragStateRef.current) return
-    setDisplayHeight(
-      clampHeight(dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY),
-    )
+    setDisplayHeight(clampHeight(dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY))
   }, [])
 
   const handlePointerUp = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       if (!dragStateRef.current) return
       event.currentTarget.releasePointerCapture(event.pointerId)
-      const nextHeight = clampHeight(
-        dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY,
-      )
+      const nextHeight = clampHeight(dragStateRef.current.startHeight + event.clientY - dragStateRef.current.startY)
       dragStateRef.current = null
       setDisplayHeight(nextHeight)
       updateAttributes({ height: nextHeight })
@@ -101,10 +97,7 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
   const Icon = provider.iconName ? (Si as Record<string, any>)[provider.iconName] : null
 
   return (
-    <NodeViewWrapper
-      className="embed-block-node-view my-4 w-full"
-      data-drag-handle={isEditable ? '' : undefined}
-    >
+    <NodeViewWrapper className="embed-block-node-view my-4 w-full" data-drag-handle={isEditable ? '' : undefined}>
       <div
         className="border-border bg-card relative w-full overflow-hidden rounded-lg border"
         style={{ height: displayHeight }}
@@ -130,12 +123,8 @@ export default function GenericEmbedNodeView(props: TypedNodeViewProps<EmbedBloc
             )}
 
             <div className="space-y-1.5">
-              <p className="text-foreground text-sm font-semibold">
-                {t(`providers.${provider.type}.label`)}
-              </p>
-              <p className="text-muted-foreground max-w-md text-sm">
-                {t(`providers.${provider.type}.description`)}
-              </p>
+              <p className="text-foreground text-sm font-semibold">{t(`providers.${provider.type}.label`)}</p>
+              <p className="text-muted-foreground max-w-md text-sm">{t(`providers.${provider.type}.description`)}</p>
               <a
                 href={url}
                 target="_blank"

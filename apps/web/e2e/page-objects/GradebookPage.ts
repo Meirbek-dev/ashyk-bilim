@@ -36,10 +36,7 @@ export class GradebookPage {
    * @param activityName - the activity name that appears in the column header
    */
   public async openActivityReview(activityName: string): Promise<void> {
-    const header = this.table
-      .locator('th, [role="columnheader"]')
-      .filter({ hasText: activityName })
-      .first()
+    const header = this.table.locator('th, [role="columnheader"]').filter({ hasText: activityName }).first()
     await header.click()
     await this.page.waitForURL(/\/activity\/[^/]+\/review/, { timeout: 10_000 })
   }

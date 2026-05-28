@@ -142,9 +142,7 @@ export function isAuthError(error: GamificationError): error is AuthError {
   return error.type === ERROR_TYPES.AUTH_ERROR
 }
 
-export function isDailyLimitExceededError(
-  error: GamificationError,
-): error is DailyLimitExceededError {
+export function isDailyLimitExceededError(error: GamificationError): error is DailyLimitExceededError {
   return error.type === ERROR_TYPES.DAILY_LIMIT_EXCEEDED
 }
 

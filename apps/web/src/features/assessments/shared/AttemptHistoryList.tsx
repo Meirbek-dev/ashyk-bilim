@@ -43,9 +43,7 @@ export default function AttemptHistoryList({
         <h3 className="text-sm font-semibold">{resolvedTitle}</h3>
       </div>
       {items.length === 0 ? (
-        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">
-          {resolvedEmptyLabel}
-        </div>
+        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">{resolvedEmptyLabel}</div>
       ) : (
         <div className="space-y-2">
           {items.map(item => (
@@ -57,23 +55,13 @@ export default function AttemptHistoryList({
                     {item.status ? <SubmissionStatusBadge status={item.status} /> : null}
                   </div>
                   <div className="text-muted-foreground text-xs">
-                    {item.submittedAt
-                      ? new Date(item.submittedAt).toLocaleString()
-                      : item.metaLabel}
+                    {item.submittedAt ? new Date(item.submittedAt).toLocaleString() : item.metaLabel}
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  {item.scoreLabel ? (
-                    <div className="text-sm font-semibold">{item.scoreLabel}</div>
-                  ) : null}
+                  {item.scoreLabel ? <div className="text-sm font-semibold">{item.scoreLabel}</div> : null}
                   {item.onReview ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={item.onReview}
-                    >
+                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={item.onReview}>
                       {t('review')}
                     </Button>
                   ) : null}

@@ -12,15 +12,10 @@ export function formatPercentScore(score: number | null | undefined): string {
 }
 
 export function formatScoreFraction(score: number | null | undefined, maxScore = 100): string {
-  return score === null || score === undefined
-    ? '--'
-    : `${Math.round(score * 100) / 100}/${maxScore}`
+  return score === null || score === undefined ? '--' : `${Math.round(score * 100) / 100}/${maxScore}`
 }
 
-export function calculateItemPercent(
-  items: GradedItem[] | undefined,
-  itemScores: Record<string, number | null>,
-) {
+export function calculateItemPercent(items: GradedItem[] | undefined, itemScores: Record<string, number | null>) {
   if (!items?.length) return null
   const totalMax = items.reduce((sum, item) => sum + item.max_score, 0)
   if (totalMax <= 0) return null

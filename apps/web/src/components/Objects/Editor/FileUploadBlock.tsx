@@ -1,12 +1,6 @@
 'use client'
 
-import type {
-  ButtonHTMLAttributes,
-  FC,
-  HTMLAttributes,
-  InputHTMLAttributes,
-  ReactNode,
-} from 'react'
+import type { ButtonHTMLAttributes, FC, HTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { Loader2 } from 'lucide-react'
 import { Upload } from 'lucide-react'
@@ -36,11 +30,7 @@ const FileUploadBlockInput: FC<InputHTMLAttributes<HTMLInputElement> & { ariaLab
   )
 }
 
-const FileUploadBlockButton: FC<ButtonHTMLAttributes<HTMLButtonElement>> = ({
-  onClick,
-  className,
-  ...props
-}) => {
+const FileUploadBlockButton: FC<ButtonHTMLAttributes<HTMLButtonElement>> = ({ onClick, className, ...props }) => {
   const t = useTranslations('DashPage.Editor.FileUploadBlock')
   return (
     <button
@@ -65,13 +55,7 @@ type UploadBlockComponentProps = {
   children: ReactNode
 } & HTMLAttributes<HTMLDivElement>
 
-const FileUploadBlock = ({
-  isLoading,
-  isEditable,
-  isEmpty,
-  Icon,
-  children,
-}: UploadBlockComponentProps) => {
+const FileUploadBlock = ({ isLoading, isEditable, isEmpty, Icon, children }: UploadBlockComponentProps) => {
   const t = useTranslations('DashPage.Editor.FileUploadBlock')
 
   if (isLoading) {

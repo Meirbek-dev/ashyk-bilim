@@ -54,8 +54,7 @@ export default function SecurityShieldBadge({ state, className }: SecurityShield
       Icon: ShieldCheck,
       label: t('high'),
       description: t('highDescription'),
-      className:
-        'text-lime-700 border-lime-400 bg-lime-50 dark:text-lime-300 dark:border-lime-700 dark:bg-lime-950/30',
+      className: 'text-lime-700 border-lime-400 bg-lime-50 dark:text-lime-300 dark:border-lime-700 dark:bg-lime-950/30',
     },
   } as const
 

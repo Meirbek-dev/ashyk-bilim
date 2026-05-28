@@ -84,11 +84,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
           disabled={isValidating || selectedLanguages.length === 0}
           className="h-7 gap-1.5 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
         >
-          {isValidating ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <Play className="size-3.5" />
-          )}
+          {isValidating ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
           {t('validateSolutions')}
         </Button>
       </div>
@@ -108,10 +104,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                 const runResult = results?.[lang.id]
 
                 return (
-                  <div
-                    key={lang.id}
-                    className="bg-card text-card-foreground rounded-lg border shadow-xs"
-                  >
+                  <div key={lang.id} className="bg-card text-card-foreground rounded-lg border shadow-xs">
                     <div className="flex items-center justify-between border-b p-4">
                       <div className="flex items-center gap-2.5">
                         <Code2 className="size-5 text-emerald-600" />
@@ -119,12 +112,10 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                           <h3 className="text-sm font-semibold">{lang.name}</h3>
                           <div className="text-muted-foreground mt-0.5 flex gap-3 text-xs font-medium">
                             <span className="flex items-center gap-1">
-                              {t('starterCodeStatus')}:{' '}
-                              {starter?.trim() ? t('present') : t('missing')}
+                              {t('starterCodeStatus')}: {starter?.trim() ? t('present') : t('missing')}
                             </span>
                             <span className="flex items-center gap-1">
-                              {t('solutionStatus')}:{' '}
-                              {solution?.trim() ? t('present') : t('missing')}
+                              {t('solutionStatus')}: {solution?.trim() ? t('present') : t('missing')}
                             </span>
                           </div>
                         </div>
@@ -177,9 +168,7 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                             <h4 className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
                               {t('errorDetails')}
                             </h4>
-                            <p className="text-muted-foreground text-xs leading-relaxed">
-                              {runResult.message}
-                            </p>
+                            <p className="text-muted-foreground text-xs leading-relaxed">{runResult.message}</p>
                           </div>
                         )}
 
@@ -199,19 +188,14 @@ export function ReferenceSolutionRunner({ draft, languages }: ReferenceSolutionR
                                       : 'bg-rose-500/5 border-rose-500/20 text-rose-700 dark:text-rose-300',
                                   )}
                                 >
-                                  <div
-                                    className="mb-0.5 truncate font-bold"
-                                    title={caseDetail.test_id}
-                                  >
+                                  <div className="mb-0.5 truncate font-bold" title={caseDetail.test_id}>
                                     {t('caseNumber', { number: idx + 1 })}
                                   </div>
                                   <div
                                     className="truncate text-[10px] opacity-75"
                                     title={caseDetail.status_description}
                                   >
-                                    {caseDetail.passed
-                                      ? t('passed')
-                                      : caseDetail.status_description}
+                                    {caseDetail.passed ? t('passed') : caseDetail.status_description}
                                   </div>
                                   {typeof caseDetail.time === 'number' && (
                                     <div className="mt-1 font-mono text-[9px] opacity-60">

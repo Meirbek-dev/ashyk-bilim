@@ -12,16 +12,7 @@ import {
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import {
-  AlertTriangle,
-  Check,
-  GripVertical,
-  Hexagon,
-  Loader2,
-  Pencil,
-  Trash2,
-  X as XIcon,
-} from 'lucide-react'
+import { AlertTriangle, Check, GripVertical, Hexagon, Loader2, Pencil, Trash2, X as XIcon } from 'lucide-react'
 import { useChapterMutations } from '@/hooks/mutations/useChapterMutations'
 import ToolTip from '@/components/Objects/Elements/Tooltip/Tooltip'
 import { Button } from '@/components/ui/button'
@@ -124,10 +115,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
 
   const activities = useMemo(() => chapter.activities ?? [], [chapter.activities])
 
-  const activityIds = useMemo(
-    () => activities.map(activity => activity.activity_uuid),
-    [activities],
-  )
+  const activityIds = useMemo(() => activities.map(activity => activity.activity_uuid), [activities])
 
   const publishedCount = activities.filter(activity => activity.published).length
   const draftCount = activities.length - publishedCount
@@ -258,11 +246,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
                   onClick={() => void handleSaveEdit()}
                   disabled={isSavingEdit}
                 >
-                  {isSavingEdit ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Check className="h-4 w-4" />
-                  )}
+                  {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 </Button>
               </ToolTip>
 
@@ -280,9 +264,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="text-foreground truncate text-sm font-medium sm:text-base">
-                {chapter.name}
-              </span>
+              <span className="text-foreground truncate text-sm font-medium sm:text-base">{chapter.name}</span>
               <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
                 {activities.length}
               </span>
@@ -333,11 +315,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={isDeletingChapter} />
-              <AlertDialogAction
-                variant="destructive"
-                onClick={handleDeleteChapter}
-                disabled={isDeletingChapter}
-              >
+              <AlertDialogAction variant="destructive" onClick={handleDeleteChapter} disabled={isDeletingChapter}>
                 {isDeletingChapter ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -355,10 +333,7 @@ const ChapterElement = ({ chapter, chapterIndex: _chapterIndex, course_uuid }: C
       <SortableContext items={activityIds} strategy={verticalListSortingStrategy}>
         <div
           ref={setActivitiesDroppableRef}
-          className={cn(
-            'min-h-[80px] rounded-lg px-4 py-3 transition-colors',
-            isActivitiesOver && 'bg-muted/50',
-          )}
+          className={cn('min-h-[80px] rounded-lg px-4 py-3 transition-colors', isActivitiesOver && 'bg-muted/50')}
         >
           {activities.length > 0 ? (
             activities.map((activity, index) => (

@@ -67,9 +67,7 @@ export function useSaveSection(options?: SaveSectionOptions) {
           const message =
             typeof response.data?.detail === 'string'
               ? response.data.detail
-              : invocationOptions?.errorMessage ||
-                options?.errorMessage ||
-                'Failed to save. Please try again.'
+              : invocationOptions?.errorMessage || options?.errorMessage || 'Failed to save. Please try again.'
           options?.onError?.(message)
           toast.error(message)
           return
@@ -84,8 +82,7 @@ export function useSaveSection(options?: SaveSectionOptions) {
 
         syncLastKnownUpdateDate(response.data?.update_date)
 
-        const successMessage =
-          invocationOptions?.successMessage || options?.successMessage || 'Изменения сохранены'
+        const successMessage = invocationOptions?.successMessage || options?.successMessage || 'Изменения сохранены'
         if (successMessage) toast.success(successMessage)
 
         invocationOptions?.onSuccess?.()
@@ -117,30 +114,21 @@ export function useSaveSection(options?: SaveSectionOptions) {
   )
 
   const save = useCallback(
-    async (
-      saveFn: () => Promise<SaveResponse>,
-      invocationOptions?: Omit<SaveInvocationOptions, 'refresh'>,
-    ) => {
+    async (saveFn: () => Promise<SaveResponse>, invocationOptions?: Omit<SaveInvocationOptions, 'refresh'>) => {
       await runSave(saveFn, { ...invocationOptions, refresh: 'meta' })
     },
     [runSave],
   )
 
   const saveWithEditorRefresh = useCallback(
-    async (
-      saveFn: () => Promise<SaveResponse>,
-      invocationOptions?: Omit<SaveInvocationOptions, 'refresh'>,
-    ) => {
+    async (saveFn: () => Promise<SaveResponse>, invocationOptions?: Omit<SaveInvocationOptions, 'refresh'>) => {
       await runSave(saveFn, { ...invocationOptions, refresh: 'editor' })
     },
     [runSave],
   )
 
   const saveWithoutRefresh = useCallback(
-    async (
-      saveFn: () => Promise<SaveResponse>,
-      invocationOptions?: Omit<SaveInvocationOptions, 'refresh'>,
-    ) => {
+    async (saveFn: () => Promise<SaveResponse>, invocationOptions?: Omit<SaveInvocationOptions, 'refresh'>) => {
       await runSave(saveFn, { ...invocationOptions, refresh: 'none' })
     },
     [runSave],

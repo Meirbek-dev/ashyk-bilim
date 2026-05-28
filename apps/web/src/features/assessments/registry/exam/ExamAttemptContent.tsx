@@ -99,9 +99,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
   }
 
   if (!assessmentUuid) {
-    return (
-      <div className="text-destructive rounded-lg border p-6 text-sm">{t('errorLoadingExam')}</div>
-    )
+    return <div className="text-destructive rounded-lg border p-6 text-sm">{t('errorLoadingExam')}</div>
   }
 
   const latestCompletedSubmission =
@@ -132,10 +130,7 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
               }),
         submittedAt: submission.submitted_at ?? submission.updated_at,
         status: submission.status,
-        scoreLabel:
-          typeof submission.final_score === 'number'
-            ? `${Math.round(submission.final_score)}%`
-            : null,
+        scoreLabel: typeof submission.final_score === 'number' ? `${Math.round(submission.final_score)}%` : null,
         metaLabel: plagiarismText || null,
       }
     })
@@ -232,16 +227,11 @@ export default function ExamAttemptContent({ courseUuid, vm }: KindAttemptProps)
         notices={
           <div className="space-y-4">
             {questions.length === 0 ? (
-              <Alert
-                variant="destructive"
-                className="border-destructive/30 bg-destructive/5 text-destructive"
-              >
+              <Alert variant="destructive" className="border-destructive/30 bg-destructive/5 text-destructive">
                 <AlertCircle className="size-4" />
                 <AlertTitle>{t('testNotReadyTitle')}</AlertTitle>
                 <AlertDescription>
-                  {contributorStatus === 'ACTIVE'
-                    ? t('teacherNoQuestionsWarning')
-                    : t('noQuestionsWarning')}
+                  {contributorStatus === 'ACTIVE' ? t('teacherNoQuestionsWarning') : t('noQuestionsWarning')}
                 </AlertDescription>
               </Alert>
             ) : (
@@ -384,12 +374,8 @@ function ExamTakingContent({
         }
         if (kind === 'CHOICE' && !Array.isArray((ans as any).selected)) return false
         if (kind === 'OPEN_TEXT' && typeof (ans as any).text !== 'string') return false
-        if (kind === 'FORM' && (!(ans as any).values || typeof (ans as any).values !== 'object'))
-          return false
-        if (
-          kind === 'CODE' &&
-          (typeof (ans as any).language !== 'number' || typeof (ans as any).source !== 'string')
-        )
+        if (kind === 'FORM' && (!(ans as any).values || typeof (ans as any).values !== 'object')) return false
+        if (kind === 'CODE' && (typeof (ans as any).language !== 'number' || typeof (ans as any).source !== 'string'))
           return false
         if (kind === 'MATCHING' && !Array.isArray((ans as any).matches)) return false
       }
@@ -533,10 +519,7 @@ function ExamTakingContent({
       canSubmit,
       isSaving: submissionState.isSaving,
       isSubmitting: submissionState.isSubmitting,
-      onSave:
-        canSaveDraft && submissionState.saveState === 'dirty'
-          ? () => submissionState.save()
-          : undefined,
+      onSave: canSaveDraft && submissionState.saveState === 'dirty' ? () => submissionState.save() : undefined,
       onSubmit: canSubmit ? handleOpenSubmitConfirmation : undefined,
       navigation: {
         current: currentIndex + 1,
@@ -661,9 +644,7 @@ function ExamTakingContent({
 
       {historyItems.length ? <AttemptHistoryList items={historyItems} /> : null}
 
-      {latestCompletedSubmission ? (
-        <ExamSubmissionStatePanel submission={latestCompletedSubmission as any} />
-      ) : null}
+      {latestCompletedSubmission ? <ExamSubmissionStatePanel submission={latestCompletedSubmission as any} /> : null}
 
       {/* Progress bar + view mode toggle */}
       <div className="flex items-center gap-3">
@@ -686,11 +667,7 @@ function ExamTakingContent({
                 onClick={toggleViewMode}
                 aria-label={viewMode === 'CARD' ? t('switchToScrollMode') : t('switchToCardMode')}
               >
-                {viewMode === 'CARD' ? (
-                  <LayoutList className="size-4" />
-                ) : (
-                  <Rows2 className="size-4" />
-                )}
+                {viewMode === 'CARD' ? <LayoutList className="size-4" /> : <Rows2 className="size-4" />}
               </Button>
             }
           />
@@ -835,11 +812,7 @@ function buildExamQuestions(items: AssessmentItem[]): QuestionData[] {
         question_uuid: item.item_uuid,
         question_text: body.prompt,
         question_type:
-          body.variant === 'TRUE_FALSE'
-            ? 'TRUE_FALSE'
-            : body.multiple
-              ? 'MULTIPLE_CHOICE'
-              : 'SINGLE_CHOICE',
+          body.variant === 'TRUE_FALSE' ? 'TRUE_FALSE' : body.multiple ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE',
         points: item.max_score,
         explanation: body.explanation ?? undefined,
         answer_options: body.options.map(option => ({
@@ -909,15 +882,11 @@ function ExamSubmissionStatePanel({
 
   return (
     <Alert>
-      <AlertTitle>
-        {submission.status === 'RETURNED' ? t('returnedForRevision') : t('resultAvailable')}
-      </AlertTitle>
+      <AlertTitle>{submission.status === 'RETURNED' ? t('returnedForRevision') : t('resultAvailable')}</AlertTitle>
       <AlertDescription className="space-y-3">
         {typeof submission.final_score === 'number' ? (
           <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium">
-            <span className="bg-muted rounded px-2 py-0.5 text-xs font-medium">
-              {t('scoreLabel')}
-            </span>
+            <span className="bg-muted rounded px-2 py-0.5 text-xs font-medium">{t('scoreLabel')}</span>
             {Math.round(submission.final_score)}%
           </span>
         ) : null}
@@ -940,9 +909,7 @@ function Instruction({ icon: Icon, label }: { icon: any; label: string }) {
 
 function isAntiCheatWarningVisible(policy: typeof DEFAULT_POLICY_VIEW): boolean {
   return (
-    policy.antiCheat.tabSwitchDetection ||
-    policy.antiCheat.copyPasteProtection ||
-    policy.antiCheat.devtoolsDetection
+    policy.antiCheat.tabSwitchDetection || policy.antiCheat.copyPasteProtection || policy.antiCheat.devtoolsDetection
   )
 }
 

@@ -1,8 +1,4 @@
-import {
-  getAdminAnalyticsOverview,
-  getTeacherOverview,
-  normalizeAnalyticsQuery,
-} from '@services/analytics/teacher'
+import { getAdminAnalyticsOverview, getTeacherOverview, normalizeAnalyticsQuery } from '@services/analytics/teacher'
 import AnalyticsEmptyState from '@components/Dashboard/Analytics/AnalyticsEmptyState'
 import TeacherOverview from '@components/Dashboard/Analytics/TeacherOverview'
 import { getTranslations } from 'next-intl/server'

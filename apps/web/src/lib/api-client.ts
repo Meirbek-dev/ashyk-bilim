@@ -121,9 +121,7 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
   // force-cache so revalidateTag() actually works. Without this the default
   // 'no-store' would silently override the tags and disable caching entirely.
   const hasCacheTags =
-    isServer &&
-    Array.isArray((fetchInit as any).next?.tags) &&
-    (fetchInit as any).next?.tags?.length > 0
+    isServer && Array.isArray((fetchInit as any).next?.tags) && (fetchInit as any).next?.tags?.length > 0
   const defaultCache: RequestCache = hasCacheTags ? 'force-cache' : 'no-store'
   const options: RequestInit = {
     ...fetchInit,
@@ -150,14 +148,11 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
   let timeoutId: ReturnType<typeof setTimeout> | null = null
 
   if (timeoutController && effectiveTimeoutMs !== null && effectiveTimeoutMs > 0) {
-    timeoutId = setTimeout(
-      () => timeoutController.abort(createTimeoutReason(effectiveTimeoutMs)),
-      effectiveTimeoutMs,
-    )
+    timeoutId = setTimeout(() => timeoutController.abort(createTimeoutReason(effectiveTimeoutMs)), effectiveTimeoutMs)
   }
 
-  const abortSignals = [callerSignal, timeoutController?.signal].filter(
-    (signal): signal is AbortSignal => Boolean(signal),
+  const abortSignals = [callerSignal, timeoutController?.signal].filter((signal): signal is AbortSignal =>
+    Boolean(signal),
   )
   const combinedSignal = abortSignals.length > 0 ? combineAbortSignals(abortSignals) : null
 
@@ -171,9 +166,7 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
       const { pathname, search } = globalThis.location
       if (!isAuthRoute(pathname)) {
         authRedirectPending = true
-        globalThis.location.assign(
-          `/api/auth/refresh?returnTo=${encodeURIComponent(pathname + search)}`,
-        )
+        globalThis.location.assign(`/api/auth/refresh?returnTo=${encodeURIComponent(pathname + search)}`)
       }
     }
 
@@ -196,9 +189,7 @@ export const fetchResponseMetadata = async (url: string): Promise<CustomResponse
   return getResponseMetadata(response)
 }
 
-export const apiFetcherWithHeaders = async (
-  url: string,
-): Promise<{ data: any; headers: Record<string, string> }> => {
+export const apiFetcherWithHeaders = async (url: string): Promise<{ data: any; headers: Record<string, string> }> => {
   const response = await apiFetch(url, {
     method: 'GET',
   })

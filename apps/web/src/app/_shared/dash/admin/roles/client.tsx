@@ -136,8 +136,7 @@ export default function RBACAdminClient() {
       page_size: number
     }
   }, [auditLogQuery.data])
-  const isAuditLoading =
-    activeTab === 'audit' && (auditLogQuery.isLoading || auditLogQuery.isFetching)
+  const isAuditLoading = activeTab === 'audit' && (auditLogQuery.isLoading || auditLogQuery.isFetching)
 
   const fetchRoles = useCallback(async () => {
     const result = await refetchRoles()
@@ -152,10 +151,7 @@ export default function RBACAdminClient() {
   }, [router, session.user, t])
 
   const loadRoleWithPermissions = async (roleId: number): Promise<RoleWithPermissions> => {
-    const [role, rolePermissions] = await Promise.all([
-      apiGetRole(roleId),
-      getRolePermissions(roleId),
-    ])
+    const [role, rolePermissions] = await Promise.all([apiGetRole(roleId), getRolePermissions(roleId)])
 
     return {
       ...role,
@@ -214,16 +210,13 @@ export default function RBACAdminClient() {
     toast.error(t('auditLogLoadFailed'))
   }, [activeTab, auditLogQuery.error, t])
 
-  const permissionsByResource = permissions.reduce<Record<string, Permission[]>>(
-    (acc, permission) => {
-      if (!acc[permission.resource_type]) {
-        acc[permission.resource_type] = []
-      }
-      acc[permission.resource_type]?.push(permission)
-      return acc
-    },
-    {},
-  )
+  const permissionsByResource = permissions.reduce<Record<string, Permission[]>>((acc, permission) => {
+    if (!acc[permission.resource_type]) {
+      acc[permission.resource_type] = []
+    }
+    acc[permission.resource_type]?.push(permission)
+    return acc
+  }, {})
 
   const resourceOptions = Object.keys(permissionsByResource).toSorted((a, b) => a.localeCompare(b))
 
@@ -239,15 +232,16 @@ export default function RBACAdminClient() {
     })
   }, [permissionSearchQuery, permissionResourceFilter, permissions])
 
-  const filteredDialogPermissionsByResource = filteredDialogPermissions.reduce<
-    Record<string, Permission[]>
-  >((acc, perm) => {
-    if (!acc[perm.resource_type]) {
-      acc[perm.resource_type] = []
-    }
-    acc[perm.resource_type]?.push(perm)
-    return acc
-  }, {})
+  const filteredDialogPermissionsByResource = filteredDialogPermissions.reduce<Record<string, Permission[]>>(
+    (acc, perm) => {
+      if (!acc[perm.resource_type]) {
+        acc[perm.resource_type] = []
+      }
+      acc[perm.resource_type]?.push(perm)
+      return acc
+    },
+    {},
+  )
 
   const openCreateDialog = () => {
     setRoleDialogMode('create')
@@ -354,9 +348,7 @@ export default function RBACAdminClient() {
 
     const currentPermissions = permissionsRole.permissions ?? []
     const updatedPermissions = grant
-      ? [...currentPermissions, permission].filter(
-          (perm, index, arr) => arr.findIndex(p => p.id === perm.id) === index,
-        )
+      ? [...currentPermissions, permission].filter((perm, index, arr) => arr.findIndex(p => p.id === perm.id) === index)
       : currentPermissions.filter(perm => perm.id !== permission.id)
 
     const updatedRole: RoleWithPermissions = {
@@ -400,20 +392,13 @@ export default function RBACAdminClient() {
     }
   }
 
-  const handleToggleResourcePermissions = async (
-    resourceType: string,
-    resourcePermissions: Permission[],
-  ) => {
+  const handleToggleResourcePermissions = async (resourceType: string, resourcePermissions: Permission[]) => {
     if (!permissionsRole) return
 
     setPendingResourceToggles(prev => [...prev, resourceType])
 
-    const currentPermissionIds = new Set(
-      (permissionsRole.permissions ?? []).map(permission => permission.id),
-    )
-    const shouldGrantAll = !resourcePermissions.every(permission =>
-      currentPermissionIds.has(permission.id),
-    )
+    const currentPermissionIds = new Set((permissionsRole.permissions ?? []).map(permission => permission.id))
+    const shouldGrantAll = !resourcePermissions.every(permission => currentPermissionIds.has(permission.id))
 
     const nextPermissions = shouldGrantAll
       ? [
@@ -421,8 +406,7 @@ export default function RBACAdminClient() {
           ...resourcePermissions.filter(permission => !currentPermissionIds.has(permission.id)),
         ]
       : (permissionsRole.permissions ?? []).filter(
-          existingPermission =>
-            !resourcePermissions.some(permission => permission.id === existingPermission.id),
+          existingPermission => !resourcePermissions.some(permission => permission.id === existingPermission.id),
         )
 
     const optimisticRole = {
@@ -507,9 +491,7 @@ export default function RBACAdminClient() {
       accessorKey: 'slug',
       header: t('tableHead.slug'),
       meta: { label: t('tableHead.slug') },
-      cell: ({ row }) => (
-        <code className="bg-muted rounded px-1.5 py-0.5 text-sm">{row.original.slug}</code>
-      ),
+      cell: ({ row }) => <code className="bg-muted rounded px-1.5 py-0.5 text-sm">{row.original.slug}</code>,
     },
     {
       accessorFn: role => (role.is_system ? t('system') : t('custom')),
@@ -591,9 +573,7 @@ export default function RBACAdminClient() {
             <Button
               variant="ghost"
               size="icon"
-              disabled={
-                (row.original.is_system && !isSuperAdmin) || deletingRoleId === row.original.id
-              }
+              disabled={(row.original.is_system && !isSuperAdmin) || deletingRoleId === row.original.id}
               aria-label={t('deleteRoleAria', { roleName: row.original.name })}
               onClick={() => handleDeleteRole(row.original)}
             >
@@ -669,9 +649,7 @@ export default function RBACAdminClient() {
       header: t('permissionTable.description'),
       meta: { label: t('permissionTable.description') },
       cell: ({ row }) =>
-        row.original.description || (
-          <span className="text-muted-foreground">{t('noDescription')}</span>
-        ),
+        row.original.description || <span className="text-muted-foreground">{t('noDescription')}</span>,
     },
   ]
 
@@ -689,9 +667,7 @@ export default function RBACAdminClient() {
     )
   }
 
-  const totalAuditPages = auditData
-    ? Math.max(1, Math.ceil(auditData.total / auditData.page_size))
-    : 1
+  const totalAuditPages = auditData ? Math.max(1, Math.ceil(auditData.total / auditData.page_size)) : 1
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -750,8 +726,8 @@ export default function RBACAdminClient() {
           <CardContent>
             <div className="text-2xl font-bold">{roles.length}</div>
             <p className="text-muted-foreground text-xs">
-              {roles.filter(r => r.is_system).length} {t('system')},{' '}
-              {roles.filter(r => !r.is_system).length} {t('custom')}
+              {roles.filter(r => r.is_system).length} {t('system')}, {roles.filter(r => !r.is_system).length}{' '}
+              {t('custom')}
             </p>
           </CardContent>
         </Card>
@@ -815,8 +791,7 @@ export default function RBACAdminClient() {
               <CardTitle>{t('allPermissionsTitle')}</CardTitle>
               <CardDescription>{t('allPermissionsDescription')}</CardDescription>
               <div className="bg-muted text-muted-foreground rounded-md border p-3 text-sm">
-                {t('scopeHierarchy')}:{' '}
-                <span className="font-medium">{t('scopeHierarchyValue')}</span>
+                {t('scopeHierarchy')}: <span className="font-medium">{t('scopeHierarchyValue')}</span>
               </div>
             </CardHeader>
             <CardContent>
@@ -909,16 +884,12 @@ export default function RBACAdminClient() {
         >
           <DialogContent className="max-h-[80vh] w-2xl overflow-y-auto lg:min-w-2xl">
             <DialogHeader>
-              <DialogTitle>
-                {t('managePermissionsTitle', { roleName: permissionsRole.name })}
-              </DialogTitle>
+              <DialogTitle>{t('managePermissionsTitle', { roleName: permissionsRole.name })}</DialogTitle>
               <DialogDescription>{t('managePermissionsDescription')}</DialogDescription>
             </DialogHeader>
 
             {permissionsRole.is_system && !isSuperAdmin && (
-              <div className="bg-muted rounded-md border p-3 text-sm">
-                {t('systemRoleReadOnlyBanner')}
-              </div>
+              <div className="bg-muted rounded-md border p-3 text-sm">{t('systemRoleReadOnlyBanner')}</div>
             )}
 
             <div className="flex flex-col gap-3 py-2 md:flex-row">
@@ -954,11 +925,8 @@ export default function RBACAdminClient() {
                 </div>
               ) : (
                 Object.entries(filteredDialogPermissionsByResource).map(([resourceType, perms]) => {
-                  const rolePermissionIds = new Set(
-                    (permissionsRole.permissions ?? []).map(p => p.id),
-                  )
-                  const allSelected =
-                    perms.length > 0 && perms.every(perm => rolePermissionIds.has(perm.id))
+                  const rolePermissionIds = new Set((permissionsRole.permissions ?? []).map(p => p.id))
+                  const allSelected = perms.length > 0 && perms.every(perm => rolePermissionIds.has(perm.id))
                   const isResourcePending = pendingResourceToggles.includes(resourceType)
 
                   return (
@@ -971,12 +939,8 @@ export default function RBACAdminClient() {
                           <Checkbox
                             id={`resource-toggle-${resourceType}`}
                             checked={allSelected}
-                            disabled={
-                              (permissionsRole.is_system && !isSuperAdmin) || isResourcePending
-                            }
-                            onCheckedChange={() =>
-                              handleToggleResourcePermissions(resourceType, perms)
-                            }
+                            disabled={(permissionsRole.is_system && !isSuperAdmin) || isResourcePending}
+                            onCheckedChange={() => handleToggleResourcePermissions(resourceType, perms)}
                           />
                           <label htmlFor={`resource-toggle-${resourceType}`} className="text-sm">
                             {isResourcePending ? t('updating') : t('selectAllResource')}
@@ -990,35 +954,23 @@ export default function RBACAdminClient() {
                           const pending = pendingPermissionIds.includes(perm.id)
 
                           return (
-                            <div
-                              key={perm.id}
-                              className="flex items-center justify-between rounded border p-2"
-                            >
+                            <div key={perm.id} className="flex items-center justify-between rounded border p-2">
                               <div className="flex items-start gap-3">
                                 <Checkbox
                                   id={`perm-${perm.id}`}
                                   checked={hasPermission}
                                   disabled={(permissionsRole.is_system && !isSuperAdmin) || pending}
-                                  onCheckedChange={() =>
-                                    handleTogglePermission(perm, hasPermission)
-                                  }
+                                  onCheckedChange={() => handleTogglePermission(perm, hasPermission)}
                                 />
-                                <label
-                                  htmlFor={`perm-${perm.id}`}
-                                  className="cursor-pointer text-sm"
-                                >
+                                <label htmlFor={`perm-${perm.id}`} className="cursor-pointer text-sm">
                                   <span className="block">{perm.name}</span>
                                   {perm.description && (
-                                    <span className="text-muted-foreground block text-xs">
-                                      {perm.description}
-                                    </span>
+                                    <span className="text-muted-foreground block text-xs">{perm.description}</span>
                                   )}
                                 </label>
                               </div>
                               <div className="flex items-center gap-2">
-                                {pending && (
-                                  <Loader2 className="text-muted-foreground h-3.5 w-3.5 animate-spin" />
-                                )}
+                                {pending && <Loader2 className="text-muted-foreground h-3.5 w-3.5 animate-spin" />}
                                 <Badge variant="secondary" className="text-xs">
                                   {perm.action}
                                 </Badge>
@@ -1035,10 +987,9 @@ export default function RBACAdminClient() {
                 })
               )}
 
-              {!isPermissionsDialogLoading &&
-                Object.keys(filteredDialogPermissionsByResource).length === 0 && (
-                  <p className="text-muted-foreground text-sm">{t('noPermissionsFound')}</p>
-                )}
+              {!isPermissionsDialogLoading && Object.keys(filteredDialogPermissionsByResource).length === 0 && (
+                <p className="text-muted-foreground text-sm">{t('noPermissionsFound')}</p>
+              )}
             </div>
 
             <DialogFooter>
@@ -1061,9 +1012,7 @@ export default function RBACAdminClient() {
             <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20">
               <AlertTriangle />
             </AlertDialogMedia>
-            <AlertDialogTitle>
-              {t('deleteRoleAria', { roleName: roleToDelete?.name ?? '' })}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteRoleAria', { roleName: roleToDelete?.name ?? '' })}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('deleteRoleConfirmationWithUsers', {
                 count: roleToDelete?.users_count ?? 0,
@@ -1094,12 +1043,7 @@ function RoleEditForm({
   role?: RoleWithPermissions
   maxPriority: number
   isSuperAdmin: boolean
-  onSubmit: (data: {
-    name: string
-    slug: string
-    description: string
-    priority: number
-  }) => Promise<void>
+  onSubmit: (data: { name: string; slug: string; description: string; priority: number }) => Promise<void>
   onCancel: () => void
 }) {
   const t = useTranslations('Components.Roles')
@@ -1149,11 +1093,7 @@ function RoleEditForm({
     <form action={handleSubmit}>
       <DialogHeader>
         <DialogTitle>
-          {mode === 'edit'
-            ? t('editRoleTitle')
-            : mode === 'clone'
-              ? t('cloneRoleTitle')
-              : t('createRoleTitle')}
+          {mode === 'edit' ? t('editRoleTitle') : mode === 'clone' ? t('cloneRoleTitle') : t('createRoleTitle')}
         </DialogTitle>
         <DialogDescription>
           {mode === 'edit'
@@ -1189,9 +1129,7 @@ function RoleEditForm({
             disabled={isEditMode}
             required
           />
-          <p className="text-muted-foreground text-xs">
-            {isEditMode ? t('slugImmutableHelp') : t('slugCreateHelp')}
-          </p>
+          <p className="text-muted-foreground text-xs">{isEditMode ? t('slugImmutableHelp') : t('slugCreateHelp')}</p>
         </div>
 
         <div className="grid gap-2">
@@ -1207,9 +1145,7 @@ function RoleEditForm({
             required
           />
           {!isSuperAdmin && (
-            <p className="text-muted-foreground text-xs">
-              {t('priorityMaxHelp', { max: maxPriority })}
-            </p>
+            <p className="text-muted-foreground text-xs">{t('priorityMaxHelp', { max: maxPriority })}</p>
           )}
         </div>
 

@@ -38,10 +38,7 @@ interface TagsInputContextProps {
 const TagInputContext = React.createContext<TagsInputContextProps | null>(null)
 
 export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
-  (
-    { children, value, onValueChange, placeholder, maxItems, minItems, className, dir, ...props },
-    ref,
-  ) => {
+  ({ children, value, onValueChange, placeholder, maxItems, minItems, className, dir, ...props }, ref) => {
     const t = useTranslations('Components.TagsInput')
     const [activeIndex, setActiveIndex] = React.useState(-1)
     const [inputValue, setInputValue] = React.useState('')
@@ -71,11 +68,7 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
       const newValue = [...value]
       tags.forEach(item => {
         const parsedItem = item.replaceAll(FORMATTING_REGEX, '').trim()
-        if (
-          parsedItem.length > 0 &&
-          !newValue.includes(parsedItem) &&
-          newValue.length < parseMaxItems
-        ) {
+        if (parsedItem.length > 0 && !newValue.includes(parsedItem) && newValue.length < parseMaxItems) {
           newValue.push(parsedItem)
         }
       })

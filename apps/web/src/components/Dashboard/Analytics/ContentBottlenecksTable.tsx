@@ -2,14 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { ContentBottleneckRow } from '@/types/analytics'
 import { RouteOff } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
@@ -22,8 +15,7 @@ export default function ContentBottlenecksTable({ rows }: ContentBottlenecksTabl
   const locale = useLocale()
   const t = useTranslations('Components.DashboardAnalytics')
   const numberFormatter = new Intl.NumberFormat(locale)
-  const signalLabel = (signal: ContentBottleneckRow['signal']) =>
-    t(`contentBottlenecksTable.signals.${signal}`)
+  const signalLabel = (signal: ContentBottleneckRow['signal']) => t(`contentBottlenecksTable.signals.${signal}`)
 
   return (
     <Card className="shadow-sm">
@@ -55,11 +47,7 @@ export default function ContentBottlenecksTable({ rows }: ContentBottlenecksTabl
                 <TableCell>
                   <Badge
                     variant={
-                      row.severity === 'critical'
-                        ? 'destructive'
-                        : row.severity === 'warning'
-                          ? 'warning'
-                          : 'outline'
+                      row.severity === 'critical' ? 'destructive' : row.severity === 'warning' ? 'warning' : 'outline'
                     }
                   >
                     {signalLabel(row.signal)}

@@ -32,14 +32,7 @@ const defaultIcons = {
   warning: TrendingUp,
 } as const
 
-export function EmptyState({
-  title,
-  message,
-  icon,
-  action,
-  variant = 'default',
-  className = '',
-}: EmptyStateProps) {
+export function EmptyState({ title, message, icon, action, variant = 'default', className = '' }: EmptyStateProps) {
   const Icon = icon || defaultIcons[variant]
   const colorClass = variantStyles[variant]
 

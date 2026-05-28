@@ -224,12 +224,7 @@ export default defineConfig(
 
   {
     name: 'tests',
-    files: [
-      '**/*.test.{ts,tsx}',
-      '**/*.spec.{ts,tsx}',
-      'tests/**/*.{ts,tsx}',
-      'src/tests/**/*.{ts,tsx}',
-    ],
+    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', 'tests/**/*.{ts,tsx}', 'src/tests/**/*.{ts,tsx}'],
     rules: {
       'i18next/no-literal-string': 'off',
       'react-compiler/react-compiler': 'off',

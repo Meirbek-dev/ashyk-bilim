@@ -115,14 +115,11 @@ export function CodeChallengeEditor({
   onSubmissionComplete,
 }: CodeChallengeEditorProps) {
   const t = useTranslations('Activities.CodeChallenges')
-  const initialSelectedLanguageId =
-    answer?.language ?? initialLanguageId ?? settings?.allowed_languages?.[0] ?? 0
+  const initialSelectedLanguageId = answer?.language ?? initialLanguageId ?? settings?.allowed_languages?.[0] ?? 0
   // State
   const [code, setCode] = useState(answer?.source ?? initialCode)
   const [codeByLanguage, setCodeByLanguage] = useState<Record<number, string>>(() =>
-    initialSelectedLanguageId > 0
-      ? { [initialSelectedLanguageId]: answer?.source ?? initialCode }
-      : {},
+    initialSelectedLanguageId > 0 ? { [initialSelectedLanguageId]: answer?.source ?? initialCode } : {},
   )
   const [selectedLanguageId, setSelectedLanguageId] = useState(initialSelectedLanguageId)
   const [customInput, setCustomInput] = useState('')
@@ -141,25 +138,18 @@ export function CodeChallengeEditor({
   const isRunning = runCustomTestMutation.isPending || runCodeChallengeTestsMutation.isPending
   const availableLanguages = useMemo(() => {
     const allowed = settings?.allowed_languages ?? []
-    return allowed.length > 0
-      ? judge0Languages.filter(language => allowed.includes(language.id))
-      : judge0Languages
+    return allowed.length > 0 ? judge0Languages.filter(language => allowed.includes(language.id)) : judge0Languages
   }, [judge0Languages, settings?.allowed_languages])
   const selectedLanguage = availableLanguages.find(language => language.id === selectedLanguageId)
 
   // Fetch submissions history
-  const { data: submissionsData, refetch: refreshSubmissions } =
-    useCodeChallengeSubmissions(activityUuid)
+  const { data: submissionsData, refetch: refreshSubmissions } = useCodeChallengeSubmissions(activityUuid)
   const submissions = submissionsData as Submission[] | null | undefined
 
   // Poll for active submission status
-  const { data: activeSubmissionData } = useCodeChallengeSubmission(
-    activityUuid,
-    activeSubmissionId,
-    {
-      refetchInterval: activeSubmissionId ? 1000 : false,
-    },
-  )
+  const { data: activeSubmissionData } = useCodeChallengeSubmission(activityUuid, activeSubmissionId, {
+    refetchInterval: activeSubmissionId ? 1000 : false,
+  })
   const activeSubmission = activeSubmissionData as Submission | null | undefined
 
   useEffect(() => {
@@ -197,10 +187,7 @@ export function CodeChallengeEditor({
       refreshSubmissions()
       onSubmissionComplete?.(activeSubmission)
 
-      if (
-        status === 'COMPLETED' &&
-        activeSubmission.score === (activeSubmission.max_score ?? 100)
-      ) {
+      if (status === 'COMPLETED' && activeSubmission.score === (activeSubmission.max_score ?? 100)) {
         toast.success(t('allTestsPassed'))
       } else if (status === 'FAILED') {
         toast.error(t('submissionFailed'))
@@ -247,8 +234,7 @@ export function CodeChallengeEditor({
 
   const updateLanguage = useCallback(
     (nextLanguageId: number) => {
-      const nextSource =
-        codeByLanguage[nextLanguageId] ?? settings?.starter_code?.[String(nextLanguageId)] ?? ''
+      const nextSource = codeByLanguage[nextLanguageId] ?? settings?.starter_code?.[String(nextLanguageId)] ?? ''
       setSelectedLanguageId(nextLanguageId)
       setCode(nextSource)
       onAnswerChange?.({
@@ -341,8 +327,7 @@ export function CodeChallengeEditor({
 
   const submitControl = useMemo<CodeChallengeSubmitControl>(
     () => ({
-      canSubmit:
-        !disabled && selectedLanguageId > 0 && Boolean(code.trim()) && !isRunning && !isSubmitting,
+      canSubmit: !disabled && selectedLanguageId > 0 && Boolean(code.trim()) && !isRunning && !isSubmitting,
       isSubmitting,
       submit: handleSubmit,
     }),
@@ -390,12 +375,8 @@ export function CodeChallengeEditor({
             {/* Problem description */}
             {challengeTitle || challengeDescription ? (
               <div className="border-b p-4">
-                {challengeTitle && (
-                  <h2 className="mb-1 text-sm leading-snug font-semibold">{challengeTitle}</h2>
-                )}
-                {challengeDescription && (
-                  <MarkdownContent content={challengeDescription} mode="codeProblem" />
-                )}
+                {challengeTitle && <h2 className="mb-1 text-sm leading-snug font-semibold">{challengeTitle}</h2>}
+                {challengeDescription && <MarkdownContent content={challengeDescription} mode="codeProblem" />}
               </div>
             ) : null}
 
@@ -407,10 +388,7 @@ export function CodeChallengeEditor({
                 </div>
                 <div className="space-y-3">
                   {visibleTestCases.map((tc, index) => (
-                    <div
-                      key={`${tc.id ?? 'tc'}-${index}`}
-                      className="bg-muted/40 rounded-md border p-3"
-                    >
+                    <div key={`${tc.id ?? 'tc'}-${index}`} className="bg-muted/40 rounded-md border p-3">
                       <div className="text-muted-foreground mb-2 text-xs font-medium">
                         {t('testCase')} #{index + 1}
                         {tc.description ? ` - ${extractMarkdownSummary(tc.description, 100)}` : ''}
@@ -423,9 +401,7 @@ export function CodeChallengeEditor({
                           </pre>
                         </div>
                         <div>
-                          <div className="text-muted-foreground mb-0.5 text-xs">
-                            {t('expectedOutput')}:
-                          </div>
+                          <div className="text-muted-foreground mb-0.5 text-xs">{t('expectedOutput')}:</div>
                           <pre className="bg-background overflow-x-auto rounded border px-2 py-1 font-mono text-xs">
                             {tc.expected_output}
                           </pre>
@@ -572,9 +548,7 @@ export function CodeChallengeEditor({
                 <TabsContent value="console" className="min-h-0 flex-1 overflow-hidden">
                   <ScrollArea className="h-full p-3">
                     <pre className="font-mono text-xs whitespace-pre-wrap">
-                      {customOutput || (
-                        <span className="text-muted-foreground">{t('noOutput')}</span>
-                      )}
+                      {customOutput || <span className="text-muted-foreground">{t('noOutput')}</span>}
                     </pre>
                   </ScrollArea>
                 </TabsContent>
@@ -594,9 +568,7 @@ export function CodeChallengeEditor({
                         testCases={visibleTestCases}
                       />
                     ) : (
-                      <p className="text-muted-foreground text-center text-xs">
-                        {t('noResultsYet')}
-                      </p>
+                      <p className="text-muted-foreground text-center text-xs">{t('noResultsYet')}</p>
                     )}
                   </ScrollArea>
                 </TabsContent>
@@ -606,9 +578,7 @@ export function CodeChallengeEditor({
                   <ScrollArea className="h-full p-3">
                     <div className="space-y-2">
                       {!submissions?.length ? (
-                        <p className="text-muted-foreground text-center text-xs">
-                          {t('noSubmissionsYet')}
-                        </p>
+                        <p className="text-muted-foreground text-center text-xs">{t('noSubmissionsYet')}</p>
                       ) : (
                         <AttemptHistoryList
                           compact
@@ -620,9 +590,7 @@ export function CodeChallengeEditor({
                               language: getLanguageName(submission.language_id),
                             }),
                             submittedAt: submission.created_at,
-                            status:
-                              submission.submission_status ??
-                              codeRunToSubmissionStatus(submission.status),
+                            status: submission.submission_status ?? codeRunToSubmissionStatus(submission.status),
                             scoreLabel:
                               submission.score !== undefined
                                 ? `${Math.round(submission.score)}/${submission.max_score ?? 100}`

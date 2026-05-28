@@ -58,9 +58,7 @@ export default function HintsPanel() {
           fields.map((hint, index) => (
             <div key={hint.id} className="space-y-3 rounded-md border p-3">
               <div className="flex items-start justify-between gap-3">
-                <div className="text-sm font-medium">
-                  {t('hintsPanel.hintNumber', { number: index + 1 })}
-                </div>
+                <div className="text-sm font-medium">{t('hintsPanel.hintNumber', { number: index + 1 })}</div>
                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
                   <Trash2 className="size-4" />
                 </Button>

@@ -9,12 +9,7 @@ interface InlineStatusStripProps {
   runtime: StudentActivityRuntime
 }
 
-const ASSESSMENT_TYPES = new Set([
-  'TYPE_EXAM',
-  'TYPE_CUSTOM',
-  'TYPE_CODE_CHALLENGE',
-  'TYPE_FILE_SUBMISSION',
-])
+const ASSESSMENT_TYPES = new Set(['TYPE_EXAM', 'TYPE_CUSTOM', 'TYPE_CODE_CHALLENGE', 'TYPE_FILE_SUBMISSION'])
 
 /**
  * InlineStatusStrip
@@ -75,8 +70,7 @@ export default function InlineStatusStrip({ runtime }: InlineStatusStripProps) {
   // Due date
   if (policy?.due_at) {
     const dueDate = new Date(policy.due_at)
-    const isOverdue =
-      dueDate < new Date() && state !== 'complete' && state !== 'passed' && state !== 'published'
+    const isOverdue = dueDate < new Date() && state !== 'complete' && state !== 'passed' && state !== 'published'
     const duePart = `${t('dueDate')}: ${formatDate(policy.due_at)}`
     if (isOverdue) {
       items.push(`⚠ ${duePart}`)

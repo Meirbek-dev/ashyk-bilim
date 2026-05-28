@@ -4,9 +4,7 @@ import EditorOptionsProvider from '@components/Contexts/Editor/EditorContext'
 import { Tiptap } from '@tiptap/react'
 import { useEditorInstance } from '@components/Objects/Editor/core'
 import type { ActivityRef } from '@components/Objects/Editor/core'
-import TableOfContents, {
-  useHeadingOutline,
-} from '@components/Objects/Activities/DynamicCanva/TableOfContents'
+import TableOfContents, { useHeadingOutline } from '@components/Objects/Activities/DynamicCanva/TableOfContents'
 import { ListTree } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
@@ -57,13 +55,7 @@ export function InteractiveViewer(props: InteractiveViewerProps) {
   )
 }
 
-function MobileTableOfContents({
-  editor,
-  title,
-}: {
-  editor: ReturnType<typeof useEditorInstance>
-  title: string
-}) {
+function MobileTableOfContents({ editor, title }: { editor: ReturnType<typeof useEditorInstance>; title: string }) {
   return (
     <div className="mb-3 flex justify-end xl:hidden">
       <Sheet>

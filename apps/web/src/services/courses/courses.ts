@@ -30,14 +30,7 @@ type NormalizedCourseAuthor = Omit<AuthorWithRole, 'user'> & {
 }
 type NormalizedCourse = Omit<
   CourseRead,
-  | 'about'
-  | 'authors'
-  | 'description'
-  | 'learnings'
-  | 'tags'
-  | 'thumbnail_image'
-  | 'thumbnail_type'
-  | 'thumbnail_video'
+  'about' | 'authors' | 'description' | 'learnings' | 'tags' | 'thumbnail_image' | 'thumbnail_type' | 'thumbnail_video'
 > & {
   about: string
   authors: NormalizedCourseAuthor[]
@@ -51,14 +44,7 @@ type NormalizedCourse = Omit<
 }
 type NormalizedCourseWithPermissions = Omit<
   CourseReadWithPermissions,
-  | 'about'
-  | 'authors'
-  | 'description'
-  | 'learnings'
-  | 'tags'
-  | 'thumbnail_image'
-  | 'thumbnail_type'
-  | 'thumbnail_video'
+  'about' | 'authors' | 'description' | 'learnings' | 'tags' | 'thumbnail_image' | 'thumbnail_type' | 'thumbnail_video'
 > & {
   about: string
   authors: NormalizedCourseAuthor[]
@@ -165,9 +151,7 @@ function normalizeCourse(course: CourseRead): NormalizedCourse {
   }
 }
 
-function normalizeCourseWithPermissions(
-  course: CourseReadWithPermissions,
-): NormalizedCourseWithPermissions {
+function normalizeCourseWithPermissions(course: CourseReadWithPermissions): NormalizedCourseWithPermissions {
   return {
     ...course,
     about: course.about ?? '',
@@ -298,13 +282,7 @@ async function fetchEditableCourses(
   return { courses, total, summary }
 }
 
-export async function getEditableCourses(
-  page = 1,
-  limit = 20,
-  query = '',
-  sortBy = 'updated',
-  preset = '',
-) {
+export async function getEditableCourses(page = 1, limit = 20, query = '', sortBy = 'updated', preset = '') {
   return fetchEditableCourses(page, limit, query, sortBy, preset)
 }
 
@@ -314,9 +292,7 @@ export async function getCourseUserRights(course_uuid: string) {
 }
 
 export async function searchCourses(query: string, page = 1, limit = 20, next: any) {
-  const result = await apiFetch(
-    `courses/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
-  )
+  const result = await apiFetch(`courses/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
   const courses: CourseRead[] = await errorHandling(result)
   return courses.map(course => normalizeCourse(course))
 }
@@ -328,9 +304,7 @@ async function fetchCourseMetadata(
   course_uuid: string,
   withUnpublishedActivities = false,
 ): Promise<NormalizedFullCourse> {
-  const normalizedCourseUuid = course_uuid.startsWith('course_')
-    ? course_uuid
-    : `course_${course_uuid}`
+  const normalizedCourseUuid = course_uuid.startsWith('course_') ? course_uuid : `course_${course_uuid}`
   const result = await apiFetch(
     `courses/${normalizedCourseUuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`,
     {
@@ -343,11 +317,7 @@ async function fetchCourseMetadata(
   return normalizeFullCourse(await errorHandling(result))
 }
 
-export async function getCourseMetadata(
-  course_uuid: string,
-  _next?: any,
-  withUnpublishedActivities = false,
-) {
+export async function getCourseMetadata(course_uuid: string, _next?: any, withUnpublishedActivities = false) {
   return fetchCourseMetadata(course_uuid, withUnpublishedActivities)
 }
 
@@ -367,11 +337,7 @@ const toCourseMetadataPayload = (data: any, options?: CourseWriteOptions) => ({
   last_known_update_date: options?.lastKnownUpdateDate ?? data.update_date ?? undefined,
 })
 
-export async function updateCourseMetadata(
-  course_uuid: string,
-  data: any,
-  options?: CourseWriteOptions,
-) {
+export async function updateCourseMetadata(course_uuid: string, data: any, options?: CourseWriteOptions) {
   const result = await apiFetch(`courses/${course_uuid}/metadata`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -390,11 +356,7 @@ export async function updateCourseMetadata(
   return metadata
 }
 
-export async function updateCourseAccess(
-  course_uuid: string,
-  data: any,
-  options?: CourseWriteOptions,
-) {
+export async function updateCourseAccess(course_uuid: string, data: any, options?: CourseWriteOptions) {
   const result = await apiFetch(`courses/${course_uuid}/access`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -434,11 +396,7 @@ export async function getCourse(course_uuid: string, _next?: any) {
   return fetchCourse(course_uuid)
 }
 
-export async function updateCourseThumbnail(
-  course_uuid: string,
-  formData: FormData,
-  options?: CourseWriteOptions,
-) {
+export async function updateCourseThumbnail(course_uuid: string, formData: FormData, options?: CourseWriteOptions) {
   if (options?.lastKnownUpdateDate) {
     formData.set('last_known_update_date', options.lastKnownUpdateDate)
   }
@@ -519,9 +477,7 @@ export async function deleteCourseFromBackend(
   const result = await apiFetch(`courses/${course_uuid}`, { method: 'DELETE' })
   const data = await errorHandling(result)
   const deletionSucceeded =
-    result.ok &&
-    (!('success' in (data as Record<string, unknown>)) ||
-      Boolean((data as { success?: unknown }).success))
+    result.ok && (!('success' in (data as Record<string, unknown>)) || Boolean((data as { success?: unknown }).success))
 
   if (deletionSucceeded) {
     const { revalidateTag } = await import('next/cache')

@@ -22,9 +22,7 @@ const LinkInputTooltip = ({ onSave, onCancel, currentUrl = '' }: LinkInputToolti
     if (nextUrl) {
       // Ensure the URL has a protocol
       const formattedUrl =
-        nextUrl.startsWith('http://') || nextUrl.startsWith('https://')
-          ? nextUrl
-          : `https://${nextUrl}`
+        nextUrl.startsWith('http://') || nextUrl.startsWith('https://') ? nextUrl : `https://${nextUrl}`
       onSave(formattedUrl)
     }
   }
@@ -55,13 +53,7 @@ const LinkInputTooltip = ({ onSave, onCancel, currentUrl = '' }: LinkInputToolti
           className="w-52 text-xs"
         />
         <div className="flex gap-1">
-          <Button
-            type="submit"
-            disabled={!url.trim()}
-            variant="ghost"
-            size="icon"
-            title={t('saveLink')}
-          >
+          <Button type="submit" disabled={!url.trim()} variant="ghost" size="icon" title={t('saveLink')}>
             <Check size={16} />
           </Button>
           <Button type="button" onClick={onCancel} variant="ghost" size="icon" title={t('cancel')}>

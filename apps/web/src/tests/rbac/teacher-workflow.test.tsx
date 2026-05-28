@@ -5,12 +5,7 @@ import React from 'react'
 import { SessionProvider } from '@/components/providers/session-provider'
 import { PermissionGuard } from '@/components/Security/PermissionGuard'
 import { Actions, Resources, Scopes } from '@/types/permissions'
-import {
-  canSeePlatform,
-  canSeeCourses,
-  canSeeAnalytics,
-  canSeeAdmin,
-} from '@/lib/rbac/navigation-policy'
+import { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeAdmin } from '@/lib/rbac/navigation-policy'
 import type { Session } from '@/lib/auth/types'
 
 // Mock useRouter
@@ -145,11 +140,7 @@ describe('Teacher (Instructor) Workflow', () => {
     it('should handle "own" scope correctly', () => {
       render(
         <Wrapper>
-          <PermissionGuard
-            action={Actions.GRADE}
-            resource={Resources.ASSESSMENT}
-            scope={Scopes.OWN}
-          >
+          <PermissionGuard action={Actions.GRADE} resource={Resources.ASSESSMENT} scope={Scopes.OWN}>
             <button data-testid="grade-own">Grade My ManualAssessment</button>
           </PermissionGuard>
         </Wrapper>,
@@ -161,11 +152,7 @@ describe('Teacher (Instructor) Workflow', () => {
     it('should deny "platform" scope if only "own" is granted', () => {
       render(
         <Wrapper>
-          <PermissionGuard
-            action={Actions.GRADE}
-            resource={Resources.ASSESSMENT}
-            scope={Scopes.APP}
-          >
+          <PermissionGuard action={Actions.GRADE} resource={Resources.ASSESSMENT} scope={Scopes.APP}>
             <button data-testid="grade-all">Grade All ManualAssessments</button>
           </PermissionGuard>
         </Wrapper>,

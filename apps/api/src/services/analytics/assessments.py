@@ -14,8 +14,7 @@ from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.courses import Course
 from src.db.grading.bulk_actions import BulkAction
 from src.db.grading.entries import GradingEntry
-from src.db.grading.submissions import AssessmentType as SubmissionAssessmentType
-from src.db.grading.submissions import Submission, SubmissionStatus
+from src.db.grading.submissions import AssessmentType as SubmissionAssessmentType, Submission, SubmissionStatus
 from src.db.usergroups import UserGroup
 from src.db.users import User
 from src.services.analytics.filters import AnalyticsFilters
@@ -23,6 +22,7 @@ from src.services.analytics.queries import (
     AnalyticsContext,
     ProgressSnapshot,
     assessment_pass_threshold,
+    bucket_start as normalize_bucket_start,
     cohort_user_ids,
     display_name,
     hours_between,
@@ -39,9 +39,6 @@ from src.services.analytics.queries import (
     progress_snapshots,
     safe_pct,
     to_iso,
-)
-from src.services.analytics.queries import (
-    bucket_start as normalize_bucket_start,
 )
 from src.services.analytics.rollups import (
     list_latest_assessment_rollups,

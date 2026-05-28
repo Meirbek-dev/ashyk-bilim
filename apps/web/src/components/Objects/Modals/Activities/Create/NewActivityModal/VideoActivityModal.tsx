@@ -18,12 +18,7 @@ import {
   UploadCloud,
   VolumeX,
 } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@components/ui/dropdown-menu'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { usePlatform } from '@/components/Contexts/PlatformContext'
 import type { ChangeEvent, ComponentType, DragEvent } from 'react'
@@ -127,9 +122,7 @@ const TimeInput = ({
           min="0"
           max="59"
           value={seconds}
-          onChange={e =>
-            onSecondsChange(Math.max(0, Math.min(59, Number.parseInt(e.target.value, 10) || 0)))
-          }
+          onChange={e => onSecondsChange(Math.max(0, Math.min(59, Number.parseInt(e.target.value, 10) || 0)))}
           placeholder="00"
           className="h-9 text-center tabular-nums"
           disabled={disabled}
@@ -162,9 +155,7 @@ const SubtitleManager = ({
     }
     const fileName = file.name.toLowerCase()
     const potentialLang = fileName.split('.').slice(-2, -1)[0]
-    const existingLang = subtitles.find(
-      s => s.language === potentialLang || s.file.name.toLowerCase() === fileName,
-    )
+    const existingLang = subtitles.find(s => s.language === potentialLang || s.file.name.toLowerCase() === fileName)
     if (existingLang) {
       return {
         valid: false,
@@ -380,26 +371,15 @@ const SubtitleManager = ({
                 className="group flex items-center gap-3 px-3 py-2.5"
               >
                 <Languages size={14} className="shrink-0 text-gray-300" />
-                <span
-                  className="min-w-0 flex-1 truncate text-sm text-gray-700"
-                  title={subtitle.file.name}
-                >
+                <span className="min-w-0 flex-1 truncate text-sm text-gray-700" title={subtitle.file.name}>
                   {subtitle.file.name}
                 </span>
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 gap-1 border-gray-200 px-2 text-xs"
-                      >
+                      <Button variant="outline" size="sm" className="h-6 gap-1 border-gray-200 px-2 text-xs">
                         <span>
-                          {
-                            getLocalizedLanguageOptions(t).find(
-                              lang => lang.code === subtitle.language,
-                            )?.flag
-                          }
+                          {getLocalizedLanguageOptions(t).find(lang => lang.code === subtitle.language)?.flag}
                         </span>
                         {subtitle.label}
                         <ChevronDown size={10} className="opacity-40" />
@@ -422,9 +402,7 @@ const SubtitleManager = ({
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <span className="text-xs text-gray-400 tabular-nums">
-                  {(subtitle.file.size / 1024).toFixed(0)} KB
-                </span>
+                <span className="text-xs text-gray-400 tabular-nums">{(subtitle.file.size / 1024).toFixed(0)} KB</span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -469,17 +447,14 @@ const VideoSettingsForm = ({
   })
 
   const startTimeParts = convertFromSeconds(videoDetails.startTime)
-  const endTimeParts = videoDetails.endTime
-    ? convertFromSeconds(videoDetails.endTime)
-    : { minutes: 0, seconds: 0 }
+  const endTimeParts = videoDetails.endTime ? convertFromSeconds(videoDetails.endTime) : { minutes: 0, seconds: 0 }
 
   const updateStartTime = (minutes: number, seconds: number) => {
     const newStartTime = convertToSeconds(minutes, seconds)
     setVideoDetails({
       ...videoDetails,
       startTime: newStartTime,
-      endTime:
-        videoDetails.endTime && videoDetails.endTime <= newStartTime ? null : videoDetails.endTime,
+      endTime: videoDetails.endTime && videoDetails.endTime <= newStartTime ? null : videoDetails.endTime,
     })
   }
 
@@ -498,9 +473,7 @@ const VideoSettingsForm = ({
     subtitles.length > 0,
   ].filter(Boolean).length
 
-  const hasTimingErrors = Boolean(
-    videoDetails.endTime && videoDetails.endTime <= videoDetails.startTime,
-  )
+  const hasTimingErrors = Boolean(videoDetails.endTime && videoDetails.endTime <= videoDetails.startTime)
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -523,10 +496,7 @@ const VideoSettingsForm = ({
               )}
               <ChevronDown
                 size={15}
-                className={cn(
-                  'text-gray-400 transition-transform duration-200',
-                  isOpen && 'rotate-180',
-                )}
+                className={cn('text-gray-400 transition-transform duration-200', isOpen && 'rotate-180')}
               />
             </div>
           </div>
@@ -595,9 +565,7 @@ const VideoSettingsForm = ({
               <Label className="flex cursor-pointer items-center gap-3 rounded-md border border-gray-200 px-3 py-2.5 transition-colors hover:bg-gray-50">
                 <Checkbox
                   checked={videoDetails.autoplay}
-                  onCheckedChange={checked =>
-                    setVideoDetails({ ...videoDetails, autoplay: checked })
-                  }
+                  onCheckedChange={checked => setVideoDetails({ ...videoDetails, autoplay: checked })}
                 />
                 <div className="flex items-center gap-2">
                   <Play size={14} className="shrink-0 text-gray-400" />
@@ -666,9 +634,7 @@ const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course
     })
   }, [platform, course])
 
-  const isYouTubeUrlValid = youtubeUrl
-    ? /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/.test(youtubeUrl)
-    : false
+  const isYouTubeUrlValid = youtubeUrl ? /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/.test(youtubeUrl) : false
 
   const validateForm = ({
     activityName,
@@ -752,8 +718,7 @@ const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course
     const submittedName = String(formData.get('name') ?? '').trim()
     const submittedYoutubeUrl = String(formData.get('youtubeUrl') ?? '').trim()
     const submittedVideo = formData.get('videoFile')
-    const selectedVideo =
-      submittedVideo instanceof File && submittedVideo.size > 0 ? submittedVideo : video
+    const selectedVideo = submittedVideo instanceof File && submittedVideo.size > 0 ? submittedVideo : video
 
     if (
       !validateForm({
@@ -873,9 +838,7 @@ const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course
               }}
               className={cn(
                 'flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-150',
-                selectedView === 'file'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700',
+                selectedView === 'file' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
               )}
             >
               <Upload size={15} />
@@ -889,9 +852,7 @@ const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course
               }}
               className={cn(
                 'flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-150',
-                selectedView === 'youtube'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700',
+                selectedView === 'youtube' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
               )}
             >
               <SiYoutube size={15} />
@@ -926,12 +887,8 @@ const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course
                         <FileVideo size={16} className="text-gray-400" />
                       </div>
                       <div className="min-w-0">
-                        <p className="max-w-xs truncate text-sm font-medium text-gray-800">
-                          {video.name}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {(video.size / (1024 * 1024)).toFixed(1)} MB
-                        </p>
+                        <p className="max-w-xs truncate text-sm font-medium text-gray-800">{video.name}</p>
+                        <p className="text-xs text-gray-400">{(video.size / (1024 * 1024)).toFixed(1)} MB</p>
                       </div>
                     </div>
                     <Label
@@ -1039,12 +996,7 @@ const VideoModal = ({ submitFileActivity, submitExternalVideo, chapterId, course
 
         {/* Submit */}
         <div className="flex justify-end border-t border-gray-100 pt-4">
-          <Button
-            type="submit"
-            disabled={isSubmitting || !canSubmit}
-            size="sm"
-            className="gap-2 px-5"
-          >
+          <Button type="submit" disabled={isSubmitting || !canSubmit} size="sm" className="gap-2 px-5">
             {isSubmitting ? (
               <>
                 <Loader2 size={14} className="animate-spin" />

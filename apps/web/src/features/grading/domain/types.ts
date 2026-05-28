@@ -4,9 +4,7 @@ export type SubmissionStatus = components['schemas']['SubmissionStatus']
 export type AssessmentType = components['schemas']['AssessmentType']
 export type GradedItem = components['schemas']['GradedItem']
 export type GradingBreakdown = components['schemas']['GradingBreakdown']
-export type Submission =
-  | components['schemas']['SubmissionRead']
-  | components['schemas']['TeacherSubmissionRead']
+export type Submission = components['schemas']['SubmissionRead'] | components['schemas']['TeacherSubmissionRead']
 export type SubmissionUser = components['schemas']['SubmissionUser']
 export type SubmissionsPage = components['schemas']['SubmissionListResponse']
 export type SubmissionStats = components['schemas']['SubmissionStats']
@@ -73,23 +71,17 @@ export interface SubmissionMetadata {
   [key: string]: unknown
 }
 
-export function getSubmissionMetadata(
-  submission: Pick<Submission, 'metadata_json'>,
-): SubmissionMetadata {
+export function getSubmissionMetadata(submission: Pick<Submission, 'metadata_json'>): SubmissionMetadata {
   const raw = submission.metadata_json
   return raw && typeof raw === 'object' ? raw : {}
 }
 
-export function getSubmissionViolations(
-  submission: Pick<Submission, 'metadata_json'>,
-): AntiCheatViolation[] {
+export function getSubmissionViolations(submission: Pick<Submission, 'metadata_json'>): AntiCheatViolation[] {
   const { violations } = getSubmissionMetadata(submission)
   return Array.isArray(violations) ? violations : []
 }
 
-export function getSubmissionPlagiarismState(
-  submission: Pick<Submission, 'metadata_json'>,
-): PlagiarismState {
+export function getSubmissionPlagiarismState(submission: Pick<Submission, 'metadata_json'>): PlagiarismState {
   const metadata = getSubmissionMetadata(submission)
   const status = metadata.plagiarism_status
   const plagiarism = metadata.plagiarism ?? null

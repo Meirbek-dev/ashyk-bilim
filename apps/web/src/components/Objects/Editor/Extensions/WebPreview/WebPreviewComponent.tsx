@@ -35,15 +35,7 @@ const PreviewImage = ({ src, alt }: { src: string; alt: string }) => (
   </div>
 )
 
-const FaviconDisplay = ({
-  favicon,
-  url,
-  faviconAlt,
-}: {
-  favicon?: string
-  url: string
-  faviconAlt: string
-}) => (
+const FaviconDisplay = ({ favicon, url, faviconAlt }: { favicon?: string; url: string; faviconAlt: string }) => (
   <div className="mt-0 flex items-center border-t border-gray-100 pt-2">
     {favicon ? (
       <div className="relative mr-2 h-[18px] w-[18px] overflow-hidden rounded bg-gray-100">
@@ -185,20 +177,9 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
     }
 
     if (previewQuery.error) {
-      setError(
-        previewQuery.error instanceof Error
-          ? previewQuery.error.message
-          : t('errorFetchingPreview'),
-      )
+      setError(previewQuery.error instanceof Error ? previewQuery.error.message : t('errorFetchingPreview'))
     }
-  }, [
-    applyPreviewData,
-    node.attrs.url,
-    previewQuery.data,
-    previewQuery.error,
-    shouldAutoFetchPreview,
-    t,
-  ])
+  }, [applyPreviewData, node.attrs.url, previewQuery.data, previewQuery.error, shouldAutoFetchPreview, t])
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -279,12 +260,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
             ? (() => {
                 const videoId = getYouTubeVideoId(previewUrl)
                 if (videoId) {
-                  return (
-                    <YouTubeEmbed
-                      videoid={videoId}
-                      style="height: 100%; width: 100%; max-width: none;"
-                    />
-                  )
+                  return <YouTubeEmbed videoid={videoId} style="height: 100%; width: 100%; max-width: none;" />
                 }
                 return (
                   <iframe
@@ -452,9 +428,7 @@ const WebPreviewComponent = ({ node, updateAttributes, deleteNode }: WebPreviewP
                 className="no-underline hover:no-underline focus:no-underline active:no-underline"
                 style={{ textDecoration: 'none', borderBottom: 'none' }}
               >
-                {previewData.og_image ? (
-                  <PreviewImage src={previewData.og_image} alt={t('previewImageAlt')} />
-                ) : null}
+                {previewData.og_image ? <PreviewImage src={previewData.og_image} alt={t('previewImageAlt')} /> : null}
                 <div className="pt-4 pb-2">
                   <span
                     className="text-foreground mb-1.5 text-lg leading-tight font-semibold no-underline hover:no-underline focus:no-underline active:no-underline"

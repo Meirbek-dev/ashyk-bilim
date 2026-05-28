@@ -182,9 +182,7 @@ export default function StudentActivityWorkspace({
             focusMode ? 'pb-10 pt-6' : 'pb-24 pt-4',
           )}
         >
-          {!isAttemptActive && !isLocked && !focusMode ? (
-            <InlineStatusStrip runtime={runtime} />
-          ) : null}
+          {!isAttemptActive && !isLocked && !focusMode ? <InlineStatusStrip runtime={runtime} /> : null}
 
           {isLocked ? <LockStateCard runtime={runtime} /> : children}
         </main>

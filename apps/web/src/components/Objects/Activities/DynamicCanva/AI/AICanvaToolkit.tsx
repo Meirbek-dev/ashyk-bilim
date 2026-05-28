@@ -43,13 +43,7 @@ const AICanvaToolkit = (props: AICanvaToolkitProps) => {
     >
       <div className="border-border bg-popover flex h-auto w-max items-center gap-2 rounded-lg border px-3 py-1.5 shadow-md">
         <div className="flex items-center gap-1.5">
-          <Image
-            className="rounded-sm"
-            width={18}
-            src={logoSrc}
-            alt={t('aiIconAlt')}
-            style={{ height: 'auto' }}
-          />
+          <Image className="rounded-sm" width={18} src={logoSrc} alt={t('aiIconAlt')} style={{ height: 'auto' }} />
           <span className="text-foreground text-xs font-semibold">{t('aiTitle')}</span>
         </div>
         <div className="bg-border h-4 w-px" aria-hidden="true" />

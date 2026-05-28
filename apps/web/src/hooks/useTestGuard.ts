@@ -2,14 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 
-type ViolationType =
-  | 'BLUR'
-  | 'DEVTOOLS'
-  | 'COPY'
-  | 'RESIZE'
-  | 'CONTEXTMENU'
-  | 'KEYDOWN'
-  | 'FULLSCREEN_EXIT'
+type ViolationType = 'BLUR' | 'DEVTOOLS' | 'COPY' | 'RESIZE' | 'CONTEXTMENU' | 'KEYDOWN' | 'FULLSCREEN_EXIT'
 
 interface Violation {
   type: ViolationType
@@ -159,8 +152,7 @@ export function useTestGuard({
         const widthDiff = window.outerWidth - window.innerWidth
         const heightDiff = window.outerHeight - window.innerHeight
         const sizeChange =
-          Math.abs(window.outerWidth - lastWidth) > 100 ||
-          Math.abs(window.outerHeight - lastHeight) > 100
+          Math.abs(window.outerWidth - lastWidth) > 100 || Math.abs(window.outerHeight - lastHeight) > 100
 
         // Only report if threshold exceeded and significant size change
         if ((widthDiff > devToolsThreshold || heightDiff > devToolsThreshold) && sizeChange) {
@@ -191,10 +183,7 @@ export function useTestGuard({
         try {
           // Only consider clipboard events if there is an actual selection or pasted text
           if (e.type === 'copy' || e.type === 'cut') {
-            const sel =
-              typeof globalThis.getSelection === 'function'
-                ? globalThis.getSelection()?.toString()
-                : ''
+            const sel = typeof globalThis.getSelection === 'function' ? globalThis.getSelection()?.toString() : ''
             if (!sel) return
           }
           if (e.type === 'paste') {
@@ -247,10 +236,7 @@ export function useTestGuard({
 
         if (isEditable) return
 
-        if (
-          (e.ctrlKey || e.metaKey) &&
-          ['c', 'a', 'u', 's', 'p', 'x'].includes(e.key.toLowerCase())
-        ) {
+        if ((e.ctrlKey || e.metaKey) && ['c', 'a', 'u', 's', 'p', 'x'].includes(e.key.toLowerCase())) {
           e.preventDefault()
           report('KEYDOWN')
         }

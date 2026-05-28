@@ -4,13 +4,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 import { reportClientError } from '@/services/telemetry/client'
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const t = useTranslations('Errors')
 
   useEffect(() => {
@@ -46,8 +40,7 @@ export default function Error({
 
         {error.digest && (
           <p className="text-muted-foreground dark:text-muted-foreground mb-4 text-sm">
-            {t('errorReference')}{' '}
-            <code className="bg-muted/70 text-foreground rounded px-2 py-1">{error.digest}</code>
+            {t('errorReference')} <code className="bg-muted/70 text-foreground rounded px-2 py-1">{error.digest}</code>
           </p>
         )}
 
@@ -63,10 +56,7 @@ export default function Error({
           </details>
         )}
 
-        <button
-          onClick={reset}
-          className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-md px-6 py-2"
-        >
+        <button onClick={reset} className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-md px-6 py-2">
           {t('tryAgain')}
         </button>
       </div>

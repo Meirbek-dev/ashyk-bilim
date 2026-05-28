@@ -11,9 +11,7 @@ export async function getCourseDiscussions(
   limit = 50,
   offset = 0,
 ): Promise<Discussion[]> {
-  const normalizedCourseUuid = course_uuid.startsWith('course_')
-    ? course_uuid
-    : `course_${course_uuid}`
+  const normalizedCourseUuid = course_uuid.startsWith('course_') ? course_uuid : `course_${course_uuid}`
   const result = await apiFetch(
     `courses/${normalizedCourseUuid}/discussions?include_replies=${includeReplies}&limit=${limit}&offset=${offset}`,
     {
@@ -77,10 +75,7 @@ export interface Discussion {
   is_disliked: boolean
 }
 
-export async function createDiscussion(
-  course_uuid: string,
-  discussion: DiscussionCreate,
-): Promise<Discussion> {
+export async function createDiscussion(course_uuid: string, discussion: DiscussionCreate): Promise<Discussion> {
   const result = await apiFetch(`courses/${course_uuid}/discussions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -116,10 +111,7 @@ export async function updateDiscussion(
   return data
 }
 
-export async function deleteDiscussion(
-  course_uuid: string,
-  discussion_uuid: string,
-): Promise<{ message: string }> {
+export async function deleteDiscussion(course_uuid: string, discussion_uuid: string): Promise<{ message: string }> {
   const result = await apiFetch(`courses/${course_uuid}/discussions/${discussion_uuid}`, {
     method: 'DELETE',
   })

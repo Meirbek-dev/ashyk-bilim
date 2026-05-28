@@ -15,11 +15,7 @@ export interface CreateCertificationParams {
   options?: CertificationInvalidationOptions
 }
 
-export async function createCertification({
-  course_id,
-  config,
-  options,
-}: CreateCertificationParams) {
+export async function createCertification({ course_id, config, options }: CreateCertificationParams) {
   const result = await apiFetch('certifications/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -44,11 +40,7 @@ export interface UpdateCertificationParams {
   options?: CertificationInvalidationOptions
 }
 
-export async function updateCertification({
-  certification_uuid,
-  config,
-  options,
-}: UpdateCertificationParams) {
+export async function updateCertification({ certification_uuid, config, options }: UpdateCertificationParams) {
   const result = await apiFetch(`certifications/${certification_uuid}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -66,19 +58,13 @@ export async function updateCertification({
   return response
 }
 
-export async function deleteCertification(
-  certification_uuid: string,
-  options?: CertificationInvalidationOptions,
-) {
+export async function deleteCertification(certification_uuid: string, options?: CertificationInvalidationOptions) {
   const query = new URLSearchParams()
   if (options?.lastKnownUpdateDate) query.set('last_known_update_date', options.lastKnownUpdateDate)
 
-  const result = await apiFetch(
-    `certifications/${certification_uuid}${query.size > 0 ? `?${query.toString()}` : ''}`,
-    {
-      method: 'DELETE',
-    },
-  )
+  const result = await apiFetch(`certifications/${certification_uuid}${query.size > 0 ? `?${query.toString()}` : ''}`, {
+    method: 'DELETE',
+  })
   const response = await errorHandling<any>(result)
 
   const { revalidateTag } = await import('next/cache')

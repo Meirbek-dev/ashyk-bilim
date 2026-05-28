@@ -54,10 +54,7 @@ export function useThemeSync(themeName: string): void {
           pendingThemeRef.current = null
         })
         .catch((error: unknown) => {
-          const status =
-            typeof error === 'object' && error && 'status' in error
-              ? Number(error.status)
-              : undefined
+          const status = typeof error === 'object' && error && 'status' in error ? Number(error.status) : undefined
 
           if (status === 401 || status === 403) {
             pendingThemeRef.current = null

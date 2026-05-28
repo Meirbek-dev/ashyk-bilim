@@ -1,14 +1,6 @@
 'use client'
 
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-  XCircle,
-  Loader2,
-} from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Copy, XCircle, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
@@ -126,11 +118,7 @@ export function ResultsDock({
       <TabsContent value="result" className="min-h-0 flex-1 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="space-y-3 p-4">
-            <VerdictBanner
-              verdict={verdict}
-              results={results}
-              onFocusFailedCase={handleFocusFailedCase}
-            />
+            <VerdictBanner verdict={verdict} results={results} onFocusFailedCase={handleFocusFailedCase} />
 
             {verdict === 'RUNNING' && <RunProgressTimeline />}
 
@@ -223,13 +211,7 @@ function VerdictBanner({
   const t = useTranslations('Activities.CodeChallenges')
   const firstFail = firstFailingResult(results)
   const Icon =
-    verdict === 'ACCEPTED'
-      ? CheckCircle2
-      : verdict === 'RUNNING'
-        ? Loader2
-        : verdict
-          ? XCircle
-          : AlertTriangle
+    verdict === 'ACCEPTED' ? CheckCircle2 : verdict === 'RUNNING' ? Loader2 : verdict ? XCircle : AlertTriangle
   const isRunning = verdict === 'RUNNING'
 
   return (
@@ -259,8 +241,7 @@ function VerdictBanner({
       {firstFail ? (
         <div className="text-muted-foreground mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
           <span>
-            {t('firstFailingCasePrefix')} <strong>{firstFail.test_case_id}</strong>.{' '}
-            {firstFail.status_description}
+            {t('firstFailingCasePrefix')} <strong>{firstFail.test_case_id}</strong>. {firstFail.status_description}
           </span>
           <Button
             type="button"
@@ -335,10 +316,7 @@ function RunProgressTimeline() {
                 {isActive && !isCurrent ? '✓' : idx + 1}
               </div>
               <span
-                className={cn(
-                  'text-[10px] mt-1.5 font-medium',
-                  isActive ? 'text-foreground' : 'text-muted-foreground',
-                )}
+                className={cn('text-[10px] mt-1.5 font-medium', isActive ? 'text-foreground' : 'text-muted-foreground')}
               >
                 {step.label}
               </span>
@@ -359,8 +337,7 @@ interface ResultRowProps {
 
 function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
   const t = useTranslations('Activities.CodeChallenges')
-  const diffExists =
-    !result.passed && typeof result.expected === 'string' && typeof result.stdout === 'string'
+  const diffExists = !result.passed && typeof result.expected === 'string' && typeof result.stdout === 'string'
 
   return (
     <div
@@ -379,23 +356,14 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
           ) : (
             <XCircle className="size-4 text-rose-500" />
           )}
-          <span className="truncate text-xs font-semibold">
-            {t('caseNumber', { number: index + 1 })}
-          </span>
-          <Badge
-            variant={result.passed ? 'success' : 'destructive'}
-            className="px-1 py-0 text-[10px]"
-          >
+          <span className="truncate text-xs font-semibold">{t('caseNumber', { number: index + 1 })}</span>
+          <Badge variant={result.passed ? 'success' : 'destructive'} className="px-1 py-0 text-[10px]">
             {result.passed ? 'Passed' : result.status_description}
           </Badge>
         </div>
         <div className="text-muted-foreground flex shrink-0 items-center gap-3.5 font-mono text-xs">
-          {typeof result.time_ms === 'number' ? (
-            <span>{t('timeLimitValue', { value: result.time_ms })}</span>
-          ) : null}
-          {typeof result.memory_kb === 'number' ? (
-            <span>{(result.memory_kb / 1024).toFixed(1)}MB</span>
-          ) : null}
+          {typeof result.time_ms === 'number' ? <span>{t('timeLimitValue', { value: result.time_ms })}</span> : null}
+          {typeof result.memory_kb === 'number' ? <span>{(result.memory_kb / 1024).toFixed(1)}MB</span> : null}
           {isExpanded ? (
             <ChevronUp className="text-muted-foreground size-3.5" />
           ) : (
@@ -411,9 +379,7 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
               <div className="text-muted-foreground mb-1 text-[10px] font-bold tracking-wider uppercase">
                 {t('input')}
               </div>
-              <pre className="bg-muted/30 overflow-x-auto rounded border p-2 font-mono text-xs">
-                {result.stdin}
-              </pre>
+              <pre className="bg-muted/30 overflow-x-auto rounded border p-2 font-mono text-xs">{result.stdin}</pre>
             </div>
           )}
 
@@ -430,24 +396,14 @@ function ResultRow({ result, index, isExpanded, onToggle }: ResultRowProps) {
 
           {result.stderr && <Output label="Stderr" value={result.stderr} destructive />}
 
-          {result.compile_output && (
-            <Output label="Compile output" value={result.compile_output} destructive />
-          )}
+          {result.compile_output && <Output label="Compile output" value={result.compile_output} destructive />}
         </div>
       )}
     </div>
   )
 }
 
-function Output({
-  label,
-  value,
-  destructive = false,
-}: {
-  label: string
-  value: string
-  destructive?: boolean
-}) {
+function Output({ label, value, destructive = false }: { label: string; value: string; destructive?: boolean }) {
   return (
     <div>
       <div className="text-muted-foreground mb-1 flex items-center justify-between text-[10px] font-bold tracking-wider uppercase">

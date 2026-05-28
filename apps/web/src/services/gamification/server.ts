@@ -34,9 +34,7 @@ const numberOr = (value: unknown, fallback = 0) => {
 
 const stringOrNull = (value: unknown) => (typeof value === 'string' ? value : null)
 
-const recordOrEmpty = (
-  value: Record<string, unknown> | null | undefined,
-): Record<string, unknown> => value ?? {}
+const recordOrEmpty = (value: Record<string, unknown> | null | undefined): Record<string, unknown> => value ?? {}
 
 function normalizeProfile(payload: ApiProfileResponse | undefined): UserGamificationProfile | null {
   if (!payload) return null
@@ -54,23 +52,17 @@ function normalizeProfile(payload: ApiProfileResponse | undefined): UserGamifica
     total_activities_completed: Math.max(0, numberOr(payload.total_activities_completed)),
     total_courses_completed: Math.max(0, numberOr(payload.total_courses_completed)),
     daily_xp_earned: Math.max(0, numberOr(payload.daily_xp_earned)),
-    xp_to_next_level:
-      payload.xp_to_next_level !== undefined ? numberOr(payload.xp_to_next_level) : undefined,
+    xp_to_next_level: payload.xp_to_next_level !== undefined ? numberOr(payload.xp_to_next_level) : undefined,
     level_progress_percent:
-      payload.level_progress_percent !== undefined
-        ? numberOr(payload.level_progress_percent)
-        : undefined,
-    xp_in_current_level:
-      payload.xp_in_current_level !== undefined ? numberOr(payload.xp_in_current_level) : undefined,
+      payload.level_progress_percent !== undefined ? numberOr(payload.level_progress_percent) : undefined,
+    xp_in_current_level: payload.xp_in_current_level !== undefined ? numberOr(payload.xp_in_current_level) : undefined,
     last_xp_award_date: stringOrNull(payload.last_xp_award_date),
     last_login_date: stringOrNull(payload.last_login_date),
     last_learning_date: stringOrNull(payload.last_learning_date),
     created_at: createdAt,
     updated_at: updatedAt,
     preferences: recordOrEmpty(payload.preferences),
-    ...(payload.xp_to_next_level !== undefined
-      ? { xp_to_next_level: numberOr(payload.xp_to_next_level) }
-      : {}),
+    ...(payload.xp_to_next_level !== undefined ? { xp_to_next_level: numberOr(payload.xp_to_next_level) } : {}),
     ...(payload.level_progress_percent !== undefined
       ? { level_progress_percent: numberOr(payload.level_progress_percent) }
       : {}),
@@ -101,16 +93,19 @@ function normalizeLeaderboard(payload?: ApiLeaderboardResponse | null): Platform
   const entries = payload?.entries ?? []
   return {
     entries: entries.map((data, index) => {
-      return Object.assign({
-	user_id: numberOr(data.user_id),
-	total_xp: Math.max(0, numberOr(data.total_xp)),
-	level: Math.max(1, numberOr(data.level, 1)),
-	rank: Math.max(1, numberOr(data.rank, index + 1)),
-	username: typeof data.username === 'string' ? data.username : null,
-	first_name: 'first_name' in data ? data.first_name ?? null : null,
-	last_name: 'last_name' in data ? data.last_name ?? null : null,
-	avatar_url: 'avatar_url' in data ? data.avatar_url ?? null : null
-}, typeof data.rank_change === 'number' ? { rank_change: data.rank_change } : {})
+      return Object.assign(
+        {
+          user_id: numberOr(data.user_id),
+          total_xp: Math.max(0, numberOr(data.total_xp)),
+          level: Math.max(1, numberOr(data.level, 1)),
+          rank: Math.max(1, numberOr(data.rank, index + 1)),
+          username: typeof data.username === 'string' ? data.username : null,
+          first_name: 'first_name' in data ? (data.first_name ?? null) : null,
+          last_name: 'last_name' in data ? (data.last_name ?? null) : null,
+          avatar_url: 'avatar_url' in data ? (data.avatar_url ?? null) : null,
+        },
+        typeof data.rank_change === 'number' ? { rank_change: data.rank_change } : {},
+      )
     }),
     total_participants: Math.max(0, numberOr(payload?.total_participants)),
     last_updated: fallbackDate,
@@ -148,14 +143,11 @@ async function fetchGamificationData(): Promise<ApiDashboardResponse | null> {
  */
 async function fetchLeaderboardData(limit: number): Promise<ApiLeaderboardResponse | null> {
   try {
-    const res = await apiFetch(
-      `gamification/leaderboard?limit=${encodeURIComponent(String(limit))}`,
-      {
-        method: 'GET',
-        baseUrl: getServerAPIUrl(),
-        timeoutMs: 8000,
-      },
-    )
+    const res = await apiFetch(`gamification/leaderboard?limit=${encodeURIComponent(String(limit))}`, {
+      method: 'GET',
+      baseUrl: getServerAPIUrl(),
+      timeoutMs: 8000,
+    })
 
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) return null
@@ -191,8 +183,7 @@ export async function getServerGamificationDashboard(): Promise<DashboardData | 
     return null
   }
 
-  const userRank =
-    json.user_rank === null || json.user_rank === undefined ? null : numberOr(json.user_rank)
+  const userRank = json.user_rank === null || json.user_rank === undefined ? null : numberOr(json.user_rank)
 
   const dashboardData: DashboardData = {
     profile,

@@ -17,11 +17,7 @@ registerKind('TYPE_CODE_CHALLENGE', async () => {
     import('./code-challenge/CodeChallengeAttemptContent'),
   ])
 
-  const ReviewPassthrough: ComponentType<KindReviewProps> = ({
-    activityId,
-    submissionUuid,
-    title,
-  }) => {
+  const ReviewPassthrough: ComponentType<KindReviewProps> = ({ activityId, submissionUuid, title }) => {
     return GradingReviewWorkspace({
       activityId,
       initialSubmissionUuid: submissionUuid ?? null,

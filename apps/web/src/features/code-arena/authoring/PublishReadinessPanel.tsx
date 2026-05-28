@@ -24,10 +24,7 @@ export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
         <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
           {t('publishReadinessCheck')}
         </span>
-        <Badge
-          variant={blockersCount > 0 ? 'warning' : 'success'}
-          className="text-[10px] font-bold"
-        >
+        <Badge variant={blockersCount > 0 ? 'warning' : 'success'} className="text-[10px] font-bold">
           {blockersCount > 0 ? t('issuesPending', { count: blockersCount }) : t('readyToPublish')}
         </Badge>
       </div>
@@ -43,9 +40,7 @@ export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
               )}
               {blockersCount > 0 ? t('checklistPending') : t('checklistAllPassed')}
             </h3>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              {t('publishReadinessDescription')}
-            </p>
+            <p className="text-muted-foreground text-xs leading-relaxed">{t('publishReadinessDescription')}</p>
           </div>
 
           <div className="grid gap-3">
@@ -54,9 +49,7 @@ export function PublishReadinessPanel({ draft }: PublishReadinessPanelProps) {
                 key={item.label}
                 className={cn(
                   'flex items-start gap-3 rounded-lg border p-4 transition-all duration-200',
-                  item.ok
-                    ? 'border-emerald-500/10 bg-emerald-500/[0.01]'
-                    : 'border-amber-500/25 bg-amber-500/[0.01]',
+                  item.ok ? 'border-emerald-500/10 bg-emerald-500/[0.01]' : 'border-amber-500/25 bg-amber-500/[0.01]',
                 )}
               >
                 <div className="mt-0.5 shrink-0">
@@ -103,16 +96,12 @@ function buildReadiness(settings: CodeChallengeSettings, t: any) {
       label: t('readiness.languages.label'),
       ok:
         (settings.allowed_languages ?? []).length > 0 &&
-        settings.allowed_languages.every(
-          id => starterCode[id]?.trim() && referenceSolutions[id]?.trim(),
-        ),
+        settings.allowed_languages.every(id => starterCode[id]?.trim() && referenceSolutions[id]?.trim()),
       detail: t('readiness.languages.detail'),
     },
     {
       label: t('readiness.visible.label'),
-      ok:
-        visible.length > 0 &&
-        visible.some(test => test.input.trim() || test.expected_output.trim()),
+      ok: visible.length > 0 && visible.some(test => test.input.trim() || test.expected_output.trim()),
       detail: t('readiness.visible.detail'),
     },
     {

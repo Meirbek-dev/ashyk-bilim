@@ -42,18 +42,13 @@ export default function FileSubmissionResult({ attempt, onRevise }: FileSubmissi
           <p className="text-muted-foreground text-sm">{t('yourScore')}</p>
           <p className="text-4xl font-bold tabular-nums">{formatScore(final_score)}</p>
           {late_penalty_pct > 0 ? (
-            <p className="text-muted-foreground mt-1 text-xs">
-              {t('latePenalty', { percent: late_penalty_pct })}
-            </p>
+            <p className="text-muted-foreground mt-1 text-xs">{t('latePenalty', { percent: late_penalty_pct })}</p>
           ) : null}
         </div>
 
         <div className="flex flex-col items-end gap-2">
           {isReturned ? (
-            <Badge
-              variant="outline"
-              className="gap-1.5 border-amber-500 text-amber-600 dark:text-amber-400"
-            >
+            <Badge variant="outline" className="gap-1.5 border-amber-500 text-amber-600 dark:text-amber-400">
               <RotateCcw className="size-3" />
               {t('returnedForRevision')}
             </Badge>

@@ -41,10 +41,7 @@ import { Button } from '@components/ui/button'
 import { Badge } from '@components/ui/badge'
 import Link from '@components/ui/AppLink'
 
-import {
-  getCourseThumbnailMediaDirectory,
-  getUserAvatarMediaDirectory,
-} from '@services/media/media'
+import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media'
 import { deleteCourseFromBackend } from '@services/courses/courses'
 import { getAbsoluteUrl } from '@services/config/config'
 
@@ -402,12 +399,10 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
   }, [currentUserId, course.authors, course.is_owner])
 
   const canUpdate =
-    can(Resources.COURSE, Actions.UPDATE, Scopes.APP) ||
-    (isOwner && can(Resources.COURSE, Actions.UPDATE, Scopes.OWN))
+    can(Resources.COURSE, Actions.UPDATE, Scopes.APP) || (isOwner && can(Resources.COURSE, Actions.UPDATE, Scopes.OWN))
 
   const canDelete =
-    can(Resources.COURSE, Actions.DELETE, Scopes.APP) ||
-    (isOwner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
+    can(Resources.COURSE, Actions.DELETE, Scopes.APP) || (isOwner && can(Resources.COURSE, Actions.DELETE, Scopes.OWN))
 
   const availableActions = [...(canUpdate ? ['update'] : []), ...(canDelete ? ['delete'] : [])]
 
@@ -460,11 +455,7 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
   return (
     <>
       <div className="absolute top-2 right-2 z-20 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-        <ResourceActionsMenu
-          availableActions={availableActions}
-          actions={actions}
-          trigger={trigger}
-        />
+        <ResourceActionsMenu availableActions={availableActions} actions={actions} trigger={trigger} />
       </div>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -473,9 +464,7 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
             <AlertDialogMedia className="bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400">
               <AlertTriangle className="size-8" />
             </AlertDialogMedia>
-            <AlertDialogTitle>
-              {t('deleteConfirmationTitle', { courseName: course.name })}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteConfirmationTitle', { courseName: course.name })}</AlertDialogTitle>
             <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -528,10 +517,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
     [course.authors],
   )
 
-  const cleanCourseUuid = useMemo(
-    () => removeCoursePrefix(course.course_uuid),
-    [course.course_uuid],
-  )
+  const cleanCourseUuid = useMemo(() => removeCoursePrefix(course.course_uuid), [course.course_uuid])
 
   const courseRun = useMemo(() => {
     return trailData?.runs?.find((run: any) => {
@@ -570,9 +556,7 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const currentUserId = currentUser?.id
   const isOwner = useMemo(() => {
     if (!currentUserId || !activeAuthors.length) return false
-    return activeAuthors.some(
-      author => author.authorship === 'CREATOR' && author.user.id === currentUserId,
-    )
+    return activeAuthors.some(author => author.authorship === 'CREATOR' && author.user.id === currentUserId)
   }, [currentUserId, activeAuthors])
 
   const handleDelete = async () => {

@@ -96,9 +96,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
 
     if (userByIdQuery.error) {
       console.error('Error fetching user by ID:', userByIdQuery.error)
-      setError(
-        userByIdQuery.error instanceof Error ? userByIdQuery.error.message : t('errorNotFound'),
-      )
+      setError(userByIdQuery.error instanceof Error ? userByIdQuery.error.message : t('errorNotFound'))
       updateAttributes({ user_id: null })
     }
   }, [t, updateAttributes, userByIdQuery.data, userByIdQuery.error, userId])
@@ -119,11 +117,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
 
     if (userByUsernameQuery.error) {
       console.error('Error fetching user by username:', userByUsernameQuery.error)
-      setError(
-        userByUsernameQuery.error instanceof Error
-          ? userByUsernameQuery.error.message
-          : t('errorNotFound'),
-      )
+      setError(userByUsernameQuery.error instanceof Error ? userByUsernameQuery.error.message : t('errorNotFound'))
       setSubmittedUsername(null)
     }
   }, [submittedUsername, t, updateAttributes, userByUsernameQuery.data, userByUsernameQuery.error])
@@ -227,15 +221,10 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <h4 className="truncate font-semibold text-gray-900">
-                      {[userData.first_name, userData.middle_name, userData.last_name]
-                        .filter(Boolean)
-                        .join(' ')}
+                      {[userData.first_name, userData.middle_name, userData.last_name].filter(Boolean).join(' ')}
                     </h4>
                     {userData.username ? (
-                      <Badge
-                        variant="outline"
-                        className="truncate px-2 text-xs font-normal text-gray-500"
-                      >
+                      <Badge variant="outline" className="truncate px-2 text-xs font-normal text-gray-500">
                         @{userData.username}
                       </Badge>
                     ) : null}
@@ -250,9 +239,7 @@ const UserBlockComponent = (props: TypedNodeViewProps<UserNodeAttrs>) => {
                   </Button>
                 </div>
                 {userData.bio ? (
-                  <p className="mt-1.5 line-clamp-4 text-sm leading-normal text-gray-500">
-                    {userData.bio}
-                  </p>
+                  <p className="mt-1.5 line-clamp-4 text-sm leading-normal text-gray-500">{userData.bio}</p>
                 ) : null}
               </div>
             </div>

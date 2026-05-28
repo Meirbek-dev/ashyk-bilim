@@ -4,14 +4,7 @@ import { AlertTriangle, RotateCcw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { Viewport } from 'next'
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
@@ -30,13 +23,7 @@ export const viewport: Viewport = {
   initialScale: 1,
 }
 
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const [locale, setLocale] = useState<SupportedLocale>('ru-RU')
 
   useEffect(() => {
@@ -65,8 +52,7 @@ export default function GlobalError({
   }, [error])
 
   const t = ERROR_MESSAGES[locale]
-  const isChunkError =
-    error?.name === 'ChunkLoadError' || /Failed to load chunk/i.test(error?.message || '')
+  const isChunkError = error?.name === 'ChunkLoadError' || /Failed to load chunk/i.test(error?.message || '')
 
   const handleRetry = () => {
     if (typeof globalThis.window === 'undefined') {
@@ -113,21 +99,17 @@ export default function GlobalError({
 
               {isChunkError && <p className="text-muted-foreground text-sm">{t.updateInfo}</p>}
 
-              {typeof process !== 'undefined' &&
-                process?.env?.NODE_ENV !== 'production' &&
-                error.stack && (
-                  <>
-                    <Separator />
-                    <details className="group bg-muted/50 rounded-md border p-3">
-                      <summary className="cursor-pointer text-sm font-medium">
-                        {t.devDetails}
-                      </summary>
-                      <pre className="text-muted-foreground mt-2 max-h-64 overflow-auto text-xs break-all whitespace-pre-wrap">
-                        {error.stack}
-                      </pre>
-                    </details>
-                  </>
-                )}
+              {typeof process !== 'undefined' && process?.env?.NODE_ENV !== 'production' && error.stack && (
+                <>
+                  <Separator />
+                  <details className="group bg-muted/50 rounded-md border p-3">
+                    <summary className="cursor-pointer text-sm font-medium">{t.devDetails}</summary>
+                    <pre className="text-muted-foreground mt-2 max-h-64 overflow-auto text-xs break-all whitespace-pre-wrap">
+                      {error.stack}
+                    </pre>
+                  </details>
+                </>
+              )}
             </CardContent>
 
             <CardFooter className="flex justify-end gap-3">

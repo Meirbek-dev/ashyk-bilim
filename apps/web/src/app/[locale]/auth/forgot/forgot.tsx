@@ -24,11 +24,7 @@ const ForgotPasswordClient = () => {
   const validationT = useTranslations('Validation')
 
   const schema = v.object({
-    email: v.pipe(
-      v.string(),
-      v.minLength(1, validationT('required')),
-      v.email(validationT('invalidEmail')),
-    ),
+    email: v.pipe(v.string(), v.minLength(1, validationT('required')), v.email(validationT('invalidEmail'))),
   })
 
   const [state, action, isPending] = useActionState(
@@ -41,7 +37,7 @@ const ForgotPasswordClient = () => {
         return {
           error: null,
           message: null,
-          fieldErrors: (emailError ? { email: emailError } : {}),
+          fieldErrors: emailError ? { email: emailError } : {},
         }
       }
 
@@ -94,11 +90,7 @@ const ForgotPasswordClient = () => {
           <FieldError>{state.fieldErrors.email}</FieldError>
         </Field>
 
-        <AuthSubmitButton
-          isPending={isPending}
-          label={t('sendResetLink')}
-          pendingLabel={t('loading')}
-        />
+        <AuthSubmitButton isPending={isPending} label={t('sendResetLink')} pendingLabel={t('loading')} />
       </form>
 
       <Link

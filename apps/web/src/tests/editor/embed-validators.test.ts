@@ -125,9 +125,7 @@ describe('validateExcalidrawUrl', () => {
 
 describe('buildExcalidrawSrc', () => {
   it('appends ?embed=1 when no query string present', () => {
-    expect(buildExcalidrawSrc('https://excalidraw.com/#room=abc')).toBe(
-      'https://excalidraw.com/#room=abc?embed=1',
-    )
+    expect(buildExcalidrawSrc('https://excalidraw.com/#room=abc')).toBe('https://excalidraw.com/#room=abc?embed=1')
   })
 
   it('appends &embed=1 when query string already present', () => {
@@ -189,14 +187,10 @@ describe('validateTldrawUrl', () => {
 
 describe('buildTldrawSrc', () => {
   it('appends ?embed=1 when no query string present', () => {
-    expect(buildTldrawSrc('https://tldraw.com/r/my-room')).toBe(
-      'https://tldraw.com/r/my-room?embed=1',
-    )
+    expect(buildTldrawSrc('https://tldraw.com/r/my-room')).toBe('https://tldraw.com/r/my-room?embed=1')
   })
 
   it('appends &embed=1 when query string already present', () => {
-    expect(buildTldrawSrc('https://tldraw.com/r/my-room?foo=bar')).toBe(
-      'https://tldraw.com/r/my-room?foo=bar&embed=1',
-    )
+    expect(buildTldrawSrc('https://tldraw.com/r/my-room?foo=bar')).toBe('https://tldraw.com/r/my-room?foo=bar&embed=1')
   })
 })

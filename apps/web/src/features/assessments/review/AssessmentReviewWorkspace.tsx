@@ -69,8 +69,7 @@ export default function AssessmentReviewWorkspace({
           phase: 'load-review-kind-module',
           activityUuid: cleanUuid,
           assessmentUuid: assessment?.assessment_uuid,
-          error:
-            loadError instanceof Error ? loadError.message : 'Failed to load review kind module',
+          error: loadError instanceof Error ? loadError.message : 'Failed to load review kind module',
         }).catch(() => undefined)
       })
     return () => {
@@ -89,9 +88,7 @@ export default function AssessmentReviewWorkspace({
 
   if (error || !assessment?.review_projection) {
     return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-        {t('reviewUnavailable')}
-      </div>
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('reviewUnavailable')}</div>
     )
   }
 

@@ -20,9 +20,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
-const EditActivity = async (props: {
-  params: Promise<{ courseid: string; activityuuid: string }>
-}) => {
+const EditActivity = async (props: { params: Promise<{ courseid: string; activityuuid: string }> }) => {
   const params = await props.params
   const { activityuuid, courseid } = params
   redirect(`/dash/courses/${courseid}/activity/${activityuuid}/studio`)

@@ -36,10 +36,7 @@ export function courseStructureQueryOptions<TCourseStructure = unknown>(
 ) {
   return queryOptions({
     queryKey: courseKeys.structure(courseUuid, withUnpublishedActivities),
-    queryFn: () =>
-      apiFetcher<TCourseStructure>(
-        courseEndpoints.structure(courseUuid, withUnpublishedActivities),
-      ),
+    queryFn: () => apiFetcher<TCourseStructure>(courseEndpoints.structure(courseUuid, withUnpublishedActivities)),
     staleTime: 5000,
   })
 }
@@ -71,9 +68,7 @@ export function courseListQueryOptions<TCourse = unknown>(options: CourseListKey
   })
 }
 
-export function editableCourseListQueryOptions<TCourse = unknown>(
-  options: CourseListKeyOptions = {},
-) {
+export function editableCourseListQueryOptions<TCourse = unknown>(options: CourseListKeyOptions = {}) {
   return queryOptions({
     queryKey: courseKeys.editable(options),
     queryFn: async (): Promise<CourseListResponse<TCourse>> => {
@@ -82,10 +77,7 @@ export function editableCourseListQueryOptions<TCourse = unknown>(
         courses: Array.isArray(response.data) ? response.data : [],
         total: Number.parseInt(response.headers['x-total-count'] ?? '0', 10),
         summary: {
-          total: Number.parseInt(
-            response.headers['x-summary-total'] ?? response.headers['x-total-count'] ?? '0',
-            10,
-          ),
+          total: Number.parseInt(response.headers['x-summary-total'] ?? response.headers['x-total-count'] ?? '0', 10),
           ready: Number.parseInt(response.headers['x-summary-ready'] ?? '0', 10),
           private: Number.parseInt(response.headers['x-summary-private'] ?? '0', 10),
           attention: Number.parseInt(response.headers['x-summary-attention'] ?? '0', 10),
@@ -169,9 +161,7 @@ export function activityAssessmentUuidQueryOptions(activityUuid: string) {
     queryKey: queryKeys.assessments.activity(activityUuid),
     queryFn: async () => {
       try {
-        const data = await apiFetcher<{ assessment_uuid?: string }>(
-          `assessments/activity/${activityUuid}`,
-        )
+        const data = await apiFetcher<{ assessment_uuid?: string }>(`assessments/activity/${activityUuid}`)
         return data?.assessment_uuid ?? null
       } catch {
         return null
@@ -184,9 +174,7 @@ export function platformCoursesQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.platform.courses(),
     queryFn: async () => {
-      const { data, headers } = await apiFetcherWithHeaders(
-        courseEndpoints.list({ page: 1, limit: 20 }),
-      )
+      const { data, headers } = await apiFetcherWithHeaders(courseEndpoints.list({ page: 1, limit: 20 }))
       return {
         courses: Array.isArray(data) ? data : [],
         total: Number.parseInt(headers['x-total-count'] ?? '0', 10),

@@ -62,8 +62,7 @@ vi.mock('@/services/grading/grading', () => ({
 }))
 
 vi.mock('@/services/assessments/assessment-actions', () => ({
-  createStudentPolicyOverride: (...args: unknown[]) =>
-    mocks.createStudentPolicyOverrideMock(...args),
+  createStudentPolicyOverride: (...args: unknown[]) => mocks.createStudentPolicyOverrideMock(...args),
   saveGradingDraft: (...args: unknown[]) => mocks.saveGradingDraftMock(...args),
 }))
 

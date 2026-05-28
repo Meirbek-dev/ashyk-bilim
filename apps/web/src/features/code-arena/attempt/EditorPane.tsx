@@ -81,13 +81,7 @@ export function EditorPane({
             <RotateCcw className="size-4" />
             {t('resetCode')}
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleFormat}
-            disabled={readOnly}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={handleFormat} disabled={readOnly}>
             <AlignLeft className="size-4" />
             {t('formatCode')}
           </Button>
@@ -109,17 +103,13 @@ export function EditorPane({
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={preferences.wordWrap}
-                onCheckedChange={checked =>
-                  onPreferencesChange({ ...preferences, wordWrap: checked })
-                }
+                onCheckedChange={checked => onPreferencesChange({ ...preferences, wordWrap: checked })}
               >
                 {t('wordWrap')}
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
                 checked={preferences.minimap}
-                onCheckedChange={checked =>
-                  onPreferencesChange({ ...preferences, minimap: checked })
-                }
+                onCheckedChange={checked => onPreferencesChange({ ...preferences, minimap: checked })}
               >
                 {t('minimap')}
               </DropdownMenuCheckboxItem>
@@ -160,9 +150,7 @@ export function EditorPane({
         className="min-h-0 flex-1 rounded-none border-0"
         onMount={handleMount}
         options={monacoOptions}
-        {...(selectedLanguage?.monaco_language
-          ? { monacoLanguage: selectedLanguage.monaco_language }
-          : {})}
+        {...(selectedLanguage?.monaco_language ? { monacoLanguage: selectedLanguage.monaco_language } : {})}
         {...(readOnly ? { readOnlyMessage: 'This submission is read-only.' } : {})}
       />
     </div>

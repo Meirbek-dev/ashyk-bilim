@@ -1,10 +1,6 @@
 import rawThemeRegistry from './theme-store.json'
 import { loadThemeFonts } from './theme-fonts'
-import {
-  readLocalStorageString,
-  writeJsonLocalStorage,
-  writeLocalStorageString,
-} from './local-storage'
+import { readLocalStorageString, writeJsonLocalStorage, writeLocalStorageString } from './local-storage'
 
 export type ThemeMode = 'light' | 'dark'
 export type ThemeTokenMap = Record<string, string>
@@ -104,9 +100,7 @@ function isThemeMode(value: string | null | undefined): value is ThemeMode {
 }
 
 export const themeNames = Object.keys(registry)
-export const themes = themeNames.map(name =>
-  buildThemeDefinition(name, registry[name]!, DEFAULT_THEME_MODE),
-)
+export const themes = themeNames.map(name => buildThemeDefinition(name, registry[name]!, DEFAULT_THEME_MODE))
 
 export function getTheme(name: string, mode: ThemeMode = DEFAULT_THEME_MODE): ThemeDefinition {
   const resolvedName = name in registry ? name : DEFAULT_THEME_NAME

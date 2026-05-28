@@ -5,12 +5,7 @@ import { Combobox as ComboboxPrimitive } from '@base-ui/react/combobox'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from '@/components/ui/input-group'
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
 import { ChevronDownIcon, XIcon, CheckIcon } from 'lucide-react'
 
 const Combobox = ComboboxPrimitive.Root
@@ -86,10 +81,7 @@ function ComboboxContent({
   anchor,
   ...props
 }: ComboboxPrimitive.Popup.Props &
-  Pick<
-    ComboboxPrimitive.Positioner.Props,
-    'side' | 'align' | 'sideOffset' | 'alignOffset' | 'anchor'
-  >) {
+  Pick<ComboboxPrimitive.Positioner.Props, 'side' | 'align' | 'sideOffset' | 'alignOffset' | 'anchor'>) {
   return (
     <ComboboxPrimitive.Portal>
       <ComboboxPrimitive.Positioner
@@ -139,9 +131,7 @@ function ComboboxItem({ className, children, ...props }: ComboboxPrimitive.Item.
     >
       {children}
       <ComboboxPrimitive.ItemIndicator
-        render={
-          <span className="pointer-events-none absolute end-2 flex size-4 items-center justify-center" />
-        }
+        render={<span className="pointer-events-none absolute end-2 flex size-4 items-center justify-center" />}
       >
         <CheckIcon className="pointer-events-none" />
       </ComboboxPrimitive.ItemIndicator>

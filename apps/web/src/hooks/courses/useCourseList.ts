@@ -2,10 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import type { CourseListKeyOptions } from './courseKeys'
-import {
-  courseListQueryOptions,
-  editableCourseListQueryOptions,
-} from '@/features/courses/queries/course.query'
+import { courseListQueryOptions, editableCourseListQueryOptions } from '@/features/courses/queries/course.query'
 
 export function useCourseList<TCourse = any>(options: CourseListKeyOptions = {}) {
   const query = useQuery(courseListQueryOptions<TCourse>(options))

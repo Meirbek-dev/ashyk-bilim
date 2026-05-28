@@ -25,10 +25,7 @@ export function AiStreamingCursor({ className }: { className?: string }) {
  * container and append the cursor to it. Used internally by MarkdownContent
  * when streaming=true.
  */
-export function useStreamingCursor(
-  containerRef: React.RefObject<HTMLDivElement | null>,
-  isStreaming: boolean,
-) {
+export function useStreamingCursor(containerRef: React.RefObject<HTMLDivElement | null>, isStreaming: boolean) {
   const cursorRef = useRef<HTMLSpanElement | null>(null)
 
   useEffect(() => {

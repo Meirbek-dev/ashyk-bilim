@@ -9,8 +9,6 @@ export interface SearchContentParams {
 }
 
 export async function searchContent({ query, page = 1, limit = 20 }: SearchContentParams) {
-  const result = await apiFetch(
-    `search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
-  )
+  const result = await apiFetch(`search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
   return await getResponseMetadata(result)
 }

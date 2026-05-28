@@ -50,8 +50,7 @@ export function createInsertItems(t: ToolbarTranslator): InsertItem[] {
       icon: <Table2 className="size-4" />,
       category: 'basic',
       includeInToolbar: false,
-      run: editor =>
-        editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+      run: editor => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
     },
     {
       id: 'codeblock',

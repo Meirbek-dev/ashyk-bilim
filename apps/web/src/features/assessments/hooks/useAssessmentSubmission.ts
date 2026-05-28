@@ -32,9 +32,7 @@ interface ConflictState {
 
 export type AssessmentSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'conflict' | 'error'
 
-function answersFromSubmission(
-  submission: AssessmentSubmissionRead | null | undefined,
-): Record<string, ItemAnswer> {
+function answersFromSubmission(submission: AssessmentSubmissionRead | null | undefined): Record<string, ItemAnswer> {
   const answers = submission?.answers_json?.['answers']
   return answers && typeof answers === 'object' ? (answers as Record<string, ItemAnswer>) : {}
 }
@@ -56,10 +54,7 @@ async function readJsonOrThrow(response: Response) {
   return payload
 }
 
-export function useAssessmentSubmission(
-  assessmentUuid: string | null | undefined,
-  activityUuid?: string | null,
-) {
+export function useAssessmentSubmission(assessmentUuid: string | null | undefined, activityUuid?: string | null) {
   const t = useTranslations('Features.ActivityWorkspace')
   const queryClient = useQueryClient()
   const [localAnswers, setLocalAnswers] = useState<Record<string, ItemAnswer>>({})
@@ -112,13 +107,7 @@ export function useAssessmentSubmission(
           })
         : Promise.resolve(),
     ])
-  }, [
-    assessmentUuid,
-    draftQueryOptions.queryKey,
-    normalizedActivityUuid,
-    queryClient,
-    submissionsQueryKey,
-  ])
+  }, [assessmentUuid, draftQueryOptions.queryKey, normalizedActivityUuid, queryClient, submissionsQueryKey])
 
   const draftQuery = useQuery({
     ...draftQueryOptions,
@@ -162,26 +151,21 @@ export function useAssessmentSubmission(
         submission: latest.status === 'DRAFT' ? latest : null,
       } satisfies DraftRead)
 
-      queryClient.setQueryData(
-        submissionsQueryKey,
-        (current: AssessmentSubmissionRead[] | undefined) => {
-          const next = [...(current ?? [])]
-          const existingIndex = next.findIndex(
-            candidate => candidate.submission_uuid === latest.submission_uuid,
-          )
-          if (existingIndex !== -1) {
-            next[existingIndex] = latest
-          } else {
-            next.unshift(latest)
-          }
-          next.sort((left, right) => {
-            const leftTime = new Date(left.created_at ?? left.updated_at).getTime()
-            const rightTime = new Date(right.created_at ?? right.updated_at).getTime()
-            return rightTime - leftTime
-          })
-          return next
-        },
-      )
+      queryClient.setQueryData(submissionsQueryKey, (current: AssessmentSubmissionRead[] | undefined) => {
+        const next = [...(current ?? [])]
+        const existingIndex = next.findIndex(candidate => candidate.submission_uuid === latest.submission_uuid)
+        if (existingIndex !== -1) {
+          next[existingIndex] = latest
+        } else {
+          next.unshift(latest)
+        }
+        next.sort((left, right) => {
+          const leftTime = new Date(left.created_at ?? left.updated_at).getTime()
+          const rightTime = new Date(right.created_at ?? right.updated_at).getTime()
+          return rightTime - leftTime
+        })
+        return next
+      })
     },
     [assessmentUuid, draftQueryOptions.queryKey, queryClient, submissionsQueryKey],
   )
@@ -249,11 +233,7 @@ export function useAssessmentSubmission(
         return
       }
       // Gentle offline recovery support
-      if (
-        !error.status ||
-        error.message?.includes('Failed to fetch') ||
-        error.message?.includes('NetworkError')
-      ) {
+      if (!error.status || error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
         setSaveState('dirty')
         return
       }
@@ -361,13 +341,7 @@ export function useAssessmentSubmission(
       return
     }
     if (draftQuery.isLoading || submissionsQuery.isLoading) return
-    if (
-      saveState === 'dirty' ||
-      saveState === 'conflict' ||
-      saveMutation.isPending ||
-      submitMutation.isPending
-    )
-      return
+    if (saveState === 'dirty' || saveState === 'conflict' || saveMutation.isPending || submitMutation.isPending) return
     setLocalAnswers(answersFromSubmission(submission))
     if (saveState === 'idle' || saveState === 'saved') {
       setSaveState(submission ? 'saved' : 'idle')
@@ -457,9 +431,7 @@ export function useAssessmentSubmission(
     (options?: SubmitOptions) =>
       submitMutateAsync({
         answers: localAnswersRef.current,
-        ...(options?.violationCount !== undefined
-          ? { violationCount: options.violationCount }
-          : {}),
+        ...(options?.violationCount !== undefined ? { violationCount: options.violationCount } : {}),
         ...(options?.autoSubmit !== undefined ? { autoSubmit: options.autoSubmit } : {}),
       }),
     [submitMutateAsync],
@@ -535,9 +507,6 @@ function cloneAnswers(answers: Record<string, ItemAnswer>): Record<string, ItemA
   return structuredClone(answers)
 }
 
-function areAnswersEqual(
-  left: Record<string, ItemAnswer>,
-  right: Record<string, ItemAnswer>,
-): boolean {
+function areAnswersEqual(left: Record<string, ItemAnswer>, right: Record<string, ItemAnswer>): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
 }

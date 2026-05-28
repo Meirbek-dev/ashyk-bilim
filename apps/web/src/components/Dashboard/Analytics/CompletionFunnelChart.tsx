@@ -12,11 +12,7 @@ interface CompletionFunnelChartProps {
   data: FunnelStep[]
 }
 
-export default function CompletionFunnelChart({
-  title,
-  description,
-  data,
-}: CompletionFunnelChartProps) {
+export default function CompletionFunnelChart({ title, description, data }: CompletionFunnelChartProps) {
   const t = useTranslations('TeacherAnalytics')
   return (
     <Card className="shadow-sm">
@@ -40,12 +36,7 @@ export default function CompletionFunnelChart({
             <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={v => String(v)} />
             <YAxis dataKey="label" type="category" width={140} tickLine={false} axisLine={false} />
             <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  nameKey="label"
-                  formatter={v => [`${v} ${t('funnel.learners')}`, '']}
-                />
-              }
+              content={<ChartTooltipContent nameKey="label" formatter={v => [`${v} ${t('funnel.learners')}`, '']} />}
             />
             <Bar dataKey="count" fill="var(--color-count)" radius={8} />
           </BarChart>

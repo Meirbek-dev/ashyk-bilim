@@ -168,8 +168,7 @@ function useImageResize(initialWidth: number, onResize: (width: number) => void)
       const startWidth = width
 
       const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
-        const currentX =
-          'touches' in moveEvent ? (moveEvent.touches?.[0]?.clientX ?? startX) : moveEvent.clientX
+        const currentX = 'touches' in moveEvent ? (moveEvent.touches?.[0]?.clientX ?? startX) : moveEvent.clientX
         const delta = currentX - startX
         const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + delta * 2)) // *2 because handle is centered
         setWidth(newWidth)
@@ -208,30 +207,15 @@ interface IconButtonProps {
   className?: string
 }
 
-function IconButton({
-  onClick,
-  icon: Icon,
-  title,
-  isActive,
-  variant = 'default',
-  className,
-}: IconButtonProps) {
+function IconButton({ onClick, icon: Icon, title, isActive, variant = 'default', className }: IconButtonProps) {
   const baseStyles = 'rounded-md p-1.5 transition-colors'
   const variants = {
-    default: cn(
-      'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-      isActive && 'bg-gray-100 text-gray-900',
-    ),
+    default: cn('text-gray-600 hover:bg-gray-100 hover:text-gray-900', isActive && 'bg-gray-100 text-gray-900'),
     overlay: 'bg-black/50 text-white hover:bg-black/70 rounded-full p-2 backdrop-blur-sm',
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(baseStyles, variants[variant], className)}
-      title={title}
-    >
+    <button type="button" onClick={onClick} className={cn(baseStyles, variants[variant], className)} title={title}>
       <Icon size={16} />
     </button>
   )
@@ -247,15 +231,7 @@ interface DropZoneProps {
   t: ReturnType<typeof useTranslations>
 }
 
-function DropZone({
-  onFileSelect,
-  preview,
-  isUploading,
-  error,
-  onUpload,
-  onReset,
-  t,
-}: DropZoneProps) {
+function DropZone({ onFileSelect, preview, isUploading, error, onUpload, onReset, t }: DropZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
 
@@ -282,13 +258,7 @@ function DropZone({
     return (
       <div className="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
         <div className="mx-auto h-48 w-full overflow-hidden rounded-md">
-          <NextImage
-            src={preview}
-            alt={t('previewImageAlt')}
-            fill
-            className="object-contain"
-            sizes="100vw"
-          />
+          <NextImage src={preview} alt={t('previewImageAlt')} fill className="object-contain" sizes="100vw" />
         </div>
         <div className="mt-4 flex justify-center gap-2">
           <button
@@ -345,11 +315,7 @@ function DropZone({
       />
 
       <div className={cn('mb-3 rounded-full p-3', error ? 'bg-red-100' : 'bg-gray-100')}>
-        {error ? (
-          <AlertCircle className="h-6 w-6 text-red-500" />
-        ) : (
-          <ImageIcon className="h-6 w-6 text-gray-400" />
-        )}
+        {error ? <AlertCircle className="h-6 w-6 text-red-500" /> : <ImageIcon className="h-6 w-6 text-gray-400" />}
       </div>
 
       {error ? (
@@ -431,11 +397,7 @@ function ViewerControls({ onExpand, onDownload, t }: ViewerControlsProps) {
 // Main Component
 // ============================================================================
 
-export default function ImageBlockComponent({
-  node,
-  updateAttributes,
-  extension,
-}: ImageBlockProps) {
+export default function ImageBlockComponent({ node, updateAttributes, extension }: ImageBlockProps) {
   const t = useTranslations('DashPage.Editor.ImageBlock')
   usePlatform()
   const course = useCourse()
@@ -445,8 +407,7 @@ export default function ImageBlockComponent({
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const activityUuid = extension.options.activity.activity_uuid
-  const initialWidth =
-    node.attrs.size?.width && node.attrs.size.width > 0 ? node.attrs.size.width : DEFAULT_WIDTH
+  const initialWidth = node.attrs.size?.width && node.attrs.size.width > 0 ? node.attrs.size.width : DEFAULT_WIDTH
 
   // Image URL computation
   const imageUrl = useMemo(() => {
@@ -463,15 +424,14 @@ export default function ImageBlockComponent({
   }, [blockObject, course, activityUuid])
 
   // Upload handling
-  const { file, preview, isUploading, error, handleFileSelect, handleUpload, reset } =
-    useImageUpload({
-      activityUuid,
-      onSuccess: newBlockObject => {
-        setBlockObject(newBlockObject)
-        updateAttributes({ blockObject: newBlockObject })
-      },
-      t,
-    })
+  const { file, preview, isUploading, error, handleFileSelect, handleUpload, reset } = useImageUpload({
+    activityUuid,
+    onSuccess: newBlockObject => {
+      setBlockObject(newBlockObject)
+      updateAttributes({ blockObject: newBlockObject })
+    },
+    t,
+  })
 
   // Resize handling
   const handleResize = useCallback(
@@ -556,11 +516,7 @@ export default function ImageBlockComponent({
               height={Math.round(MAX_WIDTH * 0.5625)}
               className="h-auto w-full rounded-lg shadow-sm"
             />
-            <ViewerControls
-              onExpand={() => setIsModalOpen(true)}
-              onDownload={handleDownload}
-              t={t}
-            />
+            <ViewerControls onExpand={() => setIsModalOpen(true)} onDownload={handleDownload} t={t} />
           </div>
         )}
       </NodeViewWrapper>

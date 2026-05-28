@@ -68,11 +68,7 @@ const EmptyCollectionsState = ({ t }: EmptyStateProps) => (
 )
 
 const EmptyCoursesState = ({ t }: EmptyStateProps) => (
-  <EmptyState
-    icon={BookOpen}
-    title={t('Courses.noContent')}
-    description={t('Courses.noContentDescription')}
-  />
+  <EmptyState icon={BookOpen} title={t('Courses.noContent')} description={t('Courses.noContentDescription')} />
 )
 
 // Collection Grid Component
@@ -90,15 +86,7 @@ const CollectionGrid = ({ collections }: GridProps) => (
 )
 
 // Section Header Component
-const SectionHeader = ({
-  title,
-  type,
-  action,
-}: {
-  title: string
-  type: 'cou' | 'col'
-  action?: React.ReactNode
-}) => (
+const SectionHeader = ({ title, type, action }: { title: string; type: 'cou' | 'col'; action?: React.ReactNode }) => (
   <div className="flex items-center justify-between gap-4">
     <TypeOfContentTitle title={title} type={type} />
     {action && <div className="flex-shrink-0">{action}</div>}
@@ -130,20 +118,13 @@ const LandingClassic = async ({
             {/* Gamification Hero Section */}
             {gamificationProfile && (
               <section className="animate-in fade-in slide-in-from-top-4 duration-500">
-                <HeroSection
-                  profile={gamificationProfile}
-                  {...(userRank === undefined ? {} : { userRank })}
-                />
+                <HeroSection profile={gamificationProfile} {...(userRank === undefined ? {} : { userRank })} />
               </section>
             )}
 
             {/* Courses Section */}
             <section className="space-y-6">
-              <SectionHeader
-                title={t('Courses.title')}
-                type="cou"
-                action={<CreateCourseTrigger />}
-              />
+              <SectionHeader title={t('Courses.title')} type="cou" action={<CreateCourseTrigger />} />
 
               <div className="min-h-[200px]">
                 {hasCourses ? (
@@ -166,11 +147,7 @@ const LandingClassic = async ({
                 title={t('Collections.title')}
                 type="col"
                 action={
-                  <PermissionGuard
-                    action={Actions.CREATE}
-                    resource={Resources.COLLECTION}
-                    scope={Scopes.APP}
-                  >
+                  <PermissionGuard action={Actions.CREATE} resource={Resources.COLLECTION} scope={Scopes.APP}>
                     <Link
                       href={getAbsoluteUrl('/collections/new')}
                       className="focus:ring-primary inline-block rounded transition-transform duration-200 hover:scale-105 focus:scale-105 focus:ring-2 focus:ring-offset-2 focus:outline-none"
@@ -182,11 +159,7 @@ const LandingClassic = async ({
               />
 
               <div className="min-h-[200px]">
-                {hasCollections ? (
-                  <CollectionGrid collections={collections} />
-                ) : (
-                  <EmptyCollectionsState t={t} />
-                )}
+                {hasCollections ? <CollectionGrid collections={collections} /> : <EmptyCollectionsState t={t} />}
               </div>
             </section>
           </div>

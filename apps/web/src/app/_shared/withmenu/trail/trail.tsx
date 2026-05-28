@@ -51,9 +51,7 @@ const Trail = () => {
   }, [])
 
   const gamificationProfile = useGamificationStore(s => s.profile)
-  const recentTransactions = useGamificationStore(
-    s => s.dashboard?.recent_transactions ?? EMPTY_RECENT_TRANSACTIONS,
-  )
+  const recentTransactions = useGamificationStore(s => s.dashboard?.recent_transactions ?? EMPTY_RECENT_TRANSACTIONS)
   const userRank = useGamificationStore(s => s.dashboard?.user_rank)
   const isGamificationLoading = useGamificationStore(s => s.isLoading)
   const gamificationData = {
@@ -89,9 +87,7 @@ const Trail = () => {
                 <BookOpen className="text-muted-foreground h-6 w-6" />
               </div>
               <p className="text-foreground text-sm font-medium">{t('noCoursesInProgress')}</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                {t('startACourseToSeeYourProgress')}
-              </p>
+              <p className="text-muted-foreground mt-1 text-sm">{t('startACourseToSeeYourProgress')}</p>
             </div>
           ) : (
             <div className="space-y-3">

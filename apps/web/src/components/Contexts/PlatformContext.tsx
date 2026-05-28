@@ -14,9 +14,7 @@ export const PlatformContextProvider = ({
   children: ReactNode
   initialPlatform?: any
 }) => {
-  return (
-    <PlatformContext.Provider value={initialPlatform ?? null}>{children}</PlatformContext.Provider>
-  )
+  return <PlatformContext.Provider value={initialPlatform ?? null}>{children}</PlatformContext.Provider>
 }
 
 export function usePlatform(): Platform | null {

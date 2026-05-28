@@ -198,10 +198,7 @@ function CourseWorkspaceChrome({
               >
                 <Icon className={cn('size-4 shrink-0', isActive && 'text-primary')} />
                 <span className="hidden whitespace-nowrap sm:inline">{stage.label}</span>
-                {mounted &&
-                stage.key === 'review' &&
-                !readiness.readyToPublish &&
-                readiness.issues.length > 0 ? (
+                {mounted && stage.key === 'review' && !readiness.readyToPublish && readiness.issues.length > 0 ? (
                   <span className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold">
                     {readiness.issues.length}
                   </span>
@@ -228,16 +225,8 @@ export default function CourseWorkspacePageShell({
   children,
 }: CourseWorkspacePageShellProps) {
   return (
-    <CourseProvider
-      courseuuid={prefixedCourseUuid(courseuuid)}
-      withUnpublishedActivities
-      initialCourse={initialCourse}
-    >
-      <CourseWorkspaceChrome
-        courseuuid={courseuuid}
-        activeStage={activeStage}
-        capabilities={capabilities}
-      >
+    <CourseProvider courseuuid={prefixedCourseUuid(courseuuid)} withUnpublishedActivities initialCourse={initialCourse}>
+      <CourseWorkspaceChrome courseuuid={courseuuid} activeStage={activeStage} capabilities={capabilities}>
         {children}
       </CourseWorkspaceChrome>
     </CourseProvider>

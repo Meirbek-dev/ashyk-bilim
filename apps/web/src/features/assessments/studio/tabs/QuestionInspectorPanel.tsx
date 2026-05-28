@@ -76,9 +76,7 @@ export default function QuestionInspectorPanel({
           className="bg-card hover:bg-muted flex h-auto shrink-0 flex-col items-center justify-center gap-1.5 rounded-none border border-l px-1.5 py-3"
         >
           <SlidersHorizontal className="text-muted-foreground size-4" />
-          <span className="text-muted-foreground text-[9px] font-medium [writing-mode:vertical-rl]">
-            {t('title')}
-          </span>
+          <span className="text-muted-foreground text-[9px] font-medium [writing-mode:vertical-rl]">{t('title')}</span>
         </Button>
       )}
 
@@ -147,9 +145,7 @@ export default function QuestionInspectorPanel({
                       onClick={() => setDifficulty(d)}
                       className={cn(
                         'flex-1 rounded px-2 py-1 text-[11px] font-medium ring-1 transition-all h-auto',
-                        difficulty === d
-                          ? DIFFICULTY_COLORS[d]
-                          : 'bg-muted text-muted-foreground ring-transparent',
+                        difficulty === d ? DIFFICULTY_COLORS[d] : 'bg-muted text-muted-foreground ring-transparent',
                         !isEditable && 'cursor-not-allowed opacity-50',
                       )}
                     >

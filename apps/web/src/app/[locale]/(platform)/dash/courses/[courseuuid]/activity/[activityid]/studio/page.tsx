@@ -22,10 +22,7 @@ export default async function PlatformAssessmentStudioPage(props: {
   let assessment
 
   try {
-    ;[activity, course] = await Promise.all([
-      getActivity(activityid),
-      getCourseMetadata(courseuuid, undefined, true),
-    ])
+    ;[activity, course] = await Promise.all([getActivity(activityid), getCourseMetadata(courseuuid, undefined, true)])
     assessment = await getAssessmentByActivityUuid(activity.activity_uuid)
   } catch (error: any) {
     if (error.status === 401) {

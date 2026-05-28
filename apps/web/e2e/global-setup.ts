@@ -127,9 +127,7 @@ async function loginViaApi(email: string, password: string): Promise<string> {
 }
 
 /** GET /api/v1/auth/me — returns the current session object with user nested under `user` key */
-async function getMe(
-  cookieHeader: string,
-): Promise<{ id: number; email: string; user_uuid: string }> {
+async function getMe(cookieHeader: string): Promise<{ id: number; email: string; user_uuid: string }> {
   const res = await fetch(`${API_URL}/auth/me`, {
     headers: { Cookie: cookieHeader },
   })
@@ -145,9 +143,7 @@ async function getMe(
 }
 
 /** GET /api/v1/roles — list all roles, returns array of { id, slug, name } */
-async function listRoles(
-  cookieHeader: string,
-): Promise<{ id: number; slug: string; name: string }[]> {
+async function listRoles(cookieHeader: string): Promise<{ id: number; slug: string; name: string }[]> {
   const res = await fetch(`${API_URL}/roles`, {
     headers: { Cookie: cookieHeader },
   })
@@ -170,11 +166,7 @@ async function findUserIdByEmail(cookieHeader: string, email: string): Promise<n
  * Fall back to fetching the user's own session after they log in,
  * since non-admin calls to user-roles may not include the user.
  */
-async function findOrFetchUserId(
-  adminCookie: string,
-  userCookie: string,
-  email: string,
-): Promise<number> {
+async function findOrFetchUserId(adminCookie: string, userCookie: string, email: string): Promise<number> {
   const fromRoles = await findUserIdByEmail(adminCookie, email)
   if (fromRoles !== null) return fromRoles
 
@@ -203,11 +195,7 @@ async function assignRole(cookieHeader: string, userId: number, roleId: number):
  * This is needed because Next.js server-side auth cookies are HttpOnly and
  * cannot be captured via fetch alone.
  */
-async function captureStorageState(
-  email: string,
-  password: string,
-  outputPath: string,
-): Promise<void> {
+async function captureStorageState(email: string, password: string, outputPath: string): Promise<void> {
   const browser = await chromium.launch()
   const context = await browser.newContext({ baseURL: BASE_URL })
   const page = await context.newPage()
@@ -282,9 +270,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   // 4. Resolve teacher user ID and assign teacher role
   const teacherUserId = await findOrFetchUserId(adminCookie, teacherCookie, teacherEmail)
   await assignRole(adminCookie, teacherUserId, teacherRole.id)
-  console.log(
-    `[setup] Assigned role "${teacherRole.name}" to ${teacherEmail} (id=${teacherUserId})`,
-  )
+  console.log(`[setup] Assigned role "${teacherRole.name}" to ${teacherEmail} (id=${teacherUserId})`)
 
   // 5. Capture real browser storage states (HttpOnly cookies)
   await captureStorageState(adminEmail, adminPassword, STORAGE_STATE.admin)

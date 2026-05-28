@@ -54,13 +54,7 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
             <Sparkles className="text-primary size-4" />
             <span className="text-sm font-semibold">{t('title')}</span>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            aria-label={t('title')}
-          >
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label={t('title')}>
             <X className="size-4" />
           </Button>
         </div>
@@ -88,9 +82,7 @@ export default function AiAssistantPanel({ open, onClose, runtime }: AiAssistant
           {/* Activity context info */}
           {runtime.activity ? (
             <div className="border-border bg-muted/30 mt-6 rounded-lg border p-3">
-              <p className="text-muted-foreground mb-1 text-xs font-medium">
-                {t('currentActivity')}
-              </p>
+              <p className="text-muted-foreground mb-1 text-xs font-medium">{t('currentActivity')}</p>
               <p className="text-sm font-medium">{runtime.activity.title}</p>
             </div>
           ) : null}
@@ -133,32 +125,16 @@ function getSuggestions(activityType: string, t: any): string[] {
     }
     case 'TYPE_EXAM':
     case 'TYPE_CUSTOM': {
-      return [
-        t('suggestions.exam.hint'),
-        t('suggestions.exam.concept'),
-        t('suggestions.exam.review'),
-      ]
+      return [t('suggestions.exam.hint'), t('suggestions.exam.concept'), t('suggestions.exam.review')]
     }
     case 'TYPE_FILE_SUBMISSION': {
-      return [
-        t('suggestions.file.include'),
-        t('suggestions.file.criteria'),
-        t('suggestions.file.structure'),
-      ]
+      return [t('suggestions.file.include'), t('suggestions.file.criteria'), t('suggestions.file.structure')]
     }
     case 'TYPE_VIDEO': {
-      return [
-        t('suggestions.video.summarize'),
-        t('suggestions.video.explain'),
-        t('suggestions.video.keypoints'),
-      ]
+      return [t('suggestions.video.summarize'), t('suggestions.video.explain'), t('suggestions.video.keypoints')]
     }
     default: {
-      return [
-        t('suggestions.default.understand'),
-        t('suggestions.default.concepts'),
-        t('suggestions.default.guidance'),
-      ]
+      return [t('suggestions.default.understand'), t('suggestions.default.concepts'), t('suggestions.default.guidance')]
     }
   }
 }

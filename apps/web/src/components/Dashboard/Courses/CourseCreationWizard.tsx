@@ -1,15 +1,7 @@
 'use client'
 
-import {
-  buildCourseWorkspacePath,
-  cleanCourseUuid,
-  prefixedCourseUuid,
-} from '@/lib/course-management'
-import {
-  createNewCourse,
-  getCourseMetadata,
-  searchEditableCourses,
-} from '@services/courses/courses'
+import { buildCourseWorkspacePath, cleanCourseUuid, prefixedCourseUuid } from '@/lib/course-management'
+import { createNewCourse, getCourseMetadata, searchEditableCourses } from '@services/courses/courses'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field'
 import { CourseChoiceCard, courseWorkflowSummaryCardClass } from './courseWorkflowUi'
@@ -28,11 +20,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type * as v from 'valibot'
-import {
-  MarkdownEditor,
-  getMarkdownSaveGate,
-  isMarkdownStructurallyEmpty,
-} from '@/features/content-markdown'
+import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
 
 export default function CourseCreationWizard() {
   const t = useTranslations('DashPage.CourseManagement.Wizard')
@@ -78,9 +66,7 @@ export default function CourseCreationWizard() {
 
   // ── Async source-course combobox ──────────────────────────────────────────
   const [sourceQuery, setSourceQuery] = useState('')
-  const [sourceOptions, setSourceOptions] = useState<
-    { course_uuid: string; name: string; cleanUuid: string }[]
-  >([])
+  const [sourceOptions, setSourceOptions] = useState<{ course_uuid: string; name: string; cleanUuid: string }[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [selectedSourceName, setSelectedSourceName] = useState('')
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -138,11 +124,7 @@ export default function CourseCreationWizard() {
 
   const createOutlineFromSource = async (createdCourse: any) => {
     if (!sourceCourseUuid) return
-    const sourceMetadata = await getCourseMetadata(
-      prefixedCourseUuid(sourceCourseUuid),
-      undefined,
-      true,
-    )
+    const sourceMetadata = await getCourseMetadata(prefixedCourseUuid(sourceCourseUuid), undefined, true)
     const chapters = Array.isArray(sourceMetadata?.chapters) ? sourceMetadata.chapters : []
     for (const chapter of chapters) {
       await createChapter({
@@ -184,9 +166,7 @@ export default function CourseCreationWizard() {
           createdCourse && typeof createdCourse === 'object' && 'detail' in createdCourse
             ? createdCourse.detail
             : undefined
-        throw new Error(
-          (typeof detail === 'string' ? detail : undefined) || t('errors.creationFailed'),
-        )
+        throw new Error((typeof detail === 'string' ? detail : undefined) || t('errors.creationFailed'))
       }
 
       if (values.template === 'outline') {
@@ -205,15 +185,11 @@ export default function CourseCreationWizard() {
     <div className="text-muted-foreground space-y-4 text-sm">
       <div>
         <div className="text-muted-foreground">{t('summary.title')}</div>
-        <div className="text-foreground mt-1 text-base font-semibold">
-          {name.trim() || t('summary.untitledCourse')}
-        </div>
+        <div className="text-foreground mt-1 text-base font-semibold">{name.trim() || t('summary.untitledCourse')}</div>
       </div>
       <div>
         <div className="text-muted-foreground">{t('summary.visibility')}</div>
-        <div className="mt-1">
-          {isPublic ? t('visibility.public.summary') : t('visibility.private.summary')}
-        </div>
+        <div className="mt-1">{isPublic ? t('visibility.public.summary') : t('visibility.private.summary')}</div>
       </div>
       <div>
         <div className="text-muted-foreground">{t('summary.template')}</div>
@@ -241,12 +217,8 @@ export default function CourseCreationWizard() {
           <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
             {t('header.label')}
           </div>
-          <h1 className="text-foreground mt-2 text-4xl font-semibold tracking-tight">
-            {t('header.title')}
-          </h1>
-          <p className="text-muted-foreground mt-3 max-w-3xl text-sm leading-6">
-            {t('header.description')}
-          </p>
+          <h1 className="text-foreground mt-2 text-4xl font-semibold tracking-tight">{t('header.title')}</h1>
+          <p className="text-muted-foreground mt-3 max-w-3xl text-sm leading-6">{t('header.description')}</p>
         </div>
 
         <div className="xl:hidden">
@@ -310,9 +282,7 @@ export default function CourseCreationWizard() {
               </Field>
 
               <fieldset className="space-y-3">
-                <legend className="text-foreground text-sm font-medium">
-                  {t('basics.audienceDefault')}
-                </legend>
+                <legend className="text-foreground text-sm font-medium">{t('basics.audienceDefault')}</legend>
                 <RadioGroup
                   value={isPublic ? 'public' : 'private'}
                   onValueChange={val => form.setValue('public', val === 'public')}
@@ -355,9 +325,7 @@ export default function CourseCreationWizard() {
                   }
                 >
                   <div>
-                    <div className="text-foreground text-sm font-semibold">
-                      {t('steps.template')}
-                    </div>
+                    <div className="text-foreground text-sm font-semibold">{t('steps.template')}</div>
                     <div className="text-muted-foreground text-sm">{t('template.description')}</div>
                   </div>
                   <ChevronDown className="text-muted-foreground size-4 transition-transform group-data-open:rotate-180" />
@@ -365,9 +333,7 @@ export default function CourseCreationWizard() {
                 <CollapsibleContent className="bg-card mt-4 space-y-5 rounded-xl border p-4">
                   <RadioGroup
                     value={template}
-                    onValueChange={val =>
-                      form.setValue('template', val as CourseWizardValues['template'])
-                    }
+                    onValueChange={val => form.setValue('template', val as CourseWizardValues['template'])}
                     className="grid gap-3"
                   >
                     {[
@@ -401,19 +367,14 @@ export default function CourseCreationWizard() {
                               ? Sparkles
                               : CheckCircle2
                         }
-                        onSelect={value =>
-                          form.setValue('template', value as CourseWizardValues['template'])
-                        }
+                        onSelect={value => form.setValue('template', value as CourseWizardValues['template'])}
                       />
                     ))}
                   </RadioGroup>
 
                   {template === 'outline' ? (
                     <div className="space-y-2">
-                      <label
-                        htmlFor="source-course-search"
-                        className="text-foreground text-sm font-medium"
-                      >
+                      <label htmlFor="source-course-search" className="text-foreground text-sm font-medium">
                         {t('template.sourceCourse')}
                       </label>
 
@@ -457,9 +418,7 @@ export default function CourseCreationWizard() {
                       )}
 
                       {sourceCourseUuid && (
-                        <p className="text-muted-foreground text-xs">
-                          {t('template.sourceCourseHelp')}
-                        </p>
+                        <p className="text-muted-foreground text-xs">{t('template.sourceCourseHelp')}</p>
                       )}
                     </div>
                   ) : null}
@@ -477,11 +436,7 @@ export default function CourseCreationWizard() {
                 {tCommon('cancel')}
               </Button>
 
-              <Button
-                type="button"
-                onClick={handleCreate}
-                disabled={!canCreate || form.formState.isSubmitting}
-              >
+              <Button type="button" onClick={handleCreate} disabled={!canCreate || form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (

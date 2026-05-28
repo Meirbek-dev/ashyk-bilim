@@ -69,18 +69,9 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
           {t('dashboard.leaderboard')}
         </CardTitle>
         {entries.length > 10 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowFull(!showFull)}
-            className="h-8 text-xs"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setShowFull(!showFull)} className="h-8 text-xs">
             {showFull ? t('leaderboard.showLess') : t('leaderboard.showAll')}
-            {showFull ? (
-              <ChevronUp className="ml-1 h-3 w-3" />
-            ) : (
-              <ChevronDown className="ml-1 h-3 w-3" />
-            )}
+            {showFull ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
           </Button>
         )}
       </CardHeader>
@@ -124,12 +115,7 @@ export function Leaderboard({ entries, currentUserId, userRank, className }: Lea
                     </div>
                   )}
 
-                  <LeaderboardEntryRow
-                    entry={entry}
-                    isCurrentUser={isCurrentUser}
-                    isTop3={isTop3}
-                    t={t}
-                  />
+                  <LeaderboardEntryRow entry={entry} isCurrentUser={isCurrentUser} isTop3={isTop3} t={t} />
                 </div>
               )
             })}
@@ -180,9 +166,7 @@ function LeaderboardEntryRow({
             {entry.rank === 1 ? <Crown className="h-3.5 w-3.5" /> : entry.rank}
           </Badge>
         ) : (
-          <span className="text-muted-foreground text-xs font-medium tabular-nums">
-            #{entry.rank}
-          </span>
+          <span className="text-muted-foreground text-xs font-medium tabular-nums">#{entry.rank}</span>
         )}
       </div>
 
@@ -220,9 +204,7 @@ function LeaderboardEntryRow({
           {entry.first_name && entry.last_name
             ? [entry.first_name, entry.middle_name, entry.last_name].filter(Boolean).join(' ')
             : entry.username || 'Anonymous'}
-          {isCurrentUser && (
-            <span className="text-muted-foreground ml-2 text-xs">({t('leaderboard.you')})</span>
-          )}
+          {isCurrentUser && <span className="text-muted-foreground ml-2 text-xs">({t('leaderboard.you')})</span>}
         </p>
         {entry.username && (entry.first_name || entry.last_name) && (
           <p className="text-muted-foreground text-xs">@{entry.username}</p>

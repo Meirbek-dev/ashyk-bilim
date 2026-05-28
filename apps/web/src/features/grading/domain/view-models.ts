@@ -8,14 +8,11 @@ import {
 import { formatScoreFraction } from './scoring'
 import type { Submission, SubmissionReviewViewModel } from './types'
 
-export function getSubmissionDisplayName(
-  submission: Pick<Submission, 'user' | 'user_id'> | null | undefined,
-): string {
+export function getSubmissionDisplayName(submission: Pick<Submission, 'user' | 'user_id'> | null | undefined): string {
   if (!submission?.user) return submission?.user_id ? `User #${submission.user_id}` : '--'
   return (
-    [submission.user.first_name, submission.user.middle_name, submission.user.last_name]
-      .filter(Boolean)
-      .join(' ') || `@${submission.user.username}`
+    [submission.user.first_name, submission.user.middle_name, submission.user.last_name].filter(Boolean).join(' ') ||
+    `@${submission.user.username}`
   )
 }
 

@@ -24,19 +24,12 @@ export interface MarkdownValidatedCodeChallenge {
   hints?: MarkdownValidatedHint[] | null
 }
 
-export function getCodeChallengeMarkdownIssues(
-  settings: MarkdownValidatedCodeChallenge,
-): CodeChallengeMarkdownIssue[] {
+export function getCodeChallengeMarkdownIssues(settings: MarkdownValidatedCodeChallenge): CodeChallengeMarkdownIssue[] {
   const issues: CodeChallengeMarkdownIssue[] = []
 
   collectMarkdownIssues(issues, 'Problem statement', settings.prompt ?? '', 'codeProblemStatement')
   collectMarkdownIssues(issues, 'Input specification', settings.input_spec ?? '', 'codeInputSpec')
-  collectMarkdownIssues(
-    issues,
-    'Output specification',
-    settings.output_spec ?? '',
-    'codeOutputSpec',
-  )
+  collectMarkdownIssues(issues, 'Output specification', settings.output_spec ?? '', 'codeOutputSpec')
 
   for (const [index, test] of (settings.visible_tests ?? []).entries()) {
     collectMarkdownIssues(
@@ -66,9 +59,7 @@ export function getCodeChallengeMarkdownIssues(
 export function getFirstBlockingCodeChallengeMarkdownIssue(
   settings: Parameters<typeof getCodeChallengeMarkdownIssues>[0],
 ): CodeChallengeMarkdownIssue | null {
-  return (
-    getCodeChallengeMarkdownIssues(settings).find(issue => issue.issue.severity === 'error') ?? null
-  )
+  return getCodeChallengeMarkdownIssues(settings).find(issue => issue.issue.severity === 'error') ?? null
 }
 
 function collectMarkdownIssues(

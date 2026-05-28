@@ -1,10 +1,6 @@
 import type { MarkdownEditorPreset } from '../presets/presets'
 import { getMarkdownPreset } from '../presets/presets'
-import {
-  findUnsafeMarkdownLinks,
-  hasRawHtml,
-  isMarkdownStructurallyEmpty,
-} from '../utils/markdown-sanitize'
+import { findUnsafeMarkdownLinks, hasRawHtml, isMarkdownStructurallyEmpty } from '../utils/markdown-sanitize'
 
 export interface MarkdownValidationIssue {
   severity: 'error' | 'warning' | 'info'

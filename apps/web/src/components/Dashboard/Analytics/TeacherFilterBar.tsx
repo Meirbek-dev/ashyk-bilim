@@ -137,9 +137,7 @@ export default function TeacherFilterBar({
               bucket: getAnalyticsBucketLabel(t, query.bucket || 'day'),
             })}
           </Badge>
-          <Badge variant="outline">
-            {getAnalyticsCompareLabel(t, query.compare || 'previous_period')}
-          </Badge>
+          <Badge variant="outline">{getAnalyticsCompareLabel(t, query.compare || 'previous_period')}</Badge>
           <Badge variant="outline">
             <Globe2 className="mr-1 h-3.5 w-3.5" />
             {query.timezone || 'UTC'}

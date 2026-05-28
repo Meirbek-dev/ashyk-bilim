@@ -14,12 +14,7 @@ interface MarkdownCodeBlockProps {
   lineNumbers?: boolean
 }
 
-export function MarkdownCodeBlock({
-  code,
-  language,
-  compact = false,
-  lineNumbers = false,
-}: MarkdownCodeBlockProps) {
+export function MarkdownCodeBlock({ code, language, compact = false, lineNumbers = false }: MarkdownCodeBlockProps) {
   const [copied, setCopied] = useState(false)
   const [highlighted, setHighlighted] = useState<string | null>(null)
 
@@ -58,12 +53,7 @@ export function MarkdownCodeBlock({
     >
       {/* Header bar */}
       <div className="flex h-8 items-center justify-between border-b border-neutral-800 px-3">
-        <span
-          className={cn(
-            'font-mono font-medium text-neutral-400',
-            compact ? 'text-[10px]' : 'text-[11px]',
-          )}
-        >
+        <span className={cn('font-mono font-medium text-neutral-400', compact ? 'text-[10px]' : 'text-[11px]')}>
           {displayName}
         </span>
         <Button

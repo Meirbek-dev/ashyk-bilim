@@ -1,14 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { AdminAnalyticsResponse } from '@/types/analytics'
 import { Building2 } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
@@ -33,9 +26,7 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
       </CardHeader>
       <CardContent className="grid gap-6 xl:grid-cols-2">
         <div>
-          <div className="mb-2 text-sm font-medium">
-            {t('adminAnalyticsPanel.teacherWorkloadComparison')}
-          </div>
+          <div className="mb-2 text-sm font-medium">{t('adminAnalyticsPanel.teacherWorkloadComparison')}</div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -47,9 +38,7 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
             <TableBody>
               {data.teacher_workload_comparison.slice(0, 5).map(row => (
                 <TableRow key={row.teacher_user_id}>
-                  <TableCell className="max-w-[220px] truncate">
-                    {row.teacher_display_name}
-                  </TableCell>
+                  <TableCell className="max-w-[220px] truncate">{row.teacher_display_name}</TableCell>
                   <TableCell>{row.workload_backlog}</TableCell>
                   <TableCell>{row.at_risk_learners}</TableCell>
                 </TableRow>
@@ -58,9 +47,7 @@ export default function AdminAnalyticsPanel({ data }: AdminAnalyticsPanelProps) 
           </Table>
         </div>
         <div>
-          <div className="mb-2 text-sm font-medium">
-            {t('adminAnalyticsPanel.courseHealthRanking')}
-          </div>
+          <div className="mb-2 text-sm font-medium">{t('adminAnalyticsPanel.courseHealthRanking')}</div>
           <Table>
             <TableHeader>
               <TableRow>

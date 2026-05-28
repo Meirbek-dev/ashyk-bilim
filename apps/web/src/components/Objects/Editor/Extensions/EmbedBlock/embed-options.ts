@@ -333,8 +333,7 @@ export const EMBED_PROVIDERS = [
     placeholder: 'https://www.youtube.com/watch?v=...',
     hostnames: ['youtube.com', 'www.youtube.com', 'youtu.be'],
     defaultHeight: 420,
-    allow:
-      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
+    allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
     iconName: 'SiYoutube',
   },
   {
@@ -895,13 +894,9 @@ export type EmbedType = (typeof EMBED_PROVIDERS)[number]['type']
 
 export const DEFAULT_EMBED_TYPE: EmbedType = 'youtube'
 
-const PROVIDERS_BY_TYPE = new Map<EmbedType, EmbedProvider>(
-  EMBED_PROVIDERS.map(provider => [provider.type, provider]),
-)
+const PROVIDERS_BY_TYPE = new Map<EmbedType, EmbedProvider>(EMBED_PROVIDERS.map(provider => [provider.type, provider]))
 
-export function getEmbedProvider(
-  type: EmbedType | string | null | undefined,
-): EmbedProvider | null {
+export function getEmbedProvider(type: EmbedType | string | null | undefined): EmbedProvider | null {
   if (!type) return null
   return PROVIDERS_BY_TYPE.get(type as EmbedType) ?? null
 }

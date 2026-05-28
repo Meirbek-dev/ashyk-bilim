@@ -53,12 +53,7 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
   }
 
   if (courseImages.length === 1) {
-    return (
-      <div
-        className="h-full w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${courseImages[0]})` }}
-      />
-    )
+    return <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[0]})` }} />
   }
 
   if (courseImages.length === 2) {
@@ -68,10 +63,7 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
           className="border-background h-full w-1/2 border-r bg-cover bg-center"
           style={{ backgroundImage: `url(${courseImages[0]})` }}
         />
-        <div
-          className="h-full w-1/2 bg-cover bg-center"
-          style={{ backgroundImage: `url(${courseImages[1]})` }}
-        />
+        <div className="h-full w-1/2 bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[1]})` }} />
       </div>
     )
   }
@@ -88,10 +80,7 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
             className="border-background h-1/2 w-full border-b bg-cover bg-center"
             style={{ backgroundImage: `url(${courseImages[1]})` }}
           />
-          <div
-            className="h-1/2 w-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${courseImages[2]})` }}
-          />
+          <div className="h-1/2 w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[2]})` }} />
         </div>
       </div>
     )
@@ -99,22 +88,10 @@ const CollectionMosaic = ({ courses }: { courses: any[] }) => {
 
   return (
     <div className="bg-background grid h-full w-full grid-cols-2 grid-rows-2 gap-[1px]">
-      <div
-        className="h-full w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${courseImages[0]})` }}
-      />
-      <div
-        className="h-full w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${courseImages[1]})` }}
-      />
-      <div
-        className="h-full w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${courseImages[2]})` }}
-      />
-      <div
-        className="h-full w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${courseImages[3]})` }}
-      />
+      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[0]})` }} />
+      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[1]})` }} />
+      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[2]})` }} />
+      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${courseImages[3]})` }} />
     </div>
   )
 }
@@ -147,9 +124,7 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
       <div className="flex flex-1 flex-col p-4">
         <div className="mb-2 flex items-start justify-between gap-2">
           <Link
-            href={getAbsoluteUrl(
-              `/collection/${removeCollectionPrefix(collection.collection_uuid)}`,
-            )}
+            href={getAbsoluteUrl(`/collection/${removeCollectionPrefix(collection.collection_uuid)}`)}
             className="text-foreground hover:text-primary line-clamp-2 text-base font-semibold transition-colors"
           >
             {collection.name}
@@ -159,9 +134,7 @@ const CollectionThumbnail = ({ collection }: PropsType) => {
         <div className="mt-auto flex items-center justify-between pt-2">
           <div className="text-muted-foreground flex items-center gap-1.5">
             <Layers className="h-4 w-4" />
-            <p className="text-sm font-medium">
-              {t('courseCount', { count: collection.courses.length })}
-            </p>
+            <p className="text-sm font-medium">{t('courseCount', { count: collection.courses.length })}</p>
           </div>
           {isOwner && (
             <Badge variant="secondary" className="gap-1 rounded-md px-2 py-0.5 text-xs font-medium">
@@ -219,9 +192,7 @@ const CollectionDeleteAction = ({
 
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('deleteConfirmationTitle', { collectionName: collection.name })}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteConfirmationTitle', { collectionName: collection.name })}</AlertDialogTitle>
             <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

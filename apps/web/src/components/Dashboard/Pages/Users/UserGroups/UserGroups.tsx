@@ -93,9 +93,7 @@ const UserGroups = () => {
   const [editUserGroupModal, setEditUserGroupModal] = useState(false)
   const [selectedUserGroup, setSelectedUserGroup] = useState<any | null>(null)
   const [selectedUserGroupIdForEdit, setSelectedUserGroupIdForEdit] = useState<number | null>(null)
-  const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<number | null>(
-    null,
-  )
+  const [selectedUserGroupIdForManage, setSelectedUserGroupIdForManage] = useState<number | null>(null)
   const [isMounted, setIsMounted] = useState(false)
   const queryClient = useQueryClient()
 
@@ -168,17 +166,13 @@ const UserGroups = () => {
       enableSorting: false,
       cell: ({ row }) => (
         <Modal
-          isDialogOpen={
-            userGroupManagementModal ? selectedUserGroupIdForManage === row.original.id : false
-          }
+          isDialogOpen={userGroupManagementModal ? selectedUserGroupIdForManage === row.original.id : false}
           onOpenChange={isOpen => {
             if (!isOpen) handleCloseModal('manage')
           }}
           minHeight="lg"
           minWidth="lg"
-          dialogContent={
-            selectedUserGroup ? <ManageUsers usergroup_id={selectedUserGroup.id} /> : null
-          }
+          dialogContent={selectedUserGroup ? <ManageUsers usergroup_id={selectedUserGroup.id} /> : null}
           dialogTitle={t('manageUsersModalTitle')}
           dialogDescription={t('manageUsersModalDescription')}
           dialogTrigger={
@@ -205,9 +199,7 @@ const UserGroups = () => {
       cell: ({ row }) => (
         <div className="flex space-x-2">
           <Modal
-            isDialogOpen={
-              editUserGroupModal ? selectedUserGroupIdForEdit === row.original.id : false
-            }
+            isDialogOpen={editUserGroupModal ? selectedUserGroupIdForEdit === row.original.id : false}
             onOpenChange={isOpen => {
               if (!isOpen) handleCloseModal('edit')
             }}
@@ -227,9 +219,7 @@ const UserGroups = () => {
             }
             minHeight="sm"
             minWidth="sm"
-            dialogContent={
-              selectedUserGroup ? <EditUserGroup usergroup={selectedUserGroup} /> : null
-            }
+            dialogContent={selectedUserGroup ? <EditUserGroup usergroup={selectedUserGroup} /> : null}
           />
           <DeleteUserGroupButton usergroupId={row.original.id} onDelete={deleteUserGroupUI} t={t} />
         </div>

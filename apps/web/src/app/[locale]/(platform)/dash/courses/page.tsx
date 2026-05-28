@@ -55,28 +55,18 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function PlatformDashCoursesPage(props: {
-  searchParams: Promise<PageSearchParams>
-}) {
+export default function PlatformDashCoursesPage(props: { searchParams: Promise<PageSearchParams> }) {
   return <PlatformDashCoursesPageInner searchParams={props.searchParams} />
 }
 
-async function PlatformDashCoursesPageInner(props: {
-  searchParams: Promise<PageSearchParams>
-}) {
+async function PlatformDashCoursesPageInner(props: { searchParams: Promise<PageSearchParams> }) {
   const searchParams = await props.searchParams
   const currentPage = parsePage(searchParams['page'])
   const query = parseQuery(searchParams['q'])
   const sortBy = parseSort(searchParams['sort'])
   const preset = parsePreset(searchParams['preset'])
 
-  const { courses, total, summary } = await getEditableCourses(
-    currentPage,
-    COURSES_PER_PAGE,
-    query,
-    sortBy,
-    preset,
-  )
+  const { courses, total, summary } = await getEditableCourses(currentPage, COURSES_PER_PAGE, query, sortBy, preset)
 
   return (
     <CoursesHome

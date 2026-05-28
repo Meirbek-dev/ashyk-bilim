@@ -73,17 +73,11 @@ function courseListHookOptions<TCourse = unknown>(
   })
 }
 
-export function useCourseDiscussions(
-  courseUuid: string | null | undefined,
-  options?: UseCourseDiscussionsOptions,
-) {
+export function useCourseDiscussions(courseUuid: string | null | undefined, options?: UseCourseDiscussionsOptions) {
   return useQuery(courseDiscussionsHookOptions(courseUuid, options))
 }
 
-export function useCourseUpdates(
-  courseUuid: string | null | undefined,
-  options?: { enabled?: boolean },
-) {
+export function useCourseUpdates(courseUuid: string | null | undefined, options?: { enabled?: boolean }) {
   return useQuery(courseUpdatesHookOptions(courseUuid, options?.enabled ?? true))
 }
 

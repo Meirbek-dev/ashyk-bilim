@@ -30,11 +30,7 @@ export function TimerRing({ remainingSeconds, className }: TimerRingProps) {
   const isUrgent = remainingSeconds <= 60
   const isWarning = remainingSeconds <= 300
 
-  const ringColor = isUrgent
-    ? 'stroke-destructive'
-    : isWarning
-      ? 'stroke-amber-500'
-      : 'stroke-primary'
+  const ringColor = isUrgent ? 'stroke-destructive' : isWarning ? 'stroke-amber-500' : 'stroke-primary'
 
   const textColor = isUrgent ? 'text-destructive' : isWarning ? 'text-amber-600' : 'text-foreground'
 

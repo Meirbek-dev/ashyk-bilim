@@ -5,9 +5,7 @@ export type StudentActivityRuntime = components['schemas']['StudentActivityRunti
 export type StudentActivityActionRequest = components['schemas']['StudentActivityActionRequest']
 
 export function getStudentActivityRuntime(courseUuid: string, activityUuid: string) {
-  return apiFetcher<StudentActivityRuntime>(
-    `courses/${courseUuid}/activities/${activityUuid}/runtime`,
-  )
+  return apiFetcher<StudentActivityRuntime>(`courses/${courseUuid}/activities/${activityUuid}/runtime`)
 }
 
 export function runStudentActivityAction(

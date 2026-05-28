@@ -2,12 +2,7 @@ import { apiFetch, errorHandling, getResponseMetadata } from '@/lib/api-client'
 import type { CustomResponseTyping } from '@/lib/api-client'
 import { getAPIUrl } from '@services/config/config'
 
-export type FileSubmissionAttemptStatus =
-  | 'DRAFT'
-  | 'SUBMITTED'
-  | 'GRADED'
-  | 'PUBLISHED'
-  | 'RETURNED'
+export type FileSubmissionAttemptStatus = 'DRAFT' | 'SUBMITTED' | 'GRADED' | 'PUBLISHED' | 'RETURNED'
 
 export interface FileSubmissionAttemptFile {
   attempt_file_uuid: string
@@ -87,9 +82,7 @@ export interface FileSubmissionCreatePayload {
   grade_release_mode?: 'IMMEDIATE' | 'BATCH'
 }
 
-export type FileSubmissionUpdatePayload = Partial<
-  Omit<FileSubmissionCreatePayload, 'course_id' | 'chapter_id'>
->
+export type FileSubmissionUpdatePayload = Partial<Omit<FileSubmissionCreatePayload, 'course_id' | 'chapter_id'>>
 
 export interface FileSubmissionReviewQueue {
   items: FileSubmissionAttempt[]
@@ -115,9 +108,7 @@ async function readJsonOrThrow<T>(response: Response): Promise<T> {
   throw new Error(message)
 }
 
-export async function getFileSubmissionByActivity(
-  activityUuid: string,
-): Promise<FileSubmissionActivity> {
+export async function getFileSubmissionByActivity(activityUuid: string): Promise<FileSubmissionActivity> {
   const response = await apiFetch(`file-submissions/activity/${activityUuid}`, {
     baseUrl: getAPIUrl(),
     timeoutMs: 10_000,
@@ -160,9 +151,7 @@ export async function updateFileSubmissionActivity(
   return readJsonOrThrow<FileSubmissionActivity>(response)
 }
 
-export async function publishFileSubmissionActivity(
-  fileSubmissionUuid: string,
-): Promise<FileSubmissionActivity> {
+export async function publishFileSubmissionActivity(fileSubmissionUuid: string): Promise<FileSubmissionActivity> {
   const response = await apiFetch(`file-submissions/${fileSubmissionUuid}/publish`, {
     method: 'POST',
     baseUrl: getAPIUrl(),
@@ -170,9 +159,7 @@ export async function publishFileSubmissionActivity(
   return readJsonOrThrow<FileSubmissionActivity>(response)
 }
 
-export async function startFileSubmissionDraft(
-  fileSubmissionUuid: string,
-): Promise<FileSubmissionAttempt> {
+export async function startFileSubmissionDraft(fileSubmissionUuid: string): Promise<FileSubmissionAttempt> {
   const response = await apiFetch(`file-submissions/${fileSubmissionUuid}/draft`, {
     method: 'POST',
   })
@@ -211,9 +198,7 @@ export async function submitFileSubmission(
   return readJsonOrThrow<FileSubmissionAttempt>(response)
 }
 
-export async function uploadSubmissionFile(
-  file: File,
-): Promise<{ upload_uuid: string; filename: string }> {
+export async function uploadSubmissionFile(file: File): Promise<{ upload_uuid: string; filename: string }> {
   return uploadSubmissionFileWithProgress(file)
 }
 
@@ -269,9 +254,7 @@ export async function uploadSubmissionFileWithProgress(
   return { upload_uuid: finalized.upload_uuid, filename: file.name }
 }
 
-export async function getFileSubmissionReviewQueue(
-  fileSubmissionUuid: string,
-): Promise<FileSubmissionReviewQueue> {
+export async function getFileSubmissionReviewQueue(fileSubmissionUuid: string): Promise<FileSubmissionReviewQueue> {
   const response = await apiFetch(`file-submissions/${fileSubmissionUuid}/submissions`)
   return readJsonOrThrow<FileSubmissionReviewQueue>(response)
 }
@@ -301,22 +284,19 @@ export async function gradeFileSubmissionAttempt(
   },
   version?: number | null,
 ): Promise<FileSubmissionAttempt> {
-  const response = await apiFetch(
-    `file-submissions/${fileSubmissionUuid}/submissions/${attemptUuid}/grade`,
-    {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(version ? { 'If-Match': String(version) } : {}),
-      },
-      body: JSON.stringify({
-        final_score: payload.final_score ?? null,
-        feedback: payload.feedback ?? '',
-        rubric: payload.rubric ?? {},
-        status: payload.status,
-      }),
+  const response = await apiFetch(`file-submissions/${fileSubmissionUuid}/submissions/${attemptUuid}/grade`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(version ? { 'If-Match': String(version) } : {}),
     },
-  )
+    body: JSON.stringify({
+      final_score: payload.final_score ?? null,
+      feedback: payload.feedback ?? '',
+      rubric: payload.rubric ?? {},
+      status: payload.status,
+    }),
+  })
   return readJsonOrThrow<FileSubmissionAttempt>(response)
 }
 

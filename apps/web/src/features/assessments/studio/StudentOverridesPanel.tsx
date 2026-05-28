@@ -11,10 +11,7 @@ import {
   listStudentPolicyOverrides,
   updateStudentPolicyOverride,
 } from '@/services/assessments/assessment-actions'
-import type {
-  StudentPolicyOverride,
-  StudentPolicyOverrideCreate,
-} from '@/services/assessments/assessment-actions'
+import type { StudentPolicyOverride, StudentPolicyOverrideCreate } from '@/services/assessments/assessment-actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,14 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Switch } from '@/components/ui/switch'
 
 interface StudentOverridesPanelProps {
@@ -83,11 +73,8 @@ export default function StudentOverridesPanel({ assessmentUuid }: StudentOverrid
   const openEdit = (override: StudentPolicyOverride) => {
     setForm({
       user_id: String(override.user_id),
-      max_attempts_override:
-        override.max_attempts_override !== null ? String(override.max_attempts_override) : '',
-      due_at_override: override.due_at_override
-        ? new Date(override.due_at_override).toISOString().slice(0, 16)
-        : '',
+      max_attempts_override: override.max_attempts_override !== null ? String(override.max_attempts_override) : '',
+      due_at_override: override.due_at_override ? new Date(override.due_at_override).toISOString().slice(0, 16) : '',
       waive_late_penalty: override.waive_late_penalty,
       note: override.note,
     })
@@ -100,12 +87,8 @@ export default function StudentOverridesPanel({ assessmentUuid }: StudentOverrid
       try {
         const payload: StudentPolicyOverrideCreate = {
           user_id: Number.parseInt(form.user_id, 10),
-          max_attempts_override: form.max_attempts_override
-            ? Number.parseInt(form.max_attempts_override, 10)
-            : null,
-          due_at_override: form.due_at_override
-            ? new Date(form.due_at_override).toISOString()
-            : null,
+          max_attempts_override: form.max_attempts_override ? Number.parseInt(form.max_attempts_override, 10) : null,
+          due_at_override: form.due_at_override ? new Date(form.due_at_override).toISOString() : null,
           waive_late_penalty: form.waive_late_penalty,
           note: form.note || undefined,
         }
@@ -206,9 +189,7 @@ export default function StudentOverridesPanel({ assessmentUuid }: StudentOverrid
                 <Switch
                   id="override-waive-penalty"
                   checked={form.waive_late_penalty}
-                  onCheckedChange={checked =>
-                    setForm(prev => ({ ...prev, waive_late_penalty: checked }))
-                  }
+                  onCheckedChange={checked => setForm(prev => ({ ...prev, waive_late_penalty: checked }))}
                 />
                 <Label htmlFor="override-waive-penalty">{t('waiveLatePenalty')}</Label>
               </div>
@@ -251,17 +232,11 @@ export default function StudentOverridesPanel({ assessmentUuid }: StudentOverrid
           </TableHeader>
           <TableBody>
             {overrides.map(override => (
-              <TableRow
-                key={override.id}
-                className="cursor-pointer"
-                onClick={() => openEdit(override)}
-              >
+              <TableRow key={override.id} className="cursor-pointer" onClick={() => openEdit(override)}>
                 <TableCell className="font-mono text-xs">{override.user_id}</TableCell>
                 <TableCell>{override.max_attempts_override ?? '—'}</TableCell>
                 <TableCell className="text-xs">
-                  {override.due_at_override
-                    ? new Date(override.due_at_override).toLocaleString()
-                    : '—'}
+                  {override.due_at_override ? new Date(override.due_at_override).toLocaleString() : '—'}
                 </TableCell>
                 <TableCell>{override.waive_late_penalty ? '✓' : '—'}</TableCell>
                 <TableCell>

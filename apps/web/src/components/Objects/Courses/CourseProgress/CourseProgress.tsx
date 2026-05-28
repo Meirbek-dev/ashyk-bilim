@@ -1,14 +1,4 @@
-import {
-  ArrowRight,
-  Check,
-  ChevronDown,
-  Circle,
-  FileArchive,
-  FileText,
-  Layers,
-  Trophy,
-  Video,
-} from 'lucide-react'
+import { ArrowRight, Check, ChevronDown, Circle, FileArchive, FileText, Layers, Trophy, Video } from 'lucide-react'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { getAbsoluteUrl } from '@services/config/config'
@@ -80,8 +70,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
     return completedActivityIds.has(activity.id)
   }
 
-  const progressPercentage =
-    totalActivities === 0 ? 0 : Math.round((completedActivities / totalActivities) * 100)
+  const progressPercentage = totalActivities === 0 ? 0 : Math.round((completedActivities / totalActivities) * 100)
 
   const toggleChapter = (chapterUuid: string) => {
     setExpandedChapters(prev => {
@@ -141,15 +130,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
           {/* Circular Progress */}
           <div className="relative flex size-20 shrink-0 items-center justify-center">
             <svg className="size-full -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="42"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="8"
-                className="text-muted"
-              />
+              <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted" />
               <circle
                 cx="50"
                 cy="50"
@@ -166,38 +147,24 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
               {isCompleted ? (
                 <Trophy className="text-primary size-6" />
               ) : (
-                <span className="text-foreground text-lg font-bold tabular-nums">
-                  {progressPercentage}%
-                </span>
+                <span className="text-foreground text-lg font-bold tabular-nums">{progressPercentage}%</span>
               )}
             </div>
           </div>
 
           {/* Stats */}
           <div className="flex flex-1 flex-col gap-1.5">
-            <p
-              className={cn(
-                'text-lg font-semibold',
-                isCompleted ? 'text-primary' : 'text-foreground',
-              )}
-            >
-              {isCompleted
-                ? t('progressCard.courseCompleted')
-                : `${completedActivities} of ${totalActivities}`}
+            <p className={cn('text-lg font-semibold', isCompleted ? 'text-primary' : 'text-foreground')}>
+              {isCompleted ? t('progressCard.courseCompleted') : `${completedActivities} of ${totalActivities}`}
             </p>
             <p className="text-muted-foreground text-sm">
-              {isCompleted
-                ? t('progressCard.completedAllActivities')
-                : t('progressCard.activitiesCompletedLabel')}
+              {isCompleted ? t('progressCard.completedAllActivities') : t('progressCard.activitiesCompletedLabel')}
             </p>
 
             {/* Progress Bar */}
             <div className="bg-muted mt-2 h-2 w-full overflow-hidden rounded-full">
               <div
-                className={cn(
-                  'h-full rounded-full transition-all duration-500 ease-out',
-                  'bg-primary',
-                )}
+                className={cn('h-full rounded-full transition-all duration-500 ease-out', 'bg-primary')}
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
@@ -236,9 +203,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                   <div
                     className={cn(
                       'flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-semibold',
-                      isChapterComplete
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-muted text-muted-foreground',
+                      isChapterComplete ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
                     )}
                   >
                     {isChapterComplete ? <Check className="size-4" /> : chapterIndex + 1}
@@ -299,8 +264,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                           <div
                             className={cn(
                               'group flex items-center gap-3 px-4 py-3 transition-colors',
-                              activityIndex !== chapter.activities.length - 1 &&
-                                'border-b border-neutral-100',
+                              activityIndex !== chapter.activities.length - 1 && 'border-b border-neutral-100',
                               isDone ? 'hover:bg-teal-50/50' : 'hover:bg-white',
                             )}
                           >
@@ -322,9 +286,7 @@ const CourseProgress: FC<CourseProgressProps> = ({ course, isOpen, onClose, trai
                             <span
                               className={cn(
                                 'flex-1 truncate text-sm',
-                                isDone
-                                  ? 'text-teal-700'
-                                  : 'text-neutral-700 group-hover:text-neutral-900',
+                                isDone ? 'text-teal-700' : 'text-neutral-700 group-hover:text-neutral-900',
                               )}
                             >
                               {activity.name}

@@ -16,15 +16,7 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { useQuery, useQueryClient, queryOptions } from '@tanstack/react-query'
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
@@ -44,11 +36,7 @@ import type { ValidationIssue } from '@/features/assessments/domain/view-models'
 import { ChoiceItemAuthor } from '@/features/assessments/items/choice'
 import type { ChoiceAuthorValue } from '@/features/assessments/items/choice'
 import type { SaveState } from '@/features/assessments/shared/SaveStateBadge'
-import type {
-  AssessmentEditorState,
-  EditableItem,
-  StudioTab,
-} from '@/features/assessments/studio/studioTypes'
+import type { AssessmentEditorState, EditableItem, StudioTab } from '@/features/assessments/studio/studioTypes'
 import GeneralSettingsTab from '@/features/assessments/studio/tabs/GeneralSettingsTab'
 import BuilderCanvasTab from '@/features/assessments/studio/tabs/BuilderCanvasTab'
 import PublishDashboardTab from '@/features/assessments/studio/tabs/PublishDashboardTab'
@@ -57,12 +45,7 @@ import ResultsReviewTab from '@/features/assessments/studio/tabs/ResultsReviewTa
 import ErrorUI from '@/components/Objects/Elements/Error/Error'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
@@ -124,10 +107,7 @@ const KIND_ICONS: Record<SupportedStudioItemKind, typeof ListTodo> = {
   MATCHING: GitCompareArrows,
 }
 
-export function NativeItemStudioProvider({
-  activityUuid,
-  children,
-}: KindAuthorProps & { children: React.ReactNode }) {
+export function NativeItemStudioProvider({ activityUuid, children }: KindAuthorProps & { children: React.ReactNode }) {
   const normalizedActivityUuid = activityUuid.replace(/^activity_/, '')
   const queryClient = useQueryClient()
   const {
@@ -137,8 +117,7 @@ export function NativeItemStudioProvider({
   } = useQuery(
     queryOptions({
       queryKey: queryKeys.assessments.activity(normalizedActivityUuid),
-      queryFn: () =>
-        apiFetcher<AssessmentStudioDetail>(`assessments/activity/${normalizedActivityUuid}`),
+      queryFn: () => apiFetcher<AssessmentStudioDetail>(`assessments/activity/${normalizedActivityUuid}`),
       enabled: Boolean(normalizedActivityUuid),
     }),
   )
@@ -147,8 +126,7 @@ export function NativeItemStudioProvider({
   const readinessQuery = useQuery(
     queryOptions({
       queryKey: queryKeys.assessments.readiness(assessment?.assessment_uuid ?? ''),
-      queryFn: () =>
-        apiFetcher<StudioReadinessPayload>(`assessments/${assessment?.assessment_uuid}/readiness`),
+      queryFn: () => apiFetcher<StudioReadinessPayload>(`assessments/${assessment?.assessment_uuid}/readiness`),
       enabled: Boolean(assessment?.assessment_uuid),
       retry: false,
     }),
@@ -189,10 +167,15 @@ export function NativeItemStudioProvider({
   const totalPoints = items.reduce((sum, item) => sum + (item.max_score || 0), 0)
   const isEditable = isAssessmentEditable(assessment.lifecycle)
   const validationIssues =
-    readinessQuery.data?.issues.map(issue => (Object.assign({
-	code: issue.code,
-	message: issue.message
-}, issue.item_uuid ? { itemUuid: issue.item_uuid } : {}))) ?? []
+    readinessQuery.data?.issues.map(issue =>
+      Object.assign(
+        {
+          code: issue.code,
+          message: issue.message,
+        },
+        issue.item_uuid ? { itemUuid: issue.item_uuid } : {},
+      ),
+    ) ?? []
 
   return (
     <AssessmentStudioContext.Provider
@@ -260,12 +243,7 @@ export function NativeItemOutline({
         })
 
         if (!response.ok) {
-          throw new Error(
-            await responseError(
-              response,
-              t('createFailed', { itemNoun: displayItemNoun.toLowerCase() }),
-            ),
-          )
+          throw new Error(await responseError(response, t('createFailed', { itemNoun: displayItemNoun.toLowerCase() })))
         }
 
         const created = (await response.json()) as { item_uuid?: string }
@@ -276,9 +254,7 @@ export function NativeItemOutline({
         }
       } catch (error) {
         toast.error(
-          error instanceof Error
-            ? error.message
-            : t('createFailed', { itemNoun: displayItemNoun.toLowerCase() }),
+          error instanceof Error ? error.message : t('createFailed', { itemNoun: displayItemNoun.toLowerCase() }),
         )
       }
     })
@@ -288,12 +264,8 @@ export function NativeItemOutline({
     <div className="bg-card rounded-lg border p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">
-            {t('outlineTitle', { itemNoun: displayItemNoun })}
-          </h2>
-          <p className="text-muted-foreground text-xs">
-            {t('outlinePoints', { points: totalPoints })}
-          </p>
+          <h2 className="text-sm font-semibold">{t('outlineTitle', { itemNoun: displayItemNoun })}</h2>
+          <p className="text-muted-foreground text-xs">{t('outlinePoints', { points: totalPoints })}</p>
         </div>
       </div>
 
@@ -303,11 +275,7 @@ export function NativeItemOutline({
             <DropdownMenuTrigger
               render={
                 <Button type="button" className="w-full justify-center" disabled={isCreating}>
-                  {isCreating ? (
-                    <LoaderCircle className="size-4 animate-spin" />
-                  ) : (
-                    <ListTodo className="size-4" />
-                  )}
+                  {isCreating ? <LoaderCircle className="size-4 animate-spin" /> : <ListTodo className="size-4" />}
                   {t('newQuestion')}
                 </Button>
               }
@@ -450,17 +418,12 @@ export function NativeItemAuthor({
     .map(uuid => items.find(item => item.item_uuid === uuid))
     .filter((item): item is AssessmentItem => Boolean(item))
 
-  const item =
-    orderedItems.find(candidate => candidate.item_uuid === selectedItemUuid) ??
-    orderedItems[0] ??
-    null
+  const item = orderedItems.find(candidate => candidate.item_uuid === selectedItemUuid) ?? orderedItems[0] ?? null
 
   const [assessmentState, setAssessmentState] = useState<AssessmentEditorState>(() =>
     toAssessmentEditorState(assessment),
   )
-  const [itemState, setItemState] = useState<EditableItem | null>(
-    item ? toEditableItem(item) : null,
-  )
+  const [itemState, setItemState] = useState<EditableItem | null>(item ? toEditableItem(item) : null)
   const [assessmentSaveState, setAssessmentSaveState] = useState<SaveState>('idle')
   const [itemSaveState, setItemSaveState] = useState<SaveState>('idle')
   const lastSavedAssessmentRef = useRef('')
@@ -489,8 +452,7 @@ export function NativeItemAuthor({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(buildAssessmentPatch(mode, assessment, nextState)),
         })
-        if (!response.ok)
-          throw new Error(await responseError(response, 'Failed to save assessment settings'))
+        if (!response.ok) throw new Error(await responseError(response, 'Failed to save assessment settings'))
         lastSavedAssessmentRef.current = serializeAssessmentState(nextState)
         setAssessmentSaveState('saved')
         await refresh()
@@ -506,26 +468,20 @@ export function NativeItemAuthor({
     async (nextItem: EditableItem) => {
       setItemSaveState('saving')
       try {
-        const response = await apiFetch(
-          `assessments/${assessment.assessment_uuid}/items/${nextItem.item_uuid}`,
-          {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              kind: nextItem.kind,
-              title: nextItem.title,
-              max_score: nextItem.max_score,
-              body: nextItem.body,
-              metadata: nextItem.metadata,
-            }),
-          },
-        )
+        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${nextItem.item_uuid}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kind: nextItem.kind,
+            title: nextItem.title,
+            max_score: nextItem.max_score,
+            body: nextItem.body,
+            metadata: nextItem.metadata,
+          }),
+        })
         if (!response.ok)
           throw new Error(
-            await responseError(
-              response,
-              t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
-            ),
+            await responseError(response, t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() })),
           )
         lastSavedItemRef.current = serializeItemState(nextItem)
         setItemSaveState('saved')
@@ -533,9 +489,7 @@ export function NativeItemAuthor({
       } catch (error) {
         setItemSaveState('error')
         toast.error(
-          error instanceof Error
-            ? error.message
-            : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
+          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
         )
       }
     },
@@ -589,28 +543,20 @@ export function NativeItemAuthor({
   const updateItemMetadata = useCallback(
     async (itemUuid: string, metadata: AssessmentItemMetadata) => {
       try {
-        const response = await apiFetch(
-          `assessments/${assessment.assessment_uuid}/items/${itemUuid}`,
-          {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ metadata }),
-          },
-        )
+        const response = await apiFetch(`assessments/${assessment.assessment_uuid}/items/${itemUuid}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ metadata }),
+        })
         if (!response.ok) {
           throw new Error(
-            await responseError(
-              response,
-              t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
-            ),
+            await responseError(response, t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() })),
           )
         }
         await refresh()
       } catch (error) {
         toast.error(
-          error instanceof Error
-            ? error.message
-            : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
+          error instanceof Error ? error.message : t('failedToSaveItem', { itemNoun: displayItemNoun.toLowerCase() }),
         )
         throw error
       }
@@ -629,8 +575,7 @@ export function NativeItemAuthor({
             scheduled_at: scheduledAt ?? null,
           }),
         })
-        if (!response.ok)
-          throw new Error(await responseError(response, 'Failed to update lifecycle'))
+        if (!response.ok) throw new Error(await responseError(response, 'Failed to update lifecycle'))
         await refresh()
         toast.success(t('lifecycleChanged', { state: lifecycle }))
       } catch (error) {
@@ -640,18 +585,14 @@ export function NativeItemAuthor({
     [assessment.assessment_uuid, refresh, t],
   )
 
-  const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState, t).map(
-    classifyValidationIssue,
-  )
+  const assessmentIssues = getAssessmentEditorIssues(mode, assessmentState, t).map(classifyValidationIssue)
   const itemIssueList = itemState
     ? dedupeIssues([
         ...localItemValidationIssues(itemState),
         ...persistedItemIssues(validationIssues, itemState.item_uuid),
       ]).map(classifyValidationIssue)
     : []
-  const itemContentIssues = itemIssueList.filter(
-    issue => issue.area === 'item-content' || issue.area === 'item-kind',
-  )
+  const itemContentIssues = itemIssueList.filter(issue => issue.area === 'item-content' || issue.area === 'item-kind')
   const allIssues = dedupeIssues([...validationIssues, ...assessmentIssues])
 
   const TAB_CONFIG: {
@@ -830,9 +771,7 @@ function NativeItemBodyEditor({
   const t = useTranslations('Features.Assessments.Studio.NativeItemStudio')
   const hasIssue = (code: string) =>
     issues.some(
-      issue =>
-        issue.code === code ||
-        (code.endsWith('.prompt_missing') && issue.code === 'item.prompt_missing'),
+      issue => issue.code === code || (code.endsWith('.prompt_missing') && issue.code === 'item.prompt_missing'),
     )
 
   if (item.body.kind === 'CHOICE' || item.body.kind === 'MATCHING') {
@@ -945,9 +884,7 @@ function NativeItemBodyEditor({
           {body.fields.map((field, index) => (
             <div key={field.id} className="rounded-lg border p-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  {t('Items.Form.fieldHeader', { number: index + 1 })}
-                </span>
+                <span className="text-sm font-medium">{t('Items.Form.fieldHeader', { number: index + 1 })}</span>
                 <Button
                   type="button"
                   variant="ghost"
@@ -970,9 +907,7 @@ function NativeItemBodyEditor({
 
               <div className="grid gap-4 md:grid-cols-[1fr_12rem_auto]">
                 <div className="space-y-1.5">
-                  <Label htmlFor={`form-field-label-${field.id}`}>
-                    {t('Items.Form.fieldLabel')}
-                  </Label>
+                  <Label htmlFor={`form-field-label-${field.id}`}>{t('Items.Form.fieldLabel')}</Label>
                   <Input
                     id={`form-field-label-${field.id}`}
                     value={field.label}
@@ -985,9 +920,7 @@ function NativeItemBodyEditor({
                           ...body,
                           kind: 'FORM',
                           fields: body.fields.map(candidate =>
-                            candidate.id === field.id
-                              ? { ...candidate, label: event.target.value }
-                              : candidate,
+                            candidate.id === field.id ? { ...candidate, label: event.target.value } : candidate,
                           ),
                         },
                       })
@@ -1019,18 +952,10 @@ function NativeItemBodyEditor({
                       })
                     }
                   >
-                    <NativeSelectOption value="text">
-                      {t('Items.Form.fieldTypes.text')}
-                    </NativeSelectOption>
-                    <NativeSelectOption value="textarea">
-                      {t('Items.Form.fieldTypes.textarea')}
-                    </NativeSelectOption>
-                    <NativeSelectOption value="number">
-                      {t('Items.Form.fieldTypes.number')}
-                    </NativeSelectOption>
-                    <NativeSelectOption value="date">
-                      {t('Items.Form.fieldTypes.date')}
-                    </NativeSelectOption>
+                    <NativeSelectOption value="text">{t('Items.Form.fieldTypes.text')}</NativeSelectOption>
+                    <NativeSelectOption value="textarea">{t('Items.Form.fieldTypes.textarea')}</NativeSelectOption>
+                    <NativeSelectOption value="number">{t('Items.Form.fieldTypes.number')}</NativeSelectOption>
+                    <NativeSelectOption value="date">{t('Items.Form.fieldTypes.date')}</NativeSelectOption>
                   </NativeSelect>
                 </div>
                 <div className="flex items-end">
@@ -1045,9 +970,7 @@ function NativeItemBodyEditor({
                           ...body,
                           kind: 'FORM',
                           fields: body.fields.map(candidate =>
-                            candidate.id === field.id
-                              ? { ...candidate, required: checked }
-                              : candidate,
+                            candidate.id === field.id ? { ...candidate, required: checked } : candidate,
                           ),
                         },
                       })
@@ -1138,11 +1061,7 @@ function buildDefaultItemPayload(kind: SupportedStudioItemKind, defaultTitle: st
   }
 }
 
-function buildAssessmentPatch(
-  mode: StudioMode,
-  assessment: AssessmentStudioDetail,
-  state: AssessmentEditorState,
-) {
+function buildAssessmentPatch(mode: StudioMode, assessment: AssessmentStudioDetail, state: AssessmentEditorState) {
   const dueAt = state.dueAt ? new Date(state.dueAt).toISOString() : null
   const payload: Record<string, unknown> = {
     title: state.title,
@@ -1180,9 +1099,7 @@ function buildAssessmentPatch(
       partial_credit: state.partialCredit,
       grace_period_minutes: state.gracePeriodMinutes ? Number(state.gracePeriodMinutes) : null,
       available_from: state.availableFrom ? new Date(state.availableFrom).toISOString() : null,
-      negative_marking_percent: state.negativeMarkingPercent
-        ? Number(state.negativeMarkingPercent)
-        : 0,
+      negative_marking_percent: state.negativeMarkingPercent ? Number(state.negativeMarkingPercent) : 0,
     },
   }
   return payload
@@ -1212,16 +1129,11 @@ function toAssessmentEditorState(assessment: AssessmentStudioDetail): Assessment
           : typeof settings['time_limit'] === 'number'
             ? String(settings['time_limit'])
             : '',
-    copyPasteProtection:
-      antiCheat['copy_paste_protection'] === true || settings['copy_paste_protection'] === true,
-    tabSwitchDetection:
-      antiCheat['tab_switch_detection'] === true || settings['tab_switch_detection'] === true,
-    devtoolsDetection:
-      antiCheat['devtools_detection'] === true || settings['devtools_detection'] === true,
-    rightClickDisable:
-      antiCheat['right_click_disable'] === true || settings['right_click_disable'] === true,
-    fullscreenEnforcement:
-      antiCheat['fullscreen_enforcement'] === true || settings['fullscreen_enforcement'] === true,
+    copyPasteProtection: antiCheat['copy_paste_protection'] === true || settings['copy_paste_protection'] === true,
+    tabSwitchDetection: antiCheat['tab_switch_detection'] === true || settings['tab_switch_detection'] === true,
+    devtoolsDetection: antiCheat['devtools_detection'] === true || settings['devtools_detection'] === true,
+    rightClickDisable: antiCheat['right_click_disable'] === true || settings['right_click_disable'] === true,
+    fullscreenEnforcement: antiCheat['fullscreen_enforcement'] === true || settings['fullscreen_enforcement'] === true,
     violationThreshold:
       typeof antiCheat['violation_threshold'] === 'number'
         ? String(antiCheat['violation_threshold'])
@@ -1233,18 +1145,12 @@ function toAssessmentEditorState(assessment: AssessmentStudioDetail): Assessment
       typeof settings.show_correct_answers === 'boolean'
         ? settings.show_correct_answers
         : settings.allow_result_review !== false,
-    passThreshold:
-      typeof settings.pass_threshold === 'number' ? String(settings.pass_threshold) : '',
+    passThreshold: typeof settings.pass_threshold === 'number' ? String(settings.pass_threshold) : '',
     randomizeQuestions: settings.randomize_questions === true,
     randomizeOptions: settings.randomize_options === true,
     partialCredit: settings.partial_credit === true,
-    gracePeriodMinutes:
-      typeof settings.grace_period_minutes === 'number'
-        ? String(settings.grace_period_minutes)
-        : '',
-    availableFrom: settings.available_from
-      ? toDateTimeLocal(settings.available_from as string)
-      : '',
+    gracePeriodMinutes: typeof settings.grace_period_minutes === 'number' ? String(settings.grace_period_minutes) : '',
+    availableFrom: settings.available_from ? toDateTimeLocal(settings.available_from as string) : '',
     negativeMarkingPercent:
       typeof settings.negative_marking_percent === 'number' && settings.negative_marking_percent > 0
         ? String(settings.negative_marking_percent)
@@ -1263,9 +1169,7 @@ function toEditableItem(item: AssessmentItem): EditableItem {
   }
 }
 
-function toChoiceAuthorValue(
-  body: Extract<EditableItem['body'], { kind: 'CHOICE' | 'MATCHING' }>,
-): ChoiceAuthorValue {
+function toChoiceAuthorValue(body: Extract<EditableItem['body'], { kind: 'CHOICE' | 'MATCHING' }>): ChoiceAuthorValue {
   if (body.kind === 'MATCHING') {
     return {
       kind: 'MATCHING',
@@ -1279,12 +1183,7 @@ function toChoiceAuthorValue(
   }
 
   return {
-    kind:
-      body.variant === 'TRUE_FALSE'
-        ? 'TRUE_FALSE'
-        : body.multiple
-          ? 'CHOICE_MULTIPLE'
-          : 'CHOICE_SINGLE',
+    kind: body.variant === 'TRUE_FALSE' ? 'TRUE_FALSE' : body.multiple ? 'CHOICE_MULTIPLE' : 'CHOICE_SINGLE',
     prompt: body.prompt,
     options: body.options.map(option => ({
       id: option.id,
@@ -1294,10 +1193,7 @@ function toChoiceAuthorValue(
   }
 }
 
-function fromChoiceAuthorValue(
-  item: EditableItem,
-  value: ChoiceAuthorValue,
-): Pick<EditableItem, 'kind' | 'body'> {
+function fromChoiceAuthorValue(item: EditableItem, value: ChoiceAuthorValue): Pick<EditableItem, 'kind' | 'body'> {
   if (value.kind === 'MATCHING') {
     return {
       kind: 'MATCHING',
@@ -1432,9 +1328,7 @@ function createFormField() {
 }
 
 function normalizeRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {}
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
 }
 
 function serializeAssessmentState(state: AssessmentEditorState) {
@@ -1445,9 +1339,7 @@ function serializeItemState(item: EditableItem) {
   return JSON.stringify(item)
 }
 
-function defaultItemMetadata(
-  metadata: AssessmentItem['metadata'] | null | undefined,
-): AssessmentItemMetadata {
+function defaultItemMetadata(metadata: AssessmentItem['metadata'] | null | undefined): AssessmentItemMetadata {
   return {
     section_label: metadata?.section_label ?? null,
     difficulty: metadata?.difficulty ?? null,
@@ -1476,15 +1368,9 @@ function formatStudioDate(value: string): string {
 
 async function responseError(response: Response, fallback: string) {
   const payload = await response.json().catch(() => null)
-  const detail =
-    payload && typeof payload === 'object' ? (payload as { detail?: unknown }).detail : null
+  const detail = payload && typeof payload === 'object' ? (payload as { detail?: unknown }).detail : null
   if (typeof detail === 'string' && detail) return detail
-  if (
-    detail &&
-    typeof detail === 'object' &&
-    'message' in detail &&
-    typeof detail.message === 'string'
-  ) {
+  if (detail && typeof detail === 'object' && 'message' in detail && typeof detail.message === 'string') {
     return detail.message
   }
   return fallback

@@ -24,9 +24,7 @@ export class FileSubmissionPage {
     this.fileInput = page.locator('input[type="file"]').first()
     this.dropZone = page.locator('[data-dropzone], [aria-label*="upload"], .upload-zone').first()
     this.submitButton = page.getByRole('button', { name: /submit|upload|send/i }).first()
-    this.statusBadge = page
-      .locator('[data-status-badge], .submission-status, [aria-label*="status"]')
-      .first()
+    this.statusBadge = page.locator('[data-status-badge], .submission-status, [aria-label*="status"]').first()
     this.toast = page.locator('[data-sonner-toast]').first()
   }
 
@@ -42,12 +40,9 @@ export class FileSubmissionPage {
     })
 
     await this.submitButton.click()
-    await this.page.waitForResponse(
-      r => r.url().includes('/file-submissions') && r.request().method() === 'POST',
-      {
-        timeout: 15_000,
-      },
-    )
+    await this.page.waitForResponse(r => r.url().includes('/file-submissions') && r.request().method() === 'POST', {
+      timeout: 15_000,
+    })
   }
 
   public async assertSubmitted(): Promise<void> {

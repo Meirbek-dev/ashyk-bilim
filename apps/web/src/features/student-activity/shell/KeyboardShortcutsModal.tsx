@@ -46,13 +46,9 @@ export default function KeyboardShortcutsModal() {
               {SHORTCUTS.map(shortcut => (
                 <TableRow key={shortcut.key}>
                   <TableCell className="py-2 pr-4 font-mono">
-                    <kbd className="bg-muted rounded px-1.5 py-0.5 text-xs font-semibold">
-                      {shortcut.key}
-                    </kbd>
+                    <kbd className="bg-muted rounded px-1.5 py-0.5 text-xs font-semibold">{shortcut.key}</kbd>
                   </TableCell>
-                  <TableCell className="text-muted-foreground py-2">
-                    {shortcut.description}
-                  </TableCell>
+                  <TableCell className="text-muted-foreground py-2">{shortcut.description}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -24,8 +24,7 @@ const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
   const t = useTranslations('Trail')
   const { course_total_steps } = run
   const course_completed_steps = run.steps.length
-  const course_progress =
-    course_total_steps > 0 ? Math.round((course_completed_steps / course_total_steps) * 100) : 0
+  const course_progress = course_total_steps > 0 ? Math.round((course_completed_steps / course_total_steps) * 100) : 0
   const isCompleted = course_progress === 100
   const certificateQuery = useUserCertificateByCourse(isCompleted ? course.course_uuid : null)
   const courseCertificate = certificateQuery.data?.data?.[0] ?? null
@@ -81,12 +80,7 @@ const TrailCourseElement = ({ course, run }: TrailCourseElementProps) => {
             <span className="tabular-nums">
               {course_completed_steps}&thinsp;/&thinsp;{course_total_steps} {t('stepsLabel')}
             </span>
-            <span
-              className={cn(
-                'tabular-nums font-semibold',
-                isCompleted ? 'text-primary' : 'text-foreground',
-              )}
-            >
+            <span className={cn('tabular-nums font-semibold', isCompleted ? 'text-primary' : 'text-foreground')}>
               {course_progress}%
             </span>
           </div>

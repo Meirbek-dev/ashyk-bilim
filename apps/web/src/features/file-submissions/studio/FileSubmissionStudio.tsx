@@ -19,11 +19,7 @@ import {
 } from '@/features/file-submissions/services/file-submissions'
 import { getFriendlyMimeName } from '@/lib/file-validation'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  MarkdownEditor,
-  getMarkdownSaveGate,
-  isMarkdownStructurallyEmpty,
-} from '@/features/content-markdown'
+import { MarkdownEditor, getMarkdownSaveGate, isMarkdownStructurallyEmpty } from '@/features/content-markdown'
 
 interface FileSubmissionStudioProps {
   courseUuid: string
@@ -95,10 +91,7 @@ const MIME_PRESETS = [
   },
 ]
 
-export default function FileSubmissionStudio({
-  courseUuid,
-  activityUuid,
-}: FileSubmissionStudioProps) {
+export default function FileSubmissionStudio({ courseUuid, activityUuid }: FileSubmissionStudioProps) {
   const cleanActivityUuid = activityUuid.replace(/^activity_/, '')
   const queryClient = useQueryClient()
   const [title, setTitle] = useState('')
@@ -206,9 +199,7 @@ export default function FileSubmissionStudio({
 
   if (error || !data) {
     return (
-      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-        {t('studioUnavailable')}
-      </div>
+      <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">{t('studioUnavailable')}</div>
     )
   }
 
@@ -231,9 +222,7 @@ export default function FileSubmissionStudio({
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h1 className="truncate text-xl font-semibold">{data.title}</h1>
-              <Badge variant={data.lifecycle === 'PUBLISHED' ? 'default' : 'secondary'}>
-                {data.lifecycle}
-              </Badge>
+              <Badge variant={data.lifecycle === 'PUBLISHED' ? 'default' : 'secondary'}>{data.lifecycle}</Badge>
               {data.due_at ? (
                 <Badge variant="outline">
                   <CalendarClock className="mr-1 size-3" />
@@ -247,11 +236,7 @@ export default function FileSubmissionStudio({
               variant="ghost"
               size="sm"
               nativeButton={false}
-              render={
-                <Link
-                  href={`/course/${courseUuid.replace('course_', '')}/activity/${cleanActivityUuid}`}
-                />
-              }
+              render={<Link href={`/course/${courseUuid.replace('course_', '')}/activity/${cleanActivityUuid}`} />}
             >
               <Eye className="size-4" />
               {t('preview')}
@@ -262,20 +247,14 @@ export default function FileSubmissionStudio({
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending || publishMutation.isPending}
             >
-              {saveMutation.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Save className="size-4" />
-              )}
+              {saveMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               {t('save')}
             </Button>
             <Button
               size="sm"
               onClick={() => {
                 if (!publishGate.canPublish) {
-                  toast.error(
-                    publishGate.errors[0]?.message ?? t('fixInstructionsBeforePublishing'),
-                  )
+                  toast.error(publishGate.errors[0]?.message ?? t('fixInstructionsBeforePublishing'))
                   return
                 }
                 publishMutation.mutate()
@@ -288,11 +267,7 @@ export default function FileSubmissionStudio({
                 !publishGate.canPublish
               }
             >
-              {publishMutation.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Send className="size-4" />
-              )}
+              {publishMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               {t('publish')}
             </Button>
           </div>
@@ -317,11 +292,7 @@ export default function FileSubmissionStudio({
           <div className="grid gap-4 md:grid-cols-3">
             <Field>
               <FieldLabel>{t('dueDate')}</FieldLabel>
-              <Input
-                type="datetime-local"
-                value={dueAt}
-                onChange={event => setDueAt(event.target.value)}
-              />
+              <Input type="datetime-local" value={dueAt} onChange={event => setDueAt(event.target.value)} />
             </Field>
             <Field>
               <FieldLabel>{t('maxFiles')}</FieldLabel>
@@ -339,9 +310,7 @@ export default function FileSubmissionStudio({
                 type="number"
                 min={1}
                 value={maxFileSizeMb}
-                onChange={event =>
-                  setMaxFileSizeMb(event.target.value === '' ? '' : Number(event.target.value))
-                }
+                onChange={event => setMaxFileSizeMb(event.target.value === '' ? '' : Number(event.target.value))}
               />
             </Field>
           </div>

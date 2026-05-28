@@ -21,11 +21,7 @@ type EnhancedTeacherCourseRow = TeacherCourseRow & {
   cohort_completion_delta_pct?: number | null
 }
 
-export default function CourseHealthTable({
-  rows,
-  storageKey,
-  serverPaginated,
-}: CourseHealthTableProps) {
+export default function CourseHealthTable({ rows, storageKey, serverPaginated }: CourseHealthTableProps) {
   const t = useTranslations('TeacherAnalytics')
   const columns: ColumnDef<TeacherCourseRow>[] = [
     {
@@ -50,8 +46,7 @@ export default function CourseHealthTable({
           <div>
             <div>{course.completion_rate}%</div>
             <div className="text-muted-foreground text-[11px]">
-              {course.teacher_completion_delta_pct !== null &&
-              course.teacher_completion_delta_pct !== undefined
+              {course.teacher_completion_delta_pct !== null && course.teacher_completion_delta_pct !== undefined
                 ? `${course.teacher_completion_delta_pct > 0 ? '+' : ''}${course.teacher_completion_delta_pct} ${t('courseHealth.vsTeacherAvg')}`
                 : ''}
             </div>

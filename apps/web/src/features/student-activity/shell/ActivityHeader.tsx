@@ -1,15 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import {
-  ChevronLeft,
-  ChevronRight,
-  Focus,
-  ListTree,
-  PanelLeftClose,
-  Sparkles,
-  X,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, Focus, ListTree, PanelLeftClose, Sparkles, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import Link from '@components/ui/AppLink'
@@ -60,23 +52,14 @@ export default function ActivityHeader({
     const items = (runtime.outline ?? []).flatMap(chapter => chapter.activities ?? [])
     if (items.length === 0) return 0
 
-    const done = items.filter(
-      item => item.complete || item.state === 'complete' || item.state === 'passed',
-    ).length
+    const done = items.filter(item => item.complete || item.state === 'complete' || item.state === 'passed').length
     return Math.round((done / items.length) * 100)
   }, [runtime.outline])
 
   const courseHref = `/course/${cleanUuid(runtime.course.uuid, 'course_')}`
 
   if (focusMode) {
-    return (
-      <FocusHeader
-        runtime={runtime}
-        position={position}
-        percent={percent}
-        onExit={onToggleFocusMode}
-      />
-    )
+    return <FocusHeader runtime={runtime} position={position} percent={percent} onExit={onToggleFocusMode} />
   }
 
   return (
@@ -93,21 +76,14 @@ export default function ActivityHeader({
                 aria-label={t('courseContent')}
                 className="hidden shrink-0 lg:flex"
               >
-                {outlineOpen ? (
-                  <PanelLeftClose className="size-4" />
-                ) : (
-                  <ListTree className="size-4" />
-                )}
+                {outlineOpen ? <PanelLeftClose className="size-4" /> : <ListTree className="size-4" />}
               </Button>
 
               <MobileOutlineSheet runtime={runtime} />
             </>
           ) : null}
 
-          <nav
-            aria-label={tBreadcrumb('ariaLabel')}
-            className="flex min-w-0 items-center gap-1 text-xs"
-          >
+          <nav aria-label={tBreadcrumb('ariaLabel')} className="flex min-w-0 items-center gap-1 text-xs">
             <Link
               href={courseHref}
               className="text-muted-foreground hover:text-foreground max-w-[8rem] min-w-0 truncate"
@@ -192,9 +168,7 @@ function FocusHeader({
             <Focus className="size-4" />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">
-              {runtime.activity?.title ?? runtime.course.title}
-            </p>
+            <p className="truncate text-sm font-medium">{runtime.activity?.title ?? runtime.course.title}</p>
             <p className="text-muted-foreground hidden truncate text-xs sm:block">{subtitle}</p>
           </div>
         </div>
@@ -209,16 +183,8 @@ function FocusHeader({
         ) : null}
 
         <div className="flex shrink-0 items-center gap-1">
-          <FocusNavButton
-            item={runtime.previous ?? null}
-            courseUuid={runtime.course.uuid}
-            side="prev"
-          />
-          <FocusNavButton
-            item={runtime.next ?? null}
-            courseUuid={runtime.course.uuid}
-            side="next"
-          />
+          <FocusNavButton item={runtime.previous ?? null} courseUuid={runtime.course.uuid} side="prev" />
+          <FocusNavButton item={runtime.next ?? null} courseUuid={runtime.course.uuid} side="next" />
           <Button
             type="button"
             variant="outline"
@@ -278,10 +244,7 @@ function FocusNavButton({
 function ProgressFill({ percent }: { percent: number }) {
   return (
     <div className="bg-border/50 absolute inset-x-0 bottom-0 h-[3px]" aria-hidden>
-      <div
-        className="bg-primary h-full transition-[width] duration-500"
-        style={{ width: `${percent}%` }}
-      />
+      <div className="bg-primary h-full transition-[width] duration-500" style={{ width: `${percent}%` }} />
     </div>
   )
 }

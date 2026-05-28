@@ -15,11 +15,7 @@ vi.mock('next/cache', () => ({
   revalidateTag: mocks.revalidateTag,
 }))
 
-import {
-  getAssessmentSubmission,
-  publishAssessmentGrades,
-  saveGrade,
-} from '@/services/grading/grading'
+import { getAssessmentSubmission, publishAssessmentGrades, saveGrade } from '@/services/grading/grading'
 import type { Submission } from '@/types/grading'
 
 function makeSubmission(overrides: Partial<Submission> = {}): Submission {

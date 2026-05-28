@@ -16,14 +16,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -56,12 +49,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 type SupportedStudioItemKind = Exclude<UnifiedItemKind, 'CODE'>
@@ -207,9 +195,7 @@ export default function BuilderCanvasTab({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             kind: itemState.kind,
-            title: itemState.title
-              ? t('copyOf', { title: itemState.title })
-              : t('copyOfItem', { itemNoun }),
+            title: itemState.title ? t('copyOf', { title: itemState.title }) : t('copyOfItem', { itemNoun }),
             max_score: itemState.max_score,
             body: structuredClone(itemState.body),
             metadata: structuredClone(itemState.metadata),
@@ -231,12 +217,9 @@ export default function BuilderCanvasTab({
     if (!itemState) return
     startDeleteTransition(async () => {
       try {
-        const response = await apiFetch(
-          `assessments/${assessmentUuid}/items/${itemState.item_uuid}`,
-          {
-            method: 'DELETE',
-          },
-        )
+        const response = await apiFetch(`assessments/${assessmentUuid}/items/${itemState.item_uuid}`, {
+          method: 'DELETE',
+        })
         if (!response.ok) throw new Error('Failed to delete item')
         toast.success(t('itemDeleted', { itemNoun }))
         await onItemDeleted()
@@ -260,9 +243,7 @@ export default function BuilderCanvasTab({
         <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
           <div>
             <h2 className="text-sm font-semibold">{t('outlineTitle', { itemNoun })}</h2>
-            <p className="text-muted-foreground text-xs">
-              {t('outlinePoints', { points: totalPoints })}
-            </p>
+            <p className="text-muted-foreground text-xs">{t('outlinePoints', { points: totalPoints })}</p>
           </div>
         </div>
 
@@ -273,11 +254,7 @@ export default function BuilderCanvasTab({
               <DropdownMenuTrigger
                 render={
                   <Button type="button" className="w-full justify-center" disabled={isCreating}>
-                    {isCreating ? (
-                      <LoaderCircle className="size-4 animate-spin" />
-                    ) : (
-                      <Plus className="size-4" />
-                    )}
+                    {isCreating ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}
                     {tBuilder('newQuestion')}
                   </Button>
                 }
@@ -304,15 +281,8 @@ export default function BuilderCanvasTab({
               {t('outlineEmptyMessage', { itemNoun: itemNoun.toLowerCase() })}
             </div>
           ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={items.map(item => item.item_uuid)}
-                strategy={verticalListSortingStrategy}
-              >
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={items.map(item => item.item_uuid)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-1">
                   {items.map((item, index) => {
                     const itemSections = sections.filter(s => s.beforeItemUuid === item.item_uuid)
@@ -324,9 +294,7 @@ export default function BuilderCanvasTab({
                             section={section}
                             isEditable={isEditable}
                             onRename={label => {
-                              const item = items.find(
-                                candidate => candidate.item_uuid === section.beforeItemUuid,
-                              )
+                              const item = items.find(candidate => candidate.item_uuid === section.beforeItemUuid)
                               if (!item) return
                               void patchItemMetadata(item.item_uuid, {
                                 ...defaultMetadata(item.metadata),
@@ -334,9 +302,7 @@ export default function BuilderCanvasTab({
                               })
                             }}
                             onDelete={() => {
-                              const item = items.find(
-                                candidate => candidate.item_uuid === section.beforeItemUuid,
-                              )
+                              const item = items.find(candidate => candidate.item_uuid === section.beforeItemUuid)
                               if (!item) return
                               void patchItemMetadata(item.item_uuid, {
                                 ...defaultMetadata(item.metadata),
@@ -392,11 +358,7 @@ export default function BuilderCanvasTab({
                 })}
               </p>
               {isEditable && allowedKinds.length > 0 ? (
-                <Button
-                  className="mt-4"
-                  onClick={() => createItem(allowedKinds[0]!)}
-                  disabled={isCreating}
-                >
+                <Button className="mt-4" onClick={() => createItem(allowedKinds[0]!)} disabled={isCreating}>
                   <Plus className="size-4" />
                   {t('addKind', { kind: kindLabels[allowedKinds[0]!] })}
                 </Button>
@@ -552,11 +514,7 @@ function SortableOutlineItem({
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn('group relative', isDragging && 'z-50 opacity-60')}
-    >
+    <div ref={setNodeRef} style={style} className={cn('group relative', isDragging && 'z-50 opacity-60')}>
       <div
         role="button"
         tabIndex={0}
@@ -571,9 +529,7 @@ function SortableOutlineItem({
         className={cn(
           'h-auto w-full rounded-lg border p-3 text-left transition-all duration-150 cursor-pointer block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
           'hover:bg-muted/50',
-          selected
-            ? 'border-primary bg-primary/5 ring-primary/20 ring-2'
-            : 'bg-background border-border',
+          selected ? 'border-primary bg-primary/5 ring-primary/20 ring-2' : 'bg-background border-border',
         )}
       >
         <div className="flex items-start gap-2">
@@ -601,9 +557,7 @@ function SortableOutlineItem({
           </div>
           {hasIssues ? (
             <Tooltip>
-              <TooltipTrigger
-                render={<AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500" />}
-              />
+              <TooltipTrigger render={<AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500" />} />
               <TooltipContent side="right" className="max-w-[200px]">
                 <ul className="space-y-1 text-xs">
                   {issues.slice(0, 3).map((issue, i) => (
@@ -682,8 +636,7 @@ function ItemCanvas({
     ...persistedItemIssues(validationIssues, item.item_uuid),
   ]).map(classifyValidationIssue)
   const itemMetadataIssues = itemIssueList.filter(issue => issue.area === 'item-metadata')
-  const hasMetadataIssue = (field: string) =>
-    itemMetadataIssues.some(issue => issue.field === field)
+  const hasMetadataIssue = (field: string) => itemMetadataIssues.some(issue => issue.field === field)
   const itemIndex = items.findIndex(i => i.item_uuid === item.item_uuid)
 
   return (
@@ -695,9 +648,7 @@ function ItemCanvas({
             <Badge variant="outline" className="text-xs">
               {kindLabel}
             </Badge>
-            {itemIndex !== -1 ? (
-              <span className="text-muted-foreground text-xs">#{itemIndex + 1}</span>
-            ) : null}
+            {itemIndex !== -1 ? <span className="text-muted-foreground text-xs">#{itemIndex + 1}</span> : null}
             <SaveStateBadge state={saveState} />
             {!isEditable ? (
               <Badge variant="secondary" className="text-xs">
@@ -723,25 +674,11 @@ function ItemCanvas({
             disabled={!isEditable || isDuplicating}
             onClick={onDuplicate}
           >
-            {isDuplicating ? (
-              <LoaderCircle className="size-3.5 animate-spin" />
-            ) : (
-              <Copy className="size-3.5" />
-            )}
+            {isDuplicating ? <LoaderCircle className="size-3.5 animate-spin" /> : <Copy className="size-3.5" />}
             {t('duplicate')}
           </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            disabled={!isEditable || isDeleting}
-            onClick={onDelete}
-          >
-            {isDeleting ? (
-              <LoaderCircle className="size-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="size-3.5" />
-            )}
+          <Button type="button" variant="destructive" size="sm" disabled={!isEditable || isDeleting} onClick={onDelete}>
+            {isDeleting ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
             {t('delete')}
           </Button>
         </div>
@@ -758,9 +695,7 @@ function ItemCanvas({
               value={item.title}
               disabled={!isEditable}
               aria-invalid={hasMetadataIssue('title')}
-              className={cn(
-                hasMetadataIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40',
-              )}
+              className={cn(hasMetadataIssue('title') && 'border-amber-500 focus-visible:ring-amber-500/40')}
               onChange={e => onChange({ ...item, title: e.target.value })}
             />
           </div>
@@ -774,9 +709,7 @@ function ItemCanvas({
               value={item.max_score}
               disabled={!isEditable}
               aria-invalid={hasMetadataIssue('max_score')}
-              className={cn(
-                hasMetadataIssue('max_score') && 'border-amber-500 focus-visible:ring-amber-500/40',
-              )}
+              className={cn(hasMetadataIssue('max_score') && 'border-amber-500 focus-visible:ring-amber-500/40')}
               onChange={e =>
                 onChange({
                   ...item,
@@ -851,9 +784,7 @@ function createChoiceOption() {
   return { id: `option_${crypto.randomUUID()}`, text: '', is_correct: false }
 }
 
-function defaultMetadata(
-  metadata: AssessmentItemMetadata | null | undefined,
-): AssessmentItemMetadata {
+function defaultMetadata(metadata: AssessmentItemMetadata | null | undefined): AssessmentItemMetadata {
   return {
     section_label: metadata?.section_label ?? null,
     difficulty: metadata?.difficulty ?? null,

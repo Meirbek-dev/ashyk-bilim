@@ -22,10 +22,7 @@ interface ActivityOutlineContentProps {
  * Full chapter tree used inside both the OutlineRail expanded panel and
  * the mobile Sheet drawer.
  */
-export default function ActivityOutlineContent({
-  runtime,
-  className,
-}: ActivityOutlineContentProps) {
+export default function ActivityOutlineContent({ runtime, className }: ActivityOutlineContentProps) {
   const t = useTranslations('ActivityPage')
   const currentId = runtime.activity?.id ?? null
 
@@ -83,18 +80,14 @@ function ActivityOutlineItem({
       title={item.title}
       className={cn(
         'group flex min-h-9 items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring',
-        current
-          ? 'bg-muted text-foreground'
-          : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+        current ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
         item.state === 'locked' || !item.published ? 'opacity-60' : null,
       )}
     >
       <span
         className={cn(
           'flex size-4 shrink-0 items-center justify-center rounded-full border',
-          complete
-            ? 'border-primary bg-primary text-primary-foreground'
-            : 'border-border bg-background',
+          complete ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background',
         )}
       >
         {complete ? <Check className="size-2.5" /> : <Icon className="size-2.5" />}

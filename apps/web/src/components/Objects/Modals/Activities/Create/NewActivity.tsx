@@ -1,15 +1,6 @@
 'use client'
 
-import {
-  ArrowLeft,
-  ChevronRight,
-  Code2,
-  FileArchive,
-  FileText,
-  GraduationCap,
-  Sparkles,
-  Video,
-} from 'lucide-react'
+import { ArrowLeft, ChevronRight, Code2, FileArchive, FileText, GraduationCap, Sparkles, Video } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { useTranslations } from 'next-intl'
@@ -24,14 +15,7 @@ import VideoModal from './NewActivityModal/VideoActivityModal'
 import Exam from './NewActivityModal/ExamActivityModal'
 import FileSubmission from './NewActivityModal/FileSubmissionActivityModal'
 
-type ViewType =
-  | 'home'
-  | 'dynamic'
-  | 'video'
-  | 'documentpdf'
-  | 'filesubmission'
-  | 'exams'
-  | 'codechallenge'
+type ViewType = 'home' | 'dynamic' | 'video' | 'documentpdf' | 'filesubmission' | 'exams' | 'codechallenge'
 
 interface ActivityTypeConfig {
   id: ViewType
@@ -44,12 +28,7 @@ interface ActivityTypeConfig {
 interface NewActivityModalProps {
   closeModal: () => void
   submitActivity: (data?: any) => Promise<any>
-  submitFileActivity: (params: {
-    file: any
-    type: any
-    activity: any
-    chapterId: number
-  }) => Promise<void>
+  submitFileActivity: (params: { file: any; type: any; activity: any; chapterId: number }) => Promise<void>
   submitExternalVideo: (external_video_data: any, activity: any, chapterId: number) => Promise<void>
   createAndOpenActivity: (kind: 'dynamic' | 'codechallenge') => Promise<void>
   chapterId: number
@@ -138,9 +117,7 @@ export default function NewActivityModal({
   if (selectedView === 'home') {
     return (
       <div className="w-full space-y-3">
-        <p className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase">
-          {t('chooseType')}
-        </p>
+        <p className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase">{t('chooseType')}</p>
         <div className="overflow-hidden rounded-xl border border-gray-200">
           {ACTIVITY_TYPES.map((activity, index) => (
             <ActivityTypeRow
@@ -170,9 +147,7 @@ export default function NewActivityModal({
         {t('backToActivities')}
       </Button>
 
-      {selectedView === 'dynamic' && (
-        <DynamicCanvaModal submitActivity={submitActivity} {...sharedProps} />
-      )}
+      {selectedView === 'dynamic' && <DynamicCanvaModal submitActivity={submitActivity} {...sharedProps} />}
       {selectedView === 'video' && (
         <VideoModal
           submitFileActivity={submitFileActivity}
@@ -182,17 +157,11 @@ export default function NewActivityModal({
         />
       )}
       {selectedView === 'documentpdf' && (
-        <DocumentPdfModal
-          submitFileActivity={submitFileActivity}
-          chapterId={chapterId}
-          course={course}
-        />
+        <DocumentPdfModal submitFileActivity={submitFileActivity} chapterId={chapterId} course={course} />
       )}
       {selectedView === 'filesubmission' && <FileSubmission {...sharedProps} />}
       {selectedView === 'exams' && <Exam submitActivity={submitActivity} {...sharedProps} />}
-      {selectedView === 'codechallenge' && (
-        <CodeChallenge submitActivity={submitActivity} {...sharedProps} />
-      )}
+      {selectedView === 'codechallenge' && <CodeChallenge submitActivity={submitActivity} {...sharedProps} />}
     </div>
   )
 }

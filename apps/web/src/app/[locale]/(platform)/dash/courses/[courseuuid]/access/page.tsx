@@ -3,9 +3,7 @@ import EditCourseAccess from '@components/Dashboard/Pages/Course/EditCourseAcces
 import { renderCourseWorkspacePage } from '@components/Dashboard/Courses/renderCourseWorkspacePage'
 import { requireCourseWorkspaceStageAccess } from '@/lib/course-management-server'
 
-export default async function PlatformCourseAccessPage(props: {
-  params: Promise<{ courseuuid: string }>
-}) {
+export default async function PlatformCourseAccessPage(props: { params: Promise<{ courseuuid: string }> }) {
   const { courseuuid } = await props.params
   const capabilities = await requireCourseWorkspaceStageAccess(courseuuid, 'access')
 

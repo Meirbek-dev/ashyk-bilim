@@ -34,10 +34,7 @@ export function useHeadingOutline(editor: Editor | null) {
 const TableOfContents = ({ className, editor, minItems = 2 }: TableOfContentsProps) => {
   const headings = useHeadingOutline(editor)
   const [activeId, setActiveId] = useState<string | null>(null)
-  const visibleHeadings = useMemo(
-    () => headings.filter(heading => heading.id && heading.text),
-    [headings],
-  )
+  const visibleHeadings = useMemo(() => headings.filter(heading => heading.id && heading.text), [headings])
 
   useEffect(() => {
     if (visibleHeadings.length < minItems) return
@@ -70,10 +67,7 @@ const TableOfContents = ({ className, editor, minItems = 2 }: TableOfContentsPro
 
   return (
     <div
-      className={cn(
-        'm-0 flex h-fit w-full flex-col items-stretch border-0 bg-transparent p-0 shadow-none',
-        className,
-      )}
+      className={cn('m-0 flex h-fit w-full flex-col items-stretch border-0 bg-transparent p-0 shadow-none', className)}
     >
       <ul className="m-0 !list-none !p-0">
         {visibleHeadings.map(heading => (
@@ -93,8 +87,7 @@ const TableOfContents = ({ className, editor, minItems = 2 }: TableOfContentsPro
             <a
               style={{
                 fontWeight: heading.level === 1 ? 500 : 400,
-                fontSize:
-                  heading.level === 1 ? '1rem' : heading.level === 2 ? '0.97rem' : '0.95rem',
+                fontSize: heading.level === 1 ? '1rem' : heading.level === 2 ? '0.97rem' : '0.95rem',
               }}
               className={cn(
                 'hover:text-primary focus-visible:ring-ring block min-w-0 flex-1 rounded-sm bg-transparent p-0 leading-[1.4] break-words hyphens-auto no-underline outline-none transition-colors focus-visible:ring-2',

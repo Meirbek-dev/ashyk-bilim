@@ -53,22 +53,13 @@ export function useCoursesMutations(courseUuid: string, withUnpublishedActivitie
   const updateThumbnailMutation = useMutation(
     updateCourseThumbnailMutationOptions(courseUuid, queryClient, structureKey, detailKey),
   )
-  const addContributorsMutation = useMutation(
-    addCourseContributorsMutationOptions(courseUuid, queryClient),
-  )
-  const updateContributorMutation = useMutation(
-    updateCourseContributorMutationOptions(courseUuid, queryClient),
-  )
-  const removeContributorsMutation = useMutation(
-    removeCourseContributorsMutationOptions(courseUuid, queryClient),
-  )
+  const addContributorsMutation = useMutation(addCourseContributorsMutationOptions(courseUuid, queryClient))
+  const updateContributorMutation = useMutation(updateCourseContributorMutationOptions(courseUuid, queryClient))
+  const removeContributorsMutation = useMutation(removeCourseContributorsMutationOptions(courseUuid, queryClient))
 
   return {
-    addContributors: async (
-      usernames: string[],
-      users: ContributorDraftUser[],
-      options: MutationOptions,
-    ) => addContributorsMutation.mutateAsync({ options, usernames, users }),
+    addContributors: async (usernames: string[], users: ContributorDraftUser[], options: MutationOptions) =>
+      addContributorsMutation.mutateAsync({ options, usernames, users }),
     refreshCourse,
     removeContributors: async (usernames: string[], userIds: number[], options: MutationOptions) =>
       removeContributorsMutation.mutateAsync({ options, userIds, usernames }),

@@ -23,12 +23,7 @@ export function LoadingSkeleton({
       const widths = ['w-full', 'w-3/4', 'w-1/2', 'w-2/3', 'w-5/6']
       const width = i === count - 1 ? widths[2] : widths[i % widths.length]
 
-      return (
-        <div
-          key={i}
-          className={`h-4 rounded-md ${skeletonBg} ${width} ${i < count - 1 ? 'mb-3' : ''}`}
-        />
-      )
+      return <div key={i} className={`h-4 rounded-md ${skeletonBg} ${width} ${i < count - 1 ? 'mb-3' : ''}`} />
     })
   }
 
@@ -42,9 +37,7 @@ export function LoadingSkeleton({
     ),
 
     card: (
-      <div
-        className={`${baseClasses} border-border dark:border-border rounded-lg border p-4 ${className}`}
-      >
+      <div className={`${baseClasses} border-border dark:border-border rounded-lg border p-4 ${className}`}>
         <div className={`h-6 w-1/3 rounded-md ${skeletonBg} mb-4`} />
         {renderLines(lines)}
         <div className={`h-10 w-24 rounded-md ${skeletonBg} mt-4`} />
@@ -99,12 +92,7 @@ interface PageSuspenseProps {
   className?: string
 }
 
-export function PageSuspense({
-  children,
-  fallback,
-  variant = 'minimal',
-  className = '',
-}: PageSuspenseProps) {
+export function PageSuspense({ children, fallback, variant = 'minimal', className = '' }: PageSuspenseProps) {
   const defaultFallback = (
     <div className="flex min-h-[200px] items-center justify-center">
       <LoadingSkeleton variant={variant} className={className} />
@@ -156,9 +144,7 @@ export async function PageTransitionLoader({
         </div>
 
         {/* Optional loading text */}
-        <div className="text-muted-foreground dark:text-muted-foreground text-sm font-medium">
-          {t('loading')}
-        </div>
+        <div className="text-muted-foreground dark:text-muted-foreground text-sm font-medium">{t('loading')}</div>
       </div>
     </div>
   )

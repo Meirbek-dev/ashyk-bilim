@@ -17,12 +17,7 @@ import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 import { useQueryClient } from '@tanstack/react-query'
 
-import {
-  canPublishGrade,
-  canReturnSubmission,
-  canTeacherEditGrade,
-  getReleaseState,
-} from '@/features/grading/domain'
+import { canPublishGrade, canReturnSubmission, canTeacherEditGrade, getReleaseState } from '@/features/grading/domain'
 import type { GradedItem, Submission, TeacherGradeInput } from '@/features/grading/domain'
 import { StaleGradeError } from '@/services/grading/errors'
 import { saveGradingDraft } from '@/services/assessments/assessment-actions'
@@ -93,10 +88,7 @@ export default function GradeForm({
     }, 0)
   }, [hasItemGrading, gradedItems, itemDrafts])
 
-  const maxPossible = useMemo(
-    () => gradedItems.reduce((acc, item) => acc + item.max_score, 0),
-    [gradedItems],
-  )
+  const maxPossible = useMemo(() => gradedItems.reduce((acc, item) => acc + item.max_score, 0), [gradedItems])
 
   const editable = submission ? canTeacherEditGrade(submission.status) : false
 
@@ -104,9 +96,7 @@ export default function GradeForm({
     // Sync overall draft from server
     setDraft({
       score:
-        submission?.final_score !== null && submission?.final_score !== undefined
-          ? String(submission.final_score)
-          : '',
+        submission?.final_score !== null && submission?.final_score !== undefined ? String(submission.final_score) : '',
       feedback: submission?.grading_json?.feedback ?? '',
     })
     setStaleDraft(null)
@@ -245,9 +235,7 @@ export default function GradeForm({
   const saveOverallScore = useCallback(
     (status: TeacherGradeInput['status']) => {
       // Redirect to item-level grading with a single "overall" item
-      saveWithItemGrading(
-        status === 'PUBLISHED' ? 'publish' : status === 'RETURNED' ? 'return' : 'save',
-      )
+      saveWithItemGrading(status === 'PUBLISHED' ? 'publish' : status === 'RETURNED' ? 'return' : 'save')
     },
     [saveWithItemGrading],
   )
@@ -327,8 +315,7 @@ export default function GradeForm({
           <AlertTitle>{t('staleDraftTitle')}</AlertTitle>
           <AlertDescription className="mt-1 space-y-1 text-xs">
             <p>
-              {t('staleDraft.serverScoreLabel')}{' '}
-              <strong>{staleDraft.server.final_score ?? '—'}</strong>.{' '}
+              {t('staleDraft.serverScoreLabel')} <strong>{staleDraft.server.final_score ?? '—'}</strong>.{' '}
               {t('staleDraft.yourDraftLabel')} <strong>{staleDraft.local.score}</strong>.
             </p>
             <div className="flex gap-2">
@@ -339,10 +326,7 @@ export default function GradeForm({
                 onClick={() => {
                   const s = staleDraft.server
                   setDraft({
-                    score:
-                      s.final_score !== null && s.final_score !== undefined
-                        ? String(s.final_score)
-                        : '',
+                    score: s.final_score !== null && s.final_score !== undefined ? String(s.final_score) : '',
                     feedback: s.grading_json?.feedback ?? '',
                   })
                   setStaleDraft(null)
@@ -350,12 +334,7 @@ export default function GradeForm({
               >
                 {t('useServerValues')}
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 text-xs"
-                onClick={() => setStaleDraft(null)}
-              >
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setStaleDraft(null)}>
                 {t('keepMyDraft')}
               </Button>
             </div>
@@ -364,21 +343,11 @@ export default function GradeForm({
       ) : null}
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!navigation.hasPrevious}
-          onClick={navigation.goPrevious}
-        >
+        <Button variant="outline" size="sm" disabled={!navigation.hasPrevious} onClick={navigation.goPrevious}>
           <ChevronLeft className="size-4" />
           {t('previous')}
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!navigation.hasNext}
-          onClick={navigation.goNext}
-        >
+        <Button variant="outline" size="sm" disabled={!navigation.hasNext} onClick={navigation.goNext}>
           {t('next')}
           <ChevronRight className="size-4" />
         </Button>
@@ -394,8 +363,7 @@ export default function GradeForm({
                 {tItemGrading('scoreSummary', {
                   earned: calculatedTotal.toFixed(1),
                   possible: maxPossible,
-                  percentage:
-                    maxPossible > 0 ? Math.round((calculatedTotal / maxPossible) * 100) : 0,
+                  percentage: maxPossible > 0 ? Math.round((calculatedTotal / maxPossible) * 100) : 0,
                 })}
               </span>
             )}
@@ -499,11 +467,7 @@ export default function GradeForm({
               disabled={!editable || isSaving}
               onClick={() => saveWithItemGrading('save')}
             >
-              {isSaving ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : (
-                <BookOpenCheck className="size-4" />
-              )}
+              {isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <BookOpenCheck className="size-4" />}
               {tItemGrading('saveDraft')}
             </Button>
             <Button
@@ -523,9 +487,7 @@ export default function GradeForm({
               <RotateCcw className="size-4" />
               {tItemGrading('returnForRevision')}
             </Button>
-            {!canPublishNow ? (
-              <p className="text-muted-foreground text-xs">{t('publishPrerequisite')}</p>
-            ) : null}
+            {!canPublishNow ? <p className="text-muted-foreground text-xs">{t('publishPrerequisite')}</p> : null}
           </div>
         </div>
       ) : (
@@ -556,9 +518,7 @@ export default function GradeForm({
                 type="button"
                 variant="link"
                 className="h-auto p-0 text-xs"
-                disabled={
-                  !editable || isSaving || Number.parseFloat(draft.score) === submission.auto_score
-                }
+                disabled={!editable || isSaving || Number.parseFloat(draft.score) === submission.auto_score}
                 onClick={() =>
                   setDraft(current => ({
                     ...current,
@@ -592,11 +552,7 @@ export default function GradeForm({
               disabled={!editable || isSaving}
               onClick={() => saveOverallScore('GRADED')}
             >
-              {isSaving ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : (
-                <BookOpenCheck className="size-4" />
-              )}
+              {isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <BookOpenCheck className="size-4" />}
               {t('saveDraftGrade')}
             </Button>
             <Button
@@ -616,9 +572,7 @@ export default function GradeForm({
               <RotateCcw className="size-4" />
               {t('returnForRevision')}
             </Button>
-            {!canPublishNow ? (
-              <p className="text-muted-foreground text-xs">{t('publishPrerequisite')}</p>
-            ) : null}
+            {!canPublishNow ? <p className="text-muted-foreground text-xs">{t('publishPrerequisite')}</p> : null}
           </div>
         </>
       )}
@@ -627,25 +581,15 @@ export default function GradeForm({
       <div className="border-t pt-3">
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           <Keyboard className="size-3.5" />
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">
-            {t('keyboardHintNextKey')}
-          </kbd>{' '}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintNextKey')}</kbd>{' '}
           {t('keyboardHintForward')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">
-            {t('keyboardHintPrevKey')}
-          </kbd>{' '}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('keyboardHintPrevKey')}</kbd>{' '}
           {t('keyboardHintBackward')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">
-            {t('shortcutFocusGrade')}
-          </kbd>{' '}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutFocusGrade')}</kbd>{' '}
           {t('keyboardHintFocusGrade')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">
-            {t('shortcutSave')}
-          </kbd>{' '}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutSave')}</kbd>{' '}
           {t('keyboardHintSave')}
-          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">
-            {t('shortcutPublish')}
-          </kbd>{' '}
+          <kbd className="rounded border px-1 py-0.5 font-mono text-[10px]">{t('shortcutPublish')}</kbd>{' '}
           {t('keyboardHintPublish')}
         </div>
       </div>
@@ -668,9 +612,7 @@ function KeyboardHint() {
   return (
     <TooltipProvider>
       <Tooltip open={open} onOpenChange={setOpen}>
-        <TooltipTrigger
-          render={<Button type="button" variant="ghost" size="icon" className="size-7" />}
-        >
+        <TooltipTrigger render={<Button type="button" variant="ghost" size="icon" className="size-7" />}>
           <Info className="size-4" />
         </TooltipTrigger>
         <TooltipContent side="bottom">{t('keyboardHint')}</TooltipContent>
@@ -694,8 +636,7 @@ function buildOptimisticSubmission(
     finalScore: number | null
   },
 ): Submission {
-  const nextStatus =
-    args.status === 'publish' ? 'PUBLISHED' : args.status === 'return' ? 'RETURNED' : 'GRADED'
+  const nextStatus = args.status === 'publish' ? 'PUBLISHED' : args.status === 'return' ? 'RETURNED' : 'GRADED'
   const gradingJson = {
     ...submission.grading_json,
     feedback: args.draft.feedback,
@@ -714,9 +655,7 @@ function buildOptimisticSubmission(
   return {
     ...submission,
     status: nextStatus,
-    final_score: args.overrideScore
-      ? (args.finalScore ?? submission.final_score)
-      : submission.final_score,
+    final_score: args.overrideScore ? (args.finalScore ?? submission.final_score) : submission.final_score,
     grading_json: gradingJson,
     version: typeof submission.version === 'number' ? submission.version + 1 : submission.version,
   } as Submission

@@ -2,15 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import {
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  LoaderCircle,
-  RotateCcw,
-  Save,
-  SendHorizonal,
-} from 'lucide-react'
+import { CheckCircle2, ChevronLeft, ChevronRight, LoaderCircle, RotateCcw, Save, SendHorizonal } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -98,10 +90,7 @@ interface ActionBarContextValue {
 export const ActionBarContext = createContext<ActionBarContextValue | null>(null)
 
 const DEFAULT_CONTROLS: Required<
-  Pick<
-    AttemptShellRegistration,
-    'saveState' | 'status' | 'canSave' | 'canSubmit' | 'isSaving' | 'isSubmitting'
-  >
+  Pick<AttemptShellRegistration, 'saveState' | 'status' | 'canSave' | 'canSubmit' | 'isSaving' | 'isSubmitting'>
 > = {
   saveState: 'saved',
   status: null,
@@ -135,10 +124,7 @@ export function useActionBarState() {
     }
   }, [])
 
-  const contextValue = useMemo<ActionBarContextValue>(
-    () => ({ registerControls }),
-    [registerControls],
-  )
+  const contextValue = useMemo<ActionBarContextValue>(() => ({ registerControls }), [registerControls])
 
   return { controls, contextValue }
 }
@@ -159,11 +145,7 @@ interface AssessmentActionBarProps {
  *
  * This is the ONLY place `SaveStateBadge` is rendered — no duplicate in the header.
  */
-export function AssessmentActionBar({
-  controls,
-  returned,
-  primaryButtonLabelKey,
-}: AssessmentActionBarProps) {
+export function AssessmentActionBar({ controls, returned, primaryButtonLabelKey }: AssessmentActionBarProps) {
   const t = useTranslations('Features.Assessments.Attempt.Exam')
   const tAttemptActions = useTranslations('AttemptActions')
   const { navigation } = controls
@@ -198,12 +180,7 @@ export function AssessmentActionBar({
                 <ChevronLeft className="size-4" />
                 {t('previous')}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!navigation.canNext}
-                onClick={navigation.onNext}
-              >
+              <Button type="button" variant="outline" disabled={!navigation.canNext} onClick={navigation.onNext}>
                 {t('next')}
                 <ChevronRight className="size-4" />
               </Button>
@@ -217,23 +194,14 @@ export function AssessmentActionBar({
               disabled={!controls.canSave || controls.isSaving || controls.isSubmitting}
               onClick={controls.onSave}
             >
-              {controls.isSaving ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : (
-                <Save className="size-4" />
-              )}
+              {controls.isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />}
               {t('save')}
             </Button>
           ) : null}
 
           <Button
             type="button"
-            disabled={
-              !controls.canSubmit ||
-              controls.isSaving ||
-              controls.isSubmitting ||
-              !controls.onSubmit
-            }
+            disabled={!controls.canSubmit || controls.isSaving || controls.isSubmitting || !controls.onSubmit}
             onClick={controls.onSubmit}
           >
             {controls.isSubmitting ? (
@@ -241,11 +209,7 @@ export function AssessmentActionBar({
             ) : (
               <SendHorizonal className="size-4" />
             )}
-            {primaryButtonLabelKey
-              ? tAttemptActions(primaryButtonLabelKey)
-              : returned
-                ? t('submitAgain')
-                : t('submit')}
+            {primaryButtonLabelKey ? tAttemptActions(primaryButtonLabelKey) : returned ? t('submitAgain') : t('submit')}
           </Button>
         </div>
       </div>
@@ -259,13 +223,7 @@ export function AssessmentActionBar({
  * Exported so kinds can use it in their own inline status display if needed,
  * but the canonical placement is AssessmentActionBar (bottom bar only).
  */
-export function SaveStateBadge({
-  state,
-  status,
-}: {
-  state: AttemptSaveState
-  status: SubmissionStatus | null
-}) {
+export function SaveStateBadge({ state, status }: { state: AttemptSaveState; status: SubmissionStatus | null }) {
   const t = useTranslations('Features.Assessments.Attempt.Exam')
 
   if (state === 'saving')
@@ -284,8 +242,7 @@ export function SaveStateBadge({
         {t('saveStateReturned')}
       </Badge>
     )
-  if (state === 'submitted' || status === 'PENDING')
-    return <SubmissionStatusBadge status="PENDING" />
+  if (state === 'submitted' || status === 'PENDING') return <SubmissionStatusBadge status="PENDING" />
   if (status === 'GRADED') return <SubmissionStatusBadge status="GRADED" />
   if (status === 'PUBLISHED') return <SubmissionStatusBadge status="PUBLISHED" />
   return (
@@ -296,9 +253,7 @@ export function SaveStateBadge({
   )
 }
 
-function useStableAttemptShellRegistration(
-  controls: AttemptShellRegistration,
-): AttemptShellRegistration {
+function useStableAttemptShellRegistration(controls: AttemptShellRegistration): AttemptShellRegistration {
   const stableRef = useRef(controls)
 
   if (!areAttemptShellRegistrationsEqual(stableRef.current, controls)) {
@@ -308,13 +263,8 @@ function useStableAttemptShellRegistration(
   return stableRef.current
 }
 
-function areAttemptShellRegistrationsEqual(
-  left: AttemptShellRegistration,
-  right: AttemptShellRegistration,
-): boolean {
-  const keys = new Set([...Object.keys(left), ...Object.keys(right)]) as Set<
-    keyof AttemptShellRegistration
-  >
+function areAttemptShellRegistrationsEqual(left: AttemptShellRegistration, right: AttemptShellRegistration): boolean {
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]) as Set<keyof AttemptShellRegistration>
 
   for (const key of keys) {
     if (!areShellRegistrationValuesEqual(left[key], right[key])) {

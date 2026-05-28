@@ -90,15 +90,9 @@ export default function SubmissionInspector({
                       ? t('releaseStateVisible')
                       : t('releaseStateReturned')}
               </Badge>
-              {current.is_late ? (
-                <Badge variant="destructive">{t('submissionInspector.late')}</Badge>
-              ) : null}
+              {current.is_late ? <Badge variant="destructive">{t('submissionInspector.late')}</Badge> : null}
               <Badge
-                variant={
-                  plagiarismState.status === 'failed' || plagiarismState.flagged
-                    ? 'destructive'
-                    : 'secondary'
-                }
+                variant={plagiarismState.status === 'failed' || plagiarismState.flagged ? 'destructive' : 'secondary'}
                 className="font-mono text-[10px]"
               >
                 {plagiarismState.status === 'failed'
@@ -129,19 +123,14 @@ export default function SubmissionInspector({
             <HistoryItem
               label={t('submissionInspector.studentVisibility')}
               value={
-                reviewVm.releaseState === 'VISIBLE' ||
-                reviewVm.releaseState === 'RETURNED_FOR_REVISION'
+                reviewVm.releaseState === 'VISIBLE' || reviewVm.releaseState === 'RETURNED_FOR_REVISION'
                   ? t('submissionInspector.visibleNow')
                   : t('submissionInspector.hiddenUntilRelease')
               }
             />
             <HistoryItem
               label={t('submissionInspector.score')}
-              value={
-                typeof current.final_score === 'number'
-                  ? `${Math.round(current.final_score)}%`
-                  : '--'
-              }
+              value={typeof current.final_score === 'number' ? `${Math.round(current.final_score)}%` : '--'}
             />
           </div>
         </div>
@@ -154,10 +143,7 @@ export default function SubmissionInspector({
             <TabsTrigger value="violations">
               {t('submissionInspector.violations')}
               {getViolationCount(current) > 0 ? (
-                <Badge
-                  variant="destructive"
-                  className="ml-1.5 h-4 min-w-4 rounded-full px-1 text-[10px]"
-                >
+                <Badge variant="destructive" className="ml-1.5 h-4 min-w-4 rounded-full px-1 text-[10px]">
                   {getViolationCount(current)}
                 </Badge>
               ) : null}
@@ -166,15 +152,9 @@ export default function SubmissionInspector({
 
           <TabsContent value="work" className="mt-4">
             {ReviewDetail ? (
-              <ReviewDetail
-                submission={current}
-                {...(activityUuid !== undefined ? { activityUuid } : {})}
-              />
+              <ReviewDetail submission={current} {...(activityUuid !== undefined ? { activityUuid } : {})} />
             ) : (
-              <SubmittedAnswers
-                submission={current}
-                {...(activityUuid !== undefined ? { activityUuid } : {})}
-              />
+              <SubmittedAnswers submission={current} {...(activityUuid !== undefined ? { activityUuid } : {})} />
             )}
           </TabsContent>
 
@@ -224,10 +204,7 @@ function ViolationLog({ submission }: { submission: Submission }) {
           const occurredAt = v.occurred_at ?? ''
           const count = typeof v.count === 'number' ? v.count : null
           return (
-            <li
-              key={idx}
-              className="flex items-center justify-between gap-4 rounded-md border px-3 py-2"
-            >
+            <li key={idx} className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
               <Badge variant="outline" className="font-mono text-[10px]">
                 {kind}
               </Badge>
@@ -250,18 +227,9 @@ function AttemptHistory({ submission }: { submission: Submission }) {
     <section className="bg-card rounded-lg border p-4">
       <h3 className="text-sm font-semibold">{t('submissionInspector.attemptHistory')}</h3>
       <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        <HistoryItem
-          label={t('submissionInspector.started')}
-          value={formatDate(submission.started_at)}
-        />
-        <HistoryItem
-          label={t('submissionInspector.submitted')}
-          value={formatDate(submission.submitted_at)}
-        />
-        <HistoryItem
-          label={t('submissionInspector.graded')}
-          value={formatDate(submission.graded_at)}
-        />
+        <HistoryItem label={t('submissionInspector.started')} value={formatDate(submission.started_at)} />
+        <HistoryItem label={t('submissionInspector.submitted')} value={formatDate(submission.submitted_at)} />
+        <HistoryItem label={t('submissionInspector.graded')} value={formatDate(submission.graded_at)} />
         <HistoryItem label={t('submissionInspector.version')} value={`v${submission.version}`} />
       </div>
     </section>
@@ -306,23 +274,17 @@ export function SubmittedAnswers({
           const answer = canonicalAnswers[item.item_uuid]
           const isOpenText = item.body?.kind === 'OPEN_TEXT' || item.kind === 'OPEN_TEXT'
           const openTextValue =
-            isOpenText && answer && 'text' in answer
-              ? (answer.text as string | undefined)
-              : undefined
+            isOpenText && answer && 'text' in answer ? (answer.text as string | undefined) : undefined
 
           return (
             <div key={item.item_uuid ?? index} className="bg-card rounded-lg border p-4">
               <div className="mb-2 flex items-center justify-between gap-3">
-                <Badge variant="secondary">
-                  {t('submissionInspector.itemLabel', { index: index + 1 })}
-                </Badge>
+                <Badge variant="secondary">{t('submissionInspector.itemLabel', { index: index + 1 })}</Badge>
                 <Badge variant="outline">{item.kind}</Badge>
               </div>
               <p className="mb-3 text-sm font-medium">
                 {item.title ||
-                  ('prompt' in item.body
-                    ? item.body.prompt
-                    : t('submissionInspector.itemLabel', { index: index + 1 }))}
+                  ('prompt' in item.body ? item.body.prompt : t('submissionInspector.itemLabel', { index: index + 1 }))}
               </p>
               {isOpenText && openTextValue !== undefined ? (
                 <AnnotatableText
@@ -334,9 +296,7 @@ export function SubmittedAnswers({
               ) : (
                 <CanonicalReviewAnswer item={item} answer={answer} />
               )}
-              {item.body.kind === 'OPEN_TEXT' && item.body.rubric ? (
-                <RubricSummary rubric={item.body.rubric} />
-              ) : null}
+              {item.body.kind === 'OPEN_TEXT' && item.body.rubric ? <RubricSummary rubric={item.body.rubric} /> : null}
             </div>
           )
         })

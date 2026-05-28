@@ -36,11 +36,7 @@ const ResetPasswordClient = () => {
 
   const schema = v.pipe(
     v.object({
-      email: v.pipe(
-        v.string(),
-        v.minLength(1, validationT('required')),
-        v.email(validationT('invalidEmail')),
-      ),
+      email: v.pipe(v.string(), v.minLength(1, validationT('required')), v.email(validationT('invalidEmail'))),
       new_password: v.pipe(
         v.string(),
         v.minLength(1, validationT('required')),
@@ -179,11 +175,7 @@ const ResetPasswordClient = () => {
           <FieldError>{state.fieldErrors.confirm_password}</FieldError>
         </Field>
 
-        <AuthSubmitButton
-          isPending={isPending}
-          label={t('changePassword')}
-          pendingLabel={t('loading')}
-        />
+        <AuthSubmitButton isPending={isPending} label={t('changePassword')} pendingLabel={t('loading')} />
       </form>
     </AuthCard>
   )

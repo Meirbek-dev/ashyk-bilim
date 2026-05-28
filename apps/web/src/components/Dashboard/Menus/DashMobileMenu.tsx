@@ -11,8 +11,7 @@ import type { LucideIcon } from 'lucide-react'
 const DashMobileMenu = () => {
   const pathname = usePathname()
   const t = useTranslations('SidebarMenu')
-  const { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } =
-    useNavigationPermissions()
+  const { canSeePlatform, canSeeCourses, canSeeAnalytics, canSeeUsers, canSeeAdmin } = useNavigationPermissions()
 
   const navigationItems: {
     href: string
@@ -121,9 +120,7 @@ const DashMobileMenu = () => {
                 >
                   <Icon size={18} />
                 </span>
-                <span className="mt-1 truncate text-[11px] leading-tight font-medium">
-                  {item.label}
-                </span>
+                <span className="mt-1 truncate text-[11px] leading-tight font-medium">{item.label}</span>
               </AppLink>
             )
           })}

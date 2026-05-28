@@ -1,15 +1,4 @@
-import {
-  ArrowRight,
-  CheckCircle,
-  GitBranch,
-  Image,
-  Play,
-  Plus,
-  RotateCcw,
-  Save,
-  Settings,
-  Trash2,
-} from 'lucide-react'
+import { ArrowRight, CheckCircle, GitBranch, Image, Play, Plus, RotateCcw, Save, Settings, Trash2 } from 'lucide-react'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import SimpleAlertDialog from '@/components/ui/alert-dialog-simple'
 import Modal from '@/components/Objects/Elements/Modal/Modal'
@@ -200,9 +189,7 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
     if (!scenario) return
 
     updateScenario(scenarioId, {
-      options: scenario.options.map(opt =>
-        opt.id === optionId ? Object.assign(opt, updates) : opt,
-      ),
+      options: scenario.options.map(opt => (opt.id === optionId ? Object.assign(opt, updates) : opt)),
     })
   }
 
@@ -235,12 +222,7 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetPreview}
-                className="flex items-center gap-2"
-              >
+              <Button variant="outline" size="sm" onClick={resetPreview} className="flex items-center gap-2">
                 <RotateCcw size={14} />
                 {t('reset')}
               </Button>
@@ -265,15 +247,8 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
                 <CheckCircle size={24} className="text-emerald-600" />
               </div>
               <h4 className="mb-2 text-xl font-bold text-slate-900">{t('scenarioComplete')}</h4>
-              <p className="mb-6 leading-relaxed text-slate-600">
-                {t('scenarioCompleteDescription')}
-              </p>
-              <Button
-                onClick={resetPreview}
-                className="mx-auto flex items-center gap-2"
-                variant="default"
-                size="sm"
-              >
+              <p className="mb-6 leading-relaxed text-slate-600">{t('scenarioCompleteDescription')}</p>
+              <Button onClick={resetPreview} className="mx-auto flex items-center gap-2" variant="default" size="sm">
                 <RotateCcw size={16} />
                 {t('startOver')}
               </Button>
@@ -293,9 +268,7 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
                     />
                   </div>
                 )}
-                <p className="text-base leading-relaxed font-medium text-slate-800">
-                  {previewScenario.text}
-                </p>
+                <p className="text-base leading-relaxed font-medium text-slate-800">{previewScenario.text}</p>
               </div>
 
               {/* Response Options */}
@@ -344,9 +317,7 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
       <div className="-mx-2 -mt-2 mb-4 shrink-0 border-b border-slate-200 bg-white p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 flex-1">
-            <Label className="mb-2 block text-sm font-semibold text-slate-900">
-              {t('scenarioTitleLabel')}
-            </Label>
+            <Label className="mb-2 block text-sm font-semibold text-slate-900">{t('scenarioTitleLabel')}</Label>
             <Input
               type="text"
               value={title}
@@ -397,9 +368,7 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-200">
-                        <span className="text-sm font-bold text-slate-700">
-                          {scenarioIndex + 1}
-                        </span>
+                        <span className="text-sm font-bold text-slate-700">{scenarioIndex + 1}</span>
                       </div>
                       <div>
                         <h3 className="text-base font-semibold text-slate-900">
@@ -445,31 +414,20 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
                   {/* Scenario Text */}
                   <div>
                     <div className="mb-2 flex items-center justify-between">
-                      <Label className="text-sm font-medium text-slate-700">
-                        {t('scenarioDescriptionLabel')}
-                      </Label>
+                      <Label className="text-sm font-medium text-slate-700">{t('scenarioDescriptionLabel')}</Label>
                       <Button
                         variant={
-                          showImageInputs[scenario.id] ||
-                          (scenario.imageUrl && scenario.imageUrl.trim() !== '')
+                          showImageInputs[scenario.id] || (scenario.imageUrl && scenario.imageUrl.trim() !== '')
                             ? 'outline'
                             : 'default'
                         }
                         size="sm"
                         onClick={() => toggleImageInput(scenario.id)}
                         className="flex items-center gap-2 text-xs"
-                        title={
-                          scenario.imageUrl && scenario.imageUrl.trim() !== ''
-                            ? t('editImage')
-                            : t('addImage')
-                        }
+                        title={scenario.imageUrl && scenario.imageUrl.trim() !== '' ? t('editImage') : t('addImage')}
                       >
                         <Image size={14} />
-                        <span>
-                          {scenario.imageUrl && scenario.imageUrl.trim() !== ''
-                            ? t('image')
-                            : t('addImage')}
-                        </span>
+                        <span>{scenario.imageUrl && scenario.imageUrl.trim() !== '' ? t('image') : t('addImage')}</span>
                         {scenario.imageUrl && scenario.imageUrl.trim() !== '' && (
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
                             1
@@ -489,9 +447,7 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
                   {/* Scenario Image */}
                   {showImageInputs[scenario.id] && (
                     <div>
-                      <Label className="mb-2 block text-sm font-medium text-slate-700">
-                        {t('imageUrlLabel')}
-                      </Label>
+                      <Label className="mb-2 block text-sm font-medium text-slate-700">{t('imageUrlLabel')}</Label>
                       <Input
                         type="url"
                         value={scenario.imageUrl || ''}
@@ -571,16 +527,13 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
                                   value={option.nextScenarioId ?? '__end'}
                                   onChange={event =>
                                     updateOption(scenario.id, option.id, {
-                                      nextScenarioId:
-                                        event.target.value === '__end' ? null : event.target.value,
+                                      nextScenarioId: event.target.value === '__end' ? null : event.target.value,
                                     })
                                   }
                                   className="flex-1 text-xs"
                                   aria-label={t('endScenarioOption')}
                                 >
-                                  <NativeSelectOption value="__end">
-                                    {t('endScenarioOption')}
-                                  </NativeSelectOption>
+                                  <NativeSelectOption value="__end">{t('endScenarioOption')}</NativeSelectOption>
                                   {nextScenarioOptions.map(item => (
                                     <NativeSelectOption key={item.value} value={item.value}>
                                       {item.label}
@@ -634,11 +587,7 @@ const ScenariosModal: React.FC<ScenariosModalProps> = ({
 
   return (
     <>
-      <SimpleAlertDialog
-        open={dialogAlertOpen}
-        onOpenChange={setDialogAlertOpen}
-        description={dialogAlertMessage}
-      />
+      <SimpleAlertDialog open={dialogAlertOpen} onOpenChange={setDialogAlertOpen} description={dialogAlertMessage} />
       <Modal
         isDialogOpen={isOpen}
         onOpenChange={handleClose}

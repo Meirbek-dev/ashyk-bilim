@@ -171,10 +171,7 @@ function SelectField({
       render={({ field }) => (
         <Field>
           <FieldLabel>{label}</FieldLabel>
-          <NativeSelect
-            value={String(field.value)}
-            onChange={event => field.onChange(event.target.value)}
-          >
+          <NativeSelect value={String(field.value)} onChange={event => field.onChange(event.target.value)}>
             {options.map(([value, optionLabel]) => (
               <NativeSelectOption key={value} value={value}>
                 {optionLabel}

@@ -14,8 +14,7 @@ function buildForwardedHeaders(request: NextRequest): Headers {
   const userAgent = request.headers.get('user-agent')
   const forwardedFor = request.headers.get('x-forwarded-for')
   const forwardedHost = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
-  const forwardedProto =
-    request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol.replace(':', '')
+  const forwardedProto = request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol.replace(':', '')
 
   if (userAgent) headers.set('user-agent', userAgent)
   if (forwardedFor) headers.set('x-forwarded-for', forwardedFor)
@@ -31,19 +30,13 @@ function buildForwardedHeaders(request: NextRequest): Headers {
 }
 
 function getPublicOrigin(request: NextRequest): string {
-  const host =
-    request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.host
-  const proto = (request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol).replace(
-    ':',
-    '',
-  )
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.host
+  const proto = (request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol).replace(':', '')
   return `${proto}://${host}`
 }
 
 function redirectToLogin(request: NextRequest, returnTo: string): NextResponse {
-  const response = NextResponse.redirect(
-    new URL(buildLoginRedirect(returnTo), getPublicOrigin(request)),
-  )
+  const response = NextResponse.redirect(new URL(buildLoginRedirect(returnTo), getPublicOrigin(request)))
   clearAuthCookies(response)
   return response
 }

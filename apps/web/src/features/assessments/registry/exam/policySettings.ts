@@ -40,16 +40,13 @@ export function buildExamAntiCheatSettings(settings: ExamSettingsRecord) {
     right_click_disable: settings['right_click_disable'] === true,
     fullscreen_enforcement: settings['fullscreen_enforcement'] === true,
     violation_threshold:
-      typeof settings['violation_threshold'] === 'number' &&
-      Number.isInteger(settings['violation_threshold'])
+      typeof settings['violation_threshold'] === 'number' && Number.isInteger(settings['violation_threshold'])
         ? settings['violation_threshold']
         : null,
   }
 }
 
-export function normalizeExamPolicySettings(
-  settings: ExamSettingsRecord | null | undefined,
-): ExamSettingsRecord {
+export function normalizeExamPolicySettings(settings: ExamSettingsRecord | null | undefined): ExamSettingsRecord {
   if (!settings) return {}
   const normalized: ExamSettingsRecord = { ...settings }
   const dueAt = readString(normalized, 'due_at', 'due_date_iso')

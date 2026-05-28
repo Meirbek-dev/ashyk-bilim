@@ -25,16 +25,13 @@ const AnnotationContext = createContext<AnnotationContextValue | null>(null)
 export function AnnotationProvider({ children }: { children: ReactNode }) {
   const [annotationsByItem, setAnnotationsByItem] = useState<Record<string, TextAnnotation[]>>({})
 
-  const addAnnotation = useCallback(
-    (itemUuid: string, a: Omit<TextAnnotation, 'id' | 'itemUuid'>) => {
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-      setAnnotationsByItem(prev => ({
-        ...prev,
-        [itemUuid]: [...(prev[itemUuid] ?? []), { ...a, id, itemUuid }],
-      }))
-    },
-    [],
-  )
+  const addAnnotation = useCallback((itemUuid: string, a: Omit<TextAnnotation, 'id' | 'itemUuid'>) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    setAnnotationsByItem(prev => ({
+      ...prev,
+      [itemUuid]: [...(prev[itemUuid] ?? []), { ...a, id, itemUuid }],
+    }))
+  }, [])
 
   const removeAnnotation = useCallback((itemUuid: string, annotationId: string) => {
     setAnnotationsByItem(prev => ({

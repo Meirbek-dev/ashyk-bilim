@@ -29,10 +29,7 @@ interface AuthActionResult {
 
 type HeaderSource = Pick<Headers, 'get'>
 
-function buildForwardedHeaders(
-  sourceHeaders: HeaderSource,
-  includeJsonContentType = false,
-): Headers {
+function buildForwardedHeaders(sourceHeaders: HeaderSource, includeJsonContentType = false): Headers {
   const forwardedHeaders = new Headers()
   const userAgent = sourceHeaders.get('user-agent')
   const forwardedFor = sourceHeaders.get('x-forwarded-for')
@@ -62,11 +59,7 @@ function buildForwardedHeaders(
   return forwardedHeaders
 }
 
-async function postAuthJson(
-  path: string,
-  body: unknown,
-  requestHeaders: HeaderSource,
-): Promise<Response> {
+async function postAuthJson(path: string, body: unknown, requestHeaders: HeaderSource): Promise<Response> {
   return fetch(`${getServerAPIUrl()}${path}`, {
     method: 'POST',
     headers: buildForwardedHeaders(requestHeaders, true),
@@ -88,11 +81,7 @@ function getSignupCode(payload: unknown): string | undefined {
   return typeof detail.code === 'string' ? detail.code : undefined
 }
 
-async function performLoginFetch(
-  email: string,
-  password: string,
-  requestHeaders: HeaderSource,
-): Promise<Response> {
+async function performLoginFetch(email: string, password: string, requestHeaders: HeaderSource): Promise<Response> {
   const formData = new URLSearchParams()
   formData.append('username', email.trim().toLowerCase())
   formData.append('password', password)
@@ -118,9 +107,7 @@ function usernameBaseFrom(value: string): string {
     .replace(/^\.+|\.+$/g, '')
 }
 
-function buildSignupUsername(
-  input: Pick<SignupActionInput, 'email' | 'firstName' | 'lastName'>,
-): string {
+function buildSignupUsername(input: Pick<SignupActionInput, 'email' | 'firstName' | 'lastName'>): string {
   const nameBase = usernameBaseFrom(`${input.firstName}.${input.lastName}`)
   const emailBase = usernameBaseFrom(input.email.split('@')[0] ?? '')
   const base = (nameBase || emailBase || 'user').slice(0, 20).replace(/^\.+|\.+$/g, '') || 'user'
@@ -191,9 +178,7 @@ export async function signupAction(input: SignupActionInput): Promise<AuthAction
   if (!signupResponse.ok) {
     const payload = await signupResponse.json().catch(() => null)
     const signupCode = getSignupCode(payload)
-    return signupCode
-      ? { ok: false, reason: 'signup_failed', signupCode }
-      : { ok: false, reason: 'signup_failed' }
+    return signupCode ? { ok: false, reason: 'signup_failed', signupCode } : { ok: false, reason: 'signup_failed' }
   }
 
   let loginResponse: Response

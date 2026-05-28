@@ -51,10 +51,7 @@ import {
   saveGradingDraft,
   runCodeItem,
 } from '@/services/assessments/assessment-actions'
-import {
-  getAssessmentByUuid,
-  getAssessmentByActivityUuid,
-} from '@/services/assessments/assessments'
+import { getAssessmentByUuid, getAssessmentByActivityUuid } from '@/services/assessments/assessments'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -157,10 +154,7 @@ describe('getAssessmentByActivityUuid', () => {
 
     const result = await getAssessmentByActivityUuid('activity_abc')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
-      'assessments/activity/activity_abc',
-      expect.any(Object),
-    )
+    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/activity/activity_abc', expect.any(Object))
     expect(result?.activity_uuid).toBe('activity_abc')
   })
 
@@ -256,10 +250,7 @@ describe('getPolicyPreset', () => {
 
     const result = await getPolicyPreset('EXAM')
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
-      'assessments/policy-preset/EXAM',
-      expect.any(Object),
-    )
+    expect(mocks.apiFetch).toHaveBeenCalledWith('assessments/policy-preset/EXAM', expect.any(Object))
     expect(result?.grade_release_mode).toBe('IMMEDIATE')
     expect(result?.grading_mode).toBe('MANUAL')
   })
@@ -327,9 +318,7 @@ describe('createStudentPolicyOverride', () => {
   it('throws on failure', async () => {
     mockMetaFailure('User not enrolled')
 
-    await expect(createStudentPolicyOverride('asm_1', { user_id: 999 })).rejects.toThrow(
-      'User not enrolled',
-    )
+    await expect(createStudentPolicyOverride('asm_1', { user_id: 999 })).rejects.toThrow('User not enrolled')
   })
 })
 
@@ -358,9 +347,7 @@ describe('updateStudentPolicyOverride', () => {
   it('throws on failure', async () => {
     mockMetaFailure('Override not found')
 
-    await expect(updateStudentPolicyOverride('asm_1', 999, {})).rejects.toThrow(
-      'Override not found',
-    )
+    await expect(updateStudentPolicyOverride('asm_1', 999, {})).rejects.toThrow('Override not found')
   })
 })
 
@@ -426,22 +413,16 @@ describe('saveGradingDraft', () => {
 
     // The function dynamically imports grading module; mock it too
     vi.doMock('@/services/grading/grading', () => ({
-      getAssessmentSubmission: vi
-        .fn()
-        .mockResolvedValue({ submission_uuid: 'sub_stale', version: 5 }),
+      getAssessmentSubmission: vi.fn().mockResolvedValue({ submission_uuid: 'sub_stale', version: 5 }),
     }))
 
-    await expect(
-      saveGradingDraft('asm_1', 'sub_stale', { item_grades: [] }, 2),
-    ).rejects.toBeInstanceOf(StaleGradeError)
+    await expect(saveGradingDraft('asm_1', 'sub_stale', { item_grades: [] }, 2)).rejects.toBeInstanceOf(StaleGradeError)
   })
 
   it('throws on generic failure', async () => {
     mockMetaFailure('Grade conflict')
 
-    await expect(saveGradingDraft('asm_1', 'sub_err', { item_grades: [] })).rejects.toThrow(
-      'Grade conflict',
-    )
+    await expect(saveGradingDraft('asm_1', 'sub_err', { item_grades: [] })).rejects.toThrow('Grade conflict')
   })
 })
 

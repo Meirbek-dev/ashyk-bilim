@@ -141,16 +141,12 @@ export const HeaderProfileBox = () => {
             <DropdownMenu>
               <DropdownMenuTrigger
                 nativeButton
-                render={
-                  <Button variant="ghost" className="flex h-auto items-center space-x-1 p-2" />
-                }
+                render={<Button variant="ghost" className="flex h-auto items-center space-x-1 p-2" />}
               >
                 <UserAvatar size="sm" />
                 <div className="flex flex-col space-y-0 text-start">
                   <div className="flex items-center space-x-2">
-                    <p className="text-foreground text-sm font-semibold capitalize">
-                      {user?.username}
-                    </p>
+                    <p className="text-foreground text-sm font-semibold capitalize">{user?.username}</p>
                     {/* Updated condition here */}
                     {shouldShowBadge && userRoleInfo && (
                       <Tooltip>

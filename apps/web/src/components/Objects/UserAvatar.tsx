@@ -90,10 +90,7 @@ const UserAvatar = (props: UserAvatarProps) => {
     [avatar_url, predefined_avatar, resolvedUser],
   )
 
-  const fallback = useMemo(
-    () => getAvatarInitials(resolvedUser, fallbackText),
-    [fallbackText, resolvedUser],
-  )
+  const fallback = useMemo(() => getAvatarInitials(resolvedUser, fallbackText), [fallbackText, resolvedUser])
   const PredefinedIcon = predefined_avatar ? predefinedIcon[predefined_avatar] : null
 
   const avatarElement = (

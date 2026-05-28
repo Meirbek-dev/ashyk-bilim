@@ -117,9 +117,7 @@ export default function DiscussionPost({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h4 className="text-foreground font-semibold">
-                    {getUserDisplayName(post.firstName, post.lastName)}
-                  </h4>
+                  <h4 className="text-foreground font-semibold">{getUserDisplayName(post.firstName, post.lastName)}</h4>
                   <span className="text-muted-foreground text-sm">@{post.username}</span>
                   {canModerate && (
                     <Badge variant="destructive" className="h-auto px-1.5 py-0.5 text-xs">
@@ -136,8 +134,7 @@ export default function DiscussionPost({
                     <span>{format.relativeTime(new Date(post.createDate), now)}</span>
                     {post.updateDate &&
                       post.createDate &&
-                      new Date(post.updateDate).getTime() !==
-                        new Date(post.createDate).getTime() && (
+                      new Date(post.updateDate).getTime() !== new Date(post.createDate).getTime() && (
                         <span className="text-muted-foreground text-xs">({t('edited')})</span>
                       )}
                   </div>

@@ -45,10 +45,7 @@ interface AccessManagementTabProps {
   disabled: boolean
 }
 
-export default function AccessManagementTab({
-  assessmentUuid,
-  disabled,
-}: AccessManagementTabProps) {
+export default function AccessManagementTab({ assessmentUuid, disabled }: AccessManagementTabProps) {
   const t = useTranslations('Features.Assessments.Studio.AccessManagement')
   const [access, setAccess] = useState<AccessRead | null>(null)
   const [eligibleUsers, setEligibleUsers] = useState<AccessUser[]>([])
@@ -104,9 +101,7 @@ export default function AccessManagementTab({
     const normalized = groupQuery.trim().toLowerCase()
     if (!normalized) return eligibleGroups
     return eligibleGroups.filter(group =>
-      [group.name, group.description]
-        .filter(Boolean)
-        .some(value => value.toLowerCase().includes(normalized)),
+      [group.name, group.description].filter(Boolean).some(value => value.toLowerCase().includes(normalized)),
     )
   }, [eligibleGroups, groupQuery])
 
@@ -189,11 +184,7 @@ export default function AccessManagementTab({
             />
           </RadioGroup>
           <Button className="mt-4 w-full" disabled={disabled || isPending} onClick={save}>
-            {isPending ? (
-              <LoaderCircle className="size-4 animate-spin" />
-            ) : (
-              <UserRoundCheck className="size-4" />
-            )}
+            {isPending ? <LoaderCircle className="size-4 animate-spin" /> : <UserRoundCheck className="size-4" />}
             {t('save')}
           </Button>
         </section>
@@ -245,9 +236,7 @@ export default function AccessManagementTab({
               <Checkbox checked={selectedGroups.has(group.id)} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{group.name}</p>
-                <p className="text-muted-foreground truncate text-xs">
-                  {group.description || t('noGroupDescription')}
-                </p>
+                <p className="text-muted-foreground truncate text-xs">{group.description || t('noGroupDescription')}</p>
               </div>
               <Badge variant="secondary">
                 <UsersRound className="size-3" />

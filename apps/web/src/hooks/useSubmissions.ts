@@ -66,16 +66,7 @@ export function useSubmissions({
   const { queryKey } = submissionsQueryOptions(queryParams)
   const queryClient = useQueryClient()
   const query = useQuery(
-    submissionsHookOptions(
-      activityId,
-      assessmentUuid,
-      page,
-      pageSize,
-      search ?? '',
-      sortBy,
-      sortDir,
-      status ?? 'ALL',
-    ),
+    submissionsHookOptions(activityId, assessmentUuid, page, pageSize, search ?? '', sortBy, sortDir, status ?? 'ALL'),
   )
 
   return {

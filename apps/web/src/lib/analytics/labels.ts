@@ -76,20 +76,12 @@ const statusKeys: Record<string, string> = {
   PENDING_JUDGE0: 'labels.status.pendingJudge0',
 }
 
-function resolveLabel(
-  t: Translator,
-  keyMap: Record<string, string>,
-  value: string,
-  fallback: string,
-): string {
+function resolveLabel(t: Translator, keyMap: Record<string, string>, value: string, fallback: string): string {
   const key = keyMap[value]
   return key ? t(key) : fallback
 }
 
-export function getAnalyticsAssessmentTypeLabel(
-  t: Translator,
-  assessmentType: AssessmentType,
-): string {
+export function getAnalyticsAssessmentTypeLabel(t: Translator, assessmentType: AssessmentType): string {
   return t(assessmentTypeKeys[assessmentType])
 }
 

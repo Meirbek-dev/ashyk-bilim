@@ -125,10 +125,7 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
       toast.success(t('createSuccess'))
       if (course?.courseStructure?.course_uuid) {
         await queryClient.invalidateQueries({
-          queryKey: courseKeys.structure(
-            course.courseStructure.course_uuid,
-            course.withUnpublishedActivities,
-          ),
+          queryKey: courseKeys.structure(course.courseStructure.course_uuid, course.withUnpublishedActivities),
         })
       }
       closeModal()
@@ -202,14 +199,8 @@ export default function FileSubmissionActivityModal({ chapterId, course, closeMo
           {MIME_PRESETS.map(preset => {
             const checked = preset.mimes.every(mime => selectedMimes.includes(mime))
             return (
-              <label
-                key={preset.id}
-                className="flex items-center gap-2 rounded-md border p-3 text-sm"
-              >
-                <Checkbox
-                  checked={checked}
-                  onCheckedChange={value => togglePreset(preset.mimes, value)}
-                />
+              <label key={preset.id} className="flex items-center gap-2 rounded-md border p-3 text-sm">
+                <Checkbox checked={checked} onCheckedChange={value => togglePreset(preset.mimes, value)} />
                 {preset.label}
               </label>
             )

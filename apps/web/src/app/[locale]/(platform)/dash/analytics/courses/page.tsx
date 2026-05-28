@@ -38,9 +38,7 @@ async function PlatformAnalyticsCoursesPageInner(props: {
           <CardHeader>
             <CardTitle>{t('pages.courseRankingTitle')}</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-slate-600">
-            {t('pages.courseRankingDescription')}
-          </CardContent>
+          <CardContent className="text-sm text-slate-600">{t('pages.courseRankingDescription')}</CardContent>
         </Card>
         <Card className="bg-background border-slate-200 shadow-sm">
           <CardContent>

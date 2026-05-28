@@ -112,11 +112,7 @@ function makeFullCourse(overrides: Record<string, unknown> = {}) {
 /** Create a Response-like mock with ok, status, json, headers */
 function makeResponse(
   body: unknown,
-  {
-    status = 200,
-    ok = true,
-    headers = {},
-  }: { status?: number; ok?: boolean; headers?: Record<string, string> } = {},
+  { status = 200, ok = true, headers = {} }: { status?: number; ok?: boolean; headers?: Record<string, string> } = {},
 ) {
   const headerMap = new Map(Object.entries(headers))
   return {
@@ -142,10 +138,7 @@ describe('getCourses', () => {
 
     const result = await getCourses(undefined, 1, 20)
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
-      'courses/page/1/limit/20',
-      expect.objectContaining({ method: 'GET' }),
-    )
+    expect(mocks.apiFetch).toHaveBeenCalledWith('courses/page/1/limit/20', expect.objectContaining({ method: 'GET' }))
     expect(result.total).toBe(1)
     expect(result.courses).toHaveLength(1)
   })
@@ -380,10 +373,7 @@ describe('updateCourseAccess', () => {
 
     await updateCourseAccess('course_abc', { public: true })
 
-    expect(mocks.apiFetch).toHaveBeenCalledWith(
-      'courses/course_abc/access',
-      expect.objectContaining({ method: 'PUT' }),
-    )
+    expect(mocks.apiFetch).toHaveBeenCalledWith('courses/course_abc/access', expect.objectContaining({ method: 'PUT' }))
     expect(mocks.revalidateTag).toHaveBeenCalledWith('course-access-course_abc', 'max')
   })
 })

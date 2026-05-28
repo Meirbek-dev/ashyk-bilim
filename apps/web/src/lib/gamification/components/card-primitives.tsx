@@ -30,13 +30,7 @@ interface GamificationCardProps {
 /**
  * Base card component with optional compound children
  */
-export function GamificationCard({
-  title,
-  children,
-  headerAction,
-  className,
-  animated = true,
-}: GamificationCardProps) {
+export function GamificationCard({ title, children, headerAction, className, animated = true }: GamificationCardProps) {
   const CardWrapper = animated ? motion.div : 'div'
   const animationProps = animated
     ? {
@@ -74,18 +68,9 @@ interface CardHeaderCompoundProps {
   className?: string
 }
 
-function CardHeaderCompound({
-  icon: Icon,
-  title,
-  subtitle,
-  badge,
-  action,
-  className,
-}: CardHeaderCompoundProps) {
+function CardHeaderCompound({ icon: Icon, title, subtitle, badge, action, className }: CardHeaderCompoundProps) {
   return (
-    <div
-      className={cn('flex items-start justify-between', spacing.card.padding, 'pb-4', className)}
-    >
+    <div className={cn('flex items-start justify-between', spacing.card.padding, 'pb-4', className)}>
       <div className="flex items-start gap-3">
         {Icon && (
           <div className="bg-primary/10 mt-1 rounded-lg p-2">
@@ -134,16 +119,7 @@ interface CardStatProps {
   animated?: boolean
 }
 
-function CardStat({
-  label,
-  value,
-  icon: Icon,
-  trend,
-  trendLabel,
-  color,
-  className,
-  animated = true,
-}: CardStatProps) {
+function CardStat({ label, value, icon: Icon, trend, trendLabel, color, className, animated = true }: CardStatProps) {
   const trendInfo = getTrendInfo(trend)
 
   const StatWrapper = animated ? motion.div : 'div'
@@ -159,10 +135,7 @@ function CardStat({
   return (
     <StatWrapper
       {...animationProps}
-      className={cn(
-        'group rounded-lg border bg-card p-4 transition-shadow hover:shadow-md',
-        className,
-      )}
+      className={cn('group rounded-lg border bg-card p-4 transition-shadow hover:shadow-md', className)}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -171,9 +144,7 @@ function CardStat({
           {(trend !== undefined || trendLabel) && (
             <div className="mt-2 flex items-center gap-1">
               {trendInfo.icon && <trendInfo.icon className={cn('h-3 w-3', trendInfo.color)} />}
-              {trendLabel && (
-                <span className={cn('text-xs font-medium', trendInfo.color)}>{trendLabel}</span>
-              )}
+              {trendLabel && <span className={cn('text-xs font-medium', trendInfo.color)}>{trendLabel}</span>}
             </div>
           )}
         </div>
@@ -201,23 +172,12 @@ interface CardMetricRowProps {
   className?: string
 }
 
-function CardMetricRow({
-  label,
-  value,
-  icon: Icon,
-  sublabel,
-  trend,
-  color,
-  className,
-}: CardMetricRowProps) {
+function CardMetricRow({ label, value, icon: Icon, sublabel, trend, color, className }: CardMetricRowProps) {
   const trendInfo = getTrendInfo(trend)
 
   return (
     <div
-      className={cn(
-        'flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-muted/70',
-        className,
-      )}
+      className={cn('flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-muted/70', className)}
     >
       <div className="flex items-center gap-3">
         {Icon && (
@@ -260,8 +220,7 @@ function CardTrendIndicator({
   className,
 }: CardTrendIndicatorProps) {
   const trendInfo = getTrendInfo(value)
-  const formattedValue =
-    format === 'percentage' ? `${Math.abs(value)}%` : Math.abs(value).toString()
+  const formattedValue = format === 'percentage' ? `${Math.abs(value)}%` : Math.abs(value).toString()
 
   const sizeClasses = {
     sm: 'text-xs',
@@ -277,9 +236,7 @@ function CardTrendIndicator({
 
   return (
     <div className={cn('inline-flex items-center gap-1', className)}>
-      {showIcon && trendInfo.icon && (
-        <trendInfo.icon className={cn(iconSizes[size], trendInfo.color)} />
-      )}
+      {showIcon && trendInfo.icon && <trendInfo.icon className={cn(iconSizes[size], trendInfo.color)} />}
       <span className={cn('font-medium tabular-nums', sizeClasses[size], trendInfo.color)}>
         {value > 0 ? '+' : ''}
         {formattedValue}
@@ -314,9 +271,7 @@ function CardGrid({ children, columns = 2, gap = 'md', className }: CardGridProp
     lg: 'gap-6',
   }
 
-  return (
-    <div className={cn('grid', columnClasses[columns], gapClasses[gap], className)}>{children}</div>
-  )
+  return <div className={cn('grid', columnClasses[columns], gapClasses[gap], className)}>{children}</div>
 }
 
 // ============================================================================

@@ -64,22 +64,14 @@ const NewActivityButton = (props: NewActivityButtonProps) => {
   }) => {
     const toast_loading = toast.loading(tNotify('uploadingAndCreating'))
     const courseUuid = course.courseStructure.course_uuid
-    const activityPayload = courseUuid
-      ? { ...activity, course_uuid: activity?.course_uuid ?? courseUuid }
-      : activity
+    const activityPayload = courseUuid ? { ...activity, course_uuid: activity?.course_uuid ?? courseUuid } : activity
 
     try {
-      await activityMutations.createFileActivity(
-        file,
-        type,
-        activityPayload,
-        chapterId,
-        progress => {
-          toast.loading(`${tNotify('uploadingAndCreating')} ${progress.percentage}%`, {
-            id: toast_loading,
-          })
-        },
-      )
+      await activityMutations.createFileActivity(file, type, activityPayload, chapterId, progress => {
+        toast.loading(`${tNotify('uploadingAndCreating')} ${progress.percentage}%`, {
+          id: toast_loading,
+        })
+      })
 
       setNewActivityModal(false)
       toast.dismiss(toast_loading)

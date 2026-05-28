@@ -34,9 +34,7 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
 
   // ── Height state (local during drag, persisted on commit) ──────────────────
   const initialHeight =
-    typeof attrHeight === 'number' && attrHeight > 0
-      ? clampEmbedHeight(attrHeight)
-      : TLDRAW_DEFAULT_HEIGHT
+    typeof attrHeight === 'number' && attrHeight > 0 ? clampEmbedHeight(attrHeight) : TLDRAW_DEFAULT_HEIGHT
 
   const [displayHeight, setDisplayHeight] = useState(initialHeight)
 
@@ -93,9 +91,7 @@ const TldrawNodeView = (props: TypedNodeViewProps<EmbedBlockAttrs>) => {
 
   // ── Edit button ────────────────────────────────────────────────────────────
   const editButtonRef = useRef<HTMLButtonElement>(null)
-  const openForEdit = useEmbedPanelStore(
-    (s: ReturnType<typeof useEmbedPanelStore.getState>) => s.openForEdit,
-  )
+  const openForEdit = useEmbedPanelStore((s: ReturnType<typeof useEmbedPanelStore.getState>) => s.openForEdit)
 
   const handleEdit = useCallback(() => {
     const pos = typeof getPos === 'function' ? getPos() : undefined

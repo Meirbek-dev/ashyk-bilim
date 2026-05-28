@@ -32,9 +32,7 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
       <CardContent className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="bg-muted rounded-lg border p-4">
-            <div className="text-muted-foreground text-xs tracking-wider uppercase">
-              {t('dataQualityPanel.mode')}
-            </div>
+            <div className="text-muted-foreground text-xs tracking-wider uppercase">{t('dataQualityPanel.mode')}</div>
             <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
               <DatabaseZap className="h-4 w-4" />
               {quality.mode}
@@ -91,11 +89,7 @@ export default function DataQualityPanel({ quality }: DataQualityPanelProps) {
               <div key={issue.id} className="bg-muted rounded-lg border p-3">
                 <Badge
                   variant={
-                    issue.severity === 'critical'
-                      ? 'destructive'
-                      : issue.severity === 'warning'
-                        ? 'warning'
-                        : 'outline'
+                    issue.severity === 'critical' ? 'destructive' : issue.severity === 'warning' ? 'warning' : 'outline'
                   }
                 >
                   {t(`dataQualityPanel.issueSeverity.${issue.severity}`)}

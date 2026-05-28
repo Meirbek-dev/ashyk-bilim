@@ -11,30 +11,12 @@ import {
   uploadPlatformPreview,
   uploadPlatformThumbnail,
 } from '@/services/settings/platform'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@components/ui/dialog'
 import { GripVertical, ImageIcon, Images, Info, Plus, StarIcon, UploadCloud, X } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs'
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  horizontalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable'
+import { arrayMove, SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 import { usePlatform } from '@/components/Contexts/PlatformContext'
@@ -80,11 +62,7 @@ function SortablePreviewItem({ preview, removePreview, getPreviewMediaDirectory 
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(
-        'group relative shrink-0',
-        'inline-block w-auto',
-        isDragging ? 'scale-105' : 'hover:scale-102',
-      )}
+      className={cn('group relative shrink-0', 'inline-block w-auto', isDragging ? 'scale-105' : 'hover:scale-102')}
     >
       <button
         onClick={() => removePreview(preview.id)}
@@ -156,11 +134,7 @@ type VideoService = 'youtube' | 'loom' | null
 const DIALOG_ICON_SIZE = 'w-16 h-16'
 
 // Function to get translated preview options
-const getAddPreviewOptions = (
-  t: Function,
-  isPreviewUploading: boolean,
-  setSelectedService: Function,
-) => [
+const getAddPreviewOptions = (t: Function, isPreviewUploading: boolean, setSelectedService: Function) => [
   {
     id: 'image',
     title: t('Dialog.AddPreview.imageTitle'),
@@ -219,10 +193,7 @@ export default function EditImages() {
         id: video.id,
         url: video.url,
         type: video.type as 'youtube' | 'loom',
-        thumbnailUrl:
-          video.type === 'youtube'
-            ? `https://img.youtube.com/vi/${video.id}/maxresdefault.jpg`
-            : '',
+        thumbnailUrl: video.type === 'youtube' ? `https://img.youtube.com/vi/${video.id}/maxresdefault.jpg` : '',
         filename: '',
         order: video.order ?? imagePreviews.length + index, // Use existing order or fallback to index after images
       }))
@@ -379,8 +350,7 @@ export default function EditImages() {
 
   const extractVideoId = (url: string, type: 'youtube' | 'loom'): string | null => {
     if (type === 'youtube') {
-      const regex =
-        /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/
+      const regex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/
       const match = regex.exec(url)
       return match ? match[1] || null : null
     }
@@ -412,8 +382,7 @@ export default function EditImages() {
     const loadingToast = toast.loading(tNotify('addingVideoPreview'))
 
     try {
-      const thumbnailUrl =
-        type === 'youtube' ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : ''
+      const thumbnailUrl = type === 'youtube' ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : ''
 
       const newPreview: Preview = {
         id: videoId,
@@ -598,13 +567,8 @@ export default function EditImages() {
                     )}
                     onClick={handleImageButtonClick('fileInput')}
                   >
-                    <UploadCloud
-                      size={18}
-                      className={cn('', isLogoUploading && 'animate-bounce')}
-                    />
-                    <span>
-                      {isLogoUploading ? t('Buttons.uploadingLogo') : t('Buttons.uploadNewLogo')}
-                    </span>
+                    <UploadCloud size={18} className={cn('', isLogoUploading && 'animate-bounce')} />
+                    <span>{isLogoUploading ? t('Buttons.uploadingLogo') : t('Buttons.uploadNewLogo')}</span>
                   </button>
 
                   <div className="flex flex-col items-center space-y-2 text-xs text-gray-500">
@@ -664,14 +628,9 @@ export default function EditImages() {
                     )}
                     onClick={handleImageButtonClick('thumbnailInput')}
                   >
-                    <UploadCloud
-                      size={18}
-                      className={cn('', isThumbnailUploading && 'animate-bounce')}
-                    />
+                    <UploadCloud size={18} className={cn('', isThumbnailUploading && 'animate-bounce')} />
                     <span>
-                      {isThumbnailUploading
-                        ? t('Buttons.uploadingThumbnail')
-                        : t('Buttons.uploadNewThumbnail')}
+                      {isThumbnailUploading ? t('Buttons.uploadingThumbnail') : t('Buttons.uploadNewThumbnail')}
                     </span>
                   </button>
 
@@ -741,27 +700,16 @@ export default function EditImages() {
                             <div className="rounded-full bg-blue-50 p-2 transition-colors duration-200 group-hover:bg-blue-100">
                               <Plus size={20} className="text-blue-500" />
                             </div>
-                            <span className="text-sm font-medium text-gray-600">
-                              {t('Buttons.addPreview')}
-                            </span>
+                            <span className="text-sm font-medium text-gray-600">{t('Buttons.addPreview')}</span>
                           </DialogTrigger>
                           <DialogContent className="sm:max-w-[600px]" aria-describedby={undefined}>
                             <DialogHeader>
                               <DialogTitle>{t('Dialog.AddPreview.title')}</DialogTitle>
                             </DialogHeader>
-                            <div
-                              className={cn(
-                                'p-6',
-                                selectedService ? 'space-y-4' : 'grid grid-cols-3 gap-6',
-                              )}
-                            >
+                            <div className={cn('p-6', selectedService ? 'space-y-4' : 'grid grid-cols-3 gap-6')}>
                               {!selectedService ? (
                                 <>
-                                  {getAddPreviewOptions(
-                                    t,
-                                    isPreviewUploading,
-                                    setSelectedService,
-                                  ).map(option => (
+                                  {getAddPreviewOptions(t, isPreviewUploading, setSelectedService).map(option => (
                                     <button
                                       key={option.id}
                                       onClick={option.onClick}
@@ -781,15 +729,11 @@ export default function EditImages() {
                                           'flex items-center justify-center',
                                         )}
                                       >
-                                        <option.icon
-                                          className={`text- h-8 w-8${option.color}-500`}
-                                        />
+                                        <option.icon className={`text- h-8 w-8${option.color}-500`} />
                                       </div>
                                       <div className="text-center">
                                         <p className="font-medium text-gray-700">{option.title}</p>
-                                        <p className="mt-1 text-sm text-gray-500">
-                                          {option.description}
-                                        </p>
+                                        <p className="mt-1 text-sm text-gray-500">{option.description}</p>
                                       </div>
                                     </button>
                                   ))}
@@ -811,9 +755,7 @@ export default function EditImages() {
                                       <div
                                         className={cn(
                                           'flex h-10 w-10 items-center justify-center rounded-full',
-                                          selectedService === 'youtube'
-                                            ? 'bg-red-50'
-                                            : 'bg-blue-50',
+                                          selectedService === 'youtube' ? 'bg-red-50' : 'bg-blue-50',
                                         )}
                                       >
                                         {selectedService === 'youtube' ? (

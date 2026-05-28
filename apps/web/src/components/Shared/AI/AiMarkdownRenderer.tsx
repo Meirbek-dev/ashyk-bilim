@@ -18,11 +18,7 @@ interface AiMarkdownRendererProps {
  * @deprecated Internal implementation merged into MarkdownContent.
  *   This component is kept as a thin wrapper for backward compatibility.
  */
-export function AiMarkdownRenderer({
-  content,
-  isStreaming = false,
-  className,
-}: AiMarkdownRendererProps) {
+export function AiMarkdownRenderer({ content, isStreaming = false, className }: AiMarkdownRendererProps) {
   return (
     <MarkdownContent
       content={content}

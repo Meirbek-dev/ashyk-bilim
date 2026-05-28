@@ -1,16 +1,6 @@
 'use client'
 
-import {
-  AlertCircle,
-  ArrowLeftRight,
-  CheckCircle2,
-  Download,
-  Expand,
-  Loader2,
-  Upload,
-  Video,
-  X,
-} from 'lucide-react'
+import { AlertCircle, ArrowLeftRight, CheckCircle2, Download, Expand, Loader2, Upload, Video, X } from 'lucide-react'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import ArtPlayer from '@components/Objects/Activities/Video/Artplayer'
 import { getActivityBlockMediaDirectory } from '@services/media/media'
@@ -125,9 +115,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
   }, [selectedSize, blockObject, updateAttributes])
 
   const isEditable = editorState?.isEditable
-  const fileId = blockObject
-    ? `${blockObject.content.file_id}.${blockObject.content.file_format}`
-    : null
+  const fileId = blockObject ? `${blockObject.content.file_id}.${blockObject.content.file_format}` : null
 
   const handleVideoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -371,11 +359,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
   // Show the full editor UI when in edit mode
   return (
     <NodeViewWrapper className="block-video w-full">
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="bg-muted border-border flex flex-col space-y-4 rounded-lg border px-5 py-6 [transition:all_0.2s_ease]">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-zinc-500">
@@ -434,9 +418,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
                       className="space-y-3"
                     >
                       <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-500" />
-                      <div className="text-sm text-zinc-600">
-                        {t('uploading', { progress: uploadProgress })}
-                      </div>
+                      <div className="text-sm text-zinc-600">{t('uploading', { progress: uploadProgress })}</div>
                       <div className="mx-auto h-1 w-48 overflow-hidden rounded-full bg-gray-200">
                         <motion.div
                           className="h-full rounded-full bg-blue-500"
@@ -455,9 +437,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
                     >
                       <Upload className="mx-auto h-8 w-8 text-blue-500" />
                       <div>
-                        <div className="text-sm font-medium text-zinc-700">
-                          {t('uploadPlaceholder')}
-                        </div>
+                        <div className="text-sm font-medium text-zinc-700">{t('uploadPlaceholder')}</div>
                         <div className="mt-1 text-xs text-zinc-500">{t('uploadHint')}</div>
                       </div>
                     </motion.div>
@@ -515,9 +495,7 @@ const VideoBlockComponent = (props: ExtendedNodeViewProps) => {
                 <div
                   style={{
                     maxWidth:
-                      typeof VIDEO_SIZES[selectedSize].width === 'number'
-                        ? VIDEO_SIZES[selectedSize].width
-                        : '100%',
+                      typeof VIDEO_SIZES[selectedSize].width === 'number' ? VIDEO_SIZES[selectedSize].width : '100%',
                     width: '100%',
                   }}
                 >

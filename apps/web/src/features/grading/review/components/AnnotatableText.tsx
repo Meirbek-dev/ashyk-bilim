@@ -31,9 +31,7 @@ interface SelectionState {
 
 // ─── Segment model ────────────────────────────────────────────────────────────
 
-type Segment =
-  | { type: 'plain'; text: string }
-  | { type: 'annotated'; text: string; annotation: TextAnnotation }
+type Segment = { type: 'plain'; text: string } | { type: 'annotated'; text: string; annotation: TextAnnotation }
 
 function buildSegments(text: string, annotations: TextAnnotation[]): Segment[] {
   if (!annotations.length) return [{ type: 'plain', text }]
@@ -180,9 +178,7 @@ export default function AnnotatableText({
         <div className="space-y-2 rounded-md border bg-amber-50/80 p-3 dark:bg-amber-900/20">
           <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
             {t('addNoteFor', {
-              text:
-                selection.selectedText.slice(0, 60) +
-                (selection.selectedText.length > 60 ? '…' : ''),
+              text: selection.selectedText.slice(0, 60) + (selection.selectedText.length > 60 ? '…' : ''),
             })}
           </p>
           <Textarea
@@ -224,9 +220,7 @@ export default function AnnotatableText({
                 {idx + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <span className="text-muted-foreground line-clamp-1 italic">
-                  "{ann.selectedText}"
-                </span>
+                <span className="text-muted-foreground line-clamp-1 italic">"{ann.selectedText}"</span>
                 <span className="ml-1 font-medium">{ann.comment}</span>
               </div>
               {!readOnly && (

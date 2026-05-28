@@ -27,13 +27,7 @@ interface CourseEndViewProps {
   trailData: any
 }
 
-const CourseEndView: FC<CourseEndViewProps> = ({
-  courseName,
-  courseUuid,
-  thumbnailImage,
-  course,
-  trailData,
-}) => {
+const CourseEndView: FC<CourseEndViewProps> = ({ courseName, courseUuid, thumbnailImage, course, trailData }) => {
   const locale = useLocale()
   const t = useTranslations('Certificates.CourseEndView')
   const [dialogAlertOpen, setDialogAlertOpen] = useState(false)
@@ -66,25 +60,17 @@ const CourseEndView: FC<CourseEndViewProps> = ({
       })
 
       if (run) {
-        return run.steps.find(
-          (step: any) => step.activity_id === activity.id && step.complete === true,
-        )
+        return run.steps.find((step: any) => step.activity_id === activity.id && step.complete === true)
       }
       return false
     }
 
     const totalActivities = allActivities.length
-    const completedActivities = allActivities.filter((activity: any) =>
-      isActivityDone(activity),
-    ).length
+    const completedActivities = allActivities.filter((activity: any) => isActivityDone(activity)).length
     return totalActivities > 0 && completedActivities === totalActivities
   })()
-  const normalizedCourseUuid = courseUuid.startsWith('course_')
-    ? courseUuid
-    : `course_${courseUuid}`
-  const certificateQuery = useUserCertificateByCourse(
-    isCourseCompleted ? normalizedCourseUuid : null,
-  )
+  const normalizedCourseUuid = courseUuid.startsWith('course_') ? courseUuid : `course_${courseUuid}`
+  const certificateQuery = useUserCertificateByCourse(isCourseCompleted ? normalizedCourseUuid : null)
   const userCertificate = certificateQuery.data?.data?.[0] ?? null
   const isLoadingCertificate = isCourseCompleted && certificateQuery.isPending
   const certificateError = certificateQuery.error
@@ -92,9 +78,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({
     : !isLoadingCertificate && isCourseCompleted && !userCertificate
       ? t('noCertificateFound')
       : null
-  const qrCodeLink = getAbsoluteUrl(
-    `/certificates/${userCertificate?.certificate_user.user_certification_uuid}/verify`,
-  )
+  const qrCodeLink = getAbsoluteUrl(`/certificates/${userCertificate?.certificate_user.user_certification_uuid}/verify`)
 
   useEffect(() => {
     if (!userCertificate || typeof gamificationRefetch !== 'function') return
@@ -243,22 +227,16 @@ const CourseEndView: FC<CourseEndViewProps> = ({
       const certificateId = userCertificate.certificate_user.user_certification_uuid
       const certificationName = userCertificate.certification.config.certification_name
       const blob = await generateCertificatePdfBlob({
-        awardedDate: new Date(userCertificate.certificate_user.created_at).toLocaleDateString(
-          locale,
-          {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          },
-        ),
+        awardedDate: new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
         certificateId,
         certificationDescription:
-          userCertificate.certification.config.certification_description ||
-          t('defaultCertificationDescription'),
+          userCertificate.certification.config.certification_description || t('defaultCertificationDescription'),
         certificationName,
-        certificationTypeLabel: getCertificationTypeLabel(
-          userCertificate.certification.config.certification_type,
-        ),
+        certificationTypeLabel: getCertificationTypeLabel(userCertificate.certification.config.certification_type),
         instructor: userCertificate.certification.config.certificate_instructor,
         labels: {
           authenticityGuaranteed: t('verifyCertificate'),
@@ -300,17 +278,13 @@ const CourseEndView: FC<CourseEndViewProps> = ({
       })
 
       if (run) {
-        return run.steps.find(
-          (step: any) => step.activity_id === activity.id && step.complete === true,
-        )
+        return run.steps.find((step: any) => step.activity_id === activity.id && step.complete === true)
       }
       return false
     }
 
     const totalActivities = allActivities.length
-    const completedActivities = allActivities.filter((activity: any) =>
-      isActivityDone(activity),
-    ).length
+    const completedActivities = allActivities.filter((activity: any) => isActivityDone(activity)).length
     const progressPercentage = Math.round((completedActivities / totalActivities) * 100)
 
     return {
@@ -324,11 +298,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({
     // Show congratulations for completed course
     return (
       <div className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden px-4 text-center">
-        <SimpleAlertDialog
-          open={dialogAlertOpen}
-          onOpenChange={setDialogAlertOpen}
-          description={dialogAlertMessage}
-        />
+        <SimpleAlertDialog open={dialogAlertOpen} onOpenChange={setDialogAlertOpen} description={dialogAlertMessage} />
         <div className="soft-shadow relative z-10 mb-2 w-full space-y-6 rounded-2xl bg-white p-8">
           <div className="flex flex-col items-center space-y-6">
             {thumbnailImage ? (
@@ -362,20 +332,14 @@ const CourseEndView: FC<CourseEndViewProps> = ({
             <div className="space-y-4 rounded-lg border border-yellow-200 bg-linear-to-br from-yellow-50 to-orange-50 p-6">
               <div className="flex items-center justify-center space-x-2">
                 <Trophy className="h-6 w-6 text-yellow-600" />
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {t('learningAchievementUnlocked')}
-                </h3>
+                <h3 className="text-xl font-semibold text-gray-900">{t('learningAchievementUnlocked')}</h3>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <div className="text-center">
                     {gamificationProfile && (
-                      <LevelProgress
-                        profile={gamificationProfile}
-                        showMilestones={false}
-                        className="justify-center"
-                      />
+                      <LevelProgress profile={gamificationProfile} showMilestones={false} className="justify-center" />
                     )}
                   </div>
                 </div>
@@ -385,9 +349,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({
                     <Target className="h-5 w-5" />
                     <span className="font-semibold">{t('xpBonusMessage')}</span>
                   </div>
-                  <div className="text-center text-sm text-gray-600">
-                    {t('keepLearningMessage')}
-                  </div>
+                  <div className="text-center text-sm text-gray-600">{t('keepLearningMessage')}</div>
                 </div>
               </div>
             </div>
@@ -410,18 +372,12 @@ const CourseEndView: FC<CourseEndViewProps> = ({
                 <div id="certificate-content">
                   <CertificatePreview
                     certificationName={userCertificate.certification.config.certification_name}
-                    certificationDescription={
-                      userCertificate.certification.config.certification_description
-                    }
+                    certificationDescription={userCertificate.certification.config.certification_description}
                     certificationType={userCertificate.certification.config.certification_type}
                     certificatePattern={userCertificate.certification.config.certificate_pattern}
-                    certificateInstructor={
-                      userCertificate.certification.config.certificate_instructor
-                    }
+                    certificateInstructor={userCertificate.certification.config.certificate_instructor}
                     certificateId={userCertificate.certificate_user.user_certification_uuid}
-                    awardedDate={new Date(
-                      userCertificate.certificate_user.created_at,
-                    ).toLocaleDateString(locale, {
+                    awardedDate={new Date(userCertificate.certificate_user.created_at).toLocaleDateString(locale, {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',
@@ -473,11 +429,7 @@ const CourseEndView: FC<CourseEndViewProps> = ({
   // Show progress and encouragement for incomplete course
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-      <SimpleAlertDialog
-        open={dialogAlertOpen}
-        onOpenChange={setDialogAlertOpen}
-        description={dialogAlertMessage}
-      />
+      <SimpleAlertDialog open={dialogAlertOpen} onOpenChange={setDialogAlertOpen} description={dialogAlertMessage} />
       <div className="soft-shadow w-full max-w-2xl space-y-6 rounded-2xl bg-white p-8">
         <div className="flex flex-col items-center space-y-6">
           {thumbnailImage ? (

@@ -47,21 +47,14 @@ function sortCoursesByProgress(courses: any[], trailData: any) {
     const aCleanUuid = a.course_uuid?.replace('course_', '')
     const bCleanUuid = b.course_uuid?.replace('course_', '')
 
-    const aRun = trailData.runs.find(
-      (r: any) => r.course?.course_uuid?.replace('course_', '') === aCleanUuid,
-    )
-    const bRun = trailData.runs.find(
-      (r: any) => r.course?.course_uuid?.replace('course_', '') === bCleanUuid,
-    )
+    const aRun = trailData.runs.find((r: any) => r.course?.course_uuid?.replace('course_', '') === aCleanUuid)
+    const bRun = trailData.runs.find((r: any) => r.course?.course_uuid?.replace('course_', '') === bCleanUuid)
 
     const getProgress = (run: any, course: any) => {
       if (!run) return 0
       const total =
         run.course_total_steps ||
-        course.chapters?.reduce(
-          (acc: number, chap: any) => acc + (chap.activities?.length || 0),
-          0,
-        ) ||
+        course.chapters?.reduce((acc: number, chap: any) => acc + (chap.activities?.length || 0), 0) ||
         0
       const completed = run.steps?.filter((s: any) => s.complete === true)?.length || 0
       return total > 0 ? Math.round((completed / total) * 100) : 0
@@ -97,12 +90,9 @@ export async function LandingContent() {
         message: error instanceof Error ? error.message : 'Unknown error',
         cause: error instanceof Error ? error.cause : undefined,
       })
-      throw new Error(
-        'Unable to load the platform. Please check your network connection and try again.',
-        {
-          cause: error,
-        },
-      )
+      throw new Error('Unable to load the platform. Please check your network connection and try again.', {
+        cause: error,
+      })
     }
 
     const hasCustomLanding = platform?.landing?.['enabled']

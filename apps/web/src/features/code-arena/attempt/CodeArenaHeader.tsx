@@ -6,12 +6,7 @@ import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import type { CodeChallengeProblem, CodeVerdict } from '../domain'
 import { verdictLabel } from '../domain'
@@ -62,14 +57,7 @@ export function CodeArenaHeader({
 
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 gap-1.5 text-sm font-semibold"
-              />
-            }
+            render={<Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 text-sm font-semibold" />}
           >
             <List className="size-4" />
             {t('problems')}
@@ -77,9 +65,7 @@ export function CodeArenaHeader({
           <DropdownMenuContent align="start">
             <DropdownMenuItem className="font-semibold">{problem.title}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-muted-foreground text-xs">
-              {t('practiceModeActive')}
-            </DropdownMenuItem>
+            <DropdownMenuItem className="text-muted-foreground text-xs">{t('practiceModeActive')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -99,10 +85,7 @@ export function CodeArenaHeader({
       <div className="flex items-center gap-3 truncate">
         <h1 className="truncate text-sm font-semibold">{problem.title}</h1>
         {problem.difficulty ? (
-          <Badge
-            variant={difficultyTone(problem.difficulty)}
-            className="px-1.5 py-0 text-[10px] font-bold uppercase"
-          >
+          <Badge variant={difficultyTone(problem.difficulty)} className="px-1.5 py-0 text-[10px] font-bold uppercase">
             {problem.difficulty}
           </Badge>
         ) : null}

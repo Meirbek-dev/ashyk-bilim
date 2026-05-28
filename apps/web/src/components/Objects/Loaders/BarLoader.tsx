@@ -7,12 +7,7 @@ interface BarLoaderProps {
   cssOverride?: React.CSSProperties
 }
 
-export const BarLoader: React.FC<BarLoaderProps> = ({
-  width = 60,
-  color = '#000000',
-  className,
-  cssOverride,
-}) => {
+export const BarLoader: React.FC<BarLoaderProps> = ({ width = 60, color = '#000000', className, cssOverride }) => {
   return (
     <>
       <style>

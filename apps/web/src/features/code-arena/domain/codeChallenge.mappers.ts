@@ -19,21 +19,14 @@ export function codeItemToProblem(params: {
     constraints: body?.constraints ?? [],
     points: params.settings.points ?? params.item.max_score,
     ...(params.settings.difficulty ? { difficulty: params.settings.difficulty } : {}),
-    ...(params.settings.time_limit !== undefined
-      ? { timeLimitSeconds: params.settings.time_limit }
-      : {}),
-    ...(params.settings.memory_limit !== undefined
-      ? { memoryLimitMb: params.settings.memory_limit }
-      : {}),
+    ...(params.settings.time_limit !== undefined ? { timeLimitSeconds: params.settings.time_limit } : {}),
+    ...(params.settings.memory_limit !== undefined ? { memoryLimitMb: params.settings.memory_limit } : {}),
   }
 
   return problem
 }
 
-export function normalizeStarterCode(
-  settings: CodeChallengeSettings | null | undefined,
-  languageId: number,
-): string {
+export function normalizeStarterCode(settings: CodeChallengeSettings | null | undefined, languageId: number): string {
   if (!settings || languageId <= 0) return ''
   return settings.starter_code?.[String(languageId)] ?? ''
 }

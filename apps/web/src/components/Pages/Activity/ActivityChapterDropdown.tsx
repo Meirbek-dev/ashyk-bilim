@@ -1,15 +1,5 @@
 'use client'
-import {
-  ArrowRight,
-  Check,
-  ClipboardList,
-  FileArchive,
-  FileText,
-  ListTree,
-  StickyNote,
-  Video,
-  X,
-} from 'lucide-react'
+import { ArrowRight, Check, ClipboardList, FileArchive, FileText, ListTree, StickyNote, Video, X } from 'lucide-react'
 import { useEffect, useEffectEvent, useRef, useState, useMemo } from 'react'
 import { getAbsoluteUrl } from '@services/config/config'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -76,9 +66,7 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
       return cleanRunCourseUuid === cleanCourseUuid
     })
     return new Set(
-      (run?.steps ?? [])
-        .filter((step: any) => step.complete === true)
-        .map((step: any) => step.activity_id),
+      (run?.steps ?? []).filter((step: any) => step.complete === true).map((step: any) => step.activity_id),
     )
   }, [props.trailData, cleanCourseUuid])
 
@@ -162,9 +150,7 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
               // Build a map of chapterIndex to activities for grouping
               const chapters = props.course.chapters ?? []
               return chapters.map((chapter: any, chapterIndex: number) => {
-                const chapterActivities = activityIndex.allActivities.filter(
-                  a => a.chapterIndex === chapterIndex,
-                )
+                const chapterActivities = activityIndex.allActivities.filter(a => a.chapterIndex === chapterIndex)
                 return (
                   <div key={chapter.id} className="mb-1">
                     <div className="flex items-center border-y border-gray-100 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-600">
@@ -189,9 +175,7 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
                           >
                             <div
                               className={`group px-3 py-2 transition-colors hover:bg-neutral-50 ${
-                                isCurrent
-                                  ? 'border-l-2 border-neutral-300 bg-neutral-50 pl-2.5 font-medium'
-                                  : ''
+                                isCurrent ? 'border-l-2 border-neutral-300 bg-neutral-50 pl-2.5 font-medium' : ''
                               }`}
                             >
                               <div className="flex items-center space-x-2">

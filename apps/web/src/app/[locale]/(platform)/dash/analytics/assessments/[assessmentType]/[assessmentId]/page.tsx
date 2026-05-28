@@ -14,12 +14,7 @@ export default function PlatformAnalyticsAssessmentDetailPage(props: {
   params: Promise<{ assessmentType: AssessmentType; assessmentId: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  return (
-    <PlatformAnalyticsAssessmentDetailPageInner
-      params={props.params}
-      searchParams={props.searchParams}
-    />
-  )
+  return <PlatformAnalyticsAssessmentDetailPageInner params={props.params} searchParams={props.searchParams} />
 }
 
 async function PlatformAnalyticsAssessmentDetailPageInner(props: {
@@ -45,12 +40,8 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
         <Card className="border-slate-200 bg-white/90 shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Badge variant="outline">
-                {getAnalyticsAssessmentTypeLabel(t, detail.assessment_type)}
-              </Badge>
-              <Badge variant="outline">
-                {t('pages.assessmentDetailBadge', { id: detail.assessment_id })}
-              </Badge>
+              <Badge variant="outline">{getAnalyticsAssessmentTypeLabel(t, detail.assessment_type)}</Badge>
+              <Badge variant="outline">{t('pages.assessmentDetailBadge', { id: detail.assessment_id })}</Badge>
             </div>
             <CardTitle className="mt-3 text-3xl">{detail.title}</CardTitle>
           </CardHeader>
@@ -65,9 +56,7 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">
-                {t('pages.assessmentStatPassRate')}
-              </div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentStatPassRate')}</div>
               <div className="mt-2 text-3xl font-semibold">
                 {detail.summary.pass_rate ?? t('atRisk.na')}
                 {detail.summary.pass_rate !== null ? '%' : ''}
@@ -83,12 +72,8 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">
-                {t('pages.assessmentStatGenerated')}
-              </div>
-              <div className="mt-2 text-lg font-semibold">
-                {new Date(detail.generated_at).toLocaleString(locale)}
-              </div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.assessmentStatGenerated')}</div>
+              <div className="mt-2 text-lg font-semibold">{new Date(detail.generated_at).toLocaleString(locale)}</div>
             </div>
           </CardContent>
         </Card>

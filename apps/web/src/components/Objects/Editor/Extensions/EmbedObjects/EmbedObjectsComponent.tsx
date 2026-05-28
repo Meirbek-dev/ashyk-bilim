@@ -24,12 +24,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import type {
-  CSSProperties,
-  ChangeEvent,
-  KeyboardEvent,
-  MouseEvent as ReactMouseEvent,
-} from 'react'
+import type { CSSProperties, ChangeEvent, KeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Textarea } from '@components/ui/textarea'
@@ -241,11 +236,7 @@ const EmbedContent = ({
 
     if (videoId) {
       return (
-        <YouTubeEmbed
-          videoid={videoId}
-          style="height: 100%; width: 100%; max-width: none;"
-          params="autoplay=0&rel=0"
-        />
+        <YouTubeEmbed videoid={videoId} style="height: 100%; width: 100%; max-width: none;" params="autoplay=0&rel=0" />
       )
     }
 
@@ -260,9 +251,7 @@ const EmbedContent = ({
   }
 
   if (embedType === 'code' && sanitizedEmbedCode) {
-    return (
-      <div dangerouslySetInnerHTML={{ __html: sanitizedEmbedCode }} className="h-full w-full" />
-    )
+    return <div dangerouslySetInnerHTML={{ __html: sanitizedEmbedCode }} className="h-full w-full" />
   }
 
   return null
@@ -284,9 +273,7 @@ const ProductIcon = ({ product, onClick }: { product: SupportedProduct; onClick:
       >
         <product.icon size={isMobile ? 20 : 26} color="#FFFFFF" />
       </div>
-      <span className="text-xs font-medium text-gray-700 group-hover:text-gray-900">
-        {product.name}
-      </span>
+      <span className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{product.name}</span>
     </button>
   )
 }
@@ -376,11 +363,7 @@ const InputModal = ({
 
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/20 p-4 backdrop-blur-sm">
-      <form
-        action={onSubmit}
-        onKeyDown={handleKeyDown}
-        className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
-      >
+      <form action={onSubmit} onKeyDown={handleKeyDown} className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -500,11 +483,7 @@ const EmptyState = ({
 
     <div className="mb-6 grid grid-cols-4 gap-4 sm:grid-cols-6 lg:grid-cols-7">
       {SUPPORTED_PRODUCTS.map(product => (
-        <ProductIcon
-          key={product.name}
-          product={product}
-          onClick={() => onProductSelect(product)}
-        />
+        <ProductIcon key={product.name} product={product} onClick={() => onProductSelect(product)} />
       ))}
     </div>
 
@@ -563,9 +542,7 @@ const EmbedObjectsComponent = (props: TypedNodeViewProps<EmbedNodeAttrs>) => {
   // Sanitized embed code
   const sanitizedEmbedCode = useMemo(
     () =>
-      embedType === 'code' && embedCode
-        ? DOMPurify.sanitize(embedCode, { ADD_TAGS: ['iframe'], ADD_ATTR: ['*'] })
-        : '',
+      embedType === 'code' && embedCode ? DOMPurify.sanitize(embedCode, { ADD_TAGS: ['iframe'], ADD_ATTR: ['*'] }) : '',
     [embedType, embedCode],
   )
 

@@ -92,53 +92,44 @@ const VideoActivity = ({ activity, course }: VideoActivityProps) => {
       {activity ? (
         <div className="my-3 w-full md:my-5">
           <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xs ring-1 ring-gray-300/30 sm:shadow-none sm:ring-gray-200/10 dark:ring-gray-600/30 sm:dark:ring-gray-700/20">
-            {activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED' && (
+            {activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED' &&
               (() => {
                 const playerOption = {
                   url: getVideoSrc(),
-                  ...(activity.details?.muted === undefined
-                    ? {}
-                    : { muted: activity.details.muted }),
-                  ...(activity.details?.autoplay === undefined
-                    ? {}
-                    : { autoplay: activity.details.autoplay }),
+                  ...(activity.details?.muted === undefined ? {} : { muted: activity.details.muted }),
+                  ...(activity.details?.autoplay === undefined ? {} : { autoplay: activity.details.autoplay }),
                   lang: locale,
                   pip: false,
                 }
                 const defaultSubtitleUrl = getDefaultSubtitleUrl()
 
                 return (
-              <ArtPlayer
-                option={playerOption}
-                {...(defaultSubtitleUrl
-                  ? {
-                      subtitle: {
-                        url: defaultSubtitleUrl,
-                        type: 'srt',
-                        style: {
-                          color: '#ffffff',
-                          fontSize: '2.5rem',
-                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                          textAlign: 'center',
-                        },
-                        encoding: 'utf8',
-                      },
-                    }
-                  : {})}
-                locale={locale}
-                subtitleEntries={subtitleEntries}
-                className="size-full"
-                {...(activity.details?.startTime === undefined
-                  ? {}
-                  : { startTime: activity.details.startTime })}
-                {...(activity.details?.endTime === undefined
-                  ? {}
-                  : { endTime: activity.details.endTime })}
-                onPlayerReady={(_art: ArtplayerType) => {}}
-              />
+                  <ArtPlayer
+                    option={playerOption}
+                    {...(defaultSubtitleUrl
+                      ? {
+                          subtitle: {
+                            url: defaultSubtitleUrl,
+                            type: 'srt',
+                            style: {
+                              color: '#ffffff',
+                              fontSize: '2.5rem',
+                              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                              textAlign: 'center',
+                            },
+                            encoding: 'utf8',
+                          },
+                        }
+                      : {})}
+                    locale={locale}
+                    subtitleEntries={subtitleEntries}
+                    className="size-full"
+                    {...(activity.details?.startTime === undefined ? {} : { startTime: activity.details.startTime })}
+                    {...(activity.details?.endTime === undefined ? {} : { endTime: activity.details.endTime })}
+                    onPlayerReady={(_art: ArtplayerType) => {}}
+                  />
                 )
-              })()
-            )}
+              })()}
             {activity.activity_sub_type === 'SUBTYPE_VIDEO_YOUTUBE' && videoId && (
               <YouTubeEmbed
                 videoid={videoId}

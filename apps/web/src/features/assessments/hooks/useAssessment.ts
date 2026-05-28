@@ -25,12 +25,7 @@ import { classifyValidationIssue } from '../domain/readiness'
 import { policyFromAssessmentPolicy } from '../domain/policy'
 import type { AssessmentPolicyDTO } from '../domain/policy'
 import { assessmentTypeToKind } from '../domain/view-models'
-import type {
-  AssessmentKind,
-  AssessmentSurface,
-  StudioViewModel,
-  AttemptViewModel,
-} from '../domain/view-models'
+import type { AssessmentKind, AssessmentSurface, StudioViewModel, AttemptViewModel } from '../domain/view-models'
 import type { AssessmentItem } from '../domain/items'
 import type { SubmissionStatus } from '../domain/submission-status'
 
@@ -105,10 +100,7 @@ export function useAssessment(
   }, [error, normalizedUuid, options.surface])
 
   const readiness = useQuery({
-    ...readinessQueryOptions(
-      assessment?.assessment_uuid ?? '',
-      options.surface === 'STUDIO' && Boolean(assessment),
-    ),
+    ...readinessQueryOptions(assessment?.assessment_uuid ?? '', options.surface === 'STUDIO' && Boolean(assessment)),
   })
 
   if (isLoading || !assessment) {
@@ -165,10 +157,7 @@ export function useAssessment(
 
   // ATTEMPT surface
   const attemptProjection = assessment.attempt_projection
-  const effectivePolicy = attemptProjection?.effective_policy as
-    | AssessmentPolicyDTO
-    | null
-    | undefined
+  const effectivePolicy = attemptProjection?.effective_policy as AssessmentPolicyDTO | null | undefined
   const vm: AttemptViewModel = {
     surface: 'ATTEMPT',
     kind,
@@ -202,9 +191,7 @@ export function useAssessment(
     canContinue: attemptProjection?.can_continue ?? false,
     canViewResult: attemptProjection?.can_view_result ?? false,
     canStartRevision: attemptProjection?.can_start_revision ?? false,
-    recommendedAction:
-      (attemptProjection?.recommended_action as AttemptViewModel['recommendedAction']) ??
-      'noAction',
+    recommendedAction: (attemptProjection?.recommended_action as AttemptViewModel['recommendedAction']) ?? 'noAction',
     primaryButtonLabelKey: attemptProjection?.primary_button_label_key ?? 'noAction',
     startedAt: attemptProjection?.started_at ?? null,
     timerStartedAt: attemptProjection?.timer_started_at ?? null,

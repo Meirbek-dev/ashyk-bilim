@@ -41,11 +41,7 @@ export default function CourseReviewPublish({
       const parts = [contributor?.user?.first_name, contributor?.user?.last_name].filter(Boolean)
       const label = parts.join(' ') || contributor?.user?.username || contributor?.user?.email
       return {
-        key:
-          contributor?.user?.user_uuid ||
-          contributor?.user?.username ||
-          contributor?.id ||
-          `contributor-${index}`,
+        key: contributor?.user?.user_uuid || contributor?.user?.username || contributor?.id || `contributor-${index}`,
         label,
       }
     })
@@ -110,31 +106,20 @@ export default function CourseReviewPublish({
             <h2 className="text-foreground mt-2 text-2xl font-semibold tracking-tight">
               {readiness.readyToPublish ? t('readyTitle') : t('notReadyTitle')}
             </h2>
-            <p className="text-muted-foreground mt-2 max-w-3xl text-sm leading-6">
-              {t('description')}
-            </p>
+            <p className="text-muted-foreground mt-2 max-w-3xl text-sm leading-6">{t('description')}</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <Button
               variant="outline"
               nativeButton={false}
-              render={
-                <a
-                  href={getAbsoluteUrl(`/course/${courseuuid}`)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                />
-              }
+              render={<a href={getAbsoluteUrl(`/course/${courseuuid}`)} target="_blank" rel="noopener noreferrer" />}
             >
               <ExternalLink className="size-4" />
               {t('previewPublicPage')}
             </Button>
             {capabilities.canManageAccess ? (
-              <Button
-                onClick={toggleVisibility}
-                disabled={isPending || isRefreshing || !criticalReady}
-              >
+              <Button onClick={toggleVisibility} disabled={isPending || isRefreshing || !criticalReady}>
                 {isPending || isRefreshing ? <Loader2 className="size-4 animate-spin" /> : null}
                 {course.courseStructure.public ? t('movePrivate') : t('publishCourse')}
               </Button>
@@ -148,14 +133,9 @@ export default function CourseReviewPublish({
           <div className="text-foreground text-sm font-semibold">{t('readinessChecklist')}</div>
           <div className="mt-4 space-y-3">
             {readiness.checklist.map(item => (
-              <div
-                key={item.id}
-                className="bg-muted/40 flex items-start justify-between gap-4 rounded-lg border p-4"
-              >
+              <div key={item.id} className="bg-muted/40 flex items-start justify-between gap-4 rounded-lg border p-4">
                 <div>
-                  <div className="text-foreground font-medium">
-                    {tReadiness(`checklist.${item.id}.title`)}
-                  </div>
+                  <div className="text-foreground font-medium">{tReadiness(`checklist.${item.id}.title`)}</div>
                   <div className="text-muted-foreground mt-1 text-sm">
                     {tReadiness(`checklist.${item.id}.description`)}
                   </div>
@@ -190,9 +170,7 @@ export default function CourseReviewPublish({
               {course.courseStructure.public ? t('launchStates.live') : t('launchStates.private')}
             </div>
             <div className="text-muted-foreground mt-2 text-sm">
-              {course.courseStructure.public
-                ? t('launchStateDescriptions.live')
-                : t('launchStateDescriptions.private')}
+              {course.courseStructure.public ? t('launchStateDescriptions.live') : t('launchStateDescriptions.private')}
             </div>
           </div>
 
@@ -220,9 +198,7 @@ export default function CourseReviewPublish({
                   <Users className="size-4" />
                   {tOverview('sections.collaboration')}
                 </div>
-                <div className="text-foreground mt-2 text-2xl font-semibold">
-                  {contributors.length}
-                </div>
+                <div className="text-foreground mt-2 text-2xl font-semibold">{contributors.length}</div>
                 <div className="text-muted-foreground mt-1 text-sm">
                   {tOverview('collaboration.loadedRecords', {
                     count: contributors.length,

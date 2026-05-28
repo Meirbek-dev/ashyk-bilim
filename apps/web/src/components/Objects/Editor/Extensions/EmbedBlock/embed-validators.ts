@@ -204,9 +204,7 @@ function validateProviderUrl(type: EmbedType, url: string): null | EmbedValidati
   }
 
   const hostname = parsed.hostname.toLowerCase()
-  const isAllowedHost = provider.hostnames.some(allowedHost =>
-    hostnameMatches(hostname, allowedHost.toLowerCase()),
-  )
+  const isAllowedHost = provider.hostnames.some(allowedHost => hostnameMatches(hostname, allowedHost.toLowerCase()))
 
   return isAllowedHost ? null : 'errorInvalid'
 }

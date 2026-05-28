@@ -22,13 +22,7 @@ import {
 } from '@/components/ui/dialog'
 import { assignRoleToUser, removeRoleFromUser } from '@/services/rbac'
 import { useBasicUsers, useRoles, useUserRoleAssignments } from '@/features/users/hooks/useUsers'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Actions, PermissionGuard, Resources, Scopes } from '@/components/Security'
 import { AlertTriangle, Calendar, Plus, Shield, Trash2, User } from 'lucide-react'
 import type { UserRoleAssignment } from '@/types/permissions'
@@ -127,12 +121,7 @@ export default function UserRolesClient() {
     () => [
       {
         accessorFn: assignment =>
-          [
-            assignment.user?.first_name,
-            assignment.user?.last_name,
-            assignment.user?.username,
-            assignment.user?.email,
-          ]
+          [assignment.user?.first_name, assignment.user?.last_name, assignment.user?.username, assignment.user?.email]
             .filter(Boolean)
             .join(' '),
         id: 'user',
@@ -148,10 +137,7 @@ export default function UserRolesClient() {
                       ? assignment.user.avatar_image.startsWith('http')
                         ? assignment.user.avatar_image
                         : assignment.user.user_uuid
-                          ? getUserAvatarMediaDirectory(
-                              assignment.user.user_uuid,
-                              assignment.user.avatar_image,
-                            )
+                          ? getUserAvatarMediaDirectory(assignment.user.user_uuid, assignment.user.avatar_image)
                           : undefined
                       : undefined
                   }
@@ -204,11 +190,7 @@ export default function UserRolesClient() {
                 variant="ghost"
                 size="icon"
                 onClick={() =>
-                  handleRemoveUserRole(
-                    row.original.user_id,
-                    row.original.role_id,
-                    row.original.role?.name,
-                  )
+                  handleRemoveUserRole(row.original.user_id, row.original.role_id, row.original.role?.name)
                 }
               >
                 <Trash2 className="h-4 w-4" />
@@ -260,10 +242,7 @@ export default function UserRolesClient() {
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="user">{t('userLabel')}</Label>
-                  <Select
-                    value={selectedUserId?.toString() || ''}
-                    onValueChange={v => setSelectedUserId(Number(v))}
-                  >
+                  <Select value={selectedUserId?.toString() || ''} onValueChange={v => setSelectedUserId(Number(v))}>
                     <SelectTrigger>
                       <SelectValue placeholder={t('selectUserPlaceholder')} />
                     </SelectTrigger>
@@ -276,11 +255,7 @@ export default function UserRolesClient() {
                               <Avatar className="h-6 w-6">
                                 <AvatarImage src={user.avatar_image} />
                                 <AvatarFallback>
-                                  {(
-                                    user.first_name?.[0] ||
-                                    user.username?.[0] ||
-                                    'U'
-                                  ).toUpperCase()}
+                                  {(user.first_name?.[0] || user.username?.[0] || 'U').toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <span>
@@ -294,10 +269,7 @@ export default function UserRolesClient() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="role">{t('roleLabel')}</Label>
-                  <Select
-                    value={selectedRoleId?.toString() || ''}
-                    onValueChange={v => setSelectedRoleId(Number(v))}
-                  >
+                  <Select value={selectedRoleId?.toString() || ''} onValueChange={v => setSelectedRoleId(Number(v))}>
                     <SelectTrigger>
                       <SelectValue placeholder={t('selectRolePlaceholder')} />
                     </SelectTrigger>

@@ -10,12 +10,7 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useDndAnnouncements } from '@/hooks/useDndAnnouncements'
 import { AlertTriangle, BookOpen, CheckCircle2, Hexagon, Loader2 } from 'lucide-react'
 import { useChapterMutations } from '@/hooks/mutations/useChapterMutations'
@@ -51,9 +46,7 @@ const CurriculumEditor = () => {
   const [isCreatingChapter, setIsCreatingChapter] = useState(false)
   const newChapterInputRef = useRef<HTMLInputElement>(null)
 
-  const [structureStatus, setStructureStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
-    'idle',
-  )
+  const [structureStatus, setStructureStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [activeDragType, setActiveDragType] = useState<DndItemType | null>(null)
 
   const chapterIds = useMemo(
@@ -134,9 +127,7 @@ const CurriculumEditor = () => {
   const buildPayload = (newCourseStructure: any): CourseOrderPayload => ({
     chapter_order_by_uuids: newCourseStructure.chapters.map((chapter: any) => ({
       chapter_uuid: chapter.chapter_uuid,
-      activities_order_by_uuids: (chapter.activities ?? []).map(
-        (activity: any) => activity.activity_uuid,
-      ),
+      activities_order_by_uuids: (chapter.activities ?? []).map((activity: any) => activity.activity_uuid),
     })),
   })
 
@@ -203,12 +194,8 @@ const CurriculumEditor = () => {
     const newCourseStructure = structuredClone(course_structure)
 
     if (activeData?.type === 'chapter') {
-      const oldIndex = newCourseStructure.chapters.findIndex(
-        (chapter: any) => chapter.chapter_uuid === activeId,
-      )
-      const newIndex = newCourseStructure.chapters.findIndex(
-        (chapter: any) => chapter.chapter_uuid === overId,
-      )
+      const oldIndex = newCourseStructure.chapters.findIndex((chapter: any) => chapter.chapter_uuid === activeId)
+      const newIndex = newCourseStructure.chapters.findIndex((chapter: any) => chapter.chapter_uuid === overId)
 
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
 
@@ -224,9 +211,7 @@ const CurriculumEditor = () => {
       const destinationChapterUuid =
         overData?.type === 'chapter'
           ? overId
-          : (overData?.chapterUuid ??
-            findChapterByActivityUuid(overId)?.chapter_uuid ??
-            sourceLocation.chapterUuid)
+          : (overData?.chapterUuid ?? findChapterByActivityUuid(overId)?.chapter_uuid ?? sourceLocation.chapterUuid)
 
       const sourceChapter = newCourseStructure.chapters.find(
         (chapter: any) => chapter.chapter_uuid === sourceLocation.chapterUuid,
@@ -241,9 +226,7 @@ const CurriculumEditor = () => {
       sourceChapter.activities ??= []
       destinationChapter.activities ??= []
 
-      const sourceIndex = sourceChapter.activities.findIndex(
-        (activity: any) => activity.activity_uuid === activeId,
-      )
+      const sourceIndex = sourceChapter.activities.findIndex((activity: any) => activity.activity_uuid === activeId)
       if (sourceIndex === -1) return
 
       const [movedActivity] = sourceChapter.activities.splice(sourceIndex, 1)
@@ -303,9 +286,7 @@ const CurriculumEditor = () => {
             <BookOpen className="text-muted-foreground h-6 w-6" />
           </div>
           <p className="text-foreground mb-1 text-sm font-semibold">{t('emptyStateTitle')}</p>
-          <p className="text-muted-foreground mb-4 max-w-xs text-sm">
-            {t('emptyStateDescription')}
-          </p>
+          <p className="text-muted-foreground mb-4 max-w-xs text-sm">{t('emptyStateDescription')}</p>
           <Button variant="default" size="sm" onClick={handleStartNewChapter}>
             <Hexagon strokeWidth={3} className="mr-2 size-4" />
             {t('emptyStateAction')}
@@ -323,9 +304,7 @@ const CurriculumEditor = () => {
           accessibility={{ announcements }}
         >
           <SortableContext items={chapterIds} strategy={verticalListSortingStrategy}>
-            <div
-              className={cn('space-y-4', activeDragType === 'chapter' && 'rounded-xl bg-muted/20')}
-            >
+            <div className={cn('space-y-4', activeDragType === 'chapter' && 'rounded-xl bg-muted/20')}>
               {course_structure.chapters.map((chapter: any, index: number) => (
                 <ChapterElement
                   key={chapter.chapter_uuid}
@@ -366,11 +345,7 @@ const CurriculumEditor = () => {
               disabled={isCreatingChapter || !newChapterName.trim()}
               className="h-8"
             >
-              {isCreatingChapter ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                t('confirmChapter')
-              )}
+              {isCreatingChapter ? <Loader2 className="size-4 animate-spin" /> : t('confirmChapter')}
             </Button>
             <Button
               size="sm"
@@ -383,11 +358,7 @@ const CurriculumEditor = () => {
             </Button>
           </div>
         ) : (
-          <Button
-            variant="outline"
-            className="w-full rounded-xl border-dashed py-5"
-            onClick={handleStartNewChapter}
-          >
+          <Button variant="outline" className="w-full rounded-xl border-dashed py-5" onClick={handleStartNewChapter}>
             <Hexagon strokeWidth={3} className="mr-2 size-4" />
             {t('addChapterButton')}
           </Button>

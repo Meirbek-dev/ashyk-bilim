@@ -144,9 +144,7 @@ const buildServerConfig = (env: ServerEnv): ServerConfig => {
 
   const appUrl = new URL(resolvedAppUrl).toString()
   const app = new URL(appUrl)
-  const internalApiUrl = env.INTERNAL_API_URL
-    ? normalizePathUrl(env.INTERNAL_API_URL)
-    : undefined
+  const internalApiUrl = env.INTERNAL_API_URL ? normalizePathUrl(env.INTERNAL_API_URL) : undefined
   const cookieDomain = deriveCookieDomain(appUrl, env.COOKIE_DOMAIN)
 
   return {
@@ -255,9 +253,7 @@ export const getAppConfig = (): AppConfig => {
 
   const result = getAppConfigResult()
   if (!result.success) {
-    throw new Error(
-      result.errors.map(error => `${error.scope}.${error.key}: ${error.message}`).join('; '),
-    )
+    throw new Error(result.errors.map(error => `${error.scope}.${error.key}: ${error.message}`).join('; '))
   }
 
   appConfigCache = result.config

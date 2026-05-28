@@ -1,7 +1,4 @@
-import {
-  getServerGamificationDashboard,
-  getServerLeaderboard,
-} from '@/services/gamification/server'
+import { getServerGamificationDashboard, getServerLeaderboard } from '@/services/gamification/server'
 import { GamificationProvider } from '@/components/Contexts/GamificationContext'
 import { getSession } from '@/lib/auth/session'
 import { APP_NAME } from '@/lib/constants'

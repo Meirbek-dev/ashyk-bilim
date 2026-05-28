@@ -29,12 +29,7 @@ export default function DesktopOnlyGuard({
 
   if (isMobile) {
     return (
-      <div
-        className={cn(
-          'bg-muted/20 flex min-h-[100dvh] w-full items-center justify-center p-4 sm:p-6',
-          className,
-        )}
-      >
+      <div className={cn('bg-muted/20 flex min-h-[100dvh] w-full items-center justify-center p-4 sm:p-6', className)}>
         <Card className="border-border/70 bg-background/95 w-full max-w-md border shadow-sm backdrop-blur">
           <CardContent className="px-6 py-8 sm:px-8 sm:py-10">
             <div className="flex flex-col items-center text-center">
@@ -42,12 +37,8 @@ export default function DesktopOnlyGuard({
                 <Icon className="text-muted-foreground h-7 w-7" />
               </div>
               <div className="space-y-2.5">
-                <h2 className="text-xl font-semibold tracking-tight">
-                  {title ?? t('desktopOnlyTitle')}
-                </h2>
-                <p className="text-muted-foreground text-sm leading-6">
-                  {description ?? t('desktopOnlyMessage1')}
-                </p>
+                <h2 className="text-xl font-semibold tracking-tight">{title ?? t('desktopOnlyTitle')}</h2>
+                <p className="text-muted-foreground text-sm leading-6">{description ?? t('desktopOnlyMessage1')}</p>
                 <p className="text-muted-foreground/80 text-xs leading-5">
                   {supportingText ?? t('desktopOnlyMessage2')}
                 </p>

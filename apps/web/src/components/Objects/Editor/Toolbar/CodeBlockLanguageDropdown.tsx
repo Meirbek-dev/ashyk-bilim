@@ -83,9 +83,7 @@ export function CodeBlockLanguageDropdown({ editor, language }: CodeBlockLanguag
           <DropdownMenuLabel>{t('codeBlockLanguage')}</DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuRadioGroup value={activeLanguage} onValueChange={handleValueChange}>
-          <DropdownMenuRadioItem value={PLAIN_TEXT_CODE_BLOCK_LANGUAGE}>
-            {t('plainText')}
-          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value={PLAIN_TEXT_CODE_BLOCK_LANGUAGE}>{t('plainText')}</DropdownMenuRadioItem>
           {CODE_BLOCK_LANGUAGE_VALUES.map(option => (
             <DropdownMenuRadioItem key={option} value={option}>
               {LANGUAGE_LABELS[option]}

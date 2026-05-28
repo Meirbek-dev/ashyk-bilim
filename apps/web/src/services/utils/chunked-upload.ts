@@ -55,9 +55,7 @@ function splitFileIntoChunks(file: File, chunkSize: number): Blob[] {
 /**
  * Upload a file using chunked upload
  */
-export async function uploadFileChunked(
-  options: ChunkedUploadOptions,
-): Promise<ChunkedUploadResult> {
+export async function uploadFileChunked(options: ChunkedUploadOptions): Promise<ChunkedUploadResult> {
   const {
     file,
     directory,
@@ -104,9 +102,7 @@ export async function uploadFileChunked(
         body,
       })
       throw new Error(
-        body?.detail
-          ? JSON.stringify(body.detail)
-          : `Failed to initiate upload (status ${initiateResponse.status})`,
+        body?.detail ? JSON.stringify(body.detail) : `Failed to initiate upload (status ${initiateResponse.status})`,
       )
     }
 
@@ -138,9 +134,7 @@ export async function uploadFileChunked(
           body,
         })
         throw new Error(
-          body?.detail
-            ? JSON.stringify(body.detail)
-            : `Failed to upload chunk ${i} (status ${chunkResponse.status})`,
+          body?.detail ? JSON.stringify(body.detail) : `Failed to upload chunk ${i} (status ${chunkResponse.status})`,
         )
       }
 
@@ -180,9 +174,7 @@ export async function uploadFileChunked(
         body,
       })
       throw new Error(
-        body?.detail
-          ? JSON.stringify(body.detail)
-          : `Failed to complete upload (status ${completeResponse.status})`,
+        body?.detail ? JSON.stringify(body.detail) : `Failed to complete upload (status ${completeResponse.status})`,
       )
     }
 

@@ -48,11 +48,7 @@ async function invalidateActivityCache(courseUuid?: string) {
   if (courseUuid) revalidateTag(courseTag.detail(courseUuid), 'max')
 }
 
-export async function createActivity(
-  data: any,
-  chapter_id: number,
-  options?: ActivityInvalidationOptions,
-) {
+export async function createActivity(data: any, chapter_id: number, options?: ActivityInvalidationOptions) {
   if (!data || typeof data !== 'object') {
     throw new Error('Activity payload is required')
   }
@@ -312,9 +308,7 @@ export async function createExternalVideoActivity(
 async function fetchActivity(activity_uuid: string): Promise<ActivityReadWithPermissions> {
   // Support both raw and canonical UUID variants.
   // Some UI routes pass the raw suffix (e.g. "01KE..."), but API uses "activity_...".
-  const canonicalActivityUuid = activity_uuid.startsWith('activity_')
-    ? activity_uuid
-    : `activity_${activity_uuid}`
+  const canonicalActivityUuid = activity_uuid.startsWith('activity_') ? activity_uuid : `activity_${activity_uuid}`
 
   const result = await apiFetch(`activities/${canonicalActivityUuid}`, {
     method: 'GET',

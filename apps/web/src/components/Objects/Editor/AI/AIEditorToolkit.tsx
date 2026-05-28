@@ -312,9 +312,7 @@ function AiEditorActionScreen({
               aria-pressed={critisizeScope === scope}
               className={cn(
                 'h-7 rounded-md px-2.5 text-xs',
-                critisizeScope === scope
-                  ? 'bg-zinc-700 text-zinc-100'
-                  : 'text-zinc-400 hover:text-zinc-200',
+                critisizeScope === scope ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200',
               )}
             >
               {t(scope === 'selection' ? 'critisizeScopeSelection' : 'critisizeScopeLecture')}
@@ -396,8 +394,7 @@ function UserFeedbackModal({
   const { resolvedTheme } = useTheme()
   const logoSrc = resolvedTheme === 'dark' ? appLogoLight : appLogo
 
-  const { getSelectedText, getSelectedBlockText, getEntireText, typeText } =
-    useEditorOperations(editor)
+  const { getSelectedText, getSelectedBlockText, getEntireText, typeText } = useEditorOperations(editor)
 
   const getPrompt = useCallback(
     ({ label, selection, scope, targetLanguage }: AIPromptsLabels): string => {
@@ -419,9 +416,7 @@ function UserFeedbackModal({
             : t('prompt_critisize', { selection })
         }
         case 'Translate': {
-          return targetLanguage
-            ? t('prompt_translateTo', { language: targetLanguage, selection })
-            : ''
+          return targetLanguage ? t('prompt_translateTo', { language: targetLanguage, selection }) : ''
         }
       }
     },
@@ -469,11 +464,7 @@ function UserFeedbackModal({
           const selection = critisizeScope === 'lecture' ? getEntireText() : getSelectedBlockText()
 
           if (!selection) {
-            toast.error(
-              critisizeScope === 'lecture'
-                ? t('critisizeLectureMissing')
-                : t('critisizeSelectionMissing'),
-            )
+            toast.error(critisizeScope === 'lecture' ? t('critisizeLectureMissing') : t('critisizeSelectionMissing'))
             return
           }
 
@@ -625,16 +616,8 @@ export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorT
   const t = useTranslations('Activities.AIEditorToolkit')
   const { resolvedTheme } = useTheme()
   const logoSrc = resolvedTheme === 'dark' ? appLogoLight : appLogo
-  const {
-    messages,
-    sendMessageAndGetResponse,
-    isLoading,
-    error,
-    clear,
-    stop,
-    abort,
-    resetConversation,
-  } = useActivityAIChat()
+  const { messages, sendMessageAndGetResponse, isLoading, error, clear, stop, abort, resetConversation } =
+    useActivityAIChat()
 
   // ── Local UI state ────────────────────────────────────────────────────────
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false)
@@ -737,10 +720,7 @@ export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorT
           </AnimatePresence>
 
           {/* Toolbar */}
-          <div
-            className="fixed bottom-0 left-1/2 z-40 mb-5 -translate-x-1/2"
-            style={{ pointerEvents: 'auto' }}
-          >
+          <div className="fixed bottom-0 left-1/2 z-40 mb-5 -translate-x-1/2" style={{ pointerEvents: 'auto' }}>
             <div className="flex items-center gap-1.5 rounded-xl border border-zinc-700/60 bg-zinc-900 px-3 py-2 shadow-lg">
               {/* Logo */}
               <div className="flex items-center gap-2 pr-1">
@@ -752,40 +732,18 @@ export default function AIEditorToolkit({ activity, isOpen, onClose }: AIEditorT
                   className="rounded-sm"
                   style={{ height: 'auto' }}
                 />
-                <span className="hidden text-xs font-semibold text-zinc-300 sm:block">
-                  {t('aiEditorTitle')}
-                </span>
+                <span className="hidden text-xs font-semibold text-zinc-300 sm:block">{t('aiEditorTitle')}</span>
               </div>
 
               <div className="h-5 w-px bg-zinc-700/60" />
 
               {/* Tools */}
               <div className="flex flex-wrap gap-1">
-                <AiEditorToolButton
-                  label="Writer"
-                  selectedTool={selectedTool}
-                  onSelect={handleToolSelect}
-                />
-                <AiEditorToolButton
-                  label="ContinueWriting"
-                  selectedTool={selectedTool}
-                  onSelect={handleToolSelect}
-                />
-                <AiEditorToolButton
-                  label="MakeLonger"
-                  selectedTool={selectedTool}
-                  onSelect={handleToolSelect}
-                />
-                <AiEditorToolButton
-                  label="Critisize"
-                  selectedTool={selectedTool}
-                  onSelect={handleToolSelect}
-                />
-                <AiEditorToolButton
-                  label="Translate"
-                  selectedTool={selectedTool}
-                  onSelect={handleToolSelect}
-                />
+                <AiEditorToolButton label="Writer" selectedTool={selectedTool} onSelect={handleToolSelect} />
+                <AiEditorToolButton label="ContinueWriting" selectedTool={selectedTool} onSelect={handleToolSelect} />
+                <AiEditorToolButton label="MakeLonger" selectedTool={selectedTool} onSelect={handleToolSelect} />
+                <AiEditorToolButton label="Critisize" selectedTool={selectedTool} onSelect={handleToolSelect} />
+                <AiEditorToolButton label="Translate" selectedTool={selectedTool} onSelect={handleToolSelect} />
               </div>
 
               <div className="h-5 w-px bg-zinc-700/60" />

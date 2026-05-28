@@ -18,9 +18,6 @@ describe('NextImage', () => {
     const image = screen.getByAltText('Android preview')
 
     expect(image.tagName).toBe('IMG')
-    expect(image).toHaveAttribute(
-      'src',
-      'https://developer.android.com/static/images/social/android-developers.png',
-    )
+    expect(image).toHaveAttribute('src', 'https://developer.android.com/static/images/social/android-developers.png')
   })
 })

@@ -124,12 +124,7 @@ export function EditorImageDialog({ onConfirm, onClose }: EditorImageDialogProps
           <Button type="button" variant="outline" size="sm" onClick={onClose}>
             {t('imageDialog.cancel')}
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleConfirm}
-            disabled={!src.trim() || !srcValid || !alt.trim()}
-          >
+          <Button type="button" size="sm" onClick={handleConfirm} disabled={!src.trim() || !srcValid || !alt.trim()}>
             {t('imageDialog.insert')}
           </Button>
         </div>

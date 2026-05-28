@@ -170,9 +170,7 @@ export function GamificationProfileSection({
                       <p className="font-medium">
                         {t('levelIndicators.level')} {nextMilestone.level}
                       </p>
-                      <p className="text-muted-foreground text-sm">
-                        {localizeLevelTitle(nextMilestone.title)}
-                      </p>
+                      <p className="text-muted-foreground text-sm">{localizeLevelTitle(nextMilestone.title)}</p>
                     </div>
                   </div>
                   <div className="text-right">

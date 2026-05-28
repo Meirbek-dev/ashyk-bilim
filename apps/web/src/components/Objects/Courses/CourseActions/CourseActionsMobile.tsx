@@ -78,11 +78,7 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
     <div className="flex items-center gap-3">
       <div className="relative flex -space-x-3">
         {displayedAvatars.map((author, index) => (
-          <div
-            key={author.user.user_uuid}
-            className="relative"
-            style={{ zIndex: displayedAvatars.length - index }}
-          >
+          <div key={author.user.user_uuid} className="relative" style={{ zIndex: displayedAvatars.length - index }}>
             <UserAvatar
               size="sm"
               variant="outline"
@@ -111,9 +107,7 @@ const MultipleAuthors = ({ authors }: { authors: Author[] }) => {
       </div>
 
       <div className="flex flex-col">
-        <span className="text-xs font-medium text-neutral-400">
-          {authors.length > 1 ? t('authors') : t('author')}
-        </span>
+        <span className="text-xs font-medium text-neutral-400">{authors.length > 1 ? t('authors') : t('author')}</span>
         {authors.length === 1 ? (
           <span className="text-sm font-semibold text-neutral-800">
             {authors[0]?.user?.first_name && authors[0]?.user?.last_name
@@ -172,9 +166,7 @@ const CourseActionsMobile = ({ courseuuid, course, trailData }: CourseActionsMob
       if (course.chapters) {
         for (const chapter of course.chapters) {
           for (const activity of chapter.activities) {
-            const isCompleted = run?.steps?.some(
-              (step: any) => step.activity_id === activity.id && step.complete,
-            )
+            const isCompleted = run?.steps?.some((step: any) => step.activity_id === activity.id && step.complete)
             if (!isCompleted) {
               firstUnfinishedActivity = activity
               break

@@ -228,9 +228,7 @@ describe('CourseGradebookCommandCenter', () => {
   it('shows command-center rollups and summary counts', () => {
     render(<CourseGradebookCommandCenter courseUuid="course_gradebook" />)
 
-    const actionCells = gradebook.cells.filter(
-      cell => cell.teacher_action_required && cell.latest_submission_uuid,
-    )
+    const actionCells = gradebook.cells.filter(cell => cell.teacher_action_required && cell.latest_submission_uuid)
 
     expect(screen.getAllByText('summary.needsGrading').length).toBeGreaterThan(0)
     expect(screen.getAllByText(String(actionCells.length)).length).toBeGreaterThan(0)

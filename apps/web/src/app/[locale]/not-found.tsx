@@ -36,9 +36,7 @@ export default async function NotFound() {
       </div>
       <div className="space-y-6 text-center">
         <h1 className="text-foreground text-8xl leading-7 font-bold drop-shadow-md">{t('code')}</h1>
-        <p className="text-foreground pt-8 text-lg leading-normal font-medium tracking-tight">
-          {t('message')}
-        </p>
+        <p className="text-foreground pt-8 text-lg leading-normal font-medium tracking-tight">{t('message')}</p>
       </div>
       <div className="flex flex-col items-center pt-8">
         <Button className="flex h-[50px] items-center rounded-lg px-6 py-2 text-xl font-bold shadow-md">

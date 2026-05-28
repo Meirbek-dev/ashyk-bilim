@@ -54,11 +54,7 @@ interface AssessmentLayoutProps {
  *
  * Previously: `features/assessments/shared/AttemptShell.tsx`
  */
-export default function AssessmentLayout({
-  activityUuid,
-  courseUuid,
-  vm: suppliedVm,
-}: AssessmentLayoutProps) {
+export default function AssessmentLayout({ activityUuid, courseUuid, vm: suppliedVm }: AssessmentLayoutProps) {
   const assessment = useAssessmentAttemptData(suppliedVm ? null : activityUuid)
   const resolved = suppliedVm
     ? ({ surface: 'ATTEMPT', vm: suppliedVm, kind: suppliedVm.kind } as const)
@@ -151,15 +147,11 @@ export default function AssessmentLayout({
               <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                 {kindModule?.label ?? 'Code Challenge'}
               </span>
-              <span className="text-foreground min-w-0 truncate text-sm font-semibold">
-                {vm.title}
-              </span>
+              <span className="text-foreground min-w-0 truncate text-sm font-semibold">{vm.title}</span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {guard.remainingSeconds !== null && guard.remainingSeconds !== undefined ? (
-                <span className="text-sm font-medium tabular-nums">
-                  {formatTimerDisplay(guard.remainingSeconds)}
-                </span>
+                <span className="text-sm font-medium tabular-nums">{formatTimerDisplay(guard.remainingSeconds)}</span>
               ) : null}
             </div>
           </div>
@@ -171,9 +163,7 @@ export default function AssessmentLayout({
         <AssessmentActionBar
           controls={controls}
           returned={returned}
-          primaryButtonLabelKey={
-            controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null
-          }
+          primaryButtonLabelKey={controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null}
         />
         <RecoveryDialog recovery={controls.recovery ?? null} />
         <ConflictDialog conflict={controls.conflict ?? null} />
@@ -208,12 +198,7 @@ export default function AssessmentLayout({
               </span>
             </div>
             {policy?.antiCheat.fullscreenEnforced && !guard.isFullscreen ? (
-              <Button
-                type="button"
-                variant="destructive"
-                className="mt-2 w-full"
-                onClick={guard.requestFullscreen}
-              >
+              <Button type="button" variant="destructive" className="mt-2 w-full" onClick={guard.requestFullscreen}>
                 <Maximize2 className="size-4" />
                 {t('reEnterFullscreen', { defaultValue: 'Re-enter Fullscreen' })}
               </Button>
@@ -236,9 +221,7 @@ export default function AssessmentLayout({
               <Maximize2 className="size-5" />
               {t('fullscreenRequired')}
             </div>
-            <p className="text-muted-foreground mt-2 text-sm">
-              {t('fullscreenRequiredDescription')}
-            </p>
+            <p className="text-muted-foreground mt-2 text-sm">{t('fullscreenRequiredDescription')}</p>
             {guard.fullscreenError ? (
               <p className="text-muted-foreground mt-3 text-sm">{guard.fullscreenError}</p>
             ) : null}
@@ -284,9 +267,7 @@ export default function AssessmentLayout({
         <AssessmentActionBar
           controls={controls}
           returned={returned}
-          primaryButtonLabelKey={
-            controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null
-          }
+          primaryButtonLabelKey={controls.primaryButtonLabelKey ?? vm?.primaryButtonLabelKey ?? null}
         />
       </div>
 
@@ -354,12 +335,8 @@ function ConflictDialog({ conflict }: { conflict: AttemptConflictState | null })
           ) : null}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={conflict?.onKeepLocalVersion}>
-            {t('keepMyLocalVersion')}
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={conflict?.onUseServerVersion}>
-            {t('useLatestSavedVersion')}
-          </AlertDialogAction>
+          <AlertDialogCancel onClick={conflict?.onKeepLocalVersion}>{t('keepMyLocalVersion')}</AlertDialogCancel>
+          <AlertDialogAction onClick={conflict?.onUseServerVersion}>{t('useLatestSavedVersion')}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -156,12 +156,7 @@ export default function DiscussionReply({
                 >
                   {t('cancel')}
                 </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={!hasMeaningfulText(editContent)}
-                  className="h-8 px-3 text-sm"
-                >
+                <Button type="submit" size="sm" disabled={!hasMeaningfulText(editContent)} className="h-8 px-3 text-sm">
                   {t('save')}
                 </Button>
               </div>

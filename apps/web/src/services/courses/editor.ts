@@ -44,18 +44,11 @@ const toArrayResource = (response: {
 
   if (!response.success) {
     const detail =
-      typeof response.data?.detail === 'string'
-        ? response.data.detail
-        : response.HTTPmessage || 'Request failed'
+      typeof response.data?.detail === 'string' ? response.data.detail : response.HTTPmessage || 'Request failed'
     return createResource<any[]>([], response.status, detail, true)
   }
 
-  return createResource(
-    Array.isArray(response.data) ? response.data : [],
-    response.status,
-    null,
-    true,
-  )
+  return createResource(Array.isArray(response.data) ? response.data : [], response.status, null, true)
 }
 
 export async function getCourseEditorBundle(courseUuid: string): Promise<CourseEditorBundle> {

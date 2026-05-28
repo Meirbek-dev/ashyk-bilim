@@ -34,12 +34,7 @@ export {
 export type { GamificationError } from './errors'
 export type { UserGamificationProfile, LevelInfo, StreakInfo } from './profile'
 export type { XPSource, XPTransaction, XPAwardRequest, XPAwardResponse } from './transactions'
-export type {
-  LeaderboardEntry,
-  PlatformLeaderboard,
-  UserRank,
-  LeaderboardFilters,
-} from './leaderboard'
+export type { LeaderboardEntry, PlatformLeaderboard, UserRank, LeaderboardFilters } from './leaderboard'
 export type {
   GamificationPreferences,
   NotificationPreferences,

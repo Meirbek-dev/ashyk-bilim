@@ -17,8 +17,7 @@ export const queryKeys = {
     settings: (activityUuid: string) => ['code-challenges', 'settings', activityUuid] as const,
     submission: (activityUuid: string, submissionUuid: string) =>
       ['code-challenges', 'submission', activityUuid, submissionUuid] as const,
-    submissions: (activityUuid: string) =>
-      ['code-challenges', 'submissions', activityUuid] as const,
+    submissions: (activityUuid: string) => ['code-challenges', 'submissions', activityUuid] as const,
   },
   certifications: {
     course: (courseUuid: string) => ['certifications', 'course', courseUuid] as const,
@@ -64,8 +63,7 @@ export const queryKeys = {
     courses: (page: number, limit: number) => ['landing', 'courses', { page, limit }] as const,
   },
   search: {
-    content: (query: string, page: number, limit: number) =>
-      ['search', 'content', { query, page, limit }] as const,
+    content: (query: string, page: number, limit: number) => ['search', 'content', { query, page, limit }] as const,
   },
   studentActivity: {
     runtime: (courseUuid: string, activityUuid: string) =>
@@ -92,8 +90,7 @@ export const queryKeys = {
     byUsername: (username: string) => ['users', 'username', username] as const,
     courses: (userId: number) => ['users', 'courses', userId] as const,
     members: (page: number, perPage: number) => ['users', 'members', { page, perPage }] as const,
-    roleAuditLog: (page: number, pageSize: number) =>
-      ['users', 'role-audit-log', { page, pageSize }] as const,
+    roleAuditLog: (page: number, pageSize: number) => ['users', 'role-audit-log', { page, pageSize }] as const,
     roleAssignments: () => ['users', 'role-assignments'] as const,
     roles: () => ['users', 'roles'] as const,
   },

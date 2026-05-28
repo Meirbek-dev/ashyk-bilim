@@ -5,13 +5,7 @@ import { useTranslations } from 'next-intl'
 import { AlertTriangle, RotateCcw } from 'lucide-react'
 import { reportClientError } from '@/services/telemetry/client'
 
-export default function GradebookError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
+export default function GradebookError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const t = useTranslations('Errors')
 
   useEffect(() => {

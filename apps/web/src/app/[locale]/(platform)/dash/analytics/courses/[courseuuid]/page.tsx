@@ -14,12 +14,7 @@ export default function PlatformAnalyticsCourseDetailPage(props: {
   params: Promise<{ courseuuid: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  return (
-    <PlatformAnalyticsCourseDetailPageInner
-      params={props.params}
-      searchParams={props.searchParams}
-    />
-  )
+  return <PlatformAnalyticsCourseDetailPageInner params={props.params} searchParams={props.searchParams} />
 }
 
 async function PlatformAnalyticsCourseDetailPageInner(props: {
@@ -47,24 +42,16 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-3">
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">
-                {t('pages.courseStatCompletion')}
-              </div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.courseStatCompletion')}</div>
               <div className="mt-2 text-3xl font-semibold">{detail.summary.completion_rate}%</div>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">
-                {t('pages.courseStatAvgProgress')}
-              </div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.courseStatAvgProgress')}</div>
               <div className="mt-2 text-3xl font-semibold">{detail.summary.avg_progress_pct}%</div>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-xs tracking-wide text-slate-500 uppercase">
-                {t('pages.courseStatUngraded')}
-              </div>
-              <div className="mt-2 text-3xl font-semibold">
-                {detail.summary.ungraded_submissions}
-              </div>
+              <div className="text-xs tracking-wide text-slate-500 uppercase">{t('pages.courseStatUngraded')}</div>
+              <div className="mt-2 text-3xl font-semibold">{detail.summary.ungraded_submissions}</div>
             </div>
           </CardContent>
         </Card>
@@ -98,18 +85,12 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
                 <div className="flex items-center gap-2">
                   <Badge
                     variant={
-                      item.severity === 'critical'
-                        ? 'destructive'
-                        : item.severity === 'warning'
-                          ? 'warning'
-                          : 'outline'
+                      item.severity === 'critical' ? 'destructive' : item.severity === 'warning' ? 'warning' : 'outline'
                     }
                   >
                     {getAnalyticsSeverityLabel(t, item.severity)}
                   </Badge>
-                  <span className="text-sm font-medium text-slate-800">
-                    {getAnalyticsSignalLabel(t, item.signal)}
-                  </span>
+                  <span className="text-sm font-medium text-slate-800">{getAnalyticsSignalLabel(t, item.signal)}</span>
                 </div>
                 <div className="mt-3 text-sm leading-6 text-slate-600">{item.note}</div>
                 {item.value !== null ? (

@@ -15,8 +15,7 @@ const courseWorkflowBadgeToneClass: Record<CourseWorkflowBadgeTone, string> = {
   info: 'border-border bg-muted/70 text-muted-foreground',
   success:
     'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300',
-  warning:
-    'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200',
+  warning: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200',
   danger: 'border-destructive/20 bg-destructive/10 text-destructive',
 }
 
@@ -49,15 +48,7 @@ export function CourseStatusBadge({
   status,
   className,
 }: {
-  status:
-    | 'public'
-    | 'private'
-    | 'ready'
-    | 'needs-review'
-    | 'attention'
-    | 'unsaved'
-    | 'live'
-    | 'draft'
+  status: 'public' | 'private' | 'ready' | 'needs-review' | 'attention' | 'unsaved' | 'live' | 'draft'
   className?: string
 }) {
   const t = useTranslations('DashPage.CourseManagement.Workflow.status')
@@ -85,11 +76,7 @@ export function CourseStatusBadge({
   }[status]
 
   return (
-    <CourseWorkflowBadge
-      tone={config.tone}
-      icon={config.icon}
-      {...(className === undefined ? {} : { className })}
-    >
+    <CourseWorkflowBadge tone={config.tone} icon={config.icon} {...(className === undefined ? {} : { className })}>
       {config.label}
     </CourseWorkflowBadge>
   )
@@ -135,9 +122,7 @@ export function CourseChoiceCard({
       <div
         className={cn(
           'mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-lg border',
-          checked
-            ? 'border-primary/30 bg-primary/10 text-primary'
-            : 'border-border bg-muted text-muted-foreground',
+          checked ? 'border-primary/30 bg-primary/10 text-primary' : 'border-border bg-muted text-muted-foreground',
         )}
       >
         <Icon className="size-5" />
@@ -146,9 +131,7 @@ export function CourseChoiceCard({
         <div className="text-foreground text-sm leading-5 font-semibold">{title}</div>
         <div className="text-muted-foreground text-sm leading-5">{description}</div>
       </div>
-      <div
-        className={cn('mt-0.5 shrink-0 transition-opacity', checked ? 'opacity-100' : 'opacity-0')}
-      >
+      <div className={cn('mt-0.5 shrink-0 transition-opacity', checked ? 'opacity-100' : 'opacity-0')}>
         <CheckCircle2 className="text-primary size-5" />
       </div>
     </Label>

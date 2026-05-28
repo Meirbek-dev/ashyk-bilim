@@ -50,6 +50,5 @@ export type AssessmentSupportAlertRow = components['schemas']['AssessmentSupport
 export type AssessmentSupportDiagnostics = components['schemas']['AssessmentSupportDiagnostics']
 export type AssessmentItemAnalyticsRow = components['schemas']['AssessmentItemAnalyticsRow']
 export type AssessmentCohortRow = components['schemas']['AssessmentCohortRow']
-export type TeacherAssessmentDetailResponse =
-  components['schemas']['TeacherAssessmentDetailResponse']
+export type TeacherAssessmentDetailResponse = components['schemas']['TeacherAssessmentDetailResponse']
 export type AtRiskLearnersResponse = components['schemas']['AtRiskLearnersResponse']

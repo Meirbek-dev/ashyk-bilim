@@ -42,20 +42,12 @@ export default function SettingsTabs({
           'hover:bg-muted/50',
           'focus-visible:ring-0 focus-visible:ring-offset-0',
           'data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none',
-          isActive
-            ? 'border-b-primary border-b-4 text-primary'
-            : 'border-b-transparent text-muted-foreground',
+          isActive ? 'border-b-primary border-b-4 text-primary' : 'border-b-transparent text-muted-foreground',
         )}
       >
         <div className="flex items-center gap-2">
           {Icon && (
-            <Icon
-              size={16}
-              className={cn(
-                'transition-colors',
-                isActive ? 'text-primary' : 'text-muted-foreground',
-              )}
-            />
+            <Icon size={16} className={cn('transition-colors', isActive ? 'text-primary' : 'text-muted-foreground')} />
           )}
           <span className="text-sm">{t ? t(tab.labelKey) : tab.labelKey}</span>
         </div>

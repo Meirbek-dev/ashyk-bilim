@@ -38,12 +38,7 @@ interface AuthSubmitButtonProps {
   className?: string
 }
 
-export function AuthSubmitButton({
-  isPending,
-  label,
-  pendingLabel,
-  className,
-}: AuthSubmitButtonProps) {
+export function AuthSubmitButton({ isPending, label, pendingLabel, className }: AuthSubmitButtonProps) {
   return (
     <Button type="submit" className={className ?? 'w-full'} disabled={isPending}>
       {isPending ? (

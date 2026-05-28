@@ -40,11 +40,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           aria-pressed={isVisible}
           aria-controls={id}
         >
-          {isVisible ? (
-            <EyeOffIcon size={16} aria-hidden="true" />
-          ) : (
-            <EyeIcon size={16} aria-hidden="true" />
-          )}
+          {isVisible ? <EyeOffIcon size={16} aria-hidden="true" /> : <EyeIcon size={16} aria-hidden="true" />}
         </button>
       </div>
     )

@@ -134,8 +134,7 @@ export function DiscussionEditor({
   const addVideo = () => {
     if (!(editor && videoUrl)) return
 
-    const youtubeRegex =
-      /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/
+    const youtubeRegex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[&?]v=)|youtu\.be\/)([^\s"&/?]{11})/
     const match = youtubeRegex.exec(videoUrl)
 
     if (match) {
@@ -281,10 +280,7 @@ export function DiscussionEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={cn(
-              'h-8 px-2 text-sm',
-              editor.isActive('heading', { level: 2 }) && 'bg-muted',
-            )}
+            className={cn('h-8 px-2 text-sm', editor.isActive('heading', { level: 2 }) && 'bg-muted')}
           >
             {t('h2')}
           </Button>
@@ -293,10 +289,7 @@ export function DiscussionEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-            className={cn(
-              'h-8 px-2 text-sm',
-              editor.isActive('heading', { level: 3 }) && 'bg-muted',
-            )}
+            className={cn('h-8 px-2 text-sm', editor.isActive('heading', { level: 3 }) && 'bg-muted')}
           >
             {t('h3')}
           </Button>
@@ -305,9 +298,7 @@ export function DiscussionEditor({
 
           {/* Media */}
           <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
-            <DialogTrigger
-              render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}
-            >
+            <DialogTrigger render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
               <LinkIcon size={16} />
             </DialogTrigger>
             <DialogContent>
@@ -336,9 +327,7 @@ export function DiscussionEditor({
           </Dialog>
 
           <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-            <DialogTrigger
-              render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}
-            >
+            <DialogTrigger render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
               <ImageIcon size={16} />
             </DialogTrigger>
             <DialogContent>
@@ -367,9 +356,7 @@ export function DiscussionEditor({
           </Dialog>
 
           <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
-            <DialogTrigger
-              render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}
-            >
+            <DialogTrigger render={<Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
               <SiYoutube size={16} />
             </DialogTrigger>
             <DialogContent>
@@ -445,11 +432,7 @@ export function DiscussionEditor({
         </div>
 
         {/* Editor Content */}
-        <EditorContent
-          editor={editor}
-          className="prosemirror-discussion overflow-hidden"
-          placeholder={placeholder}
-        />
+        <EditorContent editor={editor} className="prosemirror-discussion overflow-hidden" placeholder={placeholder} />
       </div>
     </EditorOptionsProvider>
   )

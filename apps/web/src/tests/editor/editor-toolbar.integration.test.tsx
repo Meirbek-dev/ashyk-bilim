@@ -77,8 +77,7 @@ vi.mock('@/components/providers/theme-provider', () => ({
 // Mock EmbedPanelStore — open is a stable no-op so it never changes identity
 const stableOpen = vi.fn()
 vi.mock('../../components/Objects/Editor/Toolbar/EmbedPanel/EmbedPanelStore', () => ({
-  useEmbedPanelStore: (selector: (s: { open: typeof stableOpen }) => unknown) =>
-    selector({ open: stableOpen }),
+  useEmbedPanelStore: (selector: (s: { open: typeof stableOpen }) => unknown) => selector({ open: stableOpen }),
 }))
 
 // Mock all sub-components that EditorToolbar renders so they don't pull in

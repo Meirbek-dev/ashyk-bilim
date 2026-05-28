@@ -25,15 +25,9 @@ export default function ScoreSummary({ score, rawScore, maxScore, className }: S
   const t = useTranslations('Components.ScoreSummary')
   const percent = formatPercent(score.percent)
   const hasRaw =
-    rawScore !== null &&
-    rawScore !== undefined &&
-    maxScore !== null &&
-    maxScore !== undefined &&
-    maxScore > 0
+    rawScore !== null && rawScore !== undefined && maxScore !== null && maxScore !== undefined && maxScore > 0
   const sourceLabel = t(SOURCE_LABEL_KEYS[score.source])
-  const detail = hasRaw
-    ? `${rawScore}/${maxScore} ${t('points')} · ${percent}`
-    : `${sourceLabel} · ${percent}`
+  const detail = hasRaw ? `${rawScore}/${maxScore} ${t('points')} · ${percent}` : `${sourceLabel} · ${percent}`
 
   return (
     <div className={cn('rounded-md border bg-card p-3', className)}>

@@ -7,12 +7,7 @@ import { Bold, Code, Italic, Link2, Strikethrough, ChevronDown } from 'lucide-re
 import { Toggle } from '@/components/ui/toggle'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useState } from 'react'
 import LinkInputTooltip from '../Toolbar/LinkInputTooltip'
 
@@ -25,11 +20,7 @@ export function BubbleToolbar() {
   const [showLinkInput, setShowLinkInput] = useState(false)
 
   const handleLinkSave = (url: string) => {
-    editor
-      .chain()
-      .focus()
-      .setLink({ href: url, target: '_blank', rel: 'noopener noreferrer' })
-      .run()
+    editor.chain().focus().setLink({ href: url, target: '_blank', rel: 'noopener noreferrer' }).run()
     setShowLinkInput(false)
   }
 
@@ -50,10 +41,7 @@ export function BubbleToolbar() {
             {t('paragraph')}
           </DropdownMenuItem>
           {([1, 2, 3] as const).map(level => (
-            <DropdownMenuItem
-              key={level}
-              onClick={() => editor.chain().focus().toggleHeading({ level }).run()}
-            >
+            <DropdownMenuItem key={level} onClick={() => editor.chain().focus().toggleHeading({ level }).run()}>
               <span className="font-semibold">{t('headingLevel', { level })}</span>
             </DropdownMenuItem>
           ))}

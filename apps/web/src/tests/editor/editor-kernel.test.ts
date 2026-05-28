@@ -33,12 +33,8 @@ describe('editor kernel', () => {
   })
 
   it('requires activity context for activity presets', () => {
-    expect(() => createEditorKernel({ preset: 'authoring' })).toThrow(
-      /requires an activity context/i,
-    )
-    expect(() => createEditorKernel({ preset: 'interactive' })).toThrow(
-      /requires an activity context/i,
-    )
+    expect(() => createEditorKernel({ preset: 'authoring' })).toThrow(/requires an activity context/i)
+    expect(() => createEditorKernel({ preset: 'interactive' })).toThrow(/requires an activity context/i)
   })
 
   it('normalizes invalid content to an empty document', () => {

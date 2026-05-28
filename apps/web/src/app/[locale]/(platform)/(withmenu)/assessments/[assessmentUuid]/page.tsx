@@ -2,8 +2,8 @@ import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { getSession } from '@/lib/auth/session'
-import { getSearchParam } from '@/lib/search-params';
-import type { PageSearchParams } from '@/lib/search-params';
+import { getSearchParam } from '@/lib/search-params'
+import type { PageSearchParams } from '@/lib/search-params'
 import { getAssessmentByUuid } from '@services/assessments/assessments'
 
 interface Props {
@@ -35,10 +35,7 @@ export default async function AssessmentAttemptPage(props: Props) {
   const searchParams = await props.searchParams
   const reviewSubmissionUuid = getSearchParam(searchParams, 'review') ?? null
 
-  const [assessment, initialSession] = await Promise.all([
-    getAssessmentByUuid(assessmentUuid),
-    getSession(),
-  ])
+  const [assessment, initialSession] = await Promise.all([getAssessmentByUuid(assessmentUuid), getSession()])
 
   if (!assessment) notFound()
 
@@ -57,9 +54,7 @@ export default async function AssessmentAttemptPage(props: Props) {
     // Teacher review deep-link: ?review={submissionUuid} → editor review tab
     if (reviewSubmissionUuid) {
       const cleanSubmission = reviewSubmissionUuid.replace(/^submission_/, '')
-      redirect(
-        `/editor/course/${cleanCourse}/activity/${cleanActivity}?tab=review&submission=${cleanSubmission}`,
-      )
+      redirect(`/editor/course/${cleanCourse}/activity/${cleanActivity}?tab=review&submission=${cleanSubmission}`)
     }
 
     redirect(`/course/${cleanCourse}/activity/${cleanActivity}`)

@@ -18,10 +18,7 @@ export interface UseGradingPanelResult {
   mutate: () => Promise<Submission | undefined>
 }
 
-function gradingPanelHookOptionsWithAssessment(
-  submissionUuid: string | null,
-  assessmentUuid?: string | null,
-) {
+function gradingPanelHookOptionsWithAssessment(submissionUuid: string | null, assessmentUuid?: string | null) {
   const normalizedSubmissionUuid = submissionUuid ?? ''
 
   return queryOptions({
@@ -30,10 +27,7 @@ function gradingPanelHookOptionsWithAssessment(
   })
 }
 
-export function useGradingPanel(
-  submissionUuid: string | null,
-  assessmentUuid?: string | null,
-): UseGradingPanelResult {
+export function useGradingPanel(submissionUuid: string | null, assessmentUuid?: string | null): UseGradingPanelResult {
   const queryClient = useQueryClient()
   const query = useQuery(gradingPanelHookOptionsWithAssessment(submissionUuid, assessmentUuid))
 

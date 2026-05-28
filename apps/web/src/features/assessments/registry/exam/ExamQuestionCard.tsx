@@ -35,13 +35,8 @@ interface ExamQuestionCardProps {
   onToggleFlag?: () => void
 }
 
-function getAnswerOptionId(
-  option: QuestionData['answer_options'][number],
-  visualIndex: number,
-): string | number {
-  return typeof option.option_id === 'string' || typeof option.option_id === 'number'
-    ? option.option_id
-    : visualIndex
+function getAnswerOptionId(option: QuestionData['answer_options'][number], visualIndex: number): string | number {
+  return typeof option.option_id === 'string' || typeof option.option_id === 'number' ? option.option_id : visualIndex
 }
 
 function toChoiceItem(question: QuestionData): ChoiceAttemptItem {
@@ -96,9 +91,7 @@ export default function ExamQuestionCard({
     >
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2">
-          <span id={`question-title-${questionId}`}>
-            {t('questionNumber', { number: questionNumber })}
-          </span>
+          <span id={`question-title-${questionId}`}>{t('questionNumber', { number: questionNumber })}</span>
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground text-sm font-normal">
               {t('points', { count: question.points ?? 0 })}
@@ -112,9 +105,7 @@ export default function ExamQuestionCard({
                 aria-label={isFlagged ? t('unflagQuestion') : t('flagQuestion')}
                 className={cn(
                   'size-8 transition-colors',
-                  isFlagged
-                    ? 'text-amber-500 hover:text-amber-600'
-                    : 'text-muted-foreground hover:text-amber-500',
+                  isFlagged ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-amber-500',
                 )}
               >
                 {isFlagged ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}

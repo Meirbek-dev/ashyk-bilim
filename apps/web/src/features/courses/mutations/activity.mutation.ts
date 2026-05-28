@@ -13,18 +13,10 @@ import type { ActivityCreateValues, ActivityUpdateValues } from '@/schemas/activ
 import { courseKeys } from '@/hooks/courses/courseKeys'
 import { assertSuccess } from '@/lib/api/assertSuccess'
 
-export function updateActivityMutationOptions(
-  queryClient: QueryClient,
-  structureKey: readonly unknown[],
-) {
+export function updateActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
-    mutationFn: async ({
-      activityUuid,
-      payload,
-    }: {
-      activityUuid: string
-      payload: Partial<ActivityUpdateValues>
-    }) => assertSuccess(await updateActivity(payload, activityUuid)),
+    mutationFn: async ({ activityUuid, payload }: { activityUuid: string; payload: Partial<ActivityUpdateValues> }) =>
+      assertSuccess(await updateActivity(payload, activityUuid)),
     onMutate: async ({ activityUuid, payload }) => {
       const activityKey = courseKeys.activity(activityUuid)
 
@@ -43,9 +35,7 @@ export function updateActivityMutationOptions(
               chapters: (current.chapters ?? []).map((chapter: any) =>
                 Object.assign(chapter, {
                   activities: (chapter.activities ?? []).map((activity: any) =>
-                    activity.activity_uuid === activityUuid
-                      ? Object.assign(activity, payload)
-                      : activity,
+                    activity.activity_uuid === activityUuid ? Object.assign(activity, payload) : activity,
                   ),
                 }),
               ),
@@ -53,9 +43,7 @@ export function updateActivityMutationOptions(
           : current,
       )
 
-      queryClient.setQueryData(activityKey, (current: any) =>
-        current ? { ...current, ...payload } : current,
-      )
+      queryClient.setQueryData(activityKey, (current: any) => (current ? { ...current, ...payload } : current))
 
       return { activityKey, previousActivity, previousStructure }
     },
@@ -79,10 +67,7 @@ export function updateActivityMutationOptions(
   })
 }
 
-export function deleteActivityMutationOptions(
-  queryClient: QueryClient,
-  structureKey: readonly unknown[],
-) {
+export function deleteActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
     mutationFn: async (activityUuid: string) => assertSuccess(await deleteActivity(activityUuid)),
     onMutate: async (activityUuid: string) => {
@@ -115,28 +100,17 @@ export function deleteActivityMutationOptions(
   })
 }
 
-export function createActivityMutationOptions(
-  queryClient: QueryClient,
-  structureKey: readonly unknown[],
-) {
+export function createActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
-    mutationFn: async ({
-      chapterId,
-      payload,
-    }: {
-      chapterId: number
-      payload: ActivityCreateValues
-    }) => assertSuccess(await createActivity(payload, chapterId)),
+    mutationFn: async ({ chapterId, payload }: { chapterId: number; payload: ActivityCreateValues }) =>
+      assertSuccess(await createActivity(payload, chapterId)),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: structureKey })
     },
   })
 }
 
-export function createFileActivityMutationOptions(
-  queryClient: QueryClient,
-  structureKey: readonly unknown[],
-) {
+export function createFileActivityMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
     mutationFn: async ({
       chapterId,
@@ -157,10 +131,7 @@ export function createFileActivityMutationOptions(
   })
 }
 
-export function createExternalVideoMutationOptions(
-  queryClient: QueryClient,
-  structureKey: readonly unknown[],
-) {
+export function createExternalVideoMutationOptions(queryClient: QueryClient, structureKey: readonly unknown[]) {
   return mutationOptions({
     mutationFn: async ({
       activityPayload,
@@ -170,10 +141,7 @@ export function createExternalVideoMutationOptions(
       activityPayload: Partial<ActivityCreateValues>
       chapterId: number
       externalVideoData: Record<string, unknown>
-    }) =>
-      assertSuccess(
-        await createExternalVideoActivity(externalVideoData, activityPayload, chapterId),
-      ),
+    }) => assertSuccess(await createExternalVideoActivity(externalVideoData, activityPayload, chapterId)),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: structureKey })
     },

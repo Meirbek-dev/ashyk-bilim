@@ -82,9 +82,7 @@ export default function AtRiskLearnersTable({
       accessorKey: 'user_display_name',
       header: t('atRisk.colLearner'),
       cell: ({ row }) => {
-        const courseHref = row.original.course_uuid
-          ? `/dash/analytics/courses/${row.original.course_uuid}`
-          : undefined
+        const courseHref = row.original.course_uuid ? `/dash/analytics/courses/${row.original.course_uuid}` : undefined
         return (
           <div>
             <div className="text-foreground font-medium">{row.original.user_display_name}</div>
@@ -92,10 +90,7 @@ export default function AtRiskLearnersTable({
               {t('atRisk.userNumber', { userId: row.original.user_id })}
             </div>
             {courseHref && (
-              <Link
-                href={courseHref}
-                className="mt-0.5 block text-xs text-emerald-700 hover:underline"
-              >
+              <Link href={courseHref} className="mt-0.5 block text-xs text-emerald-700 hover:underline">
                 {row.original.course_name}
               </Link>
             )}
@@ -113,9 +108,7 @@ export default function AtRiskLearnersTable({
       accessorKey: 'days_since_last_activity',
       header: t('atRisk.colInactivity'),
       cell: ({ row }) =>
-        row.original.days_since_last_activity === null
-          ? t('atRisk.na')
-          : `${row.original.days_since_last_activity}d`,
+        row.original.days_since_last_activity === null ? t('atRisk.na') : `${row.original.days_since_last_activity}d`,
     },
     {
       accessorKey: 'risk_score',
@@ -166,9 +159,7 @@ export default function AtRiskLearnersTable({
         <div className="text-muted-foreground max-w-[220px] text-xs whitespace-normal">
           {row.original.reason_codes.map(code => getAnalyticsReasonCodeLabel(t, code)).join(', ')}
           {(row.original as EnhancedAtRiskLearnerRow).why_now && (
-            <div className="mt-1 text-[11px]">
-              {(row.original as EnhancedAtRiskLearnerRow).why_now}
-            </div>
+            <div className="mt-1 text-[11px]">{(row.original as EnhancedAtRiskLearnerRow).why_now}</div>
           )}
         </div>
       ),
@@ -179,9 +170,7 @@ export default function AtRiskLearnersTable({
       cell: ({ row }) => {
         const riskRow = row.original as EnhancedAtRiskLearnerRow
         const hasGradingBlock = riskRow.open_grading_blocks > 0
-        const gradingHref = riskRow.course_uuid
-          ? `/dash/analytics/courses/${riskRow.course_uuid}`
-          : '/dash/courses'
+        const gradingHref = riskRow.course_uuid ? `/dash/analytics/courses/${riskRow.course_uuid}` : '/dash/courses'
         return (
           <div className="text-muted-foreground max-w-[280px] space-y-1 text-sm whitespace-normal">
             <span>{riskRow.recommended_action}</span>
@@ -214,10 +203,7 @@ export default function AtRiskLearnersTable({
                     className="h-7 px-2 text-xs"
                     disabled={pendingKey === key}
                     onClick={() =>
-                      logIntervention(
-                        riskRow,
-                        type as 'message_sent' | 'meeting_scheduled' | 'learner_recovered',
-                      )
+                      logIntervention(riskRow, type as 'message_sent' | 'meeting_scheduled' | 'learner_recovered')
                     }
                   >
                     {label}

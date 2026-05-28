@@ -30,12 +30,7 @@ const InlineQuizComponent = (props: TypedNodeViewProps<InlineQuizAttrs>) => {
 
   const renderContent = () => {
     if (editable) {
-      return (
-        <InlineQuizAuthor
-          assessmentUuid={assessmentUuid}
-          onAssessmentCreated={handleAssessmentCreated}
-        />
-      )
+      return <InlineQuizAuthor assessmentUuid={assessmentUuid} onAssessmentCreated={handleAssessmentCreated} />
     }
 
     if (!assessmentUuid) {

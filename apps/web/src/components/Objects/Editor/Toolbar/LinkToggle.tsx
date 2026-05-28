@@ -36,11 +36,7 @@ export function LinkToggle({ editor, isLink, linkHref }: LinkToggleProps) {
   }
 
   const handleLinkSave = (url: string) => {
-    editor
-      .chain()
-      .focus()
-      .setLink({ href: url, target: '_blank', rel: 'noopener noreferrer' })
-      .run()
+    editor.chain().focus().setLink({ href: url, target: '_blank', rel: 'noopener noreferrer' }).run()
     setShowLinkInput(false)
   }
 
@@ -63,11 +59,7 @@ export function LinkToggle({ editor, isLink, linkHref }: LinkToggleProps) {
         <Link2 />
       </Toggle>
       {showLinkInput ? (
-        <LinkInputTooltip
-          onSave={handleLinkSave}
-          onCancel={() => setShowLinkInput(false)}
-          currentUrl={linkHref}
-        />
+        <LinkInputTooltip onSave={handleLinkSave} onCancel={() => setShowLinkInput(false)} currentUrl={linkHref} />
       ) : null}
     </div>
   )

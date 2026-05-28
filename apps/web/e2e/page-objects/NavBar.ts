@@ -18,9 +18,7 @@ export class NavBar {
     // The sidebar "dashboard" link — resilient to label text changes
     this.dashboardLink = page.getByRole('link', { name: /dashboard/i }).first()
     // Avatar button in the top-right corner
-    this.userMenu = page
-      .locator('button[aria-label*="user"], button[aria-label*="profile"], header button')
-      .last()
+    this.userMenu = page.locator('button[aria-label*="user"], button[aria-label*="profile"], header button').last()
     this.logoutButton = page.getByRole('menuitem', {
       name: /log\s*out|sign\s*out/i,
     })

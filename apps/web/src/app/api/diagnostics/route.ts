@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import {
-  getAppConfigResult,
-  getPublicConfigResult,
-  getServerConfigResult,
-} from '@/services/config/env'
+import { getAppConfigResult, getPublicConfigResult, getServerConfigResult } from '@/services/config/env'
 
 interface DiagnosticsPayload {
   timestamp: string
@@ -166,8 +162,7 @@ export async function GET() {
     // Check backend connectivity
     try {
       const backendUrl = serverConfig.success
-        ? (serverConfig.config.internalApiUrl ??
-          (publicConfig.success ? publicConfig.config.apiUrl : null))
+        ? (serverConfig.config.internalApiUrl ?? (publicConfig.success ? publicConfig.config.apiUrl : null))
         : publicConfig.success
           ? publicConfig.config.apiUrl
           : null

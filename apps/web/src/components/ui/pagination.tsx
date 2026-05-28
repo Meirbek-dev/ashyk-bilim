@@ -18,13 +18,7 @@ function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {
 }
 
 function PaginationContent({ className, ...props }: React.ComponentProps<'ul'>) {
-  return (
-    <ul
-      data-slot="pagination-content"
-      className={cn('flex items-center gap-0.5', className)}
-      {...props}
-    />
-  )
+  return <ul data-slot="pagination-content" className={cn('flex items-center gap-0.5', className)} {...props} />
 }
 
 function PaginationItem({ ...props }: React.ComponentProps<'li'>) {
@@ -44,12 +38,7 @@ function PaginationLink({ className, isActive, size = 'icon', ...props }: Pagina
       className={cn(className)}
       nativeButton={false}
       render={
-        <a
-          aria-current={isActive ? 'page' : undefined}
-          data-slot="pagination-link"
-          data-active={isActive}
-          {...props}
-        />
+        <a aria-current={isActive ? 'page' : undefined} data-slot="pagination-link" data-active={isActive} {...props} />
       }
     />
   )
@@ -58,12 +47,7 @@ function PaginationLink({ className, isActive, size = 'icon', ...props }: Pagina
 function PaginationPrevious({ className, ...props }: React.ComponentProps<typeof PaginationLink>) {
   const t = useTranslations('Components.Pagination')
   return (
-    <PaginationLink
-      aria-label={t('previousAria')}
-      size="default"
-      className={cn('ps-1.5!', className)}
-      {...props}
-    >
+    <PaginationLink aria-label={t('previousAria')} size="default" className={cn('ps-1.5!', className)} {...props}>
       <ChevronLeftIcon data-icon="inline-start" className="rtl:rotate-180" />
       <span className="hidden sm:block">{t('previous')}</span>
     </PaginationLink>
@@ -73,12 +57,7 @@ function PaginationPrevious({ className, ...props }: React.ComponentProps<typeof
 function PaginationNext({ className, ...props }: React.ComponentProps<typeof PaginationLink>) {
   const t = useTranslations('Components.Pagination')
   return (
-    <PaginationLink
-      aria-label={t('nextAria')}
-      size="default"
-      className={cn('pe-1.5!', className)}
-      {...props}
-    >
+    <PaginationLink aria-label={t('nextAria')} size="default" className={cn('pe-1.5!', className)} {...props}>
       <span className="hidden sm:block">{t('next')}</span>
       <ChevronRightIcon data-icon="inline-end" className="rtl:rotate-180" />
     </PaginationLink>
@@ -91,10 +70,7 @@ function PaginationEllipsis({ className, ...props }: React.ComponentProps<'span'
     <span
       aria-hidden
       data-slot="pagination-ellipsis"
-      className={cn(
-        "flex size-8 items-center justify-center [&_svg:not([class*='size-'])]:size-4",
-        className,
-      )}
+      className={cn("flex size-8 items-center justify-center [&_svg:not([class*='size-'])]:size-4", className)}
       {...props}
     >
       <MoreHorizontalIcon />

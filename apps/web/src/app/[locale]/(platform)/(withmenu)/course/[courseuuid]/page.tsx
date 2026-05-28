@@ -45,10 +45,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
         description: course_meta.description || '',
         images: [
           {
-            url: getCourseThumbnailMediaDirectory(
-              course_meta?.course_uuid,
-              course_meta?.thumbnail_image,
-            ),
+            url: getCourseThumbnailMediaDirectory(course_meta?.course_uuid, course_meta?.thumbnail_image),
             width: 800,
             height: 600,
             alt: course_meta.name,
@@ -69,9 +66,7 @@ export async function generateMetadata(props: MetadataProps): Promise<Metadata> 
   }
 }
 
-export default async function PlatformCoursePage(props: {
-  params: Promise<{ courseuuid: string }>
-}) {
+export default async function PlatformCoursePage(props: { params: Promise<{ courseuuid: string }> }) {
   const { courseuuid } = await props.params
 
   let course_meta
@@ -101,11 +96,6 @@ export default async function PlatformCoursePage(props: {
   ])
 
   return (
-    <CourseClient
-      courseuuid={courseuuid}
-      course={course_meta}
-      initialDiscussions={discussions}
-      trailData={trailData}
-    />
+    <CourseClient courseuuid={courseuuid} course={course_meta} initialDiscussions={discussions} trailData={trailData} />
   )
 }

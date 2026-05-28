@@ -73,12 +73,7 @@ const transformDiscussionToPost = (discussion: any, anonymousLabel: string) => {
   }
 }
 
-export default function DiscussionList({
-  initialPosts,
-  currentUser,
-  courseUuid,
-  onMutate,
-}: DiscussionListProps) {
+export default function DiscussionList({ initialPosts, currentUser, courseUuid, onMutate }: DiscussionListProps) {
   const t = useTranslations('CoursePage')
   const anonymousLabel = t('anonymous')
   // Use lazy initialization to transform initial posts
@@ -93,9 +88,7 @@ export default function DiscussionList({
   // Update posts when initialPosts changes
   useEffect(() => {
     if (Array.isArray(initialPosts)) {
-      const transformedPosts = initialPosts.map(discussion =>
-        transformDiscussionToPost(discussion, anonymousLabel),
-      )
+      const transformedPosts = initialPosts.map(discussion => transformDiscussionToPost(discussion, anonymousLabel))
       // Schedule update on next animation frame to avoid synchronous update in render
       if (postsRafRef.current) cancelAnimationFrame(postsRafRef.current)
       postsRafRef.current = requestAnimationFrame(() => setPosts(transformedPosts))
@@ -202,9 +195,7 @@ export default function DiscussionList({
       // Update local state with the new reply
       setPosts(
         posts.map(post =>
-          post.id === postId
-            ? { ...post, replies: [...(post.replies || []), transformedReply] }
-            : post,
+          post.id === postId ? { ...post, replies: [...(post.replies || []), transformedReply] } : post,
         ),
       )
 

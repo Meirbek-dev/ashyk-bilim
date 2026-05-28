@@ -105,12 +105,9 @@ export async function linkResourcesToUserGroup(
   resource_uuids: any,
   options?: UserGroupCourseInvalidationOptions,
 ) {
-  const result = await apiFetch(
-    `usergroups/${usergroup_id}/add_resources?resource_uuids=${resource_uuids}`,
-    {
-      method: 'POST',
-    },
-  )
+  const result = await apiFetch(`usergroups/${usergroup_id}/add_resources?resource_uuids=${resource_uuids}`, {
+    method: 'POST',
+  })
   const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {
@@ -125,12 +122,9 @@ export async function unLinkResourcesToUserGroup(
   resource_uuids: any,
   options?: UserGroupCourseInvalidationOptions,
 ) {
-  const result = await apiFetch(
-    `usergroups/${usergroup_id}/remove_resources?resource_uuids=${resource_uuids}`,
-    {
-      method: 'DELETE',
-    },
-  )
+  const result = await apiFetch(`usergroups/${usergroup_id}/remove_resources?resource_uuids=${resource_uuids}`, {
+    method: 'DELETE',
+  })
   const metadata = await getResponseMetadata(result)
 
   if (metadata.success) {

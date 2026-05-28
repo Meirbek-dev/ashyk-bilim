@@ -36,12 +36,9 @@ export async function updateUserAvatar(user_id: number, avatar_file: any) {
 }
 
 export async function updateUserTheme(user_id: number, theme: string) {
-  const result = await apiFetch(
-    `users/preferences/theme/${user_id}?theme=${encodeURIComponent(theme)}`,
-    {
-      method: 'PUT',
-    },
-  )
+  const result = await apiFetch(`users/preferences/theme/${user_id}?theme=${encodeURIComponent(theme)}`, {
+    method: 'PUT',
+  })
   const data = await errorHandling(result)
 
   if (result.ok) {
@@ -53,12 +50,9 @@ export async function updateUserTheme(user_id: number, theme: string) {
 }
 
 export async function updateUserLocale(user_id: number, locale: string) {
-  const result = await apiFetch(
-    `users/preferences/locale/${user_id}?locale=${encodeURIComponent(locale)}`,
-    {
-      method: 'PUT',
-    },
-  )
+  const result = await apiFetch(`users/preferences/locale/${user_id}?locale=${encodeURIComponent(locale)}`, {
+    method: 'PUT',
+  })
   const data = await errorHandling(result)
 
   if (result.ok) {

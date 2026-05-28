@@ -63,9 +63,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
           <div className="mx-auto max-w-4xl space-y-6 p-6">
             <div className="grid gap-4 md:grid-cols-[1fr_160px_160px]">
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">
-                  {t('form.title')}
-                </span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('form.title')}</span>
                 <Input
                   value={draft.title ?? ''}
                   onChange={e => onChange({ title: e.target.value })}
@@ -74,9 +72,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">
-                  {t('form.difficulty')}
-                </span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('form.difficulty')}</span>
                 <NativeSelect
                   value={draft.difficulty ?? 'EASY'}
                   onChange={e => onChange({ difficulty: e.target.value as any })}
@@ -88,9 +84,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-muted-foreground text-xs font-semibold uppercase">
-                  {t('maxScore')}
-                </span>
+                <span className="text-muted-foreground text-xs font-semibold uppercase">{t('maxScore')}</span>
                 <Input
                   type="number"
                   min={1}
@@ -163,11 +157,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
               <div className="flex items-center gap-2">
                 <Badge
                   variant={
-                    draft.difficulty === 'EASY'
-                      ? 'success'
-                      : draft.difficulty === 'MEDIUM'
-                        ? 'warning'
-                        : 'destructive'
+                    draft.difficulty === 'EASY' ? 'success' : draft.difficulty === 'MEDIUM' ? 'warning' : 'destructive'
                   }
                 >
                   {t(`difficulty.${(draft.difficulty ?? 'EASY').toLowerCase()}` as any)}
@@ -181,16 +171,11 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                   </Badge>
                 )}
               </div>
-              <h1 className="text-2xl font-bold tracking-normal">
-                {draft.title || t('untitledChallenge')}
-              </h1>
+              <h1 className="text-2xl font-bold tracking-normal">{draft.title || t('untitledChallenge')}</h1>
             </header>
 
             <div className="prose prose-sm dark:prose-invert max-w-none">
-              <MarkdownContent
-                content={draft.prompt || t('noProblemStatement')}
-                mode="codeProblem"
-              />
+              <MarkdownContent content={draft.prompt || t('noProblemStatement')} mode="codeProblem" />
             </div>
 
             {draft.input_spec && (
@@ -214,9 +199,7 @@ export function ProblemStatementEditor({ draft, onChange }: ProblemStatementEdit
                   {constraintsList.map((constraint, idx) => (
                     <li key={`preview-const-${idx}`} className="flex items-start gap-2 text-xs">
                       <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-600" />
-                      <code className="bg-muted text-foreground rounded px-1 py-0.5 font-mono">
-                        {constraint}
-                      </code>
+                      <code className="bg-muted text-foreground rounded px-1 py-0.5 font-mono">{constraint}</code>
                     </li>
                   ))}
                 </ul>

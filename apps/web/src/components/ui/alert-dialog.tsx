@@ -94,10 +94,7 @@ function AlertDialogMedia({ className, ...props }: React.ComponentProps<'div'>) 
   )
 }
 
-function AlertDialogTitle({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
+function AlertDialogTitle({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
   return (
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"

@@ -108,12 +108,7 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
 
         {/* Open in new tab */}
         <label className="mb-4 flex cursor-pointer items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={newTab}
-            onChange={e => setNewTab(e.target.checked)}
-            className="rounded"
-          />
+          <input type="checkbox" checked={newTab} onChange={e => setNewTab(e.target.checked)} className="rounded" />
           <ExternalLink className="text-muted-foreground size-3.5" />
           <span>{t('linkDialog.openNewTab')}</span>
         </label>
@@ -121,13 +116,7 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
         {/* Actions */}
         <div className="flex items-center justify-between gap-2">
           {currentHref ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleRemove}
-              className="text-destructive"
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={handleRemove} className="text-destructive">
               <Unlink className="mr-1.5 size-3.5" />
               {t('linkDialog.removeLink')}
             </Button>
@@ -138,12 +127,7 @@ export function EditorLinkDialog({ currentHref, onConfirm, onClose }: EditorLink
             <Button type="button" variant="outline" size="sm" onClick={onClose}>
               {t('linkDialog.cancel')}
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleConfirm}
-              disabled={!isValid && !!url.trim()}
-            >
+            <Button type="button" size="sm" onClick={handleConfirm} disabled={!isValid && !!url.trim()}>
               {currentHref ? t('linkDialog.update') : t('linkDialog.insert')}
             </Button>
           </div>

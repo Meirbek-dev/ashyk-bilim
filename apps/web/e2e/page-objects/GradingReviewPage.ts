@@ -28,19 +28,11 @@ export class GradingReviewPage {
   public constructor(page: Page) {
     this.page = page
     this.submissionList = page.locator('[data-submission-list], aside ul, .submission-list').first()
-    this.submissionItems = page.locator(
-      '[data-submission-item], .submission-item, [role="listitem"]',
-    )
+    this.submissionItems = page.locator('[data-submission-item], .submission-item, [role="listitem"]')
     this.scoreInput = page.locator('input[name*="score"], input[type="number"]').first()
-    this.feedbackTextarea = page
-      .locator('textarea[name*="feedback"], textarea[placeholder*="feedback" i]')
-      .first()
-    this.publishButton = page
-      .getByRole('button', { name: /publish grade|save grade|approve|release/i })
-      .first()
-    this.statusBadge = page
-      .locator('[data-status-badge], .grade-status, .submission-status')
-      .first()
+    this.feedbackTextarea = page.locator('textarea[name*="feedback"], textarea[placeholder*="feedback" i]').first()
+    this.publishButton = page.getByRole('button', { name: /publish grade|save grade|approve|release/i }).first()
+    this.statusBadge = page.locator('[data-status-badge], .grade-status, .submission-status').first()
     this.toast = page.locator('[data-sonner-toast]').first()
   }
 

@@ -5,14 +5,7 @@ import { useId, useState } from 'react'
 
 import { CheckIcon, ChevronsUpDownIcon, XIcon } from 'lucide-react'
 
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -54,9 +47,7 @@ export default function MultiSelectCombobox<T>({
   const emptyMessageText = emptyMessage ?? t('emptyMessage')
 
   const toggleSelection = (optionValue: string | number) => {
-    onChange(
-      value.includes(optionValue) ? value.filter(v => v !== optionValue) : [...value, optionValue],
-    )
+    onChange(value.includes(optionValue) ? value.filter(v => v !== optionValue) : [...value, optionValue])
   }
 
   const removeSelection = (optionValue: string | number) => {
@@ -66,8 +57,7 @@ export default function MultiSelectCombobox<T>({
   const visibleItems = expanded ? value : value.slice(0, maxShownItems)
   const hiddenCount = value.length - visibleItems.length
 
-  const getOptionByValue = (val: string | number) =>
-    options.find(opt => getOptionValue(opt) === val)
+  const getOptionByValue = (val: string | number) => options.find(opt => getOptionValue(opt) === val)
 
   return (
     <div className="w-full space-y-2">
@@ -128,10 +118,7 @@ export default function MultiSelectCombobox<T>({
                   <span className="text-muted-foreground">{placeholderText}</span>
                 )}
               </div>
-              <ChevronsUpDownIcon
-                className="text-muted-foreground/80 shrink-0"
-                aria-hidden="true"
-              />
+              <ChevronsUpDownIcon className="text-muted-foreground/80 shrink-0" aria-hidden="true" />
             </Button>
           }
         />

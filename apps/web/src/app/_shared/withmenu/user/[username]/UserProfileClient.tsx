@@ -72,9 +72,7 @@ const ImageModal: FC<{
           height={600}
           className="h-auto w-full rounded-lg"
         />
-        {image.caption ? (
-          <p className="text-foreground mt-4 text-center text-lg">{image.caption}</p>
-        ) : null}
+        {image.caption ? <p className="text-foreground mt-4 text-center text-lg">{image.caption}</p> : null}
       </div>
     </div>
   )
@@ -107,9 +105,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
             <UserAvatar
               size="3xl"
               avatar_url={
-                userData.avatar_image
-                  ? getUserAvatarMediaDirectory(userData.user_uuid, userData.avatar_image)
-                  : ''
+                userData.avatar_image ? getUserAvatarMediaDirectory(userData.user_uuid, userData.avatar_image) : ''
               }
               {...(!userData.avatar_image && { predefined_avatar: 'empty' })}
               userId={userData.id}
@@ -126,10 +122,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
               section.affiliations?.map(
                 (affiliation: any, index: number) =>
                   affiliation.logoUrl && (
-                    <div
-                      key={index}
-                      className="border-background bg-card rounded-lg border-2 p-2 shadow-lg"
-                    >
+                    <div key={index} className="border-background bg-card rounded-lg border-2 p-2 shadow-lg">
                       <Image
                         src={affiliation.logoUrl}
                         alt={affiliation.name}
@@ -151,9 +144,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
             <div className="w-full pl-2 md:w-1/6">
               {/* Name */}
               <h1 className="text-foreground mb-8 text-[32px] font-bold">
-                {[userData.first_name, userData.middle_name, userData.last_name]
-                  .filter(Boolean)
-                  .join(' ')}
+                {[userData.first_name, userData.middle_name, userData.last_name].filter(Boolean).join(' ')}
               </h1>
 
               {/* Details */}
@@ -164,9 +155,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                         <div className="shrink-0">
                           <IconComponent iconName={detail.icon} />
                         </div>
-                        <span className="text-muted-foreground text-[15px] font-medium">
-                          {detail.text}
-                        </span>
+                        <span className="text-muted-foreground text-[15px] font-medium">{detail.text}</span>
                       </div>
                     ))
                   : null}
@@ -211,9 +200,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                               />
                               {image.caption ? (
                                 <div className="bg-background/70 absolute inset-0 flex items-center justify-center rounded-lg p-4 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
-                                  <p className="text-foreground text-center text-sm">
-                                    {image.caption}
-                                  </p>
+                                  <p className="text-foreground text-center text-sm">{image.caption}</p>
                                 </div>
                               ) : null}
                             </div>
@@ -221,9 +208,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                         </div>
                       )}
 
-                      {section.type === 'text' && (
-                        <div className="prose max-w-none">{section.content}</div>
-                      )}
+                      {section.type === 'text' && <div className="prose max-w-none">{section.content}</div>}
 
                       {section.type === 'links' && (
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -265,9 +250,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                               <p className="text-muted-foreground text-sm">
                                 {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
                               </p>
-                              {exp.description ? (
-                                <p className="text-muted-foreground mt-2">{exp.description}</p>
-                              ) : null}
+                              {exp.description ? <p className="text-muted-foreground mt-2">{exp.description}</p> : null}
                             </div>
                           ))}
                         </div>
@@ -284,9 +267,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                               <p className="text-muted-foreground text-sm">
                                 {edu.startDate} - {edu.current ? 'Present' : edu.endDate}
                               </p>
-                              {edu.description ? (
-                                <p className="text-muted-foreground mt-2">{edu.description}</p>
-                              ) : null}
+                              {edu.description ? <p className="text-muted-foreground mt-2">{edu.description}</p> : null}
                             </div>
                           ))}
                         </div>
@@ -309,9 +290,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                                 <div>
                                   <h3 className="font-medium">{affiliation.name}</h3>
                                   {affiliation.description ? (
-                                    <p className="text-muted-foreground mt-2">
-                                      {affiliation.description}
-                                    </p>
+                                    <p className="text-muted-foreground mt-2">{affiliation.description}</p>
                                   ) : null}
                                 </div>
                               </div>
@@ -328,17 +307,10 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                             </div>
                           ) : userCourses.length > 0 ? (
                             <div className="grid w-full grid-cols-1 gap-6 pb-8 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
-                              {userCourses.map(
-                                course => {
-                                  const {
-                                    authors,
-                                    description,
-                                    thumbnail_image,
-                                    ...courseWithoutAuthors
-                                  } = course
-                                  const mappedAuthors: NonNullable<
-                                    CourseThumbnailData['authors']
-                                  > | undefined = authors?.map(author => ({
+                              {userCourses.map(course => {
+                                const { authors, description, thumbnail_image, ...courseWithoutAuthors } = course
+                                const mappedAuthors: NonNullable<CourseThumbnailData['authors']> | undefined =
+                                  authors?.map(author => ({
                                     authorship: author.authorship,
                                     authorship_status: author.authorship_status,
                                     user: {
@@ -346,29 +318,26 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                                       user_uuid: author.user.user_uuid,
                                       avatar_image: author.user.avatar_image ?? '',
                                       first_name: author.user.first_name,
-                                      ...(author.user.middle_name
-                                        ? { middle_name: author.user.middle_name }
-                                        : {}),
+                                      ...(author.user.middle_name ? { middle_name: author.user.middle_name } : {}),
                                       last_name: author.user.last_name,
                                       username: author.user.username,
                                     },
                                   }))
-                                  const courseThumbnailData: CourseThumbnailData = {
-                                    course_uuid: courseWithoutAuthors.course_uuid,
-                                    name: courseWithoutAuthors.name,
-                                    update_date: courseWithoutAuthors.update_date,
-                                    description: description ?? '',
-                                    thumbnail_image: thumbnail_image ?? '',
-                                    ...(mappedAuthors ? { authors: mappedAuthors } : {}),
-                                  }
+                                const courseThumbnailData: CourseThumbnailData = {
+                                  course_uuid: courseWithoutAuthors.course_uuid,
+                                  name: courseWithoutAuthors.name,
+                                  update_date: courseWithoutAuthors.update_date,
+                                  description: description ?? '',
+                                  thumbnail_image: thumbnail_image ?? '',
+                                  ...(mappedAuthors ? { authors: mappedAuthors } : {}),
+                                }
 
-                                  return (
-                                    <div key={course.id} className="mx-auto w-full max-w-[300px]">
-                                      <CourseThumbnail course={courseThumbnailData} />
-                                    </div>
-                                  )
-                                },
-                              )}
+                                return (
+                                  <div key={course.id} className="mx-auto w-full max-w-[300px]">
+                                    <CourseThumbnail course={courseThumbnailData} />
+                                  </div>
+                                )
+                              })}
                             </div>
                           ) : (
                             <div className="text-muted-foreground py-8 text-center">
@@ -382,9 +351,7 @@ const UserProfileClient = ({ userData, profile }: UserProfileClientProps) => {
                 </div>
               ) : null}
 
-              {error ? (
-                <div className="text-destructive">{t('courseSection.errorLoadingCourses')}</div>
-              ) : null}
+              {error ? <div className="text-destructive">{t('courseSection.errorLoadingCourses')}</div> : null}
             </div>
           </div>
         </div>

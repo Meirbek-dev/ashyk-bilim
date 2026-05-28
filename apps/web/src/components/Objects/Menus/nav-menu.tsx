@@ -12,11 +12,7 @@ import { useTheme } from '@/components/providers/theme-provider'
 import Link from '@components/ui/AppLink'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
-} from '@/components/ui/navigation-menu'
+import { NavigationMenu, NavigationMenuItem, NavigationMenuList } from '@/components/ui/navigation-menu'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
 import { ThemeModeToggle } from '@/components/theme-mode-toggle'
@@ -142,9 +138,7 @@ const DesktopNavLink = ({ def, label }: NavLinkProps) => {
         className={cn(
           'group/navlink relative flex h-10 items-center gap-2 rounded-md px-3.5 text-base font-medium outline-none transition-colors duration-200',
           'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-          isActive
-            ? 'bg-accent text-primary'
-            : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+          isActive ? 'bg-accent text-primary' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
         )}
       >
         <Icon
@@ -153,9 +147,7 @@ const DesktopNavLink = ({ def, label }: NavLinkProps) => {
           aria-hidden="true"
           className={cn(
             'shrink-0 transition-colors',
-            isActive
-              ? 'text-primary'
-              : 'text-muted-foreground/70 group-hover/navlink:text-foreground',
+            isActive ? 'text-primary' : 'text-muted-foreground/70 group-hover/navlink:text-foreground',
           )}
         />
         <span className="tracking-tight">{label}</span>
@@ -179,9 +171,7 @@ const MobileNavLink = ({ def, label, onNavigate }: NavLinkProps) => {
       className={cn(
         'group/navlink flex w-full items-center gap-3 rounded-lg px-3 py-3 text-base font-medium outline-none transition-colors',
         'focus-visible:ring-2 focus-visible:ring-ring',
-        isActive
-          ? 'bg-accent text-foreground'
-          : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+        isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
       )}
     >
       <Icon
@@ -190,9 +180,7 @@ const MobileNavLink = ({ def, label, onNavigate }: NavLinkProps) => {
         aria-hidden="true"
         className={cn(
           'shrink-0',
-          isActive
-            ? 'text-primary'
-            : 'text-muted-foreground/70 group-hover/navlink:text-foreground',
+          isActive ? 'text-primary' : 'text-muted-foreground/70 group-hover/navlink:text-foreground',
         )}
       />
       <span className="flex-1">{label}</span>
@@ -216,10 +204,7 @@ export default function NavBar() {
   const isActivityChromeHidden = useActivityChromeHidden()
   const isScrolled = useScrollElevation()
 
-  const visibleLinks = useMemo(
-    () => NAV_LINKS.filter(l => !l.authRequired || isAuthenticated),
-    [isAuthenticated],
-  )
+  const visibleLinks = useMemo(() => NAV_LINKS.filter(l => !l.authRequired || isAuthenticated), [isAuthenticated])
 
   // Auto-close the mobile sheet on route change
   useEffect(() => {
@@ -335,12 +320,7 @@ export default function NavBar() {
                   </Label>
                   <nav aria-label={t('navigation')} className="flex flex-col gap-1">
                     {visibleLinks.map(def => (
-                      <MobileNavLink
-                        key={def.type}
-                        def={def}
-                        label={tLinks(def.type)}
-                        onNavigate={closeMenu}
-                      />
+                      <MobileNavLink key={def.type} def={def} label={tLinks(def.type)} onNavigate={closeMenu} />
                     ))}
                   </nav>
                 </section>
