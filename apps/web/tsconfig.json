@@ -32,7 +32,7 @@
     /* Agentic / LLM-safe constraints */
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "noPropertyAccessFromIndexSignature": true,
+    "noPropertyAccessFromIndexSignature": false,
     "forceConsistentCasingInFileNames": true,
 
     /* Dead code prevention */

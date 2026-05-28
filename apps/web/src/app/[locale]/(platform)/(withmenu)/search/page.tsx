@@ -1,6 +1,7 @@
 import { getPlatformThumbnailImage } from '@services/media/media'
 import { APP_NAME } from '@/lib/constants'
-import { getSearchParam, type PageSearchParams } from '@/lib/search-params'
+import { getSearchParam } from '@/lib/search-params';
+import type { PageSearchParams } from '@/lib/search-params';
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 

@@ -301,7 +301,7 @@ const EditCourseCertification = () => {
               config,
 
               options: {
-                courseUuid: courseStructure['course_uuid'],
+                courseUuid: courseStructure.course_uuid,
                 lastKnownUpdateDate: courseStructure['update_date'],
               },
             })
@@ -312,7 +312,7 @@ const EditCourseCertification = () => {
             course_id: courseStructure['id'],
             config,
             options: {
-              courseUuid: courseStructure['course_uuid'],
+              courseUuid: courseStructure.course_uuid,
               lastKnownUpdateDate: courseStructure['update_date'],
             },
           })
@@ -321,7 +321,7 @@ const EditCourseCertification = () => {
 
         if (existingCertification) {
           await deleteCertification(existingCertification.certification_uuid, {
-            courseUuid: courseStructure['course_uuid'],
+            courseUuid: courseStructure.course_uuid,
             lastKnownUpdateDate: courseStructure['update_date'],
           })
         }

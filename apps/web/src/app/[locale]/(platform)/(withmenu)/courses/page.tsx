@@ -3,7 +3,8 @@ import { getPlatformThumbnailImage } from '@services/media/media'
 import { getCourses } from '@services/courses/courses'
 import { getCurrentTrail } from '@services/courses/activity'
 import { getSession } from '@/lib/auth/session'
-import { getSearchParam, type PageSearchParams } from '@/lib/search-params'
+import { getSearchParam } from '@/lib/search-params';
+import type { PageSearchParams } from '@/lib/search-params';
 import { getTranslations } from 'next-intl/server'
 import { Actions, Resources, Scopes, perm } from '@/types/permissions'
 import { AUTH_PERMISSION_WILDCARD } from '@/lib/auth/types'

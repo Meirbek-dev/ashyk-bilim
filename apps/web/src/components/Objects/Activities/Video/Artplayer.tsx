@@ -103,9 +103,9 @@ export default function ArtPlayer({
           ],
           onSelect: item => {
             art.subtitle.switch(item['url'], {
-              name: item['html'],
+              name: item.html,
             })
-            return item['html']
+            return item.html
           },
         },
       ],

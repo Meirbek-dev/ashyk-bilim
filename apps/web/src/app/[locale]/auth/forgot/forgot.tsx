@@ -41,9 +41,7 @@ const ForgotPasswordClient = () => {
         return {
           error: null,
           message: null,
-          fieldErrors: {
-            ...(emailError ? { email: emailError } : {}),
-          },
+          fieldErrors: (emailError ? { email: emailError } : {}),
         }
       }
 

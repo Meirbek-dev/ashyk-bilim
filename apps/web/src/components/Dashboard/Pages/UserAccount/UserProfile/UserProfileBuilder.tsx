@@ -1077,7 +1077,7 @@ const SkillsEditor: FC<{
                     const newSkills = [...section.skills]
                     newSkills[index] = {
                       ...skill,
-                      level: value as ProfileSkillLevel,
+                      level: value!,
                     }
                     onChange({ ...section, skills: newSkills })
                   }}

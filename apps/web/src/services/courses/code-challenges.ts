@@ -234,7 +234,7 @@ const readCanonicalMetadata = (value: CanonicalSubmissionRead['metadata_json']):
 const readCodeAnswers = (value: CanonicalSubmissionRead['answers_json']) => {
   if (!isRecord(value)) return {}
 
-  const answersValue = value['answers']
+  const answersValue = value.answers
   if (!isRecord(answersValue)) return {}
 
   const entries = Object.entries(answersValue).filter(([, answer]) =>
@@ -306,7 +306,7 @@ function toReadableTestCase(test: TestCase): TestCase {
 }
 
 function toStoredTestCase(test: TestCase, isVisible: boolean): TestCase {
-  const points = test.points
+  const {points} = test
 
   return {
     id: test.id,

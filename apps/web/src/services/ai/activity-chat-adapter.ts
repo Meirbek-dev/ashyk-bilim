@@ -81,7 +81,7 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
   const version = readOptionalNumber(value['version'])
 
   switch (type) {
-    case 'status':
+    case 'status': {
       return {
         type,
         ...(version !== undefined ? { version } : {}),
@@ -93,14 +93,16 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
           ? { message: readOptionalString(value['message']) }
           : {}),
       }
+    }
     case 'delta':
-    case 'chunk':
+    case 'chunk': {
       return {
         type,
         ...(version !== undefined ? { version } : {}),
         ...(readOptionalString(value['content']) ? { content: readOptionalString(value['content']) } : {}),
       }
-    case 'final':
+    }
+    case 'final': {
       return {
         type,
         ...(version !== undefined ? { version } : {}),
@@ -109,7 +111,8 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
           : {}),
         ...(readOptionalString(value['content']) ? { content: readOptionalString(value['content']) } : {}),
       }
-    case 'error':
+    }
+    case 'error': {
       return {
         type,
         ...(version !== undefined ? { version } : {}),
@@ -118,8 +121,10 @@ const parseActivitySseEvent = (value: unknown): ActivitySseEvent | null => {
           ? { error_code: readOptionalString(value['error_code']) }
           : {}),
       }
-    default:
+    }
+    default: {
       return null
+    }
   }
 }
 

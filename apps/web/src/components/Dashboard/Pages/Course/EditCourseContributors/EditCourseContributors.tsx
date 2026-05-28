@@ -269,7 +269,7 @@ const EditCourseContributors = () => {
     if (!isDirtyRef.current) {
       setIsOpenToContributors(courseStructure?.['open_to_contributors'])
     }
-  }, [courseStructure?.['open_to_contributors']])
+  }, [courseStructure?.['open_to_contributors'], courseStructure])
 
   const masterCheckboxChecked = (() => {
     const nonCreatorContributors = contributors.filter(c => c.authorship !== 'CREATOR')

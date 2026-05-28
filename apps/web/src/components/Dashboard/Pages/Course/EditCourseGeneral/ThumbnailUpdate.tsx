@@ -176,12 +176,13 @@ const ThumbnailUpdate = ({
       )
     },
     [
-      course.courseStructure['update_date'],
-      lastKnownUpdateDate,
-      saveWithoutRefresh,
-      t,
-      updateThumbnailMutation,
-    ],
+	course.courseStructure['update_date'],
+	lastKnownUpdateDate,
+	saveWithoutRefresh,
+	t,
+	updateThumbnailMutation,
+	course.courseStructure
+],
   )
 
   const handleFileChange = useCallback(
@@ -233,16 +234,16 @@ const ThumbnailUpdate = ({
   const getThumbnailUrl = useCallback(
     (type: 'image' | 'video') => {
       if (type === 'image') {
-        return course.courseStructure['thumbnail_image']
+        return course.courseStructure.thumbnail_image
           ? getCourseThumbnailMediaDirectory(
-              course.courseStructure['course_uuid'],
-              course.courseStructure['thumbnail_image'],
+              course.courseStructure.course_uuid,
+              course.courseStructure.thumbnail_image,
             )
           : '/empty_thumbnail.avif'
       }
       return course.courseStructure['thumbnail_video']
         ? getCourseThumbnailMediaDirectory(
-            course.courseStructure['course_uuid'],
+            course.courseStructure.course_uuid,
             course.courseStructure['thumbnail_video'],
           )
         : undefined

@@ -2,7 +2,8 @@ import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { getSession } from '@/lib/auth/session'
-import { getSearchParam, type PageSearchParams } from '@/lib/search-params'
+import { getSearchParam } from '@/lib/search-params';
+import type { PageSearchParams } from '@/lib/search-params';
 import { getAssessmentByUuid } from '@services/assessments/assessments'
 
 interface Props {

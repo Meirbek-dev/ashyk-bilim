@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
     // Optimized for avatars and course thumbnails
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     remotePatterns: imageRemotePatterns,
-    dangerouslyAllowLocalIP: process.env['NODE_ENV'] === 'development',
+    dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',
   },
 
   // Build & Environment
