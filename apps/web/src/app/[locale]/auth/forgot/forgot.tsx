@@ -37,10 +37,13 @@ const ForgotPasswordClient = () => {
 
       if (!result.success) {
         const flat = v.flatten(result.issues)
+        const emailError = flat.nested?.['email']?.[0]
         return {
           error: null,
           message: null,
-          fieldErrors: { email: flat.nested?.email?.[0] },
+          fieldErrors: {
+            ...(emailError ? { email: emailError } : {}),
+          },
         }
       }
 

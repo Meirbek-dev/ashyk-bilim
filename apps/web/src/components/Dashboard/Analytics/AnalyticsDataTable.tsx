@@ -37,9 +37,9 @@ export default function AnalyticsDataTable<TData>({
     <DataTable
       columns={columns}
       data={data}
-      className={className}
+      {...(className ? { className } : {})}
       pageSize={pageSize}
-      storageKey={storageKey ? `analytics-${storageKey}` : undefined}
+      {...(storageKey ? { storageKey: `analytics-${storageKey}` } : {})}
       serverPaginated={serverPaginated}
       labels={{
         searchPlaceholder: searchPlaceholder ?? t('table.searchDefault'),

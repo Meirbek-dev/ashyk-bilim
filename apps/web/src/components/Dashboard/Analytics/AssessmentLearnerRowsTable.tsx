@@ -64,7 +64,7 @@ export default function AssessmentLearnerRowsTable({
           columns={columns}
           data={rows}
           pageSize={10}
-          storageKey={storageKey}
+          {...(storageKey ? { storageKey } : {})}
           labels={{
             emptyMessage: t('table.emptyDefault'),
             searchPlaceholder: t('table.searchDefault'),

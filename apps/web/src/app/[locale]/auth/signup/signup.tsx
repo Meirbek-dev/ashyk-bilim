@@ -68,14 +68,19 @@ const SignUpClient = () => {
 
       if (!result.success) {
         const flat = v.flatten(result.issues)
+        const firstNameError = flat.nested?.['firstName']?.[0]
+        const lastNameError = flat.nested?.['lastName']?.[0]
+        const emailError = flat.nested?.['email']?.[0]
+        const passwordError = flat.nested?.['password']?.[0]
+        const confirmPasswordError = flat.nested?.['confirmPassword']?.[0]
         return {
           error: null,
           fieldErrors: {
-            firstName: flat.nested?.firstName?.[0],
-            lastName: flat.nested?.lastName?.[0],
-            email: flat.nested?.email?.[0],
-            password: flat.nested?.password?.[0],
-            confirmPassword: flat.nested?.confirmPassword?.[0],
+            ...(firstNameError ? { firstName: firstNameError } : {}),
+            ...(lastNameError ? { lastName: lastNameError } : {}),
+            ...(emailError ? { email: emailError } : {}),
+            ...(passwordError ? { password: passwordError } : {}),
+            ...(confirmPasswordError ? { confirmPassword: confirmPasswordError } : {}),
           },
         }
       }

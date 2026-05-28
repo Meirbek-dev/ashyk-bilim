@@ -191,7 +191,9 @@ export async function signupAction(input: SignupActionInput): Promise<AuthAction
   if (!signupResponse.ok) {
     const payload = await signupResponse.json().catch(() => null)
     const signupCode = getSignupCode(payload)
-    return { ok: false, reason: 'signup_failed', signupCode }
+    return signupCode
+      ? { ok: false, reason: 'signup_failed', signupCode }
+      : { ok: false, reason: 'signup_failed' }
   }
 
   let loginResponse: Response

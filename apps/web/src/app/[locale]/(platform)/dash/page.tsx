@@ -116,7 +116,7 @@ export default async function PlatformDashHomePage() {
               icon={card.icon}
               title={card.title}
               description={card.description}
-              badge={card.badge}
+              {...(card.badge ? { badge: card.badge } : {})}
             />
           ))}
         </div>

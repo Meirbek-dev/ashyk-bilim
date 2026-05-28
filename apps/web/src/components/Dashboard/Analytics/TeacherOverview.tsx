@@ -230,8 +230,8 @@ export default function TeacherOverview({
       <TeacherFilterBar
         query={query}
         courseCount={data.scope.course_ids.length}
-        courseOptions={courseOptions.length ? courseOptions : data.course_options}
-        cohortOptions={cohortOptions.length ? cohortOptions : data.cohort_options}
+        courseOptions={(courseOptions.length ? courseOptions : data.course_options) ?? []}
+        cohortOptions={(cohortOptions.length ? cohortOptions : data.cohort_options) ?? []}
       />
 
       <Suspense fallback={<SectionFallback height="h-[96px]" />}>

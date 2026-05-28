@@ -130,8 +130,8 @@ export default function AssessmentOutliersTable({
         <AnalyticsDataTable
           columns={columns}
           data={rows}
-          storageKey={storageKey}
-          serverPaginated={serverPaginated}
+          {...(storageKey ? { storageKey } : {})}
+          {...(serverPaginated === undefined ? {} : { serverPaginated })}
           searchPlaceholder={t('assessmentOutliers.searchPlaceholder')}
           emptyMessage={t('assessmentOutliers.emptyMessage')}
         />

@@ -56,11 +56,13 @@ const LoginClient = () => {
 
       if (!result.success) {
         const flat = v.flatten(result.issues)
+        const emailError = flat.nested?.['email']?.[0]
+        const passwordError = flat.nested?.['password']?.[0]
         return {
           error: null,
           fieldErrors: {
-            email: flat.nested?.email?.[0],
-            password: flat.nested?.password?.[0],
+            ...(emailError ? { email: emailError } : {}),
+            ...(passwordError ? { password: passwordError } : {}),
           },
         }
       }

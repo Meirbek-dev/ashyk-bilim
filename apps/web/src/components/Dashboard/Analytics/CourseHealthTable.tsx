@@ -118,8 +118,8 @@ export default function CourseHealthTable({
         <AnalyticsDataTable
           columns={columns}
           data={rows}
-          storageKey={storageKey}
-          serverPaginated={serverPaginated}
+          {...(storageKey ? { storageKey } : {})}
+          {...(serverPaginated === undefined ? {} : { serverPaginated })}
           searchPlaceholder={t('courseHealth.searchPlaceholder')}
           emptyMessage={t('courseHealth.emptyMessage')}
         />

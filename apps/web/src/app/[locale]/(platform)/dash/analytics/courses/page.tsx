@@ -48,8 +48,8 @@ async function PlatformAnalyticsCoursesPageInner(props: {
               path="/dash/analytics/courses"
               query={query}
               courseCount={courseList.total}
-              courseOptions={courseList.course_options}
-              cohortOptions={courseList.cohort_options}
+              courseOptions={courseList.course_options ?? []}
+              cohortOptions={courseList.cohort_options ?? []}
             />
           </CardContent>
         </Card>

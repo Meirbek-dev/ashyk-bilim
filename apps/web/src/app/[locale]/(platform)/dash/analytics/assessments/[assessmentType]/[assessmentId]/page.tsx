@@ -98,12 +98,14 @@ async function PlatformAnalyticsAssessmentDetailPageInner(props: {
             title={t('pages.assessmentScoreDistTitle')}
             description={t('pages.assessmentScoreDistDesc')}
             data={detail.score_distribution}
-            thresholdLabel={
-              detail.pass_threshold !== null
-                ? `${t('pages.assessmentPassThresholdDefault')} ${detail.pass_threshold}%`
-                : undefined
-            }
-            thresholdBucketLabel={detail.pass_threshold_bucket_label || undefined}
+            {...(detail.pass_threshold !== null
+              ? {
+                  thresholdLabel: `${t('pages.assessmentPassThresholdDefault')} ${detail.pass_threshold}%`,
+                }
+              : {})}
+            {...(detail.pass_threshold_bucket_label
+              ? { thresholdBucketLabel: detail.pass_threshold_bucket_label }
+              : {})}
           />
           <AnalyticsThresholdHistogram
             title={t('pages.assessmentAttemptDistTitle')}

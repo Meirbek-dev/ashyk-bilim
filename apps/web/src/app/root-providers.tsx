@@ -47,10 +47,10 @@ export default function RootProviders({
 }: RootProvidersProps) {
   return (
     <ReactQueryProvider>
-      <SessionProvider initialSession={initialSession}>
+      <SessionProvider {...(initialSession === undefined ? {} : { initialSession })}>
         <ThemeProvider
           defaultThemeName={initialSession?.user.theme ?? 'modern-minimal'}
-          initialMode={initialThemeMode}
+          {...(initialThemeMode === undefined ? {} : { initialMode: initialThemeMode })}
         >
           <ValibotProvider>
             <TopLoaderWithTheme>{children}</TopLoaderWithTheme>

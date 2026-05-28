@@ -97,7 +97,11 @@ export default function UserRolesClient() {
 
   // Open remove confirmation dialog
   const handleRemoveUserRole = useCallback((userId: number, roleId: number, roleName?: string) => {
-    setAssignmentToRemove({ userId, roleId, roleName })
+    setAssignmentToRemove({
+      userId,
+      roleId,
+      ...(roleName ? { roleName } : {}),
+    })
   }, [])
 
   // Confirm remove role from user

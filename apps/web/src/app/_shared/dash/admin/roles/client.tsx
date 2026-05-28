@@ -722,7 +722,7 @@ export default function RBACAdminClient() {
             <DialogContent>
               <RoleEditForm
                 mode={roleDialogMode}
-                role={roleDialogRole ?? undefined}
+                {...(roleDialogRole ? { role: roleDialogRole } : {})}
                 maxPriority={currentUserMaxPriority}
                 isSuperAdmin={isSuperAdmin}
                 onSubmit={data => {

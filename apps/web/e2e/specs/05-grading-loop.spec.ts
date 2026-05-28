@@ -75,6 +75,7 @@ test.describe.serial('Teacher – Grading Loop', () => {
   })
 
   test('teacher can select the student submission and see the uploaded file', async ({
+    page,
     gradingReviewPage,
   }) => {
     if (!fileSubmissionActivityId) {

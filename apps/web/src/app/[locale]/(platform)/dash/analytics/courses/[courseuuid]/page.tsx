@@ -41,9 +41,9 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
           <CardHeader>
             <div className="flex flex-wrap items-center gap-2 text-xs tracking-[0.18em] text-slate-500 uppercase">
               <Badge variant="outline">{t('pages.courseDetailBadge')}</Badge>
-              <Badge variant="outline">{detail.course.course_uuid}</Badge>
+              <Badge variant="outline">{detail.course['course_uuid']}</Badge>
             </div>
-            <CardTitle className="mt-3 text-3xl">{detail.course.name}</CardTitle>
+            <CardTitle className="mt-3 text-3xl">{detail.course['name']}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-3">
             <div className="rounded-2xl border border-slate-200 p-4">
@@ -78,14 +78,14 @@ async function PlatformAnalyticsCourseDetailPageInner(props: {
           <CompletionFunnelChart
             title={t('pages.courseFunnelTitle')}
             description={t('pages.courseFunnelDesc')}
-            data={detail.funnels.course_completion ?? []}
+            data={detail.funnels['course_completion'] ?? []}
           />
         </div>
 
         <CompletionFunnelChart
           title={t('pages.courseChapterDropoffTitle')}
           description={t('pages.courseChapterDropoffDesc')}
-          data={detail.funnels.chapter_dropoff ?? []}
+          data={detail.funnels['chapter_dropoff'] ?? []}
         />
 
         <Card className="border-slate-200 bg-white/90 shadow-sm">

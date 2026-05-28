@@ -241,8 +241,8 @@ export default function AtRiskLearnersTable({
         <AnalyticsDataTable
           columns={columns}
           data={rows}
-          storageKey={storageKey}
-          serverPaginated={serverPaginated}
+          {...(storageKey ? { storageKey } : {})}
+          {...(serverPaginated === undefined ? {} : { serverPaginated })}
           searchPlaceholder={t('atRisk.searchPlaceholder')}
           emptyMessage={t('atRisk.emptyMessage')}
         />
